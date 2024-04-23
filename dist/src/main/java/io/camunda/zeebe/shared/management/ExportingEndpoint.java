@@ -10,18 +10,17 @@ package io.camunda.zeebe.shared.management;
 import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.annotation.Selector;
-import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
-import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
-import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
-@WebEndpoint(id = "exporting")
+@RestControllerEndpoint(id = "exporting")
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
-  static final String SOFT_PAUSE = "softPause";
   static final String RESUME = "resume";
   final ExportingControlApi exportingService;
 
@@ -30,14 +29,20 @@ public final class ExportingEndpoint {
     this.exportingService = exportingService;
   }
 
-  @WriteOperation
-  public WebEndpointResponse<?> post(@Selector(match = Match.SINGLE) final String operationKey) {
+  @PostMapping(path = "/{operationKey}")
+  public WebEndpointResponse<?> post(
+      @PathVariable("operationKey") final String operationKey,
+      @RequestParam(defaultValue = "false") final boolean soft) {
+
     try {
+      final boolean softPause = soft;
       final var result =
           switch (operationKey) {
-            case PAUSE -> exportingService.pauseExporting();
-            case SOFT_PAUSE -> exportingService.softPauseExporting();
             case RESUME -> exportingService.resumeExporting();
+            case PAUSE ->
+                softPause
+                    ? exportingService.softPauseExporting()
+                    : exportingService.pauseExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();
