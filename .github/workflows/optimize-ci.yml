@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
     - name: "Read Java / Version Info"
       id: pom-info
       uses: YunaBraska/java-info-action@a39db57e7ff3656a1ad67b920444363dd1ec11e9 # 2.0.0
@@ -66,7 +66,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -142,7 +142,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -231,7 +231,7 @@ jobs:
           profiles: 'it,engine-latest'
           requiresCambpm: true
     steps:
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -310,7 +310,7 @@ jobs:
             profiles: 'ccsm-it'
             requiresCambpm: false
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -391,7 +391,7 @@ jobs:
             excludedGroups: ''
             profiles: 'it,engine-latest'
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
