@@ -1,6 +1,7 @@
 # hadolint global ignore=DL3006
 ARG BASE_IMAGE="alpine:3.19.1"
 ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 
 # Prepare Operate Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
@@ -8,7 +9,7 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
 WORKDIR /tmp/operate
 
 # download operate
-COPY dist/target/camunda-zeebe-*.tar.gz operate.tar.gz
+COPY ${DISTBALL} operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1 && \
     rm operate.tar.gz
 COPY docker-notice.txt notice.txt
