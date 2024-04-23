@@ -379,8 +379,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
