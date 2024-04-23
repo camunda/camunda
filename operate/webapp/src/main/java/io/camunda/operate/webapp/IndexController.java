@@ -30,6 +30,6 @@ public class IndexController {
   @GetMapping("/index.html")
   public String index(Model model) {
     model.addAttribute("contextPath", context.getContextPath() + "/");
-    return "index";
+    return "operate/index";
   }
 }

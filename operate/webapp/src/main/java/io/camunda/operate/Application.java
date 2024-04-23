@@ -69,6 +69,8 @@ public class Application {
     // Hack for the moment to allow serving static resources in Operate.
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
+    System.setProperty(
+        "spring.web.resources.static-locations", "classpath:/META-INF/resources/operate/");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
