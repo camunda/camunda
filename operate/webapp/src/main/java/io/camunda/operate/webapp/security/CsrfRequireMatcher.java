@@ -22,6 +22,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.regex.Pattern;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -47,7 +48,7 @@ public class CsrfRequireMatcher implements RequestMatcher {
     // If request is from Swagger UI
     final String baseRequestUrl;
     try {
-      final URL requestUrl = new URL(request.getRequestURL().toString());
+      final URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
       baseRequestUrl =
           requestUrl.getProtocol()
               + "://"
