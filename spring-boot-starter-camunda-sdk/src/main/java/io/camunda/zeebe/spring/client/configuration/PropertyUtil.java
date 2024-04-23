@@ -46,11 +46,8 @@ public class PropertyUtil {
       LOG.debug("Property {}: Loading from cache", propertyName);
       return (T) configCache.get(propertyName);
     }
-    T property = defaultProperty;
+    T property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
 
-    if (property == null) {
-      property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
-    }
     if (property == null || property.equals(defaultProperty)) {
       property = getPropertyFromSupplier(propertySupplier, propertyName, "property");
     }
