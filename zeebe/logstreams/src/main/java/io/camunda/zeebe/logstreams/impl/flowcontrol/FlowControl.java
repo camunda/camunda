@@ -15,8 +15,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class AppenderFlowControl {
-  private static final Logger LOG = LoggerFactory.getLogger(AppenderFlowControl.class);
+public final class FlowControl {
+  private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
   private static final Map<String, BackpressureCfg> ALGORITHM_CFG =
       Map.of("vegas", new BackpressureCfgVegas(), "gradient2", new BackpressureCfgGradient2());
 
@@ -24,7 +24,7 @@ public final class AppenderFlowControl {
   private final Limiter<Void> limiter;
   private final AppenderMetrics metrics;
 
-  public AppenderFlowControl(final AppendErrorHandler errorHandler, final AppenderMetrics metrics) {
+  public FlowControl(final AppendErrorHandler errorHandler, final AppenderMetrics metrics) {
     this.errorHandler = errorHandler;
     this.metrics = metrics;
     limiter = configureLimiter();

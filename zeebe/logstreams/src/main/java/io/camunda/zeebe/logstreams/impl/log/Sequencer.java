@@ -10,8 +10,8 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -45,7 +45,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
   private final LogStorage logStorage;
   private final SequencerMetrics sequencerMetrics;
   private final AppenderMetrics appenderMetrics;
-  private final AppenderFlowControl flowControl;
+  private final FlowControl flowControl;
 
   Sequencer(
       final LogStorage logStorage,
@@ -60,7 +60,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
     this.sequencerMetrics =
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
     this.appenderMetrics = Objects.requireNonNull(appenderMetrics, "must specify appender metrics");
-    flowControl = new AppenderFlowControl(this, appenderMetrics);
+    flowControl = new FlowControl(this, appenderMetrics);
   }
 
   /** {@inheritDoc} */
