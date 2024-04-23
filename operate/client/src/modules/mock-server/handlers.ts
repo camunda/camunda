@@ -19,10 +19,8 @@ import {RequestHandler, rest} from 'msw';
 import {
   IS_BATCH_MOVE_MODIFICATION_ENABLED,
   IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED,
-  IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED,
 } from 'modules/feature-flags';
 import {mockBatchStatus} from 'modules/mocks/mockBatchStatus';
-import {mockProcessInstances} from 'modules/mocks/mockProcessInstances';
 
 const batchOperationHandlers = IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED
   ? [
@@ -70,23 +68,9 @@ const batchModificationHandlers = IS_BATCH_MOVE_MODIFICATION_ENABLED
     ]
   : [];
 
-const processInstancesHandlers = IS_INSTANCE_LIST_OPERATION_ERROR_ENABLED
-  ? [
-      rest.post('api/process-instances', async (req, res, ctx) => {
-        const originalResponse = await ctx.fetch(req);
-        let originalResponseData = await originalResponse.json();
-
-        originalResponseData.processInstances.unshift(...mockProcessInstances);
-
-        return res(ctx.json(originalResponseData));
-      }),
-    ]
-  : [];
-
 const handlers: RequestHandler[] = [
   ...batchOperationHandlers,
   ...batchModificationHandlers,
-  ...processInstancesHandlers,
 ];
 
 export {handlers};
