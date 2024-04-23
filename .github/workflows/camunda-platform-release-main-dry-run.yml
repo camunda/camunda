@@ -1,4 +1,4 @@
-name: Zeebe Release Dry Run from main
+name: Camunda Platform Release Dry Run from main
 on:
   workflow_dispatch: { }
   schedule:
@@ -8,7 +8,7 @@ on:
 jobs:
   dry-run-release:
     name: "${{ matrix.version }} from main"
-    uses: ./.github/workflows/zeebe-release.yml
+    uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
       fail-fast: false
