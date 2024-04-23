@@ -32,6 +32,6 @@ jobs:
           analyzeModifiedFilesOnly: true
       - name: Upload SARIF file
         if: steps.pmd.outputs.violations != 0
-        uses: github/codeql-action/upload-sarif@c7f9125735019aa87cfc361530512d50ea439c71 # v3
+        uses: github/codeql-action/upload-sarif@8f596b4ae3cb3c588a5c46780b86dd53fef16c52 # v3
         with:
           sarif_file: pmd-report.sarif

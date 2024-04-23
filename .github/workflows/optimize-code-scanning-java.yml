@@ -40,7 +40,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c7f9125735019aa87cfc361530512d50ea439c71 # v3
+        uses: github/codeql-action/init@8f596b4ae3cb3c588a5c46780b86dd53fef16c52 # v3
         with:
           languages: java
           queries: security-and-quality
@@ -51,4 +51,4 @@ jobs:
           parameters: compile -DskipTests -Dskip.docker
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c7f9125735019aa87cfc361530512d50ea439c71 # v3
+        uses: github/codeql-action/analyze@8f596b4ae3cb3c588a5c46780b86dd53fef16c52 # v3
