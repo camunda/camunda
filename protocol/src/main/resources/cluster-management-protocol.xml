@@ -10,9 +10,9 @@
     <enum name="AdminRequestType" encodingType="uint8">
       <validValue name="STEP_DOWN_IF_NOT_PRIMARY">0</validValue>
       <validValue name="PAUSE_EXPORTING">1</validValue>
-      <validValue name="SOFT_PAUSE_EXPORTING">2</validValue>
-      <validValue name="RESUME_EXPORTING">3</validValue>
-      <validValue name="BAN_INSTANCE">4</validValue>
+      <validValue name="RESUME_EXPORTING">2</validValue>
+      <validValue name="BAN_INSTANCE">3</validValue>
+      <validValue name="SOFT_PAUSE_EXPORTING">4</validValue>
     </enum>
 
     <enum name="BackupRequestType" encodingType="uint8">
