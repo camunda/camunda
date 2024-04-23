@@ -47,7 +47,9 @@ it('should load the variable names and hand them to the filter if process defini
   await flushPromises();
 
   expect(loadVariables).toHaveBeenCalled();
-  expect(node.find('Filter').prop('variables')).toEqual(loadVariables([]));
+  expect(node.find('Filter').prop('variables')).toEqual(
+    loadVariables({processesToQuery: [], filter: []})
+  );
 });
 
 it('should render the children properly', () => {

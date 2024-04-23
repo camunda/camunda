@@ -14,6 +14,7 @@ import {Table} from 'components';
 import {updateVariables} from './service';
 import RenameVariablesModal from './RenameVariablesModal';
 import {ChangeEvent} from 'react';
+import {ProcessFilter} from 'modules/types';
 
 jest.mock('./service', () => ({updateVariables: jest.fn()}));
 jest.mock('services', () => {
@@ -50,9 +51,12 @@ it('should load all variables for the specified definition', () => {
   runLastEffect();
 
   expect(node.find(Table).prop<JSX.Element[][]>('body')[0]?.[2]?.props.value).toBe('existingLabel');
-  expect(loadVariables).toHaveBeenCalledWith([
-    {processDefinitionKey, processDefinitionVersions: ['all'], tenantIds: props.availableTenants},
-  ]);
+  expect(loadVariables).toHaveBeenCalledWith({
+    processesToQuery: [
+      {processDefinitionKey, processDefinitionVersions: ['all'], tenantIds: props.availableTenants},
+    ],
+    filter: [],
+  });
 });
 
 it('should invoke updateVariable when confirming the modal with the list of updated variables', () => {
@@ -107,4 +111,29 @@ it('should filter items based on search', () => {
   const variables = node.find(Table).prop('body') as string[][];
   expect(variables.length).toBe(1);
   expect(variables[0]?.[0]).toBe('variable1');
+});
+
+it('should pass filters to loadVariables', () => {
+  const filters = [{appliedTo: ['all'], filterLevel: 'instance', type: 'assignee', data: []}];
+  shallow(
+    <RenameVariablesModal
+      {...props}
+      filters={[
+        {appliedTo: ['all'], filterLevel: 'instance', type: 'assignee', data: []} as ProcessFilter,
+      ]}
+    />
+  );
+
+  runLastEffect();
+
+  expect(loadVariables).toHaveBeenCalledWith({
+    processesToQuery: [
+      {
+        processDefinitionKey: '',
+        processDefinitionVersions: ['all'],
+        tenantIds: props.availableTenants,
+      },
+    ],
+    filter: filters,
+  });
 });

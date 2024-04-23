@@ -89,13 +89,16 @@ export default class Filter extends Component {
     if (type === 'multipleVariable') {
       return {
         getVariables: async (definition) =>
-          await loadVariables([
-            {
-              processDefinitionKey: definition.key,
-              processDefinitionVersions: definition.versions,
-              tenantIds: definition.tenantIds,
-            },
-          ]),
+          await loadVariables({
+            processesToQuery: [
+              {
+                processDefinitionKey: definition.key,
+                processDefinitionVersions: definition.versions,
+                tenantIds: definition.tenantIds,
+              },
+            ],
+            filter: this.props.data,
+          }),
         getValues: async (name, type, numResults, valueFilter, definition) =>
           await loadValues(
             definition.key,

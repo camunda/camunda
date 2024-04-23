@@ -95,13 +95,16 @@ it('should call the provided updateReport property function when a setting chang
 it('should load the variables of the process', () => {
   shallow(<ReportControlPanel {...props} />);
 
-  expect(loadVariables).toHaveBeenCalledWith([
-    {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersions: ['aVersion'],
-      tenantIds: [],
-    },
-  ]);
+  expect(loadVariables).toHaveBeenCalledWith({
+    processesToQuery: [
+      {
+        processDefinitionKey: 'aKey',
+        processDefinitionVersions: ['aVersion'],
+        tenantIds: [],
+      },
+    ],
+    filter: [],
+  });
 });
 
 it('should include variables in the groupby options', () => {

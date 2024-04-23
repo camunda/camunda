@@ -5,32 +5,31 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Lists;
-import jakarta.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 @NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class ProcessVariableNameRequestDto {
-  @NotNull private String processDefinitionKey;
-  private List<String> processDefinitionVersions = new ArrayList<>();
-  private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
+  private List<ProcessToQueryDto> processesToQuery = new ArrayList<>();
+  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
-  @JsonIgnore
-  public void setProcessDefinitionVersion(String processDefinitionVersion) {
-    this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+  @JsonIgnore private ZoneId timezone = ZoneId.systemDefault();
+
+  public ProcessVariableNameRequestDto(
+      List<ProcessToQueryDto> processesToQuery, List<ProcessFilterDto<?>> filter) {
+    this.processesToQuery = processesToQuery;
+    this.filter = filter;
+    timezone = ZoneId.systemDefault();
   }
 
-  public List<String> getTenantIds() {
-    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  public ProcessVariableNameRequestDto(List<ProcessToQueryDto> processesToQuery) {
+    this(processesToQuery, Collections.emptyList());
   }
 }

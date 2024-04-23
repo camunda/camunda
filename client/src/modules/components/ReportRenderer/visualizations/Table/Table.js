@@ -21,7 +21,7 @@ export function Table(props) {
   const {report, mightFail, loadReport, context} = props;
   const {
     reportType,
-    data: {view, groupBy, definitions, distributedBy},
+    data: {view, groupBy, definitions, distributedBy, filter},
     result,
   } = report;
 
@@ -34,14 +34,17 @@ export function Table(props) {
 
   useEffect(() => {
     if (processVariableReport) {
-      const payload = definitions.map(({key, versions, tenantIds}) => ({
-        processDefinitionKey: key,
-        processDefinitionVersions: versions,
-        tenantIds: tenantIds,
-      }));
+      const payload = {
+        processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
+          processDefinitionKey: key,
+          processDefinitionVersions: versions,
+          tenantIds: tenantIds,
+        })),
+        filter,
+      };
       mightFail(loadVariables(payload), setProcessVariables, showError);
     }
-  }, [definitions, processVariableReport, mightFail, reportType]);
+  }, [definitions, processVariableReport, mightFail, reportType, filter]);
 
   const isDisrtibutedByProcess = distributedBy?.type === 'process';
   const updateSorting = async (by, order) => {

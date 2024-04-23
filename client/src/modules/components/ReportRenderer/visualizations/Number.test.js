@@ -58,7 +58,11 @@ const report = {
 
 const variable = {name: 'foo', type: 'String'};
 const variableReport = update(report, {
-  data: {view: {$set: {entity: 'variable', properties: [variable]}}},
+  data: {
+    view: {$set: {entity: 'variable', properties: [variable]}},
+    filter: {$set: [{type: 'runningInstancesOnly'}]},
+    definitions: {$set: [{key: 'aKey', versions: ['1'], tenantIds: ['tenantId']}]},
+  },
   result: {
     measures: {
       $set: [{data: 123, aggregationType: {type: 'avg', value: null}, property: variable}],
@@ -175,4 +179,17 @@ it('should show the variable label if it exists', () => {
   runLastEffect();
 
   expect(node).toIncludeText('FooLabel - Avg');
+});
+
+it('should call loadVariables for process variable report', () => {
+  shallow(<Number report={variableReport} {...props} />);
+
+  runLastEffect();
+
+  expect(loadVariables).toHaveBeenCalledWith({
+    filter: [{type: 'runningInstancesOnly'}],
+    processesToQuery: [
+      {processDefinitionKey: 'aKey', processDefinitionVersions: ['1'], tenantIds: ['tenantId']},
+    ],
+  });
 });

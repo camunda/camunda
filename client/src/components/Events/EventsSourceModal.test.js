@@ -89,13 +89,16 @@ it('load variables after selecting a process definition', () => {
     tenantIds: ['a', 'b'],
   });
 
-  expect(loadVariables).toHaveBeenCalledWith([
-    {
-      processDefinitionKey: 'test',
-      processDefinitionVersions: ['1'],
-      tenantIds: ['a', 'b'],
-    },
-  ]);
+  expect(loadVariables).toHaveBeenCalledWith({
+    processesToQuery: [
+      {
+        processDefinitionKey: 'test',
+        processDefinitionVersions: ['1'],
+        tenantIds: ['a', 'b'],
+      },
+    ],
+    filter: [],
+  });
 });
 
 it('should apply the source to the state when editing a source', () => {

@@ -122,13 +122,16 @@ export default function EventsSourceModal({
     (processDefinitionKey, processDefinitionVersions, tenantIds) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         mightFail(
-          loadVariablesService([
-            {
-              processDefinitionKey,
-              processDefinitionVersions,
-              tenantIds,
-            },
-          ]),
+          loadVariablesService({
+            processesToQuery: [
+              {
+                processDefinitionKey,
+                processDefinitionVersions,
+                tenantIds,
+              },
+            ],
+            filter: [],
+          }),
           setVariables,
           showError
         );

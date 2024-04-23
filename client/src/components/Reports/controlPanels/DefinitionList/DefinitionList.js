@@ -28,7 +28,15 @@ import {useDocs, useErrorHandling} from 'hooks';
 
 const {formatVersions, formatTenants} = formatters;
 
-export function DefinitionList({location, definitions = [], type, onChange, onRemove, onCopy}) {
+export function DefinitionList({
+  location,
+  definitions = [],
+  type,
+  onChange,
+  onRemove,
+  onCopy,
+  filters,
+}) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
@@ -121,6 +129,7 @@ export function DefinitionList({location, definitions = [], type, onChange, onRe
                 }
               >
                 <DefinitionEditor
+                  filters={filters}
                   collection={collection}
                   definition={definition}
                   tenantInfo={tenantInfo}

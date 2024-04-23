@@ -95,6 +95,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServicePa
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -482,13 +483,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       throws IOException {
     final FlowNodeOutlierParametersDto outlierParams =
         outlierAnalysisParams.getProcessDefinitionParametersDto();
+
     final List<String> variableNames =
         processVariableReader
             .getVariableNames(
                 new ProcessVariableNameRequestDto(
-                    outlierParams.getProcessDefinitionKey(),
-                    outlierParams.getProcessDefinitionVersions(),
-                    outlierParams.getTenantIds()))
+                    List.of(
+                        new ProcessToQueryDto(
+                            outlierParams.getProcessDefinitionKey(),
+                            outlierParams.getProcessDefinitionVersions(),
+                            outlierParams.getTenantIds()))))
             .stream()
             .map(ProcessVariableNameResponseDto::getName)
             .collect(Collectors.toList());

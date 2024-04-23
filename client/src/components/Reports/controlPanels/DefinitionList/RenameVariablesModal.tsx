@@ -19,7 +19,7 @@ import {loadVariables} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
-import {Variable} from 'types';
+import {ProcessFilter, Variable} from 'types';
 
 import {updateVariables} from './service';
 
@@ -31,6 +31,7 @@ interface RenameVariablesModalProps {
   onChange: () => void;
   definitionKey: string;
   availableTenants: (string | null)[];
+  filters?: ProcessFilter[];
 }
 
 export default function RenameVariablesModal({
@@ -39,6 +40,7 @@ export default function RenameVariablesModal({
   onChange,
   definitionKey,
   availableTenants,
+  filters = [],
 }: RenameVariablesModalProps) {
   const [variables, setVariables] = useState<Variable[]>();
   const [query, setQuery] = useState('');
@@ -47,13 +49,16 @@ export default function RenameVariablesModal({
 
   useEffect(() => {
     mightFail(
-      loadVariables([
-        {
-          processDefinitionKey: definitionKey,
-          processDefinitionVersions: ['all'],
-          tenantIds: availableTenants,
-        },
-      ]),
+      loadVariables({
+        processesToQuery: [
+          {
+            processDefinitionKey: definitionKey,
+            processDefinitionVersions: ['all'],
+            tenantIds: availableTenants,
+          },
+        ],
+        filter: filters,
+      }),
       (variables) => {
         setVariables(variables);
         setRenamedVariables(
@@ -73,7 +78,7 @@ export default function RenameVariablesModal({
       },
       showError
     );
-  }, [availableTenants, definitionKey, mightFail]);
+  }, [availableTenants, definitionKey, filters, mightFail]);
 
   function updateVariableNames() {
     mightFail(

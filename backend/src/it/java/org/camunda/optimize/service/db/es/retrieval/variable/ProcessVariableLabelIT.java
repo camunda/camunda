@@ -10,7 +10,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
 import jakarta.ws.rs.core.Response;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -103,9 +103,10 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(
-            Arrays.asList(
-                createProcessVariableRequestDto(processEngineDtos.get(0).getKey()),
-                createProcessVariableRequestDto(processEngineDtos.get(1).getKey())));
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    createProcessToQueryDto(processEngineDtos.get(0).getKey()),
+                    createProcessToQueryDto(processEngineDtos.get(1).getKey()))));
 
     // then
     assertThat(variableResponse)
@@ -132,9 +133,10 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(
-            Arrays.asList(
-                createProcessVariableRequestDto(processEngineDtos.get(0).getKey()),
-                createProcessVariableRequestDto(processEngineDtos.get(1).getKey())));
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    createProcessToQueryDto(processEngineDtos.get(0).getKey()),
+                    createProcessToQueryDto(processEngineDtos.get(1).getKey()))));
 
     // then
     assertThat(variableResponse)
@@ -161,7 +163,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(
-            List.of(createProcessVariableRequestDto(processDefinition.getKey())));
+            new ProcessVariableNameRequestDto(
+                List.of(createProcessToQueryDto(processDefinition.getKey()))));
 
     // then the duplicate labelled variables are deduplicated from the result set
     assertThat(variableResponse)
@@ -195,7 +198,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(
-            List.of(createProcessVariableRequestDto(processDefinition1.getKey())));
+            new ProcessVariableNameRequestDto(
+                List.of(createProcessToQueryDto(processDefinition1.getKey()))));
 
     // then
     assertThat(variableResponse)
@@ -377,9 +381,8 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
     return engineIntegrationExtension.startProcessInstance(processDefinitionId, variables);
   }
 
-  private ProcessVariableNameRequestDto createProcessVariableRequestDto(
-      final String processDefinitionKey) {
-    return new ProcessVariableNameRequestDto(
+  private ProcessToQueryDto createProcessToQueryDto(final String processDefinitionKey) {
+    return new ProcessToQueryDto(
         processDefinitionKey, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
   }
 

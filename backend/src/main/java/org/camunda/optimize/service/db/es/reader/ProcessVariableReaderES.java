@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.reader;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
@@ -28,6 +29,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableSourceDto;
@@ -43,6 +46,8 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQue
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.filter.FilterContext;
+import org.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
@@ -83,23 +88,24 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ConfigurationService configurationService;
   private final VariableLabelReader variableLabelReader;
+  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(
-      ProcessVariableNameRequestDto requestDto) {
-    log.debug(
-        "Fetching variable names for process definition with key [{}] and versions [{}]",
-        requestDto.getProcessDefinitionKey(),
-        requestDto.getProcessDefinitionVersions());
+      final ProcessVariableNameRequestDto variableNameRequest) {
+    Map<String, List<String>> logEntries = new HashMap<>();
+    variableNameRequest
+        .getProcessesToQuery()
+        .forEach(
+            processToQuery -> {
+              logEntries.put(
+                  processToQuery.getProcessDefinitionKey(),
+                  processToQuery.getProcessDefinitionVersions());
+            });
+    log.debug("Fetching variable names for {definitionKey=[versions]}: [{}]", logEntries);
 
-    return getVariableNames(Collections.singletonList(requestDto));
-  }
-
-  @Override
-  public List<ProcessVariableNameResponseDto> getVariableNames(
-      final List<ProcessVariableNameRequestDto> variableNameRequests) {
-    final List<ProcessVariableNameRequestDto> validNameRequests =
-        variableNameRequests.stream()
+    final List<ProcessToQueryDto> validNameRequests =
+        variableNameRequest.getProcessesToQuery().stream()
             .filter(request -> request.getProcessDefinitionKey() != null)
             .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
             .toList();
@@ -112,14 +118,14 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
 
     List<String> processDefinitionKeys =
         validNameRequests.stream()
-            .map(ProcessVariableNameRequestDto::getProcessDefinitionKey)
+            .map(ProcessToQueryDto::getProcessDefinitionKey)
             .distinct()
             .toList();
 
     Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos =
         variableLabelReader.getVariableLabelsByKey(processDefinitionKeys);
 
-    BoolQueryBuilder query = boolQuery();
+    BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
     validNameRequests.forEach(
         request ->
             query.should(
@@ -129,6 +135,14 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
                     request.getTenantIds(),
                     new ProcessInstanceIndexES(request.getProcessDefinitionKey()),
                     processDefinitionReader::getLatestVersionToKey)));
+
+    processQueryFilterEnhancer.addFilterToQuery(
+        query,
+        variableNameRequest.getFilter().stream()
+            .filter(filter -> filter.getAppliedTo().contains(APPLIED_TO_ALL_DEFINITIONS))
+            .toList(),
+        FilterContext.builder().timezone(variableNameRequest.getTimezone()).build());
+
     return getVariableNamesForInstancesMatchingQuery(query, definitionLabelsDtos);
   }
 

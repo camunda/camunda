@@ -54,13 +54,16 @@ export function ControlPanel({
     function () {
       if (processDefinitionKey && processDefinitionVersions) {
         mightFail(
-          loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
+          loadVariables({
+            processesToQuery: [{processDefinitionKey, processDefinitionVersions, tenantIds}],
+            filter: filters,
+          }),
           setVariables,
           showError
         );
       }
     },
-    [processDefinitionKey, processDefinitionVersions, tenantIds, mightFail]
+    [processDefinitionKey, processDefinitionVersions, tenantIds, filters, mightFail]
   );
 
   useEffect(() => {

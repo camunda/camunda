@@ -24,6 +24,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -225,9 +226,13 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
-    variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
+    processToQuery.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
+
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(List.of(processToQuery));
+
     final List<ProcessVariableNameResponseDto> variablesResponseDtos =
         variablesClient.getProcessVariableNames(variableRequestDto);
 

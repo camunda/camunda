@@ -32,12 +32,15 @@ export function Number({report, formatter, mightFail}) {
     // will be removed once OPT-5961 is done
     if (processVariableReport) {
       const {name, type} = data.view.properties[0];
-      const payload =
-        data.definitions?.map(({key, versions, tenantIds}) => ({
-          processDefinitionKey: key,
-          processDefinitionVersions: versions,
-          tenantIds: tenantIds,
-        })) || [];
+      const payload = {
+        processesToQuery:
+          data.definitions?.map(({key, versions, tenantIds}) => ({
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds: tenantIds,
+          })) || [],
+        filter: data.filter,
+      };
       mightFail(
         loadVariables(payload),
         (variables) => {
@@ -48,7 +51,7 @@ export function Number({report, formatter, mightFail}) {
         showError
       );
     }
-  }, [data.definitions, processVariableReport, mightFail, data.view.properties]);
+  }, [data.definitions, processVariableReport, mightFail, data.view.properties, data.filter]);
 
   const containerRef = useCallback((node) => {
     if (node) {

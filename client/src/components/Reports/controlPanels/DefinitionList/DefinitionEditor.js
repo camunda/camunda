@@ -22,7 +22,15 @@ import DiagramModal from './DiagramModal';
 
 import './DefinitionEditor.scss';
 
-export function DefinitionEditor({mightFail, collection, type, definition, tenantInfo, onChange}) {
+export function DefinitionEditor({
+  mightFail,
+  collection,
+  type,
+  definition,
+  tenantInfo,
+  onChange,
+  filters,
+}) {
   const {key, versions, tenantIds} = definition;
   const firstVersion = versions[0];
   const firstTenant = tenantIds[0];
@@ -194,6 +202,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
         </Button>
       </Stack>
       <RenameVariablesModal
+        filters={filters}
         open={variableModalOpen}
         definitionKey={definition.key}
         availableTenants={tenantInfo?.map(({id}) => id)}

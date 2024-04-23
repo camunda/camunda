@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Variable} from 'types';
+import {ProcessFilter, Variable} from 'types';
 import {get, post} from 'request';
 
 export async function loadProcessDefinitionXml(
@@ -53,12 +53,17 @@ const loadVariablesFrom =
     return (await response.json()) as Variable[];
   };
 
-type LoadVariablesPayload = {
+type Process = {
   processDefinitionKey: string;
   processDefinitionVersions: string[];
   tenantIds: (string | null)[];
 };
-export const loadVariables = loadVariablesFrom<LoadVariablesPayload[]>('api/variables');
+
+type LoadVariablesPayload = {
+  processesToQuery: Process[];
+  filter: ProcessFilter[];
+};
+export const loadVariables = loadVariablesFrom<LoadVariablesPayload>('api/variables');
 
 type LoadDecisionVariablesPayload = {
   decisionDefinitionKey: string;

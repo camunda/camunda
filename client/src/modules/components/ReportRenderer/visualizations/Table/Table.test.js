@@ -7,6 +7,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import {loadVariables} from 'services';
 
@@ -57,6 +58,19 @@ const report = {
     data: [],
   },
 };
+
+const variableReport = update(report, {
+  data: {
+    view: {$set: {entity: 'variable', properties: ['rawData']}},
+    filter: {$set: [{type: 'runningInstancesOnly'}]},
+    definitions: {$set: [{key: 'aKey', versions: ['1'], tenantIds: ['tenantId']}]},
+  },
+  result: {
+    measures: {
+      $set: [{data: 123, aggregationType: {type: 'avg', value: null}, property: {}}],
+    },
+  },
+});
 
 const Table = WrappedTable.WrappedComponent;
 
@@ -180,4 +194,20 @@ it('should not pass updateSorting to the table component for report grouped by p
   });
 
   expect(node.find(DefaultTable).prop('updateSorting')).toBe(false);
+});
+
+it('should call loadVariables for process variable report', () => {
+  shallow(<Table {...props} report={variableReport} />);
+  runAllEffects();
+
+  expect(loadVariables).toHaveBeenCalledWith({
+    processesToQuery: [
+      {
+        processDefinitionKey: 'aKey',
+        processDefinitionVersions: ['1'],
+        tenantIds: ['tenantId'],
+      },
+    ],
+    filter: [{type: 'runningInstancesOnly'}],
+  });
 });

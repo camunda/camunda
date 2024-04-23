@@ -990,19 +990,14 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(
       ProcessVariableNameRequestDto variableRequestDto) {
-    return buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto));
+    return buildProcessVariableNamesRequest(variableRequestDto, true);
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(
-      List<ProcessVariableNameRequestDto> variableRequestDtos) {
-    return buildProcessVariableNamesRequest(variableRequestDtos, true);
-  }
-
-  public OptimizeRequestExecutor buildProcessVariableNamesRequest(
-      List<ProcessVariableNameRequestDto> variableRequestDtos, boolean authenticationEnabled) {
+      ProcessVariableNameRequestDto variableRequestDto, boolean authenticationEnabled) {
     this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "variables";
     this.method = POST;
-    this.body = getBody(variableRequestDtos);
+    this.body = getBody(variableRequestDto);
     return this;
   }
 
