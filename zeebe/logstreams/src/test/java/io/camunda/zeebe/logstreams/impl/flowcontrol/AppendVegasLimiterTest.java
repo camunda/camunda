@@ -10,8 +10,6 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
-import io.camunda.zeebe.util.Environment;
-import java.util.Map;
 import org.junit.Test;
 
 public final class AppendVegasLimiterTest {
@@ -26,49 +24,6 @@ public final class AppendVegasLimiterTest {
     assertThat(vegasCfg.getBetaLimit()).isEqualTo(0.95);
     assertThat(vegasCfg.getInitialLimit()).isEqualTo(1024);
     assertThat(vegasCfg.getMaxConcurrency()).isEqualTo(1024 * 32);
-  }
-
-  @Test
-  public void shouldUseDefaultValuesForNoExistingValues() {
-    // given
-    final Environment environment = new Environment();
-    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
-
-    // when
-    vegasCfg.applyEnvironment(environment);
-
-    // then
-    assertThat(vegasCfg.getAlphaLimit()).isEqualTo(0.7);
-    assertThat(vegasCfg.getBetaLimit()).isEqualTo(0.95);
-    assertThat(vegasCfg.getInitialLimit()).isEqualTo(1024);
-    assertThat(vegasCfg.getMaxConcurrency()).isEqualTo(1024 * 32);
-  }
-
-  @Test
-  public void shouldConfigure() {
-    // given
-    final Map<String, String> cfgMap =
-        Map.of(
-            BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT,
-            "12",
-            BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY,
-            "24",
-            BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT,
-            "0.1",
-            BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT,
-            "0.5");
-    final Environment environment = new Environment(cfgMap);
-
-    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
-
-    // when
-    vegasCfg.applyEnvironment(environment);
-
-    // then
-    assertThat(vegasCfg.getAlphaLimit()).isEqualTo(0.1);
-    assertThat(vegasCfg.getBetaLimit()).isEqualTo(0.5);
-    assertThat(vegasCfg.getInitialLimit()).isEqualTo(12);
-    assertThat(vegasCfg.getMaxConcurrency()).isEqualTo(24);
   }
 
   @Test

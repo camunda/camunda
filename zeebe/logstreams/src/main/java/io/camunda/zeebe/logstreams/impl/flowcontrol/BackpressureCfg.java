@@ -8,10 +8,6 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
-import io.camunda.zeebe.util.Environment;
 import java.util.function.Supplier;
 
-interface BackpressureCfg extends Supplier<AbstractLimit> {
-
-  void applyEnvironment(Environment environment);
-}
+interface BackpressureCfg extends Supplier<AbstractLimit> {}
