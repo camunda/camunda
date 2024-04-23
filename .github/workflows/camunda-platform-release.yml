@@ -332,7 +332,7 @@ jobs:
           push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
-      - name: Verify Docker image
+      - name: Verify Zeebe Docker image
         uses: ./.github/actions/verify-zeebe-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
@@ -390,9 +390,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Build Zeebe Docker Image
+      - name: Build Operate Docker Image
         uses: ./.github/actions/build-platform-docker
-        id: build-zeebe-docker
+        id: build-operate-docker
         with:
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
@@ -402,15 +402,15 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
           dockerfile: operate.Dockerfile
-      - name: Verify Docker image
+      - name: Verify Operate Docker image
         uses: ./.github/actions/verify-zeebe-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-zeebe-docker.outputs.date }}
+          date: ${{ steps.build-operate-docker.outputs.date }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
           platforms: ${{ env.PLATFORMS }}
-      - name: Sync Docker Image to DockerHub
+      - name: Sync Operate Docker Image to DockerHub
         id: push-docker
         if: ${{ inputs.dryRun == false }}
         # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
