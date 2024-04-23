@@ -78,7 +78,7 @@ public abstract class BaseWebConfigurer {
     return http.build();
   }
 
-  protected void applySecurityHeadersSettings(HttpSecurity http) throws Exception {
+  protected void applySecurityHeadersSettings(final HttpSecurity http) throws Exception {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
 
     // Only SaaS has CloudProperties
@@ -237,10 +237,6 @@ public abstract class BaseWebConfigurer {
         && auth.isAuthenticated()
         && (path == null || !path.contains("logout"))
         && ("GET".equalsIgnoreCase(method) || (path != null && path.contains("login")));
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication) {
-    response.setStatus(NO_CONTENT.value());
   }
 
   protected void sendError(
