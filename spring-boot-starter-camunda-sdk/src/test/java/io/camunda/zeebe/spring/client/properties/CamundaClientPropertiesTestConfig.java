@@ -13,29 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.auth;
+package io.camunda.zeebe.spring.client.properties;
 
-import java.util.Arrays;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-/** Enum for supported C8 Products */
-public enum Product {
-  ZEEBE(true),
-  IDENTITY(true);
-
-  private final boolean covered;
-
-  Product(final boolean covered) {
-    this.covered = covered;
-  }
-
-  public static Product[] coveredProducts() {
-    return Arrays.stream(Product.values())
-        .filter(Product::covered)
-        .toList()
-        .toArray(new Product[0]);
-  }
-
-  public boolean covered() {
-    return covered;
-  }
-}
+@EnableConfigurationProperties(CamundaClientProperties.class)
+public class CamundaClientPropertiesTestConfig {}

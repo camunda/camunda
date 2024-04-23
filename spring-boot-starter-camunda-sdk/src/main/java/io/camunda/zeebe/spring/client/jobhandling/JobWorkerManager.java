@@ -16,11 +16,11 @@
 package io.camunda.zeebe.spring.client.jobhandling;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
+import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.client.metrics.ZeebeClientMetricsBridge;
 import java.time.Duration;
@@ -35,19 +35,19 @@ public class JobWorkerManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerManager.class);
 
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
-  private final JsonMapper jsonMapper;
   private final MetricsRecorder metricsRecorder;
+  private final ParameterResolverStrategy parameterResolverStrategy;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<ZeebeWorkerValue> workerValues = new ArrayList<>();
 
   public JobWorkerManager(
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final JsonMapper jsonMapper,
-      final MetricsRecorder metricsRecorder) {
+      final MetricsRecorder metricsRecorder,
+      final ParameterResolverStrategy parameterResolverStrategy) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
-    this.jsonMapper = jsonMapper;
     this.metricsRecorder = metricsRecorder;
+    this.parameterResolverStrategy = parameterResolverStrategy;
   }
 
   public JobWorker openWorker(final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue) {
@@ -55,7 +55,10 @@ public class JobWorkerManager {
         client,
         zeebeWorkerValue,
         new JobHandlerInvokingSpringBeans(
-            zeebeWorkerValue, commandExceptionHandlingStrategy, jsonMapper, metricsRecorder));
+            zeebeWorkerValue,
+            commandExceptionHandlingStrategy,
+            metricsRecorder,
+            parameterResolverStrategy));
   }
 
   public JobWorker openWorker(
@@ -74,21 +77,27 @@ public class JobWorkerManager {
     if (zeebeWorkerValue.getMaxJobsActive() != null && zeebeWorkerValue.getMaxJobsActive() > 0) {
       builder.maxJobsActive(zeebeWorkerValue.getMaxJobsActive());
     }
-    if (zeebeWorkerValue.getTimeout() != null && zeebeWorkerValue.getTimeout() > 0) {
+    if (isValidDuration(zeebeWorkerValue.getTimeout())) {
       builder.timeout(zeebeWorkerValue.getTimeout());
     }
-    if (zeebeWorkerValue.getPollInterval() != null && zeebeWorkerValue.getPollInterval() > 0) {
-      builder.pollInterval(Duration.ofMillis(zeebeWorkerValue.getPollInterval()));
+    if (isValidDuration(zeebeWorkerValue.getPollInterval())) {
+      builder.pollInterval(zeebeWorkerValue.getPollInterval());
     }
-    if (zeebeWorkerValue.getRequestTimeout() != null && zeebeWorkerValue.getRequestTimeout() > 0) {
-      builder.requestTimeout(Duration.ofSeconds(zeebeWorkerValue.getRequestTimeout()));
+    if (isValidDuration(zeebeWorkerValue.getRequestTimeout())) {
+      builder.requestTimeout(zeebeWorkerValue.getRequestTimeout());
     }
     if (zeebeWorkerValue.getFetchVariables() != null
-        && zeebeWorkerValue.getFetchVariables().length > 0) {
+        && !zeebeWorkerValue.getFetchVariables().isEmpty()) {
       builder.fetchVariables(zeebeWorkerValue.getFetchVariables());
     }
     if (zeebeWorkerValue.getTenantIds() != null && !zeebeWorkerValue.getTenantIds().isEmpty()) {
       builder.tenantIds(zeebeWorkerValue.getTenantIds());
+    }
+    if (zeebeWorkerValue.getStreamEnabled() != null) {
+      builder.streamEnabled(zeebeWorkerValue.getStreamEnabled());
+    }
+    if (isValidDuration(zeebeWorkerValue.getStreamTimeout())) {
+      builder.streamTimeout(zeebeWorkerValue.getStreamTimeout());
     }
 
     final JobWorker jobWorker = builder.open();
@@ -96,6 +105,10 @@ public class JobWorkerManager {
     workerValues.add(zeebeWorkerValue);
     LOGGER.info(". Starting Zeebe worker: {}", zeebeWorkerValue);
     return jobWorker;
+  }
+
+  private boolean isValidDuration(final Duration duration) {
+    return duration != null && !duration.isNegative();
   }
 
   public void closeAllOpenWorkers() {

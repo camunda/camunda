@@ -15,49 +15,34 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
-@Deprecated
-public class Keycloak {
+import java.net.URL;
 
-  private String url;
-  private String realm;
-  private String tokenUrl;
+public class ApiProperties {
+  private Boolean enabled;
+  private URL baseUrl;
+  private String audience;
 
-  @Override
-  public String toString() {
-    return "Keycloak{"
-        + "url='"
-        + url
-        + '\''
-        + ", realm='"
-        + realm
-        + '\''
-        + ", tokenUrl='"
-        + tokenUrl
-        + '\''
-        + '}';
+  public Boolean getEnabled() {
+    return enabled;
   }
 
-  public String getUrl() {
-    return url;
+  public void setEnabled(Boolean enabled) {
+    this.enabled = enabled;
   }
 
-  public void setUrl(final String url) {
-    this.url = url;
+  public URL getBaseUrl() {
+    return baseUrl;
   }
 
-  public String getRealm() {
-    return realm;
+  public void setBaseUrl(URL baseUrl) {
+    this.baseUrl = baseUrl;
   }
 
-  public void setRealm(final String realm) {
-    this.realm = realm;
+  public String getAudience() {
+    return audience;
   }
 
-  public String getTokenUrl() {
-    return tokenUrl;
-  }
-
-  public void setTokenUrl(final String tokenUrl) {
-    this.tokenUrl = tokenUrl;
+  public void setAudience(String audience) {
+    this.audience = audience;
   }
 }
