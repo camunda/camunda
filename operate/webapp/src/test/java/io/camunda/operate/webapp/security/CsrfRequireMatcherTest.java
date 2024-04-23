@@ -61,7 +61,8 @@ class CsrfRequireMatcherTest {
     when(request.getMethod()).thenReturn("POST");
     when(request.getServletPath()).thenReturn("/swagger-ui.html");
     when(request.getHeader("Referer")).thenReturn("http://localhost:8080/swagger-ui.html");
-    when(request.getRequestURI()).thenReturn("http://localhost:8080/swagger-ui.html");
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080/swagger-ui.html"));
     assertThat(csrfRequireMatcher.matches(request)).isFalse();
   }
 
@@ -70,7 +71,8 @@ class CsrfRequireMatcherTest {
     when(request.getMethod()).thenReturn("POST");
     when(request.getServletPath()).thenReturn("/v1/process-definitions/search");
     when(request.getHeader("Referer")).thenReturn(null);
-    when(request.getRequestURI()).thenReturn("http://localhost:8080/v1/process-definitions/search");
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080/v1/process-definitions/search"));
     when(request.getHeader("Authorization")).thenReturn("Bearer eyBlackCoffee");
     assertThat(csrfRequireMatcher.matches(request)).isFalse();
   }
@@ -80,7 +82,8 @@ class CsrfRequireMatcherTest {
     when(request.getMethod()).thenReturn("POST");
     when(request.getServletPath()).thenReturn("/api/processes/grouped");
     when(request.getHeader("Referer")).thenReturn(null);
-    when(request.getRequestURI()).thenReturn("http://localhost:8080//api/processes/grouped");
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080//api/processes/grouped"));
     assertThat(csrfRequireMatcher.matches(request)).isTrue();
   }
 }
