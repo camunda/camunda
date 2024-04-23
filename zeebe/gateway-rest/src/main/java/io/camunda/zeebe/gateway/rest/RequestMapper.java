@@ -34,7 +34,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.web.server.ServerWebExchange;
 
 public class RequestMapper {
 
@@ -47,9 +46,7 @@ public class RequestMapper {
       for a supported attribute in the "changeset".""";
 
   public static Either<ProblemDetail, BrokerUserTaskCompletionRequest> toUserTaskCompletionRequest(
-      final UserTaskCompletionRequest completionRequest,
-      final long userTaskKey,
-      final ServerWebExchange context) {
+      final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
     final var brokerRequest =
         new BrokerUserTaskCompletionRequest(
@@ -57,16 +54,14 @@ public class RequestMapper {
             getDocumentOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
             getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
 
-    final String authorizationToken = getAuthorizationToken(context);
+    final String authorizationToken = getAuthorizationToken();
     brokerRequest.setAuthorization(authorizationToken);
 
     return Either.right(brokerRequest);
   }
 
   public static Either<ProblemDetail, BrokerUserTaskAssignmentRequest> toUserTaskAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest,
-      final long userTaskKey,
-      final ServerWebExchange context) {
+      final UserTaskAssignmentRequest assignmentRequest, final long userTaskKey) {
 
     final var validationErrorResponse = validateAssignmentRequest(assignmentRequest);
     if (validationErrorResponse.isPresent()) {
@@ -87,27 +82,25 @@ public class RequestMapper {
         new BrokerUserTaskAssignmentRequest(
             userTaskKey, assignmentRequest.getAssignee(), action, intent);
 
-    final String authorizationToken = getAuthorizationToken(context);
+    final String authorizationToken = getAuthorizationToken();
     brokerRequest.setAuthorization(authorizationToken);
 
     return Either.right(brokerRequest);
   }
 
   public static Either<ProblemDetail, BrokerUserTaskAssignmentRequest>
-      toUserTaskUnassignmentRequest(final long userTaskKey, final ServerWebExchange context) {
+      toUserTaskUnassignmentRequest(final long userTaskKey) {
     final BrokerUserTaskAssignmentRequest brokerRequest =
         new BrokerUserTaskAssignmentRequest(userTaskKey, "", "unassign", UserTaskIntent.ASSIGN);
 
-    final String authorizationToken = getAuthorizationToken(context);
+    final String authorizationToken = getAuthorizationToken();
     brokerRequest.setAuthorization(authorizationToken);
 
     return Either.right(brokerRequest);
   }
 
   public static Either<ProblemDetail, BrokerUserTaskUpdateRequest> toUserTaskUpdateRequest(
-      final UserTaskUpdateRequest updateRequest,
-      final long userTaskKey,
-      final ServerWebExchange context) {
+      final UserTaskUpdateRequest updateRequest, final long userTaskKey) {
 
     final var validationErrorResponse = validateUpdateRequest(updateRequest);
     if (validationErrorResponse.isPresent()) {
@@ -120,7 +113,7 @@ public class RequestMapper {
             getRecordWithChangedAttributes(updateRequest),
             getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction));
 
-    brokerRequest.setAuthorization(getAuthorizationToken(context));
+    brokerRequest.setAuthorization(getAuthorizationToken());
 
     return Either.right(brokerRequest);
   }
@@ -175,8 +168,8 @@ public class RequestMapper {
             && changeset.getCandidateUsers() == null);
   }
 
-  private static String getAuthorizationToken(final ServerWebExchange context) {
-    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds(context);
+  private static String getAuthorizationToken() {
+    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
     return Authorization.jwtEncoder()
         .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)

@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.server.ServerWebExchange;
 
 @ZeebeRestController
 public class UserTaskController {
@@ -41,11 +40,10 @@ public class UserTaskController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> completeUserTask(
-      final ServerWebExchange context,
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
-    return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context)
+    return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey)
         .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
@@ -54,19 +52,18 @@ public class UserTaskController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> assignUserTask(
-      final ServerWebExchange context,
       @PathVariable final long userTaskKey,
       @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
-    return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context)
+    return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey)
         .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
   @DeleteMapping(path = "/user-tasks/{userTaskKey}/assignee")
   public CompletableFuture<ResponseEntity<Object>> unassignUserTask(
-      final ServerWebExchange context, @PathVariable final long userTaskKey) {
+      @PathVariable final long userTaskKey) {
 
-    return RequestMapper.toUserTaskUnassignmentRequest(userTaskKey, context)
+    return RequestMapper.toUserTaskUnassignmentRequest(userTaskKey)
         .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
@@ -75,11 +72,10 @@ public class UserTaskController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> updateUserTask(
-      final ServerWebExchange context,
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
 
-    return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context)
+    return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey)
         .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
   }
 
