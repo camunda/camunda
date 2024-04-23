@@ -54,7 +54,8 @@ public interface AuthenticationTestable {
           "^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
-  default HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
+  default HttpEntity<Map<String, String>> prepareRequestWithCookies(
+      final ResponseEntity<?> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
@@ -63,17 +64,17 @@ public interface AuthenticationTestable {
     return new HttpEntity<>(body, headers);
   }
 
-  default List<String> getCookies(ResponseEntity<?> response) {
+  default List<String> getCookies(final ResponseEntity<?> response) {
     return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(List.of());
   }
 
-  default List<String> getSessionCookies(ResponseEntity<?> response) {
+  default List<String> getSessionCookies(final ResponseEntity<?> response) {
     return getCookies(response).stream()
         .filter(key -> key.contains(COOKIE_JSESSIONID))
         .collect(Collectors.toList());
   }
 
-  default void assertThatCookiesAndSecurityHeadersAreSet(ResponseEntity<?> response) {
+  default void assertThatCookiesAndSecurityHeadersAreSet(final ResponseEntity<?> response) {
     final List<String> cookies = getSessionCookies(response);
     assertThat(cookies).isNotEmpty();
     final String lastSetCookie = cookies.get(cookies.size() - 1);
@@ -82,20 +83,22 @@ public interface AuthenticationTestable {
     assertThatSecurityHeadersAreSet(response);
   }
 
-  default void assertThatSecurityHeadersAreSet(ResponseEntity<?> response) {
+  default void assertThatSecurityHeadersAreSet(final ResponseEntity<?> response) {
     final var cspHeaderValues =
         response
             .getHeaders()
             .getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
     assertThat(cspHeaderValues).isNotEmpty();
-    assertThat(cspHeaderValues).first().isEqualTo(WebSecurityProperties.DEFAULT_SECURITY_POLICY);
+    assertThat(cspHeaderValues)
+        .first()
+        .isEqualTo(WebSecurityProperties.DEFAULT_SAAS_SECURITY_POLICY);
   }
 
-  default void assertSameSiteIsSet(String cookie) {
+  default void assertSameSiteIsSet(final String cookie) {
     assertThat(cookie).contains("SameSite=Lax");
   }
 
-  default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
+  default void assertThatCookiesAreDeleted(final ResponseEntity<?> response) {
     final String emptyValue = "=;";
     final List<String> sessionCookies = getSessionCookies(response);
     if (!sessionCookies.isEmpty()) {
@@ -104,7 +107,7 @@ public interface AuthenticationTestable {
     }
   }
 
-  default ResponseEntity<Void> login(String username, String password) {
+  default ResponseEntity<Void> login(final String username, final String password) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
@@ -116,12 +119,12 @@ public interface AuthenticationTestable {
         .postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
-  default ResponseEntity<?> logout(ResponseEntity<?> previousResponse) {
+  default ResponseEntity<?> logout(final ResponseEntity<?> previousResponse) {
     final HttpEntity<Map<String, String>> request = prepareRequestWithCookies(previousResponse);
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
-  default UserDto getCurrentUser(ResponseEntity<?> previousResponse) {
+  default UserDto getCurrentUser(final ResponseEntity<?> previousResponse) {
     final ResponseEntity<UserDto> responseEntity =
         getTestRestTemplate()
             .exchange(
@@ -133,11 +136,11 @@ public interface AuthenticationTestable {
     return responseEntity.getBody();
   }
 
-  default ResponseEntity<String> get(String path) {
+  default ResponseEntity<String> get(final String path) {
     return getTestRestTemplate().getForEntity(path, String.class);
   }
 
-  default String redirectLocationIn(ResponseEntity<?> response) {
+  default String redirectLocationIn(final ResponseEntity<?> response) {
     final URI location = response.getHeaders().getLocation();
     if (location != null) {
       return location.toString();

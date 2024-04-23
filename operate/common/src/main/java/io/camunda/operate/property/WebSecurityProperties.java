@@ -20,7 +20,7 @@ import java.time.Duration;
 
 public class WebSecurityProperties {
 
-  public static final String DEFAULT_SECURITY_POLICY =
+  public static final String DEFAULT_SAAS_SECURITY_POLICY =
       "default-src 'self';"
           + " base-uri 'self';"
           + " script-src 'self';"
@@ -37,13 +37,50 @@ public class WebSecurityProperties {
           + " worker-src 'self' *.osano.com *.mixpanel.com blob:;"
           + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
 
+  public static final String DEFAULT_SM_SECURITY_POLICY =
+      "default-src 'self';"
+          + " base-uri 'self';"
+          + " script-src 'self';"
+          + " script-src-elem 'self' cdn.jsdelivr.net;"
+          + " connect-src 'self' cdn.jsdelivr.net;"
+          + " style-src 'self' 'unsafe-inline' cdn.jsdelivr.net;"
+          + " img-src * data:;"
+          + " block-all-mixed-content;"
+          + " form-action 'self';"
+          + " frame-ancestors 'none';"
+          + " frame-src 'self' https:;"
+          + " object-src 'none';"
+          + " font-src 'self' fonts.camunda.io cdn.jsdelivr.net;"
+          + " worker-src 'self' blob:;"
+          + " sandbox allow-forms allow-scripts allow-same-origin allow-popups";
+
+  /*
+  const SM cspDirectives = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    scriptSrcElem: ["'self'", `'nonce-${ctx.state.nonce}'`],
+    connectSrc: [
+      "'self'",
+      ...getPusherConnectSrc(client.pusher),
+      getBaseUrl(oAuth2.token.issuer),
+      `*.${camundaCloudBaseDomain}`
+    ],
+    frameSrc: ["'self'", 'https:'],
+    fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://fonts.camunda.io'],
+    mediaSrc: ["'self'", 'data:'],
+    styleSrc: ["'self'", 'https://fonts.googleapis.com', 'https://fonts.google.com', "'unsafe-inline'"],
+    imgSrc: ['*', 'data:'],
+    workerSrc: ["'self'", 'blob:']
+  };
+   */
+
   // What if a year has 366 days? :)
   // Use recommendation of https://hstspreload.org/
   public static final long DEFAULT_HSTS_MAX_AGE =
       Duration.ofDays(2 * 365 /* 2 Years */).getSeconds();
 
   public static final boolean DEFAULT_INCLUDE_SUB_DOMAINS = true;
-  private String contentSecurityPolicy = DEFAULT_SECURITY_POLICY;
+  private String contentSecurityPolicy = DEFAULT_SAAS_SECURITY_POLICY;
   private long httpStrictTransportSecurityMaxAgeInSeconds = DEFAULT_HSTS_MAX_AGE;
   private boolean httpStrictTransportSecurityIncludeSubDomains = DEFAULT_INCLUDE_SUB_DOMAINS;
 
@@ -72,8 +109,7 @@ public class WebSecurityProperties {
 
   public WebSecurityProperties setHttpStrictTransPortSecurityIncludeSubDomains(
       final boolean httpStrictTransPortSecurityIncludeSubDomains) {
-    this.httpStrictTransportSecurityIncludeSubDomains =
-        httpStrictTransPortSecurityIncludeSubDomains;
+    httpStrictTransportSecurityIncludeSubDomains = httpStrictTransPortSecurityIncludeSubDomains;
     return this;
   }
 }
