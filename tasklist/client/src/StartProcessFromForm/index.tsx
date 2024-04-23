@@ -15,8 +15,10 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {useStartProcessParams} from 'modules/routing';
-import {useExternalForm} from 'modules/queries/useExternalForm';
+import {
+  getExternalFormQueryOptions,
+  useExternalForm,
+} from 'modules/queries/useExternalForm';
 import {useLayoutEffect, useState} from 'react';
 import {Content} from '@carbon/react';
 import {FormJS} from './FormJS';
@@ -29,17 +31,34 @@ import ErrorRobotImage from 'modules/images/error-robot.svg';
 import {Message} from './Message';
 import {match, Pattern} from 'ts-pattern';
 import styles from './styles.module.scss';
+import {useLoaderData, type LoaderFunctionArgs} from 'react-router-dom';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
+
+async function loader({params}: LoaderFunctionArgs) {
+  const {bpmnProcessId} = params;
+
+  if (bpmnProcessId === undefined) {
+    throw new Error('bpmnProcessId is required');
+  }
+
+  try {
+    await reactQueryClient.ensureQueryData(
+      getExternalFormQueryOptions(bpmnProcessId),
+    );
+  } catch {
+    // we must ignore the error to retry the query in case the form is not imported yet
+  }
+
+  return {bpmnProcessId};
+}
 
 const StartProcessFromForm: React.FC = () => {
+  const {bpmnProcessId} = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const [pageView, setPageView] = useState<
-    | 'form'
-    | 'submit-success'
-    | 'form-not-found'
-    | 'failed-submission'
-    | 'invalid-form-schema'
+    'form' | 'submit-success' | 'failed-submission' | 'invalid-form-schema'
   >('form');
-  const {bpmnProcessId} = useStartProcessParams();
   const {data, error} = useExternalForm(bpmnProcessId);
+  console.log({data, error});
   const {mutateAsync: startExternalProcess, reset} = useStartExternalProcess({
     onError: (error) => {
       logger.error(error);
@@ -59,7 +78,8 @@ const StartProcessFromForm: React.FC = () => {
       tracking.track({
         eventName: 'public-start-form-load-failed',
       });
-      setPageView('form-not-found');
+
+      throw error;
     }
   }, [error]);
 
@@ -79,95 +99,103 @@ const StartProcessFromForm: React.FC = () => {
   }, [data]);
 
   return (
-    <>
-      <Content
-        id="main-content"
-        className={styles.content}
-        tabIndex={-1}
-        tagName="main"
-      >
-        <div className={styles.container}>
-          {match({data, pageView})
-            .with({pageView: 'form', data: undefined}, () => <Skeleton />)
-            .with(
-              {pageView: 'form', data: Pattern.not(undefined)},
-              ({data}) => (
-                <FormJS
-                  schema={data.schema}
-                  handleSubmit={async (variables) => {
-                    await startExternalProcess({variables, bpmnProcessId});
-                  }}
-                  onImportError={() => {
-                    setPageView('invalid-form-schema');
-                  }}
-                  onSubmitError={() => {
-                    setPageView('failed-submission');
-                  }}
-                  onSubmitSuccess={() => {
-                    setPageView('submit-success');
-                  }}
-                />
-              ),
-            )
-            .with({pageView: 'submit-success'}, () => (
-              <Message
-                icon={{
-                  altText: 'Success checkmark',
-                  path: CheckImage,
-                }}
-                heading="Success!"
-                description={
-                  <>
-                    Your form has been successfully submitted.
-                    <br />
-                    You can close this window now.
-                  </>
-                }
-              />
-            ))
-            .with({pageView: 'form-not-found'}, () => (
-              <Message
-                icon={{
-                  altText: 'Error robot',
-                  path: ErrorRobotImage,
-                }}
-                heading="404 - Page not found"
-                description="We're sorry! The requested URL you're looking for could not be found."
-              />
-            ))
-            .with({pageView: 'failed-submission'}, () => (
-              <Message
-                icon={{
-                  altText: 'Error robot',
-                  path: ErrorRobotImage,
-                }}
-                heading="Something went wrong"
-                description="Please try again later and reload the page."
-                button={{
-                  label: 'Reload',
-                  onClick: () => {
-                    reset();
-                  },
-                }}
-              />
-            ))
-            .with({pageView: 'invalid-form-schema'}, () => (
-              <Message
-                icon={{
-                  altText: 'Error robot',
-                  path: ErrorRobotImage,
-                }}
-                heading="Invalid form"
-                description="Something went wrong and the form could not be displayed. Please contact your provider."
-              />
-            ))
-            .exhaustive()}
-        </div>
-      </Content>
-    </>
+    <Content
+      id="main-content"
+      className={styles.content}
+      tabIndex={-1}
+      tagName="main"
+    >
+      <div className={styles.container}>
+        {match({data, pageView})
+          .with({pageView: 'form', data: undefined}, () => <Skeleton />)
+          .with({pageView: 'form', data: Pattern.not(undefined)}, ({data}) => (
+            <FormJS
+              schema={data.schema}
+              handleSubmit={async (variables) => {
+                await startExternalProcess({variables, bpmnProcessId});
+              }}
+              onImportError={() => {
+                setPageView('invalid-form-schema');
+              }}
+              onSubmitError={() => {
+                setPageView('failed-submission');
+              }}
+              onSubmitSuccess={() => {
+                setPageView('submit-success');
+              }}
+            />
+          ))
+          .with({pageView: 'submit-success'}, () => (
+            <Message
+              icon={{
+                altText: 'Success checkmark',
+                path: CheckImage,
+              }}
+              heading="Success!"
+              description={
+                <>
+                  Your form has been successfully submitted.
+                  <br />
+                  You can close this window now.
+                </>
+              }
+            />
+          ))
+          .with({pageView: 'failed-submission'}, () => (
+            <Message
+              icon={{
+                altText: 'Error robot',
+                path: ErrorRobotImage,
+              }}
+              heading="Something went wrong"
+              description="Please try again later and reload the page."
+              button={{
+                label: 'Reload',
+                onClick: () => {
+                  reset();
+                },
+              }}
+            />
+          ))
+          .with({pageView: 'invalid-form-schema'}, () => (
+            <Message
+              icon={{
+                altText: 'Error robot',
+                path: ErrorRobotImage,
+              }}
+              heading="Invalid form"
+              description="Something went wrong and the form could not be displayed. Please contact your provider."
+            />
+          ))
+          .exhaustive()}
+      </div>
+    </Content>
+  );
+};
+
+const ErrorBoundary: React.FC = () => {
+  return (
+    <Content
+      id="main-content"
+      className={styles.content}
+      tabIndex={-1}
+      tagName="main"
+    >
+      <div className={styles.container}>
+        <Message
+          icon={{
+            altText: 'Error robot',
+            path: ErrorRobotImage,
+          }}
+          heading="404 - Page not found"
+          description="We're sorry! The requested URL you're looking for could not be found."
+        />
+      </div>
+    </Content>
   );
 };
 
 StartProcessFromForm.displayName = 'StartProcessFromForm';
 
-export {StartProcessFromForm as Component};
+// eslint-disable-next-line react-refresh/only-export-components
+export {StartProcessFromForm as Component, loader, ErrorBoundary};

@@ -15,13 +15,13 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {queryOptions, useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {RequestError, request} from 'modules/request';
 import {Form} from 'modules/types';
 
-function useExternalForm(bpmnProcessId: string) {
-  return useQuery<Form, RequestError | Error>({
+function getExternalFormQueryOptions(bpmnProcessId: string) {
+  return queryOptions<Form, RequestError | Error>({
     queryKey: ['externalForm', bpmnProcessId],
     queryFn: async () => {
       const {response, error} = await request(
@@ -32,7 +32,7 @@ function useExternalForm(bpmnProcessId: string) {
         return response.json();
       }
 
-      throw error ?? new Error('Could not fetch external form');
+      throw error;
     },
     staleTime: Infinity,
     gcTime: Infinity,
@@ -41,4 +41,8 @@ function useExternalForm(bpmnProcessId: string) {
   });
 }
 
-export {useExternalForm};
+function useExternalForm(bpmnProcessId: string) {
+  return useQuery(getExternalFormQueryOptions(bpmnProcessId));
+}
+
+export {useExternalForm, getExternalFormQueryOptions};

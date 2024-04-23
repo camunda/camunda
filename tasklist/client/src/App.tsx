@@ -74,6 +74,7 @@ const router = createBrowserRouter(
             ErrorBoundary={ErrorWithinLayout}
           />
         </Route>
+        <Route path="*" lazy={() => import('./NotFound')} />
       </Route>
     </Route>,
   ),

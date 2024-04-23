@@ -15,39 +15,28 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-/* istanbul ignore file */
+import {C3EmptyState} from '@camunda/camunda-composite-components';
+import ErrorRobotImage from 'modules/images/error-robot.svg';
+import {pages} from 'modules/routing';
+import {useNavigate} from 'react-router-dom';
 
-import {useParams} from 'react-router-dom';
+const NotFound: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <main className="cds--content">
+      <C3EmptyState
+        icon={{path: ErrorRobotImage, altText: ''}}
+        heading="404 - Page not found"
+        description="We're sorry! The requested URL could not be found."
+        button={{
+          label: 'Go to tasks',
+          onClick: () => {
+            navigate(pages.initial);
+          },
+        }}
+      />
+    </main>
+  );
+};
 
-const pages = {
-  initial: '/',
-  login: '/login',
-  taskDetails(id: string = ':id') {
-    return `/${id}`;
-  },
-  processes(
-    options: {tenantId?: string; matchAllChildren?: boolean} = {
-      matchAllChildren: false,
-    },
-  ) {
-    const {tenantId, matchAllChildren: matchAllChildren = false} = options;
-    const baseRoute = matchAllChildren ? 'processes/*' : 'processes';
-    if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
-      return `${baseRoute}?tenantId=${tenantId}`;
-    }
-
-    return baseRoute;
-  },
-  startProcessFromForm: '/new/:bpmnProcessId',
-  internalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
-    return `/processes/${bpmnProcessId}/start`;
-  },
-} as const;
-
-function useTaskDetailsParams(): {id: string} {
-  const {id} = useParams<'id'>();
-
-  return {id: id ?? ''};
-}
-
-export {pages, useTaskDetailsParams};
+export {NotFound as Component};
