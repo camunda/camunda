@@ -184,13 +184,14 @@ describe('stores/currentInstance', () => {
     expect(
       processInstanceDetailsStore.state.processInstance?.hasActiveOperation,
     ).toBe(true);
+
     expect(
       processInstanceDetailsStore.state.processInstance?.operations,
     ).toEqual([
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
-        id: 'id_25',
+        id: 'id_27',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
       },
@@ -208,7 +209,7 @@ describe('stores/currentInstance', () => {
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
-        id: 'id_25',
+        id: 'id_27',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
       },

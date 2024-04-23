@@ -1918,6 +1918,64 @@ const mockProcessInstances: ProcessInstancesDto = {
   totalCount: 891,
 };
 
+const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
+  processInstances: [
+    {
+      id: '6755399441062827',
+      processId: '2251799813687188',
+      processName: 'Order process',
+      processVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      endDate: null,
+      state: 'INCIDENT',
+      bpmnProcessId: 'orderProcess',
+      hasActiveOperation: false,
+      operations: [
+        {
+          id: '87ced7c0-cc22-40c5-bbe3-eafafc111520',
+          batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+          type: 'RESOLVE_INCIDENT',
+          state: 'FAILED',
+          errorMessage: 'Batch Operation Error Message',
+        },
+      ],
+      parentInstanceId: '6755399441062817',
+      rootInstanceId: '6755399441062811',
+      callHierarchy: [],
+      sortValues: [],
+      permissions: [],
+      tenantId: '',
+    },
+    {
+      id: '6755399441062826',
+      processId: '2251799813687187',
+      processName: 'Order process',
+      processVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      endDate: null,
+      state: 'ACTIVE',
+      bpmnProcessId: 'orderProcess',
+      hasActiveOperation: false,
+      operations: [
+        {
+          id: '87ced7c0-cc22-40c5-bbe3-eafafc111521',
+          batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
+          type: 'RESOLVE_INCIDENT',
+          state: 'COMPLETED',
+          errorMessage: null,
+        },
+      ],
+      parentInstanceId: '6755399441062816',
+      rootInstanceId: '6755399441062812',
+      callHierarchy: [],
+      sortValues: [],
+      permissions: [],
+      tenantId: '',
+    },
+  ],
+  totalCount: 2,
+};
+
 const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
   processInstances: [
     {
@@ -3196,6 +3254,7 @@ export {
   mockGroupedProcesses,
   mockBatchOperations,
   mockProcessInstances,
+  mockProcessInstancesWithOperationError,
   mockProcessInstancesAfterResolvingIncident,
   mockStatistics,
   mockProcessXml,
