@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -299,6 +300,28 @@ public final class StreamJobsTest extends ClientTest {
         .join();
 
     // when
+    final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
+
+    // then
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
+
+  // Regression: https://github.com/camunda/zeebe/issues/17513
+  @Test
+  public void shouldNotAccumulateTenantsOnSuccessiveOpen() {
+    // given
+    final StreamJobsCommandStep3 command =
+        client
+            .newStreamJobsCommand()
+            .jobType("foo")
+            .consumer(ignored -> {})
+            .tenantId("tenant1")
+            .tenantId("tenant2")
+            .tenantId("tenant2");
+
+    // when
+    command.send().join();
+    command.send().join();
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
 
     // then
