@@ -164,8 +164,11 @@ public class UserTaskZeebeRecordProcessor {
       final Map<String, Object> updateFields,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.update(
-        userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
+    batchRequest.upsert(
+        userTaskTemplate.getFullQualifiedName(),
+        userTaskEntity.getId(),
+        userTaskEntity,
+        updateFields);
     LOGGER.debug(
         "Updated UserTaskEntity {} with update fields {} to batch request",
         userTaskEntity.getId(),
