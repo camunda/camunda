@@ -82,7 +82,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.170</version>
+      <version>4.8.172</version>
     </dependency>
 
     <!-- Logging -->
@@ -127,7 +127,7 @@
     <dependency>
       <groupId>com.ethlo.time</groupId>
       <artifactId>itu</artifactId>
-      <version>1.10.1</version>
+      <version>1.10.2</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>

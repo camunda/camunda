@@ -41,7 +41,7 @@ jobs:
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
     #########################################################################
     # Tear down preview environment
     - name: Tear down Preview Environment for ${{ matrix.product_context }}

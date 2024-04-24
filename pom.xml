@@ -25,7 +25,7 @@
 
     <!-- database config -->
     <elasticsearch.version>7.17.20</elasticsearch.version>
-    <opensearch.version>2.10.0</opensearch.version>
+    <opensearch.version>2.10.1</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -42,14 +42,14 @@
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.1.0-jre</guava.version>
-    <spring.boot.version>3.1.10</spring.boot.version>
+    <spring.boot.version>3.1.11</spring.boot.version>
     <spring.version>6.1.6</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.108.Final</netty.version>
     <lombok.version>1.18.32</lombok.version>
-    <logback.version>1.5.5</logback.version>
+    <logback.version>1.5.6</logback.version>
     <slf4j.version>2.0.13</slf4j.version>
     <commons.io.version>2.16.1</commons.io.version>
 
@@ -419,7 +419,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
