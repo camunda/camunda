@@ -186,7 +186,7 @@
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
 
-    <version.javassist>3.29.0-GA</version.javassist>
+    <version.javassist>3.30.2-GA</version.javassist>
     <version.json>20231013</version.json>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
