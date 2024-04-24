@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.Application;
+import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -107,7 +107,7 @@ public class HealthCheckIT {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      final Map<String, Object> map = Application.getManagementProperties();
+      final Map<String, Object> map = StandaloneOperate.getManagementProperties();
       final List<String> properties = new ArrayList<>();
       map.forEach(
           (key, value) -> {

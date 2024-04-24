@@ -11,8 +11,8 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.Application;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.exceptions.ArchiverException;
@@ -55,7 +55,7 @@ public class ImportPerformanceStaticDataTest {
   public void setup() {
     LOGGER.info("Operate will be started");
     final SpringApplication application =
-        new SpringApplicationBuilder(Application.class)
+        new SpringApplicationBuilder(StandaloneOperate.class)
             .addCommandLineProperties(true)
             .profiles(OperateProfileService.AUTH_PROFILE)
             .application();

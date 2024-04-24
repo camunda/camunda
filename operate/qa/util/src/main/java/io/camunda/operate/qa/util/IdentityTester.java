@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.qa.util;
 
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.operate.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.operate.StandaloneOperate.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.operate.StandaloneOperate.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.operate.qa.util.TestContainerUtil.*;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 

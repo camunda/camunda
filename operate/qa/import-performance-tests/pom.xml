@@ -15,7 +15,8 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-webapp</artifactId>
+      <artifactId>camunda-zeebe</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 

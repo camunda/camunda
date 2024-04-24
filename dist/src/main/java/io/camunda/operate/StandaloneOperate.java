@@ -41,13 +41,13 @@ import org.springframework.core.env.ConfigurableEnvironment;
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration
-public class Application {
+public class StandaloneOperate {
 
   public static final String OPERATE_STATIC_RESOURCES_LOCATION =
       "classpath:/META-INF/resources/operate/";
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = OPERATE_STATIC_RESOURCES_LOCATION;
-  private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneOperate.class);
 
   public static void main(final String[] args) {
 
@@ -62,7 +62,7 @@ public class Application {
     System.setProperty("spring.web.resources.add-mappings", "true");
     System.setProperty("spring.web.resources.static-locations", OPERATE_STATIC_RESOURCES_LOCATION);
     System.setProperty("spring.banner.location", "classpath:/operate-banner.txt");
-    final SpringApplication springApplication = new SpringApplication(Application.class);
+    final SpringApplication springApplication = new SpringApplication(StandaloneOperate.class);
     // add "operate" profile, so that application-operate.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
     springApplication.setAdditionalProfiles("operate");
