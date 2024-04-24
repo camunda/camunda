@@ -21,20 +21,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-webjar</artifactId>
-    </dependency>
+
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
