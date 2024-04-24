@@ -38,8 +38,8 @@ import org.springframework.stereotype.Component;
 public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationTokenValidator {
 
   public static final String AUDIENCE = "aud";
-  public static final String SCOPE = "scope";
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  public static final String CLUSTER_ID_CLAIM = "https://camunda.com/clusterId";
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
   @Autowired private OperateProperties operateProperties;
 
   @Override
@@ -50,9 +50,9 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
 
   private boolean isValid(final Map<String, Object> payload) {
     try {
-      return getScope(payload).equals(getScopeFromConfiguration())
+      return getClusterId(payload).equals(getClusterIdFromConfiguration())
           && getAudience(payload).equals(getAudienceFromConfiguration());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(
           String.format(
               "Validation of JWT payload failed due to %s. Request is not authenticated.",
@@ -62,21 +62,21 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
     }
   }
 
-  private String getScope(final Map<String, Object> payload) {
-    final Object scopeObject = payload.get(SCOPE);
-    if (scopeObject == null) {
+  private String getClusterId(final Map<String, Object> payload) {
+    final Object clusterIdObject = payload.get(CLUSTER_ID_CLAIM);
+    if (clusterIdObject == null) {
       throw new OperateRuntimeException(
-          "Couldn't get scope from JWT payload. Maybe wrong scope configuration?");
+          "Couldn't get clusterId from JWT payload. Maybe wrong clusterId configuration?");
     }
-    if (scopeObject instanceof String) {
-      return (String) scopeObject;
+    if (clusterIdObject instanceof String) {
+      return (String) clusterIdObject;
     }
-    if (scopeObject instanceof List) {
+    if (clusterIdObject instanceof List) {
       return firstOrDefault(
           (List<String>) getOrDefaultFromMap(payload, AUDIENCE, Collections.emptyList()), null);
     }
     throw new OperateRuntimeException(
-        "Couldn't get scope from JWT payload as String or list of Strings. Maybe wrong scope configuration?");
+        "Couldn't get clusterId from JWT payload as String or list of Strings. Maybe wrong clusterId configuration?");
   }
 
   private String getAudience(final Map<String, Object> payload) {
@@ -94,7 +94,7 @@ public class CCSaaSJwtAuthenticationTokenValidator implements JwtAuthenticationT
         "Couldn't get audience from JWT payload as String or array of Strings.");
   }
 
-  private String getScopeFromConfiguration() {
+  private String getClusterIdFromConfiguration() {
     String clusterId = operateProperties.getCloud().getClusterId();
     if (stringIsEmpty(clusterId)) {
       // fallback to old configuration from client properties
