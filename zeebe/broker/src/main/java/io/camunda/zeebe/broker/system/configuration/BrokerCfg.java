@@ -50,6 +50,7 @@ public class BrokerCfg {
     data.init(this, brokerBase);
     exporters.values().forEach(e -> e.init(this, brokerBase));
     gateway.init(this, brokerBase);
+    flowControl.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
     experimental.init(this, brokerBase);
