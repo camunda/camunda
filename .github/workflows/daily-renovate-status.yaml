@@ -1,0 +1,79 @@
+# This workflow runs our daily scheduled acceptance tests. It runs each test suite against the
+# development head (e.g. main) and all officially supported branches.
+#
+# As this is meant to be run via scheduling, the workflow itself only runs on the default branch
+# (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+name: Daily Renovate status
+
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Runs at 10:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 10 * * 1-5'
+
+env:
+  # This URL is used as the business key for the various QA workflows
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  extract-renovate-pr-status:
+    name: Extract renovate PR status details
+    runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      pull-requests: write
+    outputs:
+      status: ${{ steps.check-prs.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check-prs
+        name: Check for renovate PRs
+        run: |
+          renovatePrs=$(gh pr list --author 'app/renovate' --json=title,number,createdAt,mergeStateStatus)
+          readarray -t prs < <( echo $renovatePrs | jq -c '.[]')
+          renovateStatusString=""
+          for pr in "${prs[@]}"
+          do 
+            # extracting the data to create a nice message
+            title=$(echo $pr | jq '.title')
+            prNumber=$(echo $pr | jq '.number')
+            createdAt=$(echo $pr | jq '.createdAt')
+            status=$(echo $pr | jq '.mergeStateStatus')
+            
+            renovateStatusString+="\nPR $prNumber: $title (open since $createdAt) status: $status"
+          done
+
+          echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT
+  slack-notify:
+    name: Send slack notification for Renovate PR status
+    runs-on: ubuntu-latest
+    needs: extract-renovate-pr-status
+    if: false
+    steps:
+      - id: slack-notify
+        name: Send slack notification to DevEx
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":fyi: *Daily Renovate status:* :fyi:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ needs.extract-renovate-pr-status.outputs.status }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
