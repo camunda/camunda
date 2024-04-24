@@ -77,6 +77,14 @@
       "enabled": false
     },
     {
+      "description": "Exclude react-router-dom until refactoring is done in Operate (see issue #17736)",
+      "matchManagers": ["npm", "nvm"],
+      "matchPackagePatterns": [
+        "react-router-dom"
+      ],
+      "enabled": false
+    },
+    {
       "description": "This additional prefix is used to skip Operate backend tests.",
       "matchManagers": ["npm", "nvm"],
       "additionalBranchPrefix": "fe-"
