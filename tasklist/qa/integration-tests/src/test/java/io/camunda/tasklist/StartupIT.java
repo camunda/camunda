@@ -19,9 +19,9 @@ package io.camunda.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
+import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
-import io.camunda.tasklist.util.ContainerVersionsUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;

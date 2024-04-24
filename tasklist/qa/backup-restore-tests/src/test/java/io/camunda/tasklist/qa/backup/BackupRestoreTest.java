@@ -16,11 +16,13 @@
  */
 package io.camunda.tasklist.qa.backup;
 
+import static io.camunda.tasklist.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
+import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
@@ -133,7 +135,7 @@ public class BackupRestoreTest {
     createElsSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(
-        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
     createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 

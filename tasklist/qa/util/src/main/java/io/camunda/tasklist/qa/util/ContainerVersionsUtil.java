@@ -14,7 +14,7 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.qa.util;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
@@ -28,10 +28,11 @@ public class ContainerVersionsUtil {
 
   public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
       "identity.currentVersion.docker";
-  private static final String VERSIONS_FILE = "/container-versions.properties";
+  private static final String VERSIONS_FILE = "container-versions.properties";
 
   public static String readProperty(String propertyName) {
-    try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
+    try (InputStream propsFile =
+        ContainerVersionsUtil.class.getClassLoader().getResourceAsStream(VERSIONS_FILE)) {
       final Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);
