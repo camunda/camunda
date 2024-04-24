@@ -40,7 +40,7 @@ jobs:
             createdAt=$(echo $pr | jq '.createdAt')
             status=$(echo $pr | jq '.mergeStateStatus')
             
-            renovateStatusString+="\nPR $prNumber: $title (open since $createdAt) status: $status"
+            renovateStatusString+="\nPR <https://github.com/camunda/zeebe/pull/$prNumber|$prNumber>: $title (open since $createdAt) status: $status"
           done
 
           echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT
