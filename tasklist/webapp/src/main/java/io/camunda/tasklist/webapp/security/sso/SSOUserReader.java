@@ -105,8 +105,7 @@ public class SSOUserReader implements UserReader {
   public Optional<String> getUserToken(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
       return Optional.of(
-          JSONObject.valueToString(
-              ((TokenAuthentication) authentication).getNewTokenByRefreshToken()));
+          JSONObject.valueToString(((TokenAuthentication) authentication).getAccessToken()));
     } else {
       throw new UnsupportedOperationException(
           "Not supported for token class: " + authentication.getClass().getName());
