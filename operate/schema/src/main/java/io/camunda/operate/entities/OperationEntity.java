@@ -52,15 +52,16 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public OperationEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
   }
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
-  public OperationEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public OperationEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -69,7 +70,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return bpmnProcessId;
   }
 
-  public OperationEntity setBpmnProcessId(String bpmnProcessId) {
+  public OperationEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -78,7 +79,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return decisionDefinitionKey;
   }
 
-  public void setDecisionDefinitionKey(Long decisionDefinitionKey) {
+  public void setDecisionDefinitionKey(final Long decisionDefinitionKey) {
     this.decisionDefinitionKey = decisionDefinitionKey;
   }
 
@@ -86,7 +87,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return incidentKey;
   }
 
-  public OperationEntity setIncidentKey(Long incidentKey) {
+  public OperationEntity setIncidentKey(final Long incidentKey) {
     this.incidentKey = incidentKey;
     return this;
   }
@@ -95,7 +96,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return scopeKey;
   }
 
-  public OperationEntity setScopeKey(Long scopeKey) {
+  public OperationEntity setScopeKey(final Long scopeKey) {
     this.scopeKey = scopeKey;
     return this;
   }
@@ -104,7 +105,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return variableName;
   }
 
-  public OperationEntity setVariableName(String variableName) {
+  public OperationEntity setVariableName(final String variableName) {
     this.variableName = variableName;
     return this;
   }
@@ -113,7 +114,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return variableValue;
   }
 
-  public OperationEntity setVariableValue(String variableValue) {
+  public OperationEntity setVariableValue(final String variableValue) {
     this.variableValue = variableValue;
     return this;
   }
@@ -122,7 +123,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return type;
   }
 
-  public OperationEntity setType(OperationType type) {
+  public OperationEntity setType(final OperationType type) {
     this.type = type;
     return this;
   }
@@ -131,7 +132,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return zeebeCommandKey;
   }
 
-  public OperationEntity setZeebeCommandKey(Long zeebeCommandKey) {
+  public OperationEntity setZeebeCommandKey(final Long zeebeCommandKey) {
     this.zeebeCommandKey = zeebeCommandKey;
     return this;
   }
@@ -140,7 +141,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return state;
   }
 
-  public OperationEntity setState(OperationState state) {
+  public OperationEntity setState(final OperationState state) {
     this.state = state;
     return this;
   }
@@ -149,7 +150,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return lockExpirationTime;
   }
 
-  public OperationEntity setLockExpirationTime(OffsetDateTime lockExpirationTime) {
+  public OperationEntity setLockExpirationTime(final OffsetDateTime lockExpirationTime) {
     this.lockExpirationTime = lockExpirationTime;
     return this;
   }
@@ -158,7 +159,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return lockOwner;
   }
 
-  public OperationEntity setLockOwner(String lockOwner) {
+  public OperationEntity setLockOwner(final String lockOwner) {
     this.lockOwner = lockOwner;
     return this;
   }
@@ -167,7 +168,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return errorMessage;
   }
 
-  public OperationEntity setErrorMessage(String errorMessage) {
+  public OperationEntity setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
     return this;
   }
@@ -176,7 +177,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return batchOperationId;
   }
 
-  public OperationEntity setBatchOperationId(String batchOperationId) {
+  public OperationEntity setBatchOperationId(final String batchOperationId) {
     this.batchOperationId = batchOperationId;
     return this;
   }
@@ -185,7 +186,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return username;
   }
 
-  public OperationEntity setUsername(String username) {
+  public OperationEntity setUsername(final String username) {
     this.username = username;
     return this;
   }
@@ -194,7 +195,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return modifyInstructions;
   }
 
-  public OperationEntity setModifyInstructions(String modifyInstructions) {
+  public OperationEntity setModifyInstructions(final String modifyInstructions) {
     this.modifyInstructions = modifyInstructions;
     return this;
   }
@@ -203,7 +204,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return migrationPlan;
   }
 
-  public OperationEntity setMigrationPlan(String migrationPlan) {
+  public OperationEntity setMigrationPlan(final String migrationPlan) {
     this.migrationPlan = migrationPlan;
     return this;
   }
@@ -237,7 +238,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

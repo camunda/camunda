@@ -250,15 +250,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.5":
-  version "1.8.5"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.5.tgz#70783dbcd77827bff33c6c9583437bf70553e3cc"
-  integrity sha512-i7lnF5k78tZjNENPgAycHgsuUGBc+aGaO+TGyjZZcntZ/fOHC3r96F1oqm9phaIs68HnWxL+toUf1a4QoxANvw==
+"@bpmn-io/form-js-carbon-styles@1.8.6":
+  version "1.8.6"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.6.tgz#0769361686f517d5dd1d0b755e840cd7633b7457"
+  integrity sha512-O4TUNxXbbOUyGOUrD15uqgAJPyEyK9K/zeOy5tBhV4h0M0GiTQoAPAKRYuSJ9zCpGhUhqTyq4zDf0Mfwmx0EsA==
 
-"@bpmn-io/form-js-viewer@1.8.5":
-  version "1.8.5"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.5.tgz#e945d7ca966a174e29cfd73cf7bd922456047bee"
-  integrity sha512-HHI83nl4XNj/WqD+PfYMwGJuq68gh2FZulfWfLJ3QiAhp306eRg+FIGyF8BJdASw2knjmVKtqkIbCZMcVDdPRQ==
+"@bpmn-io/form-js-viewer@1.8.6":
+  version "1.8.6"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.6.tgz#8cc488af78cfea489a0b27b1b1a2218c38cc55f1"
+  integrity sha512-SSU+fVqv7J5g4nP9LRNlQWmVgjcox7lYoId1kjP98fes3lQp+dcOA1VHlX55CSktWZ5uX4G8z4VQTC3/65BHcw==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -1246,10 +1246,10 @@
     lodash "^4.17.15"
     redent "^3.0.0"
 
-"@testing-library/react@15.0.2":
-  version "15.0.2"
-  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-15.0.2.tgz#d0fd7e9c41b819557639acf5f18e4cd1007ec295"
-  integrity sha512-5mzIpuytB1ctpyywvyaY2TAAUQVCZIGqwiqFQf6u9lvj/SJQepGUzNV18Xpk+NLCaCE2j7CWrZE0tEf9xLZYiQ==
+"@testing-library/react@15.0.4":
+  version "15.0.4"
+  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-15.0.4.tgz#e5e83f79863c4897719ae3191af1e54617f60dea"
+  integrity sha512-Fw/LM1emOHKfCxv5R0tz+25TOtiMt0o5Np1zJmb4LbSacOagXQX4ooAaHiJfGUMe+OjUk504BX11W+9Z8CvyZA==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@testing-library/dom" "^10.0.0"

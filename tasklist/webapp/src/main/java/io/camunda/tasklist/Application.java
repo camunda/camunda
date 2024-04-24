@@ -57,8 +57,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @EnableAutoConfiguration(exclude = ElasticsearchClientAutoConfiguration.class)
 public class Application {
 
+  public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
+      "classpath:/META-INF/resources/tasklist/";
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
+  public static final String SPRING_THYMELEAF_PREFIX_VALUE = TASKLIST_STATIC_RESOURCES_LOCATION;
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
   public static void main(final String[] args) {
@@ -68,10 +70,14 @@ public class Application {
     System.setProperty(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
+    System.setProperty("spring.web.resources.static-locations", TASKLIST_STATIC_RESOURCES_LOCATION);
     // Hack for the moment to allow serving static resources in Tasklist.
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
+    // load other components' 'application-{component}.yml'
+    springApplication.setAdditionalProfiles("tasklist");
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     springApplication.setAddCommandLineProperties(true);

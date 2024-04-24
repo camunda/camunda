@@ -11,10 +11,10 @@
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
+  "prHourlyLimit": 2,
   "updateNotScheduled": false,
   "schedule": [
-    "after 10pm every weekday",
-    "before 6am every weekday"
+    "at any time"
   ],
   "helmv3": {
     "registryAliases": {
