@@ -42,8 +42,8 @@
     <identity.version>8.5.0</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
     <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
-    <spring-boot-test.version>3.2.4</spring-boot-test.version>
-    <wiremock-standalone.version>3.5.2</wiremock-standalone.version>
+    <spring-boot-test.version>3.2.5</spring-boot-test.version>
+    <wiremock-standalone.version>3.5.4</wiremock-standalone.version>
   </properties>
 
   <dependencies>

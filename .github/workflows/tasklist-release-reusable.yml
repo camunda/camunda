@@ -218,7 +218,7 @@ jobs:
       # Notify: send Slack notification of release failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_RELEASE_ALERT_WEBHOOK_URL }}
         with:

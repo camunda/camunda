@@ -53,7 +53,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext
-@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "test"})
+@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "tasklist", "test"})
 public class ProcessIdentityIT extends IdentityTester {
 
   @BeforeAll
@@ -62,7 +62,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @DynamicPropertySource
-  protected static void registerProperties(DynamicPropertyRegistry registry) {
+  protected static void registerProperties(final DynamicPropertyRegistry registry) {
     IdentityTester.registerProperties(registry, false);
   }
 

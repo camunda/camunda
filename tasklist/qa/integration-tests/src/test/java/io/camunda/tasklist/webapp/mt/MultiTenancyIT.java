@@ -60,7 +60,7 @@ import org.springframework.web.context.WebApplicationContext;
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext
-@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "test"})
+@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "tasklist", "test"})
 public class MultiTenancyIT extends IdentityTester {
 
   @Autowired private WebApplicationContext context;
@@ -70,7 +70,7 @@ public class MultiTenancyIT extends IdentityTester {
   private MockMvcHelper mockMvcHelper;
 
   @DynamicPropertySource
-  protected static void registerProperties(DynamicPropertyRegistry registry) {
+  protected static void registerProperties(final DynamicPropertyRegistry registry) {
     IdentityTester.registerProperties(registry, true);
   }
 
