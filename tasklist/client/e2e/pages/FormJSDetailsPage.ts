@@ -24,6 +24,7 @@ class FormJSDetailsPage {
   readonly selectDropdown: Locator;
   readonly tagList: Locator;
   readonly form: Locator;
+  readonly dynamicListAddnewBtn: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -41,11 +42,31 @@ class FormJSDetailsPage {
     this.selectDropdown = this.form.getByText('Select').last();
     this.checkbox = this.form.getByLabel('Checkbox');
     this.tagList = page.getByPlaceholder('Search');
+    this.dynamicListAddnewBtn = page.getByRole('button', {name: /add new/i});
   }
   async fillDate(date: string) {
     await this.dateInput.click();
     await this.dateInput.fill(date);
     await this.dateInput.press('Enter');
+  }
+
+  async fillTextField(label: string, value: string) {
+    const locator = await this.getLocatorByLabel(label);
+    await locator.waitFor();
+    await locator.fill(value);
+  }
+
+  async fillTextFields(label: string, value: string, index: number) {
+    for (let i = 0; i < index; i++) {
+      const locator: Locator = await this.page.getByLabel(label).nth(i);
+      await locator.fill(value + (i + 1));
+    }
+  }
+  async fillDateField(label: string, value: string) {
+    const locator = await this.getLocatorByLabel(label);
+    await locator.click();
+    await locator.fill(value);
+    await locator.press('Enter');
   }
 
   async enterTime(time: string) {
@@ -63,6 +84,30 @@ class FormJSDetailsPage {
     for (const value of values) {
       await this.page.getByText(value, {exact: true}).click();
     }
+  }
+
+  async getLocatorByLabel(label: string) {
+    return this.page.getByLabel(label);
+  }
+
+  async getLocatorByText(label: string) {
+    return this.page.getByText(label);
+  }
+
+  async selectValueFromDropdown(label: string, value: string) {
+    await (await this.getLocatorByText(label)).click();
+    await this.page.getByText(value).click();
+  }
+
+  async getLocatorsByLabel(label: string, index: number) {
+    let labelValues: string[] = new Array();
+    var labelVal;
+    for (let i = 0; i < index; i++) {
+      labelVal = labelValues.push(
+        await (await this.getLocatorByLabel(label)).nth(i).inputValue(),
+      );
+    }
+    return labelValues;
   }
 }
 export {FormJSDetailsPage};
