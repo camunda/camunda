@@ -12,6 +12,8 @@ jobs:
   extract-renovate-pr-status:
     name: Extract renovate PR status details
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     permissions:
       checks: read
       pull-requests: write
