@@ -73,6 +73,9 @@ public class Application {
     System.setProperty("spring.web.resources.add-mappings", "true");
     System.setProperty("spring.web.resources.static-locations", OPERATE_STATIC_RESOURCES_LOCATION);
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    // add "operate" profile, so that application-operate.yml gets loaded. This is a way to not
+    // load other components' 'application-{component}.yml'
+    springApplication.setAdditionalProfiles("operate");
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
     setDefaultProperties(springApplication);

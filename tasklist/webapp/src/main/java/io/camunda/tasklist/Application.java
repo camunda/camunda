@@ -72,6 +72,9 @@ public class Application {
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     System.setProperty("spring.web.resources.static-locations", TASKLIST_STATIC_RESOURCES_LOCATION);
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
+    // load other components' 'application-{component}.yml'
+    springApplication.setAdditionalProfiles("tasklist");
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     springApplication.setAddCommandLineProperties(true);
