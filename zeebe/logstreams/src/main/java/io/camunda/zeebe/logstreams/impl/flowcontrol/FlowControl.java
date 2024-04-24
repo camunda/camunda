@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import com.netflix.concurrency.limits.Limiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.util.Either;
@@ -17,12 +16,12 @@ import org.slf4j.LoggerFactory;
 public final class FlowControl {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
-  private final Limiter<Void> limiter;
+  private final AppendLimiter appendLimiter;
   private final LogStreamMetrics metrics;
 
   public FlowControl(final LogStreamMetrics metrics) {
     this.metrics = metrics;
-    limiter = configureLimiter();
+    appendLimiter = configureAppendLimiter();
   }
 
   /**
@@ -32,17 +31,17 @@ public final class FlowControl {
    *     Optional otherwise.
    */
   public Either<Rejection, InFlightAppend> tryAcquire() {
-    final var appendLimitListener = limiter.acquire(null).orElse(null);
-    if (appendLimitListener == null) {
+    final var appendListener = appendLimiter.acquire(null).orElse(null);
+    if (appendListener == null) {
       metrics.increaseDeferredAppends();
       LOG.trace("Skipping append due to backpressure");
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightAppend(appendLimitListener, metrics));
+    return Either.right(new InFlightAppend(appendListener, metrics));
   }
 
-  private Limiter<Void> configureLimiter() {
+  private AppendLimiter configureAppendLimiter() {
     final var algorithmCfg = new BackpressureCfgVegas();
     final var abstractLimit = algorithmCfg.get();
     LOG.debug(
