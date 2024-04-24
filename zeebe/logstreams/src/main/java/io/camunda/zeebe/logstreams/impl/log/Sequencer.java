@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
@@ -39,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * assigning positions to all entries. Writes that are accepted are written directly to the {@link
  * LogStorage}.
  */
-final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler {
+final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int maxFragmentSize;
 
@@ -65,7 +64,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
     this.logStreamMetrics =
         Objects.requireNonNull(logStreamMetrics, "must specify appender metrics");
-    flowControl = new FlowControl(this, logStreamMetrics);
+    flowControl = new FlowControl(logStreamMetrics);
   }
 
   /** {@inheritDoc} */
@@ -151,18 +150,6 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
         && entry.recordMetadata().getLength() > 0;
   }
 
-  @Override
-  public void onCommitError(final Throwable error) {
-    LOG.error("Failed to commit entry", error);
-    close();
-  }
-
-  @Override
-  public void onWriteError(final Throwable error) {
-    LOG.error("Failed to write entry", error);
-    close();
-  }
-
   static List<LogAppendEntryMetadata> copyMetricsMetadata(final SequencedBatch sequencedBatch) {
     final var entries = sequencedBatch.entries();
     final List<LogAppendEntryMetadata> metricsMetadata = new ArrayList<>(entries.size());
@@ -193,18 +180,8 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
     }
 
     @Override
-    public void onWriteError(final Throwable error) {
-      delegate.onWriteError(error);
-    }
-
-    @Override
     public void onCommit(final long address) {
       delegate.onCommit(address);
-    }
-
-    @Override
-    public void onCommitError(final long address, final Throwable error) {
-      delegate.onCommitError(address, error);
     }
 
     private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {

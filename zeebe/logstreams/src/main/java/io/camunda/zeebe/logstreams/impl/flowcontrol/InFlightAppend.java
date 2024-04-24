@@ -14,23 +14,17 @@ import io.prometheus.client.Histogram;
 
 /**
  * Represents an in-flight append. Updates metrics and backpressure limits after being {@link
- * InFlightAppend#start(long) started} and handles callbacks from the log storage. Commit and write
- * errors are propagated to an {@link AppendErrorHandler}.
+ * InFlightAppend#start(long) started} and handles callbacks from the log storage.
  */
 public final class InFlightAppend implements AppendListener {
 
-  private final AppendErrorHandler errorHandler;
   private final Limiter.Listener limiter;
   private final LogStreamMetrics metrics;
   private Histogram.Timer writeTimer;
   private Histogram.Timer commitTimer;
   private long position;
 
-  public InFlightAppend(
-      final AppendErrorHandler errorHandler,
-      final Limiter.Listener limiter,
-      final LogStreamMetrics metrics) {
-    this.errorHandler = errorHandler;
+  public InFlightAppend(final Limiter.Listener limiter, final LogStreamMetrics metrics) {
     this.limiter = limiter;
     this.metrics = metrics;
   }
@@ -42,19 +36,6 @@ public final class InFlightAppend implements AppendListener {
   }
 
   @Override
-  public void onWriteError(final Throwable error) {
-    errorHandler.onWriteError(error);
-    metrics.decreaseInflight();
-    if (writeTimer != null) {
-      writeTimer.close();
-    }
-    if (commitTimer != null) {
-      commitTimer.close();
-    }
-    limiter.onDropped();
-  }
-
-  @Override
   public void onCommit(final long address) {
     metrics.decreaseInflight();
     metrics.setLastCommittedPosition(position);
@@ -62,13 +43,6 @@ public final class InFlightAppend implements AppendListener {
       commitTimer.close();
     }
     limiter.onSuccess();
-  }
-
-  @Override
-  public void onCommitError(final long address, final Throwable error) {
-    errorHandler.onCommitError(error);
-    metrics.decreaseInflight();
-    limiter.onDropped();
   }
 
   public InFlightAppend start(final long position) {

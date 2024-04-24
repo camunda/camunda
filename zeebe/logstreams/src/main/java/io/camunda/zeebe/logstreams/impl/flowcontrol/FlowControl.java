@@ -17,12 +17,10 @@ import org.slf4j.LoggerFactory;
 public final class FlowControl {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
-  private final AppendErrorHandler errorHandler;
   private final Limiter<Void> limiter;
   private final LogStreamMetrics metrics;
 
-  public FlowControl(final AppendErrorHandler errorHandler, final LogStreamMetrics metrics) {
-    this.errorHandler = errorHandler;
+  public FlowControl(final LogStreamMetrics metrics) {
     this.metrics = metrics;
     limiter = configureLimiter();
   }
@@ -41,7 +39,7 @@ public final class FlowControl {
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightAppend(errorHandler, appendLimitListener, metrics));
+    return Either.right(new InFlightAppend(appendLimitListener, metrics));
   }
 
   private Limiter<Void> configureLimiter() {

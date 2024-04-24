@@ -14,41 +14,14 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class FlowControlTest {
-  @Test
-  void callsErrorHandlerOnWriteError() {
-    // given
-    final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
-    final var error = new RuntimeException();
-    // when
-    final var inFlight = flow.tryAcquire().get();
-    inFlight.onWriteError(error);
-    // then
-    Mockito.verify(errorHandler).onWriteError(error);
-  }
-
-  @Test
-  void callsErrorHandlerOnCommitError() {
-    // given
-    final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
-    final var error = new RuntimeException();
-    // when
-    final var inFlight = flow.tryAcquire().get();
-    inFlight.onCommitError(0, error);
-    // then
-    Mockito.verify(errorHandler).onCommitError(error);
-  }
 
   @Test
   void eventuallyRejects() {
     // given
-    final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
+    final var flow = new FlowControl(new LogStreamMetrics(1));
 
     // when - then
     Awaitility.await("Rejects new appends")
@@ -60,8 +33,7 @@ final class FlowControlTest {
   @Test
   void recoversWhenCompletingAppends() {
     // given
-    final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new FlowControl(errorHandler, new LogStreamMetrics(1));
+    final var flow = new FlowControl(new LogStreamMetrics(1));
     // when
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();
