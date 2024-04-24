@@ -14,10 +14,10 @@
       "filter" : {
         "type": "keyword"
       },
-      "candidateGroups": {
+      "sharedGroups": {
         "type": "keyword"
       },
-      "candidateUsers": {
+      "sharedUsers": {
         "type": "keyword"
       },
       "tenantId": {

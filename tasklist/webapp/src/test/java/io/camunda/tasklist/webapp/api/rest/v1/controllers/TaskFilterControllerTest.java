@@ -27,6 +27,7 @@ import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.TaskFilterService;
@@ -65,13 +66,30 @@ public class TaskFilterControllerTest {
 
   @Test
   void persistFilter() throws Exception {
-    final var expectedFilter = new TaskFilterEntity();
-    expectedFilter.setFilter("{\"candidateUser\":\"demo\"}");
-    expectedFilter.setName("filterName");
-    expectedFilter.setCreatedBy("demo");
-    expectedFilter.setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    expectedFilter.setCandidateGroups(List.of("groupA"));
-    expectedFilter.setCandidateUsers(List.of("demo"));
+    final var expectedFilterEntity = new TaskFilterEntity();
+    expectedFilterEntity.setFilter("{\"candidateUser\":\"demo\"}");
+    expectedFilterEntity.setName("filterName");
+    expectedFilterEntity.setCreatedBy("demo");
+    expectedFilterEntity.setTenantId(DEFAULT_TENANT_IDENTIFIER);
+    expectedFilterEntity.setSharedGroups(List.of("groupA"));
+    expectedFilterEntity.setSharedUsers(List.of("demo"));
+
+    final var expectedFilterEntityResponse = new TaskFilterEntity();
+    expectedFilterEntityResponse.setFilter("{\"candidateUser\":\"demo\"}");
+    expectedFilterEntityResponse.setName("filterName");
+    expectedFilterEntityResponse.setCreatedBy("demo");
+    expectedFilterEntityResponse.setTenantId(DEFAULT_TENANT_IDENTIFIER);
+    expectedFilterEntityResponse.setSharedGroups(List.of("groupA"));
+    expectedFilterEntityResponse.setSharedUsers(List.of("demo"));
+    expectedFilterEntityResponse.setId("filterId");
+
+    final var expectedFilterResponse = new AddFilterResponse();
+    expectedFilterResponse.setFilter("{\"candidateUser\":\"demo\"}");
+    expectedFilterResponse.setName("filterName");
+    expectedFilterResponse.setCreatedBy("demo");
+    expectedFilterResponse.setSharedGroups(List.of("groupA"));
+    expectedFilterResponse.setSharedUsers(List.of("demo"));
+    expectedFilterResponse.setId("filterId");
 
     final AddFilterRequest addFilterRequest = new AddFilterRequest();
     addFilterRequest.setFilter("{\"candidateUser\":\"demo\"}");
@@ -80,8 +98,7 @@ public class TaskFilterControllerTest {
     addFilterRequest.setCandidateGroups(List.of("groupA"));
     addFilterRequest.setCandidateUsers(List.of("demo"));
 
-
-    when(taskFilterStore.persistFilter(expectedFilter)).thenReturn(expectedFilter);
+    when(taskFilterStore.persistFilter(expectedFilterEntity)).thenReturn(expectedFilterEntityResponse);
 
     var response =
         mockMvc
@@ -92,10 +109,12 @@ public class TaskFilterControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON))
             .andDo(print())
-            .andExpect(status().isCreated())
+            .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
+
+    assertThat(CommonUtils.OBJECT_MAPPER.readValue(response, AddFilterResponse.class)).isEqualTo(expectedFilterResponse);
   }
 
   @Test

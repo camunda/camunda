@@ -14,33 +14,108 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.service;
+package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.store.TaskFilterStore;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import io.camunda.tasklist.entities.TaskFilterEntity;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.Objects;
 
-@ExtendWith(MockitoExtension.class)
-public class TaskFilterServiceTest {
+public class AddFilterResponse {
 
-  @Mock private TaskFilterStore taskFilterStore;
+  private String id;
+  private String name;
+  private String filter;
+  private String createdBy;
+  private List<String> sharedUsers;
+  private List<String> sharedGroups;
 
-  @InjectMocks private TaskFilterService taskFilterService;
+  public AddFilterResponse fromFilterEntity(final TaskFilterEntity taskFilterEntity) {
+    this.setId(taskFilterEntity.getId());
+    this.setSharedGroups(taskFilterEntity.getSharedGroups());
+    this.setSharedUsers(taskFilterEntity.getSharedUsers());
+    this.setName(taskFilterEntity.getName());
+    this.setCreatedBy(taskFilterEntity.getCreatedBy());
+    this.setFilter(taskFilterEntity.getFilter());
+    return this;
+  }
 
-  @Test
-  void addFilter() {
-    final AddFilterRequest addFilterRequest = new AddFilterRequest();
-    addFilterRequest.setFilter("{\"candidateUser\":\"demo\"}");
-    addFilterRequest.setName("filterName");
-    addFilterRequest.setCreatedBy("demo");
-    addFilterRequest.setCandidateGroups(List.of("groupA"));
-    addFilterRequest.setCandidateUsers(List.of("demo"));
+  public void validate() {
+    if (this.getName() == null || this.getName().isBlank()) {
+      throw new IllegalArgumentException("Name is mandatory");
+    }
+    if (this.getFilter() == null || this.getFilter().isEmpty()) {
+      throw new IllegalArgumentException("Filter is mandatory");
+    }
+    if (this.getCreatedBy() == null || this.getCreatedBy().isEmpty()) {
+      throw new IllegalArgumentException("CreatedBy is mandatory");
+    }
+  }
 
-    taskFilterService.addFilter(addFilterRequest);
+  public List<String> getSharedGroups() {
+    return sharedGroups;
+  }
+
+  public void setSharedGroups(final List<String> sharedGroups) {
+    this.sharedGroups = sharedGroups;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getFilter() {
+    return filter;
+  }
+
+  public void setFilter(final String filter) {
+    this.filter = filter;
+  }
+
+  public String getCreatedBy() {
+    return createdBy;
+  }
+
+  public void setCreatedBy(final String user) {
+    this.createdBy = user;
+  }
+
+  public List<String> getSharedUsers() {
+    return sharedUsers;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public void setSharedUsers(final List<String> sharedUsers) {
+    this.sharedUsers = sharedUsers;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AddFilterResponse that = (AddFilterResponse) o;
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name)
+        && Objects.equals(filter, that.filter) && Objects.equals(createdBy,
+        that.createdBy) && Objects.equals(sharedUsers, that.sharedUsers)
+        && Objects.equals(sharedGroups, that.sharedGroups);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name, filter, createdBy, sharedUsers, sharedGroups);
   }
 }

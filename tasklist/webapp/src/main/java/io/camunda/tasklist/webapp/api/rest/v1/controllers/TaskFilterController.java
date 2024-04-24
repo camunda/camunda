@@ -18,6 +18,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -64,20 +65,14 @@ public class TaskFilterController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @PostMapping
-  public ResponseEntity<FormResponse> addFilter(
+  public ResponseEntity<AddFilterResponse> addFilter(
       @RequestBody(required = false) AddFilterRequest addFilterRequest) {
 
     try {
       final TaskFilterEntity taskFilterEntity = taskFilterService.addFilter(addFilterRequest);
-      final URI location = ServletUriComponentsBuilder
-          .fromCurrentRequest()
-          .path("/{taskFilterId}")
-          .buildAndExpand(taskFilterEntity.getId()).toUri();
-
-      return ResponseEntity.created(location).build();
+      return ResponseEntity.ok(new AddFilterResponse().fromFilterEntity(taskFilterEntity));
     } catch (IllegalArgumentException ex) {
       throw new InvalidRequestException(ex.getMessage());
     }
-
   }
 }

@@ -17,9 +17,9 @@
 package io.camunda.tasklist.store.opensearch;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.TaskFilterIndex;
-import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.store.TaskFilterStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
@@ -45,7 +45,12 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
   @Override
   public TaskFilterEntity persistFilter(TaskFilterEntity filterEntity) {
     try {
-      final IndexResponse indexResponse = osClient.index(indexRequest -> indexRequest.index(taskFilterIndex.getFullQualifiedName()).document(filterEntity));
+      final IndexResponse indexResponse =
+          osClient.index(
+              indexRequest ->
+                  indexRequest
+                      .index(taskFilterIndex.getFullQualifiedName())
+                      .document(filterEntity));
       filterEntity.setId(indexResponse.id());
     } catch (IOException e) {
       throw new TasklistRuntimeException(e);

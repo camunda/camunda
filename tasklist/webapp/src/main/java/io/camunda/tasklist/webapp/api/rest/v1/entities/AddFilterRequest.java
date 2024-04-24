@@ -32,8 +32,8 @@ public class AddFilterRequest {
     TaskFilterEntity filterEntity = new TaskFilterEntity();
     filterEntity.setName(this.getName());
     filterEntity.setFilter(this.getFilter());
-    filterEntity.setCandidateGroups(this.getCandidateGroups());
-    filterEntity.setCandidateUsers(this.getCandidateUsers());
+    filterEntity.setSharedGroups(this.getCandidateGroups());
+    filterEntity.setSharedUsers(this.getCandidateUsers());
     filterEntity.setCreatedBy(this.getCreatedBy());
     return filterEntity;
   }
@@ -99,10 +99,11 @@ public class AddFilterRequest {
       return false;
     }
     final AddFilterRequest that = (AddFilterRequest) o;
-    return Objects.equals(name, that.name) && Objects.equals(filter, that.filter)
-        && Objects.equals(createdBy, that.createdBy) && Objects.equals(
-        candidateUsers, that.candidateUsers) && Objects.equals(candidateGroups,
-        that.candidateGroups);
+    return Objects.equals(name, that.name)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(createdBy, that.createdBy)
+        && Objects.equals(candidateUsers, that.candidateUsers)
+        && Objects.equals(candidateGroups, that.candidateGroups);
   }
 
   @Override

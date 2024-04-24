@@ -24,8 +24,8 @@ public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity
   private String name;
   private String createdBy;
   private String filter;
-  private List<String> candidateUsers;
-  private List<String> candidateGroups;
+  private List<String> sharedUsers;
+  private List<String> sharedGroups;
 
   public String getName() {
     return name;
@@ -51,20 +51,20 @@ public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity
     this.filter = filter;
   }
 
-  public List<String> getCandidateUsers() {
-    return candidateUsers;
+  public List<String> getSharedUsers() {
+    return sharedUsers;
   }
 
-  public void setCandidateUsers(final List<String> candidateUsers) {
-    this.candidateUsers = candidateUsers;
+  public void setSharedUsers(final List<String> sharedUsers) {
+    this.sharedUsers = sharedUsers;
   }
 
-  public List<String> getCandidateGroups() {
-    return candidateGroups;
+  public List<String> getSharedGroups() {
+    return sharedGroups;
   }
 
-  public void setCandidateGroups(final List<String> candidateGroups) {
-    this.candidateGroups = candidateGroups;
+  public void setSharedGroups(final List<String> sharedGroups) {
+    this.sharedGroups = sharedGroups;
   }
 
   @Override
@@ -79,14 +79,15 @@ public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity
       return false;
     }
     final TaskFilterEntity that = (TaskFilterEntity) o;
-    return Objects.equals(name, that.name) && Objects.equals(createdBy,
-        that.createdBy) && Objects.equals(filter, that.filter) && Objects.equals(
-        candidateUsers, that.candidateUsers) && Objects.equals(candidateGroups,
-        that.candidateGroups);
+    return Objects.equals(name, that.name)
+        && Objects.equals(createdBy, that.createdBy)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(sharedUsers, that.sharedUsers)
+        && Objects.equals(sharedGroups, that.sharedGroups);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, createdBy, filter, candidateUsers, candidateGroups);
+    return Objects.hash(super.hashCode(), name, createdBy, filter, sharedUsers, sharedGroups);
   }
 }

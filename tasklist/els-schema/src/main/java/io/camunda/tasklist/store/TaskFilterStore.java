@@ -21,4 +21,3 @@ import io.camunda.tasklist.entities.TaskFilterEntity;
 public interface TaskFilterStore {
   TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity);
 }
-
