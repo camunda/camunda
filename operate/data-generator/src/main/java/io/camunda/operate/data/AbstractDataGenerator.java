@@ -24,6 +24,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.concurrent.Executors;
@@ -43,6 +44,21 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
   private boolean shutdown = false;
   @Autowired private ZeebeStore zeebeStore;
+
+  @PostConstruct
+  private void startDataGenerator() {
+    startGeneratingData();
+  }
+
+  protected void startGeneratingData() {
+    LOGGER.debug("INIT: Generate demo data...");
+    try {
+      createZeebeDataAsync(false);
+    } catch (Exception ex) {
+      LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
+      LOGGER.error("Error occurred when generating demo data.", ex);
+    }
+  }
 
   @PreDestroy
   public void shutdown() {

@@ -26,7 +26,6 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
-import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,9 +59,10 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
 
-  @PostConstruct
-  private void initRestTemplate() {
+  @Override
+  protected void startGeneratingData() {
     restTemplate = statefulRestTemplateFactory.apply(OPERATE_HOST, OPERATE_PORT);
+    super.startGeneratingData();
   }
 
   @Override

@@ -16,9 +16,10 @@
  */
 package io.camunda.operate.data;
 
-public interface DataGenerator {
+import org.springframework.context.annotation.DependsOn;
 
-  DataGenerator DO_NOTHING = (boolean manuallyCalled) -> {};
+@DependsOn("schemaStartup")
+public interface DataGenerator {
 
   void createZeebeDataAsync(boolean manuallyCalled);
 }

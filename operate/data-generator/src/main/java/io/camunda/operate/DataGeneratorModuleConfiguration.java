@@ -14,40 +14,28 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.util.apps.modules;
+package io.camunda.operate;
 
-import io.camunda.operate.StandaloneOperate;
-import io.camunda.operate.util.TestApplication;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Profile;
 
-@SpringBootApplication
+@Configuration
 @ComponentScan(
-    basePackages = "io.camunda.operate",
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.webapp\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.archiver\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.data\\..*"),
-      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.operate\\.it\\..*"),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneOperate.class)
-    },
+    basePackages = "io.camunda.operate.data",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-public class ModulesTestApplication {
+@Profile({"dev-data", "usertest-data"})
+public class DataGeneratorModuleConfiguration {
 
-  public static void main(String[] args) throws Exception {
-    SpringApplication.run(ModulesTestApplication.class, args);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(DataGeneratorModuleConfiguration.class);
+
+  @PostConstruct
+  public void logModule() {
+    LOGGER.info("Starting module: data generator");
   }
 }
