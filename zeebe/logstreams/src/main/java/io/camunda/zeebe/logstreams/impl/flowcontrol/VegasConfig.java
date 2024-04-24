@@ -15,7 +15,7 @@ import com.netflix.concurrency.limits.limit.VegasLimit;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-final class BackpressureCfgVegas implements BackpressureCfg {
+final class VegasConfig {
 
   private final int initialLimit = 1024;
   private final int maxConcurrency = 1024 * 32;
@@ -54,7 +54,6 @@ final class BackpressureCfgVegas implements BackpressureCfg {
     return betaLimit;
   }
 
-  @Override
   public AbstractLimit get() {
     return VegasLimit.newBuilder()
         .alpha(limit -> Math.max(3, (int) (limit * alphaLimit)))
@@ -69,7 +68,7 @@ final class BackpressureCfgVegas implements BackpressureCfg {
 
   @Override
   public String toString() {
-    return "BackpressureCfgVegas{"
+    return "Vegas{"
         + "initialLimit="
         + initialLimit
         + ", maxConcurrency="

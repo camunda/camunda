@@ -42,11 +42,10 @@ public final class FlowControl {
   }
 
   private AppendLimiter configureAppendLimiter() {
-    final var algorithmCfg = new BackpressureCfgVegas();
-    final var abstractLimit = algorithmCfg.get();
+    final var algorithmCfg = new VegasConfig();
     LOG.debug(
         "Configured log appender back pressure as {}. Window limiting is disabled", algorithmCfg);
-    return AppendLimiter.builder().limit(abstractLimit).metrics(metrics).build();
+    return AppendLimiter.builder().limit(algorithmCfg.get()).metrics(metrics).build();
   }
 
   public sealed interface Rejection {

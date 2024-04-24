@@ -17,7 +17,7 @@ public final class AppendVegasLimiterTest {
   @Test
   public void shouldUseDefaultValues() {
     // given - when
-    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
+    final VegasConfig vegasCfg = new VegasConfig();
 
     // then
     assertThat(vegasCfg.getAlphaLimit()).isEqualTo(0.7);
@@ -29,7 +29,7 @@ public final class AppendVegasLimiterTest {
   @Test
   public void shouldBuild() {
     // given
-    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
+    final VegasConfig vegasCfg = new VegasConfig();
 
     // when
     final AbstractLimit abstractLimit = vegasCfg.get();
