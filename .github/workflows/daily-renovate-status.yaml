@@ -35,7 +35,7 @@ jobs:
             createdAt=$(echo $pr | jq --raw-output '.createdAt')
             status=$(echo $pr | jq --raw-output '.mergeStateStatus')
             
-            renovateStatusString+="\nPR <https://github.com/camunda/zeebe/pull/$prNumber|$prNumber>: $title (open since $createdAt) status: $status"
+            renovateStatusString+="\n • <https://github.com/camunda/zeebe/pull/$prNumber|PR $prNumber ($status)>: $title (created $createdAt)"
           done
 
           echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT
@@ -56,7 +56,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":fyi: *Daily Renovate status:* :fyi:"
+                    "text": ":renovate-party: *Daily Renovate status:* :renovate-party:"
                   }
                 },
                 {
