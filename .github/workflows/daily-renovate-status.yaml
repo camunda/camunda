@@ -11,10 +11,6 @@ on:
     # Runs at 10:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
     - cron: '0 10 * * 1-5'
 
-env:
-  # This URL is used as the business key for the various QA workflows
-  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
 jobs:
   extract-renovate-pr-status:
     name: Extract renovate PR status details
