@@ -58,14 +58,23 @@ EXPOSE 8080
 RUN apk update && apk upgrade && \
     apk add --no-cache bash openjdk21-jre tzdata
 
-WORKDIR /usr/local/tasklist
+ENV TASKLIST_HOME=/usr/local/tasklist
+
+WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
+VOLUME ${TASKLIST_HOME}/logs
 
-COPY --from=prepare /tmp/tasklist /usr/local/tasklist
-RUN mv /usr/local/tasklist/bin/tasklist-migrate /usr/local/tasklist/bin/migrate
-RUN rm /usr/local/tasklist/lib/operate-webjar*
+COPY --from=prepare /tmp/tasklist ${TASKLIST_HOME}
+# rename tasklist-migrate script to migrate (as expected by SaaS)
+RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
 
-RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/tasklist -G camunda -u 1001 camunda
+RUN addgroup --gid 1001 camunda && \
+    adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
+    mkdir ${TASKLIST_HOME}/logs && \
+    chown -R 1001:0 ${TASKLIST_HOME} && \
+    chmod -R 0775 ${TASKLIST_HOME}
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]
