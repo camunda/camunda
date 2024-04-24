@@ -125,6 +125,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
       <exclusions>
         <exclusion>
@@ -557,6 +567,8 @@
 
             <dependency>io.camunda:operate-webapp</dependency>
             <dependency>io.camunda:operate-webjar</dependency>
+            <dependency>io.camunda:operate-archiver</dependency>
+            <dependency>io.camunda:operate-importer</dependency>
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:tasklist-webapp</dependency>
 
