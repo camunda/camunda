@@ -120,6 +120,8 @@ public class Application {
     return Map.of(
         "server.servlet.session.cookie.name",
         TasklistURIs.COOKIE_JSESSIONID,
+        "spring.thymeleaf.check-template-location",
+        "true",
         SPRING_THYMELEAF_PREFIX_KEY,
         SPRING_THYMELEAF_PREFIX_VALUE,
         // Return error messages for all endpoints by default, except for Internal API.
