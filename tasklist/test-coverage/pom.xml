@@ -11,8 +11,7 @@
   <artifactId>tasklist-test-coverage</artifactId>
   <name>Tasklist aggregated coverage</name>
   <description>Module created to generate an aggregated report of the code coverage for tasklist
-    sub-modules.
-  </description>
+    sub-modules.</description>
 
   <properties>
     <maven.compiler.source>17</maven.compiler.source>

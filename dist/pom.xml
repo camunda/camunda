@@ -206,10 +206,15 @@
       </exclusions>
     </dependency>
 
-    <!-- needed for the Spring actuators which enable health checks and liveness probes-->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-webflux</artifactId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -239,12 +244,17 @@
 
     <dependency>
       <groupId>org.springframework</groupId>
-      <artifactId>spring-webflux</artifactId>
+      <artifactId>spring-webmvc</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.projectreactor</groupId>
-      <artifactId>reactor-core</artifactId>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
     <dependency>
@@ -316,11 +326,6 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.reactivestreams</groupId>
-      <artifactId>reactive-streams</artifactId>
     </dependency>
 
     <!-- /end -->
@@ -507,10 +512,11 @@
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
-            <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
-            <dependency>org.springframework.boot:spring-boot-starter-webflux</dependency>
+            <!-- Needed for Spring Actuators, and REST API -->
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
@@ -527,7 +533,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.4.0</version>
+        <version>7.5.0</version>
         <executions>
           <execution>
             <id>backups</id>

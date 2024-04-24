@@ -16,12 +16,11 @@ import org.springframework.boot.actuate.autoconfigure.web.server.ManagementServe
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.RouterFunctions;
+import org.springframework.web.servlet.function.ServerResponse;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilderFactory;
-import reactor.core.publisher.Mono;
 
 @Profile("broker")
 @ConditionalOnManagementContext
@@ -57,7 +56,7 @@ public class BrokerHealthRoutes {
         .build();
   }
 
-  private Mono<ServerResponse> movedPermanently(final String... paths) {
+  private ServerResponse movedPermanently(final String... paths) {
     final var builder = uriBuilderFactory.builder();
     for (final var path : paths) {
       builder.path(path);

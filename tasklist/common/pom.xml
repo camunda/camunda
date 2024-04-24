@@ -9,9 +9,9 @@
     <version>8.6.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>tasklist-common</artifactId>
 
   <name>Tasklist Common</name>
-  <artifactId>tasklist-common</artifactId>
 
   <dependencies>
 
@@ -209,7 +209,7 @@
 
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
-      <artifactId>swagger-annotations</artifactId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
     <!-- TEST -->
@@ -254,26 +254,13 @@
   </dependencies>
 
   <build>
-    <plugins>
-      <!-- LICENSE PLUGIN -->
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-      </plugin>
-
-    </plugins>
     <!--
       Enabled setting of schema version
      -->
     <resources>
       <resource>
-        <directory>src/main/resources/</directory>
         <filtering>true</filtering>
+        <directory>src/main/resources/</directory>
       </resource>
     </resources>
   </build>

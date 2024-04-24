@@ -10,85 +10,87 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
-import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.config.web.server.ServerHttpSecurity.AnonymousSpec;
-import org.springframework.security.config.web.server.ServerHttpSecurity.CorsSpec;
-import org.springframework.security.config.web.server.ServerHttpSecurity.CsrfSpec;
-import org.springframework.security.config.web.server.ServerHttpSecurity.FormLoginSpec;
-import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
-import org.springframework.security.config.web.server.ServerHttpSecurity.LogoutSpec;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AnonymousConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CorsConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
+import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.WebFilterExchange;
-import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
-import reactor.core.publisher.Mono;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFilter;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 @Profile("identity-auth")
-@EnableWebFluxSecurity
-@EnableReactiveMethodSecurity
+@EnableWebSecurity
+@EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
 public final class SecurityConfiguration {
 
   @Bean
   @ConditionalOnRestGatewayEnabled
-  public SecurityWebFilterChain restGatewaySecurity(
-      final ServerHttpSecurity http,
+  public SecurityFilterChain restGatewaySecurity(
+      final HttpSecurity http,
       final IdentityAuthenticationManager authManager,
       final PreAuthTokenConverter converter,
-      final ProblemAuthFailureHandler authFailureHandler) {
-    final var authFilter = new AuthenticationWebFilter(authManager);
-    authFilter.setServerAuthenticationConverter(converter);
-    authFilter.setAuthenticationFailureHandler(authFailureHandler);
-    authFilter.setAuthenticationSuccessHandler(SecurityConfiguration::injectTenantIds);
+      final ProblemAuthFailureHandler authFailureHandler)
+      throws Exception {
+    final var authFilter = new AuthenticationFilter(authManager, converter);
+    authFilter.setFailureHandler(authFailureHandler);
+    authFilter.setSuccessHandler(SecurityConfiguration::injectTenantIds);
 
     return configureSecurity(http)
         .authenticationManager(authManager)
-        .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+        .addFilterBefore(authFilter, SecurityContextHolderAwareRequestFilter.class)
         .exceptionHandling(
             spec ->
                 spec.authenticationEntryPoint(authFailureHandler)
                     .accessDeniedHandler(authFailureHandler))
-        .authorizeExchange(spec -> spec.anyExchange().authenticated())
+        .authorizeHttpRequests(spec -> spec.anyRequest().authenticated())
         .build();
   }
 
-  private static Mono<Void> injectTenantIds(
-      final WebFilterExchange webFilterExchange, final Authentication authentication) {
-    final var exchange = webFilterExchange.getExchange();
+  private static void injectTenantIds(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication)
+      throws IOException, ServletException {
     if (authentication instanceof final IdentityAuthentication identity) {
-      TenantAttributeHolder.withTenantIds(exchange, identity.tenantIds());
+      TenantAttributeHolder.withTenantIds(identity.tenantIds());
     }
-
-    return webFilterExchange.getChain().filter(exchange);
   }
 
-  private static ServerHttpSecurity configureSecurity(final ServerHttpSecurity http) {
-    return http.csrf(CsrfSpec::disable)
-        .cors(CorsSpec::disable)
-        .logout(LogoutSpec::disable)
-        .formLogin(FormLoginSpec::disable)
-        .httpBasic(HttpBasicSpec::disable)
-        .anonymous(AnonymousSpec::disable);
+  private static HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
+    return http.csrf(CsrfConfigurer::disable)
+        .cors(CorsConfigurer::disable)
+        .logout(LogoutConfigurer::disable)
+        .formLogin(FormLoginConfigurer::disable)
+        .httpBasic(HttpBasicConfigurer::disable)
+        .anonymous(AnonymousConfigurer::disable);
   }
 
   @Profile("identity-auth")
   @ConditionalOnManagementContext
-  @EnableWebFluxSecurity
-  @EnableReactiveMethodSecurity
+  @EnableWebSecurity
+  @EnableMethodSecurity
   @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
   public static final class ManagementSecurityConfiguration {
     @Bean
-    public SecurityWebFilterChain managementSecurity(final ServerHttpSecurity http) {
+    public SecurityFilterChain managementSecurity(final HttpSecurity http) throws Exception {
       return configureSecurity(http)
-          .authorizeExchange(spec -> spec.anyExchange().permitAll())
+          .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
           .build();
     }
   }

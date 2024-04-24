@@ -46,6 +46,11 @@ public class JavaClientPropertiesTest {
   @Autowired private ZeebeClientConfigurationProperties properties;
 
   @Test
+  public void hasBrokerContactPoint() {
+    assertThat(PropertiesUtil.getZeebeGatewayAddress(properties)).isEqualTo("localhost12345");
+  }
+
+  @Test
   public void hasDeprecatedGatewayAddress() {
     assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
   }
@@ -60,7 +65,7 @@ public class JavaClientPropertiesTest {
 
   @Test
   public void hasWorkerName() {
-    assertThat(properties.getDefaultJobWorkerName()).isEqualTo("testName");
+    assertThat(properties.getWorker().getDefaultName()).isEqualTo("testName");
   }
 
   @Test

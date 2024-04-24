@@ -1,4 +1,4 @@
-name: Zeebe Release Dry Run from main
+name: Camunda Platform Release Dry Run from main
 on:
   workflow_dispatch: { }
   schedule:
@@ -8,7 +8,7 @@ on:
 jobs:
   dry-run-release:
     name: "${{ matrix.version }} from main"
-    uses: ./.github/workflows/zeebe-release.yml
+    uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
       fail-fast: false
@@ -36,7 +36,7 @@ jobs:
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         if: ${{ always() && needs.dry-run-release.result != 'success' }}
         with:
           # For posting a rich message using Block Kit
@@ -61,7 +61,7 @@ jobs:
             }
       - id: slack-notify-success
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         if: ${{ always() && needs.dry-run-release.result == 'success' }}
         with:
           # For posting a rich message using Block Kit

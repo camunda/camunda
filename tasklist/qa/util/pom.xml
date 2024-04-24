@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
     <version>8.6.0-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
+  <artifactId>tasklist-qa-util</artifactId>
 
   <name>Tasklist QA Util</name>
-  <artifactId>tasklist-qa-util</artifactId>
 
   <properties>
     <plugin.version.license>4.3</plugin.version.license>
-    <license.header>${project.baseUri}/../../../license/license-header</license.header>
   </properties>
 
   <dependencies>
@@ -68,6 +67,7 @@
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch-testcontainers</artifactId>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -178,33 +178,16 @@
   </dependencies>
   <build>
     <plugins>
-
-      <!-- LICENSE PLUGIN -->
       <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>${plugin.version.license}</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <header>${license.header}</header>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>org.springframework:spring-aspects</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
-        <executions>
-          <execution>
-            <id>add-license</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
-
 
 </project>

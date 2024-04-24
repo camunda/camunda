@@ -16,7 +16,7 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
-import java.util.Arrays;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,39 +26,43 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
 
   private String name;
 
-  private Long timeout;
+  private Duration timeout;
 
   private Integer maxJobsActive;
 
-  private Long requestTimeout;
+  private Duration requestTimeout;
 
-  private Long pollInterval;
+  private Duration pollInterval;
 
   private Boolean autoComplete;
 
-  private String[] fetchVariables;
+  private List<String> fetchVariables;
 
   private Boolean enabled;
 
   private MethodInfo methodInfo;
   private List<String> tenantIds;
-  private boolean forceFetchAllVariables;
+  private Boolean forceFetchAllVariables;
+  private Boolean streamEnabled;
+  private Duration streamTimeout;
 
   public ZeebeWorkerValue() {}
 
   public ZeebeWorkerValue(
       final String type,
       final String name,
-      final Long timeout,
+      final Duration timeout,
       final Integer maxJobsActive,
-      final Long requestTimeout,
-      final Long pollInterval,
+      final Duration requestTimeout,
+      final Duration pollInterval,
       final Boolean autoComplete,
-      final String[] fetchVariables,
+      final List<String> fetchVariables,
       final Boolean enabled,
       final MethodInfo methodInfo,
       final List<String> tenantIds,
-      final boolean forceFetchAllVariables) {
+      final Boolean forceFetchAllVariables,
+      final Boolean streamEnabled,
+      final Duration streamTimeout) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -71,6 +75,8 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.methodInfo = methodInfo;
     this.tenantIds = tenantIds;
     this.forceFetchAllVariables = forceFetchAllVariables;
+    this.streamEnabled = streamEnabled;
+    this.streamTimeout = streamTimeout;
   }
 
   public String getType() {
@@ -89,11 +95,11 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.name = name;
   }
 
-  public Long getTimeout() {
+  public Duration getTimeout() {
     return timeout;
   }
 
-  public void setTimeout(final Long timeout) {
+  public void setTimeout(final Duration timeout) {
     this.timeout = timeout;
   }
 
@@ -105,19 +111,19 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.maxJobsActive = maxJobsActive;
   }
 
-  public Long getRequestTimeout() {
+  public Duration getRequestTimeout() {
     return requestTimeout;
   }
 
-  public void setRequestTimeout(final Long requestTimeout) {
+  public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
   }
 
-  public Long getPollInterval() {
+  public Duration getPollInterval() {
     return pollInterval;
   }
 
-  public void setPollInterval(final Long pollInterval) {
+  public void setPollInterval(final Duration pollInterval) {
     this.pollInterval = pollInterval;
   }
 
@@ -129,11 +135,11 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.autoComplete = autoComplete;
   }
 
-  public String[] getFetchVariables() {
+  public List<String> getFetchVariables() {
     return fetchVariables;
   }
 
-  public void setFetchVariables(final String[] fetchVariables) {
+  public void setFetchVariables(final List<String> fetchVariables) {
     this.fetchVariables = fetchVariables;
   }
 
@@ -161,12 +167,28 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.tenantIds = tenantIds;
   }
 
-  public boolean isForceFetchAllVariables() {
+  public Boolean getForceFetchAllVariables() {
     return forceFetchAllVariables;
   }
 
-  public void setForceFetchAllVariables(final boolean forceFetchAllVariables) {
+  public void setForceFetchAllVariables(final Boolean forceFetchAllVariables) {
     this.forceFetchAllVariables = forceFetchAllVariables;
+  }
+
+  public Boolean getStreamEnabled() {
+    return streamEnabled;
+  }
+
+  public void setStreamEnabled(final Boolean streamEnabled) {
+    this.streamEnabled = streamEnabled;
+  }
+
+  public Duration getStreamTimeout() {
+    return streamTimeout;
+  }
+
+  public void setStreamTimeout(final Duration streamTimeout) {
+    this.streamTimeout = streamTimeout;
   }
 
   @Override
@@ -176,21 +198,21 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
 
   @Override
   public int hashCode() {
-    int result =
-        Objects.hash(
-            type,
-            name,
-            timeout,
-            maxJobsActive,
-            requestTimeout,
-            pollInterval,
-            autoComplete,
-            enabled,
-            methodInfo,
-            tenantIds,
-            forceFetchAllVariables);
-    result = 31 * result + Arrays.hashCode(fetchVariables);
-    return result;
+    return Objects.hash(
+        type,
+        name,
+        timeout,
+        maxJobsActive,
+        requestTimeout,
+        pollInterval,
+        autoComplete,
+        fetchVariables,
+        enabled,
+        methodInfo,
+        tenantIds,
+        forceFetchAllVariables,
+        streamEnabled,
+        streamTimeout);
   }
 
   @Override
@@ -202,18 +224,20 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
       return false;
     }
     final ZeebeWorkerValue that = (ZeebeWorkerValue) o;
-    return forceFetchAllVariables == that.forceFetchAllVariables
-        && Objects.equals(type, that.type)
+    return Objects.equals(type, that.type)
         && Objects.equals(name, that.name)
         && Objects.equals(timeout, that.timeout)
         && Objects.equals(maxJobsActive, that.maxJobsActive)
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(pollInterval, that.pollInterval)
         && Objects.equals(autoComplete, that.autoComplete)
-        && Arrays.equals(fetchVariables, that.fetchVariables)
+        && Objects.equals(fetchVariables, that.fetchVariables)
         && Objects.equals(enabled, that.enabled)
         && Objects.equals(methodInfo, that.methodInfo)
-        && Objects.equals(tenantIds, that.tenantIds);
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
+        && Objects.equals(streamEnabled, that.streamEnabled)
+        && Objects.equals(streamTimeout, that.streamTimeout);
   }
 
   @Override
@@ -236,7 +260,7 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
         + ", autoComplete="
         + autoComplete
         + ", fetchVariables="
-        + Arrays.toString(fetchVariables)
+        + fetchVariables
         + ", enabled="
         + enabled
         + ", methodInfo="
@@ -245,6 +269,10 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
         + tenantIds
         + ", forceFetchAllVariables="
         + forceFetchAllVariables
+        + ", streamEnabled="
+        + streamEnabled
+        + ", streamTimeout="
+        + streamTimeout
         + '}';
   }
 }

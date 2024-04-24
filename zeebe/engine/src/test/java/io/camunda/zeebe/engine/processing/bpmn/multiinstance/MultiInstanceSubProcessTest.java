@@ -364,4 +364,62 @@ public final class MultiInstanceSubProcessTest {
         .describedAs("Expect that each sub process is interrupted so process could complete")
         .hasSize(1);
   }
+
+  /** Regression test for: https://github.com/camunda/zeebe/issues/6152 */
+  @Test
+  public void shouldCancelInterruptingEventSubprocessOnTermination() {
+    // given
+    final Consumer<EventSubProcessBuilder> eventSubprocessBuilder =
+        eventSubprocess ->
+            eventSubprocess
+                .startEvent()
+                .message(
+                    message ->
+                        message
+                            .name("cancel")
+                            .zeebeCorrelationKeyExpression("\"m-\" + string(item)"))
+                .userTask("B")
+                .endEvent();
+
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("subprocess")
+            .multiInstance(
+                m -> m.zeebeInputCollectionExpression("[1,2,3]").zeebeInputElement("item"))
+            .embeddedSubProcess()
+            .eventSubProcess("event_subprocess", eventSubprocessBuilder)
+            .startEvent()
+            .userTask("A")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.message().withName("cancel").withCorrelationKey("m-1").publish();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
 }

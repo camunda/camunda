@@ -10,7 +10,7 @@ on:
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: ./.github/workflows/zeebe-release.yml
+    uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
@@ -27,7 +27,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           # For posting a rich message using Block Kit
           payload: |

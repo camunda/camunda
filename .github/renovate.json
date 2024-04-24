@@ -11,10 +11,10 @@
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
+  "prHourlyLimit": 2,
   "updateNotScheduled": false,
   "schedule": [
-    "after 10pm every weekday",
-    "before 6am every weekday"
+    "at any time"
   ],
   "helmv3": {
     "registryAliases": {
@@ -73,6 +73,15 @@
         "io.camunda:tasklist-qa",
         "io.camunda:tasklist-qa-migration-tests-parent",
         "net.jcip:jcip-annotations"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Exclude react-router-dom until refactoring is done in Operate (see issue #17736)",
+      "matchManagers": ["npm", "nvm"],
+      "matchFileNames": ["operate/**"],
+      "matchPackagePatterns": [
+        "react-router-dom"
       ],
       "enabled": false
     },

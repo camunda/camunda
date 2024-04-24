@@ -8,6 +8,9 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'
+      - 'bom/*'
+      - 'parent/*'
+      - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
@@ -15,6 +18,9 @@ on:
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'
+      - 'bom/*'
+      - 'parent/*'
+      - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist-distro/**'
       - 'tasklist.Dockerfile'
@@ -40,7 +46,7 @@ jobs:
           - 5000:5000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
       - name: Test Dockerfile with Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -78,8 +84,10 @@ jobs:
               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build frontend
+        uses: ./.github/actions/build-tasklist-fe
       - name: Build backend
-        run: mvn -f tasklist clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -95,7 +103,7 @@ jobs:
           no-cache-filters: build,distball,dist
           file: tasklist.Dockerfile
       - name: Run Docker tests
-        run: mvn -f tasklist/qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: mvn -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-tasklist-test-artifacts

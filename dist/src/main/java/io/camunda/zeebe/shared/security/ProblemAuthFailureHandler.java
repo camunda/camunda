@@ -8,6 +8,12 @@
 package io.camunda.zeebe.shared.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,19 +21,14 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
-import org.springframework.security.web.server.WebFilterExchange;
-import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
-import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 @Component
 public final class ProblemAuthFailureHandler
-    implements ServerAuthenticationFailureHandler,
-        ServerAccessDeniedHandler,
-        ServerAuthenticationEntryPoint {
+    implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
 
   private final ObjectMapper objectMapper;
 
@@ -37,48 +38,57 @@ public final class ProblemAuthFailureHandler
   }
 
   @Override
-  public Mono<Void> onAuthenticationFailure(
-      final WebFilterExchange exchange, final AuthenticationException error) {
-    return handleFailure(exchange.getExchange(), HttpStatus.UNAUTHORIZED, error);
+  public void onAuthenticationFailure(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException error)
+      throws IOException, ServletException {
+    handleFailure(request, response, HttpStatus.UNAUTHORIZED, error);
   }
 
   @Override
-  public Mono<Void> handle(final ServerWebExchange exchange, final AccessDeniedException error) {
+  public void handle(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AccessDeniedException error)
+      throws IOException, ServletException {
     // if a token was passed but could not be validated, onAuthenticationFailure is called
     // however, if no token was passed, then access is denied here, and we want to distinguish
     // between unauthorized and forbidden; we can do that by checking the session principal to see
     // if it's authenticated or not
-    return exchange
-        .getPrincipal()
-        .flatMap(
-            principal -> {
-              if (principal instanceof final Authentication auth && auth.isAuthenticated()) {
-                return handleFailure(exchange, HttpStatus.FORBIDDEN, error);
-              }
+    final var principal = request.getUserPrincipal();
+    if (principal instanceof final Authentication auth && auth.isAuthenticated()) {
+      handleFailure(request, response, HttpStatus.FORBIDDEN, error);
+    }
 
-              return handleFailure(exchange, HttpStatus.UNAUTHORIZED, error);
-            });
+    handleFailure(request, response, HttpStatus.UNAUTHORIZED, error);
   }
 
   @Override
-  public Mono<Void> commence(
-      final ServerWebExchange exchange, final AuthenticationException error) {
-    return handleFailure(exchange, HttpStatus.UNAUTHORIZED, error);
+  public void commence(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException error)
+      throws IOException, ServletException {
+    handleFailure(request, response, HttpStatus.UNAUTHORIZED, error);
   }
 
-  private Mono<Void> handleFailure(
-      final ServerWebExchange exchange, final HttpStatus status, final Exception error) {
-    final var request = exchange.getRequest();
-    final var response = exchange.getResponse();
+  private void handleFailure(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final HttpStatus status,
+      final Exception error)
+      throws IOException {
     final var problem = ProblemDetail.forStatus(status);
-    problem.setInstance(request.getURI());
     problem.setDetail(error.getMessage());
+    problem.setInstance(URI.create(request.getRequestURI()));
 
-    response.setStatusCode(status);
-    response.getHeaders().setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+    final var problemDetail = objectMapper.writeValueAsString(problem);
 
-    return response.writeWith(
-        Mono.fromCallable(() -> objectMapper.writeValueAsBytes(problem))
-            .map(bytes -> response.bufferFactory().wrap(bytes)));
+    response.reset();
+    response.setStatus(status.value());
+    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+    response.getWriter().append(problemDetail);
   }
 }

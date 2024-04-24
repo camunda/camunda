@@ -42,6 +42,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useEffect} from 'react';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
 const ROW_HEIGHT = 34;
 
@@ -62,6 +63,10 @@ const InstancesTable: React.FC = observer(() => {
   const isTenantColumnVisible =
     window.clientConfig?.multiTenancyEnabled &&
     (tenant === undefined || tenant === 'all');
+
+  const {batchOperationId} = getProcessInstancesRequestFilters();
+
+  const isOperationStateColumnVisible = !!batchOperationId;
 
   const getTableState = () => {
     if (['initial', 'first-fetch'].includes(status)) {
@@ -168,6 +173,9 @@ const InstancesTable: React.FC = observer(() => {
         checkIsRowSelected={(rowId) => {
           return processInstancesSelectionStore.isProcessInstanceChecked(rowId);
         }}
+        rowOperationError={(rowId) => {
+          return processInstancesStore.getProcessInstanceOperationError(rowId);
+        }}
         emptyMessage={getEmptyListMessage()}
         onVerticalScrollStartReach={async (scrollDown) => {
           if (processInstancesStore.shouldFetchPreviousInstances() === false) {
@@ -210,6 +218,12 @@ const InstancesTable: React.FC = observer(() => {
                 {getProcessName(instance)}
               </ProcessName>
             ),
+            instanceOperationState: isOperationStateColumnVisible
+              ? instance.operations?.find(
+                  (operation) =>
+                    operation.batchOperationId === batchOperationId,
+                )?.state || '--'
+              : undefined,
             processInstanceKey: (
               <Link
                 to={Paths.processInstance(instance.id)}
@@ -298,6 +312,14 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Name',
             key: 'processName',
           },
+          ...(isOperationStateColumnVisible
+            ? [
+                {
+                  header: 'Operation State',
+                  key: 'instanceOperationState',
+                },
+              ]
+            : []),
           {
             header: 'Process Instance Key',
             key: 'processInstanceKey',
@@ -339,6 +361,7 @@ const InstancesTable: React.FC = observer(() => {
               ]
             : []),
         ]}
+        batchOperationId={batchOperationId}
       />
       {batchModificationStore.state.isEnabled && <BatchModificationFooter />}
     </Container>

@@ -42,7 +42,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+        uses: actions/checkout@8459bc0c7e3759cdf591f513d9f141a95fef0a8f
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -71,6 +71,7 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
 
@@ -83,10 +84,14 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build: maven artifacts and Docker images
-      - name: Build Maven
+      # Build frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-tasklist-fe
+      #########################################################################
+      # Build backend
+      - name: Build backend
         run: |
-          mvn -f tasklist spotless:check -T1C clean deploy -P -docker -DskipTests=true -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn -T1C clean deploy -B -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging
@@ -144,3 +149,12 @@ jobs:
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         run: |
           mvn -f tasklist org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+
+      #########################################################################
+      # Collect information about build status for central statistics with CI Analytics
+      - uses: camunda/infra-global-github-actions/submit-build-status@main
+        if: always()
+        with:
+          build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
+          gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+          big_query_table_name: "ci-30-162810:prod_ci_analytics.build_status_v2"

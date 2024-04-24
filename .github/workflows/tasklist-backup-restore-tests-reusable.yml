@@ -21,7 +21,7 @@ jobs:
     steps:
       # Setup: checkout
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
 
       # Setup: import secrets from vault
       - name: Import Secrets
@@ -67,12 +67,12 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -f tasklist -B -DskipTests -P skipFrontendBuild clean install
+          mvn -pl tasklist -B -DskipTests -DskipChecks -P skipFrontendBuild clean install
 
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
         run: |
-          mvn -B -f tasklist/qa/backup-restore-tests -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
+          mvn -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
 
       # Reports: publish test results
       - name: Publish Test Results
@@ -89,7 +89,7 @@ jobs:
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
         with:

@@ -117,7 +117,7 @@ jobs:
       - name: Build backend
         run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -pl operate/webapp -Dspring-boot.run.fork=true
+        run: mvn -q -B spring-boot:start -pl operate/webapp -Dspring-boot.run.fork=true -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci

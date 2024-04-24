@@ -85,7 +85,7 @@ public class BackupManagerOpenSearch extends BackupManager {
   @Autowired private OpenSearchClient openSearchClient;
 
   @Override
-  public void deleteBackup(Long backupId) {
+  public void deleteBackup(final Long backupId) {
     validateRepositoryExists();
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
@@ -105,14 +105,94 @@ public class BackupManagerOpenSearch extends BackupManager {
             .snapshot()
             .delete(request)
             .whenComplete(BackupManagerOpenSearch::handleSnapshotDeletion);
-      } catch (IOException | OpenSearchException e) {
+      } catch (final IOException | OpenSearchException e) {
         LOGGER.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
         throw new TasklistRuntimeException("Exception occurred while deleting the snapshot", e);
       }
     }
   }
 
-  private static void handleSnapshotDeletion(DeleteSnapshotResponse result, Throwable ex) {
+  @Override
+  public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
+    validateRepositoryExists();
+    validateNoDuplicateBackupId(request.getBackupId());
+    if (requestsQueue.size() > 0) {
+      throw new InvalidRequestException("Another backup is running at the moment");
+    }
+    synchronized (requestsQueue) {
+      if (requestsQueue.size() > 0) {
+        throw new InvalidRequestException("Another backup is running at the moment");
+      }
+      return scheduleSnapshots(request);
+    }
+  }
+
+  @Override
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    final List<SnapshotInfo> snapshots = findSnapshots(backupId);
+    return getBackupResponse(backupId, snapshots);
+  }
+
+  @Override
+  public List<GetBackupStateResponseDto> getBackups() {
+    final GetSnapshotRequest snapshotStatusRequest =
+        GetSnapshotRequest.of(
+            gsr ->
+                gsr.repository(getRepositoryName()).snapshot(Metadata.SNAPSHOT_NAME_PREFIX + "*"));
+    final GetCustomSnapshotResponse response;
+    try {
+      response = getCustomSnapshotResponse(snapshotStatusRequest);
+      final List<SnapshotInfo> snapshots =
+          response.snapshots().stream()
+              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
+              .toList();
+
+      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
+          snapshots.stream()
+              .collect(
+                  groupingBy(
+                      si -> {
+                        final var jsonDataMap = si.metadata();
+                        final Metadata metadata = getMetadata(jsonDataMap);
+                        Long backupId = metadata.getBackupId();
+                        // backward compatibility with v. 8.1
+                        if (backupId == null) {
+                          backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshot());
+                        }
+                        return backupId;
+                      },
+                      LinkedHashMap::new,
+                      toList()));
+
+      return groupedSnapshotInfos.entrySet().stream()
+          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+          .collect(toList());
+    } catch (final IOException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+              getRepositoryName());
+      throw new TasklistElasticsearchConnectionException(reason, ex);
+    } catch (final Exception e) {
+      if (isRepositoryMissingException(e)) {
+        final String reason =
+            String.format(
+                "No repository with name [%s] could be found.",
+                tasklistProperties.getBackup().getRepositoryName());
+        throw new TasklistRuntimeException(reason);
+      }
+      if (isSnapshotMissingException(e)) {
+        // no snapshots exist
+        return new ArrayList<>();
+      }
+      final String reason =
+          String.format("Exception occurred when searching for backups: %s", e.getMessage());
+      throw new TasklistRuntimeException(reason, e);
+    }
+  }
+
+  private static void handleSnapshotDeletion(
+      final DeleteSnapshotResponse result, final Throwable ex) {
     if (ex != null) {
       if (isSnapshotMissingException(ex)) {
         LOGGER.warn("No snapshot found for snapshot deletion: " + ex.getMessage());
@@ -130,13 +210,13 @@ public class BackupManagerOpenSearch extends BackupManager {
         GetRepositoryRequest.of(grr -> grr.name(repositoryName));
     try {
       getRepository(getRepositoryRequest);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
               repositoryName);
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
@@ -150,31 +230,16 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private GetRepositoryResponse getRepository(GetRepositoryRequest getRepositoryRequest)
+  private GetRepositoryResponse getRepository(final GetRepositoryRequest getRepositoryRequest)
       throws IOException {
     return openSearchAsyncClient.snapshot().getRepository(getRepositoryRequest).join();
   }
 
-  @Override
-  public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
-    validateRepositoryExists();
-    validateNoDuplicateBackupId(request.getBackupId());
-    if (requestsQueue.size() > 0) {
-      throw new InvalidRequestException("Another backup is running at the moment");
-    }
-    synchronized (requestsQueue) {
-      if (requestsQueue.size() > 0) {
-        throw new InvalidRequestException("Another backup is running at the moment");
-      }
-      return scheduleSnapshots(request);
-    }
-  }
-
-  private static boolean isSnapshotMissingException(Throwable e) {
+  private static boolean isSnapshotMissingException(final Throwable e) {
     return e.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
-  private boolean isRepositoryMissingException(Exception e) {
+  private boolean isRepositoryMissingException(final Exception e) {
     return e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
@@ -188,13 +253,13 @@ public class BackupManagerOpenSearch extends BackupManager {
     final GetCustomSnapshotResponse response;
     try {
       response = getCustomSnapshotResponse(snapshotsStatusRequest);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
               getRepositoryName());
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         return;
@@ -215,7 +280,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private TakeBackupResponseDto scheduleSnapshots(TakeBackupRequestDto request) {
+  private TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
@@ -265,7 +330,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private void executeSnapshotting(CreateSnapshotRequest snapshotRequest) {
+  private void executeSnapshotting(final CreateSnapshotRequest snapshotRequest) {
     try {
       openSearchAsyncClient
           .snapshot()
@@ -300,22 +365,16 @@ public class BackupManagerOpenSearch extends BackupManager {
                   }
                 }
               });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
-  private String getSnapshotId(SnapshotInfo snapshotInfo) {
+  private String getSnapshotId(final SnapshotInfo snapshotInfo) {
     return String.format("%s/%s", snapshotInfo.snapshot(), snapshotInfo.uuid());
   }
 
-  @Override
-  public GetBackupStateResponseDto getBackupState(Long backupId) {
-    final List<SnapshotInfo> snapshots = findSnapshots(backupId);
-    return getBackupResponse(backupId, snapshots);
-  }
-
-  private List<SnapshotInfo> findSnapshots(Long backupId) {
+  private List<SnapshotInfo> findSnapshots(final Long backupId) {
     final GetSnapshotRequest snapshotStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
@@ -324,13 +383,13 @@ public class BackupManagerOpenSearch extends BackupManager {
 
     try {
       return getCustomSnapshotResponse(snapshotStatusRequest).snapshots();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
               getRepositoryName());
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         throw new NotFoundApiException(String.format("No backup with id [%s] found.", backupId), e);
@@ -353,18 +412,19 @@ public class BackupManagerOpenSearch extends BackupManager {
    * href="https://github.com/opensearch-project/opensearch-java/issues/420">opensearch-java issue
    * #420</a> once it will be resolved {@link GetCustomSnapshotResponse} could be removed
    */
-  public GetCustomSnapshotResponse getCustomSnapshotResponse(GetSnapshotRequest request)
+  public GetCustomSnapshotResponse getCustomSnapshotResponse(final GetSnapshotRequest request)
       throws IOException, OpenSearchException {
     final JsonEndpoint<GetSnapshotRequest, GetCustomSnapshotResponse, ErrorResponse> endpoint =
         (JsonEndpoint<GetSnapshotRequest, GetCustomSnapshotResponse, ErrorResponse>)
-            GetCustomSnapshotResponse._ENDPOINT;
+            GetCustomSnapshotResponse.ENDPOINT;
 
     return openSearchClient
         ._transport()
         .performRequest(request, endpoint, openSearchClient._transportOptions());
   }
 
-  private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(
+      final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Map<String, JsonData> jsonDataMap = snapshots.get(0).metadata();
@@ -387,7 +447,7 @@ public class BackupManagerOpenSearch extends BackupManager {
       response.setState(BackupStateDto.FAILED);
     }
     final List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
-    for (SnapshotInfo snapshot : snapshots) {
+    for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshot());
       detail.setStartTime(
@@ -434,65 +494,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     return response;
   }
 
-  @Override
-  public List<GetBackupStateResponseDto> getBackups() {
-    final GetSnapshotRequest snapshotStatusRequest =
-        GetSnapshotRequest.of(
-            gsr ->
-                gsr.repository(getRepositoryName()).snapshot(Metadata.SNAPSHOT_NAME_PREFIX + "*"));
-    final GetCustomSnapshotResponse response;
-    try {
-      response = getCustomSnapshotResponse(snapshotStatusRequest);
-      final List<SnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
-              .toList();
-
-      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
-          snapshots.stream()
-              .collect(
-                  groupingBy(
-                      si -> {
-                        final var jsonDataMap = si.metadata();
-                        final Metadata metadata = getMetadata(jsonDataMap);
-                        Long backupId = metadata.getBackupId();
-                        // backward compatibility with v. 8.1
-                        if (backupId == null) {
-                          backupId = Metadata.extractBackupIdFromSnapshotName(si.snapshot());
-                        }
-                        return backupId;
-                      },
-                      LinkedHashMap::new,
-                      toList()));
-
-      return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
-          .collect(toList());
-    } catch (IOException ex) {
-      final String reason =
-          String.format(
-              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
-              getRepositoryName());
-      throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
-      if (isRepositoryMissingException(e)) {
-        final String reason =
-            String.format(
-                "No repository with name [%s] could be found.",
-                tasklistProperties.getBackup().getRepositoryName());
-        throw new TasklistRuntimeException(reason);
-      }
-      if (isSnapshotMissingException(e)) {
-        // no snapshots exist
-        return new ArrayList<>();
-      }
-      final String reason =
-          String.format("Exception occurred when searching for backups: %s", e.getMessage());
-      throw new TasklistRuntimeException(reason, e);
-    }
-  }
-
-  private static Metadata getMetadata(Map<String, JsonData> jsonDataMap) {
+  private static Metadata getMetadata(final Map<String, JsonData> jsonDataMap) {
     return new Metadata()
         .setBackupId(jsonDataMap.get("backupId").to(Long.class))
         .setPartCount(jsonDataMap.get("partCount").to(Integer.class))

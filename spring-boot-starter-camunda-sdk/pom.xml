@@ -38,6 +38,12 @@
     <version.java>17</version.java>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <zeebe.version>8.5.0</zeebe.version>
+    <identity.version>8.5.0</identity.version>
+    <java-jwt.version>4.4.0</java-jwt.version>
+    <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
+    <spring-boot-test.version>3.2.5</spring-boot-test.version>
+    <wiremock-standalone.version>3.5.4</wiremock-standalone.version>
   </properties>
 
   <dependencies>
@@ -79,11 +85,6 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
     </dependency>
 
     <dependency>
@@ -137,6 +138,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+      <version>${identity.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
     </dependency>
@@ -149,6 +156,27 @@
     </dependency>
 
     <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
+      <version>${java-jwt.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>${junit-platform-commons.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <version>${spring-boot-test.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
       <version>${version.commons-beanutils}</version>
@@ -158,6 +186,13 @@
           <artifactId>commons-collections</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>${wiremock-standalone.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

@@ -47,8 +47,8 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.16.1</version.commons-codec>
     <version.commons-compress>1.26.1</version.commons-compress>
-    <version.zstd-jni>1.5.6-2</version.zstd-jni>
-    <version.commons-text>1.11.0</version.commons-text>
+    <version.zstd-jni>1.5.6-3</version.zstd-jni>
+    <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.elasticsearch>8.9.2</version.elasticsearch>
@@ -74,7 +74,7 @@
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.109.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
-    <version.opensearch>2.5.0</version.opensearch>
+    <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
@@ -86,7 +86,7 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.5.3</version.wiremock>
+    <version.wiremock>3.5.4</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.7</version.testcontainers>
@@ -105,7 +105,7 @@
     <version.jqwik>1.8.4</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.14.13</version.byte-buddy>
+    <version.byte-buddy>1.14.14</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -123,7 +123,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.37.0</version.google-sdk>
     <version.azure-sdk>1.2.22</version.azure-sdk>
-    <version.awssdk>2.25.35</version.awssdk>
+    <version.awssdk>2.25.37</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -149,12 +149,14 @@
     <version.parsson>1.1.6</version.parsson>
     <version.springdoc>2.5.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.node>v20.8.0</version.node>
-    <version.yarn>v1.22.10</version.yarn>
+
+    <version.node>v20.12.2</version.node>
+    <version.yarn>v1.22.21</version.yarn>
+
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.705</version.aws-java-sdk>
-    <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
-    <postgres-test-container.version>1.19.7</postgres-test-container.version>
+    <version.aws-java-sdk>1.12.707</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.19.7</version.postgres-test-container>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
@@ -176,6 +178,16 @@
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
+
+    <!-- GraphQL dependencies -->
+    <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
+    <version.graphql-kickstart.tools>13.1.1</version.graphql-kickstart.tools>
+    <version.graphql-java>21.5</version.graphql-java>
+    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
+    <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
+
+    <version.javassist>3.30.2-GA</version.javassist>
+    <version.json>20231013</version.json>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -200,11 +212,13 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
-    <plugin.version.shade>3.5.2</plugin.version.shade>
+    <plugin.version.shade>3.5.3</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.4.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.2.5</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
+    <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
+    <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.22.0</plugin.version.google-java-format>
@@ -620,6 +634,121 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>operate-qa-migration-tests-test-fixture-840</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- Tasklist Modules -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-archiver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-importer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-importer-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-importer-850</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-importer-860</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-data-generator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-els-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-mvc-auth-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-it-tests</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-840</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
       </dependency>
@@ -1662,6 +1791,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>${version.json}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.springdoc</groupId>
         <artifactId>springdoc-openapi-starter-common</artifactId>
         <version>${version.springdoc}</version>
@@ -1676,13 +1811,13 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
-        <version>${elasticsearch-test-container.version}</version>
+        <version>${version.elasticsearch-test-container}</version>
       </dependency>
 
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>postgresql</artifactId>
-        <version>${postgres-test-container.version}</version>
+        <version>${version.postgres-test-container}</version>
       </dependency>
 
       <dependency>
@@ -1767,6 +1902,73 @@
         <version>${version.jopt-simple}</version>
       </dependency>
 
+      <!-- between graphql-spring-boot and thymeleaf -->
+      <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${version.javassist}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-starter</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-java-kickstart</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-java-servlet</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-starter-test</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-test</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
+        <version>${version.graphql-kickstart}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-java-tools</artifactId>
+        <version>${version.graphql-kickstart.tools}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java</groupId>
+        <artifactId>graphql-java</artifactId>
+        <version>${version.graphql-java}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java</groupId>
+        <artifactId>graphql-java-extended-scalars</artifactId>
+        <version>${version.graphql-java.scalars}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java</groupId>
+        <artifactId>java-dataloader</artifactId>
+        <version>${version.graphql-java.dataloader}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -1788,6 +1990,7 @@
       <artifactId>log4j-slf4j2-impl</artifactId>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
   <build>
@@ -2298,7 +2501,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.4.0</version>
+          <version>7.5.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
@@ -2321,6 +2524,18 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${version.spring-boot}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>com.github.eirslett</groupId>
+          <artifactId>frontend-maven-plugin</artifactId>
+          <version>${plugin.version.frontend-maven}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${plugin.version.maven-source}</version>
         </plugin>
       </plugins>
     </pluginManagement>

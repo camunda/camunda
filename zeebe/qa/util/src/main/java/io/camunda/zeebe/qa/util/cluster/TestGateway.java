@@ -59,7 +59,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * @return the REST gateway address
    */
   default URI restAddress() {
-    final var basePath = property("spring.webflux.base-path", String.class, "");
+    final var basePath = property("server.servlet.context-path", String.class, "");
     final var sslEnabled = property("server.ssl.enabled", Boolean.class, false);
     return uri(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
   }

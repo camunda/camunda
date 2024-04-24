@@ -107,6 +107,11 @@ public class OperateJ5Tester {
         searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
   }
 
+  public OperateJ5Tester completeJob(final String jobKey) {
+    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), null);
+    return this;
+  }
+
   public void refreshSearchIndices() {
     searchTestRuleProvider.refreshSearchIndices();
   }
