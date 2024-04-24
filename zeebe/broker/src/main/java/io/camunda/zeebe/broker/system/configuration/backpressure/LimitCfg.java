@@ -16,7 +16,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.broker.transport.backpressure.StabilizingAIMDLimit;
 import java.util.concurrent.TimeUnit;
 
-public final class BackpressureCfg implements ConfigurationEntry {
+public final class LimitCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
   private boolean useWindowed = true;
@@ -31,7 +31,7 @@ public final class BackpressureCfg implements ConfigurationEntry {
     return enabled;
   }
 
-  public BackpressureCfg setEnabled(final boolean enabled) {
+  public LimitCfg setEnabled(final boolean enabled) {
     this.enabled = enabled;
     return this;
   }
@@ -74,7 +74,7 @@ public final class BackpressureCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return "BackpressureCfg{"
+    return "LimitCfg{"
         + "enabled="
         + enabled
         + ", useWindowed="

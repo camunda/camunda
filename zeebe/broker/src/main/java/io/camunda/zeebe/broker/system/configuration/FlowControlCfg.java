@@ -7,16 +7,16 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 
 public class FlowControlCfg {
-  private BackpressureCfg append;
+  private LimitCfg append;
 
-  public BackpressureCfg getAppend() {
+  public LimitCfg getAppend() {
     return append;
   }
 
-  public void setAppend(final BackpressureCfg append) {
+  public void setAppend(final LimitCfg append) {
     this.append = append;
   }
 }

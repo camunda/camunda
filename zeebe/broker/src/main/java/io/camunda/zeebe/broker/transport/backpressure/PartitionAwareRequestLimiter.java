@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,9 +35,9 @@ public final class PartitionAwareRequestLimiter {
     return new PartitionAwareRequestLimiter();
   }
 
-  public static PartitionAwareRequestLimiter newLimiter(final BackpressureCfg backpressureCfg) {
-    final Supplier<Limit> limit = backpressureCfg::buildLimit;
-    if (backpressureCfg.useWindowed()) {
+  public static PartitionAwareRequestLimiter newLimiter(final LimitCfg limitCfg) {
+    final Supplier<Limit> limit = limitCfg::buildLimit;
+    if (limitCfg.useWindowed()) {
       return new PartitionAwareRequestLimiter(() -> WindowedLimit.newBuilder().build(limit.get()));
     } else {
       return new PartitionAwareRequestLimiter(limit);
