@@ -64,7 +64,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -111,7 +110,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       "camunda.operate.persistentSessionsEnabled=true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(locations = {"/application.yml", "/application-identity-auth.yml"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
