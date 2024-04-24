@@ -45,7 +45,7 @@ const ruleFunction = (headerFilePath, _, context) => {
     });
 
     if (!areOptionsValid) {
-      console.log('invalid options');
+      console.error('Invalid rule options.');
       return;
     }
 
