@@ -70,6 +70,9 @@ public class Application {
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    // add "operate" profile, so that application-operate.yml gets loaded. This is a way to not
+    // load other components' 'application-{component}.yml'
+    springApplication.setAdditionalProfiles("operate");
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());
     setDefaultProperties(springApplication);

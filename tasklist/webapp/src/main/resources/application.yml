@@ -1,8 +1,0 @@
-spring:
-  config:
-    activate:
-      on-profile: "dev"
-graphql:
-  tools:
-    introspection-enabled: true
-

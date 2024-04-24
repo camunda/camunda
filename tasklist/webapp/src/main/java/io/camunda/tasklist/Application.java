@@ -69,6 +69,9 @@ public class Application {
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
+    // load other components' 'application-{component}.yml'
+    springApplication.setAdditionalProfiles("tasklist");
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     springApplication.setAddCommandLineProperties(true);
