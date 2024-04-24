@@ -11,6 +11,7 @@
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
+  "prHourlyLimit": 2,
   "updateNotScheduled": false,
   "schedule": [
     "after 10pm every weekday",
