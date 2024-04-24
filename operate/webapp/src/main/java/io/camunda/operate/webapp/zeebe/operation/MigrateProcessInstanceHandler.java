@@ -19,10 +19,6 @@ package io.camunda.operate.webapp.zeebe.operation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
@@ -31,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /** Operation handler to migrate process instances */
@@ -41,18 +36,14 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MigrateProcessInstanceHandler.class);
 
-  @Autowired private OperationsManager operationsManager;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private ProcessReader processReader;
-
-  @Autowired private ProcessStore processStore;
-
-  @Autowired private ListViewTemplate listViewTemplate;
-
-  @Autowired private ObjectMapper objectMapper;
+  public MigrateProcessInstanceHandler(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
 
     final Long processInstanceKey = operation.getProcessInstanceKey();
     if (processInstanceKey == null) {
@@ -62,6 +53,24 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
 
     final MigrationPlanDto migrationPlanDto =
         objectMapper.readValue(operation.getMigrationPlan(), MigrationPlanDto.class);
+    LOGGER.info(
+        "Operation [{}]: Sending Zeebe migrate command for processInstanceKey [{}]...",
+        operation.getId(),
+        processInstanceKey);
+    migrate(processInstanceKey, migrationPlanDto);
+    markAsSent(operation);
+    LOGGER.info(
+        "Operation [{}]: Migrate command sent to Zeebe for processInstanceKey [{}]",
+        operation.getId(),
+        processInstanceKey);
+  }
+
+  @Override
+  public Set<OperationType> getTypes() {
+    return Set.of(OperationType.MIGRATE_PROCESS_INSTANCE);
+  }
+
+  public void migrate(final Long processInstanceKey, final MigrationPlanDto migrationPlanDto) {
     final long targetProcessDefinitionKey =
         Long.parseLong(migrationPlanDto.getTargetProcessDefinitionKey());
 
@@ -77,24 +86,10 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
                         new MigrationPlanBuilderImpl.MappingInstruction(
                             mapping.getSourceElementId(), mapping.getTargetElementId())));
 
-    LOGGER.info(
-        String.format(
-            "Operation [%s]: Sending Zeebe migrate command for processInstanceKey [%s]...",
-            operation.getId(), processInstanceKey));
     zeebeClient
         .newMigrateProcessInstanceCommand(processInstanceKey)
         .migrationPlan(migrationPlan)
         .send()
         .join();
-    markAsSent(operation);
-    LOGGER.info(
-        String.format(
-            "Operation [%s]: Migrate command sent to Zeebe for processInstanceKey [%s]",
-            operation.getId(), processInstanceKey));
-  }
-
-  @Override
-  public Set<OperationType> getTypes() {
-    return Set.of(OperationType.MIGRATE_PROCESS_INSTANCE);
   }
 }
