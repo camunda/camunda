@@ -219,7 +219,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('processWithDeployedForm');
 
-    var inputLocator =
+    let inputLocator =
       await formJSDetailsPage.getLocatorByLabel('Client Name*');
     await expect(inputLocator).toHaveValue('Jon');
     inputLocator = await formJSDetailsPage.getLocatorByLabel('Client Address*');
@@ -231,7 +231,7 @@ test.describe('task details page', () => {
     inputLocator = await formJSDetailsPage.getLocatorByLabel('Invoice Number*');
     await expect(inputLocator).toHaveValue('123');
 
-    var inputLocators = await formJSDetailsPage.getLocatorsByLabel(
+    let inputLocators = await formJSDetailsPage.getLocatorsByLabel(
       'Item Name*',
       2,
     );
