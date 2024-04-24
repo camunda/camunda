@@ -29,7 +29,10 @@ test.beforeAll(async () => {
     './e2e/resources/select_task_with_form.bpmn',
     './e2e/resources/tag_list_task_with_form.bpmn',
     './e2e/resources/text-templating-form-task.bpmn',
+    './e2e/resources/processWithDeployedForm.bpmn',
+    './e2e/resources/create-invoice_8-5.form',
   ]);
+
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
     createInstances('user_registration', 1, 2),
@@ -49,13 +52,15 @@ test.beforeAll(async () => {
     createInstances('Checklist_Task', 1, 1),
     createInstances('Date_and_Time_Task', 1, 1),
     createInstances('Number_Task', 1, 2),
+    createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
     createInstances('Select', 1, 1),
-    createInstances('Tag_List_Task', 1, 1),
+
     createInstances('Text_Templating_Form_Task', 1, 1, {
       name: 'Jane',
       age: '50',
     }),
+    createInstances('processWithDeployedForm', 1, 1),
   ]);
 });
 
@@ -175,6 +180,98 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.nameInput).toHaveValue('Jon');
     await expect(formJSDetailsPage.addressInput).toHaveValue('Earth');
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
+  });
+
+  test('task completion with deployed form', async ({
+    page,
+    taskPanelPage,
+    taskDetailsPage,
+    formJSDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('processWithDeployedForm');
+
+    await taskDetailsPage.assignToMeButton.click();
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await page.getByLabel('Client Name*').fill('Jon');
+    await page.getByLabel('Client Address*').fill('Earth');
+    await formJSDetailsPage.fillDateField('Invoice Date*', '1/1/3000');
+    await formJSDetailsPage.fillDateField('Due Date*', '1/2/3000');
+    await page.getByLabel('Invoice Number*').fill('123');
+
+    await formJSDetailsPage.selectDropdownOption(
+      'USD - United States Dollar',
+      'EUR - Euro',
+    );
+
+    await page.getByRole('button', {name: /add new/i}).click();
+    await formJSDetailsPage.forEachDynamicListItem(
+      page.getByLabel('Item Name*'),
+      async (element, index) => {
+        await element.fill(`${'Laptop'}${index + 1}`);
+      },
+    );
+    await formJSDetailsPage.forEachDynamicListItem(
+      page.getByLabel('Unit Price*'),
+      async (element, index) => {
+        await element.fill(`${'1'}${index + 1}`);
+      },
+    );
+    await formJSDetailsPage.forEachDynamicListItem(
+      page.getByLabel('Quantity*'),
+      async (element, index) => {
+        await element.clear();
+        await element.fill(`${'2'}${index + 1}`);
+      },
+    );
+
+    await expect(formJSDetailsPage.form).toContainText('EUR 231');
+    await expect(formJSDetailsPage.form).toContainText('EUR 264');
+    await expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
+
+    await formJSDetailsPage.completeTaskButton.click();
+
+    await expect(taskDetailsPage.taskCompletionNotification).toBeVisible({
+      timeout: 40000,
+    });
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('processWithDeployedForm');
+
+    expect(page.getByLabel('Client Name*')).toHaveValue('Jon');
+    expect(page.getByLabel('Client Address*')).toHaveValue('Earth');
+    await expect(page.getByLabel('Invoice Date*')).toHaveValue('1/1/3000');
+    expect(page.getByLabel('Due Date*')).toHaveValue('1/2/3000');
+    expect(page.getByLabel('Invoice Number*')).toHaveValue('123');
+
+    expect(
+      await formJSDetailsPage.mapDynamicListItems(
+        page.getByLabel('Item Name*'),
+        async (element) => {
+          return element.inputValue();
+        },
+      ),
+    ).toEqual(['Laptop1', 'Laptop2']);
+
+    expect(
+      await formJSDetailsPage.mapDynamicListItems(
+        page.getByLabel('Unit Price*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
+    ).toEqual(['11', '12']);
+
+    expect(
+      await formJSDetailsPage.mapDynamicListItems(
+        page.getByLabel('Quantity*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
+    ).toEqual(['21', '22']);
+
+    await expect(formJSDetailsPage.form).toContainText('EUR 231');
+    await expect(formJSDetailsPage.form).toContainText('EUR 264');
+    await expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
   });
 
   test('task completion with form from assigned to me filter', async ({
