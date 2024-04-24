@@ -15,48 +15,82 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-@use '@carbon/themes';
-@use '@carbon/layout';
-@use '@carbon/type';
+import stylelint from 'stylelint';
+import fs from 'fs';
+import path from 'path';
 
-.container {
-  padding-top: var(--cds-spacing-13);
-}
+const {
+  createPlugin,
+  utils: {report, ruleMessages, validateOptions},
+} = stylelint;
 
-.imageContainer {
-  padding: var(--cds-spacing-04) 0;
-  display: flex;
-  justify-content: end;
-  align-items: flex-start;
-}
+const ruleName = 'camunda/license-header';
 
-.image {
-  width: 80px;
-  min-width: 80px;
-}
+/** @type {import('stylelint').RuleMessages} */
+const messages = ruleMessages(ruleName, {
+  rejected: 'Header not present',
+  added: 'Header added',
+});
+/** @type {import('stylelint').RuleMeta} */
+const meta = {
+  fixable: true,
+};
 
-.newUserText {
-  padding-left: var(--cds-spacing-06);
-  color: var(--cds-text-primary);
+/** @type {import('stylelint').Rule} */
+const ruleFunction = (headerFilePath, _, context) => {
+  return (root, result) => {
+    const areOptionsValid = validateOptions(result, ruleName, {
+      actual: headerFilePath,
+      possible: [() => isFilePathValid(headerFilePath)],
+    });
 
-  & h3 {
-    padding-bottom: var(--cds-spacing-03);
+    if (!areOptionsValid) {
+      console.log('invalid options');
+      return;
+    }
+
+    try {
+      const headerContent = fs.readFileSync(
+        path.resolve(headerFilePath),
+        'utf8',
+      );
+
+      if (root.source.input.css.startsWith(headerContent)) {
+        return;
+      }
+
+      if (context.fix) {
+        root.prepend(headerContent);
+        return;
+      }
+
+      report({
+        result,
+        ruleName,
+        message: messages.rejected,
+        node: root,
+      });
+    } catch (err) {
+      console.error(
+        `Failed to load header from ${path.resolve(headerFilePath)}: ${err}`,
+      );
+      return;
+    }
+  };
+};
+
+ruleFunction.ruleName = ruleName;
+ruleFunction.messages = messages;
+ruleFunction.meta = meta;
+
+function isFilePathValid(filePath) {
+  try {
+    const absoluteFilePath = path.resolve(filePath);
+    fs.accessSync(absoluteFilePath, fs.constants.R_OK);
+    return true;
+  } catch {
+    return false;
   }
-
-  & p,
-  & a {
-    @include type.type-style('body-long-01');
-  }
-
-  & p:first-of-type,
-  & p:nth-of-type(2) {
-    padding-bottom: var(--cds-spacing-06);
-  }
 }
 
-.oldUserText {
-  padding-left: var(--cds-spacing-06);
-  color: var(--cds-text-primary);
-  display: flex;
-  align-items: center;
-}
+export default createPlugin(ruleName, ruleFunction);

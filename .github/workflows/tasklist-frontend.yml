@@ -28,5 +28,7 @@ jobs:
         name: Type checks
       - run: yarn eslint
         name: ESLint
+      - run: yarn stylelint
+        name: Stylelint
       - run: yarn test:ci
         name: Unit & Integration tests
