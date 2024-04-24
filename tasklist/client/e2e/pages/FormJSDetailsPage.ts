@@ -86,11 +86,11 @@ class FormJSDetailsPage {
     }
   }
 
-  async getLocatorByLabel(label: string) {
+  getLocatorByLabel(label: string) {
     return this.page.getByLabel(label);
   }
 
-  async getLocatorByText(label: string) {
+  getLocatorByText(label: string) {
     return this.page.getByText(label);
   }
 
