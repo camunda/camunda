@@ -49,7 +49,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:22.0.1
+    image: bitnami/keycloak:22.0.5
     ports:
       - "18080:8080"
     environment:
