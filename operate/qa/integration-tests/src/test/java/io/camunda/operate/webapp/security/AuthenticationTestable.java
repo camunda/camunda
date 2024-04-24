@@ -89,9 +89,7 @@ public interface AuthenticationTestable {
             .getHeaders()
             .getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
     assertThat(cspHeaderValues).isNotEmpty();
-    assertThat(cspHeaderValues)
-        .first()
-        .isEqualTo(WebSecurityProperties.DEFAULT_SAAS_SECURITY_POLICY);
+    assertThat(cspHeaderValues).first().isEqualTo(WebSecurityProperties.DEFAULT_SM_SECURITY_POLICY);
   }
 
   default void assertSameSiteIsSet(final String cookie) {
