@@ -87,7 +87,7 @@
     "eslint-plugin-react-refresh": "0.4.6",
     "eslint-plugin-testing-library": "6.2.2",
     "jsdom": "24.0.0",
-    "monaco-editor": "0.47.0",
+    "monaco-editor": "0.48.0",
     "msw": "2.2.14",
     "prettier": "3.2.5",
     "serve": "14.2.2",
