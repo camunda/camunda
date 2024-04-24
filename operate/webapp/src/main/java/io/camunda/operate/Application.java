@@ -54,8 +54,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @EnableAutoConfiguration
 public class Application {
 
+  public static final String OPERATE_STATIC_RESOURCES_LOCATION =
+      "classpath:/META-INF/resources/operate/";
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
+  public static final String SPRING_THYMELEAF_PREFIX_VALUE = OPERATE_STATIC_RESOURCES_LOCATION;
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
   public static void main(final String[] args) {
@@ -69,8 +71,7 @@ public class Application {
     // Hack for the moment to allow serving static resources in Operate.
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
-    System.setProperty(
-        "spring.web.resources.static-locations", "classpath:/META-INF/resources/operate/");
+    System.setProperty("spring.web.resources.static-locations", OPERATE_STATIC_RESOURCES_LOCATION);
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
     springApplication.addListeners(new ApplicationErrorListener());

@@ -57,8 +57,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @EnableAutoConfiguration(exclude = ElasticsearchClientAutoConfiguration.class)
 public class Application {
 
+  public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
+      "classpath:/META-INF/resources/tasklist/";
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
+  public static final String SPRING_THYMELEAF_PREFIX_VALUE = TASKLIST_STATIC_RESOURCES_LOCATION;
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
   public static void main(final String[] args) {
@@ -68,8 +70,7 @@ public class Application {
     System.setProperty(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
-    System.setProperty(
-        "spring.web.resources.static-locations", "classpath:/META-INF/resources/tasklist/");
+    System.setProperty("spring.web.resources.static-locations", TASKLIST_STATIC_RESOURCES_LOCATION);
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
