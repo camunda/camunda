@@ -21,7 +21,20 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-importer</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webjar</artifactId>
+    </dependency>
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -32,51 +45,9 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>transport</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>transport</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-log4j2</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.session</groupId>
@@ -84,21 +55,9 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-thymeleaf</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
     <!-- OAuth2 token authorization -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
@@ -177,11 +136,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.thymeleaf</groupId>
-      <artifactId>thymeleaf</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
@@ -239,10 +193,6 @@
     </dependency>
 
     <!-- Micrometer Prometheus -->
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
@@ -379,19 +329,9 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:identity-spring-boot-starter</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-log4j2</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-security</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-oauth2-resource-server</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
-            <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
             <dependency>org.springframework.session:spring-session-data-redis</dependency>
-            <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
