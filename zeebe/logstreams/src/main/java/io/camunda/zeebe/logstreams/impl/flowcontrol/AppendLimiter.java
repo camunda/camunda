@@ -11,7 +11,7 @@ import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.util.Optional;
 
-final class AppendLimiter extends AbstractLimiter<Void> {
+public final class AppendLimiter extends AbstractLimiter<Void> {
 
   private final LogStreamMetrics metrics;
 
@@ -40,7 +40,7 @@ final class AppendLimiter extends AbstractLimiter<Void> {
     metrics.setInflightLimit(newLimit);
   }
 
-  static final class AppenderLimiterBuilder
+  public static final class AppenderLimiterBuilder
       extends AbstractLimiter.Builder<AppenderLimiterBuilder> {
     private LogStreamMetrics metrics;
 
