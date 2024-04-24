@@ -16,7 +16,7 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.Application;
+import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.data.DataGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,7 +33,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
       @ComponentScan.Filter(
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.operate\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneOperate.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class TestApplication {
