@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 
-public class FlowControlCfg {
+public class FlowControlCfg implements ConfigurationEntry {
   private LimitCfg append;
 
   public LimitCfg getAppend() {
