@@ -120,6 +120,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-webjar</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
       <exclusions>
         <exclusion>
@@ -551,6 +556,7 @@
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
 
             <dependency>io.camunda:operate-webapp</dependency>
+            <dependency>io.camunda:operate-webjar</dependency>
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:tasklist-webapp</dependency>
 
