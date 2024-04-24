@@ -720,7 +720,8 @@ jobs:
       failure() &&
       fromJSON(github.run_attempt) < 3 &&
       github.repository == 'camunda/zeebe' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
+      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait') &&
+      github.event_name != 'merge_queue'
     runs-on: ubuntu-latest
     env:
       GH_REPO: ${{ github.repository }}
