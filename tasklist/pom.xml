@@ -27,7 +27,6 @@
     <module>webapp</module>
     <module>../tasklist-distro</module>
     <module>mvc-auth-commons</module>
-    <module>test-coverage</module>
   </modules>
 
   <properties>
@@ -182,6 +181,7 @@
       </activation>
       <modules>
         <module>qa</module>
+        <module>test-coverage</module>
       </modules>
     </profile>
   </profiles>
