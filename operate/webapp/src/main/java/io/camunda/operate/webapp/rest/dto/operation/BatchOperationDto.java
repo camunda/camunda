@@ -36,7 +36,7 @@ public class BatchOperationDto {
   private SortValuesWrapper[] sortValues;
 
   public static BatchOperationDto createFrom(
-      final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
+      final BatchOperationEntity batchOperationEntity, final ObjectMapper objectMapper) {
     return new BatchOperationDto()
         .setId(batchOperationEntity.getId())
         .setName(batchOperationEntity.getName())
@@ -52,7 +52,7 @@ public class BatchOperationDto {
   }
 
   public static List<BatchOperationDto> createFrom(
-      List<BatchOperationEntity> batchOperationEntities, ObjectMapper objectMapper) {
+      final List<BatchOperationEntity> batchOperationEntities, final ObjectMapper objectMapper) {
     if (batchOperationEntities == null) {
       return new ArrayList<>();
     }
@@ -66,7 +66,7 @@ public class BatchOperationDto {
     return name;
   }
 
-  public BatchOperationDto setName(String name) {
+  public BatchOperationDto setName(final String name) {
     this.name = name;
     return this;
   }
@@ -75,7 +75,7 @@ public class BatchOperationDto {
     return type;
   }
 
-  public BatchOperationDto setType(OperationTypeDto type) {
+  public BatchOperationDto setType(final OperationTypeDto type) {
     this.type = type;
     return this;
   }
@@ -84,7 +84,7 @@ public class BatchOperationDto {
     return startDate;
   }
 
-  public BatchOperationDto setStartDate(OffsetDateTime startDate) {
+  public BatchOperationDto setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -93,7 +93,7 @@ public class BatchOperationDto {
     return endDate;
   }
 
-  public BatchOperationDto setEndDate(OffsetDateTime endDate) {
+  public BatchOperationDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -102,7 +102,7 @@ public class BatchOperationDto {
     return instancesCount;
   }
 
-  public BatchOperationDto setInstancesCount(Integer instancesCount) {
+  public BatchOperationDto setInstancesCount(final Integer instancesCount) {
     this.instancesCount = instancesCount;
     return this;
   }
@@ -111,7 +111,7 @@ public class BatchOperationDto {
     return operationsTotalCount;
   }
 
-  public BatchOperationDto setOperationsTotalCount(Integer operationsTotalCount) {
+  public BatchOperationDto setOperationsTotalCount(final Integer operationsTotalCount) {
     this.operationsTotalCount = operationsTotalCount;
     return this;
   }
@@ -120,7 +120,7 @@ public class BatchOperationDto {
     return operationsFinishedCount;
   }
 
-  public BatchOperationDto setOperationsFinishedCount(Integer operationsFinishedCount) {
+  public BatchOperationDto setOperationsFinishedCount(final Integer operationsFinishedCount) {
     this.operationsFinishedCount = operationsFinishedCount;
     return this;
   }
@@ -129,7 +129,7 @@ public class BatchOperationDto {
     return id;
   }
 
-  public BatchOperationDto setId(String id) {
+  public BatchOperationDto setId(final String id) {
     this.id = id;
     return this;
   }
@@ -138,7 +138,7 @@ public class BatchOperationDto {
     return sortValues;
   }
 
-  public BatchOperationDto setSortValues(SortValuesWrapper[] sortValues) {
+  public BatchOperationDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -159,7 +159,7 @@ public class BatchOperationDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

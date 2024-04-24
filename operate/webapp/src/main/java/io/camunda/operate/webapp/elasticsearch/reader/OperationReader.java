@@ -84,7 +84,7 @@ public class OperationReader extends AbstractReader
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(int batchSize) {
+  public List<OperationEntity> acquireOperations(final int batchSize) {
     final TermQueryBuilder scheduledOperationsQuery =
         termQuery(OperationTemplate.STATE, SCHEDULED_OPERATION);
     final TermQueryBuilder lockedOperationsQuery =
@@ -111,7 +111,7 @@ public class OperationReader extends AbstractReader
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return ElasticsearchUtil.mapSearchHits(
           searchResponse.getHits().getHits(), objectMapper, OperationEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while acquiring operations for execution: %s", e.getMessage());
@@ -122,7 +122,7 @@ public class OperationReader extends AbstractReader
 
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
-      List<Long> processInstanceKeys) {
+      final List<Long> processInstanceKeys) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final TermsQueryBuilder processInstanceKeysQ =
@@ -148,7 +148,7 @@ public class OperationReader extends AbstractReader
             final List<OperationEntity> operationEntities =
                 ElasticsearchUtil.mapSearchHits(
                     hits.getHits(), objectMapper, OperationEntity.class);
-            for (OperationEntity operationEntity : operationEntities) {
+            for (final OperationEntity operationEntity : operationEntities) {
               CollectionUtil.addToMap(
                   result, operationEntity.getProcessInstanceKey(), operationEntity);
             }
@@ -156,7 +156,7 @@ public class OperationReader extends AbstractReader
           null);
 
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per process instance id: %s",
@@ -167,7 +167,8 @@ public class OperationReader extends AbstractReader
   }
 
   @Override
-  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(
+      final String processInstanceId) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final TermQueryBuilder processInstanceKeysQ =
@@ -192,13 +193,13 @@ public class OperationReader extends AbstractReader
             final List<OperationEntity> operationEntities =
                 ElasticsearchUtil.mapSearchHits(
                     hits.getHits(), objectMapper, OperationEntity.class);
-            for (OperationEntity operationEntity : operationEntities) {
+            for (final OperationEntity operationEntity : operationEntities) {
               CollectionUtil.addToMap(result, operationEntity.getIncidentKey(), operationEntity);
             }
           },
           null);
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per incident id: %s", e.getMessage());
@@ -209,7 +210,7 @@ public class OperationReader extends AbstractReader
 
   @Override
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
-      Long processInstanceKey, Long scopeKey) {
+      final Long processInstanceKey, final Long scopeKey) {
     final Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final TermQueryBuilder processInstanceKeyQuery =
@@ -234,13 +235,13 @@ public class OperationReader extends AbstractReader
             final List<OperationEntity> operationEntities =
                 ElasticsearchUtil.mapSearchHits(
                     hits.getHits(), objectMapper, OperationEntity.class);
-            for (OperationEntity operationEntity : operationEntities) {
+            for (final OperationEntity operationEntity : operationEntities) {
               CollectionUtil.addToMap(result, operationEntity.getVariableName(), operationEntity);
             }
           },
           null);
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining operations per variable name: %s",
@@ -251,7 +252,7 @@ public class OperationReader extends AbstractReader
   }
 
   @Override
-  public List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey) {
+  public List<OperationEntity> getOperationsByProcessInstanceKey(final Long processInstanceKey) {
 
     final TermQueryBuilder processInstanceQ =
         processInstanceKey == null ? null : termQuery(PROCESS_INSTANCE_KEY, processInstanceKey);
@@ -262,7 +263,7 @@ public class OperationReader extends AbstractReader
             .source(new SearchSourceBuilder().query(query).sort(ID, SortOrder.ASC));
     try {
       return ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -272,7 +273,7 @@ public class OperationReader extends AbstractReader
 
   // this query will be extended
   @Override
-  public List<BatchOperationEntity> getBatchOperations(int pageSize) {
+  public List<BatchOperationEntity> getBatchOperations(final int pageSize) {
     final String username = userService.getCurrentUser().getUsername();
     final TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
     final SearchRequest searchRequest =
@@ -286,7 +287,7 @@ public class OperationReader extends AbstractReader
           esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getHits(),
           objectMapper,
           BatchOperationEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining batch operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -294,7 +295,7 @@ public class OperationReader extends AbstractReader
   }
 
   @Override
-  public List<OperationDto> getOperationsByBatchOperationId(String batchOperationId) {
+  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final TermQueryBuilder operationIdQ = termQuery(BATCH_OPERATION_ID, batchOperationId);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
@@ -303,7 +304,7 @@ public class OperationReader extends AbstractReader
       final List<OperationEntity> operationEntities =
           ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
       return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for operation with batchOperationId: %s",
@@ -315,7 +316,10 @@ public class OperationReader extends AbstractReader
 
   @Override
   public List<OperationDto> getOperations(
-      OperationType operationType, String processInstanceId, String scopeId, String variableName) {
+      final OperationType operationType,
+      final String processInstanceId,
+      final String scopeId,
+      final String variableName) {
     final TermQueryBuilder operationTypeQ = termQuery(TYPE, operationType);
     final TermQueryBuilder processInstanceKeyQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final TermQueryBuilder scopeKeyQ = termQuery(SCOPE_KEY, scopeId);
@@ -331,7 +335,7 @@ public class OperationReader extends AbstractReader
       final List<OperationEntity> operationEntities =
           ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
       return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while searching for operation.", e.getMessage());
       LOGGER.error(message, e);

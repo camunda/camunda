@@ -39,7 +39,7 @@ public class BatchOperationRestService extends InternalAPIErrorController {
   @Operation(summary = "Query batch operations")
   @PostMapping
   public List<BatchOperationDto> queryBatchOperations(
-      @RequestBody BatchOperationRequestDto batchOperationRequestDto) {
+      @RequestBody final BatchOperationRequestDto batchOperationRequestDto) {
     if (batchOperationRequestDto.getPageSize() == null) {
       throw new InvalidRequestException("pageSize parameter must be provided.");
     }
