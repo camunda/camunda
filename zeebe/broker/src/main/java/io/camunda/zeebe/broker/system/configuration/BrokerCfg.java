@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.util.Environment;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class BrokerCfg {
   private ExportingCfg exporting = new ExportingCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private FlowControlCfg flowControl = new FlowControlCfg();
-  private BackpressureCfg backpressure = new BackpressureCfg();
+  private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
@@ -126,11 +126,11 @@ public class BrokerCfg {
     this.flowControl = flowControl;
   }
 
-  public BackpressureCfg getBackpressure() {
+  public LimitCfg getBackpressure() {
     return backpressure;
   }
 
-  public BrokerCfg setBackpressure(final BackpressureCfg backpressure) {
+  public BrokerCfg setBackpressure(final LimitCfg backpressure) {
     this.backpressure = backpressure;
     return this;
   }
