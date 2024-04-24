@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import com.netflix.concurrency.limits.limit.AbstractLimit;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.VegasConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -22,6 +25,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
+  private AbstractLimit appendLimit = new VegasConfig().get();
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -55,11 +59,19 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withAppendLimit(final AbstractLimit appendLimit) {
+    this.appendLimit = appendLimit;
+    return this;
+  }
+
+  @Override
   public ActorFuture<LogStream> buildAsync() {
     validate();
 
+    final var logStreamMetrics = new LogStreamMetrics(partitionId);
     final var logStreamService =
-        new LogStreamImpl(logName, partitionId, maxFragmentSize, logStorage);
+        new LogStreamImpl(
+            logName, partitionId, maxFragmentSize, logStorage, appendLimit, logStreamMetrics);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService
@@ -79,6 +91,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private void validate() {
     Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
+    Objects.requireNonNull(appendLimit, "Must specify a append limit");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(

@@ -15,7 +15,7 @@ import com.netflix.concurrency.limits.limit.VegasLimit;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-final class VegasConfig {
+public final class VegasConfig {
 
   private final int initialLimit = 1024;
   private final int maxConcurrency = 1024 * 32;
