@@ -25,6 +25,7 @@ public class BrokerCfg {
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private ExportingCfg exporting = new ExportingCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
+  private FlowControlCfg flowControl = new FlowControlCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
 
@@ -117,6 +118,14 @@ public class BrokerCfg {
     return this;
   }
 
+  public FlowControlCfg getFlowControl() {
+    return flowControl;
+  }
+
+  public void setFlowControl(final FlowControlCfg flowControl) {
+    this.flowControl = flowControl;
+  }
+
   public BackpressureCfg getBackpressure() {
     return backpressure;
   }
@@ -167,6 +176,8 @@ public class BrokerCfg {
         + exporting
         + ", gateway="
         + gateway
+        + ", flowControl="
+        + flowControl
         + ", backpressure="
         + backpressure
         + ", processingCfg="
