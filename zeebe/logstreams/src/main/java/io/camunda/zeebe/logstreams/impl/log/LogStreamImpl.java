@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import com.netflix.concurrency.limits.limit.AbstractLimit;
+import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
@@ -47,7 +47,7 @@ public final class LogStreamImpl extends Actor
   private Sequencer sequencer;
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
-  private final AbstractLimit appendLimit;
+  private final Limit appendLimit;
   private final LogStreamMetrics logStreamMetrics;
 
   LogStreamImpl(
@@ -55,7 +55,7 @@ public final class LogStreamImpl extends Actor
       final int partitionId,
       final int maxFragmentSize,
       final LogStorage logStorage,
-      final AbstractLimit appendLimit,
+      final Limit appendLimit,
       final LogStreamMetrics logStreamMetrics) {
     this.logName = logName;
 
