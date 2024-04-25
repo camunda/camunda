@@ -14,52 +14,108 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.mutation;
+package io.camunda.tasklist.webapp.graphql.resolvers;
 
-import graphql.kickstart.tools.GraphQLMutationResolver;
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.kickstart.annotations.GraphQLMutationResolver;
 import io.camunda.tasklist.entities.TaskImplementation;
+import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.store.ProcessInstanceStore;
+import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import java.util.List;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TaskMutationResolver implements GraphQLMutationResolver {
+@GraphQLMutationResolver
+public class Mutations implements ApplicationContextAware {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TaskMutationResolver.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(Mutations.class);
   private static final String ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED =
       "This operation is not supported using Tasklist graphql API. Please use the latest REST API. For more information, refer to the documentation: %s";
 
-  @Autowired private TaskService taskService;
-  @Autowired private TasklistProperties tasklistProperties;
+  private static ApplicationContext appCtx;
 
-  @PreAuthorize("hasPermission('write')")
-  public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
-    checkTaskImplementation(taskId);
-    return taskService.completeTask(taskId, variables, false);
+  @GraphQLField
+  @GraphQLNonNull
+  public static TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
+    return delegate(
+        () -> {
+          checkTaskImplementation(taskId);
+          return appCtx.getBean(TaskService.class).completeTask(taskId, variables, false);
+        });
   }
 
-  @PreAuthorize("hasPermission('write')")
-  public TaskDTO claimTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
-    checkTaskImplementation(taskId);
-    return taskService.assignTask(taskId, assignee, allowOverrideAssignment);
+  @GraphQLField
+  @GraphQLNonNull
+  public static TaskDTO claimTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
+    return delegate(
+        () -> {
+          checkTaskImplementation(taskId);
+          return appCtx
+              .getBean(TaskService.class)
+              .assignTask(taskId, assignee, allowOverrideAssignment);
+        });
   }
 
-  @PreAuthorize("hasPermission('write')")
-  public TaskDTO unclaimTask(String taskId) {
-    checkTaskImplementation(taskId);
-    return taskService.unassignTask(taskId);
+  @GraphQLField
+  @GraphQLNonNull
+  public static TaskDTO unclaimTask(String taskId) {
+    return delegate(
+        () -> {
+          checkTaskImplementation(taskId);
+          return appCtx.getBean(TaskService.class).unassignTask(taskId);
+        });
   }
 
-  private void checkTaskImplementation(String taskId) {
-    final var task = taskService.getTask(taskId);
+  @GraphQLField
+  @GraphQLNonNull
+  public static Boolean deleteProcessInstance(String processInstanceId) {
+    return delegate(
+        () ->
+            DeletionStatus.DELETED.equals(
+                appCtx
+                    .getBean(ProcessInstanceStore.class)
+                    .deleteProcessInstance(processInstanceId)));
+  }
+
+  @GraphQLField
+  @GraphQLNonNull
+  public static ProcessInstanceDTO startProcess(final String processDefinitionId) {
+    return delegate(
+        () ->
+            appCtx
+                .getBean(ProcessService.class)
+                .startProcessInstance(processDefinitionId, DEFAULT_TENANT_IDENTIFIER));
+  }
+
+  @Override
+  public void setApplicationContext(final ApplicationContext applicationContext)
+      throws BeansException {
+    appCtx = applicationContext;
+  }
+
+  private static <T> T delegate(Supplier<T> supplier) {
+    return appCtx.getBean(MutationAuthorizationDelegate.class).call(supplier);
+  }
+
+  private static void checkTaskImplementation(String taskId) {
+    final var task = appCtx.getBean(TaskService.class).getTask(taskId);
     if (task.getImplementation() != TaskImplementation.JOB_WORKER) {
       LOGGER.warn(
           "GraphQL API is used for task with id={} implementation={}",
@@ -68,7 +124,18 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
       throw new InvalidRequestException(
           String.format(
               ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED,
-              tasklistProperties.getDocumentation().getApiMigrationDocsUrl()));
+              appCtx
+                  .getBean(TasklistProperties.class)
+                  .getDocumentation()
+                  .getApiMigrationDocsUrl()));
+    }
+  }
+
+  @Component
+  public static class MutationAuthorizationDelegate {
+    @PreAuthorize("hasPermission('write')")
+    public <T> T call(Supplier<T> supplier) {
+      return supplier.get();
     }
   }
 }

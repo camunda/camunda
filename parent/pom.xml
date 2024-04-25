@@ -185,6 +185,7 @@
     <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
+    <version.graphql-java-annotations>9.1</version.graphql-java-annotations>
 
     <version.javassist>3.29.0-GA</version.javassist>
     <version.json>20231013</version.json>
@@ -1917,6 +1918,18 @@
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
+        <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+        <version>${version.graphql-kickstart}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-tools</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-java-kickstart</artifactId>
         <version>${version.graphql-kickstart}</version>
       </dependency>
@@ -1955,6 +1968,12 @@
         <groupId>com.graphql-java</groupId>
         <artifactId>graphql-java</artifactId>
         <version>${version.graphql-java}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.graphql-java</groupId>
+        <artifactId>graphql-java-annotations</artifactId>
+        <version>${version.graphql-java-annotations}</version>
       </dependency>
 
       <dependency>

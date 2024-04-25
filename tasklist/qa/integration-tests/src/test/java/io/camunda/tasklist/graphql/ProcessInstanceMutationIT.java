@@ -27,7 +27,7 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +39,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
   private static final List<Class<?>> SHOULD_PROCESS_INSTANCE_DEPENDANTS =
       List.of(FlowNodeInstanceIndex.class, VariableIndex.class, TaskTemplate.class);
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependants;
 

@@ -1,3 +1,10 @@
+graphql:
+  schema-strategy: annotations
+  annotations:
+    base-package: io.camunda.tasklist
+    always-prettify: false
+    input-prefix: ""
+---
 spring:
   config:
     activate:

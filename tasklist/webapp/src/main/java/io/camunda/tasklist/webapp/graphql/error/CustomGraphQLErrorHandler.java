@@ -14,23 +14,41 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.mutation;
+package io.camunda.tasklist.webapp.graphql.error;
 
-import graphql.kickstart.tools.GraphQLMutationResolver;
-import io.camunda.tasklist.enums.DeletionStatus;
-import io.camunda.tasklist.store.ProcessInstanceStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
+import graphql.ExceptionWhileDataFetching;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+import graphql.kickstart.execution.error.GraphQLErrorHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessInstanceMutationResolver implements GraphQLMutationResolver {
+public class CustomGraphQLErrorHandler implements GraphQLErrorHandler {
+  @Override
+  public List<GraphQLError> processErrors(List<GraphQLError> list) {
+    return list.stream().map(this::getNested).toList();
+  }
 
-  @Autowired ProcessInstanceStore processInstanceStore;
-
-  @PreAuthorize("hasPermission('write')")
-  public Boolean deleteProcessInstance(String processInstanceId) {
-    return DeletionStatus.DELETED.equals(
-        processInstanceStore.deleteProcessInstance(processInstanceId));
+  private GraphQLError getNested(GraphQLError error) {
+    if (error instanceof ExceptionWhileDataFetching) {
+      final ExceptionWhileDataFetching exceptionError = (ExceptionWhileDataFetching) error;
+      final Throwable exception = exceptionError.getException();
+      if (exception instanceof GraphQLError) {
+        return (GraphQLError) exception;
+      } else if (exception.getCause() != null
+          && exception.getCause() instanceof InvocationTargetException) {
+        final InvocationTargetException ite = (InvocationTargetException) exception.getCause();
+        if (ite.getTargetException() instanceof GraphQLError) {
+          return (GraphQLError) ite.getTargetException();
+        } else if (ite.getTargetException() != null) {
+          return GraphqlErrorBuilder.newError()
+              .message(ite.getTargetException().getMessage())
+              .build();
+        }
+      }
+    }
+    return error;
   }
 }

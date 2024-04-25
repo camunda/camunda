@@ -31,7 +31,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
@@ -121,7 +121,7 @@ public class TasklistTester {
 
   @Autowired private NoSqlHelper noSqlHelper;
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
@@ -678,7 +678,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    taskMutationResolver.claimTask(taskId, null, null);
+    mutations.claimTask(taskId, null, null);
 
     taskIsAssigned(taskId);
 
@@ -697,7 +697,7 @@ public class TasklistTester {
       }
     }
 
-    taskMutationResolver.completeTask(taskId, createVariablesList(variables));
+    mutations.completeTask(taskId, createVariablesList(variables));
 
     return taskIsCompleted(flowNodeBpmnId);
   }

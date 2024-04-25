@@ -26,7 +26,7 @@ import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.util.List;
@@ -40,7 +40,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   public static final String ENDPOINT = "/actuator/prometheus";
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @Autowired private TestRestTemplate testRestTemplate;
 

@@ -14,20 +14,45 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.query;
+package io.camunda.tasklist.webapp.graphql.extensions;
 
-import graphql.kickstart.tools.GraphQLQueryResolver;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.security.UserReader;
-import org.springframework.beans.factory.annotation.Autowired;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLTypeExtension;
+import graphql.schema.DataFetchingEnvironment;
+import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.mapper.TaskMapper;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
+@GraphQLTypeExtension(TaskDTO.class)
 @Component
-public final class UserQueryResolver implements GraphQLQueryResolver {
+public class TaskExtension implements ApplicationContextAware {
 
-  @Autowired private UserReader userReader;
+  private static ApplicationContext appCtx;
 
-  public UserDTO currentUser() {
-    return userReader.getCurrentUser();
+  @GraphQLField
+  @GraphQLNonNull
+  public static String processName(DataFetchingEnvironment env) {
+    return appCtx.getBean(TaskMapper.class).getProcessName(env.getSource());
+  }
+
+  @GraphQLField
+  @GraphQLNonNull
+  public static String name(DataFetchingEnvironment env) {
+    return appCtx.getBean(TaskMapper.class).getName(env.getSource());
+  }
+
+  @GraphQLField
+  public static String taskDefinitionId(DataFetchingEnvironment env) {
+    return ((TaskDTO) env.getSource()).getFlowNodeBpmnId();
+  }
+
+  @Override
+  public void setApplicationContext(final ApplicationContext applicationContext)
+      throws BeansException {
+    appCtx = applicationContext;
   }
 }

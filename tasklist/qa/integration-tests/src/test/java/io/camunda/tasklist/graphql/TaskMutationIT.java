@@ -28,7 +28,7 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -54,7 +54,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       "mutation {unclaimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @BeforeEach
   public void before() {

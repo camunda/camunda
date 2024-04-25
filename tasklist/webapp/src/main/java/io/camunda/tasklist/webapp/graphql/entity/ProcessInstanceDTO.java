@@ -16,11 +16,13 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import java.util.Objects;
 
 public class ProcessInstanceDTO {
 
-  private Long id;
+  @GraphQLField @GraphQLNonNull private Long id;
 
   public Long getId() {
     return id;

@@ -29,6 +29,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -44,6 +45,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles({"tasklist", "test"})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;

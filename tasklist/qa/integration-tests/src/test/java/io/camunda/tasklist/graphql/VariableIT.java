@@ -30,7 +30,7 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -52,7 +52,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @Autowired private ObjectMapper objectMapper;
 

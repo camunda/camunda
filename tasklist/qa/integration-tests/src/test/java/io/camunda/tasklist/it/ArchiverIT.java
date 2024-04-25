@@ -33,7 +33,7 @@ import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
+  @Autowired private Mutations mutations;
 
   @Autowired private TaskStore taskStore;
 

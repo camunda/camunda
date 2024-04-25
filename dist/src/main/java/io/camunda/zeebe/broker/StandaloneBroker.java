@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker;
 
+import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
+import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -37,7 +39,8 @@ import org.springframework.context.event.ContextClosedEvent;
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.gateway.rest"
-    })
+    },
+    exclude = {GraphQLJavaToolsAutoConfiguration.class, GraphQLAnnotationsAutoConfiguration.class})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {

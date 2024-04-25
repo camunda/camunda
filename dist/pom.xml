@@ -339,6 +339,11 @@
       <artifactId>java-jwt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
     <!-- /end -->
 
     <dependency>

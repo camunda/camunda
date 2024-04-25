@@ -16,39 +16,43 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLType;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.*;
 import java.util.Arrays;
 import java.util.Objects;
 
+@GraphQLType
+@GraphQLName("TaskQuery")
 public class TaskQueryDTO {
 
   public static final int DEFAULT_PAGE_SIZE = 50;
-
-  private TaskState state;
-  private Boolean assigned;
-  private String assignee;
-  private String[] assignees;
-  private String taskDefinitionId;
-  private String candidateGroup;
+  @GraphQLField private TaskState state;
+  @GraphQLField private Boolean assigned;
+  @GraphQLField private String assignee;
+  @GraphQLField private String[] assignees;
+  @GraphQLField private String taskDefinitionId;
+  @GraphQLField private String candidateGroup;
   private String[] candidateGroups;
-  private String candidateUser;
+  @GraphQLField private String candidateUser;
   private String[] candidateUsers;
-  private String processDefinitionId;
-  private String processInstanceId;
+  @GraphQLField private String processDefinitionId;
+  @GraphQLField private String processInstanceId;
   private TaskByVariables[] taskVariables;
   private String[] tenantIds;
-  private int pageSize = DEFAULT_PAGE_SIZE;
-  private String[] searchAfter;
-  private String[] searchAfterOrEqual;
-  private String[] searchBefore;
-  private String[] searchBeforeOrEqual;
-  private DateFilter followUpDate;
-  private DateFilter dueDate;
-  private TaskOrderBy[] sort;
+  @GraphQLField private int pageSize = DEFAULT_PAGE_SIZE;
+  @GraphQLField private String[] searchAfter;
+  @GraphQLField private String[] searchAfterOrEqual;
+  @GraphQLField private String[] searchBefore;
+  @GraphQLField private String[] searchBeforeOrEqual;
+  @GraphQLField private DateFilter followUpDate;
+  @GraphQLField private DateFilter dueDate;
+  @GraphQLField private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
-  private TaskImplementation implementation;
+  @GraphQLField private TaskImplementation implementation;
 
   public TaskState getState() {
     return state;
