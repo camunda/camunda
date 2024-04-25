@@ -25,8 +25,8 @@ import {
   fetchProcessXml,
   getProcessInstance,
   getWrapper,
-} from '../mocks';
-import {MoveAction} from '.';
+} from '../../mocks';
+import {MoveAction} from '..';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {batchModificationStore} from 'modules/stores/batchModification';

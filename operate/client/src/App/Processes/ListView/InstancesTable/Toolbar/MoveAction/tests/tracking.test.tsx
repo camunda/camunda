@@ -15,53 +15,42 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Button} from '@carbon/react';
-import {observer} from 'mobx-react';
-import {batchModificationStore} from 'modules/stores/batchModification';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
-import {Stack} from './styled';
+import {render, screen} from 'modules/testing-library';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockProcessInstances} from 'modules/testUtils';
+import {fetchProcessInstances, fetchProcessXml, getWrapper} from '../../mocks';
+import {MoveAction} from '..';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {open} from 'modules/mocks/diagrams';
 import {tracking} from 'modules/tracking';
 
-const BatchModificationFooter: React.FC = observer(() => {
-  const isButtonDisabled =
-    processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
-    batchModificationStore.state.selectedTargetFlowNodeId === null;
+const PROCESS_ID = 'MoveModificationProcess';
+const mockProcessXML = open('MoveModificationProcess.bpmn');
 
-  return (
-    <>
-      <Stack orientation="horizontal" gap={5}>
-        <Button
-          kind="secondary"
-          size="sm"
-          onClick={() => {
-            tracking.track({
-              eventName: 'batch-move-modification-exit-button-clicked',
-            });
-            batchModificationStore.reset();
-          }}
-        >
-          Exit
-        </Button>
-        <ModalStateManager
-          renderLauncher={({setOpen}) => (
-            <Button
-              size="sm"
-              disabled={isButtonDisabled}
-              onClick={() => setOpen(true)}
-            >
-              Apply Modification
-            </Button>
-          )}
-        >
-          {({open, setOpen}) => (
-            <BatchModificationSummaryModal open={open} setOpen={setOpen} />
-          )}
-        </ModalStateManager>
-      </Stack>
-    </>
-  );
+describe('<MoveAction /> - tracking', () => {
+  it('should track move button click', async () => {
+    const trackSpy = jest.spyOn(tracking, 'track');
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    const {user} = render(<MoveAction />, {
+      wrapper: getWrapper(
+        `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+      ),
+    });
+
+    await fetchProcessInstances(screen, user);
+    await fetchProcessXml(screen, user);
+
+    await user.click(
+      screen.getByRole('button', {name: /select all instances/i}),
+    );
+
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'batch-move-modification-move-button-clicked',
+    });
+  });
 });
-
-export {BatchModificationFooter};
