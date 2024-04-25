@@ -143,6 +143,11 @@ final class ExporterContainer implements Controller {
   }
 
   @Override
+  public long getLastExportedRecordPosition() {
+    return getPosition();
+  }
+
+  @Override
   public Optional<byte[]> readMetadata() {
     return Optional.ofNullable(exportersState.getExporterMetadata(getId()))
         .filter(metadata -> metadata.capacity() > 0)

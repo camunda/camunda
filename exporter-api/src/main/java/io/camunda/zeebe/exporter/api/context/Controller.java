@@ -48,6 +48,9 @@ public interface Controller {
    */
   ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task);
 
+  /** Gets the last acknowledged exported record position. */
+  long getLastExportedRecordPosition();
+
   /**
    * Read arbitrary metadata of the exporter that was stored previously by using the exporter
    * controller.
