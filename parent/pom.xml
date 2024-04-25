@@ -154,7 +154,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.708</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.709</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.7</version.postgres-test-container>
     <version.elasticsearch7>7.17.20</version.elasticsearch7>
