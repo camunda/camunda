@@ -3130,10 +3130,10 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
-"@zeit/schemas@2.29.0":
-  version "2.29.0"
-  resolved "https://registry.yarnpkg.com/@zeit/schemas/-/schemas-2.29.0.tgz#a59ae6ebfdf4ddc66a876872dd736baa58b6696c"
-  integrity sha512-g5QiLIfbg3pLuYUJPlisNKY+epQJTcMDsOnVNkscrDP1oi7vmJnzOANYJI/1pZcVJ6umUkBv3aFtlg1UvUHGzA==
+"@zeit/schemas@2.36.0":
+  version "2.36.0"
+  resolved "https://registry.yarnpkg.com/@zeit/schemas/-/schemas-2.36.0.tgz#7a1b53f4091e18d0b404873ea3e3c83589c765f2"
+  integrity sha512-7kjMwcChYEzMKjeex9ZFXkt1AyNov9R5HZtjBKVsmVpw7pa7ZtlCGvCBC2vnnXctaYN+aRI61HjIqeetZW5ROg==
 
 "@zxing/text-encoding@0.9.0":
   version "0.9.0"
@@ -10935,12 +10935,12 @@ serve-static@1.15.0:
     parseurl "~1.3.3"
     send "0.18.0"
 
-serve@14.2.2:
-  version "14.2.2"
-  resolved "https://registry.yarnpkg.com/serve/-/serve-14.2.2.tgz#af7678a5d893aa5048a6f94e5262cefc34a32f71"
-  integrity sha512-MktTGv3ooijGxd67iQVocNdiHaOdNnEApGj7At4qHUN44XDaLFfrqbEtj5mXf+QNqyig/VdHYMRTXWRQj6TEbw==
+serve@14.2.3:
+  version "14.2.3"
+  resolved "https://registry.yarnpkg.com/serve/-/serve-14.2.3.tgz#047ba2b349354255bc09e0332cd41a92787836c9"
+  integrity sha512-VqUFMC7K3LDGeGnJM9h56D3XGKb6KGgOw0cVNtA26yYXHCcpxf3xwCTUaQoWlVS7i8Jdh3GjQkOB23qsXyjoyQ==
   dependencies:
-    "@zeit/schemas" "2.29.0"
+    "@zeit/schemas" "2.36.0"
     ajv "8.12.0"
     arg "5.0.2"
     boxen "7.0.0"
