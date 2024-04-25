@@ -94,8 +94,6 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setPartitionCommandSender(InterPartitionCommandSenderService sender);
 
-  boolean shouldExport();
-
   ExporterPhase getExporterPhase();
 
   Collection<ExporterDescriptor> getExportedDescriptors();
