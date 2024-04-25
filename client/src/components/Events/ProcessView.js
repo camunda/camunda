@@ -25,8 +25,7 @@ import {showError, addNotification} from 'notifications';
 
 import ProcessRenderer from './ProcessRenderer';
 import PublishModal from './PublishModal';
-import {removeProcess, cancelPublish, loadProcess} from './service';
-import {checkDeleteConflict} from 'services';
+import {cancelPublish, loadProcess, deleteProcesses, checkDeleteConflicts} from './service';
 
 import './ProcessView.scss';
 
@@ -173,8 +172,8 @@ export default withErrorHandling(
             entity={deleting}
             onDelete={this.props.onDelete}
             onClose={() => this.setState({deleting: null})}
-            deleteEntity={({id}) => removeProcess(id)}
-            checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}
+            deleteEntity={({id}) => deleteProcesses([{id}])}
+            checkConflicts={({id}) => checkDeleteConflicts([{id}])}
           />
           {publishing && (
             <PublishModal

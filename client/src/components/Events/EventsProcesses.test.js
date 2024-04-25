@@ -36,7 +36,7 @@ jest.mock('./service', () => ({
       state: 'unpublished_changes',
     },
   ]),
-  removeProcess: jest.fn(),
+  deleteProcesses: jest.fn(),
 }));
 
 const props = {

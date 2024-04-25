@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {get, post, put, del} from 'request';
+import {get, post, put} from 'request';
 
 export {getUsers, updateUsers, publish, createProcess, loadExternalGroups} from './service.ts';
 
@@ -17,10 +17,6 @@ export async function loadProcesses() {
 export async function loadProcess(id) {
   const response = await get('api/eventBasedProcess/' + id);
   return await response.json();
-}
-
-export async function removeProcess(id) {
-  return await del(`api/eventBasedProcess/${id}`);
 }
 
 export async function cancelPublish(id) {
@@ -78,4 +74,13 @@ export async function deleteProcesses(processes) {
     'api/eventBasedProcess/delete',
     processes.map(({id}) => id)
   );
+}
+
+export async function checkDeleteConflicts(processes) {
+  const response = await post(
+    'api/eventBasedProcess/delete-conflicts',
+    processes.map(({id}) => id)
+  );
+
+  return response.json();
 }

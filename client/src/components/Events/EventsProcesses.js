@@ -15,7 +15,6 @@ import {BulkDeleter, Deleter, PageTitle, EmptyState, CarbonEntityList} from 'com
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
-import {checkDeleteConflict} from 'services';
 import {format} from 'dates';
 
 import PublishModal from './PublishModal';
@@ -24,9 +23,9 @@ import GenerationModal from './GenerationModal';
 import {
   loadProcesses,
   createProcess,
-  removeProcess,
   cancelPublish,
   deleteProcesses,
+  checkDeleteConflicts,
 } from './service';
 
 import './EventsProcesses.scss';
@@ -226,10 +225,10 @@ export class EventsProcesses extends Component {
             name: (deleting && deleting.name) || '',
           })}
           entity={deleting}
-          checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}
+          checkConflicts={({id}) => checkDeleteConflicts([{id}])}
           onDelete={this.loadList}
           onClose={() => this.setState({deleting: null})}
-          deleteEntity={({id}) => removeProcess(id)}
+          deleteEntity={({id}) => deleteProcesses([{id}])}
         />
         {publishing && (
           <PublishModal
