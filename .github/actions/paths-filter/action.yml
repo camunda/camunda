@@ -1,0 +1,68 @@
+name: Common paths filter for camunda-cloud/camunda-cloud-management-apps
+
+description: Common filters to detect and group changes against a base branch
+
+outputs:
+  operate-unit-tests:
+    description: Output whether Operate unit tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change ||
+        steps.filter-common.outputs.maven-change ||
+        steps.filter-operate.outputs.operate-backend-change
+      }}
+  zeebe-unit-tests:
+    description: Output whether Zeebe unit tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change ||
+        steps.filter-common.outputs.maven-change ||
+        steps.filter-zeebe.outputs.zeebe-backend-change
+      }}
+
+runs:
+  using: composite
+  steps:
+
+  - uses: dorny/paths-filter@v3
+    id: filter-common
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+
+        maven-change:
+          - 'bom/*'
+          - 'build-tools/**'
+          - 'dist/**'
+          - 'parent/*'
+          - 'pom.xml'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-operate
+    with:
+      predicate-quantifier: 'every'  # needed due to exclusions in below filter
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        operate-backend-change:
+          - 'operate/**'
+          - '!operate/client/**'
+
+        operate-frontend-change:
+          - 'operate/client/**'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-zeebe
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        zeebe-backend-change:
+          - 'spring-boot-starter-camunda-sdk/**'
+          - 'zeebe/**'

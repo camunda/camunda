@@ -1,0 +1,69 @@
+---
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - stable/*
+      - release-*
+  pull_request: {}
+  merge_group: {}
+  workflow_dispatch: {}
+
+concurrency:
+  cancel-in-progress: true
+  group: "${{ github.workflow }}-${{ github.ref }}"
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  detect-changes:
+    outputs:
+      operate-unit-tests: ${{ steps.filter.outputs.operate-unit-tests }}
+      zeebe-unit-tests: ${{ steps.filter.outputs.zeebe-unit-tests }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # Detect changes against the base branch
+      - name: Detect changes
+        uses: ./.github/actions/paths-filter
+        id: filter
+
+      - run: |
+          echo "a:${{ steps.filter.outputs.operate-unit-tests }} b:${{ steps.filter.outputs.zeebe-unit-tests }}"
+
+  operate-unit-tests:
+    if: needs.detect-changes.outputs.operate-unit-tests == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: exit 0
+
+  zeebe-unit-tests:
+    if: needs.detect-changes.outputs.zeebe-unit-tests == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: exit 0
+
+  check-results:
+    # Used by the merge queue to check all tests, including the unit test matrix.
+    # New test jobs must be added to the `needs` lists!
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - operate-unit-tests
+      - zeebe-unit-tests
+    steps:
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
