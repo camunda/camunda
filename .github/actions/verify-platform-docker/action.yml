@@ -42,7 +42,7 @@ runs:
         VERSION: ${{ inputs.version }}
         PLATFORMS_RAW: ${{ inputs.platforms }}
         DOCKERFILENAME: ${{ inputs.dockerfile }}
-        GOLDEN_FILE: ${{ inputs.goldenfile }}
+        GOLDENFILE: ${{ inputs.goldenfile }}
       run: |
         declare -a platforms=(${PLATFORMS_RAW//,/ })
 

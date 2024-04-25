@@ -25,7 +25,7 @@ VERSION="${VERSION:-}"
 REVISION="${REVISION:-}"
 DATE="${DATE:-}"
 DOCKERFILENAME="${DOCKERFILENAME:-}"
-GOLDEN_FILE="${GOLDEN_FILE:-}"
+GOLDENFILE="${GOLDENFILE:-}"
 
 # Make sure environment variables are set
 if [ -z "${VERSION}" ]; then
@@ -48,8 +48,8 @@ if [ -z "${DOCKERFILENAME}" ]; then
   exit 1
 fi
 
-if [ -z "${GOLDEN_FILE}" ]; then
-  echo >&2 "No GOLDEN_FILE was given; make sure to pass an name for the corresponding golden file, like 'zeebe-docker-labels.golden.json'."
+if [ -z "${GOLDENFILE}" ]; then
+  echo >&2 "No GOLDENFILE was given; make sure to pass an name for the corresponding golden file, like 'zeebe-docker-labels.golden.json'."
   exit 1
 fi
 
@@ -102,7 +102,7 @@ if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" =
 fi
 
 # Generate the expected labels files with the dynamic properties substituted
-labelsGoldenFile="${BASH_SOURCE%/*}/$GOLDEN_FILE"
+labelsGoldenFile="${BASH_SOURCE%/*}/$GOLDENFILE"
 expectedLabels=$(
   jq --sort-keys -n \
     --arg VERSION "${VERSION}" \
