@@ -103,7 +103,7 @@ public class ProcessingDbState implements MutableProcessingState {
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
-    processState = new DbProcessState(zeebeDb, transactionContext);
+    processState = new DbProcessState(zeebeDb, transactionContext, config);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
