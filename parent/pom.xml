@@ -187,7 +187,7 @@
     <version.graphql-java.dataloader>2022-09-12T23-25-35-08559ba</version.graphql-java.dataloader>
 
     <version.javassist>3.30.2-GA</version.javassist>
-    <version.json>20231013</version.json>
+    <version.json>20240303</version.json>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
