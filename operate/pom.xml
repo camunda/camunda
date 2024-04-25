@@ -240,13 +240,15 @@
 
     <!--
       The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
-      That is useful for example for creating releases.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
        -->
     <profile>
       <id>integration-tests-build</id>
       <activation>
         <property>
-          <name>!skipQaBuild</name>
+          <name>skipQaBuild</name>
+          <value>!true</value>
         </property>
       </activation>
       <modules>
