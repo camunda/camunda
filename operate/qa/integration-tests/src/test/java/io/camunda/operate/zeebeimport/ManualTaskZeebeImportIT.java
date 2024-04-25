@@ -16,74 +16,37 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.ZeebeTestUtil;
-import org.junit.After;
+import java.util.List;
 import org.junit.Test;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.annotation.IfProfileValue;
 
-public class ProcessCacheZeebeIT extends OperateZeebeAbstractIT {
-
-  @SpyBean private ProcessCache processCache;
-
-  @After
-  public void after() {
-    // clean the cache
-    processCache.clearCache();
-    super.after();
-  }
+public class ManualTaskZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Test
-  public void testProcessDoesNotExist() {
-    final String processNameDefault =
-        processCache.getProcessNameOrDefaultValue(2L, "default_value");
-    assertThat(processNameDefault).isEqualTo("default_value");
-  }
+  @IfProfileValue(name = "spring.profiles.active", value = "test")
+  public void shouldImportManualTask() {
+    // given
+    tester
+        .deployProcess("manual-task.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .then()
+        .startProcessInstance("manual-task-process", null)
+        .waitUntil()
+        .processInstanceIsFinished();
 
-  @Test
-  public void testProcessVersionAndNameReturnedAndReused() {
-    final Long processDefinitionKey1 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final Long processDefinitionKey2 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
-
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
-
-    String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
-    assertThat(demoProcessName).isNotNull();
-
-    // request once again, the cache should be used
-    demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
-    assertThat(demoProcessName).isNotNull();
-
-    verify(processCache, times(1)).putToCache(any(), any());
-  }
-
-  @Test
-  public void testProcessFlowNodeNameReturnedAndReused() {
-    final Long processDefinitionKey1 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final Long processDefinitionKey2 =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
-
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
-
-    String flowNodeName =
-        processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
-    assertThat(flowNodeName).isEqualTo("start");
-
-    // request once again, the cache should be used
-    flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
-    assertThat(flowNodeName).isEqualTo("start");
-
-    verify(processCache, times(1)).putToCache(any(), any());
+    // when
+    final List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
+    // then
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(
+            List.of(FlowNodeType.START_EVENT, FlowNodeType.MANUAL_TASK, FlowNodeType.END_EVENT));
   }
 }

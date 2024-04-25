@@ -45,7 +45,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class ProcessZeebeIT extends OperateZeebeAbstractIT {
+public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_PROCESSES_GROUPED_URL = "/api/processes/grouped";
   private static final String QUERY_PROCESS_XML_URL = "/api/processes/%s/xml";
@@ -54,6 +54,7 @@ public class ProcessZeebeIT extends OperateZeebeAbstractIT {
 
   @MockBean private PermissionsService permissionsService;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -181,7 +182,8 @@ public class ProcessZeebeIT extends OperateZeebeAbstractIT {
     verify(permissionsService, times(3)).getProcessDefinitionPermission(anyString());
   }
 
-  private Long createAndDeployProcess(ZeebeClient zeebeClient, String bpmnProcessId, String name) {
+  private Long createAndDeployProcess(
+      final ZeebeClient zeebeClient, final String bpmnProcessId, final String name) {
     ProcessBuilder executableProcess = Bpmn.createExecutableProcess(bpmnProcessId);
     if (name != null) {
       executableProcess = executableProcess.name(name);

@@ -26,7 +26,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Test;
 
-public class DMNFlowNodeMetadataZeebeIT extends OperateZeebeAbstractIT {
+public class DMNFlowNodeMetadataZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testDecisionsGrouped() throws Exception {

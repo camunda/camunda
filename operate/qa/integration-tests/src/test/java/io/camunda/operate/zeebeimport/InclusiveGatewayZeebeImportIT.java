@@ -16,30 +16,53 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
-import org.junit.After;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** Tests that after one failure of specific batch import, it will be successfully retried. */
-@SpringBootTest(
-    classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
-    properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
-    })
-public class ZeebeImportRetryAfterFailureZeebeIT extends ZeebeImportZeebeIT {
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.util.List;
+import org.junit.Test;
 
-  @Autowired
-  private RetryAfterFailureTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
+public class InclusiveGatewayZeebeImportIT extends OperateZeebeAbstractIT {
 
-  @After
-  public void after() {
-    elasticsearchBulkProcessor.cancelAttempts();
-    super.after();
+  @Test
+  public void shouldImportIntermediateThrowEvent() {
+
+    final String bpmnProcessId = "inclusiveGateway";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .inclusiveGateway("gateway")
+            .defaultFlow()
+            .sequenceFlowId("flow1")
+            .conditionExpression("= list contains(flows,\"1\")")
+            .endEvent()
+            .moveToLastGateway()
+            .conditionExpression("= list contains(flows,\"2\")")
+            .endEvent()
+            .done();
+
+    // given
+    tester
+        .deployProcess(instance, "inclusiveGateway.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .then()
+        .startProcessInstance(bpmnProcessId, "{\"flows\": [1,2]}")
+        .waitUntil()
+        .processInstanceIsFinished();
+
+    // when
+    final List<FlowNodeInstanceEntity> flowNodes =
+        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
+    // then
+    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
+        .isEqualTo(
+            List.of(
+                FlowNodeType.START_EVENT, FlowNodeType.INCLUSIVE_GATEWAY, FlowNodeType.END_EVENT));
   }
 }

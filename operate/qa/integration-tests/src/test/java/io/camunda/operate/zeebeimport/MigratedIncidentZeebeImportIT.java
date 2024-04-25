@@ -31,7 +31,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class IncidentImportIT extends OperateZeebeSearchAbstractIT {
+public class MigratedIncidentZeebeImportIT extends OperateZeebeSearchAbstractIT {
 
   @Autowired private IncidentTemplate incidentTemplate;
 

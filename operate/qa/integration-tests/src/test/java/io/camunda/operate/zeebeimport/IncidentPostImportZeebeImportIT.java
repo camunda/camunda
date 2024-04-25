@@ -42,7 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
+public class IncidentPostImportZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
@@ -54,6 +54,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private TestZeebeRepository testZeebeRepository;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -159,7 +160,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeInstances.get(1).isIncident()).isTrue();
   }
 
-  private Tuple<Long, Long> findSingleZeebeIncidentData(Long processInstanceKey) {
+  private Tuple<Long, Long> findSingleZeebeIncidentData(final Long processInstanceKey) {
     record Value(Long jobKey) {}
     record Result(Long key, Value value) {}
 
@@ -175,7 +176,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
     return tuples.get(0);
   }
 
-  private long countZeebeIncidentRecords(Long processInstanceKey) {
+  private long countZeebeIncidentRecords(final Long processInstanceKey) {
     final var index = zeebeRule.getPrefix() + "_incident*";
     return testZeebeRepository
         .scrollTerm(index, "value.processInstanceKey", processInstanceKey, Object.class)
@@ -183,17 +184,21 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void processImportTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
+      final ImportValueType importValueType,
+      final Predicate<Object[]> waitTill,
+      final Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
   }
 
   private void processAllRecordsWithoutPostImporterAndWait(
-      Predicate<Object[]> waitTill, Object... arguments) {
+      final Predicate<Object[]> waitTill, final Object... arguments) {
     searchTestRule.processAllRecordsAndWait(false, waitTill, null, arguments);
   }
 
   private void processRecordTypeWithoutPostImporterAndWait(
-      ImportValueType valueType, Predicate<Object[]> waitTill, Object... arguments) {
+      final ImportValueType valueType,
+      final Predicate<Object[]> waitTill,
+      final Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(valueType, false, waitTill, arguments);
   }
 
@@ -206,7 +211,7 @@ public class IncidentPostImportZeebeIT extends OperateZeebeAbstractIT {
     return listViewResponse.getProcessInstances().get(0);
   }
 
-  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(Long processInstanceKey) {
+  protected List<FlowNodeInstanceEntity> getFlowNodeInstances(final Long processInstanceKey) {
     return tester.getAllFlowNodeInstances(processInstanceKey);
   }
 }

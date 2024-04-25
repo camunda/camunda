@@ -44,23 +44,24 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class VariableZeebeIT extends OperateZeebeAbstractIT {
+public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
   @Autowired private UpdateVariableHandler updateVariableHandler;
 
+  @Override
   @Before
   public void before() {
     super.before();
     updateVariableHandler.setZeebeClient(super.getClient());
   }
 
-  protected String getVariablesURL(Long processInstanceKey) {
+  protected String getVariablesURL(final Long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceKey);
   }
 
-  protected String getVariableURL(Long processInstanceKey, String variableId) {
+  protected String getVariableURL(final Long processInstanceKey, final String variableId) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables/%s", processInstanceKey, variableId);
   }
 
@@ -509,14 +510,15 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
         .isEqualTo("ScopeId must be specifies in the request.");
   }
 
-  private void assertVariable(List<VariableDto> variables, String name, String value) {
+  private void assertVariable(
+      final List<VariableDto> variables, final String name, final String value) {
     assertThat(variables)
         .filteredOn(v -> v.getName().equals(name))
         .hasSize(1)
         .allMatch(v -> v.getValue().equals(value));
   }
 
-  protected List<VariableDto> getVariables(Long processInstanceKey) throws Exception {
+  protected List<VariableDto> getVariables(final Long processInstanceKey) throws Exception {
     final MvcResult mvcResult =
         mockMvc
             .perform(
@@ -532,7 +534,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected List<VariableDto> getVariables(Long processInstanceKey, String activityId)
+  protected List<VariableDto> getVariables(final Long processInstanceKey, final String activityId)
       throws Exception {
     final List<FlowNodeInstanceEntity> allActivityInstances =
         tester.getAllFlowNodeInstances(processInstanceKey);
@@ -551,8 +553,8 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected List<VariableDto> getVariables(Long processInstanceKey, VariableRequestDto request)
-      throws Exception {
+  protected List<VariableDto> getVariables(
+      final Long processInstanceKey, final VariableRequestDto request) throws Exception {
     final MvcResult mvcResult =
         mockMvc
             .perform(
@@ -565,7 +567,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
   }
 
-  protected VariableDto getOneVariable(Long processInstanceKey, String variableId)
+  protected VariableDto getOneVariable(final Long processInstanceKey, final String variableId)
       throws Exception {
     final MvcResult mvcResult =
         mockMvc
@@ -577,7 +579,7 @@ public class VariableZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected Long findActivityInstanceId(
-      List<FlowNodeInstanceEntity> allActivityInstances, String activityId) {
+      final List<FlowNodeInstanceEntity> allActivityInstances, final String activityId) {
     assertThat(allActivityInstances)
         .filteredOn(ai -> ai.getFlowNodeId().equals(activityId))
         .hasSize(1);
