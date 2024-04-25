@@ -49,7 +49,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.9.2
+    image: docker.elastic.co/kibana/kibana:8.13.2
     ports:
       - 5601:5601
     environment:
