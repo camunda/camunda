@@ -183,8 +183,8 @@
     <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
     <version.graphql-kickstart.tools>13.1.1</version.graphql-kickstart.tools>
     <version.graphql-java>21.5</version.graphql-java>
-    <version.graphql-java.scalars>2023-01-24T02-11-56-babda5f</version.graphql-java.scalars>
-    <version.graphql-java.dataloader>2022-09-12T23-25-35-08559ba</version.graphql-java.dataloader>
+    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
+    <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
 
     <version.javassist>3.30.2-GA</version.javassist>
     <version.json>20231013</version.json>
