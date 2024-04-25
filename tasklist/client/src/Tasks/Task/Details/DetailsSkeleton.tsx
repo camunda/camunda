@@ -25,6 +25,8 @@ import {
 } from '@carbon/react';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styles from './styles.module.scss';
+import headerStyles from './Header.module.scss';
+import asideStyles from './Aside.module.scss';
 
 type Props = {
   'data-testid'?: string;
@@ -34,12 +36,12 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
   return (
     <div className={styles.container} data-testid={props['data-testid']}>
       <Section className={styles.content}>
-        <TaskDetailsRow className={styles.header} as="header">
-          <div className={styles.headerLeftContainer}>
+        <TaskDetailsRow className={headerStyles.header} as="header">
+          <div className={headerStyles.headerLeftContainer}>
             <SkeletonText width="150px" />
             <SkeletonText width="100px" className={styles.margin0} />
           </div>
-          <div className={styles.headerRightContainer}>
+          <div className={headerStyles.headerRightContainer}>
             <SkeletonText width="100px" className={styles.margin0} />
             <ButtonSkeleton size="sm" />
           </div>
@@ -51,7 +53,7 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
           <StructuredListSkeleton />
         </TaskDetailsRow>
       </Section>
-      <aside className={styles.aside}>
+      <aside className={asideStyles.aside}>
         <ContainedList
           label={<SkeletonText width="100px" className={styles.margin0} />}
           kind="disclosed"

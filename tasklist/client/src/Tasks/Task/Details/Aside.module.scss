@@ -15,36 +15,22 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Section} from '@carbon/react';
-import {Task, CurrentUser} from 'modules/types';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-import {Aside} from './Aside';
-import {Header} from './Header';
-import styles from './styles.module.scss';
+@use '@carbon/type';
 
-type Props = {
-  children?: React.ReactNode;
-  task: Task;
-  onAssignmentError: () => void;
-  user: CurrentUser;
-};
+.aside {
+  padding-top: var(--cds-spacing-05);
+  border-left: 1px solid var(--cds-border-subtle);
+  display: flex;
+  flex-direction: column;
+}
 
-const Details: React.FC<Props> = ({
-  children,
-  onAssignmentError,
-  task,
-  user,
-}) => {
-  return (
-    <div className={styles.container} data-testid="details-info">
-      <Section className={styles.content} level={4}>
-        <TurnOnNotificationPermission />
-        <Header task={task} user={user} onAssignmentError={onAssignmentError} />
-        {children}
-      </Section>
-      <Aside task={task} user={user} />
-    </div>
-  );
-};
+.itemHeading {
+  color: var(--cds-text-secondary);
+  @include type.type-style('body-short-01');
+}
 
-export {Details};
+.itemBody {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-01');
+}
+  

@@ -15,36 +15,87 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Section} from '@carbon/react';
-import {Task, CurrentUser} from 'modules/types';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-import {Aside} from './Aside';
-import {Header} from './Header';
-import styles from './styles.module.scss';
+import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
+import {formatDate} from 'modules/utils/formatDate';
+import styles from './Aside.module.scss';
+import {CurrentUser, Task} from 'modules/types';
 
 type Props = {
-  children?: React.ReactNode;
   task: Task;
-  onAssignmentError: () => void;
   user: CurrentUser;
 };
 
-const Details: React.FC<Props> = ({
-  children,
-  onAssignmentError,
-  task,
-  user,
-}) => {
+const Aside: React.FC<Props> = ({task, user}) => {
+  const {
+    creationDate,
+    completionDate,
+    dueDate,
+    followUpDate,
+    candidateUsers,
+    candidateGroups,
+    tenantId,
+  } = task;
+  const taskTenant =
+    user.tenants.length > 1
+      ? user.tenants.find((tenant) => tenant.id === tenantId)
+      : undefined;
+  const candidates = [...(candidateUsers ?? []), ...(candidateGroups ?? [])];
+
   return (
-    <div className={styles.container} data-testid="details-info">
-      <Section className={styles.content} level={4}>
-        <TurnOnNotificationPermission />
-        <Header task={task} user={user} onAssignmentError={onAssignmentError} />
-        {children}
-      </Section>
-      <Aside task={task} user={user} />
-    </div>
+    <aside className={styles.aside} aria-label="Task details right panel">
+      <ContainedList label="Details" kind="disclosed">
+        <>
+          {taskTenant === undefined ? null : (
+            <ContainedListItem>
+              <span className={styles.itemHeading}>Tenant</span>
+              <br />
+              <span className={styles.itemBody}>{taskTenant.name}</span>
+            </ContainedListItem>
+          )}
+        </>
+        <ContainedListItem>
+          <span className={styles.itemHeading}>Creation date</span>
+          <br />
+          <span className={styles.itemBody}>{formatDate(creationDate)}</span>
+        </ContainedListItem>
+        <ContainedListItem>
+          <span className={styles.itemHeading}>Candidates</span>
+          <br />
+          {candidates.length === 0 ? (
+            <span className={styles.itemBody}>No candidates</span>
+          ) : null}
+          {candidates.map((candidate) => (
+            <Tag size="sm" type="gray" key={candidate}>
+              {candidate}
+            </Tag>
+          ))}
+        </ContainedListItem>
+        {completionDate ? (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>Completion date</span>
+            <br />
+            <span className={styles.itemBody}>
+              {formatDate(completionDate)}
+            </span>
+          </ContainedListItem>
+        ) : null}
+        <ContainedListItem>
+          <span className={styles.itemHeading}>Due date</span>
+          <br />
+          <span className={styles.itemBody}>
+            {dueDate ? formatDate(dueDate) : 'No due date'}
+          </span>
+        </ContainedListItem>
+        {followUpDate ? (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>Follow up date</span>
+            <br />
+            <span className={styles.itemBody}>{formatDate(followUpDate)}</span>
+          </ContainedListItem>
+        ) : null}
+      </ContainedList>
+    </aside>
   );
 };
 
-export {Details};
+export {Aside};
