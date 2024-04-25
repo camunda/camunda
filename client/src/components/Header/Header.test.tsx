@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
-import {shallow} from 'enzyme';
-import {C3Navigation} from '@camunda/camunda-composite-components';
+import {runLastEffect} from '__mocks__/react';
+import {ShallowWrapper, shallow} from 'enzyme';
+import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-components';
 
 import {track} from 'tracking';
 import {getOptimizeDatabase, getOptimizeProfile, isEnterpriseMode} from 'config';
@@ -39,7 +39,7 @@ jest.mock('hooks', () => ({
     mightFail: jest.fn(async (data, cb) => cb(await data)),
   })),
   useDocs: jest.fn(() => ({
-    generateDocsLink: (url) => url,
+    generateDocsLink: (url: string) => url,
   })),
   useUser: jest.fn(() => ({
     user: undefined,
@@ -60,19 +60,14 @@ jest.mock('react-router', () => ({
 
 jest.mock('tracking', () => ({track: jest.fn()}));
 
-function getNavItem(node, key) {
-  const navItems = node.find(C3Navigation).prop('navbar').elements;
+function getNavItem(node: ShallowWrapper, key: string) {
+  const navItems = node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').elements;
   return navItems.find((item) => item.key === key);
 }
 
-const props = {
-  location: {pathname: '/'},
-  history: {push: jest.fn()},
-};
-
 it('should check if the event-based process feature is enabled', async () => {
-  isEventBasedProcessEnabled.mockClear();
-  shallow(<Header {...props} />);
+  (isEventBasedProcessEnabled as jest.Mock).mockClear();
+  shallow(<Header />);
 
   await runLastEffect();
 
@@ -80,16 +75,16 @@ it('should check if the event-based process feature is enabled', async () => {
 });
 
 it('should show and hide the event-based process nav item depending on authorization', async () => {
-  isEventBasedProcessEnabled.mockReturnValueOnce(true);
-  const enabled = shallow(<Header {...props} />);
+  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(true);
+  const enabled = shallow(<Header />);
 
   await runLastEffect();
   await enabled.update();
 
   expect(getNavItem(enabled, 'events')).toBeDefined();
 
-  isEventBasedProcessEnabled.mockReturnValueOnce(false);
-  const disabled = shallow(<Header {...props} />);
+  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(false);
+  const disabled = shallow(<Header />);
 
   await runLastEffect();
   await disabled.update();
@@ -98,9 +93,9 @@ it('should show and hide the event-based process nav item depending on authoriza
 });
 
 it('should hide event-based process nav item in cloud environment', async () => {
-  isEventBasedProcessEnabled.mockReturnValueOnce(true);
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  const node = shallow(<Header {...props} />);
+  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(true);
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
+  const node = shallow(<Header />);
 
   await runLastEffect();
   await node.update();
@@ -109,23 +104,25 @@ it('should hide event-based process nav item in cloud environment', async () => 
 });
 
 it('should show license warning if enterpriseMode is not set', async () => {
-  isEnterpriseMode.mockReturnValueOnce(false);
-  const node = shallow(<Header {...props} />);
+  (isEnterpriseMode as jest.Mock).mockReturnValueOnce(false);
+  const node = shallow(<Header />);
 
   await runLastEffect();
   await node.update();
 
-  const tags = node.find(C3Navigation).prop('navbar').tags;
-  expect(tags.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
+  const tags = node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').tags;
+  expect(tags?.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
 });
 
 it('should open the whatsNewDialog on option click', async () => {
-  const node = shallow(<Header {...props} />);
+  const node = shallow(<Header />);
 
   expect(node.find(WhatsNewModal).prop('open')).toBe(false);
 
-  const sideBarEleemnts = node.find(C3Navigation).prop('infoSideBar').elements;
-  sideBarEleemnts.find((el) => el.key === 'whatsNew').onClick();
+  const sideBarEleemnts = node
+    .find(C3Navigation)
+    .prop<C3NavigationProps['infoSideBar']>('infoSideBar')?.elements;
+  sideBarEleemnts?.find((el) => el.key === 'whatsNew')?.onClick?.();
 
   expect(node.find(WhatsNewModal).prop('open')).toBe(true);
 });
@@ -139,7 +136,7 @@ it('should no display navbar and sidebar is noAction prop is specified', () => {
 });
 
 it('should render sidebar links', async () => {
-  const node = shallow(<Header {...props} />);
+  const node = shallow(<Header />);
 
   runLastEffect();
   await flushPromises();
@@ -175,7 +172,7 @@ it('should render sidebar links', async () => {
 });
 
 it('should track app clicks from the app switcher', async () => {
-  const node = shallow(<Header {...props} />);
+  const node = shallow(<Header />);
 
   node.find(C3Navigation).prop('appBar').elementClicked('modeler');
 
@@ -183,9 +180,9 @@ it('should track app clicks from the app switcher', async () => {
 });
 
 it('should display the notifications component in cloud mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
+  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
 
-  const node = shallow(<Header {...props} />);
+  const node = shallow(<Header />);
 
   await runLastEffect();
   await node.update();
@@ -193,7 +190,7 @@ it('should display the notifications component in cloud mode', async () => {
   expect(node.find('NavbarWrapper').props()).toEqual({
     isCloud: true,
     notificationsUrl: 'notificationsUrl',
-    activeOrganizationId: 'orgId',
+    organizationId: 'orgId',
     userToken: 'userToken',
     getNewUserToken: expect.any(Function),
     children: expect.any(Array),
@@ -201,13 +198,12 @@ it('should display the notifications component in cloud mode', async () => {
   expect(node.find(C3Navigation).prop('notificationSideBar')).toEqual({
     ariaLabel: 'Notifications',
     isOpen: false,
-    key: 'notifications',
   });
 });
 
 it('should display a warning if optimize is running in opensearch mode', async () => {
-  getOptimizeDatabase.mockReturnValueOnce('opensearch');
-  const node = shallow(<Header {...props} />);
+  (getOptimizeDatabase as jest.Mock).mockReturnValueOnce('opensearch');
+  const node = shallow(<Header />);
 
   await runLastEffect();
   await node.update();

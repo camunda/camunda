@@ -5,11 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {Link, useLocation} from 'react-router-dom';
-import {C3Navigation, C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
-import {DefinitionTooltip, Tooltip, Link as CarbonLink} from '@carbon/react';
+import {ComponentProps, useEffect, useState} from 'react';
+import {Link, matchPath, useLocation} from 'react-router-dom';
+import {
+  C3Navigation,
+  C3UserConfigurationProvider,
+  C3NavigationProps,
+  C3NavigationElementProps,
+} from '@camunda/camunda-composite-components';
+import {Link as CarbonLink} from '@carbon/react';
 
+// @ts-ignore
 import {NavItem} from 'components';
 import {
   getOptimizeProfile,
@@ -22,6 +28,7 @@ import {
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
+import {useDocs, useErrorHandling} from 'hooks';
 
 import {isEventBasedProcessEnabled, getUserToken} from './service';
 import WhatsNewModal from './WhatsNewModal';
@@ -29,26 +36,24 @@ import {TelemetrySettings} from './TelemetrySettings';
 import useUserMenu from './useUserMenu';
 
 import './Header.scss';
-import {useDocs, useErrorHandling, useUser} from 'hooks';
 
 const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
 
-export function Header({noActions}) {
+export function Header({noActions}: {noActions?: boolean}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
-  const [webappLinks, setwebappLinks] = useState(null);
+  const [webappLinks, setwebappLinks] = useState<Record<string, string> | null>(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
-  const [organizationId, setOrganizationId] = useState();
-  const [optimizeProfile, setOptimizeProfile] = useState();
-  const [userToken, setUserToken] = useState(null);
-  const [notificationsUrl, setNotificationsUrl] = useState();
-  const {user} = useUser();
+  const [organizationId, setOrganizationId] = useState<string>();
+  const [optimizeProfile, setOptimizeProfile] = useState<string>();
+  const [userToken, setUserToken] = useState<string | null>(null);
+  const [notificationsUrl, setNotificationsUrl] = useState<string>();
   const {mightFail} = useErrorHandling();
-  const [optimizeDatabase, setOptimizeDatabase] = useState();
+  const [optimizeDatabase, setOptimizeDatabase] = useState<string>();
   const {generateDocsLink} = useDocs();
-  const userSideBar = useUserMenu({user, mightFail, setTelemetrySettingsOpen});
+  const userSideBar = useUserMenu({setTelemetrySettingsOpen});
 
   useEffect(() => {
     mightFail(
@@ -85,14 +90,19 @@ export function Header({noActions}) {
     );
   }, [mightFail]);
 
-  const props = {
+  const props: C3NavigationProps = {
     app: createAppProps(location),
     appBar: createAppBarProps(webappLinks),
     navbar: {elements: []},
   };
 
   if (!noActions) {
-    props.navbar = createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase);
+    props.navbar = createNavBarProps(
+      showEventBased,
+      enterpriseMode,
+      location.pathname,
+      optimizeDatabase
+    );
     props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode);
     props.userSideBar = userSideBar;
   }
@@ -100,7 +110,6 @@ export function Header({noActions}) {
   const isCloud = optimizeProfile === 'cloud';
   if (isCloud) {
     props.notificationSideBar = {
-      key: 'notifications',
       isOpen: false,
       ariaLabel: 'Notifications',
     };
@@ -112,7 +121,7 @@ export function Header({noActions}) {
       notificationsUrl={notificationsUrl}
       userToken={userToken}
       getNewUserToken={getUserToken}
-      activeOrganizationId={organizationId}
+      organizationId={organizationId}
     >
       <C3Navigation {...props} />
       <WhatsNewModal open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
@@ -123,10 +132,10 @@ export function Header({noActions}) {
   );
 }
 
-function createAppProps(location) {
+function createAppProps(location: {pathname: string}): C3NavigationProps['app'] {
   return {
-    name: t('appName'),
-    ariaLabel: t('appFullName'),
+    name: t('appName').toString(),
+    ariaLabel: t('appFullName').toString(),
     routeProps: {
       as: Link,
       className: 'cds--header__name',
@@ -136,10 +145,11 @@ function createAppProps(location) {
   };
 }
 
-function createAppBarProps(webappLinks) {
+function createAppBarProps(
+  webappLinks: Record<string, string> | null
+): C3NavigationProps['appBar'] {
   return {
-    type: 'app',
-    ariaLabel: t('navigation.appSwitcher'),
+    ariaLabel: t('navigation.appSwitcher').toString(),
     isOpen: false,
     elements: createWebappLinks(webappLinks),
     elementClicked: (app) => {
@@ -148,28 +158,33 @@ function createAppBarProps(webappLinks) {
   };
 }
 
-function createWebappLinks(webappLinks) {
+function createWebappLinks(webappLinks: Record<string, string> | null): C3NavigationElementProps[] {
   if (!webappLinks) {
     return [];
   }
 
   return orderedApps
     .filter((key) => webappLinks[key])
-    .map((key) => ({
+    .map<C3NavigationElementProps>((key) => ({
       key,
-      label: t(`navigation.apps.${key}`),
-      ariaLabel: t(`navigation.apps.${key}`),
+      label: t(`navigation.apps.${key}`).toString(),
+      ariaLabel: t(`navigation.apps.${key}`).toString(),
       href: webappLinks[key],
       active: key === 'optimize',
       routeProps: key === 'optimize' ? {to: '/'} : undefined,
     }));
 }
 
-function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
-  const elements = [
+function createNavBarProps(
+  showEventBased: boolean,
+  enterpriseMode: boolean,
+  pathname: string,
+  optimizeDatabase?: string
+): C3NavigationProps['navbar'] {
+  const elements: C3NavigationProps['navbar']['elements'] = [
     {
       key: 'dashboards',
-      label: t('navigation.dashboards'),
+      label: t('navigation.dashboards').toString(),
       routeProps: {
         as: NavItem,
         name: t('navigation.dashboards'),
@@ -177,10 +192,11 @@ function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
         active: ['/', '/processes/', '/processes/*'],
         breadcrumbsEntities: [{entity: 'report'}],
       },
+      isCurrentPage: isCurrentPage(['/', '/processes/', '/processes/*'], pathname),
     },
     {
       key: 'collections',
-      label: t('navigation.collections'),
+      label: t('navigation.collections').toString(),
       routeProps: {
         as: NavItem,
         name: t('navigation.collections'),
@@ -188,23 +204,28 @@ function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
         active: ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
         breadcrumbsEntities: [{entity: 'collection'}, {entity: 'dashboard'}, {entity: 'report'}],
       },
+      isCurrentPage: isCurrentPage(
+        ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
+        pathname
+      ),
     },
     {
       key: 'analysis',
-      label: t('navigation.analysis'),
+      label: t('navigation.analysis').toString(),
       routeProps: {
         as: NavItem,
         name: t('navigation.analysis'),
         linksTo: '/analysis',
         active: ['/analysis/', '/analysis/*'],
       },
+      isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
     },
   ];
 
   if (showEventBased) {
     elements.push({
       key: 'events',
-      label: t('navigation.events'),
+      label: t('navigation.events').toString(),
       routeProps: {
         as: NavItem,
         name: t('navigation.events'),
@@ -212,44 +233,43 @@ function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
         active: ['/events/processes/', '/events/ingested/', '/events/processes/*'],
         breadcrumbsEntities: [{entity: 'eventBasedProcess', entityUrl: 'events/processes'}],
       },
+      isCurrentPage: isCurrentPage(
+        ['/events/processes/', '/events/ingested/', '/events/processes/*'],
+        pathname
+      ),
     });
   }
 
-  const tags = [];
+  const tags: C3NavigationProps['navbar']['tags'] = [];
   if (!enterpriseMode) {
     tags.push({
       key: 'licenseWarning',
-      label: (
-        <DefinitionTooltip
-          className="nonProductionTooltip"
-          definition={
-            <>
-              {t('license.referTo')}{' '}
-              <CarbonLink
-                inline
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
-              >
-                {t('license.terms')}
-              </CarbonLink>{' '}
-              {t('common.or')}{' '}
-              <CarbonLink
-                href="https://camunda.com/contact/"
-                target="_blank"
-                rel="noopener noreferrer"
-                inline
-              >
-                {t('license.contactSales')}
-              </CarbonLink>
-            </>
-          }
-          openOnHover
-          align="bottom"
-        >
-          {t('license.nonProduction')}
-        </DefinitionTooltip>
-      ),
+      label: t('license.nonProduction').toString(),
+      tooltip: {
+        content: (
+          <span>
+            {t('license.referTo')}{' '}
+            <CarbonLink
+              inline
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
+            >
+              {t('license.terms')}
+            </CarbonLink>{' '}
+            {t('common.or')}{' '}
+            <CarbonLink
+              href="https://camunda.com/contact/"
+              target="_blank"
+              rel="noopener noreferrer"
+              inline
+            >
+              {t('license.contactSales')}
+            </CarbonLink>
+          </span>
+        ),
+        buttonLabel: t('license.nonProduction').toString(),
+      },
       color: 'red',
     });
   }
@@ -257,11 +277,11 @@ function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
   if (optimizeDatabase === 'opensearch') {
     tags.push({
       key: 'opensearchWarning',
-      label: (
-        <Tooltip align="bottom" label={t('navigation.opensearchWarningText')}>
-          <button className="tooltipTrigger">{t('navigation.opensearchPreview')}</button>
-        </Tooltip>
-      ),
+      label: t('navigation.opensearchPreview').toString(),
+      tooltip: {
+        content: t('navigation.opensearchWarningText').toString(),
+        buttonLabel: t('navigation.opensearchPreview').toString(),
+      },
       color: 'red',
     });
   }
@@ -272,21 +292,28 @@ function createNavBarProps(showEventBased, enterpriseMode, optimizeDatabase) {
   };
 }
 
-function createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode) {
+function isCurrentPage(active: string[], pathname: string): boolean {
+  return matchPath(pathname, {path: active, exact: true}) !== null;
+}
+
+function createInfoSideBarProps(
+  setWhatsNewOpen: (open: boolean) => void,
+  generateDocsLink: (route: string) => string,
+  enterpriseMode: boolean
+): C3NavigationProps['infoSideBar'] {
   return {
-    type: 'info',
     ariaLabel: 'Info',
     elements: [
       {
         key: 'whatsNew',
-        label: t('whatsNew.buttonTitle'),
+        label: t('whatsNew.buttonTitle').toString(),
         onClick: () => {
           setWhatsNewOpen(true);
         },
       },
       {
         key: 'userguide',
-        label: t('navigation.userGuide'),
+        label: t('navigation.userGuide').toString(),
         onClick: () => {
           window.open(
             generateDocsLink('components/what-is-optimize/'),
@@ -297,14 +324,14 @@ function createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMod
       },
       {
         key: 'academy',
-        label: t('navigation.academy'),
+        label: t('navigation.academy').toString(),
         onClick: () => {
           window.open('https://academy.camunda.com/', '_blank');
         },
       },
       {
         key: 'feedbackAndSupport',
-        label: t('navigation.feedback'),
+        label: t('navigation.feedback').toString(),
         onClick: () => {
           if (enterpriseMode) {
             window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
@@ -319,8 +346,24 @@ function createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMod
 
 export default Header;
 
-function NavbarWrapper({isCloud, userToken, notificationsUrl, organizationId, children}) {
-  return isCloud && userToken && notificationsUrl ? (
+type NavbarWrapperProps = Omit<
+  ComponentProps<typeof C3UserConfigurationProvider>,
+  'userToken' | 'activeOrganizationId'
+> & {
+  isCloud: boolean;
+  notificationsUrl?: string;
+  organizationId?: string;
+  userToken?: string | null;
+};
+
+function NavbarWrapper({
+  isCloud,
+  userToken,
+  notificationsUrl,
+  organizationId,
+  children,
+}: NavbarWrapperProps) {
+  return isCloud && userToken && notificationsUrl && organizationId ? (
     <C3UserConfigurationProvider
       endpoints={{notifications: notificationsUrl}}
       userToken={userToken}

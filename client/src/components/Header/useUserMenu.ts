@@ -8,14 +8,22 @@
 import {useEffect, useState} from 'react';
 import {useHistory} from 'react-router-dom';
 import {ArrowRight} from '@carbon/react/icons';
+import {C3NavigationProps} from '@camunda/camunda-composite-components';
 
 import {t} from 'translation';
 import {isLogoutHidden, areSettingsManuallyConfirmed} from 'config';
 import {showError} from 'notifications';
+import {useErrorHandling, useUser} from 'hooks';
 
-export default function useUserMenu({user, mightFail, setTelemetrySettingsOpen}) {
+export default function useUserMenu({
+  setTelemetrySettingsOpen,
+}: {
+  setTelemetrySettingsOpen: (open: boolean) => void;
+}) {
   const [logoutHidden, setLogoutHidden] = useState(false);
   const history = useHistory();
+  const {mightFail} = useErrorHandling();
+  const {user} = useUser();
 
   useEffect(() => {
     mightFail(isLogoutHidden(), setLogoutHidden, showError);
@@ -28,22 +36,21 @@ export default function useUserMenu({user, mightFail, setTelemetrySettingsOpen})
     });
   }, [mightFail, setTelemetrySettingsOpen, user]);
 
-  const menu = {
-    type: 'user',
-    ariaLabel: t('common.user.label'),
+  const menu: Exclude<C3NavigationProps['userSideBar'], undefined> = {
+    ariaLabel: t('common.user.label').toString(),
     customElements: {
       profile: {
-        label: t('navigation.profile'),
+        label: t('navigation.profile').toString(),
         user: {
-          email: user?.email,
-          name: user?.name,
+          email: user?.email || '',
+          name: user?.name || '',
         },
       },
     },
     elements: [
       {
         key: 'terms',
-        label: t('navigation.termsOfUse'),
+        label: t('navigation.termsOfUse').toString(),
         onClick: () => {
           window.open(
             'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
@@ -53,14 +60,14 @@ export default function useUserMenu({user, mightFail, setTelemetrySettingsOpen})
       },
       {
         key: 'privacy',
-        label: t('navigation.privacyPolicy'),
+        label: t('navigation.privacyPolicy').toString(),
         onClick: () => {
           window.open('https://camunda.com/legal/privacy/', '_blank');
         },
       },
       {
         key: 'imprint',
-        label: t('navigation.imprint'),
+        label: t('navigation.imprint').toString(),
         onClick: () => {
           window.open('https://camunda.com/legal/imprint/', '_blank');
         },
@@ -71,17 +78,17 @@ export default function useUserMenu({user, mightFail, setTelemetrySettingsOpen})
 
   const isTelemetryAdmin = user?.authorizations.includes('telemetry_administration');
   if (isTelemetryAdmin) {
-    menu.elements.unshift({
+    menu.elements?.unshift({
       key: 'telemetry',
-      label: t('navigation.telemetry'),
+      label: t('navigation.telemetry').toString(),
       onClick: () => setTelemetrySettingsOpen(true),
     });
   }
 
   if (!logoutHidden) {
-    menu.bottomElements.push({
+    menu.bottomElements?.push({
       key: 'logout',
-      label: t('navigation.logout'),
+      label: t('navigation.logout').toString(),
       kind: 'ghost',
       onClick: () => history.replace('/logout'),
       renderIcon: ArrowRight,
