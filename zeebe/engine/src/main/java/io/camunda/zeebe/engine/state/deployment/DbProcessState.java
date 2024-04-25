@@ -36,14 +36,11 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
@@ -55,7 +52,7 @@ public final class DbProcessState implements MutableProcessState {
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
   private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
       processesByTenantAndProcessIdAndVersionCache;
-  private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKeyCache;
+  private final Cache<TenantIdAndProcessDefinitionKey, DeployedProcess> processByTenantAndKeyCache;
 
   /** [tenant id | process definition key] => process */
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
@@ -123,7 +120,8 @@ public final class DbProcessState implements MutableProcessState {
             fkTenantAwareProcessId,
             digest);
 
-    processByTenantAndKeyCache = new HashMap<>();
+    processByTenantAndKeyCache =
+        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
 
     versionManager =
         new VersionManager(
@@ -190,9 +188,10 @@ public final class DbProcessState implements MutableProcessState {
             processRecord.getVersion());
     processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
 
-    processByTenantAndKeyCache
-        .getOrDefault(processRecord.getTenantId(), new Long2ObjectHashMap<>())
-        .remove(processRecord.getProcessDefinitionKey());
+    final var key =
+        new TenantIdAndProcessDefinitionKey(
+            processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
+    processByTenantAndKeyCache.invalidate(key);
 
     final long latestVersion =
         versionManager.getLatestResourceVersion(
@@ -272,10 +271,10 @@ public final class DbProcessState implements MutableProcessState {
   private void addProcessToInMemoryState(final DeployedProcess deployedProcess) {
     final DirectBuffer bpmnProcessId = deployedProcess.getBpmnProcessId();
 
-    final Long2ObjectHashMap<DeployedProcess> keyMap =
-        processByTenantAndKeyCache.computeIfAbsent(
-            deployedProcess.getTenantId(), key -> new Long2ObjectHashMap<>());
-    keyMap.put(deployedProcess.getKey(), deployedProcess);
+    final var key =
+        new TenantIdAndProcessDefinitionKey(
+            deployedProcess.getTenantId(), deployedProcess.getKey());
+    processByTenantAndKeyCache.put(key, deployedProcess);
 
     final var tenantIdAndProcessIdAndVersion =
         new TenantIdAndProcessIdAndVersion(
@@ -317,14 +316,14 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
-    final DeployedProcess deployedProcess =
-        processByTenantAndKeyCache.getOrDefault(tenantId, new Long2ObjectHashMap<>()).get(key);
+    final var tenantIdAndProcessDefinitionKey = new TenantIdAndProcessDefinitionKey(tenantId, key);
+    final DeployedProcess cachedProcess =
+        processByTenantAndKeyCache.getIfPresent(tenantIdAndProcessDefinitionKey);
 
-    if (deployedProcess != null) {
-      return deployedProcess;
-    } else {
+    if (cachedProcess == null) {
       return lookupPersistenceStateForProcessByKey(key, tenantId);
     }
+    return cachedProcess;
   }
 
   @Override
@@ -381,7 +380,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void clearCache() {
-    processByTenantAndKeyCache.clear();
+    processByTenantAndKeyCache.invalidateAll();
     processesByTenantAndProcessIdAndVersionCache.invalidateAll();
     versionManager.clear();
   }
@@ -433,13 +432,14 @@ public final class DbProcessState implements MutableProcessState {
     if (processWithKey != null) {
       updateInMemoryState(processWithKey);
 
-      return processByTenantAndKeyCache
-          .getOrDefault(tenantId, new Long2ObjectHashMap<>())
-          .get(processDefinitionKey);
+      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
+      return processByTenantAndKeyCache.getIfPresent(key);
     }
     // does not exist in persistence and in memory state
     return null;
   }
 
   record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}
+
+  record TenantIdAndProcessDefinitionKey(String tenantId, long processDefinitionKey) {}
 }
