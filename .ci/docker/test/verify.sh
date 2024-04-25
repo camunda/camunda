@@ -24,6 +24,7 @@ set -o pipefail
 VERSION="${VERSION:-}"
 REVISION="${REVISION:-}"
 DATE="${DATE:-}"
+DOCKERFILENAME="${DOCKERFILENAME:-}
 
 # Make sure environment variables are set
 if [ -z "${VERSION}" ]; then
@@ -38,6 +39,11 @@ fi
 
 if [ -z "${DATE}" ]; then
   echo >&2 "No DATE was given; make sure to pass an ISO8601 date, e.g. DATE='2001-01-01T00:00:00Z'"
+  exit 1
+fi
+
+if [ -z "${DOCKERFILENAME}" ]; then
+  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'operate.Dockerfile'"
   exit 1
 fi
 
@@ -69,12 +75,12 @@ if [ "$imageManifestMediaType" != "$imageManifestMediaTypeExpected" ]; then
 fi
 
 DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../Dockerfile")
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../$DOCKERFILENAME")
 if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
     DIGEST="${BASH_REMATCH[1]}"
     echo "Digest found: $DIGEST"
 else
-    echo >&2 "Docker image digest can not be found in the Dockerfile"
+    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILENAME)"
     exit 1
 fi
 
