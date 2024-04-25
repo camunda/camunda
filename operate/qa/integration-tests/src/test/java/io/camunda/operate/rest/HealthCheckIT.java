@@ -7,14 +7,12 @@
  */
 package io.camunda.operate.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.management.IndicesHealthIndicator;
@@ -23,8 +21,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.hamcrest.core.StringContains;
-import org.junit.Before;
+import org.apache.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,73 +30,80 @@ import org.springframework.boot.test.autoconfigure.actuate.observability.AutoCon
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 @AutoConfigureObservability(tracing = false)
-@SpringBootTest(classes = {TestApplicationWithNoBeans.class, IndicesHealthIndicator.class})
+@SpringBootTest(
+    classes = {TestApplicationWithNoBeans.class, IndicesHealthIndicator.class},
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @RunWith(SpringRunner.class)
 public class HealthCheckIT {
 
-  @Autowired private WebApplicationContext context;
-
   @MockBean private IndicesHealthIndicator probes;
 
-  private MockMvc mockMvc;
+  @LocalManagementPort private int managementPort;
 
-  @Before
-  public void setupMockMvc() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
-  }
+  @Autowired private TestRestTemplate testRestTemplate;
 
   @Test
   public void testReady() throws Exception {
     given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
-    mockMvc
-        .perform(get("/actuator/health/readiness"))
-        .andExpect(status().isOk())
-        .andExpect(content().json("{\"status\":\"UP\"}"));
+    final var response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
+
+    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getBody()).containsEntry("status", "UP");
     verify(probes, times(1)).getHealth(anyBoolean());
   }
 
   @Test
   public void testHealth() throws Exception {
-    mockMvc
-        .perform(get("/actuator/health/liveness"))
-        .andExpect(status().isOk())
-        .andExpect(content().json("{\"status\":\"UP\"}"));
+    final var response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/liveness", Map.class);
+
+    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getBody()).containsEntry("status", "UP");
     verifyNoInteractions(probes);
   }
 
   @Test
   public void testReadyStateIsNotOK() throws Exception {
     given(probes.getHealth(anyBoolean())).willReturn(Health.down().build());
-    mockMvc
-        .perform(get("/actuator/health/liveness"))
-        .andExpect(status().isOk())
-        .andExpect(content().json("{\"status\":\"UP\"}"));
 
-    mockMvc.perform(get("/actuator/health/readiness")).andExpect(status().isServiceUnavailable());
-    verify(probes, times(1)).getHealth(anyBoolean());
+    final var livenessResponse =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/liveness", Map.class);
+
+    assertThat(livenessResponse.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(livenessResponse.getBody()).containsEntry("status", "UP");
+
+    final var readinessResponse =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/readiness", Map.class);
+
+    assertThat(readinessResponse.getStatusCodeValue()).isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
+    verify(probes, times(2)).getHealth(anyBoolean());
   }
 
   @Test
   public void testMetrics() throws Exception {
-    mockMvc
-        .perform(get("/actuator/prometheus"))
-        .andExpect(status().isOk())
-        .andExpect(
-            content()
-                .string(
-                    StringContains.containsString(
-                        "# HELP jvm_memory_used_bytes The amount of used memory\n"
-                            + "# TYPE jvm_memory_used_bytes gauge")));
+    final var response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/prometheus", String.class);
+
+    assertThat(response.getStatusCodeValue()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getBody())
+        .contains(
+            "# HELP jvm_memory_used_bytes The amount of used memory\n"
+                + "# TYPE jvm_memory_used_bytes gauge");
   }
 
   public static class AddManagementPropertiesInitializer
@@ -108,7 +112,7 @@ public class HealthCheckIT {
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
       final Map<String, Object> map = StandaloneOperate.getManagementProperties();
-      final List<String> properties = new ArrayList<>();
+      final List<String> properties = new ArrayList();
       map.forEach(
           (key, value) -> {
             // not clear how to connect mockMvc to management port

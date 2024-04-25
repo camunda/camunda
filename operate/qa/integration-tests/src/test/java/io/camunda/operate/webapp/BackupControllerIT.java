@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,14 +62,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -83,7 +82,6 @@ import org.springframework.test.web.servlet.MvcResult;
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 @ActiveProfiles({"test"})
-@AutoConfigureMockMvc
 public class BackupControllerIT {
   @SpyBean private BackupService backupService;
 
@@ -99,7 +97,9 @@ public class BackupControllerIT {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private MockMvc mockMvc;
+  @Autowired private TestRestTemplate testRestTemplate;
+
+  @LocalManagementPort private int managementPort;
 
   @Test
   public void shouldReturnNotFoundStatusWhenBackupIdNotFound() throws Exception {
@@ -109,12 +109,13 @@ public class BackupControllerIT {
             new ElasticsearchStatusException(
                 "type=snapshot_missing_exception", RestStatus.NOT_FOUND));
 
-    final MvcResult result = mockMvc.perform(get("/actuator/backups/2")).andReturn();
+    final ResponseEntity<Map> result =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/backups/2", Map.class);
 
-    assertThat(result.getResponse().getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(result.getStatusCodeValue()).isEqualTo(HttpStatus.SC_NOT_FOUND);
 
-    final Map<String, String> resultBody =
-        objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+    final Map<String, String> resultBody = (Map<String, String>) result.getBody();
 
     assertThat(resultBody.get("message")).isEqualTo("No backup with id [2] found.");
   }

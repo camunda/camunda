@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
@@ -54,6 +55,8 @@ public class UsageMetricIT {
   @Autowired private TestRestTemplate testRestTemplate;
   @MockBean private MetricsStore metricsStore;
 
+  @LocalManagementPort private int managementPort;
+
   @Test
   public void validateProcessInstanceActuatorEndpointRegistered() {
     when(metricsStore.retrieveProcessInstanceCount(any(), any())).thenReturn(3L);
@@ -63,7 +66,9 @@ public class UsageMetricIT {
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
         testRestTemplate.getForEntity(
-            PROCESS_INSTANCE_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+            "http://localhost:" + managementPort + PROCESS_INSTANCE_METRIC_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(3L);
@@ -78,7 +83,9 @@ public class UsageMetricIT {
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
         testRestTemplate.getForEntity(
-            DECISION_EVALUATION_METRIC_ENDPOINT, UsageMetricDTO.class, parameters);
+            "http://localhost:" + managementPort + DECISION_EVALUATION_METRIC_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getTotal()).isEqualTo(4L);
