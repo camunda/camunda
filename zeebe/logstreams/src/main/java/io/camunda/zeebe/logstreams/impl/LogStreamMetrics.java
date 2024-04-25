@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.flowcontrol;
+package io.camunda.zeebe.logstreams.impl;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -15,7 +15,7 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
 
-public final class AppenderMetrics {
+public final class LogStreamMetrics {
   private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
       Counter.build()
           .namespace("zeebe")
@@ -98,7 +98,7 @@ public final class AppenderMetrics {
   private final Histogram.Child appendLatency;
   private final String partitionLabel;
 
-  public AppenderMetrics(final int partitionId) {
+  public LogStreamMetrics(final int partitionId) {
     partitionLabel = String.valueOf(partitionId);
     deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);

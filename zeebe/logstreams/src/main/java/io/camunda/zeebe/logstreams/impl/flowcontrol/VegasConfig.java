@@ -7,24 +7,18 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY;
-
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
-import io.camunda.zeebe.util.Environment;
 
 /**
  * This class should be later be located in the broker configs - due to the primitive usage
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-final class BackpressureCfgVegas implements BackpressureCfg {
+final class VegasConfig {
 
-  private int initialLimit = 1024;
-  private int maxConcurrency = 1024 * 32;
+  private final int initialLimit = 1024;
+  private final int maxConcurrency = 1024 * 32;
 
   /*
    * - Copied from the Vegas JavaDoc -
@@ -41,54 +35,25 @@ final class BackpressureCfgVegas implements BackpressureCfg {
    * * beta= Max(3, limit * 0.95)
    * We get much better results
    */
-  private double alphaLimit = 0.7;
-  private double betaLimit = 0.95;
-
-  @Override
-  public void applyEnvironment(final Environment environment) {
-    environment.getInt(ENV_BP_APPENDER_VEGAS_INIT_LIMIT).ifPresent(this::setInitialLimit);
-    environment.getInt(ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY).ifPresent(this::setMaxConcurrency);
-    environment.getDouble(ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT).ifPresent(this::setAlphaLimit);
-    environment.getDouble(ENV_BP_APPENDER_VEGAS_BETA_LIMIT).ifPresent(this::setBetaLimit);
-  }
+  private final double alphaLimit = 0.7;
+  private final double betaLimit = 0.95;
 
   public int getInitialLimit() {
     return initialLimit;
-  }
-
-  public BackpressureCfgVegas setInitialLimit(final int initialLimit) {
-    this.initialLimit = initialLimit;
-    return this;
   }
 
   public int getMaxConcurrency() {
     return maxConcurrency;
   }
 
-  public BackpressureCfgVegas setMaxConcurrency(final int maxConcurrency) {
-    this.maxConcurrency = maxConcurrency;
-    return this;
-  }
-
   public double getAlphaLimit() {
     return alphaLimit;
-  }
-
-  public BackpressureCfgVegas setAlphaLimit(final double alphaLimit) {
-    this.alphaLimit = alphaLimit;
-    return this;
   }
 
   public double getBetaLimit() {
     return betaLimit;
   }
 
-  public BackpressureCfgVegas setBetaLimit(final double betaLimit) {
-    this.betaLimit = betaLimit;
-    return this;
-  }
-
-  @Override
   public AbstractLimit get() {
     return VegasLimit.newBuilder()
         .alpha(limit -> Math.max(3, (int) (limit * alphaLimit)))
@@ -103,7 +68,7 @@ final class BackpressureCfgVegas implements BackpressureCfg {
 
   @Override
   public String toString() {
-    return "BackpressureCfgVegas{"
+    return "Vegas{"
         + "initialLimit="
         + initialLimit
         + ", maxConcurrency="

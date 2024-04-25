@@ -106,26 +106,11 @@ public interface LogStorage {
     default void onWrite(final long address) {}
 
     /**
-     * Called when an error occurred while writing to the entry.
-     *
-     * @param error the error that occurred
-     */
-    default void onWriteError(final Throwable error) {}
-
-    /**
      * Called when the entry has been successfully committed.
      *
      * @param address the address of the committed entry
      */
     default void onCommit(final long address) {}
-
-    /**
-     * Called when an error occurs while committing an entry.
-     *
-     * @param address the address of the entry to be committed
-     * @param error the error that occurred
-     */
-    default void onCommitError(final long address, final Throwable error) {}
   }
 
   /**
