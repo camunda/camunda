@@ -303,14 +303,14 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/elements@11.43.0":
-  version "11.43.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.43.0.tgz#e7a9c3c1b90e561667a2428eb89f78d1040b0849"
-  integrity sha512-Jj4roaOgHw1OtywI0SMhyQiXfoZ+NTVsOsRLZUFmVngLaT7RqZba8Z0oOhsIm10IRSQUJkDop3JHUGiMaMlyRA==
+"@carbon/elements@11.44.0":
+  version "11.44.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.44.0.tgz#f5a0682e26795ec9092b8e4022d53228beddc419"
+  integrity sha512-LS5r44rskZUI08oIgaMPVqf8Q/rHyqbDHjEGEu3BHORdCLV6ZDtLRMrsu2+ZZrzfq5XG42Z2S3XYfWrtbWHObQ==
   dependencies:
     "@carbon/colors" "^11.21.0"
     "@carbon/grid" "^11.22.0"
-    "@carbon/icons" "^11.39.0"
+    "@carbon/icons" "^11.40.0"
     "@carbon/layout" "^11.21.0"
     "@carbon/motion" "^11.17.0"
     "@carbon/themes" "^11.34.0"
@@ -348,10 +348,10 @@
     "@ibm/telemetry-js" "^1.2.1"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.39.0":
-  version "11.39.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.39.0.tgz#80ef167946dd8166a262ae334156d91ea011a442"
-  integrity sha512-GejjOZj9LlyMaQ0I/cRRAN8HVFbI/HBKEOik+EBDLlGUEkhH1Ls3t5/rnBMuUNQ3BzFOkWslpcXAVxE4DFb2rg==
+"@carbon/icons@^11.40.0":
+  version "11.40.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.40.0.tgz#93e0385bfb14eca1fcddb236e65ffe82892b5795"
+  integrity sha512-D3ckVSdam66Nueg2OH/uIEbDv+VL0uVo226acMf/FqwZ9zWPIUf3CPLN39+UVHxx35zQPY39QSi4fu/6TBs6wg==
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
