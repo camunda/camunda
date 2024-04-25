@@ -139,7 +139,7 @@
     <version.tc-keycloak>3.3.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
-    <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
+    <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.14.0</version.jna-platform>
     <version.msal4j>1.15.0</version.msal4j>
 
