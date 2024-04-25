@@ -74,7 +74,7 @@ const AsyncActionButton: React.FC<Props> = ({
   return status === 'inactive' ? (
     <Button
       {...buttonProps}
-      className={cn({hidden}, buttonProps?.className, styles.button)}
+      className={cn({hide: hidden}, buttonProps?.className, styles.button)}
     >
       {children}
     </Button>
