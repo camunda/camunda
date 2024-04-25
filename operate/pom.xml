@@ -998,7 +998,7 @@
     <profile>
       <id>operateItImport</id>
       <properties>
-        <includeITNames>**/*ZeebeImportIT.java</includeITNames>
+        <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
