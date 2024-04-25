@@ -177,7 +177,9 @@
     <profile>
       <id>integration-tests</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipQaBuild</name>
+        </property>
       </activation>
       <modules>
         <module>qa</module>
