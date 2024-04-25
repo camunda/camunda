@@ -107,7 +107,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       "camunda.operate.identity.audience=operate-api",
       "camunda.operate.identity.baseUrl=http://localhost:8080",
       "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
-      "camunda.operate.persistentSessionsEnabled=true"
+      "camunda.operate.persistentSessionsEnabled=true",
+      "spring.web.resources.add-mappings = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})

@@ -47,6 +47,7 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -88,12 +89,15 @@ public class HealthCheckAuthenticationIT {
 
   @Autowired private TaskStore taskStore;
 
+  @LocalManagementPort private int managementPort;
+
   @Test
   public void testHealthStateEndpointIsNotSecured() {
     given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
 
     final ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }

@@ -101,6 +101,7 @@ import org.springframework.web.client.RestTemplate;
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
+      "spring.web.resources.add-mappings=true",
       "camunda.operate.auth0.clientId=1",
       "camunda.operate.auth0.clientSecret=2",
       "camunda.operate.cloud.organizationId=3",

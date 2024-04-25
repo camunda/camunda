@@ -34,6 +34,8 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration;
+import org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -47,6 +49,8 @@ import org.springframework.util.MultiValueMap;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
+      EmbeddedLdapAutoConfiguration.class,
+      LdapAutoConfiguration.class,
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
       AuthenticationRestService.class,

@@ -24,6 +24,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.management.ModelMetricProvider;
+import io.camunda.operate.metric.ImporterMetricsZeebeImportIT.ManagementPropertyRemoval;
 import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
@@ -31,10 +32,17 @@ import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.PropertySource;
+import org.springframework.test.context.ContextConfiguration;
 
+@ContextConfiguration(initializers = ManagementPropertyRemoval.class)
 public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
@@ -189,5 +197,60 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
                     + "{"
                     + Metrics.TAG_KEY_ORGANIZATIONID
                     + "=\"orga\",} 2.0")));
+  }
+
+  public static class ManagementPropertyRemoval
+      implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
+    @Override
+    public void initialize(ConfigurableApplicationContext ctx) {
+      final var modifiedPropertySource = new HashMap<String, Object>();
+
+      final var environment = ctx.getEnvironment();
+      final var propertySources = environment.getPropertySources();
+      final var iterator = propertySources.iterator();
+      PropertySource<?> applicationPropertySource = null;
+
+      // get the "application.properties" containing
+      // the port and address configurations
+      while (iterator.hasNext()) {
+        final var propertySource = iterator.next();
+        final var propertySourceName = propertySource.getName();
+
+        // the "application.properties" is loaded as the last one
+        // if present.
+        if (propertySourceName.contains("application.properties")) {
+          applicationPropertySource = propertySource;
+          break;
+        }
+      }
+
+      if (applicationPropertySource != null
+          && applicationPropertySource instanceof MapPropertySource mapPropertySource) {
+        final var propertyNames = mapPropertySource.getPropertyNames();
+        final var applicationPropertySourceName = applicationPropertySource.getName();
+
+        // copy all all properties
+        for (String propName : propertyNames) {
+          final var propValue = (String) mapPropertySource.getProperty(propName);
+          modifiedPropertySource.put(propName, propValue);
+        }
+
+        // remove all port and address configurations
+        // that way, mock mvc will load all controllers
+        // including the actuator web endpoints
+        modifiedPropertySource.remove("server.port");
+        modifiedPropertySource.remove("server.address");
+        modifiedPropertySource.remove("management.server.port");
+        modifiedPropertySource.remove("management.server.address");
+
+        // replace existing "application.properties" with the new properties
+        // that do not contain the port and address configurations
+        final var newPropertySource =
+            new MapPropertySource(applicationPropertySourceName, modifiedPropertySource);
+        propertySources.remove(applicationPropertySourceName);
+        propertySources.addLast(newPropertySource);
+      }
+    }
   }
 }

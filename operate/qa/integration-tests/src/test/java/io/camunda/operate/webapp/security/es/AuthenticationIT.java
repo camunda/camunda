@@ -53,6 +53,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -104,6 +105,8 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Autowired private PasswordEncoder encoder;
 
   @MockBean private UserStore userStore;
+
+  @LocalManagementPort private int managementPort;
 
   @Before
   public void setUp() {
@@ -197,12 +200,14 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void testCanAccessMetricsEndpoint() {
     final ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator", String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("actuator/info");
 
     final ResponseEntity<String> prometheusResponse =
-        testRestTemplate.getForEntity("/actuator/prometheus", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/prometheus", String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
@@ -210,7 +215,9 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
     ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator/loggers/io.camunda.operate", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
@@ -220,10 +227,15 @@ public class AuthenticationIT implements AuthenticationTestable {
         new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(
-            "/actuator/loggers/io.camunda.operate", request, String.class);
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",
+            request,
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(204);
 
-    response = testRestTemplate.getForEntity("/actuator/loggers/io.camunda.operate", String.class);
+    response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"TRACE\"");
   }
