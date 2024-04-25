@@ -142,7 +142,7 @@ final class ExporterContainerTest {
     assertThat(exporter.getRecord()).isNotNull();
     assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(0);
+    assertThat(exporterContainer.getPosition()).isZero();
   }
 
   @Test
@@ -166,7 +166,7 @@ final class ExporterContainerTest {
     assertThat(exporter.getRecord()).isNotNull();
     assertThat(exporter.getRecord()).isEqualTo(secondRecord);
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
-    assertThat(exporterContainer.getPosition()).isEqualTo(0);
+    assertThat(exporterContainer.getPosition()).isZero();
   }
 
   @Test
@@ -211,8 +211,8 @@ final class ExporterContainerTest {
 
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(0);
-    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(0);
+    assertThat(exporterContainer.getPosition()).isZero();
+    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isZero();
   }
 
   @Test
@@ -242,6 +242,61 @@ final class ExporterContainerTest {
   }
 
   @Test
+  void shouldNotUpdateExporterPositionIfSoftPaused() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+    runtime.getState().setPosition(EXPORTER_ID, 0);
+    exporterContainer.initPosition();
+    exporterContainer.openExporter();
+    exporterContainer.softPauseExporter();
+
+    final var mockedRecord = mock(TypedRecord.class);
+    when(mockedRecord.getPosition()).thenReturn(1L);
+    final var recordMetadata = new RecordMetadata();
+    exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+    // when
+    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
+    awaitPreviousCall();
+
+    // then
+    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+    assertThat(exporterContainer.getPosition()).isZero();
+  }
+
+  @Test
+  void shouldUpdatePositionWhenResumedAfterSoftPaused() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+    runtime.getState().setPosition(EXPORTER_ID, 0);
+    exporterContainer.initPosition();
+    exporterContainer.openExporter();
+    exporterContainer.softPauseExporter();
+
+    final var mockedRecord = mock(TypedRecord.class);
+    when(mockedRecord.getPosition()).thenReturn(1L);
+    final byte[] metadata = "metadata".getBytes();
+    final var recordMetadata = new RecordMetadata().requestId(1L);
+    exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition(), metadata);
+    awaitPreviousCall();
+
+    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+    assertThat(exporterContainer.getPosition()).isZero();
+    assertThat(exporterContainer.readMetadata()).isNotPresent();
+
+    // when
+    exporterContainer.undoSoftPauseExporter();
+    awaitPreviousCall();
+
+    // then
+    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+    assertThat(exporterContainer.getPosition()).isEqualTo(1);
+    assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
+  }
+
+  @Test
   void shouldUpdatePositionsWhenRecordIsFiltered() throws Exception {
     // given
     exporterContainer.configureExporter();
@@ -258,7 +313,7 @@ final class ExporterContainerTest {
 
     // then
     assertThat(exporter.getRecord()).isNull();
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(0);
+    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
     assertThat(exporterContainer.getPosition()).isEqualTo(1);
   }
 
@@ -310,7 +365,7 @@ final class ExporterContainerTest {
     assertThat(exporter.getRecord()).isNotNull();
     assertThat(exporter.getRecord()).isEqualTo(firstRecord);
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(0);
+    assertThat(exporterContainer.getPosition()).isZero();
   }
 
   @Test

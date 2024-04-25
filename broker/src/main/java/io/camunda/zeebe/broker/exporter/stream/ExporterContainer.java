@@ -36,7 +36,10 @@ final class ExporterContainer implements Controller {
   private final ExporterContext context;
   private final Exporter exporter;
   private long position;
+  private boolean exporterIsSoftPaused = false;
   private long lastUnacknowledgedPosition;
+  private long lastAcknowledgedPosition;
+  private byte[] lastExportedMetadata;
   private ExportersState exportersState;
   private ExporterMetrics metrics;
   private ActorControl actor;
@@ -89,11 +92,11 @@ final class ExporterContainer implements Controller {
   }
 
   /**
-   * Updates the exporter's position if it is up to date - that is, if it's last acknowledged
+   * Updates the exporter's position if it is up-to-date - that is, if it's last acknowledged
    * position is greater than or equal to its last unacknowledged position. This is safe to do when
    * skipping records as it means we passed no record to this exporter between both.
    *
-   * @param eventPosition the new, up to date position
+   * @param eventPosition the new, up-to-date position
    */
   void updatePositionOnSkipIfUpToDate(final long eventPosition) {
     if (position >= lastUnacknowledgedPosition && position < eventPosition) {
@@ -111,15 +114,17 @@ final class ExporterContainer implements Controller {
 
   private void updateExporterState(final long eventPosition, final byte[] metadata) {
     if (position < eventPosition) {
-
-      DirectBuffer metadataBuffer = null;
-      if (metadata != null) {
-        metadataBuffer = BufferUtil.wrapArray(metadata);
+      lastAcknowledgedPosition = eventPosition;
+      lastExportedMetadata = metadata;
+      if (!exporterIsSoftPaused) {
+        DirectBuffer metadataBuffer = null;
+        if (metadata != null) {
+          metadataBuffer = BufferUtil.wrapArray(metadata);
+        }
+        exportersState.setExporterState(getId(), eventPosition, metadataBuffer);
+        metrics.setLastUpdatedExportedPosition(getId(), eventPosition);
+        position = eventPosition;
       }
-      exportersState.setExporterState(getId(), eventPosition, metadataBuffer);
-
-      metrics.setLastUpdatedExportedPosition(getId(), eventPosition);
-      position = eventPosition;
     }
   }
 
@@ -181,6 +186,15 @@ final class ExporterContainer implements Controller {
       context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       return false;
     }
+  }
+
+  void softPauseExporter() {
+    exporterIsSoftPaused = true;
+  }
+
+  void undoSoftPauseExporter() {
+    exporterIsSoftPaused = false;
+    updateExporterState(lastAcknowledgedPosition, lastExportedMetadata);
   }
 
   private void export(final Record<?> record) {
