@@ -30,7 +30,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
-      - uses: google-github-actions/auth@v1
+      - uses: google-github-actions/auth@v2
         id: auth
         name: Get access token from google cloud
         with:
