@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.importing;
 
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
@@ -23,7 +25,6 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -80,23 +81,22 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importCompletedUnclaimedZeebeUserTaskData_viaWriter() {
     // import all data for completed usertask (creation and completion) in one batch, hence the
-    // upsert inserts the new instance
-    // created with the logic in the writer
+    // upsert inserts the new instance created with the logic in the writer
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateCompletion();
+    List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.completeZeebeUserTask(getExpectedUserTaskInstanceIdFromRecords(userTaskEvents));
+    waitUntilUserTaskRecordWithIntentExported(COMPLETED);
 
     // when
     importAllZeebeEntitiesFromScratch();
 
     // then
-    final List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
+    userTaskEvents = getZeebeExportedUserTaskEvents();
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCompletedUserTaskEvents(userTaskEvents);
     final FlowNodeInstanceDto expectedUserTask =
@@ -105,10 +105,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         .setDueDate(OffsetDateTime.parse(DUE_DATE))
         .setEndDate(expectedEndDate)
         .setIdleDurationInMs(0L)
-        .setTotalDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setWorkDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+        .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
+        .setWorkDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -134,8 +132,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importCompletedUnclaimedZeebeUserTaskData_viaUpdateScript() {
     // import completed userTask data after the first userTask record was already imported, hence
-    // the upsert uses the logic
-    // from the update script
+    // the upsert uses the logic from the update script
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
@@ -147,27 +144,23 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final List<ZeebeUserTaskRecordDto> runningUserTaskEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, runningUserTaskEvents);
-    // fake userTask completion record
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateCompletion();
+    List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.completeZeebeUserTask(getExpectedUserTaskInstanceIdFromRecords(userTaskEvents));
+    waitUntilUserTaskRecordWithIntentExported(COMPLETED);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    final Map<String, List<ZeebeUserTaskRecordDto>> completedUserTaskEvents =
-        getZeebeExportedUserTaskEventsByElementId();
+    userTaskEvents = getZeebeExportedUserTaskEvents();
     final OffsetDateTime expectedEndDate =
-        getExpectedEndDateForCompletedUserTaskEvents(completedUserTaskEvents.get(USER_TASK));
+        getExpectedEndDateForCompletedUserTaskEvents(userTaskEvents);
     expectedUserTask
         .setDueDate(OffsetDateTime.parse(DUE_DATE))
         .setEndDate(expectedEndDate)
         .setIdleDurationInMs(0L)
-        .setTotalDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
-        .setWorkDurationInMs(
-            Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis());
+        .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
+        .setWorkDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents));
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
@@ -199,8 +192,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
-    waitUntilUserTaskRecordWithElementIdAndIntentExported(
-        USER_TASK, UserTaskIntent.CANCELED.name());
+    waitUntilUserTaskRecordWithIntentExported(UserTaskIntent.CANCELED);
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
@@ -247,8 +239,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importCanceledUnclaimedZeebeUserTaskData_viaUpdateScript() {
     // import canceled userTask data after the first userTask record was already imported, hence the
-    // upsert uses the logic
-    // from the update script
+    // upsert uses the logic  from the update script
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
@@ -256,8 +247,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     removeAllZeebeExportRecordsExceptUserTaskRecords();
     importAllZeebeEntitiesFromScratch();
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
-    waitUntilUserTaskRecordWithElementIdAndIntentExported(
-        USER_TASK, UserTaskIntent.CANCELED.name());
+    waitUntilUserTaskRecordWithIntentExported(UserTaskIntent.CANCELED);
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
@@ -309,20 +299,19 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
-    updateCreatedUserTaskRecordToSimulateAssign(ASSIGNEE_ID);
+    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.assignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(exportedEvents), ASSIGNEE_ID);
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
-    waitUntilUserTaskRecordWithElementIdAndIntentExported(
-        USER_TASK, UserTaskIntent.CANCELED.name());
-    updateCancelUserTaskRecordToSimulateAssignee();
+    waitUntilUserTaskRecordWithIntentExported(CANCELED);
+    // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromScratch();
 
     // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, exportedEvents);
     final OffsetDateTime expectedEndDate =
@@ -370,30 +359,29 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importCanceledClaimedZeebeUserTaskData_viaUpdateScript() {
     // import canceled userTask data after the first userTask records were already imported, hence
-    // the upsert uses the logic
-    // from the update script
+    // the upsert uses the logic from the update script
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.assignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(exportedEvents), ASSIGNEE_ID);
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
-    updateCreatedUserTaskRecordToSimulateAssign(ASSIGNEE_ID);
     importAllZeebeEntitiesFromScratch();
+
     zeebeExtension.cancelProcessInstance(instance.getProcessInstanceKey());
-    waitUntilUserTaskRecordWithElementIdAndIntentExported(
-        USER_TASK, UserTaskIntent.CANCELED.name());
-    updateCancelUserTaskRecordToSimulateAssignee();
-    waitUntilUserTaskRecordWithElementIdAndIntentExported(
-        USER_TASK, UserTaskIntent.CANCELED.name());
-    updateCancelUserTaskRecordToSimulateAssignee();
+    waitUntilUserTaskRecordWithIntentExported(UserTaskIntent.CANCELED);
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    exportedEvents = getZeebeExportedUserTaskEvents();
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCanceledUserTaskEvents(exportedEvents);
     final OffsetDateTime assignDate = getTimestampForAssignedUserTaskEvents(exportedEvents);
@@ -441,16 +429,15 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importClaimOperation_viaWriter() {
     // import assignee usertask operations in one batch, hence the upsert inserts the new instance
-    // created with the logic in
-    // the writer
+    // created with the logic in the writer
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, null));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // Manually add usertask assign record
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateAssign(ASSIGNEE_ID);
+    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.assignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(exportedEvents), ASSIGNEE_ID);
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
@@ -458,10 +445,10 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, exportedEvents)
-            .setIdleDurationInMs(1000L)
+            .setIdleDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
             .setAssignee(ASSIGNEE_ID)
             .setAssigneeOperations(
                 List.of(
@@ -495,28 +482,27 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importClaimOperation_viaUpdateScript() {
     // import assignee userTask data after the first userTask records were already imported, hence
-    // the upsert uses the logic
-    // from the update script
+    // the upsert uses the logic from the update script
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, null));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
     removeAllZeebeExportRecordsExceptUserTaskRecords();
     importAllZeebeEntitiesFromScratch();
-    // remove all zeebe records except userTask ones to test userTask import only
-    // Manually add usertask assign record.
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateAssign(ASSIGNEE_ID);
+
+    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.assignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(exportedEvents), ASSIGNEE_ID);
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, exportedEvents)
-            .setIdleDurationInMs(1000L)
+            .setIdleDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
             .setAssignee(ASSIGNEE_ID)
             .setAssigneeOperations(
                 List.of(
@@ -550,17 +536,16 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importUnclaimOperation_viaWriter() {
     // import assignee usertask operations in one batch, hence the upsert inserts the new instance
-    // created with the logic in
-    // the writer
+    // created with the logic in the writer
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // Manually add usertaskunassign record.
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateAssign("");
+    zeebeExtension.unassignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
 
@@ -589,7 +574,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                   .isEqualTo(
                       createRunningUserTaskInstance(instance, exportedEvents)
                           .setIdleDurationInMs(0L)
-                          .setWorkDurationInMs(1000L)
+                          .setWorkDurationInMs(
+                              getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
                           .setAssigneeOperations(
                               List.of(
                                   new AssigneeOperationDto()
@@ -609,8 +595,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   @Test
   public void importUnclaimOperation_viaUpdateScript() {
     // import assignee userTask data after the first userTask records were already imported, hence
-    // the upsert uses the logic
-    // from the update script
+    // the upsert uses the logic from the update script
     // given
     final ProcessInstanceEvent instance =
         deployAndStartInstanceForProcess(
@@ -619,20 +604,20 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
     importAllZeebeEntitiesFromScratch();
-    // Manually add usertask assign record.
-    // TODO #11579 manual record manipulation will be removed in favour of using zeebeClient once
-    // functionality is available
-    updateCreatedUserTaskRecordToSimulateAssign("");
+
+    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    exportedEvents = getZeebeExportedUserTaskEvents();
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, exportedEvents)
             .setIdleDurationInMs(0L)
-            .setWorkDurationInMs(1000L)
+            .setWorkDurationInMs(getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents))
             .setAssigneeOperations(
                 List.of(
                     new AssigneeOperationDto()
@@ -643,7 +628,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                     new AssigneeOperationDto()
                         .setId(getExpectedIdFromRecords(exportedEvents, ASSIGNED))
                         .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
-                        .setTimestamp(getTimestampForZeebeAssignEvents(exportedEvents, ""))));
+                        .setTimestamp(getTimestampForZeebeUnassignEvent(exportedEvents))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -711,6 +696,82 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                                       .setTimestamp(
                                           getExpectedStartDateForUserTaskEvents(exportedEvents)))));
             });
+  }
+
+  @Test
+  public void importMultipleAssigneeOperations_viaWriter() {
+    // given
+    final String assigneeId1 = ASSIGNEE_ID + "1";
+    final String assigneeId2 = ASSIGNEE_ID + "2";
+    final ProcessInstanceEvent instance =
+        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, null));
+    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    final List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
+    final long userTaskInstanceId = getExpectedUserTaskInstanceIdFromRecords(userTaskEvents);
+    zeebeExtension.assignUserTask(userTaskInstanceId, assigneeId1);
+    zeebeExtension.unassignUserTask(userTaskInstanceId);
+    zeebeExtension.assignUserTask(userTaskInstanceId, assigneeId2);
+    zeebeExtension.completeZeebeUserTask(userTaskInstanceId);
+    waitUntilUserTaskRecordWithIntentExported(COMPLETED);
+
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .singleElement()
+                    .usingRecursiveComparison()
+                    .isEqualTo(
+                        createRunningUserTaskInstance(instance, exportedEvents)
+                            .setEndDate(
+                                getExpectedEndDateForCompletedUserTaskEvents(exportedEvents))
+                            .setIdleDurationInMs(
+                                getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
+                                    + getDurationInMsBetweenAssignOperations(
+                                        exportedEvents, "", assigneeId2))
+                            .setWorkDurationInMs(
+                                getDurationInMsBetweenAssignOperations(
+                                        exportedEvents, assigneeId1, "")
+                                    + getDurationInMsBetweenLastAssignOperationAndEnd(
+                                        exportedEvents, assigneeId2))
+                            .setTotalDurationInMs(
+                                getExpectedTotalDurationForCompletedUserTask(exportedEvents))
+                            .setAssignee(assigneeId2)
+                            .setAssigneeOperations(
+                                List.of(
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, assigneeId1))
+                                        .setUserId(assigneeId1)
+                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeAssignEvents(
+                                                exportedEvents, assigneeId1)),
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, ""))
+                                        .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeUnassignEvent(exportedEvents)),
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, assigneeId2))
+                                        .setUserId(assigneeId2)
+                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeAssignEvents(
+                                                exportedEvents, assigneeId2))))));
   }
 
   @Test
@@ -839,38 +900,71 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         .setDefinitionKey(String.valueOf(deployedInstance.getBpmnProcessId()))
         .setDefinitionVersion(String.valueOf(deployedInstance.getVersion()))
         .setTenantId(ZEEBE_DEFAULT_TENANT_ID)
-        .setUserTaskInstanceId(getExpectedUserTaskInstanceIdFromRecords(events))
+        .setUserTaskInstanceId(String.valueOf(getExpectedUserTaskInstanceIdFromRecords(events)))
         .setStartDate(getExpectedStartDateForUserTaskEvents(events))
         .setCanceled(false);
   }
 
   private OffsetDateTime getExpectedStartDateForUserTaskEvents(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
-    return getTimestampForZeebeEventsWithIntent(eventsForElement, UserTaskIntent.CREATING);
+    return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, UserTaskIntent.CREATING);
   }
 
   private OffsetDateTime getExpectedEndDateForCompletedUserTaskEvents(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
-    return getTimestampForZeebeEventsWithIntent(eventsForElement, UserTaskIntent.COMPLETED);
+    return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, COMPLETED);
   }
 
   private OffsetDateTime getTimestampForAssignedUserTaskEvents(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
-    return getTimestampForZeebeEventsWithIntent(eventsForElement, ASSIGNED);
+    return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, ASSIGNED);
   }
 
   private OffsetDateTime getExpectedEndDateForCanceledUserTaskEvents(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
-    return getTimestampForZeebeEventsWithIntent(eventsForElement, UserTaskIntent.CANCELED);
+    return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, UserTaskIntent.CANCELED);
   }
 
-  private String getExpectedUserTaskInstanceIdFromRecords(
+  private long getExpectedTotalDurationForCompletedUserTask(
+      final List<ZeebeUserTaskRecordDto> eventsForElement) {
+    return Duration.between(
+            getExpectedStartDateForUserTaskEvents(eventsForElement),
+            getExpectedEndDateForCompletedUserTaskEvents(eventsForElement))
+        .toMillis();
+  }
+
+  private long getDurationInMsBetweenStartAndFirstAssignOperation(
+      final List<ZeebeUserTaskRecordDto> eventsForElement) {
+    return Duration.between(
+            getExpectedStartDateForUserTaskEvents(eventsForElement),
+            getTimestampForAssignedUserTaskEvents(eventsForElement))
+        .toMillis();
+  }
+
+  private long getDurationInMsBetweenAssignOperations(
+      final List<ZeebeUserTaskRecordDto> eventsForElement,
+      final String assigneeId1,
+      final String assigneeId2) {
+    return Duration.between(
+            getTimestampForZeebeAssignEvents(eventsForElement, assigneeId1),
+            getTimestampForZeebeAssignEvents(eventsForElement, assigneeId2))
+        .toMillis();
+  }
+
+  private long getDurationInMsBetweenLastAssignOperationAndEnd(
+      final List<ZeebeUserTaskRecordDto> eventsForElement, final String assigneeId) {
+    return Duration.between(
+            getTimestampForZeebeAssignEvents(eventsForElement, assigneeId),
+            getExpectedEndDateForCompletedUserTaskEvents(eventsForElement))
+        .toMillis();
+  }
+
+  private long getExpectedUserTaskInstanceIdFromRecords(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
     return eventsForElement.stream()
         .findFirst()
         .map(ZeebeUserTaskRecordDto::getValue)
         .map(ZeebeUserTaskDataDto::getUserTaskKey)
-        .map(String::valueOf)
         .orElseThrow(eventNotFoundExceptionSupplier);
   }
 
@@ -884,37 +978,22 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         .orElseThrow(eventNotFoundExceptionSupplier);
   }
 
+  private String getExpectedIdFromAssignRecordsWithAssigneeId(
+      final List<ZeebeUserTaskRecordDto> eventsForElement, final String assigneeId) {
+    return eventsForElement.stream()
+        .filter(
+            event ->
+                ASSIGNED.equals(event.getIntent())
+                    && assigneeId.equals(event.getValue().getAssignee()))
+        .findFirst()
+        .map(ZeebeUserTaskRecordDto::getKey)
+        .map(String::valueOf)
+        .orElseThrow(eventNotFoundExceptionSupplier);
+  }
+
   private void removeAllZeebeExportRecordsExceptUserTaskRecords() {
     databaseIntegrationTestExtension.deleteAllOtherZeebeRecordsWithPrefix(
         zeebeExtension.getZeebeRecordPrefix(), ZEEBE_USER_TASK_INDEX_NAME);
-  }
-
-  private void updateCreatedUserTaskRecordToSimulateCompletion() {
-    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
-        zeebeExtension.getZeebeRecordPrefix(),
-        ZEEBE_USER_TASK_INDEX_NAME,
-        """
-            if (ctx._source.intent == "CREATED") {
-              ctx._source.intent = "COMPLETED";
-              ctx._source.timestamp = ctx._source.timestamp + 1000; // this will be the userTask endDate
-              ctx._source.sequence = ctx._source.sequence + 10;
-            }
-            """);
-  }
-
-  private void updateCreatedUserTaskRecordToSimulateAssign(final String assigneeId) {
-    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
-        zeebeExtension.getZeebeRecordPrefix(),
-        ZEEBE_USER_TASK_INDEX_NAME,
-        """
-            if (ctx._source.intent == "CREATED") {
-              ctx._source.intent = "ASSIGNED";
-              ctx._source.timestamp = ctx._source.timestamp + 1000;
-              ctx._source.sequence = ctx._source.sequence + 1;
-              ctx._source.value.assignee = "%s";
-            }
-            """
-            .formatted(assigneeId));
   }
 
   private void updateCreatedUserTaskRecordToSimulateUpdate() {
@@ -931,18 +1010,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
             }
             """
             .formatted(CANDIDATE_GROUP));
-  }
-
-  private void updateCancelUserTaskRecordToSimulateAssignee() {
-    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
-        zeebeExtension.getZeebeRecordPrefix(),
-        ZEEBE_USER_TASK_INDEX_NAME,
-        """
-            if (ctx._source.intent == "CANCELED") {
-              ctx._source.value.assignee = "%s";
-            }
-            """
-            .formatted(ASSIGNEE_ID));
   }
 
   private List<ZeebeUserTaskRecordDto> getZeebeExportedUserTaskEvents() {
