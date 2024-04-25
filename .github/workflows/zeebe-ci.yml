@@ -473,7 +473,7 @@ jobs:
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
       - name: Verify Docker image
-        uses: ./.github/actions/verify-zeebe-docker
+        uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
           date: ${{ steps.build-zeebe-docker.outputs.date }}
