@@ -88,7 +88,7 @@ public class MultiTenancyMigrationTest {
     @BeforeEach
     void setup() {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext);
-      processState = new DbProcessState(zeebeDb, transactionContext);
+      processState = new DbProcessState(zeebeDb, transactionContext, new EngineConfiguration());
     }
 
     @Test
