@@ -202,6 +202,10 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     zeebeClient.newUserTaskUnassignCommand(userTaskKey).send().join();
   }
 
+  public void updateCandidateGroupForUserTask(final long userTaskKey, final String candidateGroup) {
+    zeebeClient.newUserTaskUpdateCommand(userTaskKey).candidateGroups(candidateGroup).send().join();
+  }
+
   public void throwErrorIncident(final String jobType) {
     handleSingleJob(
         jobType,

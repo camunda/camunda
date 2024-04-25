@@ -18,14 +18,16 @@ import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_D
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcessWithAssignee;
-import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcessWithCandidateGroups;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleNativeUserTaskProcessWithCandidateGroup;
 
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import org.camunda.optimize.AbstractCCSMIT;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
@@ -39,7 +41,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   private static final String TEST_PROCESS = "aProcess";
   private static final String DUE_DATE = "2023-11-01T12:00:00+05:00";
   private static final String ASSIGNEE_ID = "assigneeId";
-  private static final String CANDIDATE_GROUP = "candidateGroup";
 
   @Test
   public void importRunningZeebeUserTaskData() {
@@ -775,53 +776,28 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void importUpdateCandidateGroupRecord_viaWriter() {
+  public void importMultipleAssigneeOperations_viaUpdateScript() {
     // given
+    final String assigneeId1 = ASSIGNEE_ID + "1";
+    final String assigneeId2 = ASSIGNEE_ID + "2";
     final ProcessInstanceEvent instance =
-        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
+        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, null));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    updateCreatedUserTaskRecordToSimulateUpdate();
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
-
-    // when
-    importAllZeebeEntitiesFromScratch();
-
-    // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(instance.getBpmnProcessId());
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .singleElement() // only userTask was imported because all other records were
-                  // removed
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
-                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
-            });
-  }
-
-  @Test
-  public void importUpdateCandidateGroupRecord_viaUpdateScript() {
-    // given
-    final ProcessInstanceEvent instance =
-        deployAndStartInstanceForProcess(createSimpleNativeUserTaskProcess(TEST_PROCESS, DUE_DATE));
-    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    final List<ZeebeUserTaskRecordDto> userTaskEvents = getZeebeExportedUserTaskEvents();
+    final long userTaskInstanceId = getExpectedUserTaskInstanceIdFromRecords(userTaskEvents);
+    zeebeExtension.assignUserTask(userTaskInstanceId, assigneeId1);
+    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
     importAllZeebeEntitiesFromScratch();
-    updateCreatedUserTaskRecordToSimulateUpdate();
+
+    zeebeExtension.unassignUserTask(userTaskInstanceId);
+    zeebeExtension.assignUserTask(userTaskInstanceId, assigneeId2);
+    zeebeExtension.completeZeebeUserTask(userTaskInstanceId);
+    waitUntilUserTaskRecordWithIntentExported(COMPLETED);
+
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
 
     // when
     importAllZeebeEntitiesFromLastIndex();
@@ -831,63 +807,74 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(instance.getBpmnProcessId());
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .singleElement() // only userTask was imported because all other records were
-                  // removed
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
-                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
-            });
+            savedInstance ->
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .singleElement()
+                    .usingRecursiveComparison()
+                    .isEqualTo(
+                        createRunningUserTaskInstance(instance, exportedEvents)
+                            .setEndDate(
+                                getExpectedEndDateForCompletedUserTaskEvents(exportedEvents))
+                            .setIdleDurationInMs(
+                                getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents)
+                                    + getDurationInMsBetweenAssignOperations(
+                                        exportedEvents, "", assigneeId2))
+                            .setWorkDurationInMs(
+                                getDurationInMsBetweenAssignOperations(
+                                        exportedEvents, assigneeId1, "")
+                                    + getDurationInMsBetweenLastAssignOperationAndEnd(
+                                        exportedEvents, assigneeId2))
+                            .setTotalDurationInMs(
+                                getExpectedTotalDurationForCompletedUserTask(exportedEvents))
+                            .setAssignee(assigneeId2)
+                            .setAssigneeOperations(
+                                List.of(
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, assigneeId1))
+                                        .setUserId(assigneeId1)
+                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeAssignEvents(
+                                                exportedEvents, assigneeId1)),
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, ""))
+                                        .setOperationType(UNCLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeUnassignEvent(exportedEvents)),
+                                    new AssigneeOperationDto()
+                                        .setId(
+                                            getExpectedIdFromAssignRecordsWithAssigneeId(
+                                                exportedEvents, assigneeId2))
+                                        .setUserId(assigneeId2)
+                                        .setOperationType(CLAIM_OPERATION_TYPE.toString())
+                                        .setTimestamp(
+                                            getTimestampForZeebeAssignEvents(
+                                                exportedEvents, assigneeId2))))));
   }
 
   @Test
-  public void importCandidateGroup_fromCreationRecord() {
-    // given a process that was started with a candidateGroup already present in the model
-    final ProcessInstanceEvent instance =
-        deployAndStartInstanceForProcess(
-            createSimpleNativeUserTaskProcessWithCandidateGroups(
-                TEST_PROCESS, DUE_DATE, CANDIDATE_GROUP));
+  public void doNotImportCandidateGroupUpdates() {
+    // given
+    deployAndStartInstanceForProcess(
+        createSimpleNativeUserTaskProcessWithCandidateGroup(
+            TEST_PROCESS, DUE_DATE, "aCandidateGroup"));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
+    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    zeebeExtension.updateCandidateGroupForUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(exportedEvents), "anotherCandidateGroup");
 
     // when
     importAllZeebeEntitiesFromScratch();
 
-    // then
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
+    // then no candidate group data was imported
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(savedInstance.getProcessInstanceId())
-                  .isEqualTo(String.valueOf(instance.getProcessInstanceKey()));
-              assertThat(savedInstance.getProcessDefinitionId())
-                  .isEqualTo(String.valueOf(instance.getProcessDefinitionKey()));
-              assertThat(savedInstance.getProcessDefinitionKey())
-                  .isEqualTo(instance.getBpmnProcessId());
-              assertThat(savedInstance.getDataSource().getName())
-                  .isEqualTo(getConfiguredZeebeName());
-              assertThat(savedInstance.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
-              assertThat(savedInstance.getFlowNodeInstances())
-                  .singleElement() // only userTask was imported because all other records were
-                  // removed
-                  .isEqualTo(
-                      createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
-                          .setCandidateGroups(List.of(CANDIDATE_GROUP)));
-            });
+        .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
+        .extracting(FlowNodeInstanceDto::getCandidateGroups)
+        .containsOnly(Collections.emptyList());
   }
 
   private FlowNodeInstanceDto createRunningUserTaskInstance(
@@ -994,22 +981,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   private void removeAllZeebeExportRecordsExceptUserTaskRecords() {
     databaseIntegrationTestExtension.deleteAllOtherZeebeRecordsWithPrefix(
         zeebeExtension.getZeebeRecordPrefix(), ZEEBE_USER_TASK_INDEX_NAME);
-  }
-
-  private void updateCreatedUserTaskRecordToSimulateUpdate() {
-    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
-        zeebeExtension.getZeebeRecordPrefix(),
-        ZEEBE_USER_TASK_INDEX_NAME,
-        """
-            if (ctx._source.intent == "CREATED") {
-              ctx._source.intent = "UPDATED";
-              ctx._source.timestamp = ctx._source.timestamp + 1000;
-              ctx._source.sequence = ctx._source.sequence + 1;
-              ctx._source.value.candidateGroupsList = ["%s"];
-              ctx._source.value.changedAttributes = ["candidateGroupsList"];
-            }
-            """
-            .formatted(CANDIDATE_GROUP));
   }
 
   private List<ZeebeUserTaskRecordDto> getZeebeExportedUserTaskEvents() {

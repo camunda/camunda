@@ -161,7 +161,7 @@ public class ZeebeBpmnModels {
         .done();
   }
 
-  public static BpmnModelInstance createSimpleNativeUserTaskProcessWithCandidateGroups(
+  public static BpmnModelInstance createSimpleNativeUserTaskProcessWithCandidateGroup(
       final String processName, final String dueDate, final String candidateGroup) {
     return Bpmn.createExecutableProcess()
         .name(processName)
