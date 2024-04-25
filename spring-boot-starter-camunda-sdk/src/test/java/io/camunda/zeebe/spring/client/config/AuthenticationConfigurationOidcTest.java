@@ -44,9 +44,9 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
       "camunda.client.mode=oidc",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
-      "camunda.client.auth.issuer=http://localhost:14682/auth-server"
+      "camunda.client.auth.issuer=http://localhost:14683/auth-server"
     })
-@WireMockTest(httpPort = 14682)
+@WireMockTest(httpPort = 14683)
 public class AuthenticationConfigurationOidcTest {
   private static final String ACCESS_TOKEN =
       JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());

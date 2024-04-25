@@ -19,7 +19,6 @@ on:
       - 'dist/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'spring-boot-starter-camunda-sdk/**'
       - 'zeebe/**'
   pull_request:
     paths:
@@ -33,7 +32,6 @@ on:
       - 'dist/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'spring-boot-starter-camunda-sdk/**'
       - 'zeebe/**'
   merge_group: { }
   workflow_dispatch: { }
