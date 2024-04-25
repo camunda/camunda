@@ -1280,10 +1280,10 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/icons-react@^11.39.0":
-  version "11.39.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.39.0.tgz#3e27830a7f1e44a52e9ba49c8acefc55b10fb8a0"
-  integrity sha512-tKWAo62mAMi5YE0B+LUPlD1dQFgOz+4Z5LMSgQUAoJuDnTw32uXl0BQrSCDP2fXGolIsun280rBTbmPKok/aow==
+"@carbon/icons-react@^11.40.0":
+  version "11.40.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.40.0.tgz#f1c4315000ae3e81c1d8a628f2488f2576625bfb"
+  integrity sha512-mMWsgklghC9R29G8m8mFrH22yK+Rge/NHWf/IsHJ82KufMwljCZ8IYooJ5NP2SUldJZ1qL9eRvi4HFUGqdr3lw==
   dependencies:
     "@carbon/icon-helpers" "^10.47.0"
     "@ibm/telemetry-js" "^1.2.1"
@@ -1310,18 +1310,18 @@
   dependencies:
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/react@1.55.0":
-  version "1.55.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.55.0.tgz#0f5d2ea0483820fc25cdf38472794454ce1fea62"
-  integrity sha512-jr5PyKr6mZNtYKxmG7tEakWjhrRuk2TMQ9Dw445gATmnZ51TAqWFbP7hdDnQZBRS0B5PU37EPRf1tR61a6s1Qw==
+"@carbon/react@1.56.0":
+  version "1.56.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.56.0.tgz#9e7a24c0b952cee0f9d80decf56d99615f8ed2c4"
+  integrity sha512-R1ZzugCUHDKrIjC6Ba6mq711yQhVOGL/WTjjcP+vWdFqLsM1V4oBvfspUmu9OSn5wE1be/cy1OeNhxJGnXLkJw==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.19.0"
-    "@carbon/icons-react" "^11.39.0"
+    "@carbon/icons-react" "^11.40.0"
     "@carbon/layout" "^11.21.0"
-    "@carbon/styles" "^1.55.0"
+    "@carbon/styles" "^1.56.0"
     "@floating-ui/react" "^0.26.0"
-    "@ibm/telemetry-js" "^1.2.1"
+    "@ibm/telemetry-js" "^1.4.0"
     classnames "2.5.1"
     copy-to-clipboard "^3.3.1"
     downshift "8.5.0"
@@ -1339,10 +1339,10 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.55.0":
-  version "1.55.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.55.0.tgz#15aa6d4d3b21060bc31521c5898b2b4c33b8b373"
-  integrity sha512-SrLwB5vPGxg5GdtW32Zxe8qdUnxjz8eqAF/DsM2x/8VrgONLyy1HqUpRFV4dEnXue3CO/Prr7aCtAXsj3FjoGA==
+"@carbon/styles@^1.56.0":
+  version "1.56.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.56.0.tgz#05d35928c5c6cd8439145a6e93ba40924e000170"
+  integrity sha512-NE6A0YasZoHsGwdhzN3/8qsVl7pQHy6qMxjGyGH1MIfJV96ZwR5/3hQSVyWrom+bHsZBUPMgBemImZSX/cdqew==
   dependencies:
     "@carbon/colors" "^11.21.0"
     "@carbon/feature-flags" "^0.19.0"
@@ -1704,7 +1704,7 @@
   resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-6.0.0-next.6.tgz#5b4ab81a84ddb06651fdf684521927cdce135b79"
   integrity sha512-B3uGruTn2rS5gweynLmfSe7yCawSRsJguJJQHVQiqf4rh2RNgJFu8YLE2Zd/JHV0ZXoVMOslcXP2k3hMkxKEyA==
 
-"@ibm/telemetry-js@^1.2.1":
+"@ibm/telemetry-js@^1.2.1", "@ibm/telemetry-js@^1.4.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.5.0.tgz#ab73e0988088e2cbb01a7086a31ccc3826a81ba0"
   integrity sha512-RwOohLaWw97vEEwhPnlDJlORuworVOjC2R6WzSVlG7suG08qTMLVRVpnnunUCSQHyxP1Y30V9IF5vsxVrMBOHg==
