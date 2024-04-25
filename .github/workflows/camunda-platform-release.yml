@@ -139,10 +139,10 @@ jobs:
           #   version but before committing. Space delimited.
           #   We apply spotless to make sure that pom format is correct before committing.
           #
-          # -DpreparationGoals 
+          # -DpreparationGoals
           #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
           #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
-          # 
+          #
           # -Darguments
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
@@ -173,14 +173,15 @@ jobs:
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           export ZBCTL_ROOT_DIR=${PWD}
 
-          # -P-integration-tests,-autoFormat
+          # -DskipQaBuild -P-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout=${{ inputs.dryRun }} \
-            -P-integration-tests,-autoFormat \
-            -Darguments='-T0.5C -P-integration-tests,-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+            -DskipQaBuild \
+            -P-autoFormat \
+            -Darguments='-T0.5C -P-autoFormat -DskipQaBuild -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory

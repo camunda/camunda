@@ -67,7 +67,7 @@
       That is useful for example for creating releases.
       -->
     <profile>
-      <id>integration-tests</id>
+      <id>integration-tests-build</id>
       <activation>
         <property>
           <name>!skipQaBuild</name>
