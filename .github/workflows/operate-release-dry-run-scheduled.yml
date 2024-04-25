@@ -20,7 +20,7 @@ on:
 jobs:
   dry-run-release:
     name: "dry run release v${{ matrix.releaseVersion }}"
-    uses: ./.github/workflows/operate-release-reusable.yml
+    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@stable/operate-8.5
     secrets: inherit
     strategy:
       fail-fast: false
