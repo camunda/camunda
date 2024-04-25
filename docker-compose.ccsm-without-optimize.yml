@@ -50,7 +50,7 @@ version: "3.6"
 services:
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:24.0.3@sha256:b5cd07277043fce11a729727954153596a626ac2edd1afcc281273ce670011f2
+    image: bitnami/keycloak:24.0.3@sha256:aa1c35dad73b7699fdca1165c6b18fd47371ea7c38b6a317b4bc67e2e0c99041
     ports:
       - "18080:8080"
     environment:
