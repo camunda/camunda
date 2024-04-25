@@ -24,7 +24,8 @@ set -o pipefail
 VERSION="${VERSION:-}"
 REVISION="${REVISION:-}"
 DATE="${DATE:-}"
-DOCKERFILENAME="${DOCKERFILENAME:-}
+DOCKERFILENAME="${DOCKERFILENAME:-}"
+GOLDEN_FILE="${GOLDEN_FILE:-}"
 
 # Make sure environment variables are set
 if [ -z "${VERSION}" ]; then
@@ -44,6 +45,11 @@ fi
 
 if [ -z "${DOCKERFILENAME}" ]; then
   echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'operate.Dockerfile'"
+  exit 1
+fi
+
+if [ -z "${GOLDEN_FILE}" ]; then
+  echo >&2 "No GOLDEN_FILE was given; make sure to pass an name for the corresponding golden file, like 'zeebe-docker-labels.golden.json'."
   exit 1
 fi
 
@@ -96,7 +102,7 @@ if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" =
 fi
 
 # Generate the expected labels files with the dynamic properties substituted
-labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
+labelsGoldenFile="${BASH_SOURCE%/*}/$GOLDEN_FILE"
 expectedLabels=$(
   jq --sort-keys -n \
     --arg VERSION "${VERSION}" \
