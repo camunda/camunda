@@ -99,6 +99,7 @@ const Variables: React.FC<Props> = ({
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];
+  const isJsonEditorModalOpen = editingVariable !== undefined;
 
   if (isInitialLoading) {
     return null;
@@ -272,7 +273,7 @@ const Variables: React.FC<Props> = ({
                     onError={() => {
                       setSubmissionState('inactive');
                     }}
-                    hide={taskState === 'COMPLETED'}
+                    hidden={taskState === 'COMPLETED'}
                     disabled={
                       submitting ||
                       hasValidationErrors ||
@@ -286,7 +287,7 @@ const Variables: React.FC<Props> = ({
 
               <Suspense>
                 <JSONEditorModal
-                  isOpen={editingVariable !== undefined}
+                  isOpen={isJsonEditorModalOpen}
                   title="Edit Variable"
                   onClose={() => {
                     setEditingVariable(undefined);

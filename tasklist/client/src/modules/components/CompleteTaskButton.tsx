@@ -18,6 +18,15 @@
 import {InlineLoadingStatus} from '@carbon/react';
 import {AsyncActionButton} from './AsyncActionButton';
 
+type Props = {
+  submissionState: InlineLoadingStatus;
+  onClick?: () => void;
+  onSuccess?: () => void;
+  onError?: () => void;
+  hidden: boolean;
+  disabled: boolean;
+};
+
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
   if (status === 'active') {
     return 'Completing task...';
@@ -34,14 +43,14 @@ function getCompletionButtonDescription(status: InlineLoadingStatus) {
   return undefined;
 }
 
-const CompleteTaskButton: React.FC<{
-  submissionState: InlineLoadingStatus;
-  onClick?: () => void;
-  onSuccess?: () => void;
-  onError?: () => void;
-  hide: boolean;
-  disabled: boolean;
-}> = ({submissionState, hide, disabled, onClick, onSuccess, onError}) => {
+const CompleteTaskButton: React.FC<Props> = ({
+  submissionState,
+  hidden,
+  disabled,
+  onClick,
+  onSuccess,
+  onError,
+}) => {
   return (
     <AsyncActionButton
       inlineLoadingProps={{
@@ -50,7 +59,6 @@ const CompleteTaskButton: React.FC<{
         onSuccess,
       }}
       buttonProps={{
-        className: hide ? 'hide' : '',
         size: 'md',
         type: 'submit',
         disabled: submissionState === 'active' || disabled,
@@ -60,6 +68,7 @@ const CompleteTaskButton: React.FC<{
           : 'You must first assign this task to complete it',
       }}
       status={submissionState}
+      hidden={hidden}
       onError={onError}
     >
       Complete Task

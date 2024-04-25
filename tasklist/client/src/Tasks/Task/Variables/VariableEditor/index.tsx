@@ -29,6 +29,7 @@ import {Popup, Close} from '@carbon/react/icons';
 import {Variable} from 'modules/types';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
+import {FormValues} from '../types';
 import {DelayedErrorField} from '../../DelayedErrorField';
 import {LoadingTextarea} from '../LoadingTextarea';
 import {OnNewVariableAdded} from '../OnNewVariableAdded';
@@ -46,7 +47,6 @@ import {
 import {mergeValidators} from '../validators/mergeValidators';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {FormValues} from '../types';
 
 type Props = {
   containerRef: RefObject<HTMLElement | null>;
@@ -103,7 +103,29 @@ const VariableEditor: React.FC<Props> = ({
       </StructuredListHead>
       <StructuredListBody>
         {variables.map((variable) =>
-          !readOnly ? (
+          readOnly ? (
+            <StructuredListRow key={variable.name}>
+              <StructuredListCell
+                className={cn(styles.listCell, styles.cellName)}
+              >
+                {variable.name}
+              </StructuredListCell>
+              <StructuredListCell
+                className={cn(styles.listCell, styles.valueCell)}
+              >
+                <div className={styles.scrollableOuter}>
+                  <div className={styles.scrollableInner}>
+                    {variable.isValueTruncated
+                      ? `${variable.previewValue}...`
+                      : variable.value}
+                  </div>
+                </div>
+              </StructuredListCell>
+              <StructuredListCell
+                className={cn(styles.listCell, styles.controlsCell)}
+              />
+            </StructuredListRow>
+          ) : (
             <StructuredListRow key={variable.name}>
               <StructuredListCell
                 className={cn(styles.listCell, styles.cellName)}
@@ -167,28 +189,6 @@ const VariableEditor: React.FC<Props> = ({
                   </IconButton>
                 </div>
               </StructuredListCell>
-            </StructuredListRow>
-          ) : (
-            <StructuredListRow key={variable.name}>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.cellName)}
-              >
-                {variable.name}
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.valueCell)}
-              >
-                <div className={styles.scrollableOuter}>
-                  <div className={styles.scrollableInner}>
-                    {variable.isValueTruncated
-                      ? `${variable.previewValue}...`
-                      : variable.value}
-                  </div>
-                </div>
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.controlsCell)}
-              />
             </StructuredListRow>
           ),
         )}
