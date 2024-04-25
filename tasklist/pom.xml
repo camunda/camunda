@@ -175,9 +175,11 @@
       That is useful for example for creating releases.
        -->
     <profile>
-      <id>integration-tests</id>
+      <id>integration-tests-build</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipQaBuild</name>
+        </property>
       </activation>
       <modules>
         <module>qa</module>
