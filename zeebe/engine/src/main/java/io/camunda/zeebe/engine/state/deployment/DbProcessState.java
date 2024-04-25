@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -50,9 +53,8 @@ public final class DbProcessState implements MutableProcessState {
 
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
-
-  private final Map<String, Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>>
-      processesByTenantAndProcessIdAndVersionCache = new HashMap<>();
+  private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
+      processesByTenantAndProcessIdAndVersionCache;
   private final Map<String, Long2ObjectHashMap<DeployedProcess>> processByTenantAndKeyCache;
 
   /** [tenant id | process definition key] => process */
@@ -81,7 +83,9 @@ public final class DbProcessState implements MutableProcessState {
   private final VersionManager versionManager;
 
   public DbProcessState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config) {
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
@@ -124,6 +128,8 @@ public final class DbProcessState implements MutableProcessState {
     versionManager =
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
+    processesByTenantAndProcessIdAndVersionCache =
+        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
   }
 
   @Override
@@ -177,9 +183,13 @@ public final class DbProcessState implements MutableProcessState {
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
 
-    processesByTenantAndProcessIdAndVersionCache
-        .getOrDefault(processRecord.getTenantId(), new HashMap<>())
-        .remove(processRecord.getBpmnProcessIdBuffer());
+    final var tenantIdAndProcessIdAndVersion =
+        new TenantIdAndProcessIdAndVersion(
+            processRecord.getTenantId(),
+            processRecord.getBpmnProcessIdBuffer(),
+            processRecord.getVersion());
+    processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
+
     processByTenantAndKeyCache
         .getOrDefault(processRecord.getTenantId(), new Long2ObjectHashMap<>())
         .remove(processRecord.getProcessDefinitionKey());
@@ -267,54 +277,42 @@ public final class DbProcessState implements MutableProcessState {
             deployedProcess.getTenantId(), key -> new Long2ObjectHashMap<>());
     keyMap.put(deployedProcess.getKey(), deployedProcess);
 
-    final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByTenantAndProcessIdAndVersionCache
-            .computeIfAbsent(deployedProcess.getTenantId(), key -> new HashMap<>())
-            .computeIfAbsent(bpmnProcessId, key -> new Long2ObjectHashMap<>());
+    final var tenantIdAndProcessIdAndVersion =
+        new TenantIdAndProcessIdAndVersion(
+            deployedProcess.getTenantId(), bpmnProcessId, deployedProcess.getVersion());
 
-    final int version = deployedProcess.getVersion();
-    versionMap.put(version, deployedProcess);
+    processesByTenantAndProcessIdAndVersionCache.put(
+        tenantIdAndProcessIdAndVersion, deployedProcess);
   }
 
   @Override
   public DeployedProcess getLatestProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
-    final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByTenantAndProcessIdAndVersionCache
-            .getOrDefault(tenantId, new HashMap<>())
-            .get(processIdBuffer);
-
-    processId.wrapBuffer(processIdBuffer);
     final long latestVersion = versionManager.getLatestResourceVersion(processIdBuffer, tenantId);
+    final var tenantIdAndProcessIdAndVersion =
+        new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, latestVersion);
+    final var cachedProcess =
+        processesByTenantAndProcessIdAndVersionCache.getIfPresent(tenantIdAndProcessIdAndVersion);
 
-    DeployedProcess deployedProcess;
-    if (versionMap == null) {
-      deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
-    } else {
-      deployedProcess = versionMap.get(latestVersion);
-      if (deployedProcess == null) {
-        deployedProcess = lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
-      }
+    if (cachedProcess == null) {
+      processId.wrapBuffer(processIdBuffer);
+      return lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
     }
-    return deployedProcess;
+    return cachedProcess;
   }
 
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version, final String tenantId) {
-    final Long2ObjectHashMap<DeployedProcess> versionMap =
-        processesByTenantAndProcessIdAndVersionCache
-            .getOrDefault(tenantId, new HashMap<>())
-            .get(processId);
+    final var tenantIdAndProcessIdAndVersion =
+        new TenantIdAndProcessIdAndVersion(tenantId, processId, version);
+    final var cachedProcess =
+        processesByTenantAndProcessIdAndVersionCache.getIfPresent(tenantIdAndProcessIdAndVersion);
 
-    if (versionMap != null) {
-      final DeployedProcess deployedProcess = versionMap.get(version);
-      return deployedProcess != null
-          ? deployedProcess
-          : lookupPersistenceState(processId, version, tenantId);
-    } else {
+    if (cachedProcess == null) {
       return lookupPersistenceState(processId, version, tenantId);
     }
+    return cachedProcess;
   }
 
   @Override
@@ -384,7 +382,7 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public void clearCache() {
     processByTenantAndKeyCache.clear();
-    processesByTenantAndProcessIdAndVersionCache.clear();
+    processesByTenantAndProcessIdAndVersionCache.invalidateAll();
     versionManager.clear();
   }
 
@@ -414,14 +412,12 @@ public final class DbProcessState implements MutableProcessState {
     if (processWithVersionAndId != null) {
       updateInMemoryState(processWithVersionAndId);
 
-      final Long2ObjectHashMap<DeployedProcess> newVersionMap =
-          processesByTenantAndProcessIdAndVersionCache
-              .getOrDefault(tenantId, new HashMap<>())
-              .get(processIdBuffer);
+      final var tenantIdAndProcessIdAndVersion =
+          new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, version);
 
-      if (newVersionMap != null) {
-        return newVersionMap.get(version);
-      }
+      // return the cached copy
+      return processesByTenantAndProcessIdAndVersionCache.getIfPresent(
+          tenantIdAndProcessIdAndVersion);
     }
     // does not exist in persistence and in memory state
     return null;
@@ -444,4 +440,6 @@ public final class DbProcessState implements MutableProcessState {
     // does not exist in persistence and in memory state
     return null;
   }
+
+  record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}
 }

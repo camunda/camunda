@@ -59,6 +59,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
         .setDrgCacheCapacity(caches.getDrgCacheCapacity())
         .setFormCacheCapacity(caches.getFormCacheCapacity())
+        .setProcessCacheCapacity(caches.getProcessCacheCapacity())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit());
   }

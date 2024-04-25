@@ -22,6 +22,7 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
 
@@ -29,6 +30,7 @@ public final class EngineConfiguration {
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
 
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
@@ -68,6 +70,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setFormCacheCapacity(final int formCacheCapacity) {
     this.formCacheCapacity = formCacheCapacity;
+    return this;
+  }
+
+  public int getProcessCacheCapacity() {
+    return processCacheCapacity;
+  }
+
+  public EngineConfiguration setProcessCacheCapacity(final int processCacheCapacity) {
+    this.processCacheCapacity = processCacheCapacity;
     return this;
   }
 
