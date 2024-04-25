@@ -218,7 +218,7 @@ public class CsrfTokenIT {
     final var headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     // Set session cookie - otherwise you get an 401 UNAUTHORIZED
-    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").get(0));
     final var request = new HttpEntity<>("{}", headers);
     final var internalAPIresponse =
         testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
@@ -257,11 +257,11 @@ public class CsrfTokenIT {
     final var headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     // Set session cookie - otherwise you get an 401 UNAUTHORIZED
-    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").get(0));
     // Add CSRF token as cookie - otherwise you get an 403 FORBIDDEN
     getCsrfCookie(response).ifPresent(csrfCookie -> headers.add("Cookie", csrfCookie));
     // Add CSRF token also as header - otherwise you get an 403 FORBIDDEN
-    headers.set(X_CSRF_TOKEN, response.getHeaders().get(X_CSRF_TOKEN).getFirst());
+    headers.set(X_CSRF_TOKEN, response.getHeaders().get(X_CSRF_TOKEN).get(0));
     final var request = new HttpEntity<>("{}", headers);
     final var internalAPIresponse =
         testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
@@ -298,7 +298,7 @@ public class CsrfTokenIT {
 
     final var headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    headers.add("Cookie", cookies.getHeaders().get("Cookie").getFirst());
+    headers.add("Cookie", cookies.getHeaders().get("Cookie").get(0));
     headers.setBearerAuth("bearerToken");
     final var request = new HttpEntity<>("{}", headers);
     final var publicAPIresponse =
@@ -308,7 +308,7 @@ public class CsrfTokenIT {
 
   private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
-    headers.add("Cookie", response.getHeaders().get("Set-Cookie").getFirst());
+    headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
   }
 

@@ -155,7 +155,7 @@ public class CsrfTokenIT {
     // Add CSRF token as cookie - otherwise you get an 403 FORBIDDEN
     getCsrfCookie(loginResponse).ifPresent(csrfCookie -> headers.add("Cookie", csrfCookie));
     // Add CSRF token also as header - otherwise you get an 403 FORBIDDEN
-    headers.set(X_CSRF_TOKEN, loginResponse.getHeaders().get(X_CSRF_TOKEN).getFirst());
+    headers.set(X_CSRF_TOKEN, loginResponse.getHeaders().get(X_CSRF_TOKEN).get(0));
     final var request = new HttpEntity<>("{}", headers);
     final var response =
         testRestTemplate.postForEntity("/api/processes/grouped", request, Object.class);
