@@ -102,8 +102,8 @@ const VariableEditor: React.FC<Props> = ({
         </StructuredListRow>
       </StructuredListHead>
       <StructuredListBody>
-        {variables.map((variable) =>
-          readOnly ? (
+        {readOnly ? (
+          variables.map((variable) => (
             <StructuredListRow key={variable.name}>
               <StructuredListCell
                 className={cn(styles.listCell, styles.cellName)}
@@ -125,75 +125,75 @@ const VariableEditor: React.FC<Props> = ({
                 className={cn(styles.listCell, styles.controlsCell)}
               />
             </StructuredListRow>
-          ) : (
-            <StructuredListRow key={variable.name}>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.cellName)}
-              >
-                <label htmlFor={createVariableFieldName(variable.name)}>
-                  {variable.name}
-                </label>
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.valueCell)}
-              >
-                <Field
-                  name={createVariableFieldName(variable.name)}
-                  validate={
-                    variable.isValueTruncated
-                      ? () => undefined
-                      : validateValueJSON
-                  }
+          ))
+        ) : (
+          <>
+            {variables.map((variable) => (
+              <StructuredListRow key={variable.name}>
+                <StructuredListCell
+                  className={cn(styles.listCell, styles.cellName)}
                 >
-                  {({input, meta}) => (
-                    <LoadingTextarea
-                      {...input}
-                      id={input.name}
-                      invalidText={meta.error}
-                      isLoading={variablesLoadingFullValue.includes(
-                        variable.id,
-                      )}
-                      onFocus={(event) => {
+                  <label htmlFor={createVariableFieldName(variable.name)}>
+                    {variable.name}
+                  </label>
+                </StructuredListCell>
+                <StructuredListCell
+                  className={cn(styles.listCell, styles.valueCell)}
+                >
+                  <Field
+                    name={createVariableFieldName(variable.name)}
+                    validate={
+                      variable.isValueTruncated
+                        ? () => undefined
+                        : validateValueJSON
+                    }
+                  >
+                    {({input, meta}) => (
+                      <LoadingTextarea
+                        {...input}
+                        id={input.name}
+                        invalidText={meta.error}
+                        isLoading={variablesLoadingFullValue.includes(
+                          variable.id,
+                        )}
+                        onFocus={(event) => {
+                          if (variable.isValueTruncated) {
+                            fetchFullVariable(variable.id);
+                          }
+                          input.onFocus(event);
+                        }}
+                        isActive={meta.active}
+                        type="text"
+                        labelText={`${variable.name} value`}
+                        placeholder={`${variable.name} value`}
+                        hideLabel
+                      />
+                    )}
+                  </Field>
+                </StructuredListCell>
+                <StructuredListCell
+                  className={cn(styles.listCell, styles.controlsCell)}
+                >
+                  <div className={cn(styles.iconButtons, styles.extraPadding)}>
+                    <IconButton
+                      label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                      onClick={() => {
                         if (variable.isValueTruncated) {
                           fetchFullVariable(variable.id);
                         }
-                        input.onFocus(event);
-                      }}
-                      isActive={meta.active}
-                      type="text"
-                      labelText={`${variable.name} value`}
-                      placeholder={`${variable.name} value`}
-                      hideLabel
-                    />
-                  )}
-                </Field>
-              </StructuredListCell>
-              <StructuredListCell
-                className={cn(styles.listCell, styles.controlsCell)}
-              >
-                <div className={cn(styles.iconButtons, styles.extraPadding)}>
-                  <IconButton
-                    label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
-                    onClick={() => {
-                      if (variable.isValueTruncated) {
-                        fetchFullVariable(variable.id);
-                      }
 
-                      onEdit(createVariableFieldName(variable.name));
-                    }}
-                    size="sm"
-                    kind="ghost"
-                    leaveDelayMs={100}
-                  >
-                    <Popup />
-                  </IconButton>
-                </div>
-              </StructuredListCell>
-            </StructuredListRow>
-          ),
-        )}
-        {!readOnly ? (
-          <>
+                        onEdit(createVariableFieldName(variable.name));
+                      }}
+                      size="sm"
+                      kind="ghost"
+                      leaveDelayMs={100}
+                    >
+                      <Popup />
+                    </IconButton>
+                  </div>
+                </StructuredListCell>
+              </StructuredListRow>
+            ))}
             <OnNewVariableAdded
               name="newVariables"
               execute={() => {
@@ -305,7 +305,7 @@ const VariableEditor: React.FC<Props> = ({
               }
             </FieldArray>
           </>
-        ) : null}
+        )}
       </StructuredListBody>
     </StructuredListWrapper>
   );
