@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backpressure;
 
-import com.netflix.concurrency.limits.limit.AbstractLimit;
+import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.FixedLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
 import com.netflix.concurrency.limits.limit.GradientLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
+import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.broker.transport.backpressure.StabilizingAIMDLimit;
 import java.util.concurrent.TimeUnit;
@@ -95,15 +96,21 @@ public final class LimitCfg implements ConfigurationEntry {
         + '}';
   }
 
-  public AbstractLimit buildLimit() {
+  public Limit buildLimit() {
     final LimitAlgorithm algorithm = getAlgorithm();
-    return switch (algorithm) {
-      case AIMD -> getAIMD(getAimd());
-      case FIXED -> FixedLimit.of(getFixed().getLimit());
-      case GRADIENT -> getGradientLimit(getGradient());
-      case GRADIENT2 -> getGradient2Limit(getGradient2());
-      case VEGAS -> getVegasLimit(getVegas());
-    };
+    final var baseLimit =
+        switch (algorithm) {
+          case AIMD -> getAIMD(getAimd());
+          case FIXED -> FixedLimit.of(getFixed().getLimit());
+          case GRADIENT -> getGradientLimit(getGradient());
+          case GRADIENT2 -> getGradient2Limit(getGradient2());
+          case VEGAS -> getVegasLimit(getVegas());
+        };
+    if (useWindowed) {
+      return WindowedLimit.newBuilder().build(baseLimit);
+    } else {
+      return baseLimit;
+    }
   }
 
   private static VegasLimit getVegasLimit(final VegasCfg vegasCfg) {
