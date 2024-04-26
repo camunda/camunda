@@ -47,3 +47,11 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: kind/task
           label-operator: NOT
+      - id: add-to-operate
+        name: Add to Operate project
+        uses: actions/add-to-project@v1.0.1
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/24
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/operate
