@@ -38,6 +38,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
+  private long requestId;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     mutableRecordBatch = new RecordBatch(predicate);
@@ -47,13 +48,14 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
+    metadata.requestId(requestId);
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    if (value instanceof UnifiedRecordValue unifiedRecordValue) {
+    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
       final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
           mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
@@ -87,7 +89,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .intent(intent)
             .rejectionType(rejectionType)
             .rejectionReason(rejectionReason)
-            .valueType(valueType);
+            .valueType(valueType)
+            .requestId(requestId);
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
@@ -113,6 +116,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
+  }
+
+  @Override
+  public void setRequestId(final long requestId) {
+    this.requestId = requestId;
   }
 
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)

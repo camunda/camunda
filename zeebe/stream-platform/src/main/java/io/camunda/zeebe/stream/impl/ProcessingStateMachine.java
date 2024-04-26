@@ -362,6 +362,8 @@ public final class ProcessingStateMachine {
 
       final var command = pendingCommands.removeFirst();
 
+      processingResultBuilder.setRequestId(command.getRequestId());
+
       currentProcessor =
           recordProcessors.stream()
               .filter(p -> p.accepts(command.getValueType()))

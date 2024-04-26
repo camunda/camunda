@@ -87,4 +87,6 @@ public interface ProcessingResultBuilder {
   ProcessingResult build();
 
   boolean canWriteEventOfLength(int eventLength);
+
+  void setRequestId(long requestId);
 }
