@@ -36,6 +36,13 @@ public class ExportingControlService implements ExportingControlApi {
   }
 
   @Override
+  public CompletableFuture<Void> softPauseExporting() {
+    LOG.info("Soft Pausing exporting on all partitions.");
+    final var topology = brokerClient.getTopologyManager().getTopology();
+    return broadcastOnTopology(topology, BrokerAdminRequest::softPauseExporting);
+  }
+
+  @Override
   public CompletableFuture<Void> resumeExporting() {
     LOG.info("Resuming exporting on all partitions.");
     final var topology = brokerClient.getTopologyManager().getTopology();

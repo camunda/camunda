@@ -21,9 +21,19 @@ import {render, screen} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {BatchModificationFooter} from '.';
+import {BatchModificationFooter} from '..';
 
-jest.mock('./BatchModificationSummaryModal', () => ({
+jest.mock('modules/hooks/useCallbackPrompt', () => {
+  return {
+    useCallbackPrompt: () => ({
+      shouldInterrupt: false,
+      confirmNavigation: jest.fn(),
+      cancelNavigation: jest.fn(),
+    }),
+  };
+});
+
+jest.mock('../BatchModificationSummaryModal', () => ({
   BatchModificationSummaryModal: () => (
     <div>MockedBatchModificationSummaryModal</div>
   ),

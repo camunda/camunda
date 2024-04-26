@@ -16,7 +16,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {MoveAction} from '.';
+import {MoveAction} from '..';
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';

@@ -68,21 +68,17 @@ public class ListLogStorage implements LogStorage {
       final long highestPosition,
       final ByteBuffer blockBuffer,
       final AppendListener listener) {
-    try {
-      final var entry = new Entry(blockBuffer);
-      final var index = currentIndex.getAndIncrement();
-      entries.put(index, entry);
-      positionIndexMapping.put(lowestPosition, index);
-      listener.onWrite(index);
+    final var entry = new Entry(blockBuffer);
+    final var index = currentIndex.getAndIncrement();
+    entries.put(index, entry);
+    positionIndexMapping.put(lowestPosition, index);
+    listener.onWrite(index);
 
-      if (positionListener != null) {
-        positionListener.accept(highestPosition);
-      }
-      listener.onCommit(index);
-      commitListeners.forEach(CommitListener::onCommit);
-    } catch (final Exception e) {
-      listener.onWriteError(e);
+    if (positionListener != null) {
+      positionListener.accept(highestPosition);
     }
+    listener.onCommit(index);
+    commitListeners.forEach(CommitListener::onCommit);
   }
 
   @Override

@@ -15,12 +15,13 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {InstancesTable} from '.';
-import {MemoryRouter} from 'react-router-dom';
+import {unstable_HistoryRouter as HistoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
+import {createMemoryHistory} from 'history';
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -29,12 +30,16 @@ function getWrapper(initialPath: string = Paths.processes()) {
     });
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
+      <HistoryRouter
+        history={createMemoryHistory({
+          initialEntries: [initialPath],
+        })}
+      >
         {children}
         <button onClick={batchModificationStore.enable}>
           Enable batch modification mode
         </button>
-      </MemoryRouter>
+      </HistoryRouter>
     );
   };
 
@@ -107,6 +112,10 @@ describe('<InstancesTable />', () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /exit/i}));
+
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {name: /exit/i}),
+    );
 
     expect(
       screen.queryByRole('button', {name: /apply modification/i}),

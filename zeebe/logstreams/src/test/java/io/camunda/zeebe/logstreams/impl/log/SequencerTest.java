@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
@@ -38,7 +38,7 @@ final class SequencerTest {
     final var logStorage = Mockito.mock(LogStorage.class);
     final var sequencer =
         new Sequencer(
-            logStorage, initialPosition, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+            logStorage, initialPosition, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
 
     // when
     final var result = sequencer.tryWrite(TestEntry.ofDefaults());
@@ -54,7 +54,7 @@ final class SequencerTest {
     final var logStorage = Mockito.mock(LogStorage.class);
     final var sequencer =
         new Sequencer(
-            logStorage, initialPosition, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+            logStorage, initialPosition, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
@@ -72,7 +72,7 @@ final class SequencerTest {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entry = TestEntry.ofDefaults();
 
     // when
@@ -87,7 +87,7 @@ final class SequencerTest {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -103,7 +103,7 @@ final class SequencerTest {
     // given
     final var logStorage = new VerifyingLogStorage();
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -123,7 +123,7 @@ final class SequencerTest {
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -148,7 +148,7 @@ final class SequencerTest {
     // given
     final var logStorage = new VerifyingLogStorage();
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -168,7 +168,7 @@ final class SequencerTest {
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new LogStreamMetrics(1));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();

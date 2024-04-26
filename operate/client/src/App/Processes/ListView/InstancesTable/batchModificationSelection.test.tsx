@@ -29,6 +29,16 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 
+jest.mock('modules/hooks/useCallbackPrompt', () => {
+  return {
+    useCallbackPrompt: () => ({
+      shouldInterrupt: false,
+      confirmNavigation: jest.fn(),
+      cancelNavigation: jest.fn(),
+    }),
+  };
+});
+
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {

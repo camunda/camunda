@@ -53,7 +53,7 @@ jobs:
           dockerfile: operate.Dockerfile
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.1
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

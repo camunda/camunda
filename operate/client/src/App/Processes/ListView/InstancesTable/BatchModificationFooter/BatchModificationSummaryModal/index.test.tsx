@@ -33,6 +33,7 @@ import {
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import * as hooks from 'App/Processes/ListView/InstancesTable/useOperationApply';
+import {tracking} from 'modules/tracking';
 
 jest.mock('App/Processes/ListView/InstancesTable/useOperationApply');
 
@@ -109,6 +110,7 @@ describe('BatchModificationSummaryModal', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
+    const trackSpy = jest.spyOn(tracking, 'track');
     const applyBatchOperationMock = jest.fn();
     jest.spyOn(hooks, 'default').mockImplementation(() => ({
       applyBatchOperation: applyBatchOperationMock,
@@ -141,6 +143,9 @@ describe('BatchModificationSummaryModal', () => {
       ],
       onSuccess: expect.any(Function),
       operationType: 'MODIFY_PROCESS_INSTANCE',
+    });
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'batch-move-modification-apply-button-clicked',
     });
   });
 });
