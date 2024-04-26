@@ -70,6 +70,11 @@ public final class ExporterTestController implements Controller {
   }
 
   @Override
+  public long getLastExportedRecordPosition() {
+    return getPosition();
+  }
+
+  @Override
   public Optional<byte[]> readMetadata() {
     return exporterMetadata.get();
   }
