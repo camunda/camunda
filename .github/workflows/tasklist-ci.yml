@@ -232,6 +232,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     needs:
+      - run-build
       - check_changes
       - fe-type-check
       - fe-eslint
