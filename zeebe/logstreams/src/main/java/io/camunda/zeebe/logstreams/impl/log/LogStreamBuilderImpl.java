@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.Limit;
-import com.netflix.concurrency.limits.limit.AbstractLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.VegasConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -60,7 +59,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withAppendLimit(final AbstractLimit appendLimit) {
+  public LogStreamBuilder withAppendLimit(final Limit appendLimit) {
     this.appendLimit = appendLimit;
     return this;
   }
