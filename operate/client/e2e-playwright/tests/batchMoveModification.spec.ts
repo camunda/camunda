@@ -94,11 +94,17 @@ test.beforeAll(async ({request}) => {
       // Select target flow node
       await processesPage.diagram.clickFlowNode('Ship Articles');
 
-      await expect(
-        page.getByText(
-          `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Apply Modification” button to confirm.`,
-        ),
-      ).toBeVisible();
+      const notificationText = `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Apply Modification” button to confirm.`;
+      await expect(page.getByText(notificationText)).toBeVisible();
+
+      // Check that Undo button is working
+      await page.getByRole('button', {name: /undo/i}).click();
+      await expect(page.getByText(notificationText)).not.toBeVisible();
+
+      // Select target flow node
+      await processesPage.diagram.clickFlowNode('Ship Articles');
+
+      await expect(page.getByText(notificationText)).toBeVisible();
 
       await page.getByRole('button', {name: /apply modification/i}).click();
 
