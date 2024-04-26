@@ -117,7 +117,7 @@ class UserTaskZeebeRecordProcessorTest {
             1L,
             "elementId",
             "element id");
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
   @Test
@@ -140,7 +140,7 @@ class UserTaskZeebeRecordProcessorTest {
     /* then */
     final Map<String, Object> expectedUpdateFields =
         Map.of("assignee", "Homer Simpson", "action", "assign");
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
   @Test
@@ -163,7 +163,7 @@ class UserTaskZeebeRecordProcessorTest {
     userTaskZeebeRecordProcessor.processUserTaskRecord(batchRequest, userTaskRecord);
     /* then */
     final Map<String, Object> expectedUpdateFields = Map.of("assignee", "", "action", "assign");
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
   @Test
@@ -199,7 +199,57 @@ class UserTaskZeebeRecordProcessorTest {
             "update",
             "changedAttributes",
             List.of("candidateUserList", "candidateGroupList", "dueDate"));
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
+  }
+
+  @Test // https://github.com/camunda/zeebe/issues/17611
+  void updateShouldIgnoreMissingAttributes() throws PersistenceException {
+    /* given */
+    final var batchRequest = mock(BatchRequest.class);
+    final var userTaskRecord = (Record<UserTaskRecordValue>) mock(Record.class);
+    final var userTaskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withUserTaskKey(1L)
+            .withTenantId(DEFAULT_TENANT_ID)
+            .withCandidateUsersList(List.of("string"))
+            .withCandidateGroupsList(List.of("string"))
+            .withDueDate("2024-04-03T20:22:18.305Z")
+            .withFollowUpDate("2024-04-03T20:22:18.305Z")
+            .withAction("update")
+            .withChangedAttributes(
+                List.of(
+                    "candidateUsersList",
+                    "candidateGroupsList",
+                    "dueDate",
+                    "followUpDate",
+                    "attribute-not-exist"))
+            .build();
+    when(userTaskTemplate.getFullQualifiedName()).thenReturn("user-task-index");
+    when(userTaskRecord.getIntent()).thenReturn(UserTaskIntent.UPDATED);
+    when(userTaskRecord.getValue()).thenReturn(userTaskRecordValue);
+    /* when */
+    userTaskZeebeRecordProcessor.processUserTaskRecord(batchRequest, userTaskRecord);
+    /* then */
+    final Map<String, Object> expectedUpdateFields =
+        Map.of(
+            "candidateUsers",
+            List.of("string"),
+            "candidateGroups",
+            List.of("string"),
+            "dueDate",
+            OffsetDateTime.parse("2024-04-03T20:22:18.305Z"),
+            "followUpDate",
+            OffsetDateTime.parse("2024-04-03T20:22:18.305Z"),
+            "action",
+            "update",
+            "changedAttributes",
+            List.of(
+                "candidateUsersList",
+                "candidateGroupsList",
+                "dueDate",
+                "followUpDate",
+                "attribute-not-exist"));
+    verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
   @Test
@@ -228,7 +278,7 @@ class UserTaskZeebeRecordProcessorTest {
             "complete",
             "variables",
             objectMapper.writeValueAsString(variablesDueCompletion));
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
   @Test
@@ -249,6 +299,14 @@ class UserTaskZeebeRecordProcessorTest {
     userTaskZeebeRecordProcessor.processUserTaskRecord(batchRequest, userTaskRecord);
     /* then */
     final Map<String, Object> expectedUpdateFields = Map.of("action", "");
-    verify(batchRequest).update("user-task-index", "1", expectedUpdateFields);
+    verifyUpsert(batchRequest, expectedUpdateFields);
+  }
+
+  private void verifyUpsert(
+      final BatchRequest batchRequest, final Map<String, Object> expectedUpdateFields)
+      throws PersistenceException {
+    verify(batchRequest)
+        .upsert(
+            eq("user-task-index"), eq("1"), any(UserTaskEntity.class), eq(expectedUpdateFields));
   }
 }

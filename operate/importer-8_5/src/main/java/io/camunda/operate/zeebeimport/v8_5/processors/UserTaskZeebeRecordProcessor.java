@@ -95,7 +95,11 @@ public class UserTaskZeebeRecordProcessor {
         Map.of(
             "candidateUserList",
             new Tuple<>(UserTaskTemplate.CANDIDATE_USERS, userTaskEntity::getCandidateUsers),
+            "candidateUsersList",
+            new Tuple<>(UserTaskTemplate.CANDIDATE_USERS, userTaskEntity::getCandidateUsers),
             "candidateGroupList",
+            new Tuple<>(UserTaskTemplate.CANDIDATE_GROUPS, userTaskEntity::getCandidateGroups),
+            "candidateGroupsList",
             new Tuple<>(UserTaskTemplate.CANDIDATE_GROUPS, userTaskEntity::getCandidateGroups),
             "dueDate",
             new Tuple<>(UserTaskTemplate.DUE_DATE, userTaskEntity::getDueDate),
@@ -108,7 +112,14 @@ public class UserTaskZeebeRecordProcessor {
     map.put(UserTaskTemplate.ACTION, userTaskEntity.getAction());
     for (final var changedAttribute : changedAttributes) {
       final var fieldAndValueSupplier = changedAttributesToUserEntitySupplier.get(changedAttribute);
-      map.put(fieldAndValueSupplier.getLeft(), fieldAndValueSupplier.getRight().get());
+      if (fieldAndValueSupplier != null) {
+        map.put(fieldAndValueSupplier.getLeft(), fieldAndValueSupplier.getRight().get());
+      } else {
+        LOGGER.warn(
+            "Could not find attribute {} from changed attributes {}. This will be ignored.",
+            changedAttribute,
+            changedAttributes);
+      }
     }
     return map;
   }
@@ -153,11 +164,10 @@ public class UserTaskZeebeRecordProcessor {
       final Map<String, Object> updateFields,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.update(
-        userTaskTemplate.getFullQualifiedName(), userTaskEntity.getId(), updateFields);
-    LOGGER.debug(
-        "Updated UserTaskEntity {} with update fields {} to batch request",
+    batchRequest.upsert(
+        userTaskTemplate.getFullQualifiedName(),
         userTaskEntity.getId(),
+        userTaskEntity,
         updateFields);
   }
 
