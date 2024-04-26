@@ -104,6 +104,11 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
+  public long getRequestId() {
+    return metadata.getRequestId();
+  }
+
+  @Override
   public Record copyOf() {
     return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
   }
@@ -122,12 +127,6 @@ public final class TypedRecordImpl implements TypedRecord {
   @JsonIgnore
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
-  }
-
-  @Override
-  @JsonIgnore
-  public long getRequestId() {
-    return metadata.getRequestId();
   }
 
   @Override

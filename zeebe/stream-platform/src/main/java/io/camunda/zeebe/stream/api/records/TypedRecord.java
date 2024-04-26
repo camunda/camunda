@@ -24,8 +24,6 @@ public interface TypedRecord<T extends UnifiedRecordValue> extends Record<T> {
 
   int getRequestStreamId();
 
-  long getRequestId();
-
   int getLength();
 
   default boolean hasRequestMetadata() {

@@ -129,6 +129,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   T getValue();
 
+  long getRequestId();
+
   /**
    * Creates a deep copy of the current record. Can be used to collect records.
    *

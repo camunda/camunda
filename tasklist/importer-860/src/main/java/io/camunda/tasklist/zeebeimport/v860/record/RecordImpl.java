@@ -38,6 +38,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private T value;
 
   private Map<String, Object> authorizations;
+  private long requestId;
 
   public RecordImpl() {}
 
@@ -113,6 +114,15 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   @Override
   public T getValue() {
     return value;
+  }
+
+  @Override
+  public long getRequestId() {
+    return requestId;
+  }
+
+  public void setRequestId(final long requestId) {
+    this.requestId = requestId;
   }
 
   public void setValue(final T value) {
@@ -204,6 +214,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + (authorizations == null ? "null" : String.format("[size='%d']", authorizations.size()))
         + ", value="
         + value
+        + ", requestId="
+        + requestId
         + '}';
   }
 

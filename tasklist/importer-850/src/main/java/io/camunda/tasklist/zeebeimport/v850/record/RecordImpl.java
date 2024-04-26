@@ -39,6 +39,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   private Map<String, Object> authorizations;
 
+  private long requestId;
+
   public RecordImpl() {}
 
   @Override
@@ -92,13 +94,22 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
-  public ValueType getValueType() {
-    return valueType;
+  public Map<String, Object> getAuthorizations() {
+    return authorizations;
+  }
+
+  public void setAuthorizations(final Map<String, Object> authorizations) {
+    this.authorizations = authorizations;
   }
 
   @Override
-  public Map<String, Object> getAuthorizations() {
-    return authorizations;
+  public int getRecordVersion() {
+    return recordVersion;
+  }
+
+  @Override
+  public ValueType getValueType() {
+    return valueType;
   }
 
   @Override
@@ -106,70 +117,71 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return value;
   }
 
-  public void setValue(T value) {
+  @Override
+  public long getRequestId() {
+    return requestId;
+  }
+
+  public void setRequestId(final long requestId) {
+    this.requestId = requestId;
+  }
+
+  public void setValue(final T value) {
     this.value = value;
   }
 
-  public void setRejectionReason(String rejectionReason) {
-    this.rejectionReason = rejectionReason;
+  public void setValueType(final ValueType valueType) {
+    this.valueType = valueType;
+  }
+
+  public RecordImpl<T> setRecordVersion(final int recordVersion) {
+    this.recordVersion = recordVersion;
+    return this;
   }
 
   public void setBrokerVersion(final String brokerVersion) {
     this.brokerVersion = brokerVersion;
   }
 
-  public void setRejectionType(RejectionType rejectionType) {
+  public void setRejectionReason(final String rejectionReason) {
+    this.rejectionReason = rejectionReason;
+  }
+
+  public void setRejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
   }
 
-  public void setRecordType(RecordType recordType) {
+  public void setRecordType(final RecordType recordType) {
     this.recordType = recordType;
   }
 
-  public void setPartitionId(int partitionId) {
+  public void setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
   }
 
-  public void setIntent(Intent intent) {
+  public void setIntent(final Intent intent) {
     this.intent = intent;
   }
 
-  public void setTimestamp(long timestamp) {
+  public void setTimestamp(final long timestamp) {
     this.timestamp = timestamp;
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     this.key = key;
   }
 
-  public void setSourceRecordPosition(long sourceRecordPosition) {
+  public void setSourceRecordPosition(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
-  public void setPosition(long position) {
+  public void setPosition(final long position) {
     this.position = position;
-  }
-
-  public void setValueType(ValueType valueType) {
-    this.valueType = valueType;
-  }
-
-  public void setAuthorizations(Map<String, Object> authorizations) {
-    this.authorizations = authorizations;
   }
 
   @Override
   public Record<T> clone() {
     throw new UnsupportedOperationException("Clone not implemented");
-  }
-
-  public int getRecordVersion() {
-    return recordVersion;
-  }
-
-  public RecordImpl<T> setRecordVersion(int recordVersion) {
-    this.recordVersion = recordVersion;
-    return this;
   }
 
   @Override
@@ -203,6 +215,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + (authorizations == null ? "null" : String.format("[size='%d']", authorizations.size()))
         + ", value="
         + value
+        + ", requestId="
+        + requestId
         + '}';
   }
 
