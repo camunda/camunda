@@ -333,7 +333,7 @@ jobs:
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
           platforms: ${{ env.PLATFORMS }}
       - name: Verify Zeebe Docker image
-        uses: ./.github/actions/verify-zeebe-docker
+        uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
           date: ${{ steps.build-zeebe-docker.outputs.date }}
@@ -403,13 +403,15 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           dockerfile: operate.Dockerfile
       - name: Verify Operate Docker image
-        uses: ./.github/actions/verify-zeebe-docker
+        uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
           date: ${{ steps.build-operate-docker.outputs.date }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
           platforms: ${{ env.PLATFORMS }}
+          dockerfile: operate.Dockerfile
+          goldenfile: operate-docker-labels.golden.json
       - name: Sync Operate Docker Image to DockerHub
         id: push-docker
         if: ${{ inputs.dryRun == false }}
