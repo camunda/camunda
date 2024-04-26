@@ -26,8 +26,8 @@ class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.usernameInput = page.getByLabel('Username');
-    this.passwordInput = page.getByLabel('Password');
+    this.usernameInput = page.getByLabel(/^username$/i);
+    this.passwordInput = page.getByLabel(/^password$/i);
     this.loginButton = page.getByRole('button', {name: 'Login'});
     this.errorMessage = page.getByRole('alert').first();
   }

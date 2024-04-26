@@ -80,8 +80,8 @@ const test = base.extend<
       // Important: make sure we authenticate in a clean environment by unsetting storage state.
       const page = await browser.newPage({storageState: undefined});
       await page.goto(`${baseURL}/login`);
-      await page.getByLabel('Username').fill('demo');
-      await page.getByLabel('Password').fill('demo');
+      await page.getByLabel(/^username$/i).fill('demo');
+      await page.getByLabel(/^password$/i).fill('demo');
       await page.getByRole('button', {name: 'Login'}).click();
 
       await page.waitForURL(`${baseURL}`);

@@ -264,33 +264,33 @@ describe('<Login />', () => {
       /username is required/i,
     );
     expect(screen.getByLabelText(/username/i)).toBeInvalid();
-    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+    expect(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(
       /password is required/i,
     );
-    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^password$/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
     await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
-      /username is required/i,
-    );
+    expect(
+      screen.getByLabelText(/^password$/i),
+    ).not.toHaveAccessibleDescription(/username is required/i);
     expect(screen.getByLabelText(/username/i)).toBeValid();
-    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+    expect(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(
       /password is required/i,
     );
-    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^password$/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.clear(screen.getByLabelText(/username/i));
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
-      /password is required/i,
-    );
-    expect(screen.getByLabelText(/password/i)).toBeValid();
+    expect(
+      screen.getByLabelText(/^password$/i),
+    ).not.toHaveAccessibleDescription(/password is required/i);
+    expect(screen.getByLabelText(/^password$/i)).toBeValid();
     expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
       /username is required/i,
     );
