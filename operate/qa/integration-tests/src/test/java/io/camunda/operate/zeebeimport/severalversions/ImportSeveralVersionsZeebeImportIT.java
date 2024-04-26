@@ -58,9 +58,10 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-public class ImportSeveralVersionsIT extends OperateAbstractIT {
+public class ImportSeveralVersionsZeebeImportIT extends OperateAbstractIT {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImportSeveralVersionsIT.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ImportSeveralVersionsZeebeImportIT.class);
   private static final int TIMEOUT_IN_SECONDS = 5 * 60; // 5 minutes
   private static final int TIMEOUT_IN_MILLIS = TIMEOUT_IN_SECONDS * 1000; // 5 minutes
 
@@ -172,20 +173,21 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
           ElasticsearchUtil.getFieldCardinality(
               esClient, incidentTemplate.getAlias(), IncidentTemplate.KEY);
       assertThat(count).isEqualTo(incidentCount);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       fail("Unable to assert data.", ex);
     }
   }
 
-  private void executeAndRetry(int retryTimes, long waitTime, Runnable execute) {
+  private void executeAndRetry(final int retryTimes, final long waitTime, final Runnable execute) {
     executeAndRetry(0, retryTimes, waitTime, execute);
   }
 
-  private void executeAndRetry(int currentRun, int retryTimes, long waitTime, Runnable execute) {
+  private void executeAndRetry(
+      int currentRun, final int retryTimes, final long waitTime, final Runnable execute) {
     currentRun++;
     try {
       execute.run();
-    } catch (Exception | AssertionError ex) {
+    } catch (final Exception | AssertionError ex) {
       if (currentRun > retryTimes) {
         throw ex;
       } else {

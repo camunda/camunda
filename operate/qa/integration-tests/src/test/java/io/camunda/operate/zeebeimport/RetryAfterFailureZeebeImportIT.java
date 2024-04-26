@@ -16,40 +16,31 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.util.CollectionUtil.map;
-import static org.assertj.core.api.Assertions.assertThat;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
+import org.junit.After;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import java.util.List;
-import org.junit.Test;
-import org.springframework.test.annotation.IfProfileValue;
+/** Tests that after one failure of specific batch import, it will be successfully retried. */
+@SpringBootTest(
+    classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.main.allow-bean-definition-overriding=true",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+    })
+public class RetryAfterFailureZeebeImportIT extends BasicZeebeImportIT {
 
-public class IntermediateThrowEventZeebeIT extends OperateZeebeAbstractIT {
+  @Autowired
+  private RetryAfterFailureTestConfig.CustomElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
-  @Test
-  @IfProfileValue(name = "spring.profiles.active", value = "test")
-  public void shouldImportIntermediateThrowEvent() {
-    // given
-    tester
-        .deployProcess("intermediate-throw-event.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .then()
-        .startProcessInstance("intermediate-throw-event-process", null)
-        .waitUntil()
-        .processInstanceIsFinished();
-
-    // when
-    final List<FlowNodeInstanceEntity> flowNodes =
-        tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
-    // then
-    assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
-        .isEqualTo(
-            List.of(
-                FlowNodeType.START_EVENT,
-                FlowNodeType.INTERMEDIATE_THROW_EVENT,
-                FlowNodeType.END_EVENT));
+  @Override
+  @After
+  public void after() {
+    elasticsearchBulkProcessor.cancelAttempts();
+    super.after();
   }
 }

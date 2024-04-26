@@ -53,14 +53,14 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateProperties.PREFIX + ".multiTenancy.enabled = true"
     })
 @ActiveProfiles({OperateProfileService.IDENTITY_AUTH_PROFILE, "test"})
-public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
+public class ImportMultitenancyZeebeImportIT extends IdentityOperateZeebeAbstractIT {
 
   @Autowired private ListViewReader listViewReader;
 
-  private String defaultTenantId = "<default>";
+  private final String defaultTenantId = "<default>";
 
   @DynamicPropertySource
-  protected static void registerProperties(DynamicPropertyRegistry registry) {
+  protected static void registerProperties(final DynamicPropertyRegistry registry) {
     IdentityTester.registerProperties(registry, true);
   }
 
@@ -98,7 +98,7 @@ public class ImportMultitenancyZeebeIT extends IdentityOperateZeebeAbstractIT {
   }
 
   private ListViewProcessInstanceDto getSingleProcessInstanceForListView(
-      ListViewRequestDto request) {
+      final ListViewRequestDto request) {
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);

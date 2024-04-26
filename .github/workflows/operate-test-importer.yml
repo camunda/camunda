@@ -1,0 +1,11 @@
+name: Operate Run Test Importer
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+jobs:
+  run-importer-tests:
+    uses: ./.github/workflows/operate-run-tests.yml
+    with:
+      command: mvn -f operate verify -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
+    secrets: inherit

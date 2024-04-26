@@ -45,7 +45,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-public class DecisionZeebeIT extends OperateZeebeAbstractIT {
+public class DecisionZeebeImportIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_DECISIONS_GROUPED_URL = "/api/decisions/grouped";
   private static final String QUERY_DECISION_XML_URL = "/api/decisions/%s/xml";
@@ -58,6 +58,7 @@ public class DecisionZeebeIT extends OperateZeebeAbstractIT {
 
   @MockBean private PermissionsService permissionsService;
 
+  @Override
   @Before
   public void before() {
     super.before();

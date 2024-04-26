@@ -55,12 +55,13 @@ import org.springframework.util.unit.DataSize;
       OperateProperties.PREFIX + ".alert.webhook = http://somepath",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-public class IncidentZeebeIT extends OperateZeebeAbstractIT {
+public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private UpdateVariableHandler updateVariableHandler;
 
   @MockBean private IncidentNotifier incidentNotifier;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -346,7 +347,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidentResponse.getFlowNodes().get(0).getCount()).isEqualTo(2);
   }
 
-  protected void assertIncident(IncidentDto anIncident, ErrorType anErrorType) {
+  protected void assertIncident(final IncidentDto anIncident, final ErrorType anErrorType) {
     assertThat(anIncident.getErrorType().getId()).isEqualTo(anErrorType.name());
     assertThat(anIncident.getErrorType().getName()).isEqualTo(anErrorType.getTitle());
     assertThat(anIncident.getRootCauseInstance().getInstanceId())
@@ -354,7 +355,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void assertErrorType(
-      IncidentResponseDto incidentResponse, ErrorType errorType, int count) {
+      final IncidentResponseDto incidentResponse, final ErrorType errorType, final int count) {
     assertThat(incidentResponse.getErrorTypes())
         .filteredOn(et -> et.getName().equals(errorType.getTitle()))
         .hasSize(1)
@@ -362,7 +363,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void assertIncidentFlowNode(
-      IncidentResponseDto incidentResponse, String activityId, int count) {
+      final IncidentResponseDto incidentResponse, final String activityId, final int count) {
     assertThat(incidentResponse.getFlowNodes())
         .filteredOn(fn -> fn.getId().equals(activityId))
         .hasSize(1)
@@ -370,10 +371,10 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void assertIncident(
-      IncidentResponseDto incidentResponse,
-      String errorMsg,
-      String activityId,
-      ErrorType errorType) {
+      final IncidentResponseDto incidentResponse,
+      final String errorMsg,
+      final String activityId,
+      final ErrorType errorType) {
     final Optional<IncidentDto> incidentOpt =
         incidentResponse.getIncidents().stream()
             .filter(inc -> inc.getErrorType().getName().equals(errorType.getTitle()))
@@ -392,7 +393,7 @@ public class IncidentZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  protected String getIncidentsURL(long processInstanceKey) {
+  protected String getIncidentsURL(final long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/incidents", processInstanceKey);
   }
 }

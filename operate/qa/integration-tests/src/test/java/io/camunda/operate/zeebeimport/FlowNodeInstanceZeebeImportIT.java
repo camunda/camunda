@@ -44,7 +44,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
+public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private IncidentReader incidentReader;
 
@@ -459,12 +459,12 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected FlowNodeInstanceDto assertChild(
-      List<FlowNodeInstanceDto> children,
-      int childPosition,
-      String flowNodeId,
-      FlowNodeStateDto state,
-      String parentTreePath,
-      FlowNodeType type) {
+      final List<FlowNodeInstanceDto> children,
+      final int childPosition,
+      final String flowNodeId,
+      final FlowNodeStateDto state,
+      final String parentTreePath,
+      final FlowNodeType type) {
     final FlowNodeInstanceDto flowNode = children.get(childPosition);
     assertThat(flowNode.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(flowNode.getId()).isNotNull();
@@ -673,14 +673,14 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstanceListsFromRest(
-      FlowNodeInstanceQueryDto... queries) throws Exception {
+      final FlowNodeInstanceQueryDto... queries) throws Exception {
     final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(queries);
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
   protected List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      FlowNodeInstanceQueryDto query) throws Exception {
+      final FlowNodeInstanceQueryDto query) throws Exception {
     final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
@@ -689,8 +689,8 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
     return response.values().iterator().next().getChildren();
   }
 
-  protected Map<String, FlowNodeStateDto> getFlowNodeStateDtosFromRest(String processInstanceId)
-      throws Exception {
+  protected Map<String, FlowNodeStateDto> getFlowNodeStateDtosFromRest(
+      final String processInstanceId) throws Exception {
     final MvcResult mvcResult =
         getRequest(
             String.format(
@@ -791,9 +791,9 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertFlowNodeStateDto(
-      Map<String, FlowNodeStateDto> flowNodeStateDtos,
-      String flowNodeId,
-      FlowNodeStateDto... states) {
+      final Map<String, FlowNodeStateDto> flowNodeStateDtos,
+      final String flowNodeId,
+      final FlowNodeStateDto... states) {
     assertThat(flowNodeStateDtos.get(flowNodeId)).isIn(states);
   }
 }

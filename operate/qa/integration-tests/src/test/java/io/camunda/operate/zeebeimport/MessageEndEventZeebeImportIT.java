@@ -26,18 +26,23 @@ import java.util.List;
 import org.junit.Test;
 import org.springframework.test.annotation.IfProfileValue;
 
-public class ManualTaskZeebeIT extends OperateZeebeAbstractIT {
+public class MessageEndEventZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Test
   @IfProfileValue(name = "spring.profiles.active", value = "test")
-  public void shouldImportManualTask() {
+  public void shouldImportMessageEndEvent() {
+    final String flowNodeId = "messageEndEvent";
+    final String jobKey = "taskDefinition";
     // given
     tester
-        .deployProcess("manual-task.bpmn")
+        .deployProcess("message-end-event.bpmn")
         .waitUntil()
         .processIsDeployed()
         .then()
-        .startProcessInstance("manual-task-process", null)
+        .startProcessInstance("message-end-event-process", null)
+        .flowNodeIsActive(flowNodeId)
+        .then()
+        .completeTask(flowNodeId, jobKey)
         .waitUntil()
         .processInstanceIsFinished();
 
@@ -46,7 +51,6 @@ public class ManualTaskZeebeIT extends OperateZeebeAbstractIT {
         tester.getAllFlowNodeInstances(tester.getProcessInstanceKey());
     // then
     assertThat(map(flowNodes, FlowNodeInstanceEntity::getType))
-        .isEqualTo(
-            List.of(FlowNodeType.START_EVENT, FlowNodeType.MANUAL_TASK, FlowNodeType.END_EVENT));
+        .isEqualTo(List.of(FlowNodeType.START_EVENT, FlowNodeType.END_EVENT));
   }
 }

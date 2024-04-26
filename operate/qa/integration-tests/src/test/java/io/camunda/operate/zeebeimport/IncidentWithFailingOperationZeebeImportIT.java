@@ -57,10 +57,10 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateProperties.PREFIX + ".alert.webhook = http://somepath",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT {
+public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstractIT {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(IncidentWithFailingOperationZeebeIT.class);
+      LoggerFactory.getLogger(IncidentWithFailingOperationZeebeImportIT.class);
 
   @Autowired private ResolveIncidentHandler updateRetriesHandler;
 
@@ -68,6 +68,7 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
 
   @SpyBean private OperationsManager operationsManager;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -144,10 +145,10 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
   }
 
   private void assertIncident(
-      IncidentResponseDto incidentResponse,
-      String errorMsg,
-      String activityId,
-      ErrorType errorType) {
+      final IncidentResponseDto incidentResponse,
+      final String errorMsg,
+      final String activityId,
+      final ErrorType errorType) {
     final Optional<IncidentDto> incidentOpt =
         incidentResponse.getIncidents().stream()
             .filter(inc -> inc.getErrorType().getName().equals(errorType.getTitle()))
@@ -166,7 +167,7 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
     }
   }
 
-  protected String getIncidentsURL(long processInstanceKey) {
+  protected String getIncidentsURL(final long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/incidents", processInstanceKey);
   }
 }

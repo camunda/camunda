@@ -16,37 +16,75 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
-import io.camunda.operate.zeebe.ImportValueType;
-import java.util.function.Predicate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-/**
- * Tests that even if the Zeebe data is imported twice, in Operate Elasticsearch is is still
- * consistent.
- */
-@SpringBootTest(
-    classes = {ZeebeImportIdempotencyTestConfig.class, TestApplication.class},
-    properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
-    })
-public class ZeebeImportIdempotencyZeebeIT extends ZeebeImportZeebeIT {
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.ZeebeTestUtil;
+import org.junit.After;
+import org.junit.Test;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
-  @Autowired
-  private ZeebeImportIdempotencyTestConfig.CustomElasticsearchBulkProcessor
-      elasticsearchBulkProcessor;
+public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
+
+  @SpyBean private ProcessCache processCache;
 
   @Override
-  protected void processImportTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-    searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-    elasticsearchBulkProcessor.cancelAttempts();
+  @After
+  public void after() {
+    // clean the cache
+    processCache.clearCache();
+    super.after();
+  }
+
+  @Test
+  public void testProcessDoesNotExist() {
+    final String processNameDefault =
+        processCache.getProcessNameOrDefaultValue(2L, "default_value");
+    assertThat(processNameDefault).isEqualTo("default_value");
+  }
+
+  @Test
+  public void testProcessVersionAndNameReturnedAndReused() {
+    final Long processDefinitionKey1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    final Long processDefinitionKey2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+
+    String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
+    assertThat(demoProcessName).isNotNull();
+
+    // request once again, the cache should be used
+    demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
+    assertThat(demoProcessName).isNotNull();
+
+    verify(processCache, times(1)).putToCache(any(), any());
+  }
+
+  @Test
+  public void testProcessFlowNodeNameReturnedAndReused() {
+    final Long processDefinitionKey1 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
+    final Long processDefinitionKey2 =
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "processWithGateway.bpmn");
+
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+
+    String flowNodeName =
+        processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
+    assertThat(flowNodeName).isEqualTo("start");
+
+    // request once again, the cache should be used
+    flowNodeName = processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
+    assertThat(flowNodeName).isEqualTo("start");
+
+    verify(processCache, times(1)).putToCache(any(), any());
   }
 }

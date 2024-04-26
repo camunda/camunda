@@ -56,7 +56,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-public class ImportZeebeIT extends OperateZeebeAbstractIT {
+public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
@@ -143,7 +143,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertVariableExists(processInstanceKey, "a", "\"c\"");
   }
 
-  private void assertVariableExists(Long processInstanceKey, String name, String value) {
+  private void assertVariableExists(
+      final Long processInstanceKey, final String name, final String value) {
     final ListViewProcessInstanceDto pi =
         getSingleProcessInstanceForListView(
             createGetAllProcessInstancesRequest(
@@ -153,7 +154,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
   }
 
-  private void assertVariableDoesNotExist(Long processInstanceKey, String name, String value) {
+  private void assertVariableDoesNotExist(
+      final Long processInstanceKey, final String name, final String value) {
     final ListViewRequestDto request =
         createGetAllProcessInstancesRequest(q -> q.setVariable(new VariablesQueryDto(name, value)));
     request.setPageSize(100);
@@ -163,7 +165,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private ListViewProcessInstanceDto getSingleProcessInstanceForListView(
-      ListViewRequestDto request) {
+      final ListViewRequestDto request) {
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);
@@ -664,7 +666,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void sendMessages(String messageName, String payload, int count) {
+  private void sendMessages(final String messageName, final String payload, final int count) {
     ZeebeTestUtil.sendMessages(zeebeClient, messageName, payload, count, String.valueOf(5));
   }
 
@@ -903,7 +905,7 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(variableEntity.getValue()).isEqualTo("\"b\"");
   }
 
-  private void assertStartFlowNodeCompleted(FlowNodeInstanceEntity startActivity) {
+  private void assertStartFlowNodeCompleted(final FlowNodeInstanceEntity startActivity) {
     assertThat(startActivity.getFlowNodeId()).isEqualTo("start");
     assertThat(startActivity.getProcessDefinitionKey()).isNotNull();
     assertThat(startActivity.getBpmnProcessId()).isNotNull();
@@ -915,7 +917,8 @@ public class ImportZeebeIT extends OperateZeebeAbstractIT {
     assertThat(startActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertFlowNodeIsActive(FlowNodeInstanceEntity flowNodeEntity, String flowNodeId) {
+  private void assertFlowNodeIsActive(
+      final FlowNodeInstanceEntity flowNodeEntity, final String flowNodeId) {
     assertThat(flowNodeEntity.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(flowNodeEntity.getProcessDefinitionKey()).isNotNull();
     assertThat(flowNodeEntity.getBpmnProcessId()).isNotNull();

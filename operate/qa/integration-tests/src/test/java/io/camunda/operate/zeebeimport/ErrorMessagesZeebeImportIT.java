@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
+public class ErrorMessagesZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -45,6 +45,7 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private ListViewReader listViewReader;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -120,7 +121,7 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
   }
 
   protected void assertSearchResults(
-      ListViewResponseDto results, int count, String... processInstanceKeys) {
+      final ListViewResponseDto results, final int count, final String... processInstanceKeys) {
     assertThat(results.getTotalCount()).isEqualTo(count);
     results.getProcessInstances().stream()
         .allMatch(
@@ -128,13 +129,13 @@ public class ErrorMessagesZeebeIT extends OperateZeebeAbstractIT {
                 Arrays.asList(processInstanceKeys).contains(processInstance.getId()));
   }
 
-  protected ListViewResponseDto searchForErrorMessages(String errorMessage) {
+  protected ListViewResponseDto searchForErrorMessages(final String errorMessage) {
     final ListViewRequestDto queriesRequest = createGetAllProcessInstancesRequest();
     queriesRequest.getQuery().setErrorMessage(errorMessage);
     return listViewReader.queryProcessInstances(queriesRequest);
   }
 
-  protected Long setupIncidentWith(String errorMessage) {
+  protected Long setupIncidentWith(final String errorMessage) {
     return tester
         .deployProcess("demoProcess_v_1.bpmn")
         .waitUntil()
