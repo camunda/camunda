@@ -80,16 +80,17 @@ public abstract class BaseWebConfigurer {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
 
     // Only SaaS has CloudProperties
-    if (operateProperties.getCloud().getClusterId() == null) {
-      webSecurityConfig.setContentSecurityPolicy(DEFAULT_SM_SECURITY_POLICY);
-    }
+    final String policyDirectives =
+        (operateProperties.getCloud().getClusterId() == null)
+            ? DEFAULT_SM_SECURITY_POLICY
+            : webSecurityConfig.getContentSecurityPolicy();
 
     http.headers(
         headers -> {
           headers
               .contentSecurityPolicy(
                   cps -> {
-                    cps.policyDirectives(webSecurityConfig.getContentSecurityPolicy());
+                    cps.policyDirectives(policyDirectives);
                   })
               .httpStrictTransportSecurity(
                   sts -> {
