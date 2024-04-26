@@ -46,7 +46,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@43045ae669be728bd34ed56fcd1a230c0dc4d8e2
+        uses: actions/checkout@8459bc0c7e3759cdf591f513d9f141a95fef0a8f
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -74,13 +74,9 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       # Run integration tests in parallel
-      - name: Backend - Stage 1 Integration Tests
+      - name: Backend - Integration Tests
         run: |
           mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
-
-      - name: Backend - Stage 2 Integration Tests
-        run: |
-          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItStage2 -B -Dfailsafe.rerunFailingTestsCount=2
 
       # Reports: publish test metrics results
       - name: Publish Test Results
@@ -98,7 +94,7 @@ jobs:
           name: "ci tests"
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
         with:

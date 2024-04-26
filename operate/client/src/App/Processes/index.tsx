@@ -30,9 +30,10 @@ const Processes: React.FC = observer(() => {
     return processInstanceMigrationStore.reset;
   }, []);
 
-  const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
-    processInstanceMigrationStore.isEnabled,
-  );
+  const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
+    useCallbackPrompt({
+      shouldInterrupt: processInstanceMigrationStore.isEnabled,
+    });
 
   useEffect(() => {
     // this effect is necessary to bypass the callback prompt when a migration
@@ -50,9 +51,9 @@ const Processes: React.FC = observer(() => {
         <ListView />
       )}
 
-      {showPrompt && !hasPendingRequest && (
+      {isNavigationInterrupted && !hasPendingRequest && (
         <Modal
-          open={showPrompt}
+          open={isNavigationInterrupted}
           modalHeading="Leave Migration Mode"
           preventCloseOnClickOutside
           onRequestClose={cancelNavigation}

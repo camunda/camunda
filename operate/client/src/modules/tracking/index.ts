@@ -19,6 +19,11 @@ import {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
 
 const EVENT_PREFIX = 'operate:';
+
+/**
+ * These are all available events for mixpanel tracking. If a new event is introduced,
+ * it needs to be added here first.
+ */
 type Events =
   | {
       eventName: 'navigation';
@@ -270,6 +275,9 @@ type Events =
   | {
       eventName: 'open-tasklist-link-clicked';
     }
+  /**
+   * Process instance migration
+   */
   | {
       eventName: 'process-instance-migration-button-clicked';
     }
@@ -278,6 +286,18 @@ type Events =
     }
   | {
       eventName: 'process-instance-migration-confirmed';
+    }
+  /**
+   * Process instance batch modification
+   */
+  | {
+      eventName: 'batch-move-modification-move-button-clicked';
+    }
+  | {
+      eventName: 'batch-move-modification-exit-button-clicked';
+    }
+  | {
+      eventName: 'batch-move-modification-apply-button-clicked';
     };
 
 const STAGE_ENV = getStage(window.location.host);

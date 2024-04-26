@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryImpl;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.ProcessedLogAppendEntryImpl;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;

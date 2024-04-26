@@ -28,12 +28,16 @@ function useCurrentUser() {
 
       if (response !== null) {
         const currentUser = await response.json();
+        const permissions: unknown[] = currentUser?.permissions ?? [];
 
         return {
           ...currentUser,
-          permissions: currentUser?.permissions?.map((permission: string) =>
-            permission.toLowerCase(),
-          ),
+          permissions: permissions
+            .filter<string>(
+              (permission): permission is string =>
+                typeof permission === 'string',
+            )
+            .map((permission) => permission.toLowerCase()),
         };
       }
 
