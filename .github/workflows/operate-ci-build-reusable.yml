@@ -151,7 +151,7 @@ jobs:
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics
       - uses: camunda/infra-global-github-actions/submit-build-status@main
-        if: always()
+        if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
         with:
           build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
           gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
