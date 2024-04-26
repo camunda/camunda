@@ -31,7 +31,7 @@ export async function login(t, userHandle = 'user1') {
     .maximizeWindow()
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.password)
-    .click('button[type="submit"]');
+    .click(process.env.CONTEXT === 'sm' ? 'input[type="submit"]' : 'button[type="submit"]');
 }
 
 export function getUser(t, userHandle) {
@@ -47,8 +47,12 @@ export function getUser(t, userHandle) {
 
 export async function createNewReport(t) {
   await t.click(Common.createNewButton);
-  await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Process report'));
+  if (process.env.CONTEXT === 'sm') {
+    await t.click(Common.menuOption('Report'));
+  } else {
+    await t.hover(Common.newReportOption);
+    await t.click(Common.submenuOption('Process report'));
+  }
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);

@@ -7,11 +7,31 @@
 
 const users = require('../demo-data/users.json');
 
-export default {
+const config = {
   endpoint: 'http://localhost:3000',
   collectionsEndpoint: 'http://localhost:3000/#/collections',
   elasticSearchEndpoint: 'http://localhost:9200',
-  users: {
+  keycloak: {
+    endpoint: 'http://localhost:18080/auth',
+    username: 'admin',
+    password: 'admin',
+    client_id: 'admin-cli',
+  },
+};
+if (process.env.CONTEXT === 'sm') {
+  const browser1 = createMapOfUsers(users.slice(0, 2));
+  const browser2 = createMapOfUsers(users.slice(2, 4));
+  const borwser3 = createMapOfUsers(users.slice(4, 6));
+  const browsers = [browser1, browser2, borwser3];
+
+  config.users = {
+    Chrome: browsers,
+    headless: browsers,
+    Firefox: browsers,
+    'Microsoft Edge': browsers,
+  };
+} else {
+  config.users = {
     Chrome: [
       createMapOfUsers(users.slice(0, 2)),
       createMapOfUsers(users.slice(2, 4)),
@@ -32,8 +52,10 @@ export default {
       createMapOfUsers(users.slice(20, 22)),
       createMapOfUsers(users.slice(22, 24)),
     ],
-  },
-};
+  };
+}
+
+export default config;
 
 function createMapOfUsers(users) {
   return users.reduce((map, user, idx) => {

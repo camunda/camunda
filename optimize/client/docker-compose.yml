@@ -99,7 +99,7 @@ services:
     volumes:
       - ./databaseDumps:/dump/
   zeebe:
-    image: camunda/zeebe:${ZEEBE_VERSION:-8.3.0}
+    image: camunda/zeebe:${ZEEBE_VERSION:-8.5.0}
     profiles: ['cloud', 'self-managed']
     container_name: zeebe
     environment:
@@ -121,7 +121,7 @@ services:
     environment:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_DATABASE_VENDOR: dev-file
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
   identity:
     depends_on:
@@ -138,8 +138,58 @@ services:
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:3000
-      KEYCLOAK_USERS_0_USERNAME: 'demo'
-      KEYCLOAK_USERS_0_PASSWORD: 'demo'
-      KEYCLOAK_USERS_0_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_0_USERNAME: 'Ourief'
+      KEYCLOAK_USERS_0_PASSWORD: 'Ourief'
+      KEYCLOAK_USERS_0_FIRST_NAME: 'Ourief'
       KEYCLOAK_USERS_0_ROLES_0: 'Identity'
       KEYCLOAK_USERS_0_ROLES_1: 'Optimize'
+      KEYCLOAK_USERS_1_USERNAME: 'Comentse'
+      KEYCLOAK_USERS_1_PASSWORD: 'Comentse'
+      KEYCLOAK_USERS_1_FIRST_NAME: 'Comentse'
+      KEYCLOAK_USERS_1_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_2_USERNAME: 'Abook1998'
+      KEYCLOAK_USERS_2_PASSWORD: 'Abook1998'
+      KEYCLOAK_USERS_2_FIRST_NAME: 'Abook1998'
+      KEYCLOAK_USERS_2_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_3_USERNAME: 'Aboys1960'
+      KEYCLOAK_USERS_3_PASSWORD: 'Aboys1960'
+      KEYCLOAK_USERS_3_FIRST_NAME: 'Aboys1960'
+      KEYCLOAK_USERS_3_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_4_USERNAME: 'Abrount'
+      KEYCLOAK_USERS_4_PASSWORD: 'Abrount'
+      KEYCLOAK_USERS_4_FIRST_NAME: 'Abrount'
+      KEYCLOAK_USERS_4_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_5_USERNAME: 'Abse1978'
+      KEYCLOAK_USERS_5_PASSWORD: 'Abse1978'
+      KEYCLOAK_USERS_5_FIRST_NAME: 'Abse1978'
+      KEYCLOAK_USERS_5_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_6_USERNAME: 'demo'
+      KEYCLOAK_USERS_6_PASSWORD: 'demo'
+      KEYCLOAK_USERS_6_EMAIL: 'demo@demo.com'
+      KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
+      KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
+      KEYCLOAK_USERS_6_ROLES_1: 'Identity'
+  operate:
+    profiles: ['self-managed']
+    image: camunda/operate:${OPERATE_VERSION:-8.5.0}
+    container_name: operate
+    environment:
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+      - SPRING_PROFILES_ACTIVE=dev-data
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/
+      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+    ports:
+      - '8080:8080'
+    depends_on:
+      - elasticsearch
+      - zeebe
+    restart: always

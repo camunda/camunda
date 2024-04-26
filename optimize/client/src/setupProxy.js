@@ -21,7 +21,7 @@ module.exports = function (app) {
       return true;
     }
 
-    if (req.headers.cookie) {
+    if (req.headers.cookie?.includes('X-Optimize-Authorization')) {
       return false;
     }
 
@@ -34,7 +34,9 @@ module.exports = function (app) {
       selfHandleResponse: true,
       onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req) => {
         const showPlatformLogin =
-          req.url === '/' && proxyRes.statusCode === 200 && !proxyRes.headers.cookie;
+          req.url === '/' &&
+          proxyRes.statusCode === 200 &&
+          !proxyRes.headers.cookie?.includes('X-Optimize-Authorization');
 
         if (showPlatformLogin) {
           // return original login page html file if the homepage does not redirect

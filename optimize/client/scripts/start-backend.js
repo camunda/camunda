@@ -75,6 +75,7 @@ const cloudEnv = {
 
 const selfManagedEnv = {
   SPRING_PROFILES_ACTIVE: 'ccsm',
+  ZEEBE_IMPORT_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_ZEEBE_ENABLED: 'true',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL: 'http://localhost:18080/auth/realms/camunda-platform',
   CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:
@@ -90,6 +91,10 @@ const selfManagedEnv = {
   OPTIMIZE_ELASTICSEARCH_HOST: 'localhost',
   OPTIMIZE_ELASTICSEARCH_HTTP_PORT: '9200',
   CAMUNDA_OPTIMIZE_API_AUDIENCE: 'optimize',
+  OPTIMIZE_LOG_LEVEL: 'DEBUG',
+  CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED: true,
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:
+    'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
 };
 
 const server = createServer(

@@ -9,34 +9,68 @@ import fetch from 'node-fetch';
 
 import config from './config';
 
-async function getSession(user) {
-  const resp = await fetch(config.endpoint + '/api/authentication', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(user),
-  });
-  return await resp.text();
+export async function cleanEntities({ctx}) {
+  const indicesToDelete = [
+    'optimize-single-process-report',
+    'optimize-report-share',
+    'optimize-dashboard-share',
+    'optimize-collection',
+    'optimize-alert',
+    'optimize-dashboard',
+  ];
+
+  let users = ctx.users.map((user) => user.username);
+
+  if (process.env.CONTEXT === 'sm') {
+    users = await getUsersIds(ctx.users);
+  } else {
+    indicesToDelete.push('optimize-combined-report', 'optimize-single-decision-report');
+  }
+
+  deleteIndicesContent(indicesToDelete, users);
 }
 
-export async function cleanEntities({ctx}) {
-  if (ctx.users) {
-    for (let i = 0; i < ctx.users.length; i++) {
-      const headers = {
-        Cookie: `X-Optimize-Authorization="Bearer ${await getSession(ctx.users[i])}"`,
-      };
+async function deleteIndicesContent(indicesToDelete, users) {
+  try {
+    for (const index of indicesToDelete) {
+      const response = await fetch(`${config.elasticSearchEndpoint}/${index}/_delete_by_query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: {
+            bool: {
+              must_not: [
+                {
+                  term: {
+                    managementDashboard: 'true',
+                  },
+                },
+                {
+                  term: {
+                    'data.managementReport': 'true',
+                  },
+                },
+              ],
+              must: [
+                {
+                  terms: {
+                    owner: users,
+                  },
+                },
+              ],
+            },
+          },
+        }),
+      });
 
-      const response = await fetch(`${config.endpoint}/api/entities`, {headers});
-      const entities = await response.json();
-      for (let i = 0; i < entities.length; i++) {
-        await fetch(
-          `${config.endpoint}/api/${entities[i].entityType}/${entities[i].id}?force=true`,
-          {
-            method: 'DELETE',
-            headers,
-          }
-        );
+      if (!response.ok) {
+        console.error(`Failed to delete content of index ${index}. Status: ${response.status}`);
       }
     }
+  } catch (error) {
+    console.error('Error occurred:', error);
   }
 }
 
@@ -55,4 +89,59 @@ export async function cleanEventProcesses() {
     headers,
     body: JSON.stringify(processesIds),
   });
+}
+
+async function getSession(user) {
+  const resp = await fetch(config.endpoint + '/api/authentication', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(user),
+  });
+  return await resp.text();
+}
+
+async function getUsersIds(configUsers) {
+  const keycloakUsers = await getUsersFromRealm();
+
+  return keycloakUsers
+    .filter((user) =>
+      configUsers.some(
+        (configUser) => configUser.username.toLowerCase() === user.username.toLowerCase()
+      )
+    )
+    .map((user) => user.id);
+}
+
+async function getUsersFromRealm() {
+  const {endpoint, username, password, client_id} = config.keycloak;
+  try {
+    // Get access token
+    const tokenResponse = await fetch(`${endpoint}/realms/master/protocol/openid-connect/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'password',
+        username,
+        password,
+        client_id,
+      }),
+    });
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    // Get users from the specified realm
+    const usersResponse = await fetch(`${endpoint}/admin/realms/camunda-platform/users`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const usersData = await usersResponse.json();
+
+    return usersData;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
 }
