@@ -58,14 +58,14 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
   @Autowired private RestHighLevelClient esClient;
 
   @Override
-  public TaskFilterEntity persistFilter(TaskFilterEntity filterEntity) {
+  public TaskFilterEntity persistFilter(final TaskFilterEntity filterEntity) {
     try {
       final IndexRequest indexRequest =
           new IndexRequest(taskFilterIndex.getFullQualifiedName())
               .source(objectMapper.writeValueAsString(filterEntity), XContentType.JSON);
       final IndexResponse indexResponse = esClient.index(indexRequest, RequestOptions.DEFAULT);
       filterEntity.setId(indexResponse.getId());
-    } catch (IOException exception) {
+    } catch (final IOException exception) {
       throw new TasklistRuntimeException(exception);
     }
     return filterEntity;
@@ -82,6 +82,7 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
       searchRequest.source(sourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
+
       if (searchResponse.getHits().getHits().length == 0) {
         return Optional.empty();
       }
@@ -89,7 +90,8 @@ public class TaskFilterStoreElasticSearch implements TaskFilterStore {
       return Optional.of(
           ElasticsearchUtil.fromSearchHit(
               response.getSourceAsString(), objectMapper, TaskFilterEntity.class));
-    } catch (IOException e) {
+
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }

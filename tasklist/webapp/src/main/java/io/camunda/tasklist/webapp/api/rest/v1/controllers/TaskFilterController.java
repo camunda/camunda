@@ -80,4 +80,10 @@ public class TaskFilterController extends ApiErrorController {
     final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
     return ResponseEntity.ok(taskFilterEntity);
   }
+
+  @GetMapping("{taskFilterId}")
+  public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId){
+    final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
+    return ResponseEntity.ok(taskFilterEntity);
+  }
 }
