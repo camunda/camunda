@@ -92,6 +92,7 @@ public final class LogStreamImpl extends Actor
     LOG.info("On closing logstream {} close {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
+    logStreamMetrics.remove();
   }
 
   @Override
