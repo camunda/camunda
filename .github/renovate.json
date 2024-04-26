@@ -5,9 +5,9 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranches": [
-    "main",
     "/^stable\\/8\\..*/",
-    "stable/operate-8.5"
+    "stable/operate-8.5",
+    "main"
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
@@ -44,6 +44,12 @@
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {

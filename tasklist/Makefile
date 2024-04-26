@@ -2,20 +2,20 @@
 
 .PHONY: env-up
 env-up:
-	@mvn clean install -DskipTests=true \
+	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false \
 	&& docker-compose up -d elasticsearch zeebe \
 	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 .PHONY: env-up-os
 env-up-os:
-	@mvn clean install -DskipTests=true \
+	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false \
 	&& docker-compose up -d opensearch zeebe-opensearch \
 	&& mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.tasklist.Application" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.tasklist.database=opensearch
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:
-	@mvn clean install -DskipTests=true \
+	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false \
 	&& docker-compose up -d elasticsearch zeebe \
 	&& CAMUNDA_TASKLIST_AUTH0_CLAIMNAME=https://camunda.com/orgs \
 	   CAMUNDA_TASKLIST_AUTH0_CLIENTID=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3 \
@@ -36,7 +36,7 @@ operate-up:
 .PHONY: env-identity-up
 env-identity-up:
 	@docker-compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe
-	@mvn install -DskipTests=true -Dskip.fe.build=false
+	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false
 	@CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_BASE_URL=http://localhost:8084 \
@@ -51,7 +51,7 @@ env-identity-up:
 .PHONY: env-identity-up
 env-identity-os-up:
 	@docker-compose -f ./config/docker-compose.identity.yml up -d identity opensearch zeebe-opensearch
-	@mvn install -DskipTests=true -Dskip.fe.build=false
+	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false
 	@CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_BASE_URL=http://localhost:8084 \
@@ -71,7 +71,7 @@ env-identity-os-up:
 .PHONY: env-identity-mt-up
 env-identity-mt-up:
 	@docker-compose -f ./config/docker-compose.identity.mt.yml up -d identity elasticsearch zeebe
-	@mvn install -DskipTests=true -Dskip.fe.build=false
+	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false
 	@CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://localhost:8084 \
