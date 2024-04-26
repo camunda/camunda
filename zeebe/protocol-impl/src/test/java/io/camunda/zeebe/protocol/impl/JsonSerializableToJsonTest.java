@@ -204,6 +204,7 @@ final class JsonSerializableToJsonTest {
             ]
           },
           "recordVersion": 10,
+          "requestId":23,
           "sourceRecordPosition": 231,
           "value": {
             "processesMetadata": [
@@ -267,6 +268,7 @@ final class JsonSerializableToJsonTest {
             ]
           },
           "recordVersion": 1,
+          "requestId":-1,
           "value": {
               "resources": [],
               "decisionRequirementsMetadata": [],
