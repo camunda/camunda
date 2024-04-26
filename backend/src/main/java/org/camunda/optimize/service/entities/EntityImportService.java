@@ -41,9 +41,9 @@ import org.camunda.optimize.service.entities.report.ReportImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import org.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor

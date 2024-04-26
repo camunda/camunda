@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -69,7 +68,7 @@ public class ObjectMapperFactory {
   private ObjectMapper buildObjectMapper(final DateTimeFormatter deserializationDateTimeFormatter) {
     JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
-        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(this.optimizeDateTimeFormatter));
+        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(optimizeDateTimeFormatter));
     javaTimeModule.addSerializer(
         Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
     javaTimeModule.addDeserializer(

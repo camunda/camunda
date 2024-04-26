@@ -14,9 +14,9 @@ import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import org.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.elasticsearch.xcontent.XContentBuilder;
 

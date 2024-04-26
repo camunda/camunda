@@ -9,6 +9,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
+import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -65,14 +66,22 @@ import org.camunda.optimize.service.util.mapper.CustomDefinitionDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
+import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 public class OpenSearchClientBuilder {
 
@@ -88,8 +97,35 @@ public class OpenSearchClientBuilder {
     return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService));
   }
 
+  private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
+    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    return new AwsSdk2Transport(
+        httpClient,
+        osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
+        Region.of(region),
+        AwsSdk2TransportOptions.builder()
+            .setMapper(new JacksonJsonpMapper(ObjectMapperFactory.OPTIMIZE_MAPPER))
+            .build());
+  }
+
+  private static boolean isAws() {
+    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    try {
+      credentialsProvider.resolveCredentials();
+      log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
+      return true;
+    } catch (Exception e) {
+      log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
+      return false;
+    }
+  }
+
   private static OpenSearchTransport buildOpenSearchTransport(
       final ConfigurationService configurationService) {
+    if (isAws()) {
+      return getAwsTransport(configurationService);
+    }
     final HttpHost[] hosts = buildOpenSearchConnectionNodes(configurationService);
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(hosts);
