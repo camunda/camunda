@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.properties.common;
 
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
@@ -32,12 +33,14 @@ public class ZeebeClientProperties extends ApiProperties {
   private Map<String, ZeebeWorkerValue> override;
   private URL gatewayUrl;
   private boolean preferRestOverGrpc;
+  private URI grpcAddress;
+  private URI restAddress;
 
   public ZeebeWorkerValue getDefaults() {
     return defaults;
   }
 
-  public void setDefaults(ZeebeWorkerValue defaults) {
+  public void setDefaults(final ZeebeWorkerValue defaults) {
     this.defaults = defaults;
   }
 
@@ -45,7 +48,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return override;
   }
 
-  public void setOverride(Map<String, ZeebeWorkerValue> override) {
+  public void setOverride(final Map<String, ZeebeWorkerValue> override) {
     this.override = override;
   }
 
@@ -53,7 +56,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return executionThreads;
   }
 
-  public void setExecutionThreads(Integer executionThreads) {
+  public void setExecutionThreads(final Integer executionThreads) {
     this.executionThreads = executionThreads;
   }
 
@@ -61,7 +64,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return messageTimeToLive;
   }
 
-  public void setMessageTimeToLive(Duration messageTimeToLive) {
+  public void setMessageTimeToLive(final Duration messageTimeToLive) {
     this.messageTimeToLive = messageTimeToLive;
   }
 
@@ -69,7 +72,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return requestTimeout;
   }
 
-  public void setRequestTimeout(Duration requestTimeout) {
+  public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
   }
 
@@ -77,7 +80,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return caCertificatePath;
   }
 
-  public void setCaCertificatePath(String caCertificatePath) {
+  public void setCaCertificatePath(final String caCertificatePath) {
     this.caCertificatePath = caCertificatePath;
   }
 
@@ -85,7 +88,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return keepAlive;
   }
 
-  public void setKeepAlive(Duration keepAlive) {
+  public void setKeepAlive(final Duration keepAlive) {
     this.keepAlive = keepAlive;
   }
 
@@ -93,7 +96,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return overrideAuthority;
   }
 
-  public void setOverrideAuthority(String overrideAuthority) {
+  public void setOverrideAuthority(final String overrideAuthority) {
     this.overrideAuthority = overrideAuthority;
   }
 
@@ -101,7 +104,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return maxMessageSize;
   }
 
-  public void setMaxMessageSize(Integer maxMessageSize) {
+  public void setMaxMessageSize(final Integer maxMessageSize) {
     this.maxMessageSize = maxMessageSize;
   }
 
@@ -109,7 +112,7 @@ public class ZeebeClientProperties extends ApiProperties {
     return gatewayUrl;
   }
 
-  public void setGatewayUrl(URL gatewayUrl) {
+  public void setGatewayUrl(final URL gatewayUrl) {
     this.gatewayUrl = gatewayUrl;
   }
 
@@ -117,7 +120,23 @@ public class ZeebeClientProperties extends ApiProperties {
     return preferRestOverGrpc;
   }
 
-  public void setPreferRestOverGrpc(boolean preferRestOverGrpc) {
+  public void setPreferRestOverGrpc(final boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
+  }
+
+  public URI getGrpcAddress() {
+    return grpcAddress;
+  }
+
+  public void setGrpcAddress(final URI grpcAddress) {
+    this.grpcAddress = grpcAddress;
+  }
+
+  public URI getRestAddress() {
+    return restAddress;
+  }
+
+  public void setRestAddress(final URI restAddress) {
+    this.restAddress = restAddress;
   }
 }

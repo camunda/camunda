@@ -20,7 +20,6 @@ import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfiguration
 import static org.springframework.util.StringUtils.hasText;
 
 import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -45,9 +44,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfiguration {
+public class ZeebeClientConfigurationImpl
+    implements io.camunda.zeebe.client.ZeebeClientConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientConfiguration.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(io.camunda.zeebe.client.ZeebeClientConfiguration.class);
   private final Map<String, Object> configCache = new HashMap<>();
   private final ZeebeClientConfigurationProperties properties;
   private final CamundaClientProperties camundaClientProperties;
@@ -57,7 +58,7 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
   private final ZeebeClientExecutorService zeebeClientExecutorService;
 
   @Autowired
-  public ZeebeClientConfigurationSpringImpl(
+  public ZeebeClientConfigurationImpl(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final Authentication authentication,
@@ -91,12 +92,22 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
 
   @Override
   public URI getRestAddress() {
-    return URI.create(camundaClientProperties.getZeebe().getBaseUrl().toString());
+    return getOrLegacyOrDefault(
+        "RestAddress",
+        () -> camundaClientProperties.getZeebe().getRestAddress(),
+        () -> properties.getBroker().getRestAddress(),
+        DEFAULT.getRestAddress(),
+        configCache);
   }
 
   @Override
   public URI getGrpcAddress() {
-    return URI.create(camundaClientProperties.getZeebe().getGatewayUrl().toString());
+    return getOrLegacyOrDefault(
+        "GrpcAddress",
+        () -> camundaClientProperties.getZeebe().getGrpcAddress(),
+        () -> properties.getBroker().getGrpcAddress(),
+        DEFAULT.getRestAddress(),
+        configCache);
   }
 
   @Override
@@ -375,7 +386,7 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
 
   @Override
   public String toString() {
-    return "ZeebeClientConfiguration{"
+    return "ZeebeClientConfigurationImpl{"
         + "properties="
         + properties
         + ", camundaClientProperties="

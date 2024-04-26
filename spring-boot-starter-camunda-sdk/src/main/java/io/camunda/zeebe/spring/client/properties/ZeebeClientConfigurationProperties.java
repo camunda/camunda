@@ -268,9 +268,8 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  // TODO fix annotation
   @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "TODO")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
   public URI getGrpcAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe GRPC", connectionMode);
@@ -288,9 +287,8 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  // TODO fix annotation
   @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "TODO")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
   public URI getRestAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe REST", connectionMode);
@@ -508,7 +506,6 @@ public class ZeebeClientConfigurationProperties {
         + CONNECTION_MODE_ADDRESS;
   }
 
-  // TODO fix annotations
   public static class Broker {
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
@@ -525,7 +522,7 @@ public class ZeebeClientConfigurationProperties {
      * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "TODO")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.gateway-url")
     public String getGatewayAddress() {
       if (gatewayAddress != null) {
         return gatewayAddress;
@@ -544,7 +541,7 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "TODO")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
     public URI getGrpcAddress() {
       if (grpcAddress != null) {
         return grpcAddress;
@@ -553,12 +550,13 @@ public class ZeebeClientConfigurationProperties {
       }
     }
 
+    @Deprecated
     public void setGrpcAddress(final URI grpcAddress) {
       this.grpcAddress = grpcAddress;
     }
 
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "TODO")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
     public URI getRestAddress() {
       if (restAddress != null) {
         return restAddress;
@@ -567,6 +565,7 @@ public class ZeebeClientConfigurationProperties {
       }
     }
 
+    @Deprecated
     public void setRestAddress(final URI restAddress) {
       this.restAddress = restAddress;
     }
@@ -577,6 +576,7 @@ public class ZeebeClientConfigurationProperties {
       return keepAlive;
     }
 
+    @Deprecated
     public void setKeepAlive(final Duration keepAlive) {
       this.keepAlive = keepAlive;
     }
@@ -752,16 +752,14 @@ public class ZeebeClientConfigurationProperties {
       return String.format("%s.%s.%s:%d", clusterId, region, baseUrl, port);
     }
 
-    // TODO fix annotation
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "TODO")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
     public URI getGrpcAddress() {
       return URI.create(String.format("https://%s.%s.%s:%d", clusterId, region, baseUrl, port));
     }
 
-    // TODO fix annotation
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "TODO")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
     public URI getRestAddress() {
       return URI.create(String.format("https://%s.%s:%d/%s", region, baseUrl, port, clusterId));
     }
