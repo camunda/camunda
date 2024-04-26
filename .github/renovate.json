@@ -47,6 +47,12 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": ["dockerfile"],
       "matchUpdateTypes": ["major", "minor", "patch"],
