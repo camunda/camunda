@@ -327,6 +327,7 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().softPause();
+    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
     CLUSTER.shutdown();
     CLUSTER.start();
 
