@@ -241,4 +241,4 @@ jobs:
       - fe-a11y-tests
       - fe-stylelint
     steps:
-      - run: exit ${{ ((needs.check_changes.outputs.has_changed_frontend == 'false' && contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((needs.check_changes.outputs.has_changed_frontend == 'true' && contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
