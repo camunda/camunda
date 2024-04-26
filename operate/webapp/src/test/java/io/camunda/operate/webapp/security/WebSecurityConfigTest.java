@@ -16,7 +16,6 @@
  */
 package io.camunda.operate.webapp.security;
 
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -56,7 +55,7 @@ public class WebSecurityConfigTest {
     when(cloudProperties.getClusterId()).thenReturn("Id");
     underTest.applySecurityHeadersSettings(http);
 
-    verify(webSecurityProperties, times(0)).setContentSecurityPolicy(anyString());
+    verify(webSecurityProperties, times(1)).getContentSecurityPolicy();
   }
 
   @Test
@@ -64,6 +63,6 @@ public class WebSecurityConfigTest {
     when(cloudProperties.getClusterId()).thenReturn(null);
     underTest.applySecurityHeadersSettings(http);
 
-    verify(webSecurityProperties, times(1)).setContentSecurityPolicy(anyString());
+    verify(webSecurityProperties, times(0)).getContentSecurityPolicy();
   }
 }
