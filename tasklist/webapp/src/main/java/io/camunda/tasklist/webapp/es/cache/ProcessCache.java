@@ -32,11 +32,11 @@ import org.springframework.stereotype.Component;
 public class ProcessCache {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
-  private static final int CACHE_MAX_SIZE = 200;
-  private final Map<String, ProcessCacheEntity> cache = new ConcurrentHashMap<>();
+  private static final int CACHE_MAX_SIZE = 100;
+  private Map<String, ProcessCacheEntity> cache = new ConcurrentHashMap<>();
   @Autowired private ProcessStore processStore;
 
-  private ProcessCacheEntity getProcessCacheEntity(final String processId) {
+  private ProcessCacheEntity getProcessCacheEntity(String processId) {
     if (cache.get(processId) == null) {
       final Optional<ProcessEntity> processMaybe = readProcessByKey(processId);
       if (processMaybe.isPresent()) {
@@ -47,7 +47,7 @@ public class ProcessCache {
     return cache.get(processId);
   }
 
-  public String getProcessName(final String processId) {
+  public String getProcessName(String processId) {
     final ProcessCacheEntity cachedProcessData = getProcessCacheEntity(processId);
     if (cachedProcessData != null) {
       return cachedProcessData.getName();
@@ -56,7 +56,7 @@ public class ProcessCache {
     }
   }
 
-  public String getTaskName(final String processId, final String flowNodeBpmnId) {
+  public String getTaskName(String processId, String flowNodeBpmnId) {
     final ProcessCacheEntity cachedProcessData = getProcessCacheEntity(processId);
     if (cachedProcessData != null) {
       return cachedProcessData.getFlowNodeNames().get(flowNodeBpmnId);
@@ -65,15 +65,15 @@ public class ProcessCache {
     }
   }
 
-  private Optional<ProcessEntity> readProcessByKey(final String processId) {
+  private Optional<ProcessEntity> readProcessByKey(String processId) {
     try {
       return Optional.of(processStore.getProcess(processId));
-    } catch (final TasklistRuntimeException ex) {
+    } catch (TasklistRuntimeException ex) {
       return Optional.empty();
     }
   }
 
-  public void putToCache(final String processId, final ProcessEntity process) {
+  public void putToCache(String processId, ProcessEntity process) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       // remove 1st element
       final Iterator<String> iterator = cache.keySet().iterator();

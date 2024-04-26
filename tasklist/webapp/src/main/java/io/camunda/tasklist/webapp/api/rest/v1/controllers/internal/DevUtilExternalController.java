@@ -19,6 +19,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
@@ -63,6 +64,8 @@ public class DevUtilExternalController {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private FormIndex formIndex;
+
   @Operation(
       summary = "Get details about the current user.",
       responses = {
@@ -79,13 +82,11 @@ public class DevUtilExternalController {
         retryElasticsearchClient
             .getIndexNames(tasklistProperties.getElasticsearch().getIndexPrefix() + "*")
             .stream()
-            .filter(f -> !f.equals(processIndex.getFullQualifiedName()))
+            .filter(
+                f ->
+                    !f.equals(processIndex.getFullQualifiedName())
+                        && !f.equals(formIndex.getFullQualifiedName()))
             .collect(Collectors.toSet());
-
-    System.out.println("indexes: ");
-    for (final String i : indices) {
-      System.out.println(i);
-    }
 
     deleteRequest.indices(indices.toArray(new String[indices.size()]));
     esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
