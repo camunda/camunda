@@ -40,7 +40,7 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: ${{ 'gcp-core-16-default' }}
+    runs-on: self-hosted
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
@@ -54,7 +54,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@43045ae669be728bd34ed56fcd1a230c0dc4d8e2
+        uses: actions/checkout@8459bc0c7e3759cdf591f513d9f141a95fef0a8f
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags

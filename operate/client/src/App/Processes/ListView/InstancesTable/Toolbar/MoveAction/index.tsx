@@ -46,6 +46,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {Checkbox} from './styled';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {tracking} from 'modules/tracking';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
@@ -111,6 +112,9 @@ const MoveAction: React.FC = observer(() => {
           <TableBatchAction
             renderIcon={Move}
             onClick={() => {
+              tracking.track({
+                eventName: 'batch-move-modification-move-button-clicked',
+              });
               if (getStateLocally()?.hideMoveModificationHelperModal) {
                 batchModificationStore.enable();
               } else {

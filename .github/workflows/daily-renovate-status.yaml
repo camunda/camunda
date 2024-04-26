@@ -30,12 +30,12 @@ jobs:
           for pr in "${prs[@]}"
           do 
             # extracting the data to create a nice message
-            title=$(echo $pr | jq '.title')
-            prNumber=$(echo $pr | jq '.number')
-            createdAt=$(echo $pr | jq '.createdAt')
-            status=$(echo $pr | jq '.mergeStateStatus')
+            title=$(echo $pr | jq --raw-output '.title')
+            prNumber=$(echo $pr | jq --raw-output '.number')
+            createdAt=$(echo $pr | jq --raw-output '.createdAt')
+            status=$(echo $pr | jq --raw-output '.mergeStateStatus')
             
-            renovateStatusString+="\nPR <https://github.com/camunda/zeebe/pull/$prNumber|$prNumber>: $title (open since $createdAt) status: $status"
+            renovateStatusString+="\n • <https://github.com/camunda/zeebe/pull/$prNumber|PR $prNumber ($status)>: $title (created $createdAt)"
           done
 
           echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT
@@ -46,7 +46,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification to DevEx
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.26.0
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -56,7 +56,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":fyi: *Daily Renovate status:* :fyi:"
+                    "text": ":renovate-party: *Daily Renovate status:* :renovate-party:"
                   }
                 },
                 {

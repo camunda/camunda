@@ -73,6 +73,7 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       measure: false
+      operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
         --set starter.rate=5
         --set worker.replicas=1

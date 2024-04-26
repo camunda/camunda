@@ -65,8 +65,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(Paths.login()),
     });
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
@@ -81,8 +81,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
@@ -105,8 +105,8 @@ describe('<Login />', () => {
 
     await user.click(screen.getByText(/emulate auth check/i));
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
@@ -122,44 +122,44 @@ describe('<Login />', () => {
 
     await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+    expect(screen.getByLabelText(/^username$/i)).toHaveAccessibleDescription(
       /username is required/i,
     );
-    expect(screen.getByLabelText(/username/i)).toBeInvalid();
-    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+    expect(screen.getByLabelText(/^username$/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(
       /password is required/i,
     );
-    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^password$/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
     await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
-      /username is required/i,
-    );
-    expect(screen.getByLabelText(/username/i)).toBeValid();
-    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+    expect(
+      screen.getByLabelText(/^password$/i),
+    ).not.toHaveAccessibleDescription(/username is required/i);
+    expect(screen.getByLabelText(/^username$/i)).toBeValid();
+    expect(screen.getByLabelText(/^password$/i)).toHaveAccessibleDescription(
       /password is required/i,
     );
-    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^password$/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    await user.clear(screen.getByLabelText(/username/i));
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.clear(screen.getByLabelText(/^username$/i));
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: /login/i}));
 
-    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
-      /password is required/i,
-    );
-    expect(screen.getByLabelText(/password/i)).toBeValid();
-    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+    expect(
+      screen.getByLabelText(/^password$/i),
+    ).not.toHaveAccessibleDescription(/password is required/i);
+    expect(screen.getByLabelText(/^password$/i)).toBeValid();
+    expect(screen.getByLabelText(/^username$/i)).toHaveAccessibleDescription(
       /username is required/i,
     );
-    expect(screen.getByLabelText(/username/i)).toBeInvalid();
+    expect(screen.getByLabelText(/^username$/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
     await user.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
@@ -175,8 +175,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    await user.type(screen.getByLabelText(/username/i), 'wrong');
-    await user.type(screen.getByLabelText(/password/i), 'credentials');
+    await user.type(screen.getByLabelText(/^username$/i), 'wrong');
+    await user.type(screen.getByLabelText(/^password$/i), 'credentials');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(await screen.findByText(LOGIN_ERROR)).toBeInTheDocument();
@@ -189,8 +189,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
@@ -207,8 +207,8 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    await user.type(screen.getByLabelText(/username/i), 'demo');
-    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.type(screen.getByLabelText(/^username$/i), 'demo');
+    await user.type(screen.getByLabelText(/^password$/i), 'demo');
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();

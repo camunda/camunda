@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:15.2-alpine
+    image: postgres:16.2-alpine
     ports:
       - "5432:5432"
     environment:
@@ -12,7 +12,7 @@ services:
       - identity-network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -35,7 +35,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.9.2
+    image: docker.elastic.co/kibana/kibana:8.13.2
     ports:
       - 5601:5601
     environment:
@@ -49,7 +49,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:22.0.1
+    image: bitnami/keycloak:24.0.3
     ports:
       - "18080:8080"
     environment:
