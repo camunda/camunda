@@ -17,6 +17,9 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.data.DataGenerator;
+import io.camunda.tasklist.es.RetryElasticsearchClient;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -25,6 +28,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -50,7 +55,13 @@ public class DevUtilExternalController {
 
   @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
+  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+
   @Autowired private ProcessCache processCache;
+
+  @Autowired private ProcessIndex processIndex;
+
+  @Autowired private TasklistProperties tasklistProperties;
 
   @Operation(
       summary = "Get details about the current user.",
@@ -63,7 +74,20 @@ public class DevUtilExternalController {
   @PostMapping("recreateData")
   public ResponseEntity<?> recreateData() throws IOException {
     final DeleteIndexRequest deleteRequest = new DeleteIndexRequest();
-    deleteRequest.indices("_all");
+
+    final Set<String> indices =
+        retryElasticsearchClient
+            .getIndexNames(tasklistProperties.getElasticsearch().getIndexPrefix() + "*")
+            .stream()
+            .filter(f -> !f.equals(processIndex.getFullQualifiedName()))
+            .collect(Collectors.toSet());
+
+    System.out.println("indexes: ");
+    for (final String i : indices) {
+      System.out.println(i);
+    }
+
+    deleteRequest.indices(indices.toArray(new String[indices.size()]));
     esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
     processCache.clearCache();
     schemaManager.createSchema();
