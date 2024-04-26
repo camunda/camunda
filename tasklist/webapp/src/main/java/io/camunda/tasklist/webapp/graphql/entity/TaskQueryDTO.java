@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLType;
@@ -23,6 +24,7 @@ import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.*;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 @GraphQLType
@@ -33,7 +35,7 @@ public class TaskQueryDTO {
   @GraphQLField private TaskState state;
   @GraphQLField private Boolean assigned;
   @GraphQLField private String assignee;
-  @GraphQLField private String[] assignees;
+  private String[] assignees;
   @GraphQLField private String taskDefinitionId;
   @GraphQLField private String candidateGroup;
   private String[] candidateGroups;
@@ -53,6 +55,49 @@ public class TaskQueryDTO {
   @GraphQLField private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
   @GraphQLField private TaskImplementation implementation;
+
+  // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
+  @GraphQLConstructor
+  public TaskQueryDTO(
+      final TaskState state,
+      final Boolean assigned,
+      final String assignee,
+      final String taskDefinitionId,
+      final String candidateGroup,
+      final String candidateUser,
+      final String processDefinitionId,
+      final String processInstanceId,
+      final Integer pageSize,
+      final List<String> searchAfter,
+      final List<String> searchAfterOrEqual,
+      final List<String> searchBefore,
+      final List<String> searchBeforeOrEqual,
+      final DateFilter followUpDate,
+      final DateFilter dueDate,
+      final TaskOrderBy[] sort,
+      final TaskImplementation implementation) {
+    this.state = state;
+    this.assigned = assigned;
+    this.assignee = assignee;
+    this.taskDefinitionId = taskDefinitionId;
+    this.candidateGroup = candidateGroup;
+    this.candidateUser = candidateUser;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.pageSize = pageSize != null ? pageSize : DEFAULT_PAGE_SIZE;
+    this.searchAfter = searchAfter != null ? searchAfter.toArray(new String[0]) : null;
+    this.searchAfterOrEqual =
+        searchAfterOrEqual != null ? searchAfterOrEqual.toArray(new String[0]) : null;
+    this.searchBefore = searchBefore != null ? searchBefore.toArray(new String[0]) : null;
+    this.searchBeforeOrEqual =
+        searchBeforeOrEqual != null ? searchBeforeOrEqual.toArray(new String[0]) : null;
+    this.followUpDate = followUpDate;
+    this.dueDate = dueDate;
+    this.sort = sort;
+    this.implementation = implementation;
+  }
+
+  public TaskQueryDTO() {}
 
   public TaskState getState() {
     return state;

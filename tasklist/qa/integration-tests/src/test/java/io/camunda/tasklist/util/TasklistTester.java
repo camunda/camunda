@@ -21,17 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
-import io.camunda.tasklist.webapp.graphql.resolvers.Mutations;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
@@ -44,7 +45,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -60,6 +63,12 @@ public class TasklistTester {
 
   private static final String GRAPHQL_DEFAULT_VARIABLE_FRAGMENT =
       "graphql/variableIT/full-variable-fragment.graphql";
+  private static final String TASK_RESULT_PATTERN = "{id name assignee taskState completionTime}";
+  private static final String COMPLETE_TASK_MUTATION_PATTERN =
+      "mutation {completeTask(taskId: \"%s\", variables: %s)" + TASK_RESULT_PATTERN + "}";
+  private static final String CLAIM_TASK_MUTATION_PATTERN =
+      "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
+  private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
   private ZeebeClient zeebeClient;
   private DatabaseTestExtension databaseTestExtension;
@@ -120,8 +129,6 @@ public class TasklistTester {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private NoSqlHelper noSqlHelper;
-
-  @Autowired private Mutations mutations;
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
@@ -678,7 +685,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    mutations.claimTask(taskId, null, null);
+    claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     taskIsAssigned(taskId);
 
@@ -697,7 +704,12 @@ public class TasklistTester {
       }
     }
 
-    mutations.completeTask(taskId, createVariablesList(variables));
+    final String variablesAsString =
+        createVariablesList(variables).stream()
+            .map(this::variableAsGraphqlInput)
+            .collect(Collectors.joining(", ", "[", "]"));
+    getByQuery(
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, variablesAsString));
 
     return taskIsCompleted(flowNodeBpmnId);
   }
@@ -709,6 +721,13 @@ public class TasklistTester {
       result.add(new VariableInputDTO().setName(variables[i]).setValue(variables[i + 1]));
     }
     return result;
+  }
+
+  private String variableAsGraphqlInput(VariableInputDTO variable) {
+    return String.format(
+        VARIABLE_INPUT_PATTERN,
+        variable.getName(),
+        StringEscapeUtils.escapeJson(variable.getValue()));
   }
 
   public TasklistTester completeUserTaskInZeebe() {

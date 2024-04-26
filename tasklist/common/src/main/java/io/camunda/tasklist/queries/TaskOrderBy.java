@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.queries;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,6 +32,14 @@ public class TaskOrderBy {
   @GraphQLField
   @GraphQLNonNull
   private Sort order;
+
+  @GraphQLConstructor
+  public TaskOrderBy(final TaskSortFields field, final Sort order) {
+    this.field = field;
+    this.order = order;
+  }
+
+  public TaskOrderBy() {}
 
   public TaskSortFields getField() {
     return field;

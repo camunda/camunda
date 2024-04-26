@@ -16,39 +16,33 @@
  */
 package io.camunda.tasklist.webapp.graphql.scalar;
 
+import static io.camunda.tasklist.util.DateUtil.SIMPLE_DATE_FORMAT;
+
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.GraphQLScalarType;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class DateScalarConfiguration {
 
-  private static final SimpleDateFormat DATE_FORMAT =
-      new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-
-  static {
-    DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-  }
-
   @Bean
-  public GraphQLScalarType localDateScalar() {
+  public GraphQLScalarType javaUtilDateScalar() {
     return GraphQLScalarType.newScalar()
-        .name("Date")
-        .description("DateTime scalar compliant with RFC 3339 profile of the ISO 8601 standard")
+        .name("javaUtilDate")
+        .description(
+            "java.util.Date scalar compliant with RFC 3339 profile of the ISO 8601 standard")
         .coercing(
             new Coercing<Date, String>() {
 
               @Override
               public String serialize(Object dataFetcherResult) {
                 if (dataFetcherResult instanceof Date) {
-                  return DATE_FORMAT.format((Date) dataFetcherResult);
+                  return SIMPLE_DATE_FORMAT.format((Date) dataFetcherResult);
                 }
                 throw new CoercingParseLiteralException("Cannot serialize " + dataFetcherResult);
               }
@@ -56,7 +50,7 @@ public class DateScalarConfiguration {
               @Override
               public Date parseValue(Object input) {
                 try {
-                  return DATE_FORMAT.parse(String.valueOf(input));
+                  return SIMPLE_DATE_FORMAT.parse(String.valueOf(input));
                 } catch (ParseException e) {
                   throw new CoercingParseLiteralException(
                       "Cannot parse " + input + " as DateTime", e);
@@ -67,9 +61,9 @@ public class DateScalarConfiguration {
               public Date parseLiteral(Object input) {
                 try {
                   if (!(input instanceof StringValue)) {
-                    throw new CoercingParseLiteralException("String value expected.");
+                    throw new CoercingParseLiteralException("String value expected for: " + input);
                   }
-                  return DATE_FORMAT.parse(input.toString());
+                  return SIMPLE_DATE_FORMAT.parse(((StringValue) input).getValue());
                 } catch (ParseException e) {
                   throw new CoercingParseLiteralException(
                       "Cannot parse " + input + " as DateTime", e);

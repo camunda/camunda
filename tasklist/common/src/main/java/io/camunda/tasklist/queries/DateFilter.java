@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.queries;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,6 +39,14 @@ public class DateFilter {
   @GraphQLField
   @GraphQLNonNull
   private Date to;
+
+  @GraphQLConstructor
+  public DateFilter(final Date from, final Date to) {
+    this.from = from;
+    this.to = to;
+  }
+
+  public DateFilter() {}
 
   public Date getTo() {
     return to;

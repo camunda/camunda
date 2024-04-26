@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
@@ -39,6 +40,8 @@ public class VariableInputDTO {
   @GraphQLNonNull
   private String value;
 
+  // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
+  @GraphQLConstructor
   public VariableInputDTO(final String name, final String value) {
     this.name = name;
     this.value = value;
