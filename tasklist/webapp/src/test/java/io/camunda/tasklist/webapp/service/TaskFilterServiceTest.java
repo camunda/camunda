@@ -72,26 +72,4 @@ public class TaskFilterServiceTest {
     assertThatThrownBy(() -> taskFilterService.getTaskFilterById(filterId))
         .hasMessage(String.format("Task Filter with id %s not found", filterId));
   }
-
-  @Test
-  void getFilterById(){
-    final String filterId = "filterId";
-    final TaskFilterEntity expectedFilter = new TaskFilterEntity();
-    expectedFilter.setId(filterId);
-    expectedFilter.setFilter("filter");
-    expectedFilter.setCandidateUsers(List.of("groupA", "groupB"));
-    expectedFilter.setCandidateUsers(List.of("userA", "userB"));
-    expectedFilter.setCreatedBy("demo");
-    when(taskFilterStore.getById(filterId)).thenReturn(Optional.of(expectedFilter));
-
-    final TaskFilterEntity result = taskFilterService.getTaskFilterById(filterId);
-    assertThat(result).isEqualTo(expectedFilter);
-  }
-
-  @Test
-  void getFilterIdNotFound(){
-    final String filterId = "filterId";
-        when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
-    assertThatThrownBy(() -> taskFilterService.getTaskFilterById(filterId)).hasMessage(String.format("Task Filter with id %s not found", filterId));
-  }
 }

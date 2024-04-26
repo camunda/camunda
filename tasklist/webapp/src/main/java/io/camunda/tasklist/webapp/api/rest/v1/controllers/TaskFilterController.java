@@ -65,24 +65,18 @@ public class TaskFilterController extends ApiErrorController {
       })
   @PostMapping
   public ResponseEntity<AddFilterResponse> addFilter(
-      @RequestBody(required = false) AddFilterRequest addFilterRequest) {
+      @RequestBody(required = false) final AddFilterRequest addFilterRequest) {
 
     try {
       final TaskFilterEntity taskFilterEntity = taskFilterService.addFilter(addFilterRequest);
       return ResponseEntity.ok(new AddFilterResponse().fromFilterEntity(taskFilterEntity));
-    } catch (IllegalArgumentException ex) {
+    } catch (final IllegalArgumentException ex) {
       throw new InvalidRequestException(ex.getMessage());
     }
   }
 
   @GetMapping("{taskFilterId}")
   public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId) {
-    final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
-    return ResponseEntity.ok(taskFilterEntity);
-  }
-
-  @GetMapping("{taskFilterId}")
-  public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId){
     final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
     return ResponseEntity.ok(taskFilterEntity);
   }
