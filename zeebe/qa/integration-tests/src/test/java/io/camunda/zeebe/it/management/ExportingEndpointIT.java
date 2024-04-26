@@ -328,6 +328,9 @@ final class ExportingEndpointIT {
     CLUSTER.shutdown();
     CLUSTER.start();
 
+    // all partitions should be soft paused after restart
+    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
+
     client
         .newPublishMessageCommand()
         .messageName("Test")
@@ -346,12 +349,29 @@ final class ExportingEndpointIT {
 
     // then
     assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
-    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
     // all partitions should have -1 as exported position due to restart and the exporter positions
     // not being able to update due to soft pause.
-    assertTrue(
-        exportedPositionsAfterSoftPause.entrySet().stream()
-            .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
+    try {
+      // TODO: after reason for flakiness is found, remove the debug try-catch block.
+      //  https://github.com/camunda/zeebe/issues/17836
+      assertTrue(
+          exportedPositionsAfterSoftPause.entrySet().stream()
+              .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
+    } catch (final AssertionError e) {
+      // if the assertion fails, we want to  throw the exported positions for debugging
+      final String errorMessage =
+          "Exported positions are not -1 after soft pause. Exported positions: "
+              .concat(
+                  exportedPositionsAfterSoftPause.entrySet().stream()
+                      .map(
+                          element ->
+                              String.format(
+                                  "Partition %d -> position %d",
+                                  element.getKey(), element.getValue()))
+                      .toList()
+                      .toString());
+      throw new AssertionError(errorMessage, e);
+    }
   }
 
   Map<Integer, Long> getExportedPositions() {
