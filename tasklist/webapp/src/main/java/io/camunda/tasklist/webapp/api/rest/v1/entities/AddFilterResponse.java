@@ -108,9 +108,11 @@ public class AddFilterResponse {
       return false;
     }
     final AddFilterResponse that = (AddFilterResponse) o;
-    return Objects.equals(id, that.id) && Objects.equals(name, that.name)
-        && Objects.equals(filter, that.filter) && Objects.equals(createdBy,
-        that.createdBy) && Objects.equals(sharedUsers, that.sharedUsers)
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(createdBy, that.createdBy)
+        && Objects.equals(sharedUsers, that.sharedUsers)
         && Objects.equals(sharedGroups, that.sharedGroups);
   }
 

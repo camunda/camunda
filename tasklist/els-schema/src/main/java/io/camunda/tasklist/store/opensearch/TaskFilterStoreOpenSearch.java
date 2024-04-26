@@ -78,7 +78,8 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
       query.ids(ids -> ids.values(id));
       searchRequest.query(query.build());
 
-      final SearchResponse<TaskFilterEntity> response = tenantAwareClient.search(searchRequest, TaskFilterEntity.class);
+      final SearchResponse<TaskFilterEntity> response =
+          tenantAwareClient.search(searchRequest, TaskFilterEntity.class);
 
       final List<Hit<TaskFilterEntity>> hits = response.hits().hits();
       if (hits.size() == 0) {
@@ -89,9 +90,7 @@ public class TaskFilterStoreOpenSearch implements TaskFilterStore {
       return Optional.of(hit.source());
 
     } catch (IOException e) {
-      LOGGER.error(
-          String.format("Error retrieving task filter with ID [%s]", id),
-          e);
+      LOGGER.error(String.format("Error retrieving task filter with ID [%s]", id), e);
       throw new TasklistRuntimeException(e);
     }
   }

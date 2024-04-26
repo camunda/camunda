@@ -19,7 +19,6 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 import io.camunda.tasklist.entities.TaskFilterEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.AddFilterResponse;
-import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -29,7 +28,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.net.URI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +37,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Tag(name = "Filter", description = "API to query and add filters for Tasks.")
 @RestController
@@ -79,7 +76,7 @@ public class TaskFilterController extends ApiErrorController {
   }
 
   @GetMapping("{taskFilterId}")
-  public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId){
+  public ResponseEntity<TaskFilterEntity> getFilterById(@PathVariable final String taskFilterId) {
     final TaskFilterEntity taskFilterEntity = taskFilterService.getTaskFilterById(taskFilterId);
     return ResponseEntity.ok(taskFilterEntity);
   }

@@ -51,7 +51,7 @@ public class TaskFilterServiceTest {
   }
 
   @Test
-  void getFilterById(){
+  void getFilterById() {
     final String filterId = "filterId";
     final TaskFilterEntity expectedFilter = new TaskFilterEntity();
     expectedFilter.setId(filterId);
@@ -66,9 +66,10 @@ public class TaskFilterServiceTest {
   }
 
   @Test
-  void getFilterIdNotFound(){
+  void getFilterIdNotFound() {
     final String filterId = "filterId";
-        when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
-    assertThatThrownBy(() -> taskFilterService.getTaskFilterById(filterId)).hasMessage(String.format("Task Filter with id %s not found", filterId));
+    when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> taskFilterService.getTaskFilterById(filterId))
+        .hasMessage(String.format("Task Filter with id %s not found", filterId));
   }
 }

@@ -100,7 +100,8 @@ public class TaskFilterControllerTest {
     addFilterRequest.setCandidateGroups(List.of("groupA"));
     addFilterRequest.setCandidateUsers(List.of("demo"));
 
-    when(taskFilterStore.persistFilter(expectedFilterEntity)).thenReturn(expectedFilterEntityResponse);
+    when(taskFilterStore.persistFilter(expectedFilterEntity))
+        .thenReturn(expectedFilterEntityResponse);
 
     var response =
         mockMvc
@@ -116,7 +117,8 @@ public class TaskFilterControllerTest {
             .getResponse()
             .getContentAsString();
 
-    assertThat(CommonUtils.OBJECT_MAPPER.readValue(response, AddFilterResponse.class)).isEqualTo(expectedFilterResponse);
+    assertThat(CommonUtils.OBJECT_MAPPER.readValue(response, AddFilterResponse.class))
+        .isEqualTo(expectedFilterResponse);
   }
 
   @Test
@@ -183,20 +185,21 @@ public class TaskFilterControllerTest {
     final TaskFilterEntity expectedFilter = new TaskFilterEntity();
     expectedFilter.setId(filterId);
     expectedFilter.setFilter("filter");
-    expectedFilter.setCandidateUsers(List.of("groupA", "groupB"));
-    expectedFilter.setCandidateUsers(List.of("userA", "userB"));
+    expectedFilter.setSharedGroups(List.of("groupA", "groupB"));
+    expectedFilter.setSharedUsers(List.of("userA", "userB"));
     expectedFilter.setCreatedBy("demo");
     when(taskFilterStore.getById(filterId)).thenReturn(Optional.of(expectedFilter));
 
     var response =
-        mockMvc.perform(
-            get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId)))
-        ).andDo(print())
+        mockMvc
+            .perform(get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId))))
+            .andDo(print())
             .andExpect(status().isOk())
             .andReturn()
             .getResponse();
 
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), TaskFilterEntity.class);
+    final var result =
+        CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), TaskFilterEntity.class);
 
     assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     assertThat(result).isEqualTo(expectedFilter);
@@ -209,16 +212,18 @@ public class TaskFilterControllerTest {
     when(taskFilterStore.getById(filterId)).thenReturn(Optional.empty());
 
     var response =
-        mockMvc.perform(
-                get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId)))
-            ).andDo(print())
+        mockMvc
+            .perform(get(TasklistURIs.TASK_FILTERS_URL_V1.concat(String.format("/%s", filterId))))
+            .andDo(print())
             .andExpect(status().isNotFound())
             .andReturn()
             .getResponse();
 
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), Error.class);
+    final var result =
+        CommonUtils.OBJECT_MAPPER.readValue(response.getContentAsString(), Error.class);
 
     assertThat(response.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(result.getMessage()).isEqualTo(String.format("Task Filter with id %s not found", filterId));
+    assertThat(result.getMessage())
+        .isEqualTo(String.format("Task Filter with id %s not found", filterId));
   }
 }

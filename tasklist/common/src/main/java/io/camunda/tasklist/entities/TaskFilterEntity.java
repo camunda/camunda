@@ -16,11 +16,14 @@
  */
 package io.camunda.tasklist.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import java.util.Objects;
 
 public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity> {
-
+  
+  private String id;
   private String name;
   private String createdBy;
   private String filter;
@@ -79,15 +82,14 @@ public class TaskFilterEntity extends TenantAwareTasklistEntity<TaskFilterEntity
       return false;
     }
     final TaskFilterEntity that = (TaskFilterEntity) o;
-    return Objects.equals(name, that.name)
-        && Objects.equals(createdBy, that.createdBy)
-        && Objects.equals(filter, that.filter)
-        && Objects.equals(sharedUsers, that.sharedUsers)
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name)
+        && Objects.equals(createdBy, that.createdBy) && Objects.equals(filter,
+        that.filter) && Objects.equals(sharedUsers, that.sharedUsers)
         && Objects.equals(sharedGroups, that.sharedGroups);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, createdBy, filter, sharedUsers, sharedGroups);
+    return Objects.hash(super.hashCode(), id, name, createdBy, filter, sharedUsers, sharedGroups);
   }
 }
