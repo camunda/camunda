@@ -21,14 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
@@ -708,8 +706,7 @@ public class TasklistTester {
         createVariablesList(variables).stream()
             .map(this::variableAsGraphqlInput)
             .collect(Collectors.joining(", ", "[", "]"));
-    getByQuery(
-        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, variablesAsString));
+    getByQuery(String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, variablesAsString));
 
     return taskIsCompleted(flowNodeBpmnId);
   }

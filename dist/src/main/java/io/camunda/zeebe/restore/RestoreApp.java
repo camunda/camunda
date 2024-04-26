@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.restore;
 
-import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
-import graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -25,8 +23,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(
-    scanBasePackages = {"io.camunda.zeebe.restore", "io.camunda.zeebe.broker.shared"},
-    exclude = {GraphQLJavaToolsAutoConfiguration.class, GraphQLAnnotationsAutoConfiguration.class})
+    scanBasePackages = {"io.camunda.zeebe.restore", "io.camunda.zeebe.broker.shared"})
 @ConfigurationPropertiesScan(
     basePackages = {"io.camunda.zeebe.broker.shared", "io.camunda.zeebe.restore"})
 public class RestoreApp implements ApplicationRunner {
