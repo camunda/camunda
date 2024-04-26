@@ -117,8 +117,11 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
               />
             </Tabs.Tab>
             <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
-              <span className="cds--label">{t('dashboard.addButton.text')}</span>
-              <TextEditor initialValue={text} onChange={setText} />
+              <TextEditor
+                label={t('dashboard.addButton.text').toString()}
+                initialValue={text}
+                onChange={setText}
+              />
               <TextEditor.CharCount editorState={text} />
             </Tabs.Tab>
           </Tabs>

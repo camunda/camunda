@@ -134,6 +134,8 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
         </Modal.Header>
         <Modal.Content>
           <TextEditor
+            label={t('common.description').toString()}
+            hideLabel
             simpleEditor
             initialValue={editedDescription}
             onChange={handleDescriptionChange}

@@ -19,16 +19,21 @@ import editorPlugins, {ToolbarPlugin} from './plugins';
 import './Editor.scss';
 
 export default function Editor({
+  label,
   onChange,
   error,
   showToolbar,
 }: {
+  label: string;
   onChange?: (value: SerializedEditorState) => void;
   error?: boolean;
   showToolbar?: boolean;
 }) {
   const contentEditable = (
-    <ContentEditable className={classnames('editor', 'cds--text-area', {error})} />
+    <ContentEditable
+      ariaLabel={label}
+      className={classnames('editor', 'cds--text-area', {error})}
+    />
   );
 
   const onEditorChange = useCallback(

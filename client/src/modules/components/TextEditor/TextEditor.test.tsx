@@ -13,17 +13,21 @@ import TextEditor from './TextEditor';
 import {ChangeEvent} from 'react';
 import Editor from './Editor';
 
+const props = {
+  label: 'Label',
+};
+
 describe('TextEditor', () => {
   describe('Richtext editor', () => {
     it('should render editor', () => {
-      const node = shallow(<TextEditor />);
+      const node = shallow(<TextEditor {...props} />);
 
       expect(node.find(Editor)).toBeDefined();
     });
 
     it('should call onChange when text changes', () => {
       const spy = jest.fn();
-      const node = shallow(<TextEditor onChange={spy} />);
+      const node = shallow(<TextEditor {...props} onChange={spy} />);
 
       const newValue = {
         root: {
@@ -50,7 +54,7 @@ describe('TextEditor', () => {
     });
 
     it('should handle read only mode', () => {
-      const node = shallow(<TextEditor />);
+      const node = shallow(<TextEditor {...props} />);
 
       expect(node.find('LexicalComposer').prop<InitialConfigType>('initialConfig').editable).toBe(
         false
@@ -76,7 +80,7 @@ describe('TextEditor', () => {
         },
       } as unknown as SerializedEditorState;
 
-      const node = shallow(<TextEditor initialValue={editorState} />);
+      const node = shallow(<TextEditor {...props} initialValue={editorState} />);
 
       expect(node.find(Editor).prop('error')).toBe(true);
     });
@@ -99,23 +103,35 @@ describe('TextEditor', () => {
         },
       } as unknown as SerializedEditorState;
 
-      const node = shallow(<TextEditor />);
+      const node = shallow(<TextEditor {...props} />);
 
       node.find(Editor).prop('onChange')?.(editorState);
       expect(node.find(Editor).prop('error')).toBe(true);
+    });
+
+    it('should show label', () => {
+      const node = shallow(<TextEditor {...props} />);
+
+      expect(node.find('label').text()).toBe(props.label);
+    });
+
+    it('should hide label', () => {
+      const node = shallow(<TextEditor {...props} hideLabel />);
+
+      expect(node.find('label')).not.toExist();
     });
   });
 
   describe('Simple editor', () => {
     it('should render editor', () => {
-      const node = shallow(<TextEditor simpleEditor onChange={jest.fn()} />);
+      const node = shallow(<TextEditor {...props} simpleEditor onChange={jest.fn()} />);
 
       expect(node.find('textarea')).toBeDefined();
     });
 
     it('should call onChange when text changes', () => {
       const spy = jest.fn();
-      const node = shallow(<TextEditor simpleEditor onChange={spy} />);
+      const node = shallow(<TextEditor {...props} simpleEditor onChange={spy} />);
 
       const newValue = 'this is some new text';
 
@@ -132,10 +148,16 @@ describe('TextEditor', () => {
       const editorState = 'a'.repeat(3001);
 
       const node = shallow(
-        <TextEditor simpleEditor initialValue={editorState} onChange={jest.fn()} />
+        <TextEditor {...props} simpleEditor initialValue={editorState} onChange={jest.fn()} />
       );
 
       expect(node.find('TextArea').prop('invalid')).toBe(true);
+    });
+
+    it('should show label', () => {
+      const node = shallow(<TextEditor {...props} />);
+
+      expect(node.find('label').text()).toBe(props.label);
     });
   });
 });

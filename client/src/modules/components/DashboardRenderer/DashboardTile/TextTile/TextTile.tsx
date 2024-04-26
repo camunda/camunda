@@ -11,6 +11,7 @@ import {SerializedEditorState} from 'lexical';
 
 import {TextEditor} from 'components';
 import {DashboardTile, TextTile as TTextTile} from 'types';
+import {t} from 'translation';
 
 import {DashboardTileProps} from '../types';
 
@@ -41,7 +42,12 @@ export default function TextTile({tile, children, onTileUpdate}: DashboardTilePr
   return (
     <>
       <div className="TextTile DashboardTile">
-        <TextEditor key={reloadState} initialValue={tile.configuration.text} />
+        <TextEditor
+          label={t('report.textTile').toString()}
+          hideLabel
+          key={reloadState}
+          initialValue={tile.configuration.text}
+        />
         {children?.({loadTileData: reloadTile, onTileUpdate: openEditModal})}
       </div>
       {isModalOpen && (

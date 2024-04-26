@@ -19,9 +19,13 @@ jest.mock('./plugins', () => {
   return plugins;
 });
 
+const props = {
+  label: 'Label',
+};
+
 it('should trim empty paragraphs', function () {
   const spy = jest.fn();
-  const node = shallow(<Editor onChange={spy} />);
+  const node = shallow(<Editor {...props} onChange={spy} />);
 
   const newValue = {
     root: {
@@ -101,11 +105,21 @@ it('should trim empty paragraphs', function () {
 });
 
 it('should show toolbar when showToolbar prop is passed', () => {
-  const node = shallow(<Editor />);
+  const node = shallow(<Editor {...props} />);
 
   expect(node.children().length).toBe(2);
 
   node.setProps({showToolbar: true});
 
   expect(node.children().length).toBe(3);
+});
+
+it('should pass aria label to the editor', () => {
+  const node = shallow(<Editor {...props} />);
+
+  const contentEditable = shallow(
+    node.find('RichTextPlugin').prop<Parameters<typeof shallow>[0]>('contentEditable')
+  );
+
+  expect(contentEditable.prop('ariaLabel')).toBe('Label');
 });
