@@ -3779,13 +3779,13 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.3.0:
-  version "17.3.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.3.0.tgz#fdb9b1511a70555b84ef542145a0737cab8262c8"
-  integrity sha512-LRwloZ+MoOl4YyOfXPgehifJ412o7LQcQmyrvtfn4bxnzQQfNDUBDnP0pmel4s0mfgEtIG0EFegOYxlBS19Uaw==
+bpmn-js@17.4.0:
+  version "17.4.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.4.0.tgz#c1f39b33224d1b1d23d07439017b4c5763d9b62a"
+  integrity sha512-sSpOepk3ImTMYOQOOlFy+eFqQNTY9FGHeg2+P8hOLBPsjuib665P+pm9kvyMQYlMX+e52ssMEA8XkoEwyU0G0g==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.3.1"
+    diagram-js "^14.4.1"
     diagram-js-direct-editing "^2.1.2"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -4895,6 +4895,21 @@ diagram-js@^14.3.1:
   version "14.4.0"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.4.0.tgz#329e78d58bc3e48fe9c407959e26c06a4c0fedb9"
   integrity sha512-Cek1MDJoeyrEynswpzpIeg0gKIDGQ48hHPD18aiu/8JVRyANWntX+TIFfaO7p0W1Qko71wVGwNbS2WQ2G4alkA==
+  dependencies:
+    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    clsx "^2.1.0"
+    didi "^10.2.2"
+    inherits-browser "^0.1.0"
+    min-dash "^4.1.0"
+    min-dom "^4.1.0"
+    object-refs "^0.4.0"
+    path-intersection "^3.0.0"
+    tiny-svg "^3.0.1"
+
+diagram-js@^14.4.1:
+  version "14.4.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.4.1.tgz#fe6c34ed620f40fb8855ef2211b016e0eaca3bbd"
+  integrity sha512-JnAdzUB6Crp+BjzPM/mYpeUqZhTpM9IAdMJ8l/1aIpSVw+m1a25RoYWQGEVZQ4Dx/W95cHg/oOKUYAg+ESIOcQ==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.3"
     clsx "^2.1.0"
