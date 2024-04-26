@@ -57,7 +57,7 @@ services:
     depends_on:
       - postgres
   postgres:
-    image: postgres:16.2@sha256:c3ae2edaab802159e3c3528c51002441ed2e0ddc7ac58f66628f74eca2869535
+    image: postgres:16.2@sha256:4f15cf81de9f6da19395239c61ed92add248e8e7819641b067cb136dc981e460
     profiles: ['platform']
     container_name: postgres
     command:
