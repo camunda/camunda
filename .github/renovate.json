@@ -5,9 +5,9 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranches": [
-    "main",
     "/^stable\\/8\\..*/",
-    "stable/operate-8.5"
+    "stable/operate-8.5",
+    "main"
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
