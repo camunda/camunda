@@ -22,6 +22,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
 import {Stack} from './styled';
+import {tracking} from 'modules/tracking';
 
 const BatchModificationFooter: React.FC = observer(() => {
   const isButtonDisabled =
@@ -34,7 +35,12 @@ const BatchModificationFooter: React.FC = observer(() => {
         <Button
           kind="secondary"
           size="sm"
-          onClick={batchModificationStore.reset}
+          onClick={() => {
+            tracking.track({
+              eventName: 'batch-move-modification-exit-button-clicked',
+            });
+            batchModificationStore.reset();
+          }}
         >
           Exit
         </Button>

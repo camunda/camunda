@@ -263,6 +263,7 @@ const DiagramPanel: React.FC = observer(() => {
         <BatchModificationNotification
           sourceFlowNodeId={flowNodeId}
           targetFlowNodeId={selectedTargetFlowNodeId || undefined}
+          onUndoClick={() => batchModificationStore.selectTargetFlowNode(null)}
         />
       )}
     </Section>

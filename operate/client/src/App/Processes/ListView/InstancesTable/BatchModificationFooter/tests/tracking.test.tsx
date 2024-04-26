@@ -15,48 +15,20 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-@use '@carbon/themes';
-@use '@carbon/layout';
-@use '@carbon/type';
+import {render, screen} from 'modules/testing-library';
+import {BatchModificationFooter} from '..';
+import {tracking} from 'modules/tracking';
 
-.container {
-  padding-top: var(--cds-spacing-13);
-}
+describe('BatchModificationFooter - tracking', () => {
+  const trackSpy = jest.spyOn(tracking, 'track');
 
-.imageContainer {
-  padding: var(--cds-spacing-04) 0;
-  display: flex;
-  justify-content: end;
-  align-items: flex-start;
-}
+  it('should track exit click', async () => {
+    const {user} = render(<BatchModificationFooter />);
 
-.image {
-  width: 80px;
-  min-width: 80px;
-}
+    await user.click(screen.getByRole('button', {name: /exit/i}));
 
-.newUserText {
-  padding-left: var(--cds-spacing-06);
-  color: var(--cds-text-primary);
-
-  & h3 {
-    padding-bottom: var(--cds-spacing-03);
-  }
-
-  & p,
-  & a {
-    @include type.type-style('body-long-01');
-  }
-
-  & p:first-of-type,
-  & p:nth-of-type(2) {
-    padding-bottom: var(--cds-spacing-06);
-  }
-}
-
-.oldUserText {
-  padding-left: var(--cds-spacing-06);
-  color: var(--cds-text-primary);
-  display: flex;
-  align-items: center;
-}
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'batch-move-modification-exit-button-clicked',
+    });
+  });
+});

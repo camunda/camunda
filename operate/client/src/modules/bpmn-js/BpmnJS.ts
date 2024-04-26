@@ -27,7 +27,6 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
 import {isMultiInstance} from './utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
-import {OutlineModule} from './modules/Outline';
 import {bpmnRendererColors, highlightedSequenceFlowsColor} from './styled';
 
 type OverlayData = {
@@ -264,7 +263,7 @@ class BpmnJS {
       container,
       bpmnRenderer: bpmnRendererColors,
       canvas: {deferUpdate: true},
-      additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
+      additionalModules: [ElementTemplatesIconsRenderer],
     });
   };
 
