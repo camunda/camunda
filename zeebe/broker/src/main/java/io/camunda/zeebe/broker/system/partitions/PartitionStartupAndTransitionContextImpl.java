@@ -262,11 +262,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public boolean shouldExport() {
-    return !partitionProcessingState.isExportingPaused();
-  }
-
-  @Override
   public ExporterPhase getExporterPhase() {
     return partitionProcessingState.getExporterPhase();
   }

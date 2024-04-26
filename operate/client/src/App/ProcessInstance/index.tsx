@@ -79,9 +79,10 @@ const ProcessInstance: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
-    modificationsStore.isModificationModeEnabled,
-  );
+  const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
+    useCallbackPrompt({
+      shouldInterrupt: modificationsStore.isModificationModeEnabled,
+    });
 
   useEffect(() => {
     const disposer = reaction(
@@ -304,9 +305,9 @@ const ProcessInstance: React.FC = observer(() => {
           type="process"
         />
       </Frame>
-      {showPrompt && (
+      {isNavigationInterrupted && (
         <Modal
-          open={showPrompt}
+          open={isNavigationInterrupted}
           modalHeading="Leave Modification Mode"
           preventCloseOnClickOutside
           onRequestClose={cancelNavigation}

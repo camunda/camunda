@@ -9,9 +9,8 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * assigning positions to all entries. Writes that are accepted are written directly to the {@link
  * LogStorage}.
  */
-final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler {
+final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int maxFragmentSize;
 
@@ -44,23 +43,24 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
   private final ReentrantLock lock = new ReentrantLock();
   private final LogStorage logStorage;
   private final SequencerMetrics sequencerMetrics;
-  private final AppenderMetrics appenderMetrics;
-  private final AppenderFlowControl flowControl;
+  private final LogStreamMetrics logStreamMetrics;
+  private final FlowControl flowControl;
 
   Sequencer(
       final LogStorage logStorage,
       final long initialPosition,
       final int maxFragmentSize,
       final SequencerMetrics sequencerMetrics,
-      final AppenderMetrics appenderMetrics) {
+      final LogStreamMetrics logStreamMetrics) {
     this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
     this.sequencerMetrics =
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
-    this.appenderMetrics = Objects.requireNonNull(appenderMetrics, "must specify appender metrics");
-    flowControl = new AppenderFlowControl(this, appenderMetrics);
+    this.logStreamMetrics =
+        Objects.requireNonNull(logStreamMetrics, "must specify appender metrics");
+    flowControl = new FlowControl(logStreamMetrics);
   }
 
   /** {@inheritDoc} */
@@ -93,10 +93,11 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
       return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
-    final var inflightAppend = flowControl.tryAcquire().orElse(null);
-    if (inflightAppend == null) {
+    final var permit = flowControl.tryAcquire();
+    if (permit.isLeft()) {
       return Either.left(WriteFailure.FULL);
     }
+    final var inflightAppend = permit.get();
 
     final long currentPosition;
     lock.lock();
@@ -116,7 +117,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
           lowestPosition,
           highestPosition,
           sequencedBatch,
-          new InstrumentedAppendListener(inflightAppend, metricsMetadata, appenderMetrics));
+          new InstrumentedAppendListener(inflightAppend, metricsMetadata, logStreamMetrics));
       position = currentPosition + batchSize;
       sequencerMetrics.observeBatchLengthBytes(sequencedBatch.length());
     } finally {
@@ -143,18 +144,6 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
         && entry.recordMetadata().getLength() > 0;
   }
 
-  @Override
-  public void onCommitError(final Throwable error) {
-    LOG.error("Failed to commit entry", error);
-    close();
-  }
-
-  @Override
-  public void onWriteError(final Throwable error) {
-    LOG.error("Failed to write entry", error);
-    close();
-  }
-
   static List<LogAppendEntryMetadata> copyMetricsMetadata(final SequencedBatch sequencedBatch) {
     final var entries = sequencedBatch.entries();
     final List<LogAppendEntryMetadata> metricsMetadata = new ArrayList<>(entries.size());
@@ -175,7 +164,7 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
   }
 
   record InstrumentedAppendListener(
-      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, AppenderMetrics metrics)
+      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, LogStreamMetrics metrics)
       implements AppendListener {
 
     @Override
@@ -185,18 +174,8 @@ final class Sequencer implements LogStreamWriter, Closeable, AppendErrorHandler 
     }
 
     @Override
-    public void onWriteError(final Throwable error) {
-      delegate.onWriteError(error);
-    }
-
-    @Override
     public void onCommit(final long address) {
       delegate.onCommit(address);
-    }
-
-    @Override
-    public void onCommitError(final long address, final Throwable error) {
-      delegate.onCommitError(address, error);
     }
 
     private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {

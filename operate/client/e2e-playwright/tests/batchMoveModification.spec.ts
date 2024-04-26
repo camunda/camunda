@@ -94,11 +94,17 @@ test.beforeAll(async ({request}) => {
       // Select target flow node
       await processesPage.diagram.clickFlowNode('Ship Articles');
 
-      await expect(
-        page.getByText(
-          `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Apply Modification” button to confirm.`,
-        ),
-      ).toBeVisible();
+      const notificationText = `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Apply Modification” button to confirm.`;
+      await expect(page.getByText(notificationText)).toBeVisible();
+
+      // Check that Undo button is working
+      await page.getByRole('button', {name: /undo/i}).click();
+      await expect(page.getByText(notificationText)).not.toBeVisible();
+
+      // Select target flow node
+      await processesPage.diagram.clickFlowNode('Ship Articles');
+
+      await expect(page.getByText(notificationText)).toBeVisible();
 
       await page.getByRole('button', {name: /apply modification/i}).click();
 
@@ -159,6 +165,71 @@ test.beforeAll(async ({request}) => {
           'state-overlay-checkPayment-canceled',
         ),
       ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+    });
+
+    test('Exit Modal', async ({processesPage, page}) => {
+      await processesPage.navigateToProcesses({
+        searchParams: {
+          active: 'true',
+          process: 'orderProcess',
+          version: initialData.version.toString(),
+          flowNodeId: 'checkPayment',
+        },
+      });
+
+      // Select instance for move modification
+      await processesPage.getNthProcessInstanceCheckbox(0).click();
+
+      // Enter batch modification mode
+      await processesPage.moveButton.click();
+
+      // Confirm move modification modal
+      await page.getByRole('button', {name: 'Continue'}).click();
+
+      // Select target flow node
+      await processesPage.diagram.clickFlowNode('Ship Articles');
+
+      // Try to navigate to Dashboard page
+      await page.getByRole('link', {name: 'Dashboard'}).click();
+
+      // Expect navigation to be interrupted and modal to be shown
+      const exitModal = page.getByRole('dialog', {
+        name: /exit batch modification mode/i,
+      });
+      await expect(exitModal).toBeVisible();
+      await expect(exitModal).toContainText(
+        /about to discard all added modifications/i,
+      );
+
+      // Cancel Modal
+      await exitModal.getByRole('button', {name: /cancel/i}).click();
+
+      // Expect to be still in modification mode
+      await expect(exitModal).not.toBeVisible();
+      await expect(page.getByText(/batch modification mode/i)).toBeVisible();
+
+      // Try to navigate to Dashboard page
+      await page.getByRole('link', {name: 'Dashboard'}).click();
+
+      // Confirm Exit
+      await exitModal.getByRole('button', {name: /exit/i}).click();
+
+      // Expect not to be in move modification mode
+      await expect(
+        page.getByText(/batch modification mode/i),
+      ).not.toBeVisible();
+
+      // Expect to be on Dashboard page
+      await expect(
+        page.getByText(/running process instances in total/i),
+      ).toBeVisible();
+
+      await page.goBack();
+
+      // Expect not to be in move modification mode
+      await expect(
+        page.getByText(/batch modification mode/i),
+      ).not.toBeVisible();
     });
   },
 );

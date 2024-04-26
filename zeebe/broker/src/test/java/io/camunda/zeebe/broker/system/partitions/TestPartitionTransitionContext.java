@@ -191,11 +191,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {}
 
   @Override
-  public boolean shouldExport() {
-    return true;
-  }
-
-  @Override
   public ExporterPhase getExporterPhase() {
     return ExporterPhase.EXPORTING;
   }

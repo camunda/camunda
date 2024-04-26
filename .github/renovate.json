@@ -5,9 +5,9 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranches": [
-    "main",
     "/^stable\\/8\\..*/",
-    "stable/operate-8.5"
+    "stable/operate-8.5",
+    "main"
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
@@ -47,6 +47,12 @@
       "enabled": false
     },
     {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": ["dockerfile"],
       "matchUpdateTypes": ["major", "minor", "patch"],
@@ -77,11 +83,12 @@
       "enabled": false
     },
     {
-      "description": "Exclude react-router-dom until refactoring is done in Operate (see issue #17736)",
+      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
       "matchPackagePatterns": [
-        "react-router-dom"
+        "react-router-dom",
+        "msw"
       ],
       "enabled": false
     },

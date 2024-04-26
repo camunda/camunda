@@ -52,8 +52,8 @@ test.describe('login page', () => {
       waitUntil: 'networkidle',
     });
 
-    await page.getByLabel('Username').type('demo');
-    await page.getByLabel('Password').type('wrongpassword');
+    await page.getByLabel(/^username$/i).fill('demo');
+    await page.getByLabel(/^password$/i).fill('wrongpassword');
     await page.getByRole('button', {name: 'Login'}).click();
 
     await expect(page).toHaveScreenshot();

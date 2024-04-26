@@ -25,7 +25,7 @@ services:
       - "9600:9600" # re
   postgres:
     container_name: postgres
-    image: postgres:15.1-alpine
+    image: postgres:16.2-alpine
     ports:
       - "5432:5432"
     environment:
@@ -36,7 +36,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:22.0.5
+    image: bitnami/keycloak:24.0.3
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:

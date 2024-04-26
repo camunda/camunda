@@ -74,13 +74,9 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       # Run integration tests in parallel
-      - name: Backend - Stage 1 Integration Tests
+      - name: Backend - Integration Tests
         run: |
           mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItStage1,integration-tests -B -Dfailsafe.rerunFailingTestsCount=2
-
-      - name: Backend - Stage 2 Integration Tests
-        run: |
-          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItStage2,integration-tests -B -Dfailsafe.rerunFailingTestsCount=2
 
       # Reports: publish test metrics results
       - name: Publish Test Results

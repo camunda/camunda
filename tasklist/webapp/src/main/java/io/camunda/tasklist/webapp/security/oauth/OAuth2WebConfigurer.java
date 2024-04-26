@@ -69,7 +69,7 @@ public class OAuth2WebConfigurer {
               serverCustomizer
                   .authenticationEntryPoint(this::authenticationFailure)
                   .jwt(jwtCustomizer -> jwtCustomizer.jwtAuthenticationConverter(jwtConverter)));
-      LOGGER.info("Enabled OAuth2 JWT access to GraphQL API");
+      LOGGER.info("Enabled OAuth2 JWT access to REST API");
     }
   }
 
@@ -90,7 +90,7 @@ public class OAuth2WebConfigurer {
   class CustomJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
 
     public static final String AUDIENCE = "aud";
-    public static final String SCOPE = "scope";
+    public static final String CLUSTER_ID = "https://camunda.com/clusterId";
 
     private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
 
@@ -107,18 +107,18 @@ public class OAuth2WebConfigurer {
     private boolean isValid(final Map<String, Object> payload) {
       try {
         final String audience = getAudience(payload);
-        final String scope = getScope(payload);
+        final String clusterId = getClusterId(payload);
         final ClientProperties clientConfig = config.getClient();
         return clientConfig.getAudience().equals(audience)
-            && clientConfig.getClusterId().equals(scope);
+            && clientConfig.getClusterId().equals(clusterId);
       } catch (Exception e) {
         LOGGER.warn("Validation of JWT payload failed. Request is not authenticated.");
         return false;
       }
     }
 
-    private String getScope(final Map<String, Object> payload) {
-      return (String) payload.get(SCOPE);
+    private String getClusterId(final Map<String, Object> payload) {
+      return (String) payload.get(CLUSTER_ID);
     }
 
     private String getAudience(final Map<String, Object> payload) {

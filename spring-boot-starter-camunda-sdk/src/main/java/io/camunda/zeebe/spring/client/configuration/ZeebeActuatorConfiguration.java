@@ -18,7 +18,6 @@ package io.camunda.zeebe.spring.client.configuration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
-import io.camunda.zeebe.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.InitializingBean;
@@ -41,17 +40,10 @@ import org.springframework.context.annotation.Lazy;
 }) // only if actuator is on classpath
 public class ZeebeActuatorConfiguration {
   @Bean
-  // ConditionalOnBean for MeterRegistry does not work (always missing, seems to be created too
-  // late)
-  // so using @Autowired(required=false) with null check
+  @ConditionalOnMissingBean
   public MetricsRecorder micrometerMetricsRecorder(
-      final @Autowired(required = false) @Lazy MeterRegistry meterRegistry) {
-    if (meterRegistry == null) {
-      // We might have Actuator on the classpath without starting a MetricsRecorder in some cases
-      return new DefaultNoopMetricsRecorder();
-    } else {
-      return new MicrometerMetricsRecorder(meterRegistry);
-    }
+      final @Autowired @Lazy MeterRegistry meterRegistry) {
+    return new MicrometerMetricsRecorder(meterRegistry);
   }
 
   /**
