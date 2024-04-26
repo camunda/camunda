@@ -40,7 +40,7 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: ${{ 'gcp-core-16-default' }}
+    runs-on: self-hosted
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
