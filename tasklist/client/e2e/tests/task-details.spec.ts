@@ -287,18 +287,25 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('UserTask_Number');
     await taskDetailsPage.assignToMeButton.click();
 
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+
     await formJSDetailsPage.incrementButton.click();
     await expect(formJSDetailsPage.numberInput).toHaveValue('1');
     await formJSDetailsPage.incrementButton.click();
     await expect(formJSDetailsPage.numberInput).toHaveValue('2');
     await formJSDetailsPage.decrementButton.click();
     await expect(formJSDetailsPage.numberInput).toHaveValue('1');
+    await formJSDetailsPage.decrementButton.click();
+    await expect(formJSDetailsPage.numberInput).toHaveValue('0');
+
+    await page.keyboard.press('Tab');
+
     await formJSDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('UserTask_Number');
-    await expect(formJSDetailsPage.numberInput).toHaveValue('1');
+    await expect(formJSDetailsPage.numberInput).toHaveValue('0');
   });
 
   test('task completion with date and time form', async ({
