@@ -90,7 +90,8 @@ public final class CheckpointCreateProcessor {
             .recordType(RecordType.EVENT)
             .intent(resultIntent)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason(""));
+            .rejectionReason("")
+            .requestId(command.getRequestId()));
 
     if (command.hasRequestMetadata()) {
       resultBuilder.withResponse(

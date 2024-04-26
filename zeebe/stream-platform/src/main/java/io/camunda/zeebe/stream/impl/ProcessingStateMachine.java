@@ -540,7 +540,9 @@ public final class ProcessingStateMachine {
             .intent(ErrorIntent.CREATED)
             .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
+            .rejectionReason("")
+            .requestId(typedCommand.getRequestId());
+    processingResultBuilder.setRequestId(typedCommand.getRequestId());
     processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
@@ -568,6 +570,7 @@ public final class ProcessingStateMachine {
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
               new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+          processingResultBuilder.setRequestId(typedCommand.getRequestId());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);

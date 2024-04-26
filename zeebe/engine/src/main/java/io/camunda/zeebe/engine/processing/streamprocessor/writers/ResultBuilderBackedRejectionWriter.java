@@ -33,7 +33,8 @@ final class ResultBuilderBackedRejectionWriter extends AbstractResultBuilderBack
             .recordType(RecordType.COMMAND_REJECTION)
             .intent(command.getIntent())
             .rejectionType(rejectionType)
-            .rejectionReason(reason);
+            .rejectionReason(reason)
+            .requestId(command.getRequestId());
     resultBuilder().appendRecord(command.getKey(), command.getValue(), metadata);
   }
 }
