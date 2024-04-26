@@ -35,6 +35,7 @@ const config: PlaywrightTestConfig = {
   workers: IS_CI || IS_E2E ? 1 : undefined,
   reporter: IS_CI
     ? [
+        ['github'],
         ['html'],
         [
           'junit',
