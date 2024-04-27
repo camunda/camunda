@@ -29,7 +29,6 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -42,10 +41,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
       SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
+      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID,
+      "graphql.schema-strategy = annotations",
+      "graphql.annotations.base-package= io.camunda.tasklist",
+      "graphql.annotations.always-prettify= false",
+      "graphql.annotations.input-prefix="
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
@@ -55,7 +57,7 @@ public abstract class TasklistIntegrationTest {
     testStartTime = OffsetDateTime.now();
   }
 
-  protected void mockPartitionHolder(PartitionHolder partitionHolder) {
+  protected void mockPartitionHolder(final PartitionHolder partitionHolder) {
     final List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);
