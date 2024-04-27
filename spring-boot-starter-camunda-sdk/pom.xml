@@ -39,7 +39,6 @@
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <zeebe-process-test.version>8.5.0</zeebe-process-test.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <zeebe.version>8.5.0</zeebe.version>
     <identity.version>8.5.0</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
     <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
@@ -234,7 +233,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>${zeebe.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
