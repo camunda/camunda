@@ -1,9 +1,3 @@
-graphql:
-  schema-strategy: annotations
-  annotations:
-    base-package: io.camunda.tasklist
-    always-prettify: false
-    input-prefix: ""
 # overriding spring.autoconfigure.exclude to enable graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration
 spring.autoconfigure.exclude:
   - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
@@ -41,11 +35,3 @@ camunda:
     baseUrl: ${camunda.tasklist.identity.baseUrl:${CAMUNDA_TASKLIST_IDENTITY_BASEURL:}}
     issuer: ${camunda.tasklist.identity.issuerUrl:${CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL:}}
     issuerBackendUrl: ${camunda.tasklist.identity.issuerBackendUrl:${CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL:}}
----
-spring:
-  config:
-    activate:
-      on-profile: "dev"
-graphql:
-  tools:
-    introspection-enabled: true

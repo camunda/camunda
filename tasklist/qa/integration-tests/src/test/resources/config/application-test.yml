@@ -23,9 +23,3 @@ logging:
 #Spring Boot Actuator endpoints to be exposed
 management.prometheus.metrics.export.enabled: true
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,usage-metrics
-graphql:
-  schema-strategy: annotations
-  annotations:
-    base-package: io.camunda.tasklist
-    always-prettify: false
-    input-prefix: ""

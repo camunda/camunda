@@ -113,7 +113,10 @@ public class Application {
         "graphql.playground.enabled", "false",
         "graphql.servlet.exception-handlers-enabled", "true",
         "graphql.extended-scalars", "DateTime",
-        "graphql.tools.introspection-enabled", "false");
+        "graphql.schema-strategy", "annotations",
+        "graphql.annotations.base-package", "io.camunda.tasklist",
+        "graphql.annotations.always-prettify", "false",
+        "graphql.annotations.input-prefix", "");
   }
 
   private static Map<String, Object> getWebProperties() {
