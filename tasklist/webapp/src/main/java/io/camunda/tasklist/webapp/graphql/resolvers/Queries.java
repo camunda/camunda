@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.webapp.graphql.resolvers;
 
+import static io.camunda.tasklist.util.SpringContextHolder.getBean;
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import graphql.annotations.annotationTypes.GraphQLField;
@@ -38,40 +39,31 @@ import io.camunda.tasklist.webapp.service.VariableService;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
-@Component
 @GraphQLQueryResolver
-public class Queries implements ApplicationContextAware {
-
-  private static ApplicationContext appCtx;
+public class Queries {
 
   @GraphQLField
   @GraphQLNonNull
   public static UserDTO currentUser() {
-    return appCtx.getBean(UserReader.class).getCurrentUser();
+    return getBean(UserReader.class).getCurrentUser();
   }
 
   @GraphQLField
-  public static List<TaskDTO> tasks(TaskQueryDTO query) {
-    return appCtx.getBean(TaskService.class).getTasks(query);
+  public static List<TaskDTO> tasks(final TaskQueryDTO query) {
+    return getBean(TaskService.class).getTasks(query);
   }
 
   @GraphQLField
   @GraphQLNonNull
-  public static TaskDTO task(String id) {
-    return appCtx.getBean(TaskService.class).getTask(id);
+  public static TaskDTO task(final String id) {
+    return getBean(TaskService.class).getTask(id);
   }
 
   @GraphQLField
   public static List<VariableDTO> variables(
-      String taskId, List<String> variableNames, DataFetchingEnvironment env) {
-    return appCtx
-        .getBean(VariableService.class)
-        .getVariables(taskId, variableNames, getFieldNames(env));
+      final String taskId, final List<String> variableNames, final DataFetchingEnvironment env) {
+    return getBean(VariableService.class).getVariables(taskId, variableNames, getFieldNames(env));
   }
 
   /**
@@ -83,36 +75,26 @@ public class Queries implements ApplicationContextAware {
    */
   @GraphQLField
   @GraphQLNonNull
-  public static VariableDTO variable(String id, DataFetchingEnvironment env) {
-    return appCtx.getBean(VariableService.class).getVariable(id, getFieldNames(env));
+  public static VariableDTO variable(final String id, final DataFetchingEnvironment env) {
+    return getBean(VariableService.class).getVariable(id, getFieldNames(env));
   }
 
   @GraphQLField
-  public static FormDTO form(String id, String processDefinitionId) {
-    return FormDTO.createFrom(
-        appCtx.getBean(FormStore.class).getForm(id, processDefinitionId, null));
+  public static FormDTO form(final String id, final String processDefinitionId) {
+    return FormDTO.createFrom(getBean(FormStore.class).getForm(id, processDefinitionId, null));
   }
 
   @GraphQLField
-  public static List<ProcessDTO> processes(String search) {
-    return appCtx
-        .getBean(ProcessStore.class)
+  public static List<ProcessDTO> processes(final String search) {
+    return getBean(ProcessStore.class)
         .getProcesses(
             search,
-            appCtx
-                .getBean(IdentityAuthorizationService.class)
-                .getProcessDefinitionsFromAuthorization(),
+            getBean(IdentityAuthorizationService.class).getProcessDefinitionsFromAuthorization(),
             DEFAULT_TENANT_IDENTIFIER,
             null)
         .stream()
         .map(ProcessDTO::createFrom)
         .collect(Collectors.toList());
-  }
-
-  @Override
-  public void setApplicationContext(final ApplicationContext applicationContext)
-      throws BeansException {
-    appCtx = applicationContext;
   }
 
   private static Set<String> getFieldNames(final DataFetchingEnvironment env) {

@@ -16,43 +16,32 @@
  */
 package io.camunda.tasklist.webapp.graphql.extensions;
 
+import static io.camunda.tasklist.util.SpringContextHolder.getBean;
+
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import graphql.schema.DataFetchingEnvironment;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
 
 @GraphQLTypeExtension(TaskDTO.class)
-@Component
-public class TaskExtension implements ApplicationContextAware {
-
-  private static ApplicationContext appCtx;
+public class TaskExtension {
 
   @GraphQLField
   @GraphQLNonNull
-  public static String processName(DataFetchingEnvironment env) {
-    return appCtx.getBean(TaskMapper.class).getProcessName(env.getSource());
+  public static String processName(final DataFetchingEnvironment env) {
+    return getBean(TaskMapper.class).getProcessName(env.getSource());
   }
 
   @GraphQLField
   @GraphQLNonNull
-  public static String name(DataFetchingEnvironment env) {
-    return appCtx.getBean(TaskMapper.class).getName(env.getSource());
+  public static String name(final DataFetchingEnvironment env) {
+    return getBean(TaskMapper.class).getName(env.getSource());
   }
 
   @GraphQLField
-  public static String taskDefinitionId(DataFetchingEnvironment env) {
+  public static String taskDefinitionId(final DataFetchingEnvironment env) {
     return ((TaskDTO) env.getSource()).getFlowNodeBpmnId();
-  }
-
-  @Override
-  public void setApplicationContext(final ApplicationContext applicationContext)
-      throws BeansException {
-    appCtx = applicationContext;
   }
 }

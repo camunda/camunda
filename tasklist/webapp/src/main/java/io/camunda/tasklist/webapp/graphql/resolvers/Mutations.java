@@ -16,6 +16,7 @@
  */
 package io.camunda.tasklist.webapp.graphql.resolvers;
 
+import static io.camunda.tasklist.util.SpringContextHolder.getBean;
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import graphql.annotations.annotationTypes.GraphQLField;
@@ -35,63 +36,54 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
-@Component
 @GraphQLMutationResolver
-public class Mutations implements ApplicationContextAware {
+public class Mutations {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Mutations.class);
   private static final String ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED =
       "This operation is not supported using Tasklist graphql API. Please use the latest REST API. For more information, refer to the documentation: %s";
 
-  private static ApplicationContext appCtx;
-
   @GraphQLField
   @GraphQLNonNull
-  public static TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
+  public static TaskDTO completeTask(final String taskId, final List<VariableInputDTO> variables) {
     return delegate(
         () -> {
           checkTaskImplementation(taskId);
-          return appCtx.getBean(TaskService.class).completeTask(taskId, variables, false);
+          return getBean(TaskService.class).completeTask(taskId, variables, false);
         });
   }
 
   @GraphQLField
   @GraphQLNonNull
-  public static TaskDTO claimTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
+  public static TaskDTO claimTask(
+      final String taskId, final String assignee, final Boolean allowOverrideAssignment) {
     return delegate(
         () -> {
           checkTaskImplementation(taskId);
-          return appCtx
-              .getBean(TaskService.class)
-              .assignTask(taskId, assignee, allowOverrideAssignment);
+          return getBean(TaskService.class).assignTask(taskId, assignee, allowOverrideAssignment);
         });
   }
 
   @GraphQLField
   @GraphQLNonNull
-  public static TaskDTO unclaimTask(String taskId) {
+  public static TaskDTO unclaimTask(final String taskId) {
     return delegate(
         () -> {
           checkTaskImplementation(taskId);
-          return appCtx.getBean(TaskService.class).unassignTask(taskId);
+          return getBean(TaskService.class).unassignTask(taskId);
         });
   }
 
   @GraphQLField
   @GraphQLNonNull
-  public static Boolean deleteProcessInstance(String processInstanceId) {
+  public static Boolean deleteProcessInstance(final String processInstanceId) {
     return delegate(
         () ->
             DeletionStatus.DELETED.equals(
-                appCtx
-                    .getBean(ProcessInstanceStore.class)
-                    .deleteProcessInstance(processInstanceId)));
+                getBean(ProcessInstanceStore.class).deleteProcessInstance(processInstanceId)));
   }
 
   @GraphQLField
@@ -99,23 +91,16 @@ public class Mutations implements ApplicationContextAware {
   public static ProcessInstanceDTO startProcess(final String processDefinitionId) {
     return delegate(
         () ->
-            appCtx
-                .getBean(ProcessService.class)
+            getBean(ProcessService.class)
                 .startProcessInstance(processDefinitionId, DEFAULT_TENANT_IDENTIFIER));
   }
 
-  @Override
-  public void setApplicationContext(final ApplicationContext applicationContext)
-      throws BeansException {
-    appCtx = applicationContext;
+  private static <T> T delegate(final Supplier<T> supplier) {
+    return getBean(MutationAuthorizationDelegate.class).call(supplier);
   }
 
-  private static <T> T delegate(Supplier<T> supplier) {
-    return appCtx.getBean(MutationAuthorizationDelegate.class).call(supplier);
-  }
-
-  private static void checkTaskImplementation(String taskId) {
-    final var task = appCtx.getBean(TaskService.class).getTask(taskId);
+  private static void checkTaskImplementation(final String taskId) {
+    final var task = getBean(TaskService.class).getTask(taskId);
     if (task.getImplementation() != TaskImplementation.JOB_WORKER) {
       LOGGER.warn(
           "GraphQL API is used for task with id={} implementation={}",
@@ -124,17 +109,14 @@ public class Mutations implements ApplicationContextAware {
       throw new InvalidRequestException(
           String.format(
               ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED,
-              appCtx
-                  .getBean(TasklistProperties.class)
-                  .getDocumentation()
-                  .getApiMigrationDocsUrl()));
+              getBean(TasklistProperties.class).getDocumentation().getApiMigrationDocsUrl()));
     }
   }
 
   @Component
   public static class MutationAuthorizationDelegate {
     @PreAuthorize("hasPermission('write')")
-    public <T> T call(Supplier<T> supplier) {
+    public <T> T call(final Supplier<T> supplier) {
       return supplier.get();
     }
   }

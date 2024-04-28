@@ -28,7 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -41,20 +43,18 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
       SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID,
-      "graphql.schema-strategy = annotations",
-      "graphql.annotations.base-package= io.camunda.tasklist",
-      "graphql.annotations.always-prettify= false",
-      "graphql.annotations.input-prefix="
+      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
+  @Autowired private ApplicationContext applicationContext;
 
   @BeforeEach
   public void before() {
     testStartTime = OffsetDateTime.now();
+    new SpringContextHolder().setApplicationContext(applicationContext);
   }
 
   protected void mockPartitionHolder(final PartitionHolder partitionHolder) {

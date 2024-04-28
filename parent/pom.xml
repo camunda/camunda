@@ -1959,12 +1959,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-tools</artifactId>
-        <version>${version.graphql-kickstart.tools}</version>
-      </dependency>
-
-      <dependency>
         <groupId>com.graphql-java</groupId>
         <artifactId>graphql-java</artifactId>
         <version>${version.graphql-java}</version>
