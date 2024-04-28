@@ -66,7 +66,7 @@
     <netty.version>4.1.100.Final</netty.version>
 
     <!-- Library versions not provided by spring boot -->
-    <version.zeebe>8.5.0-alpha2</version.zeebe>
+    <version.zeebe>8.5.0</version.zeebe>
     <version.identity>8.5.0-alpha2</version.identity>
     <version.elasticsearch>7.17.18</version.elasticsearch>
     <version.parsson>1.1.6</version.parsson>
