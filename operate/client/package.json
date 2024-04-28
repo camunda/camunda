@@ -9,7 +9,7 @@
     "@carbon/elements": "11.43.0",
     "@carbon/react": "1.46.1",
     "@devbookhq/splitter": "1.4.2",
-    "@floating-ui/react-dom": "2.0.8",
+    "@floating-ui/react-dom": "2.0.9",
     "@loadable/component": "^5.15.3",
     "@monaco-editor/react": "4.6.0",
     "@types/loadable__component": "5.13.9",
