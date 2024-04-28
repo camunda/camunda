@@ -125,7 +125,7 @@
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <version.commons-io>2.16.0</version.commons-io>
+    <version.commons-io>2.16.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>6.0.11</version.unboundid-ldapsdk>
   </properties>
