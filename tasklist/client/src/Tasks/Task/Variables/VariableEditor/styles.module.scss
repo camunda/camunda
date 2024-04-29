@@ -15,48 +15,46 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {useLayoutEffect, useRef} from 'react';
-import {Loading} from '@carbon/react';
-import {TextInput} from '../TextInput';
-import styles from './styles.module.scss';
+.list {
+  height: min-content;
+}
 
-type Props = React.ComponentProps<typeof TextInput> & {
-  isLoading: boolean;
-  isActive?: boolean;
-};
+.listCell {
+  vertical-align: middle;
+}
 
-const LoadingTextarea: React.FC<Props> = ({
-  isLoading,
-  isActive = false,
-  ...props
-}) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
+.cellName {
+  width: 200px;
+}
 
-  useLayoutEffect(() => {
-    if (isActive && !isLoading) {
-      inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(
-        inputRef.current.value.length,
-        inputRef.current.value.length,
-      );
-    }
-  }, [isLoading, isActive]);
+.valueCell {
+  overflow-y: hidden;
+  word-break: break-all;
+  height: min(100px, min-content);
+}
 
-  if (isLoading) {
-    return (
-      <div
-        className={styles.loadingStateContainer}
-        data-testid="textarea-loading-overlay"
-      >
-        <div className={styles.overlay}>
-          <Loading className={styles.loading} withOverlay={false} />
-        </div>
-        <TextInput ref={inputRef} {...props} disabled />
-      </div>
-    );
+.controlsCell {
+  width: 80px;
+}
+
+.iconButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-right: var(--cds-spacing-03);
+
+  &.extraPadding {
+    padding-right: calc(var(--cds-spacing-03) + 32px);
   }
+}
 
-  return <TextInput ref={inputRef} {...props} />;
-};
+.scrollableOuter {
+  height: min-content;
+  overflow-y: auto;
+}
 
-export {LoadingTextarea};
+.scrollableInner {
+  max-height: 100px;
+  height: min(min-content, 100%);
+  overflow-y: auto;
+}

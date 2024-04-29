@@ -14,20 +14,41 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.query;
+package io.camunda.tasklist.webapp.graphql.error;
 
-import graphql.kickstart.tools.GraphQLQueryResolver;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.security.UserReader;
-import org.springframework.beans.factory.annotation.Autowired;
+import graphql.ExceptionWhileDataFetching;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+import graphql.kickstart.execution.error.GraphQLErrorHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class UserQueryResolver implements GraphQLQueryResolver {
+public class CustomGraphQLErrorHandler implements GraphQLErrorHandler {
+  @Override
+  public List<GraphQLError> processErrors(List<GraphQLError> list) {
+    return list.stream().map(this::getNested).toList();
+  }
 
-  @Autowired private UserReader userReader;
-
-  public UserDTO currentUser() {
-    return userReader.getCurrentUser();
+  private GraphQLError getNested(GraphQLError error) {
+    if (error instanceof ExceptionWhileDataFetching) {
+      final ExceptionWhileDataFetching exceptionError = (ExceptionWhileDataFetching) error;
+      final Throwable exception = exceptionError.getException();
+      if (exception instanceof GraphQLError) {
+        return (GraphQLError) exception;
+      } else if (exception.getCause() != null
+          && exception.getCause() instanceof InvocationTargetException) {
+        final InvocationTargetException ite = (InvocationTargetException) exception.getCause();
+        if (ite.getTargetException() instanceof GraphQLError) {
+          return (GraphQLError) ite.getTargetException();
+        } else if (ite.getTargetException() != null) {
+          return GraphqlErrorBuilder.newError()
+              .message(ite.getTargetException().getMessage())
+              .build();
+        }
+      }
+    }
+    return error;
   }
 }

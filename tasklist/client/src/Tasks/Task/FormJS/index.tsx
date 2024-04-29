@@ -23,8 +23,6 @@ import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
-import {AsyncActionButton} from 'modules/components/AsyncActionButton';
-import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
 import {FormManager} from 'modules/formManager';
 import {
   ScrollableContent,
@@ -37,6 +35,7 @@ import {useVariables} from 'modules/queries/useVariables';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 import {Pattern, match} from 'ts-pattern';
+import {CompleteTaskButton} from 'modules/components/CompleteTaskButton';
 
 function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
@@ -85,7 +84,7 @@ const FormJS: React.FC<Props> = ({
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
   const {assignee, taskState, formVersion} = task;
-  const {data, isInitialLoading} = useForm(
+  const {data, isLoading} = useForm(
     {
       id,
       processDefinitionKey,
@@ -105,7 +104,7 @@ const FormJS: React.FC<Props> = ({
       variableNames: extractedVariables,
     },
     {
-      enabled: !isInitialLoading && extractedVariables.length > 0,
+      enabled: !isLoading && extractedVariables.length > 0,
       refetchOnReconnect: assignee === null,
       refetchOnWindowFocus: assignee === null,
     },
@@ -183,37 +182,22 @@ const FormJS: React.FC<Props> = ({
               .otherwise(() => null)}
           </TaskDetailsRow>
           <DetailsFooter>
-            <AsyncActionButton
-              inlineLoadingProps={{
-                description: getCompletionButtonDescription(submissionState),
-                'aria-live': ['error', 'finished'].includes(submissionState)
-                  ? 'assertive'
-                  : 'polite',
-                onSuccess: () => {
-                  onSubmitSuccess();
-                  setSubmissionState('inactive');
-                },
+            <CompleteTaskButton
+              submissionState={submissionState}
+              onClick={() => {
+                setSubmissionState('active');
+                formManagerRef.current?.submit();
               }}
-              buttonProps={{
-                className: taskState === 'COMPLETED' ? 'hide' : '',
-                size: 'md',
-                type: 'submit',
-                disabled: submissionState === 'active' || !canCompleteTask,
-                onClick: () => {
-                  setSubmissionState('active');
-                  formManagerRef.current?.submit();
-                },
-                title: canCompleteTask
-                  ? undefined
-                  : 'You must first assign this task to complete it',
+              onSuccess={() => {
+                onSubmitSuccess();
+                setSubmissionState('inactive');
               }}
-              status={submissionState}
               onError={() => {
                 setSubmissionState('inactive');
               }}
-            >
-              Complete Task
-            </AsyncActionButton>
+              isHidden={taskState === 'COMPLETED'}
+              isDisabled={!canCompleteTask}
+            />
           </DetailsFooter>
         </TaskDetailsContainer>
       </ScrollableContent>

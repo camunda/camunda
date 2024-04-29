@@ -72,6 +72,7 @@ public class Application {
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
     System.setProperty("spring.web.resources.static-locations", OPERATE_STATIC_RESOURCES_LOCATION);
+    System.setProperty("spring.banner.location", "classpath:/operate-banner.txt");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // add "operate" profile, so that application-operate.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
