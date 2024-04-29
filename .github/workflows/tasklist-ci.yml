@@ -41,7 +41,7 @@ jobs:
     outputs:
       has_changed_frontend: ${{ steps.filter.outputs.src_changed }}
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
           fetch-depth: 0
       - id: filter
@@ -83,7 +83,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -103,7 +103,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -123,7 +123,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -143,7 +143,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -167,7 +167,7 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - name: Setup yarn cache
         uses: actions/setup-node@v4
         with:
@@ -202,7 +202,7 @@ jobs:
         working-directory: tasklist/client
     steps:
       - name: Check out repository code
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - name: Setup yarn cache
         uses: actions/setup-node@v4
         with:
