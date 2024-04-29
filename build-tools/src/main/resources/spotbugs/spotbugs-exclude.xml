@@ -25,5 +25,9 @@
     <Source name="~.*GatewayGrpc\.java" />
   </Match>
 
+  <Match>
+    <Source name="~.*GatewayOuterClass\.java" />
+  </Match>
+
   <Bug code="RCN"/>
 </FindBugsFilter>
