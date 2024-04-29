@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.webapp.security.oauth2;
 
+import static io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator.CLUSTER_ID_CLAIM;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.property.OperateProperties;
@@ -87,7 +88,7 @@ public class CCaaSJwtAuthenticationTokenValidatorIT {
         Jwt.withTokenValue("token")
             .audience(List.of(audience))
             .header("alg", "HS256")
-            .claim("scope", scope)
+            .claim(CLUSTER_ID_CLAIM, scope)
             .build());
   }
 }
