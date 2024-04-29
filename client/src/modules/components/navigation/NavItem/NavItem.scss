@@ -1,38 +1,11 @@
+@import 'shared-styles/shared-styles.scss';
+
 .NavItem {
-  padding: 0 20px;
-  height: 1.5rem;
-  margin-top: 11.5px;
   display: flex;
-  align-items: center;
-  margin-right: 0;
-  border-right: 1px solid var(--silver-darken-87);
-  font-weight: 400;
-  font-size: 0.875rem;
+  height: 100%;
+  min-width: 0;
 
-  &.active {
-    min-width: 0;
-  }
-
-  .breadcrumb {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-
-    .arrow {
-      padding: 0 10px;
-    }
-  }
-
-  a {
-    color: var(--grey-lighten-56);
-    line-height: normal;
-
-    &:hover {
-      text-decoration: none;
-    }
-  }
-
-  .active {
-    color: var(--grey-base-40);
+  .arrow {
+    align-self: center;
   }
 }

@@ -87,18 +87,20 @@ export default withRouter(
       matchPath(this.props.location.pathname, {path: this.props.active, exact: true}) !== null;
 
     render() {
-      const {name, activeBorder, linksTo} = this.props;
+      const {name, linksTo} = this.props;
       const {breadcrumbs} = this.state;
       const breadcrumbsCount = breadcrumbs.length;
 
       const active = this.isActive();
 
       return (
-        <div className={classnames('NavItem', {activeBorder, active})}>
+        <div className="NavItem">
           <Tooltip content={name} position="bottom" overflowOnly>
             <Link
               to={linksTo}
-              className={classnames({active: !breadcrumbsCount && active})}
+              className={classnames('cds--header__menu-item', {
+                'cds--header__menu-item--current': active && !breadcrumbsCount,
+              })}
               replace={active}
             >
               {name}
@@ -107,9 +109,15 @@ export default withRouter(
           {active &&
             breadcrumbs.map(({id, name, url}, i) => (
               <Tooltip content={name} key={`${id}_${url}`} position="bottom" overflowOnly>
-                <Link className="breadcrumb" key={id} to={url}>
-                  <span className="arrow">›</span>
-                  <span className={classnames({active: breadcrumbsCount - 1 === i})}>{name}</span>
+                <span className="arrow">›</span>
+                <Link
+                  className={classnames('breadcrumb cds--header__menu-item', {
+                    'cds--header__menu-item--current': breadcrumbsCount - 1 === i,
+                  })}
+                  key={id}
+                  to={url}
+                >
+                  {name}
                 </Link>
               </Tooltip>
             ))}

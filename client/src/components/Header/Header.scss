@@ -6,16 +6,6 @@
     text-decoration: none;
   }
 
-  // TODO: Remove this after enabling the carbon css reset
-  .cds--side-nav__items li {
-    list-style: none;
-  }
-
-  .nonProductionTooltip button {
-    border-bottom: none;
-    color: inherit;
-  }
-
   .tooltipTrigger {
     padding: 0;
     border: 0;
@@ -28,6 +18,20 @@
 
     &.active {
       background: none;
+    }
+  }
+
+  .cds--side-nav {
+    .NavItem {
+      flex-direction: column;
+
+      .arrow {
+        display: none;
+      }
+
+      .breadcrumb {
+        padding-left: 2rem;
+      }
     }
   }
 }
