@@ -33,10 +33,9 @@ public interface EntryValidator {
 
   /** Result of validating an entry. */
   record ValidationResult(boolean success, String errorMessage) {
-    private static final ValidationResult OK = new ValidationResult(true, null);
 
     public static ValidationResult ok() {
-      return OK;
+      return Singleton.OK.result;
     }
 
     public static ValidationResult failure(final String errorMessage) {
@@ -45,6 +44,16 @@ public interface EntryValidator {
 
     public boolean failed() {
       return !success;
+    }
+
+    private enum Singleton {
+      OK(new ValidationResult(true, null));
+
+      private final ValidationResult result;
+
+      Singleton(final ValidationResult result) {
+        this.result = result;
+      }
     }
   }
 
