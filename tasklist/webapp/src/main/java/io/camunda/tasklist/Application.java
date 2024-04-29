@@ -74,6 +74,7 @@ public class Application {
     // Hack for the moment to allow serving static resources in Tasklist.
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
+    System.setProperty("spring.banner.location", "classpath:/tasklist-banner.txt");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
@@ -113,7 +114,10 @@ public class Application {
         "graphql.playground.enabled", "false",
         "graphql.servlet.exception-handlers-enabled", "true",
         "graphql.extended-scalars", "DateTime",
-        "graphql.tools.introspection-enabled", "false");
+        "graphql.schema-strategy", "annotations",
+        "graphql.annotations.base-package", "io.camunda.tasklist",
+        "graphql.annotations.always-prettify", "false",
+        "graphql.annotations.input-prefix", "");
   }
 
   private static Map<String, Object> getWebProperties() {

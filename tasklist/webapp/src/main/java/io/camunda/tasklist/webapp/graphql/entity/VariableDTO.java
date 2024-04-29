@@ -16,6 +16,10 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLType;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import java.util.ArrayList;
@@ -23,13 +27,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@GraphQLType
+@GraphQLName("Variable")
 public class VariableDTO {
-
-  private String id;
-  private String name;
-  private String value;
-  private boolean isValueTruncated;
-  private String previewValue;
+  @GraphQLField @GraphQLNonNull private String id;
+  @GraphQLField @GraphQLNonNull private String name;
+  @GraphQLField @GraphQLNonNull private String value;
+  @GraphQLField @GraphQLNonNull private boolean isValueTruncated;
+  @GraphQLField @GraphQLNonNull private String previewValue;
 
   public String getId() {
     return id;

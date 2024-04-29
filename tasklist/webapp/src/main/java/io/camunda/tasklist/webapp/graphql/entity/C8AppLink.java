@@ -16,12 +16,14 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import java.util.Objects;
 
 public class C8AppLink {
 
-  private String name;
-  private String link;
+  @GraphQLField @GraphQLNonNull private String name;
+  @GraphQLField @GraphQLNonNull private String link;
 
   public String getName() {
     return name.toLowerCase();
