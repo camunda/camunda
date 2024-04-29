@@ -96,10 +96,15 @@ public final class LimitCfg implements ConfigurationEntry {
         + '}';
   }
 
+  /**
+   * @return null if disabled, (windowed) limit otherwise.
+   */
   public Limit buildLimit() {
-    final LimitAlgorithm algorithm = getAlgorithm();
+    if (!enabled) {
+      return null;
+    }
     final var baseLimit =
-        switch (algorithm) {
+        switch (getAlgorithm()) {
           case AIMD -> getAIMD(getAimd());
           case FIXED -> FixedLimit.of(getFixed().getLimit());
           case GRADIENT -> getGradientLimit(getGradient());

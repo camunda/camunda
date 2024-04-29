@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /** A request limiter that manages the limits for each partition independently. */
 public final class PartitionAwareRequestLimiter {
@@ -22,20 +21,16 @@ public final class PartitionAwareRequestLimiter {
 
   private final Function<Integer, RequestLimiter<Intent>> limiterSupplier;
 
-  private PartitionAwareRequestLimiter() {
-    limiterSupplier = i -> new NoopRequestLimiter<>();
-  }
-
-  private PartitionAwareRequestLimiter(final Supplier<Limit> limitSupplier) {
-    limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
-  }
-
-  public static PartitionAwareRequestLimiter newNoopLimiter() {
-    return new PartitionAwareRequestLimiter();
+  private PartitionAwareRequestLimiter(final Limit limit) {
+    if (limit == null) {
+      limiterSupplier = i -> new NoopRequestLimiter<>();
+    } else {
+      limiterSupplier = i -> CommandRateLimiter.builder().limit(limit).build(i);
+    }
   }
 
   public static PartitionAwareRequestLimiter newLimiter(final LimitCfg limitCfg) {
-    return new PartitionAwareRequestLimiter(limitCfg::buildLimit);
+    return new PartitionAwareRequestLimiter(limitCfg.buildLimit());
   }
 
   public boolean tryAcquire(
