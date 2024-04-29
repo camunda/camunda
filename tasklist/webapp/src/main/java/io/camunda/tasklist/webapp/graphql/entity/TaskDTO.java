@@ -19,12 +19,16 @@ package io.camunda.tasklist.webapp.graphql.entity;
 import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import graphql.annotations.annotationTypes.GraphQLDataFetcher;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.tasklist.webapp.graphql.resolvers.TaskVariablesFetcher;
 import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -33,8 +37,8 @@ import java.util.StringJoiner;
 
 public final class TaskDTO {
 
-  private String id;
-  private String processInstanceId;
+  @GraphQLField @GraphQLNonNull private String id;
+  @GraphQLField private String processInstanceId;
 
   /** Field is used to resolve task name. */
   private String flowNodeBpmnId;
@@ -42,28 +46,32 @@ public final class TaskDTO {
   private String flowNodeInstanceId;
 
   /** Field is used to resolve process name. */
-  private String processDefinitionId;
+  @GraphQLField private String processDefinitionId;
 
   /** Fallback value for process name. */
   private String bpmnProcessId;
 
-  private String creationTime;
-  private String completionTime;
-  private String assignee;
-  private String[] candidateGroups;
-  private String[] candidateUsers;
-  private TaskState taskState;
-  private String[] sortValues;
-  private boolean isFirst = false;
-  private String formKey;
+  @GraphQLField @GraphQLNonNull private String creationTime;
+  @GraphQLField private String completionTime;
+  @GraphQLField private String assignee;
+  @GraphQLField private String[] candidateGroups;
+  @GraphQLField private String[] candidateUsers;
+  @GraphQLField @GraphQLNonNull private TaskState taskState;
+  @GraphQLField private String[] sortValues;
+  @GraphQLField private boolean isFirst = false;
+  @GraphQLField private String formKey;
   private String formId;
   private Long formVersion;
   private Boolean isFormEmbedded;
   private String tenantId;
-  private OffsetDateTime dueDate;
-  private OffsetDateTime followUpDate;
+  @GraphQLField private OffsetDateTime dueDate;
+  @GraphQLField private OffsetDateTime followUpDate;
+
+  @GraphQLField
+  @GraphQLDataFetcher(TaskVariablesFetcher.class)
   private VariableDTO[] variables;
-  private TaskImplementation implementation;
+
+  @GraphQLField private TaskImplementation implementation;
 
   public String getId() {
     return id;
