@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static org.camunda.optimize.AbstractCCSMIT.isZeebeVersionPre85;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_ELASTICSEARCH_EXPORTER;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_OPENSEARCH_EXPORTER;
 
@@ -70,11 +71,15 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("DATABASE_PORT", String.valueOf(databasePort))
             .withEnv("ZEEBE_EXPORTER_CLASS_NAME", zeebeExporterClassName)
-            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-            .withAdditionalExposedPort(8080)
             .withCopyFileToContainer(
                 MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
                 "/usr/local/zeebe/config/application.yml");
+    if (!isZeebeVersionPre85()) {
+      zeebeContainer =
+          zeebeContainer
+              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+              .withAdditionalExposedPort(8080);
+    }
   }
 
   @Override
@@ -93,15 +98,25 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   @SneakyThrows
   public void createClient() {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
-            .defaultRequestTimeout(Duration.ofMillis(15000))
-            .grpcAddress(
-                URI.create(String.format("http://%s", zeebeContainer.getExternalGatewayAddress())))
-            .restAddress(
-                URI.create(String.format("http://%s", zeebeContainer.getExternalAddress(8080))))
-            .usePlaintext()
-            .build();
+    if (isZeebeVersionPre85()) {
+      zeebeClient =
+          ZeebeClient.newClientBuilder()
+              .defaultRequestTimeout(Duration.ofMillis(15000))
+              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+              .usePlaintext()
+              .build();
+    } else {
+      zeebeClient =
+          ZeebeClient.newClientBuilder()
+              .defaultRequestTimeout(Duration.ofMillis(15000))
+              .grpcAddress(
+                  URI.create(
+                      String.format("http://%s", zeebeContainer.getExternalGatewayAddress())))
+              .restAddress(
+                  URI.create(String.format("http://%s", zeebeContainer.getExternalAddress(8080))))
+              .usePlaintext()
+              .build();
+    }
   }
 
   public Process deployProcess(final BpmnModelInstance bpmnModelInstance) {
