@@ -41,7 +41,7 @@
     <version.awaitility>4.2.1</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.21.0</version.camunda>
-    <version.checkstyle>10.15.0</version.checkstyle>
+    <version.checkstyle>10.16.0</version.checkstyle>
     <version.commons-lang>3.14.0</version.commons-lang>
     <version.commons-logging>1.3.1</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
