@@ -118,6 +118,7 @@
         "org.camunda.bpm:camunda-engine-rest-core",
         "org.camunda.bpm:camunda-engine"
       ],
+      separateMinorPatch: true,
       matchUpdateTypes: ["major", "minor"],
       enabled: false,
     },
