@@ -29,10 +29,11 @@ import {Popup, Close} from '@carbon/react/icons';
 import {Variable} from 'modules/types';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
+import {DelayedErrorField} from './DelayedErrorField';
+import {LoadingTextarea} from './LoadingTextarea';
+import {OnNewVariableAdded} from './OnNewVariableAdded';
+import {mergeValidators} from './mergeValidators';
 import {FormValues} from '../types';
-import {DelayedErrorField} from '../../DelayedErrorField';
-import {LoadingTextarea} from '../LoadingTextarea';
-import {OnNewVariableAdded} from '../OnNewVariableAdded';
 import {
   createVariableFieldName,
   createNewVariableFieldName,
@@ -44,7 +45,6 @@ import {
   validateDuplicateNames,
   validateValueComplete,
 } from '../validators';
-import {mergeValidators} from '../validators/mergeValidators';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 

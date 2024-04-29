@@ -196,7 +196,7 @@ const FormJS: React.FC<Props> = ({
                 setSubmissionState('inactive');
               }}
               isHidden={taskState === 'COMPLETED'}
-              disabled={!canCompleteTask}
+              isDisabled={!canCompleteTask}
             />
           </DetailsFooter>
         </TaskDetailsContainer>

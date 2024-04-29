@@ -274,7 +274,7 @@ const Variables: React.FC<Props> = ({
                       setSubmissionState('inactive');
                     }}
                     isHidden={taskState === 'COMPLETED'}
-                    disabled={
+                    isDisabled={
                       submitting ||
                       hasValidationErrors ||
                       validating ||

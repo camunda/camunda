@@ -17,7 +17,7 @@
 
 import {useLayoutEffect, useRef} from 'react';
 import {Loading} from '@carbon/react';
-import {TextInput} from '../TextInput';
+import {TextInput} from '../../TextInput';
 import styles from './styles.module.scss';
 
 type Props = React.ComponentProps<typeof TextInput> & {
