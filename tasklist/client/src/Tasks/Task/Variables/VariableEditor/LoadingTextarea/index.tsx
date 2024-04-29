@@ -49,7 +49,7 @@ const LoadingTextarea: React.FC<Props> = ({
         data-testid="textarea-loading-overlay"
       >
         <div className={styles.overlay}>
-          <Loading className={styles.loading} withOverlay={false} />
+          <Loading className={styles.spinner} withOverlay={false} />
         </div>
         <TextInput ref={inputRef} {...props} disabled />
       </div>

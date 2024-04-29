@@ -168,7 +168,7 @@
 
     <dependency>
       <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-java-tools</artifactId>
+      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
     </dependency>
 
     <dependency>
@@ -204,6 +204,11 @@
     <dependency>
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.graphql-java</groupId>
+      <artifactId>graphql-java-annotations</artifactId>
     </dependency>
 
     <dependency>

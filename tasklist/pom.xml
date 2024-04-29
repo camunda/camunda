@@ -25,7 +25,6 @@
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
-    <module>../tasklist-distro</module>
     <module>mvc-auth-commons</module>
   </modules>
 

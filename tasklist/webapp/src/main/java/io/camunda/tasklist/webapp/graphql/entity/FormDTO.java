@@ -16,16 +16,18 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.entities.FormEntity;
 import java.util.Objects;
 
 public class FormDTO {
 
-  private String id;
+  @GraphQLField @GraphQLNonNull private String id;
 
-  private String processDefinitionId;
+  @GraphQLField @GraphQLNonNull private String processDefinitionId;
 
-  private String schema;
+  @GraphQLField @GraphQLNonNull private String schema;
 
   private boolean isDeleted;
 

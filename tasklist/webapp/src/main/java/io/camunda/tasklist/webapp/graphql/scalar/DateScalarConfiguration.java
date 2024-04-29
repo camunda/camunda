@@ -14,23 +14,62 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.mutation;
+package io.camunda.tasklist.webapp.graphql.scalar;
 
-import graphql.kickstart.tools.GraphQLMutationResolver;
-import io.camunda.tasklist.enums.DeletionStatus;
-import io.camunda.tasklist.store.ProcessInstanceStore;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import static io.camunda.tasklist.util.DateUtil.SIMPLE_DATE_FORMAT;
 
-@Component
-public class ProcessInstanceMutationResolver implements GraphQLMutationResolver {
+import graphql.language.StringValue;
+import graphql.schema.Coercing;
+import graphql.schema.CoercingParseLiteralException;
+import graphql.schema.GraphQLScalarType;
+import java.text.ParseException;
+import java.util.Date;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-  @Autowired ProcessInstanceStore processInstanceStore;
+@Configuration
+public class DateScalarConfiguration {
 
-  @PreAuthorize("hasPermission('write')")
-  public Boolean deleteProcessInstance(String processInstanceId) {
-    return DeletionStatus.DELETED.equals(
-        processInstanceStore.deleteProcessInstance(processInstanceId));
+  @Bean
+  public GraphQLScalarType javaUtilDateScalar() {
+    return GraphQLScalarType.newScalar()
+        .name("javaUtilDate")
+        .description(
+            "java.util.Date scalar compliant with RFC 3339 profile of the ISO 8601 standard")
+        .coercing(
+            new Coercing<Date, String>() {
+
+              @Override
+              public String serialize(Object dataFetcherResult) {
+                if (dataFetcherResult instanceof Date) {
+                  return SIMPLE_DATE_FORMAT.format((Date) dataFetcherResult);
+                }
+                throw new CoercingParseLiteralException("Cannot serialize " + dataFetcherResult);
+              }
+
+              @Override
+              public Date parseValue(Object input) {
+                try {
+                  return SIMPLE_DATE_FORMAT.parse(String.valueOf(input));
+                } catch (ParseException e) {
+                  throw new CoercingParseLiteralException(
+                      "Cannot parse " + input + " as DateTime", e);
+                }
+              }
+
+              @Override
+              public Date parseLiteral(Object input) {
+                try {
+                  if (!(input instanceof StringValue)) {
+                    throw new CoercingParseLiteralException("String value expected for: " + input);
+                  }
+                  return SIMPLE_DATE_FORMAT.parse(((StringValue) input).getValue());
+                } catch (ParseException e) {
+                  throw new CoercingParseLiteralException(
+                      "Cannot parse " + input + " as DateTime", e);
+                }
+              }
+            })
+        .build();
   }
 }

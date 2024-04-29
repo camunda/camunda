@@ -75,7 +75,7 @@ const Variables: React.FC<Props> = ({
   const {hasPermission} = usePermissions(['write']);
   const {
     data,
-    isInitialLoading,
+    isLoading,
     fetchFullVariable,
     variablesLoadingFullValue,
     status,
@@ -101,7 +101,7 @@ const Variables: React.FC<Props> = ({
   const variables = data ?? [];
   const isJsonEditorModalOpen = editingVariable !== undefined;
 
-  if (isInitialLoading) {
+  if (isLoading) {
     return null;
   }
 

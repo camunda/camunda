@@ -212,6 +212,11 @@
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.github.graphql-java</groupId>
+      <artifactId>graphql-java-annotations</artifactId>
+    </dependency>
+
     <!-- TEST -->
 
     <dependency>

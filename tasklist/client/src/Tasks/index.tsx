@@ -86,13 +86,8 @@ function useAutoSelectNextTaskSideEffects() {
 
 const Tasks: React.FC = observer(() => {
   const filters = useTaskFilters();
-  const {
-    fetchPreviousTasks,
-    fetchNextTasks,
-    isInitialLoading,
-    isLoading,
-    data,
-  } = useTasks(filters);
+  const {fetchPreviousTasks, fetchNextTasks, isLoading, isPending, data} =
+    useTasks(filters);
   const tasks = data?.pages.flat() ?? [];
 
   useAutoSelectNextTaskSideEffects();
@@ -108,9 +103,9 @@ const Tasks: React.FC = observer(() => {
   return (
     <main className={styles.container}>
       <Stack as="section" className={styles.tasksPanel} aria-label="Left panel">
-        <Filters disabled={isLoading} />
+        <Filters disabled={isPending} />
         <AvailableTasks
-          loading={isInitialLoading}
+          loading={isLoading}
           onScrollDown={fetchNextTasks}
           onScrollUp={fetchPreviousTasks}
           tasks={tasks}
