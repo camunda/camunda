@@ -9,6 +9,7 @@ on:
       - trying
       - staging
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
@@ -22,6 +23,7 @@ on:
       - 'zeebe/**'
   pull_request:
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'

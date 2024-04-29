@@ -1,6 +1,7 @@
 component/zeebe:
   - changed-files:
     - any-glob-to-any-file:
+        - '.ci/docker/test/*'
         - '.github/ISSUE_TEMPLATE/zeebe-*'
         - '.github/actions/**'
         - '.github/renovate.json'
@@ -18,7 +19,7 @@ component/zeebe:
 component/operate:
   - changed-files:
     - any-glob-to-any-file:
-        - '.ci/**'
+        - '.ci/docker/test/*'
         - '.github/ISSUE_TEMPLATE/operate-*'
         - '.github/actions/**'
         - '.github/renovate.json'
@@ -36,6 +37,7 @@ component/identity:
 component/tasklist:
   - changed-files:
       - any-glob-to-any-file:
+          - '.ci/docker/test/*'
           - '.github/ISSUE_TEMPLATE/tasklist-*'
           - '.github/actions/**'
           - '.github/renovate.json'
