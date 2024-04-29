@@ -14,24 +14,49 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-@use '@carbon/layout';
 
-.form {
-  width: 100%;
-  height: 100%;
-}
+import {useLayoutEffect, useRef} from 'react';
+import {Loading} from '@carbon/react';
+import {TextInput} from '../../TextInput';
+import styles from './styles.module.scss';
 
-.container {
-  padding: 0 0 var(--cds-spacing-05) 0;
-}
+type Props = React.ComponentProps<typeof TextInput> & {
+  isLoading: boolean;
+  isActive?: boolean;
+};
 
-.inlineIcon {
-  margin-right: var(--cds-spacing-01);
-}
+const LoadingTextarea: React.FC<Props> = ({
+  isLoading,
+  isActive = false,
+  ...props
+}) => {
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-.panelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: layout.to-rem(32px);
-}
+  useLayoutEffect(() => {
+    if (isActive && !isLoading) {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(
+        inputRef.current.value.length,
+        inputRef.current.value.length,
+      );
+    }
+  }, [isLoading, isActive]);
+
+  if (isLoading) {
+    return (
+      <div
+        className={styles.loadingStateContainer}
+        data-testid="textarea-loading-overlay"
+      >
+        <div className={styles.overlay}>
+          <Loading className={styles.spinner} withOverlay={false} />
+        </div>
+        <TextInput ref={inputRef} {...props} disabled />
+      </div>
+    );
+  }
+
+  return <TextInput ref={inputRef} {...props} />;
+};
+
+export {LoadingTextarea};
