@@ -12,7 +12,7 @@
     <project.previousVersion>3.13.0</project.previousVersion>
 
     <camunda.engine.version>7.19.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.19.0-ee</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.19.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <zeebe.version>8.5.0</zeebe.version>
