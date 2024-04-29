@@ -137,7 +137,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setPosition(record.getPosition());
+    entity.setPositionIncident(record.getPosition());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
@@ -155,7 +155,7 @@ public class ListViewZeebeRecordProcessor {
     LOGGER.debug("Activity instance for list view: id {}", entity.getId());
     final var updateFields = new HashMap<String, Object>();
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
-    updateFields.put(INCIDENT_POSITION, entity.getPosition());
+    updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
 
     final boolean concurrencyMode = importStore.getConcurrencyMode();
 
@@ -616,7 +616,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setKey(record.getValue().getElementInstanceKey());
     entity.setId(ConversionUtils.toStringOrNull(record.getValue().getElementInstanceKey()));
     entity.setPartitionId(record.getPartitionId());
-    entity.setPosition(record.getPosition());
+    entity.setPositionJob(record.getPosition());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
@@ -634,7 +634,7 @@ public class ListViewZeebeRecordProcessor {
         entity.isJobFailedWithRetriesLeft());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
-    updateFields.put(JOB_POSITION, entity.getPosition());
+    updateFields.put(JOB_POSITION, entity.getPositionJob());
 
     if (importStore.getConcurrencyMode()) {
       batchRequest.upsertWithScriptAndRouting(

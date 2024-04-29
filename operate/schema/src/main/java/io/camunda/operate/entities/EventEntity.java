@@ -37,12 +37,15 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   private String tenantId = DEFAULT_TENANT_ID;
 
   private Long position;
+  private Long positionIncident;
+  private Long positionProcessMessageSubscription;
+  private Long positionJob;
 
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
-  public EventEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public EventEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -51,7 +54,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return processInstanceKey;
   }
 
-  public EventEntity setProcessInstanceKey(Long processInstanceKey) {
+  public EventEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -60,7 +63,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return bpmnProcessId;
   }
 
-  public EventEntity setBpmnProcessId(String bpmnProcessId) {
+  public EventEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -69,7 +72,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return flowNodeId;
   }
 
-  public EventEntity setFlowNodeId(String flowNodeId) {
+  public EventEntity setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -78,7 +81,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return flowNodeInstanceKey;
   }
 
-  public EventEntity setFlowNodeInstanceKey(Long flowNodeInstanceKey) {
+  public EventEntity setFlowNodeInstanceKey(final Long flowNodeInstanceKey) {
     this.flowNodeInstanceKey = flowNodeInstanceKey;
     return this;
   }
@@ -87,7 +90,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return eventSourceType;
   }
 
-  public EventEntity setEventSourceType(EventSourceType eventSourceType) {
+  public EventEntity setEventSourceType(final EventSourceType eventSourceType) {
     this.eventSourceType = eventSourceType;
     return this;
   }
@@ -96,7 +99,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return eventType;
   }
 
-  public EventEntity setEventType(EventType eventType) {
+  public EventEntity setEventType(final EventType eventType) {
     this.eventType = eventType;
     return this;
   }
@@ -105,7 +108,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return dateTime;
   }
 
-  public EventEntity setDateTime(OffsetDateTime dateTime) {
+  public EventEntity setDateTime(final OffsetDateTime dateTime) {
     this.dateTime = dateTime;
     return this;
   }
@@ -114,7 +117,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return metadata;
   }
 
-  public EventEntity setMetadata(EventMetadataEntity metadata) {
+  public EventEntity setMetadata(final EventMetadataEntity metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -123,7 +126,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
     return tenantId;
   }
 
-  public EventEntity setTenantId(String tenantId) {
+  public EventEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -135,6 +138,54 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   public EventEntity setPosition(final Long position) {
     this.position = position;
     return this;
+  }
+
+  public Long getPositionIncident() {
+    return positionIncident;
+  }
+
+  public EventEntity setPositionIncident(final Long positionIncident) {
+    this.positionIncident = positionIncident;
+    return this;
+  }
+
+  public Long getPositionProcessMessageSubscription() {
+    return positionProcessMessageSubscription;
+  }
+
+  public EventEntity setPositionProcessMessageSubscription(
+      final Long positionProcessMessageSubscription) {
+    this.positionProcessMessageSubscription = positionProcessMessageSubscription;
+    return this;
+  }
+
+  public Long getPositionJob() {
+    return positionJob;
+  }
+
+  public EventEntity setPositionJob(final Long positionJob) {
+    this.positionJob = positionJob;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processDefinitionKey,
+        processInstanceKey,
+        bpmnProcessId,
+        flowNodeId,
+        flowNodeInstanceKey,
+        eventSourceType,
+        eventType,
+        dateTime,
+        metadata,
+        tenantId,
+        position,
+        positionIncident,
+        positionProcessMessageSubscription,
+        positionJob);
   }
 
   @Override
@@ -159,23 +210,10 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
         && Objects.equals(dateTime, that.dateTime)
         && Objects.equals(metadata, that.metadata)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(position, that.position);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processDefinitionKey,
-        processInstanceKey,
-        bpmnProcessId,
-        flowNodeId,
-        flowNodeInstanceKey,
-        eventSourceType,
-        eventType,
-        dateTime,
-        metadata,
-        tenantId,
-        position);
+        && Objects.equals(position, that.position)
+        && Objects.equals(positionIncident, that.positionIncident)
+        && Objects.equals(
+            positionProcessMessageSubscription, that.positionProcessMessageSubscription)
+        && Objects.equals(positionJob, that.positionJob);
   }
 }

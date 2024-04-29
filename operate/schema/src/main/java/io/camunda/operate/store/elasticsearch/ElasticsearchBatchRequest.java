@@ -166,6 +166,39 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest upsertWithScript(
+      final String index,
+      final String id,
+      final OperateEntity entity,
+      final String script,
+      final Map<String, Object> parameters)
+      throws PersistenceException {
+    LOGGER.debug(
+        "Add upsert request with for index {} id {} entity {} and script {} with parameters {} ",
+        index,
+        id,
+        entity,
+        script,
+        parameters);
+    try {
+      bulkRequest.add(
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .script(getScriptWithParameters(script, parameters))
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .retryOnConflict(UPDATE_RETRY_COUNT));
+    } catch (final JsonProcessingException e) {
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
+              entity.getClass().getName(), entity),
+          e);
+    }
+    return this;
+  }
+
+  @Override
   public BatchRequest upsertWithScriptAndRouting(
       final String index,
       final String id,
