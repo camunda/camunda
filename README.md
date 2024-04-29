@@ -113,6 +113,28 @@ mvn -Pit,engine-latest -pl backend -am clean install
 You can replace the profile `engine-latest` with the version of Camunda Platform 7 you
 want to test against.
 
+## Debugging integration tests locally with IntelliJ
+
+You can use the debugger integrated within IntelliJ to go through any integration test
+directly. The only prerequisite is that your IntelliJ is already configured to run or debug
+Optimize.
+
+From a fresh environment (i.e., no docker containers are running), all you need is the containers
+defined in the default `docker-compose.yaml` file:
+
+```bash
+$ docker compose up -d
+```
+
+Once the containers are running, you need to prepare the test environment:
+
+```bash
+$ mvn pre-integration-test -Pit,engine-latest -pl backend -am -Dskip.fe.build
+```
+
+After this, you are free to set breakpoints in the code and debug any integration test using
+IntelliJ.
+
 ## Modifying Camunda Platform 7 version being tested
 
 Whenever there is a new release of the platform, we need to update the
