@@ -94,8 +94,8 @@ export default function CarbonSelect<T extends object | string | number>(
       <MenuDropdown
         {...rest}
         onChange={(e: any) => onChange(e)}
-        label={props.placeholder || getLabel() || t('common.select')}
-        menuTarget={document.querySelector('.fullscreen')}
+        label={props.placeholder || getLabel() || t('common.select').toString()}
+        menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
       >
         {renderChildrenWithProps(children)}
       </MenuDropdown>

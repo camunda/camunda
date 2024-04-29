@@ -23,6 +23,7 @@ export const mainStory: Story = {
 		],
 		tagButtonTitle: "testButton",
 		titleText: "Multi value input title",
+		placeholder: "Placeholder text",
 		helperText: "Some additional helper text",
 	},
 	play: async ({ args, canvasElement }) => {
@@ -45,6 +46,8 @@ export const invalidInput: Story = {
 			{ value: "fourth", label: "Tag label" },
 		],
 		tagButtonTitle: "testButton",
+		titleText: "Multi value input title",
+		placeholder: "Placeholder text",
 		invalid: true,
 		invalidText: "Third value is invalid",
 	},
