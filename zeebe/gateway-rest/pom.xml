@@ -33,6 +33,11 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
+
     <!-- zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>

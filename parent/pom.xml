@@ -397,6 +397,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-gateway-grpc</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -2484,6 +2490,7 @@
                   <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
                   <dep>io.camunda:zeebe-build-tools</dep>
+                  <dep>io.camunda:zeebe-cluster-config</dep>
                   <dep>io.camunda:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
                   <dep>org.bouncycastle:bcpkix-jdk18on</dep>

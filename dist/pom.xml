@@ -38,6 +38,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-grpc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-restore</artifactId>
     </dependency>
 
