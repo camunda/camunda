@@ -92,7 +92,7 @@ const Details: React.FC<Props> = ({
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
-  const isLoading = (assignIsPending || unassignIsPending) ?? false;
+  const isPending = (assignIsPending || unassignIsPending) ?? false;
 
   const handleClick = async () => {
     try {
@@ -131,7 +131,7 @@ const Details: React.FC<Props> = ({
   };
 
   function getAsyncActionButtonStatus() {
-    if (isLoading || assignmentStatus !== 'off') {
+    if (isPending || assignmentStatus !== 'off') {
       const ACTIVE_STATES: AssignmentStatus[] = ['assigning', 'unassigning'];
 
       return ACTIVE_STATES.includes(assignmentStatus) ? 'active' : 'finished';
@@ -217,7 +217,7 @@ const Details: React.FC<Props> = ({
                       size: 'sm',
                       type: 'button',
                       onClick: handleClick,
-                      disabled: isLoading,
+                      disabled: isPending,
                       autoFocus: true,
                       id: 'main-content',
                     }}
