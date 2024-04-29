@@ -88,7 +88,7 @@
     <version.protobuf>3.25.3</version.protobuf>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.7</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
