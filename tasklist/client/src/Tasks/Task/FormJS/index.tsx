@@ -85,7 +85,7 @@ const FormJS: React.FC<Props> = ({
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
   const {assignee, taskState, formVersion} = task;
-  const {data, isInitialLoading} = useForm(
+  const {data, isLoading} = useForm(
     {
       id,
       processDefinitionKey,
@@ -105,7 +105,7 @@ const FormJS: React.FC<Props> = ({
       variableNames: extractedVariables,
     },
     {
-      enabled: !isInitialLoading && extractedVariables.length > 0,
+      enabled: !isLoading && extractedVariables.length > 0,
       refetchOnReconnect: assignee === null,
       refetchOnWindowFocus: assignee === null,
     },

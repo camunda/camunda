@@ -18,6 +18,7 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
@@ -49,9 +50,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
+@Scope(SCOPE_PROTOTYPE)
 @ConditionalOnProperty(name = "camunda.tasklist.database", havingValue = "opensearch")
 public class OpenSearchTestExtension
     implements DatabaseTestExtension,

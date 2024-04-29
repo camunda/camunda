@@ -42,8 +42,8 @@ const AvailableTasks: React.FC<Props> = ({
   const taskRef = useRef<HTMLDivElement | null>(null);
   const scrollableListRef = useRef<HTMLDivElement | null>(null);
   const {filter} = useTaskFilters();
-  const {data, isInitialLoading} = useCurrentUser();
-  const isLoading = isInitialLoading || loading;
+  const {data, isLoading: isLoadingUser} = useCurrentUser();
+  const isLoading = isLoadingUser || loading;
 
   useEffect(() => {
     scrollableListRef?.current?.scrollTo?.(0, 0);

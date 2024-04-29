@@ -14,54 +14,91 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.query;
+package io.camunda.tasklist.webapp.graphql.resolvers;
 
-import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.VARIABLE_DATA_LOADER;
+import static io.camunda.tasklist.util.SpringContextHolder.getBean;
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
-import graphql.kickstart.tools.GraphQLResolver;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.kickstart.annotations.GraphQLQueryResolver;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
-import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.ProcessStore;
+import io.camunda.tasklist.webapp.graphql.entity.FormDTO;
+import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
-import io.camunda.tasklist.webapp.mapper.TaskMapper;
+import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.service.TaskService;
+import io.camunda.tasklist.webapp.service.VariableService;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.dataloader.DataLoader;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-public class TaskResolver implements GraphQLResolver<TaskDTO> {
+@GraphQLQueryResolver
+public class Queries {
 
-  @Autowired private TaskMapper taskMapper;
-
-  public CompletableFuture<List<VariableDTO>> getVariables(
-      TaskDTO task, DataFetchingEnvironment dfe) {
-    final DataLoader<VariableStore.GetVariablesRequest, List<VariableDTO>> dataloader =
-        dfe.getDataLoader(VARIABLE_DATA_LOADER);
-
-    return dataloader.load(
-        VariableStore.GetVariablesRequest.createFrom(
-            TaskDTO.toTaskEntity(task), getFieldNames(dfe)));
+  @GraphQLField
+  @GraphQLNonNull
+  public static UserDTO currentUser() {
+    return getBean(UserReader.class).getCurrentUser();
   }
 
-  public String getProcessName(TaskDTO task) {
-    return taskMapper.getProcessName(task);
+  @GraphQLField
+  public static List<TaskDTO> tasks(final TaskQueryDTO query) {
+    return getBean(TaskService.class).getTasks(query);
   }
 
-  public String getName(TaskDTO task) {
-    return taskMapper.getName(task);
+  @GraphQLField
+  @GraphQLNonNull
+  public static TaskDTO task(final String id) {
+    return getBean(TaskService.class).getTask(id);
   }
 
-  public String getTaskDefinitionId(TaskDTO task) {
-    return task.getFlowNodeBpmnId();
+  @GraphQLField
+  public static List<VariableDTO> variables(
+      final String taskId, final List<String> variableNames, final DataFetchingEnvironment env) {
+    return getBean(VariableService.class).getVariables(taskId, variableNames, getFieldNames(env));
   }
 
-  private static Set<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
-    return dataFetchingEnvironment.getSelectionSet().getFields().stream()
+  /**
+   * Variable id here can be either "scopeId-varName" for runtime variables or "taskId-varName" for
+   * completed task variables
+   *
+   * @param id: variableId
+   * @return
+   */
+  @GraphQLField
+  @GraphQLNonNull
+  public static VariableDTO variable(final String id, final DataFetchingEnvironment env) {
+    return getBean(VariableService.class).getVariable(id, getFieldNames(env));
+  }
+
+  @GraphQLField
+  public static FormDTO form(final String id, final String processDefinitionId) {
+    return FormDTO.createFrom(getBean(FormStore.class).getForm(id, processDefinitionId, null));
+  }
+
+  @GraphQLField
+  public static List<ProcessDTO> processes(final String search) {
+    return getBean(ProcessStore.class)
+        .getProcesses(
+            search,
+            getBean(IdentityAuthorizationService.class).getProcessDefinitionsFromAuthorization(),
+            DEFAULT_TENANT_IDENTIFIER,
+            null)
+        .stream()
+        .map(ProcessDTO::createFrom)
+        .collect(Collectors.toList());
+  }
+
+  private static Set<String> getFieldNames(final DataFetchingEnvironment env) {
+    return env.getSelectionSet().getFields().stream()
         .map(SelectedField::getName)
         .collect(Collectors.toSet());
   }
