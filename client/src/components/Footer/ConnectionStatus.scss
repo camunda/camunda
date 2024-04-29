@@ -1,11 +1,13 @@
+@use '@carbon/styles/scss/spacing';
+
 .ConnectionStatus {
   .error {
     font-size: 0.7em;
   }
 
-  .status .statusItem {
+  .statusItem {
     display: inline-block;
-    margin-right: 10px;
+    margin-right: spacing.$spacing-04;
     white-space: nowrap;
 
     &:before {
@@ -14,19 +16,19 @@
       width: 0.65em;
       height: 0.65em;
       border-radius: 100%;
-      margin-right: 4px;
-      background-color: var(--red-darken-38);
+      margin-right: spacing.$spacing-02;
+      background-color: var(--cds-support-error);
     }
 
     &.is-connected:before {
-      background-color: var(--green-base-44);
+      background-color: var(--cds-support-success);
     }
 
     &.is-in-progress:before {
       width: 0.8em;
       height: 0.8em;
       background-size: cover;
-      background-color: var(--white);
+      background-color: inherit;
       background-image: url(./loading.svg);
     }
   }

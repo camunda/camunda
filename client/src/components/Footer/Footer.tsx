@@ -35,15 +35,13 @@ export default function Footer() {
 
   return (
     <footer className="Footer">
-      <div className="content">
-        {optimizeProfile === 'platform' && <ConnectionStatus />}
-        <Tooltip content={timezoneInfo} overflowOnly>
-          <div className="timezone">{timezoneInfo}</div>
-        </Tooltip>
-        <div className="colophon">
-          © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
-          {optimizeVersion}
-        </div>
+      {optimizeProfile === 'platform' && <ConnectionStatus />}
+      <Tooltip content={timezoneInfo} overflowOnly>
+        <div className="timezone">{timezoneInfo}</div>
+      </Tooltip>
+      <div className="colophon">
+        © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
+        {optimizeVersion}
       </div>
     </footer>
   );

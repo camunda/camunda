@@ -78,21 +78,19 @@ export default function ConnectionStatus() {
   }
 
   return (
-    <div className="ConnectionStatus">
+    <ul className="ConnectionStatus">
       {error ? (
-        <span className="error">{t('footer.connectionError')}</span>
+        <li className="error">{t('footer.connectionError')}</li>
       ) : (
         loaded && (
-          <ul className="status">
-            <>
-              {Object.entries(engineStatus).map(([key, {isConnected, isImporting}]) =>
-                renderListElement(key, isConnected, isImporting)
-              )}
-              {renderListElement(t('footer.database').toString(), connectedToElasticsearch, false)}
-            </>
-          </ul>
+          <>
+            {Object.entries(engineStatus).map(([key, {isConnected, isImporting}]) =>
+              renderListElement(key, isConnected, isImporting)
+            )}
+            {renderListElement(t('footer.database').toString(), connectedToElasticsearch, false)}
+          </>
         )
       )}
-    </div>
+    </ul>
   );
 }

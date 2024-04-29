@@ -85,7 +85,7 @@ it('displays the connection status', () => {
 
   jest.runOnlyPendingTimers();
 
-  expect(node.find('.status')).toExist();
+  expect(node.find('.statusItem')).toHaveLength(1);
 });
 
 it('should not display connection status before receiving data', () => {
