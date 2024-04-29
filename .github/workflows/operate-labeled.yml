@@ -1,11 +1,13 @@
-name: Assign new issues to the default projects
+name: Assign labeled issues to operate project
 on:
   issues:
-    types: [ opened, reopened, transferred ]
+    types:
+      - labeled
 jobs:
   add-to-projects:
-    name: Add issue to ZDP/ZPA project if no project set yet
+    name: Add issue to operate project if relevant component label added
     runs-on: ubuntu-latest
+    if: ${{ github.event.label.name == 'component/operate' }}
     steps:
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.1
@@ -29,24 +31,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
       - id: has-project
         run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
-      - id: add-to-zdp
-        name: Add to ZDP project
-        if: ${{ steps.has-project.outputs.result == 'false' }}
-        uses: actions/add-to-project@v1.0.1
-        with:
-          project-url: https://github.com/orgs/camunda/projects/92
-          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: kind/task
-          label-operator: NOT
-      - id: add-to-zda
-        name: Add to ZPA project
-        uses: actions/add-to-project@v1.0.1
-        if: ${{ steps.has-project.outputs.result == 'false' }}
-        with:
-          project-url: https://github.com/orgs/camunda/projects/29
-          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: kind/task
-          label-operator: NOT
       - id: add-to-operate
         name: Add to Operate project
         uses: actions/add-to-project@v1.0.1
@@ -54,4 +38,3 @@ jobs:
         with:
           project-url: https://github.com/orgs/camunda/projects/24
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/operate
