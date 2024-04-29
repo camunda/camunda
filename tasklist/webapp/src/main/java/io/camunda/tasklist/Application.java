@@ -74,6 +74,7 @@ public class Application {
     // Hack for the moment to allow serving static resources in Tasklist.
     // Must be removed with the single application.
     System.setProperty("spring.web.resources.add-mappings", "true");
+    System.setProperty("spring.banner.location", "classpath:/tasklist-banner.txt");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
