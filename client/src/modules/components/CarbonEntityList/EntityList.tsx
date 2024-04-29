@@ -5,7 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {ChangeEvent, ReactNode, isValidElement, Children, cloneElement} from 'react';
+import React, {
+  ChangeEvent,
+  ReactNode,
+  isValidElement,
+  Children,
+  cloneElement,
+  useState,
+} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowsVertical} from '@carbon/icons-react';
 import {
@@ -68,6 +75,7 @@ interface BulkAction {
 
 interface EntityListProps {
   title?: ReactNode;
+  description?: ((query: string | undefined, selectedCount?: number) => ReactNode) | ReactNode;
   rows: Row[];
   headers: Column[];
   action: ReactNode;
@@ -80,6 +88,7 @@ interface EntityListProps {
 
 export default function EntityList({
   title,
+  description,
   rows,
   headers,
   action,
@@ -89,6 +98,8 @@ export default function EntityList({
   onChange,
   emptyStateComponent,
 }: EntityListProps) {
+  const [query, setQuery] = useState<string | undefined>();
+
   if ((!Array.isArray(rows) || rows?.length === 0) && emptyStateComponent) {
     if (isLoading) {
       return (
@@ -143,6 +154,8 @@ export default function EntityList({
   const dataTableHeaders = visibleHeaders.map(mapHeaderToDataTableHeader);
   const dataTableRows = rows.map(mapRowToDataTableRow);
   const hasLessThanThreeActions = rows.every(({actions}) => !actions || actions.length <= 2);
+  const objectHeaders = headers.filter(isObjectHeader);
+  const isSortable = !!sorting && objectHeaders.filter((header) => header.key).length > 0;
 
   if (isLoading) {
     return (
@@ -157,7 +170,7 @@ export default function EntityList({
       <DataTable
         rows={dataTableRows}
         headers={dataTableHeaders}
-        isSortable={!!sorting}
+        isSortable={isSortable}
         filterRows={({cellsById, getCellId, headers, inputValue, rowIds}) => {
           const searchWord = inputValue.trim().toLowerCase();
           return rowIds.filter((rowId, idx) =>
@@ -205,7 +218,15 @@ export default function EntityList({
           };
 
           return (
-            <TableContainer title={title} {...getTableContainerProps()}>
+            <TableContainer
+              title={title}
+              description={
+                description instanceof Function
+                  ? description(query, formattedRows.length)
+                  : description
+              }
+              {...getTableContainerProps()}
+            >
               <TableToolbar {...getToolbarProps()}>
                 {bulkActions && (
                   <TableBatchActions {...batchActionProps}>
@@ -223,11 +244,14 @@ export default function EntityList({
                 <TableToolbarContent aria-hidden={batchActionProps.shouldShowBatchActions}>
                   <TableToolbarSearch
                     onChange={(e) => {
+                      if (e) {
+                        setQuery(e.target.value);
+                      }
                       onInputChange(e as ChangeEvent<HTMLInputElement>);
                     }}
                     persistent
                   />
-                  {sorting && (
+                  {isSortable && (
                     <MenuButton
                       menuLabel={t('common.sort').toString()}
                       label={<ArrowsVertical />}
@@ -235,7 +259,7 @@ export default function EntityList({
                       hasIconOnly
                       iconDescription={t('common.sort').toString()}
                     >
-                      {headers.filter(isObjectHeader).map(({name, key, defaultOrder}) => (
+                      {objectHeaders.map(({name, key, defaultOrder}) => (
                         <MenuItemSelectable
                           selected={(sorting.key || 'entityType') === key}
                           key={key}
@@ -253,30 +277,41 @@ export default function EntityList({
                   <TableRow>
                     {/* @ts-ignore */}
                     {bulkActions && <TableSelectAll {...getSelectionProps()} />}
-                    {formattedHeaders.map((header, idx) => (
-                      // @ts-ignore
-                      <TableHeader
-                        {...getHeaderProps({
-                          header,
-                          isSortable: typeof visibleHeaders[idx] === 'object',
-                          onClick: () => {
-                            const header = visibleHeaders[idx];
-                            if (isObjectHeader(header)) {
-                              if (header.key === sorting?.key) {
-                                onChange?.(sorting.key, sorting?.order === 'desc' ? 'asc' : 'desc');
-                              } else {
-                                onChange?.(header.key, header.defaultOrder);
+                    {formattedHeaders.map((header, idx) => {
+                      const visibleHeader = visibleHeaders[idx];
+                      const isHeaderSortable =
+                        !!visibleHeader &&
+                        typeof visibleHeader === 'object' &&
+                        'key' in visibleHeader &&
+                        !!visibleHeader.key;
+
+                      return (
+                        // @ts-ignore
+                        <TableHeader
+                          {...getHeaderProps({
+                            header,
+                            isSortable: isHeaderSortable,
+                            onClick: () => {
+                              if (isObjectHeader(visibleHeader)) {
+                                if (visibleHeader.key === sorting?.key) {
+                                  onChange?.(
+                                    sorting.key,
+                                    sorting?.order === 'desc' ? 'asc' : 'desc'
+                                  );
+                                } else {
+                                  onChange?.(visibleHeader.key, visibleHeader.defaultOrder);
+                                }
                               }
-                            }
-                          },
-                        })}
-                        isSortHeader={header.key === sorting?.key}
-                        sortDirection={sorting?.order?.toUpperCase()}
-                        className="tableHeader"
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                            },
+                          })}
+                          isSortHeader={header.key === sorting?.key}
+                          sortDirection={sorting?.order?.toUpperCase()}
+                          className="tableHeader"
+                        >
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     <TableHeader />
                   </TableRow>
                 </TableHead>

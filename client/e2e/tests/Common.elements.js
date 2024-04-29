@@ -80,7 +80,4 @@ export const checkbox = (text) => Selector('.cds--checkbox-label').withText(text
 export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
 export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
-export const oldListItem = Selector('.ListItem');
-export const processItem = oldListItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Process') !== -1
-);
+export const processItem = listItemLink('process', true);

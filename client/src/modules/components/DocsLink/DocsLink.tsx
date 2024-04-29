@@ -6,6 +6,7 @@
  */
 
 import {ReactNode} from 'react';
+import {Link} from '@carbon/react';
 
 import {useDocs} from 'hooks';
 
@@ -18,8 +19,8 @@ export default function DocsLink({location, children}: DocsLinkProps): JSX.Eleme
   const {generateDocsLink} = useDocs();
 
   return (
-    <a href={generateDocsLink(location)} target="_blank" rel="noopener noreferrer">
+    <Link href={generateDocsLink(location)} target="_blank" rel="noopener noreferrer">
       {children}
-    </a>
+    </Link>
   );
 }

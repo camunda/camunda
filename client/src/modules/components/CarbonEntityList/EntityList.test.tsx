@@ -7,7 +7,13 @@
 
 import {shallow} from 'enzyme';
 import {ComponentProps} from 'react';
-import {DataTable, MenuItemSelectable, TableBatchActions, TableHeader} from '@carbon/react';
+import {
+  DataTable,
+  MenuItemSelectable,
+  TableBatchActions,
+  TableContainer,
+  TableHeader,
+} from '@carbon/react';
 import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
 import EntityList from './EntityList';
@@ -81,12 +87,24 @@ it('should show provided empty state if rows are empty', () => {
   expect(node.find('.emptyState')).toExist();
 });
 
-it('should disable the sorting if no sorting is applied', () => {
+it('should disable sorting if no sorting is applied', () => {
   const node = shallow(
     <EntityList {...props} headers={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']} />
   );
 
   expect(node.find('DataTable').prop('isSortable')).toBe(false);
+});
+
+it('should disable sorting if there are no sortable object headers', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      headers={[{name: 'Name', key: '', defaultOrder: 'asc'}, 'Meta 1']}
+      sorting={{key: 'name', order: 'asc'}}
+    />
+  );
+
+  expect(node.find(DataTable).prop('isSortable')).toBe(false);
 });
 
 it('should invoke onChange with default column order when selecting it from sorting menu', () => {
@@ -191,4 +209,15 @@ it('disable rows without actions', () => {
   const rows = node.find(DataTable).prop('rows');
   expect(rows[0].disabled).toBe(false);
   expect(rows[1].disabled).toBe(true);
+});
+
+it('should render description', () => {
+  const node = shallow(
+    <EntityList {...props} headers={['Name']} description={(query, count) => `${query} ${count}`} />
+  );
+
+  expect(node.find(DataTable).dive().find(TableContainer).prop('description')).toBe('undefined 3');
+
+  node.setProps({description: 'description'});
+  expect(node.find(DataTable).dive().find(TableContainer).prop('description')).toBe('description');
 });

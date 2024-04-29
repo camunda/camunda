@@ -6,8 +6,10 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
+import {DecisionTree, Settings} from '@carbon/icons-react';
+import {Column, Grid} from '@carbon/react';
 
-import {EntityList, PageTitle, Tooltip} from 'components';
+import {CarbonEntityList, EmptyState, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -54,7 +56,7 @@ export function Processes({mightFail, user}) {
     })();
   }, []);
 
-  const columns = [
+  const headers = [
     t('common.name'),
     <>
       {t('processes.timeKpi')} <KpiTooltip />
@@ -66,130 +68,127 @@ export function Processes({mightFail, user}) {
 
   if (userSearchAvailable) {
     const ownerColumn = t('processes.owner');
-    columns.splice(1, 0, ownerColumn);
+    headers.splice(1, 0, ownerColumn);
   }
 
   const processesLabel =
     processes?.length === 1 ? t('processes.label') : t('processes.label-plural');
 
   return (
-    <div className="Processes">
-      <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
-      {optimizeDatabase === 'elasticsearch' && (
-        <>
-          <h1 className="processOverview">
-            {t('processes.adoptionDashboard')}
-            {processes && (
-              <div className="info">
-                <span>
-                  {t('processes.analysing', {count: processes.length, label: processesLabel})}
-                </span>
-              </div>
+    <Grid condensed className="Processes" fullWidth>
+      <Column sm={4} md={8} lg={16}>
+        <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
+        {optimizeDatabase === 'elasticsearch' && (
+          <>
+            <h1 className="processOverview">
+              {t('processes.adoptionDashboard')}
+              {processes && (
+                <div className="info">
+                  <span>
+                    {t('processes.analysing', {count: processes.length, label: processesLabel})}
+                  </span>
+                </div>
+              )}
+            </h1>
+            {dashboard && (
+              <DashboardView
+                tiles={dashboard.tiles}
+                customizeReportLink={(id) => `/processes/report/${id}/`}
+              />
             )}
-          </h1>
-          {dashboard && (
-            <DashboardView
-              tiles={dashboard.tiles}
-              customizeReportLink={(id) => `/processes/report/${id}/`}
-            />
-          )}
-        </>
-      )}
-      <EntityList
-        name={t('processes.defaultDashboardAndKPI')}
-        displaySearchInfo={
-          processes &&
-          ((query, count) => (
-            <div className="info">
-              {query
-                ? t('processes.processesListedOf', {
-                    count,
-                    total: processes.length,
-                    label: processesLabel,
-                  })
-                : t('processes.processesListed', {total: processes.length, label: processesLabel})}
-            </div>
-          ))
-        }
-        empty={t('processes.empty')}
-        isLoading={!processes}
-        columns={columns}
-        sorting={sorting}
-        onChange={loadProcessesList}
-        forceActionsDropdown
-        data={processes?.map(
-          ({processDefinitionKey, processDefinitionName, owner, digest, kpis}) => {
-            const kpisWithData = kpis.filter(({value, target}) => value && target);
-            const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
-            const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
-            const meta = [
-              <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
-                <div className="summaryContainer">
-                  <KpiSummary kpis={timeKpis} />
-                </div>
-              </Tooltip>,
-              <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
-                <div className="summaryContainer">
-                  <KpiSummary kpis={qualityKpis} />
-                </div>
-              </Tooltip>,
-            ];
-
-            let listItem = {
-              id: processDefinitionKey,
-              type: t('common.process.label'),
-              icon: 'dashboard-optimize',
-              name: processDefinitionName || processDefinitionKey,
-              meta,
-              actions: [],
-            };
-
-            if (userSearchAvailable) {
-              meta.unshift(owner?.name);
-
-              listItem.actions.push({
-                text: t('common.configure'),
-                action: () => setEditProcessConfig({processDefinitionKey, owner, digest}),
-              });
-            }
-
-            if (user?.authorizations.includes('entity_editor')) {
-              listItem.link = `dashboard/instant/${processDefinitionKey}/`;
-            }
-
-            return listItem;
-          }
+          </>
         )}
-      />
-      {editProcessConfig && (
-        <ConfigureProcessModal
-          initialConfig={editProcessConfig}
-          onClose={() => setEditProcessConfig()}
-          onConfirm={(newConfig, emailEnabled, ownerName) => {
-            setEditProcessConfig();
-            mightFail(
-              updateProcess(editProcessConfig.processDefinitionKey, newConfig),
-              () => {
-                if (emailEnabled) {
-                  if (newConfig.processDigest.enabled) {
-                    addNotification({
-                      type: 'success',
-                      text: t('processes.digestConfigured', {name: ownerName}),
-                    });
-                  }
-                  trackEmailDigestState(
-                    newConfig.processDigest.enabled,
-                    editProcessConfig.processDefinitionKey
-                  );
-                }
-                loadProcessesList();
-              },
-              showError
-            );
-          }}
+        <CarbonEntityList
+          title={t('processes.defaultDashboardAndKPI')}
+          description={(query, count) =>
+            processes && query
+              ? t('processes.processesListedOf', {
+                  count,
+                  total: processes.length,
+                  label: processesLabel,
+                })
+              : t('processes.processesListed', {total: processes.length, label: processesLabel})
+          }
+          emptyStateComponent={<EmptyState title={t('processes.empty')} icon={<DecisionTree />} />}
+          isLoading={!processes}
+          headers={headers}
+          sorting={sorting}
+          onChange={loadProcessesList}
+          rows={processes?.map(
+            ({processDefinitionKey, processDefinitionName, owner, digest, kpis}) => {
+              const kpisWithData = kpis.filter(({value, target}) => value && target);
+              const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
+              const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
+              const meta = [
+                <Tooltip position="bottom" content={<KpiResult kpis={timeKpis} />} delay={300}>
+                  <div className="summaryContainer">
+                    <KpiSummary kpis={timeKpis} />
+                  </div>
+                </Tooltip>,
+                <Tooltip position="bottom" content={<KpiResult kpis={qualityKpis} />} delay={300}>
+                  <div className="summaryContainer">
+                    <KpiSummary kpis={qualityKpis} />
+                  </div>
+                </Tooltip>,
+              ];
+
+              let listItem = {
+                id: processDefinitionKey,
+                type: t('common.process.label'),
+                icon: <DecisionTree />,
+                name: processDefinitionName || processDefinitionKey,
+                meta,
+                actions: [],
+              };
+
+              if (userSearchAvailable) {
+                meta.unshift(owner?.name);
+
+                listItem.actions.push({
+                  icon: <Settings />,
+                  text: t('common.configure'),
+                  action: () => setEditProcessConfig({processDefinitionKey, owner, digest}),
+                });
+              }
+
+              if (user?.authorizations.includes('entity_editor')) {
+                listItem.link = `dashboard/instant/${processDefinitionKey}/`;
+              }
+
+              return listItem;
+            }
+          )}
         />
-      )}
-    </div>
+        {editProcessConfig && (
+          <ConfigureProcessModal
+            initialConfig={editProcessConfig}
+            onClose={() => setEditProcessConfig()}
+            onConfirm={(newConfig, emailEnabled, ownerName) => {
+              setEditProcessConfig();
+              mightFail(
+                updateProcess(editProcessConfig.processDefinitionKey, newConfig),
+                () => {
+                  if (emailEnabled) {
+                    if (newConfig.processDigest.enabled) {
+                      addNotification({
+                        type: 'success',
+                        text: t('processes.digestConfigured', {name: ownerName}),
+                      });
+                    }
+                    trackEmailDigestState(
+                      newConfig.processDigest.enabled,
+                      editProcessConfig.processDefinitionKey
+                    );
+                  }
+                  loadProcessesList();
+                },
+                showError
+              );
+            }}
+          />
+        )}
+      </Column>
+    </Grid>
   );
 }
 

@@ -5,10 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Icon} from 'components';
 
 import KpiSummary from './KpiSummary';
 
@@ -39,14 +36,13 @@ it('should not display the summary if no goals are defined', () => {
 it('should display two indicators if one goal succeeds and the other fails', () => {
   const node = shallow(<KpiSummary kpis={[succeededKpi, failedKpi]} />);
 
-  expect(node.find(Icon).length).toBe(2);
-  expect(node.find(Icon).at(0).prop('className')).toBe('success');
-  expect(node.find(Icon).at(1).prop('className')).toBe('error');
+  expect(node.find('.success').length).toBe(1);
+  expect(node.find('.error').length).toBe(1);
 });
 
 it('should display single indicator if all goals succeeded or failed', () => {
   const node = shallow(<KpiSummary kpis={[succeededKpi, {...failedKpi, isBelow: false}]} />);
 
-  expect(node.find(Icon).length).toBe(1);
-  expect(node.find(Icon).prop('className')).toBe('success');
+  expect(node.find('.success').length).toBe(1);
+  expect(node.find('.error')).not.toExist();
 });
