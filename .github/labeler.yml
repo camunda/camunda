@@ -44,5 +44,4 @@ component/tasklist:
           - 'parent/*'
           - 'pom.xml'
           - 'tasklist/**'
-          - 'tasklist-distro/**'
           - 'tasklist.Dockerfile'

@@ -16,16 +16,18 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.util.CollectionUtil;
 
 public class ProcessDTO {
 
-  private String id;
+  @GraphQLField @GraphQLNonNull private String id;
 
-  private String name;
+  @GraphQLField private String name;
 
-  private String processDefinitionId;
+  @GraphQLField private String processDefinitionId;
 
   private String[] sortValues;
 
@@ -37,7 +39,7 @@ public class ProcessDTO {
 
   private Boolean isFormEmbedded;
 
-  private Integer version;
+  @GraphQLField private Integer version;
 
   public static ProcessDTO createFrom(ProcessEntity processEntity) {
     return createFrom(processEntity, null);

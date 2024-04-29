@@ -40,7 +40,6 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -75,8 +74,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Autowired
   @Qualifier(TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCanceledCheck;
-
-  @Autowired private TaskMutationResolver taskMutationResolver;
 
   @Autowired private WebApplicationContext context;
 
