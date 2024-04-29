@@ -97,8 +97,8 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
             .withPartitionId(context.getPartitionId())
             .withMaxFragmentSize(context.getMaxFragmentSize())
             .withActorSchedulingService(context.getActorSchedulingService());
-    if (appendLimitConfig != null && appendLimitConfig.isEnabled()) {
-      appendLimitConfig.buildLimit();
+    if (appendLimitConfig != null) {
+      builder.withAppendLimit(appendLimitConfig.buildLimit());
     }
     return builder.buildAsync();
   }
