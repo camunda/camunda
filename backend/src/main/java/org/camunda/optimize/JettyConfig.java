@@ -5,26 +5,36 @@
  */
 package org.camunda.optimize;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
 import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
-import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextHandler;
+import static org.eclipse.jetty.ee10.servlet.ServletContextHandler.getServletContextHandler;
 
-import jakarta.servlet.DispatcherType;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Optional;
-import org.camunda.optimize.jetty.NotFoundErrorHandler;
+import org.camunda.optimize.jetty.OptimizeResourceConstants;
+import org.camunda.optimize.rest.HealthRestService;
+import org.camunda.optimize.rest.LocalizationRestService;
+import org.camunda.optimize.rest.UIConfigurationRestService;
+import org.camunda.optimize.rest.constants.RestConstants;
+import org.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.util.PanelNotificationConstants;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.service.util.configuration.security.ResponseHeadersConfiguration;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocketServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -33,12 +43,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -56,6 +65,34 @@ public class JettyConfig {
   private static final String COMPRESSED_MIME_TYPES =
       "application/json," + "text/html," + "application/x-font-ttf," + "image/svg+xml";
   private static final String PROTOCOL = "http/1.1";
+  private static final String LOGIN_ENDPOINT = "/login";
+  private static final String METRICS_ENDPOINT = "/metrics";
+  private static final String URL_BASE = "/#";
+
+  public static final String ALLOWED_URL_EXTENSION =
+      String.join(
+          "|",
+          new String[] {
+            URL_BASE,
+            LOGIN_ENDPOINT,
+            METRICS_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
+            HealthRestService.READYZ_PATH,
+            LocalizationRestService.LOCALIZATION_PATH,
+            OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH,
+            OptimizeResourceConstants.REST_API_PATH,
+            OptimizeResourceConstants.STATIC_RESOURCE_PATH,
+            OptimizeResourceConstants.STATUS_WEBSOCKET_PATH,
+            OptimizeResourceConstants.ACTUATOR_ENDPOINT,
+            PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
+            RestConstants.BACKUP_ENDPOINT,
+            UIConfigurationRestService.UI_CONFIGURATION_PATH
+          });
 
   @Autowired private ConfigurationService configurationService;
   @Autowired private Environment environment;
@@ -107,18 +144,32 @@ public class JettyConfig {
     return servletContext -> {
       final ServletContextHandler servletContextHandler = getServletContextHandler(servletContext);
 
+      addURLRedirects(servletContextHandler);
+
       addStaticResources(servletContextHandler);
       addGzipHandler(servletContextHandler);
-      servletContextHandler.setErrorHandler(new NotFoundErrorHandler());
 
       final Server server = servletContextHandler.getServer();
       setUpRequestLogging(server);
     };
   }
 
+  /** redirect to /# when the endpoint is not valid. do this rather than showing an error page */
+  private void addURLRedirects(final ServletContextHandler servletContextHandler) {
+    final String regex =
+        "^(?!" + getContextPath().orElse("") + "(" + ALLOWED_URL_EXTENSION + ")).+";
+
+    final RewriteRegexRule badUrlRegex =
+        new RewriteRegexRule(regex, getContextPath().orElse("") + "/#");
+    final RewriteHandler rewrite = new RewriteHandler();
+    rewrite.addRule(badUrlRegex);
+    servletContextHandler.insertHandler(rewrite);
+  }
+
   @Bean
   public ServletRegistrationBean<JettyWebSocketServlet> socketServlet() {
-    return new ServletRegistrationBean<>(new StatusWebSocketServlet(), STATUS_WEBSOCKET_PATH);
+    return new ServletRegistrationBean<>(
+        new StatusWebSocketServlet(), OptimizeResourceConstants.STATUS_WEBSOCKET_PATH);
   }
 
   private ServerConnector initHttp2Connector(final Server server) {
@@ -230,10 +281,10 @@ public class JettyConfig {
   private void addStaticResources(final ServletContextHandler servletContextHandler) {
     final URL webappURL = getClass().getClassLoader().getResource("webapp");
     if (webappURL != null) {
-      servletContextHandler.setResourceBase(webappURL.toExternalForm());
+      final Resource resource =
+          ResourceFactory.of(new ResourceHandler()).newResource(webappURL.toExternalForm());
+      servletContextHandler.setBaseResource(resource);
     }
-    final ServletHolder holderPwd = new ServletHolder("default", DefaultServlet.class);
-    holderPwd.setInitParameter("dirAllowed", "false");
     final ServletHolder externalHome = new ServletHolder("external-home", DefaultServlet.class);
     if (webappURL != null) {
       externalHome.setInitParameter("resourceBase", webappURL.toExternalForm());
@@ -243,15 +294,18 @@ public class JettyConfig {
     externalHome.setInitParameter("pathInfoOnly", "true");
     servletContextHandler.addServlet(
         externalHome, "/external/*"); // must end in "/*" for pathInfo to work
-    // Root path needs to be added last, otherwise it won't work
-    servletContextHandler.addServlet(holderPwd, "/");
   }
 
   private void addGzipHandler(final ServletContextHandler context) {
     final GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setMinGzipSize(23);
     gzipHandler.setIncludedMimeTypes(COMPRESSED_MIME_TYPES);
-    gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+    gzipHandler.addIncludedMethods(
+        HttpMethod.GET.asString(),
+        HttpMethod.POST.asString(),
+        HttpMethod.PUT.asString(),
+        HttpMethod.PATCH.asString(),
+        HttpMethod.DELETE.asString());
     gzipHandler.setIncludedPaths("/*");
     context.insertHandler(gzipHandler);
   }

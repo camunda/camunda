@@ -12,12 +12,13 @@ import org.camunda.optimize.dto.optimize.query.status.EngineStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StatusNotifier implements ImportObserver {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(StatusNotifier.class);
 
   private final StatusCheckingService statusCheckingService;
   private final ObjectMapper objectMapper;
@@ -26,7 +27,9 @@ public class StatusNotifier implements ImportObserver {
   private final Map<String, EngineStatusDto> engineStatusMap;
 
   public StatusNotifier(
-      StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
+      final StatusCheckingService statusCheckingService,
+      final ObjectMapper objectMapper,
+      final Session session) {
     this.statusCheckingService = statusCheckingService;
     this.objectMapper = objectMapper;
     this.session = session;
@@ -35,10 +38,10 @@ public class StatusNotifier implements ImportObserver {
   }
 
   @Override
-  public synchronized void importInProgress(String engineAlias) {
-    boolean containsKey = engineStatusMap.containsKey(engineAlias);
-    boolean sendUpdate = containsKey && !engineStatusMap.get(engineAlias).getIsImporting();
-    EngineStatusDto engineStatus = new EngineStatusDto();
+  public synchronized void importInProgress(final String engineAlias) {
+    final boolean containsKey = engineStatusMap.containsKey(engineAlias);
+    final boolean sendUpdate = containsKey && !engineStatusMap.get(engineAlias).getIsImporting();
+    final EngineStatusDto engineStatus = new EngineStatusDto();
     if (containsKey) {
       engineStatus.setIsConnected(engineStatusMap.get(engineAlias).getIsConnected());
     } else {
@@ -52,10 +55,10 @@ public class StatusNotifier implements ImportObserver {
   }
 
   @Override
-  public synchronized void importIsIdle(String engineAlias) {
-    boolean containsKey = engineStatusMap.containsKey(engineAlias);
-    boolean sendUpdate = containsKey && engineStatusMap.get(engineAlias).getIsImporting();
-    EngineStatusDto engineStatus = new EngineStatusDto();
+  public synchronized void importIsIdle(final String engineAlias) {
+    final boolean containsKey = engineStatusMap.containsKey(engineAlias);
+    final boolean sendUpdate = containsKey && engineStatusMap.get(engineAlias).getIsImporting();
+    final EngineStatusDto engineStatus = new EngineStatusDto();
     if (containsKey) {
       engineStatus.setIsConnected(engineStatusMap.get(engineAlias).getIsConnected());
     } else {
@@ -69,15 +72,15 @@ public class StatusNotifier implements ImportObserver {
   }
 
   private void sendStatus() {
-    StatusResponseDto result = statusCheckingService.getCachedStatusResponse();
+    final StatusResponseDto result = statusCheckingService.getCachedStatusResponse();
     try {
       if (session.isOpen()) {
-        session.getRemote().sendString(objectMapper.writeValueAsString(result));
+        session.sendText(objectMapper.writeValueAsString(result), Callback.NOOP);
       } else {
         logger.debug(
             "Could not write to websocket session [{}], because it already seems closed.", session);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.warn("can't write status to web socket");
       logger.debug("Exception when writing status", e);
     }

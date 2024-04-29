@@ -16,8 +16,8 @@ import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 @NoArgsConstructor
@@ -35,7 +35,7 @@ public class StatusWebSocket {
 
   private final Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
-  @OnWebSocketConnect
+  @OnWebSocketOpen
   public void onOpen(final Session session) {
     if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
       final StatusNotifier job = new StatusNotifier(statusCheckingService, objectMapper, session);
