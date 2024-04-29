@@ -11,13 +11,13 @@ import {useLocation} from 'react-router';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
-import {getOptimizeProfile, isSharingEnabled} from 'config';
+import {isSharingEnabled, isUserSearchAvailable} from 'config';
 
 import ReportView from './ReportView';
 
 jest.mock('config', () => ({
   isSharingEnabled: jest.fn().mockReturnValue(true),
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  isUserSearchAvailable: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('services', () => {
@@ -139,13 +139,13 @@ it('should show alert dropdown for number reports', async () => {
   );
 
   runLastEffect();
-  await node.update();
+  await flushPromises();
 
   expect(node.find(AlertsDropdown)).toExist();
 });
 
-it('should hide alert dropdown in ccsm environment', () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
+it('should hide alert dropdown if usersearch is not available', () => {
+  isUserSearchAvailable.mockReturnValueOnce(false);
   const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );

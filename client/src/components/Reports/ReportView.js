@@ -24,7 +24,7 @@ import {
   InstanceViewTable,
   Popover,
 } from 'components';
-import {isSharingEnabled, getOptimizeProfile} from 'config';
+import {isSharingEnabled, isUserSearchAvailable} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 import {track} from 'tracking';
@@ -38,7 +38,7 @@ import './ReportView.scss';
 export default function ReportView({report, error, loadReport}) {
   const [deleting, setDeletting] = useState(null);
   const [sharingEnabled, setSharingEnabled] = useState(false);
-  const [optimizeProfile, setOptimizeProfile] = useState(null);
+  const [userSearchAvailable, setUserSearchAvailable] = useState(null);
   const [redirect, setRedirect] = useState(false);
   const location = useLocation();
   const isProcessReport = location.pathname.includes('processes/report');
@@ -50,8 +50,8 @@ export default function ReportView({report, error, loadReport}) {
 
   useEffect(() => {
     (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
       setSharingEnabled(await isSharingEnabled());
+      setUserSearchAvailable(await isUserSearchAvailable());
     })();
   }, []);
 
@@ -145,8 +145,9 @@ export default function ReportView({report, error, loadReport}) {
                     t('common.sharing.disabled')
                   )}
                 </Popover>
-                {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') &&
-                  data?.visualization === 'number' && <AlertsDropdown numberReport={report} />}
+                {userSearchAvailable && data?.visualization === 'number' && (
+                  <AlertsDropdown numberReport={report} />
+                )}
               </>
             )}
             {shouldShowCSVDownload() && (
