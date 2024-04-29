@@ -25,7 +25,6 @@ import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
-import {IS_BATCH_MOVE_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
 
@@ -99,7 +98,7 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
             }
           }}
         >
-          {IS_BATCH_MOVE_MODIFICATION_ENABLED && <MoveAction />}
+          <MoveAction />
           <MigrateAction />
           <TableBatchAction
             renderIcon={Error}
