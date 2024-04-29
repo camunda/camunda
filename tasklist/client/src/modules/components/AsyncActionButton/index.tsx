@@ -33,7 +33,7 @@ type Props = {
   buttonProps?: ButtonDefaultProps & ButtonKindProps;
   children?: React.ReactNode;
   status: React.ComponentProps<typeof InlineLoading>['status'];
-  hidden?: boolean;
+  isHidden?: boolean;
   onError?: () => void;
 };
 
@@ -42,7 +42,7 @@ const AsyncActionButton: React.FC<Props> = ({
   inlineLoadingProps,
   buttonProps,
   status,
-  hidden,
+  isHidden,
   onError,
 }) => {
   const {onSuccess, ...restInlineLoadingProps} = inlineLoadingProps ?? {};
@@ -74,7 +74,7 @@ const AsyncActionButton: React.FC<Props> = ({
   return status === 'inactive' ? (
     <Button
       {...buttonProps}
-      className={cn({hide: hidden}, buttonProps?.className, styles.button)}
+      className={cn({hide: isHidden}, buttonProps?.className, styles.button)}
     >
       {children}
     </Button>

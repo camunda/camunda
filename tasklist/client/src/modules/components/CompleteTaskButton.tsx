@@ -23,7 +23,7 @@ type Props = {
   onClick?: () => void;
   onSuccess?: () => void;
   onError?: () => void;
-  hidden: boolean;
+  isHidden: boolean;
   disabled: boolean;
 };
 
@@ -45,7 +45,7 @@ function getCompletionButtonDescription(status: InlineLoadingStatus) {
 
 const CompleteTaskButton: React.FC<Props> = ({
   submissionState,
-  hidden,
+  isHidden,
   disabled,
   onClick,
   onSuccess,
@@ -68,7 +68,7 @@ const CompleteTaskButton: React.FC<Props> = ({
           : 'You must first assign this task to complete it',
       }}
       status={submissionState}
-      hidden={hidden}
+      isHidden={isHidden}
       onError={onError}
     >
       Complete Task

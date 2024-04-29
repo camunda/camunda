@@ -273,7 +273,7 @@ const Variables: React.FC<Props> = ({
                     onError={() => {
                       setSubmissionState('inactive');
                     }}
-                    hidden={taskState === 'COMPLETED'}
+                    isHidden={taskState === 'COMPLETED'}
                     disabled={
                       submitting ||
                       hasValidationErrors ||
@@ -293,15 +293,13 @@ const Variables: React.FC<Props> = ({
                     setEditingVariable(undefined);
                   }}
                   onSave={(value) => {
-                    if (editingVariable !== undefined) {
+                    if (isJsonEditorModalOpen) {
                       form.change(editingVariable, value);
                       setEditingVariable(undefined);
                     }
                   }}
                   value={
-                    editingVariable !== undefined
-                      ? get(values, editingVariable)
-                      : ''
+                    isJsonEditorModalOpen ? get(values, editingVariable) : ''
                   }
                 />
               </Suspense>
