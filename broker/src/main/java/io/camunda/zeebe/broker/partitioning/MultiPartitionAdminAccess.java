@@ -50,6 +50,11 @@ final class MultiPartitionAdminAccess implements PartitionAdminAccess {
   }
 
   @Override
+  public ActorFuture<Void> softPauseExporting() {
+    return callOnEachPartition(PartitionAdminAccess::softPauseExporting);
+  }
+
+  @Override
   public ActorFuture<Void> resumeExporting() {
     return callOnEachPartition(PartitionAdminAccess::resumeExporting);
   }
