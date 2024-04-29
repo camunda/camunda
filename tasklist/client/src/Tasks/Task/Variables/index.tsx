@@ -123,7 +123,7 @@ const Variables: React.FC<Props> = ({
   const {hasPermission} = usePermissions(['write']);
   const {
     data,
-    isInitialLoading,
+    isLoading,
     fetchFullVariable,
     variablesLoadingFullValue,
     status,
@@ -149,7 +149,7 @@ const Variables: React.FC<Props> = ({
     values.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];
 
-  if (isInitialLoading) {
+  if (isLoading) {
     return null;
   }
 

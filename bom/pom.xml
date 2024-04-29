@@ -200,7 +200,6 @@
               <exclude>zeebe/benchmarks/project/**/*</exclude>
               <exclude>operate/**/*</exclude>
               <exclude>tasklist/**/*</exclude>
-              <exclude>tasklist-distro/**/*</exclude>
             </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>

@@ -126,6 +126,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>tasklist-webapp</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
     </dependency>
 
@@ -437,6 +448,14 @@
               <id>migrate</id>
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
             </program>
+            <program>
+              <id>tasklist</id>
+              <mainClass>io.camunda.tasklist.Application</mainClass>
+            </program>
+            <program>
+              <id>tasklist-migrate</id>
+              <mainClass>io.camunda.tasklist.schema.migration.SchemaMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -522,6 +541,7 @@
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
 
             <dependency>io.camunda:operate-webapp</dependency>
+            <dependency>io.camunda:tasklist-webapp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>

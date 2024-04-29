@@ -421,7 +421,7 @@ jobs:
           docker buildx imagetools create \
             --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
             ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
-            ${{ steps.build-zeebe-docker.outputs.image }}
+            ${{ steps.build-operate-docker.outputs.image }}
   snyk:
     name: Snyk Monitor
     needs: [ zeebe-docker, release ]

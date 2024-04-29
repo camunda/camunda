@@ -39,7 +39,6 @@
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <zeebe-process-test.version>8.5.0</zeebe-process-test.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <zeebe.version>8.5.0</zeebe.version>
     <identity.version>8.5.0</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
     <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
@@ -56,6 +55,46 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-stream-platform</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
 
     <dependency>
@@ -234,7 +273,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>${zeebe.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -281,6 +319,24 @@
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <dependency>io.camunda:zeebe-workflow-engine</dependency>
+            <dependency>io.camunda:zeebe-scheduler</dependency>
+            <dependency>io.camunda:zeebe-util</dependency>
+            <dependency>io.camunda:zeebe-logstreams</dependency>
+            <dependency>io.camunda:zeebe-db</dependency>
+            <dependency>io.camunda:zeebe-stream-platform</dependency>
+            <dependency>io.camunda:zeebe-protocol-impl</dependency>
+            <dependency>io.camunda:zeebe-protocol-jackson</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

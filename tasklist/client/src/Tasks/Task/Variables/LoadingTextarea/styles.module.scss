@@ -16,7 +16,7 @@
  */
 @use '@carbon/layout';
 
-.spinning {
+.spinner {
   width: layout.to-rem(10px);
   height: layout.to-rem(10px);
   border-width: layout.to-rem(2px);

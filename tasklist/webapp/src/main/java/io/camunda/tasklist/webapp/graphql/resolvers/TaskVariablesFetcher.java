@@ -14,26 +14,35 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.tasklist.webapp.graphql.query;
+package io.camunda.tasklist.webapp.graphql.resolvers;
 
-import graphql.kickstart.tools.GraphQLQueryResolver;
+import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.VARIABLE_DATA_LOADER;
+
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.SelectedField;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.service.TaskService;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.dataloader.DataLoader;
 
-@Component
-public final class TaskQueryResolver implements GraphQLQueryResolver {
+public class TaskVariablesFetcher implements DataFetcher<CompletableFuture<List<VariableDTO>>> {
 
-  @Autowired private TaskService taskService;
+  @Override
+  public CompletableFuture<List<VariableDTO>> get(final DataFetchingEnvironment env)
+      throws Exception {
+    final DataLoader<GetVariablesRequest, List<VariableDTO>> dataloader =
+        env.getDataLoader(VARIABLE_DATA_LOADER);
 
-  public List<TaskDTO> tasks(TaskQueryDTO query) {
-    return taskService.getTasks(query);
-  }
-
-  public TaskDTO task(String id) {
-    return taskService.getTask(id);
+    return dataloader.load(
+        VariableStore.GetVariablesRequest.createFrom(
+            TaskDTO.toTaskEntity(env.getSource()),
+            env.getSelectionSet().getFields().stream()
+                .map(SelectedField::getName)
+                .collect(Collectors.toSet())));
   }
 }
