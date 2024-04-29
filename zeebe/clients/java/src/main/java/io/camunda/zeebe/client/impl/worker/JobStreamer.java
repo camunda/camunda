@@ -37,6 +37,8 @@ interface JobStreamer extends AutoCloseable {
   final class NoopJobStream implements JobStreamer {
     private static final NoopJobStream INSTANCE = new NoopJobStream();
 
+    private NoopJobStream() {}
+
     @Override
     public void close() {}
 
