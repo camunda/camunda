@@ -1,7 +1,7 @@
 # This action expects the docker to be setup beforehand
 ---
-name: Verify Zeebe Docker Image
-description: Verifies metadata of the Zeebe Docker image
+name: Verify Platform Docker Image
+description: Verifies metadata of the a Docker image
 
 inputs:
   imageName:
@@ -21,6 +21,14 @@ inputs:
     description: 'Comma separated-list of platforms to verify the image for; defaults to linux/amd64'
     required: false
     default: 'linux/amd64'
+  dockerfile:
+    description: 'The name of the Dockerfile that was used to create the image and should be verified'
+    required: false
+    default: 'Dockerfile'
+  goldenfile:
+    description: 'The name of the golden file that should be used to verify the docker image'
+    required: false
+    default: 'zeebe-docker-labels.golden.json'
 
 runs:
   using: composite
@@ -33,10 +41,12 @@ runs:
         REVISION: ${{ inputs.revision }}
         VERSION: ${{ inputs.version }}
         PLATFORMS_RAW: ${{ inputs.platforms }}
+        DOCKERFILENAME: ${{ inputs.dockerfile }}
+        GOLDENFILE: ${{ inputs.goldenfile }}
       run: |
         declare -a platforms=(${PLATFORMS_RAW//,/ })
 
         for platform in "${platforms[@]}"; do
           docker pull --platform "$platform" "${{ inputs.imageName }}:${VERSION}"
-          ${PWD}/zeebe/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
+          ${PWD}/.ci/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
         done
