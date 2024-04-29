@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Component("searchEngineCheck")
 public class SearchEngineHealthIndicator implements HealthIndicator {
 
-  private static final Logger logger = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
@@ -38,7 +38,7 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
 
   @Override
   public Health health() {
-    logger.debug("Search engine check is called");
+    LOGGER.debug("Search engine check is called");
     if (indexSchemaValidator.schemaExists()) {
       return Health.up().build();
     } else {
