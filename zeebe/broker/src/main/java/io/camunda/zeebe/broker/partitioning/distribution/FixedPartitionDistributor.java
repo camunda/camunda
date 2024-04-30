@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.partitioning.distribution;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.topology.PartitionDistributor;
+import io.camunda.zeebe.dynamic.configuration.PartitionDistributor;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;

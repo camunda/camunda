@@ -15,10 +15,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.topology.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -27,8 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BrokerTopologyManagerImpl extends Actor
-    implements BrokerTopologyManager, ClusterMembershipEventListener,
-    ClusterConfigurationUpdateListener {
+    implements BrokerTopologyManager,
+        ClusterMembershipEventListener,
+        ClusterConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerTopologyManagerImpl.class);
   private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();

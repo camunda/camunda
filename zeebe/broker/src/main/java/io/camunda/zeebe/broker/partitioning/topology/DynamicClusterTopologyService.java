@@ -10,13 +10,13 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.configuration.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.configuration.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.configuration.util.TopologyUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.ClusterConfigurationManager.InconsistentConfigurationListener;
-import io.camunda.zeebe.topology.ClusterConfigurationManagerService;
-import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
-import io.camunda.zeebe.topology.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 
