@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.os.externalcode.client.sync;
 
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.clearScrollRequest;
@@ -31,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -60,6 +62,7 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
 
 @Slf4j
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
@@ -357,9 +360,19 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final String index, final String id, final Class<R> entityClass) {
     return executeWithRetries(
         () -> {
-          final GetResponse<R> response =
-              openSearchClient.get(applyIndexPrefix(getRequest(index, id)).build(), entityClass);
-          return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+          try {
+            final GetResponse<R> response =
+                openSearchClient.get(applyIndexPrefix(getRequest(index, id)).build(), entityClass);
+            return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
+          } catch (final OpenSearchException e) {
+            if (openSearchClient._transport() instanceof AwsSdk2Transport
+                && isAwsNotFoundException(e)) {
+              return Optional.empty();
+            } else {
+              log.error(e.getMessage());
+              throw new OptimizeRuntimeException(e.getMessage());
+            }
+          }
         });
   }
 
@@ -370,16 +383,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return safe(
         () -> openSearchClient.deleteByQuery(applyIndexPrefix(deleteRequestBuilder).build()),
         e -> defaultDeleteErrorMessage(index));
-  }
-
-  public boolean deleteWithRetries(final String index, final Query query) {
-    return executeWithRetries(
-        () -> {
-          final DeleteByQueryRequest request =
-              applyIndexPrefix(deleteByQueryRequestBuilder(List.of(index))).query(query).build();
-          final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
-          return response.failures().isEmpty() && response.deleted() > 0;
-        });
   }
 
   public long deleteByQuery(final Query query, final boolean refresh, final String... indexes) {
@@ -497,9 +500,29 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final GetRequest.Builder requestBuilder,
       final Class<T> responseClass,
       final Function<Exception, String> errorMessageSupplier) {
-    return safe(
-        () -> openSearchClient.get(applyIndexPrefix(requestBuilder).build(), responseClass),
-        errorMessageSupplier);
+    try {
+      return openSearchClient.get(applyIndexPrefix(requestBuilder).build(), responseClass);
+    } catch (final Exception e) {
+      if (e instanceof OpenSearchException osException
+          && openSearchClient._transport() instanceof AwsSdk2Transport
+          && isAwsNotFoundException(osException)) {
+        // Making sure the response is consistent with the one from the OpenSearch client due to
+        // this
+        // unresolved AWS bug https://github.com/opensearch-project/opensearch-java/issues/424
+        // ID and index are required fields in the response but their value doesn't matter, since
+        // what
+        // matters is that found=false
+        return new GetResponse.Builder<T>()
+            .id("") // Value irrelevant, but required
+            .index("") // Value irrelevant, but required
+            .found(false)
+            .build();
+      } else {
+        final String message = errorMessageSupplier.apply(e);
+        log.error(message, e);
+        throw new OptimizeRuntimeException(message, e);
+      }
+    }
   }
 
   public <T> MgetResponse<T> mget(
@@ -523,5 +546,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   private MultiGetOperation getMultiGetOperation(final String index, final String id) {
     return new MultiGetOperation.Builder().id(id).index(index).build();
+  }
+
+  private Boolean isAwsNotFoundException(OpenSearchException e) {
+    return e.getMessage().contains(Integer.toString(HTTP_NOT_FOUND));
   }
 }

@@ -79,8 +79,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 public class OpenSearchClientBuilder {
@@ -99,7 +99,7 @@ public class OpenSearchClientBuilder {
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
