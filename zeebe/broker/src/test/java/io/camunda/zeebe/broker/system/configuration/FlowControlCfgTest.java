@@ -18,13 +18,15 @@ final class FlowControlCfgTest {
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
-  void shouldNotHaveAppendLimitByDefault() {
+  void shouldHaveAppendLimitByDefault() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
     final var appendLimit = cfg.getFlowControl().getAppend();
 
     // then
-    assertThat(appendLimit).isNull();
+    assertThat(appendLimit.isEnabled()).isTrue();
+    assertThat(appendLimit.useWindowed()).isFalse();
+    assertThat(appendLimit.getAlgorithm()).isEqualTo(LimitAlgorithm.LEGACY_VEGAS);
   }
 
   @Test
