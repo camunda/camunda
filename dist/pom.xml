@@ -110,7 +110,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-topology</artifactId>
+      <artifactId>zeebe-cluster-configuration</artifactId>
     </dependency>
 
     <dependency>

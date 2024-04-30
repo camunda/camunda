@@ -15,11 +15,11 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-cluster-topology</artifactId>
-  <name>Zeebe Cluster Topology</name>
+  <artifactId>zeebe-cluster-configuration</artifactId>
+  <name>Zeebe Dynamic Cluster Configuration</name>
 
   <properties>
-    <proto.dir>${maven.multiModuleProjectDirectory}/zeebe/topology/src/main/resources/proto</proto.dir>
+    <proto.dir>${maven.multiModuleProjectDirectory}/zeebe/dynamic-config/src/main/resources/proto</proto.dir>
   </properties>
 
   <dependencies>

@@ -158,7 +158,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-topology</artifactId>
+      <artifactId>zeebe-cluster-configuration</artifactId>
     </dependency>
 
     <dependency>
@@ -314,7 +314,7 @@
           </ignoredDependencies>
           <ignoredNonTestScopedDependencies>
             <!-- indirectly required via the broker-client module -->
-            <dependency>io.camunda:zeebe-cluster-topology</dependency>
+            <dependency>io.camunda:zeebe-cluster-configuration</dependency>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>

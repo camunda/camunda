@@ -58,7 +58,7 @@
     <module>backup-stores/azure</module>
     <module>backup-stores/common</module>
     <module>restore</module>
-    <module>topology</module>
+    <module>dynamic-config</module>
   </modules>
 
   <profiles>
