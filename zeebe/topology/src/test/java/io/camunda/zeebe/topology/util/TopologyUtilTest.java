@@ -8,13 +8,12 @@
 package io.camunda.zeebe.topology.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationAssert;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -50,19 +49,19 @@ class TopologyUtilTest {
     final var topology = TopologyUtil.getClusterTopologyFrom(partitionDistribution);
 
     // then
-    ClusterTopologyAssert.assertThatClusterTopology(topology)
+    ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(0, State.ACTIVE)
         .member(0)
         .hasPartitionWithState(1, PartitionState.active(1))
         .hasPartitionWithState(2, PartitionState.active(3));
 
-    ClusterTopologyAssert.assertThatClusterTopology(topology)
+    ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
         .hasPartitionWithState(1, PartitionState.active(2))
         .hasPartitionWithState(2, PartitionState.active(2));
 
-    ClusterTopologyAssert.assertThatClusterTopology(topology)
+    ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
         .hasPartitionWithState(1, PartitionState.active(3))
@@ -89,8 +88,8 @@ class TopologyUtilTest {
 
     final var expected = Set.of(partitionTwo, partitionOne);
 
-    final ClusterTopology topology =
-        ClusterTopology.init()
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
             .addMember(
                 member(0),
                 MemberState.initializeAsActive(
@@ -145,8 +144,8 @@ class TopologyUtilTest {
 
     final var expected = Set.of(partitionTwo, partitionOne);
 
-    final ClusterTopology topology =
-        ClusterTopology.init()
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
             .addMember(
                 member(0),
                 MemberState.initializeAsActive(

@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.ClusterTopologyManager.InconsistentTopologyListener;
+import io.camunda.zeebe.topology.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 
 public interface ClusterTopologyService extends AsyncClosable {
@@ -22,7 +22,7 @@ public interface ClusterTopologyService extends AsyncClosable {
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 
-  void registerTopologyChangeListener(InconsistentTopologyListener listener);
+  void registerTopologyChangeListener(InconsistentConfigurationListener listener);
 
   void removeTopologyChangeListener();
 }

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.util.List;
@@ -93,7 +93,7 @@ class ScaleRequestTransformerTest {
     EitherAssert.assertThat(operationsEither)
         .isLeft()
         .left()
-        .isInstanceOf(TopologyRequestFailedException.InvalidRequest.class);
+        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class);
   }
 
   void shouldScaleAndReassign(
@@ -124,7 +124,7 @@ class ScaleRequestTransformerTest {
             .get();
 
     // apply operations to generate new topology
-    final ClusterTopology newTopology =
+    final ClusterConfiguration newTopology =
         TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
 
     // then

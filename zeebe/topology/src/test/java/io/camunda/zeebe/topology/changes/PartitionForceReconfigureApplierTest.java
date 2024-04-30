@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
-import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationAssert;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.time.Duration;
@@ -31,8 +31,8 @@ final class PartitionForceReconfigureApplierTest {
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   private final MemberId otherMember = MemberId.from("2");
-  private final ClusterTopology validTopology =
-      ClusterTopology.init()
+  private final ClusterConfiguration validTopology =
+      ClusterConfiguration.init()
           .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
           .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
           .addMember(otherMember, MemberState.initializeAsActive(Map.of()))
@@ -154,7 +154,7 @@ final class PartitionForceReconfigureApplierTest {
 
     // then
     final var resultingTopology = updater.apply(validTopology);
-    ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .member(otherMember)
         .doesNotContainPartition(1);
   }

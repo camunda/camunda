@@ -10,8 +10,8 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeAppliers.MemberOperationApplier;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.util.Either;
@@ -32,16 +32,16 @@ record PartitionLeaveApplier(
 
   @Override
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
-      final ClusterTopology currentClusterTopology) {
+      final ClusterConfiguration currentClusterConfiguration) {
 
-    if (!currentClusterTopology.hasMember(localMemberId)) {
+    if (!currentClusterConfiguration.hasMember(localMemberId)) {
       return Either.left(
           new IllegalStateException(
               "Expected to leave partition, but the local member does not exist in the topology"));
     }
 
     final boolean partitionExistsInLocalMember =
-        currentClusterTopology.getMember(localMemberId).hasPartition(partitionId);
+        currentClusterConfiguration.getMember(localMemberId).hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
       return Either.left(
@@ -52,7 +52,7 @@ record PartitionLeaveApplier(
     }
 
     final boolean partitionIsLeaving =
-        currentClusterTopology.getMember(localMemberId).getPartition(partitionId).state()
+        currentClusterConfiguration.getMember(localMemberId).getPartition(partitionId).state()
             == PartitionState.State.LEAVING;
     if (partitionIsLeaving) {
       // If partition state is already set to leaving, then we don't need to set it again. This can
@@ -61,7 +61,7 @@ record PartitionLeaveApplier(
       return Either.right(m -> m);
     } else {
       final var partitionReplicaCount =
-          currentClusterTopology.members().values().stream()
+          currentClusterConfiguration.members().values().stream()
               .filter(m -> m.hasPartition(partitionId))
               .count();
       if (partitionReplicaCount <= 1) {

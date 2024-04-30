@@ -10,24 +10,24 @@ package io.camunda.zeebe.topology.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.api.TopologyChangeResponse;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.topology.gossip.ClusterConfigurationGossipState;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,10 +42,10 @@ final class ProtoBufSerializerTest {
 
   @ParameterizedTest
   @MethodSource("provideClusterTopologies")
-  void shouldEncodeAndDecode(final ClusterTopology initialClusterTopology) {
+  void shouldEncodeAndDecode(final ClusterConfiguration initialClusterConfiguration) {
     // given
-    final ClusterTopologyGossipState gossipState = new ClusterTopologyGossipState();
-    gossipState.setClusterTopology(initialClusterTopology);
+    final ClusterConfigurationGossipState gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterTopology(initialClusterConfiguration);
 
     // when
     final var decodedState = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
@@ -53,7 +53,7 @@ final class ProtoBufSerializerTest {
     // then
     assertThat(decodedState.getClusterTopology())
         .describedAs("Decoded clusterTopology must be equal to initial one")
-        .isEqualTo(initialClusterTopology);
+        .isEqualTo(initialClusterConfiguration);
   }
 
   @Test
@@ -146,7 +146,7 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecodeTopologyChangeResponse() {
     // given
     final var topologyChangeResponse =
-        new TopologyChangeResponse(
+        new ClusterConfigurationChangeResponse(
             2,
             Map.of(
                 MemberId.from("1"),
@@ -167,7 +167,7 @@ final class ProtoBufSerializerTest {
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
   }
 
-  private static Stream<ClusterTopology> provideClusterTopologies() {
+  private static Stream<ClusterConfiguration> provideClusterTopologies() {
     return Stream.of(
         topologyWithOneMemberNoPartitions(),
         topologyWithOneJoiningMember(),
@@ -183,57 +183,57 @@ final class ProtoBufSerializerTest {
         topologyWithClusterChangePlanWithMemberOperations());
   }
 
-  private static ClusterTopology topologyWithOneMemberNoPartitions() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
   }
 
-  private static ClusterTopology topologyWithOneJoiningMember() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneJoiningMember() {
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.uninitialized().toJoining());
   }
 
-  private static ClusterTopology topologyWithOneLeavingMember() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneLeavingMember() {
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeaving());
   }
 
-  private static ClusterTopology topologyWithOneLeftMember() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneLeftMember() {
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeft());
   }
 
-  private static ClusterTopology topologyWithOneMemberOneActivePartition() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneMemberOneActivePartition() {
+    return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
   }
 
-  private static ClusterTopology topologyWithOneMemberOneLeavingPartition() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneMemberOneLeavingPartition() {
+    return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())));
   }
 
-  private static ClusterTopology topologyWithOneMemberOneJoiningPartition() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneMemberOneJoiningPartition() {
+    return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(Map.of(1, PartitionState.joining(1))));
   }
 
-  private static ClusterTopology topologyWithOneMemberTwoPartitions() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithOneMemberTwoPartitions() {
+    return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
                 Map.of(1, PartitionState.active(1), 2, PartitionState.active(2).toLeaving())));
   }
 
-  private static ClusterTopology topologyWithTwoMembers() {
-    return ClusterTopology.init()
+  private static ClusterConfiguration topologyWithTwoMembers() {
+    return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
@@ -241,8 +241,8 @@ final class ProtoBufSerializerTest {
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeaving());
   }
 
-  private static ClusterTopology topologyWithClusterChangePlan() {
-    final List<TopologyChangeOperation> changes =
+  private static ClusterConfiguration topologyWithClusterChangePlan() {
+    final List<ClusterConfigurationChangeOperation> changes =
         List.of(
             new PartitionLeaveOperation(MemberId.from("1"), 1),
             new PartitionJoinOperation(MemberId.from("2"), 2, 5),
@@ -250,26 +250,26 @@ final class ProtoBufSerializerTest {
             new PartitionForceReconfigureOperation(
                 MemberId.from("4"), 5, List.of(MemberId.from("1"), MemberId.from("3"))),
             new MemberRemoveOperation(MemberId.from("5"), MemberId.from("6")));
-    return ClusterTopology.init()
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes);
   }
 
-  private static ClusterTopology topologyWithCompletedClusterChangePlan() {
-    final List<TopologyChangeOperation> changes =
+  private static ClusterConfiguration topologyWithCompletedClusterChangePlan() {
+    final List<ClusterConfigurationChangeOperation> changes =
         List.of(new PartitionLeaveOperation(MemberId.from("1"), 1));
-    return ClusterTopology.init()
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes)
         .advanceTopologyChange(topology -> topology);
   }
 
-  private static ClusterTopology topologyWithClusterChangePlanWithMemberOperations() {
-    final List<TopologyChangeOperation> changes =
+  private static ClusterConfiguration topologyWithClusterChangePlanWithMemberOperations() {
+    final List<ClusterConfigurationChangeOperation> changes =
         List.of(
             new MemberJoinOperation(MemberId.from("2")),
             new MemberLeaveOperation(MemberId.from("1")));
-    return ClusterTopology.init()
+    return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes);
   }

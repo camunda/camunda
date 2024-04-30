@@ -10,8 +10,8 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeAppliers.MemberOperationApplier;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -50,11 +50,11 @@ final class PartitionJoinApplier implements MemberOperationApplier {
 
   @Override
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
-      final ClusterTopology currentClusterTopology) {
+      final ClusterConfiguration currentClusterConfiguration) {
 
     final boolean localMemberIsActive =
-        currentClusterTopology.hasMember(localMemberId)
-            && currentClusterTopology.getMember(localMemberId).state() == State.ACTIVE;
+        currentClusterConfiguration.hasMember(localMemberId)
+            && currentClusterConfiguration.getMember(localMemberId).state() == State.ACTIVE;
     if (!localMemberIsActive) {
       return Either.left(
           new IllegalStateException(
@@ -62,7 +62,7 @@ final class PartitionJoinApplier implements MemberOperationApplier {
     }
 
     final var partitionHasActiveMember =
-        currentClusterTopology.members().values().stream()
+        currentClusterConfiguration.members().values().stream()
             .flatMap(
                 memberState ->
                     memberState.partitions().entrySet().stream()
@@ -77,7 +77,7 @@ final class PartitionJoinApplier implements MemberOperationApplier {
                   partitionId)));
     }
 
-    final MemberState localMemberState = currentClusterTopology.getMember(localMemberId);
+    final MemberState localMemberState = currentClusterConfiguration.getMember(localMemberId);
     final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
     if (partitionExistsInLocalMember
         && localMemberState.getPartition(partitionId).state() != PartitionState.State.JOINING) {
@@ -90,7 +90,7 @@ final class PartitionJoinApplier implements MemberOperationApplier {
 
     // Collect the priority of each member, including the local member. This is needed to generate
     // PartitionMetadata when joining the partition.
-    partitionMembersWithPriority = collectPriorityByMembers(currentClusterTopology);
+    partitionMembersWithPriority = collectPriorityByMembers(currentClusterConfiguration);
 
     if (partitionExistsInLocalMember
         && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
@@ -125,9 +125,9 @@ final class PartitionJoinApplier implements MemberOperationApplier {
   }
 
   private HashMap<MemberId, Integer> collectPriorityByMembers(
-      final ClusterTopology currentClusterTopology) {
+      final ClusterConfiguration currentClusterConfiguration) {
     final var priorityMap = new HashMap<MemberId, Integer>();
-    currentClusterTopology
+    currentClusterConfiguration
         .members()
         .forEach(
             (memberId, memberState) -> {

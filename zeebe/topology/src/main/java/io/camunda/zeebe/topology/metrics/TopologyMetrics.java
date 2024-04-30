@@ -9,9 +9,9 @@ package io.camunda.zeebe.topology.metrics;
 
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.CompletedChange;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
@@ -78,7 +78,7 @@ public final class TopologyMetrics {
           .labelNames(LABEL_OPERATION, LABEL_OUTCOME)
           .register();
 
-  public static void updateFromTopology(final ClusterTopology topology) {
+  public static void updateFromTopology(final ClusterConfiguration topology) {
     TOPOLOGY_VERSION.set(topology.version());
     CHANGE_STATUS.state(
         topology
@@ -102,20 +102,20 @@ public final class TopologyMetrics {
             .orElse(0));
   }
 
-  public static OperationObserver observeOperation(final TopologyChangeOperation operation) {
+  public static OperationObserver observeOperation(final ClusterConfigurationChangeOperation operation) {
     return OperationObserver.startOperation(operation);
   }
 
   public static final class OperationObserver {
-    private final TopologyChangeOperation operation;
+    private final ClusterConfigurationChangeOperation operation;
     private final Timer timer;
 
-    private OperationObserver(final TopologyChangeOperation operation, final Timer timer) {
+    private OperationObserver(final ClusterConfigurationChangeOperation operation, final Timer timer) {
       this.operation = operation;
       this.timer = timer;
     }
 
-    static OperationObserver startOperation(final TopologyChangeOperation operation) {
+    static OperationObserver startOperation(final ClusterConfigurationChangeOperation operation) {
       return new OperationObserver(
           operation, OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer());
     }

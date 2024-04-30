@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationAssert;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.time.Duration;
@@ -27,10 +27,10 @@ final class MemberLeaveApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberLeaveApplier = new MemberLeaveApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithOutMember = ClusterTopology.init();
+    final ClusterConfiguration clusterConfigurationWithOutMember = ClusterConfiguration.init();
 
     // when
-    final var result = memberLeaveApplier.init(clusterTopologyWithOutMember);
+    final var result = memberLeaveApplier.init(clusterConfigurationWithOutMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -44,14 +44,14 @@ final class MemberLeaveApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberLeaveApplier = new MemberLeaveApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init()
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init()
             .addMember(
                 memberId,
                 MemberState.initializeAsActive(Map.of()).addPartition(1, PartitionState.active(1)));
 
     // when
-    final var result = memberLeaveApplier.init(clusterTopologyWithMember);
+    final var result = memberLeaveApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -65,15 +65,15 @@ final class MemberLeaveApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberLeaveApplier = new MemberLeaveApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = memberLeaveApplier.init(clusterTopologyWithMember);
-    final var updateTopologyAfterInit = result.get().apply(clusterTopologyWithMember);
+    final var result = memberLeaveApplier.init(clusterConfigurationWithMember);
+    final var updateTopologyAfterInit = result.get().apply(clusterConfigurationWithMember);
 
     // then
-    ClusterTopologyAssert.assertThatClusterTopology(updateTopologyAfterInit)
+    ClusterConfigurationAssert.assertThatClusterTopology(updateTopologyAfterInit)
         .hasMemberWithState(1, MemberState.State.LEAVING);
   }
 
@@ -82,19 +82,19 @@ final class MemberLeaveApplierTest {
     // given
     final MemberId memberId = MemberId.from("1");
     final var memberLeaveApplier =
-        new MemberLeaveApplier(memberId, new NoopTopologyMembershipChangeExecutor());
+        new MemberLeaveApplier(memberId, new NoopClusterMembershipChangeExecutor());
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
-    final var updater = memberLeaveApplier.init(clusterTopologyWithMember).get();
-    final var topologyWithLeaving = updater.apply(clusterTopologyWithMember);
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
+    final var updater = memberLeaveApplier.init(clusterConfigurationWithMember).get();
+    final var topologyWithLeaving = updater.apply(clusterConfigurationWithMember);
 
     // when
     final var updateTopologyAfterApply =
         memberLeaveApplier.apply().join().apply(topologyWithLeaving);
 
     // then
-    ClusterTopologyAssert.assertThatClusterTopology(updateTopologyAfterApply)
+    ClusterConfigurationAssert.assertThatClusterTopology(updateTopologyAfterApply)
         .hasMemberWithState(1, MemberState.State.LEFT);
   }
 
@@ -103,11 +103,11 @@ final class MemberLeaveApplierTest {
     // given
     final MemberId memberId = MemberId.from("1");
     final var memberLeaveApplier =
-        new MemberLeaveApplier(memberId, new FailingTopologyMembershipChangeExecutor());
+        new MemberLeaveApplier(memberId, new FailingClusterMembershipChangeExecutor());
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
-    memberLeaveApplier.init(clusterTopologyWithMember);
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
+    memberLeaveApplier.init(clusterConfigurationWithMember);
 
     // when
     final var result = memberLeaveApplier.apply();

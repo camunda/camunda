@@ -8,10 +8,10 @@
 package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
@@ -25,14 +25,14 @@ public class RemoveMembersTransformer implements TopologyChangeRequest {
   }
 
   @Override
-  public Either<Exception, List<TopologyChangeOperation>> operations(
-      final ClusterTopology currentTopology) {
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentTopology) {
     final var operations =
         members.stream()
             // only add members that are not already part of the topology
             .filter(currentTopology::hasMember)
             .map(MemberLeaveOperation::new)
-            .map(TopologyChangeOperation.class::cast)
+            .map(ClusterConfigurationChangeOperation.class::cast)
             .toList();
     return Either.right(operations);
   }

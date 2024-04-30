@@ -8,13 +8,13 @@
 package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,8 +35,8 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
   }
 
   @Override
-  public Either<Exception, List<TopologyChangeOperation>> operations(
-      final ClusterTopology currentTopology) {
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentTopology) {
     for (final var member : membersToRetain) {
       if (!currentTopology.hasMember(member)) {
         return Either.left(
@@ -89,12 +89,12 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
     return true;
   }
 
-  private Either<Exception, List<TopologyChangeOperation>> generateOperations(
+  private Either<Exception, List<ClusterConfigurationChangeOperation>> generateOperations(
       final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers,
       final List<MemberId> memberToRemove) {
 
     final var partitionForceConfigureOperations = reconfigurePartitions(partitionsWithNewMembers);
-    final List<TopologyChangeOperation> operations =
+    final List<ClusterConfigurationChangeOperation> operations =
         new ArrayList<>(partitionForceConfigureOperations);
 
     final var memberRemoveOperations = forceRemoveMembers(memberToRemove);
@@ -103,7 +103,7 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
     return Either.right(operations);
   }
 
-  private List<TopologyChangeOperation> reconfigurePartitions(
+  private List<ClusterConfigurationChangeOperation> reconfigurePartitions(
       final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers) {
     return partitionsWithNewMembers.entrySet().stream()
         .map(
@@ -112,19 +112,20 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
                     partition.getValue().stream().findFirst().orElseThrow(),
                     partition.getKey(),
                     partition.getValue()))
-        .map(TopologyChangeOperation.class::cast)
+        .map(ClusterConfigurationChangeOperation.class::cast)
         .toList();
   }
 
-  private List<TopologyChangeOperation> forceRemoveMembers(final List<MemberId> membersToRemove) {
+  private List<ClusterConfigurationChangeOperation> forceRemoveMembers(
+      final List<MemberId> membersToRemove) {
     return membersToRemove.stream()
         .map(member -> new MemberRemoveOperation(coordinator, member))
-        .map(TopologyChangeOperation.class::cast)
+        .map(ClusterConfigurationChangeOperation.class::cast)
         .toList();
   }
 
   private Map<Integer, ArrayList<MemberId>> calculateNewConfiguration(
-      final ClusterTopology currentTopology,
+      final ClusterConfiguration currentTopology,
       final Set<MemberId> membersToRetain,
       final List<Integer> partitions) {
 

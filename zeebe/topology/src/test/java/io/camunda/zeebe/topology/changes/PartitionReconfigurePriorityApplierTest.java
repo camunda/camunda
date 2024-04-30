@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.time.Duration;
@@ -43,13 +43,13 @@ class PartitionReconfigurePriorityApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var partitionReconfigurePriorityApplier =
         new PartitionReconfigurePriorityApplier(partitionId, 1, memberId, null);
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init()
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init()
             .addMember(
                 memberId, MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
 
     // when
-    final var result = partitionReconfigurePriorityApplier.init(clusterTopologyWithMember);
+    final var result = partitionReconfigurePriorityApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -65,14 +65,14 @@ class PartitionReconfigurePriorityApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var partitionReconfigurePriorityApplier =
         new PartitionReconfigurePriorityApplier(partitionId, 1, memberId, null);
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init()
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init()
             .addMember(
                 memberId,
                 MemberState.initializeAsActive(Map.of(partitionId, PartitionState.joining(1))));
 
     // when
-    final var result = partitionReconfigurePriorityApplier.init(clusterTopologyWithMember);
+    final var result = partitionReconfigurePriorityApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -88,19 +88,19 @@ class PartitionReconfigurePriorityApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var partitionReconfigurePriorityApplier =
         new PartitionReconfigurePriorityApplier(partitionId, 1, memberId, null);
-    final ClusterTopology initialClusterTopology =
-        ClusterTopology.init()
+    final ClusterConfiguration initialClusterConfiguration =
+        ClusterConfiguration.init()
             .addMember(
                 memberId,
                 MemberState.initializeAsActive(Map.of(partitionId, PartitionState.active(1))));
 
     // when
-    final var result = partitionReconfigurePriorityApplier.init(initialClusterTopology);
+    final var result = partitionReconfigurePriorityApplier.init(initialClusterConfiguration);
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get().apply(initialClusterTopology).getMember(memberId))
-        .isEqualTo(initialClusterTopology.getMember(memberId));
+    assertThat(result.get().apply(initialClusterConfiguration).getMember(memberId))
+        .isEqualTo(initialClusterConfiguration.getMember(memberId));
   }
 
   @Test
@@ -111,8 +111,8 @@ class PartitionReconfigurePriorityApplierTest {
     final var partitionReconfigurePriorityApplier =
         new PartitionReconfigurePriorityApplier(
             partitionId, 3, memberId, new NoopPartitionChangeExecutor());
-    final ClusterTopology initialClusterTopology =
-        ClusterTopology.init()
+    final ClusterConfiguration initialClusterConfiguration =
+        ClusterConfiguration.init()
             .addMember(
                 memberId,
                 MemberState.initializeAsActive(Map.of(partitionId, PartitionState.active(1))));
@@ -122,7 +122,7 @@ class PartitionReconfigurePriorityApplierTest {
         partitionReconfigurePriorityApplier
             .apply()
             .join()
-            .apply(initialClusterTopology)
+            .apply(initialClusterConfiguration)
             .getMember(memberId);
 
     // then

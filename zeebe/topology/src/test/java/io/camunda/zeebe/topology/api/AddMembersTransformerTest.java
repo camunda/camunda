@@ -11,17 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class AddMembersTransformerTest {
 
-  final ClusterTopology currentTopology =
-      ClusterTopology.init()
+  final ClusterConfiguration currentTopology =
+      ClusterConfiguration.init()
           .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
 
   @Test

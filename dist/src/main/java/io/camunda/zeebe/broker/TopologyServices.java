@@ -13,8 +13,8 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopologyAwareCoordinatorSupplier;
-import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
+import io.camunda.zeebe.topology.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -44,11 +44,12 @@ public class TopologyServices {
   }
 
   @Bean
-  TopologyManagementRequestSender topologyManagementRequestSender(
+  ClusterConfigurationManagementRequestSender topologyManagementRequestSender(
       final BrokerTopologyManager brokerTopologyManager) {
-    return new TopologyManagementRequestSender(
+    return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        new ClusterTopologyAwareCoordinatorSupplier(brokerTopologyManager::getClusterTopology),
+        new ClusterClusterConfigurationAwareCoordinatorSupplier(
+            brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
   }
 }

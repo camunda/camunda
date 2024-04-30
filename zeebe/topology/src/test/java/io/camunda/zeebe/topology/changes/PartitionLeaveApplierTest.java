@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationAssert;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
@@ -31,8 +31,9 @@ final class PartitionLeaveApplierTest {
   private final PartitionChangeExecutor partitionChangeExecutor =
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
-  final ClusterTopology initialClusterTopology =
-      ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
+  final ClusterConfiguration initialClusterConfiguration =
+      ClusterConfiguration.init()
+          .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
 
   final PartitionLeaveApplier partitionLeaveApplier =
       new PartitionLeaveApplier(1, localMemberId, partitionChangeExecutor);
@@ -40,7 +41,7 @@ final class PartitionLeaveApplierTest {
   @Test
   void shouldRejectLeaveWhenPartitionDoesNotExist() {
     // when
-    final var result = partitionLeaveApplier.init(initialClusterTopology);
+    final var result = partitionLeaveApplier.init(initialClusterConfiguration);
 
     // then
     assertThat(result).isLeft();
@@ -53,8 +54,8 @@ final class PartitionLeaveApplierTest {
   @Test
   void shouldRejectLeaveWhenPartitionHasOnlyOneReplica() {
     // given
-    final ClusterTopology topologyWithOneReplica =
-        initialClusterTopology.updateMember(
+    final ClusterConfiguration topologyWithOneReplica =
+        initialClusterConfiguration.updateMember(
             localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
     // when
@@ -71,8 +72,8 @@ final class PartitionLeaveApplierTest {
   @Test
   void shouldUpdateStateToLeavingOnInit() {
     // given
-    final ClusterTopology topologyWithPartition =
-        initialClusterTopology
+    final ClusterConfiguration topologyWithPartition =
+        initialClusterConfiguration
             .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
             .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1)));
@@ -82,7 +83,7 @@ final class PartitionLeaveApplierTest {
         partitionLeaveApplier.init(topologyWithPartition).get().apply(topologyWithPartition);
 
     // then
-    ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .member(localMemberId)
         .hasPartitionWithState(1, new PartitionState(State.LEAVING, 1));
   }
@@ -91,7 +92,7 @@ final class PartitionLeaveApplierTest {
   void shouldExecuteLeaveOnApply() {
     // given
     final var topologyWithPartition =
-        initialClusterTopology
+        initialClusterConfiguration
             .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
             .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1)));
@@ -106,7 +107,7 @@ final class PartitionLeaveApplierTest {
 
     // then
     verify(partitionChangeExecutor).leave(1);
-    ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .member(localMemberId)
         .doesNotContainPartition(1);
   }

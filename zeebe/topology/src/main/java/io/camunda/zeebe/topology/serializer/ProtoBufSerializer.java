@@ -10,16 +10,16 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.api.ErrorResponse;
-import io.camunda.zeebe.topology.api.TopologyChangeResponse;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.CancelChangeRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
+import io.camunda.zeebe.topology.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
 import io.camunda.zeebe.topology.protocol.Requests.ErrorCode;
 import io.camunda.zeebe.topology.protocol.Requests.Response;
@@ -30,16 +30,16 @@ import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.topology.state.PartitionState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -48,13 +48,14 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRequestsSerializer {
+public class ProtoBufSerializer
+    implements ClusterConfigurationSerializer, ClusterConfigurationRequestsSerializer {
 
   @Override
-  public byte[] encode(final ClusterTopologyGossipState gossipState) {
+  public byte[] encode(final ClusterConfigurationGossipState gossipState) {
     final var builder = Topology.GossipState.newBuilder();
 
-    final ClusterTopology topologyToEncode = gossipState.getClusterTopology();
+    final ClusterConfiguration topologyToEncode = gossipState.getClusterTopology();
     if (topologyToEncode != null) {
       final Topology.ClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
       builder.setClusterTopology(clusterTopology);
@@ -65,7 +66,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public ClusterTopologyGossipState decode(final byte[] encodedState) {
+  public ClusterConfigurationGossipState decode(final byte[] encodedState) {
     final Topology.GossipState gossipState;
 
     try {
@@ -73,11 +74,12 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-    final ClusterTopologyGossipState clusterTopologyGossipState = new ClusterTopologyGossipState();
+    final ClusterConfigurationGossipState clusterConfigurationGossipState =
+        new ClusterConfigurationGossipState();
 
     if (gossipState.hasClusterTopology()) {
       try {
-        clusterTopologyGossipState.setClusterTopology(
+        clusterConfigurationGossipState.setClusterTopology(
             decodeClusterTopology(gossipState.getClusterTopology()));
       } catch (final Exception e) {
         throw new DecodingFailed(
@@ -86,16 +88,16 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
             e);
       }
     }
-    return clusterTopologyGossipState;
+    return clusterConfigurationGossipState;
   }
 
   @Override
-  public byte[] encode(final ClusterTopology clusterTopology) {
-    return encodeClusterTopology(clusterTopology).toByteArray();
+  public byte[] encode(final ClusterConfiguration clusterConfiguration) {
+    return encodeClusterTopology(clusterConfiguration).toByteArray();
   }
 
   @Override
-  public ClusterTopology decodeClusterTopology(
+  public ClusterConfiguration decodeClusterTopology(
       final byte[] encodedClusterTopology, final int offset, final int length) {
     try {
       final var topology =
@@ -108,7 +110,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     }
   }
 
-  private io.camunda.zeebe.topology.state.ClusterTopology decodeClusterTopology(
+  private ClusterConfiguration decodeClusterTopology(
       final Topology.ClusterTopology encodedClusterTopology) {
 
     final var members = decodeMemberStateMap(encodedClusterTopology.getMembersMap());
@@ -122,7 +124,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
             ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
             : Optional.empty();
 
-    return new io.camunda.zeebe.topology.state.ClusterTopology(
+    return new ClusterConfiguration(
         encodedClusterTopology.getVersion(), members, completedChange, currentChange);
   }
 
@@ -134,18 +136,18 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   private Topology.ClusterTopology encodeClusterTopology(
-      final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
-    final var members = encodeMemberStateMap(clusterTopology.members());
+      final ClusterConfiguration clusterConfiguration) {
+    final var members = encodeMemberStateMap(clusterConfiguration.members());
 
     final var builder =
         Topology.ClusterTopology.newBuilder()
-            .setVersion(clusterTopology.version())
+            .setVersion(clusterConfiguration.version())
             .putAllMembers(members);
 
-    clusterTopology
+    clusterConfiguration
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
-    clusterTopology
+    clusterConfiguration
         .pendingChanges()
         .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
 
@@ -282,7 +284,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   private Topology.TopologyChangeOperation encodeOperation(
-      final io.camunda.zeebe.topology.state.TopologyChangeOperation operation) {
+      final ClusterConfigurationChangeOperation operation) {
     final var builder =
         Topology.TopologyChangeOperation.newBuilder().setMemberId(operation.memberId().id());
     switch (operation) {
@@ -371,7 +373,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
             completedChange.getCompletedAt().getNanos()));
   }
 
-  private TopologyChangeOperation decodeOperation(
+  private ClusterConfigurationChangeOperation decodeOperation(
       final Topology.TopologyChangeOperation topologyChangeOperation) {
     if (topologyChangeOperation.hasPartitionJoin()) {
       return new PartitionJoinOperation(
@@ -586,7 +588,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encodeResponse(final TopologyChangeResponse response) {
+  public byte[] encodeResponse(final ClusterConfigurationChangeResponse response) {
     return Response.newBuilder()
         .setTopologyChangeResponse(encodeTopologyChangeResponse(response))
         .build()
@@ -594,7 +596,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encodeResponse(final ClusterTopology response) {
+  public byte[] encodeResponse(final ClusterConfiguration response) {
     return Response.newBuilder()
         .setClusterTopology(encodeClusterTopology(response))
         .build()
@@ -613,7 +615,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public Either<ErrorResponse, TopologyChangeResponse> decodeTopologyChangeResponse(
+  public Either<ErrorResponse, ClusterConfigurationChangeResponse> decodeTopologyChangeResponse(
       final byte[] encodedResponse) {
     try {
       final var response = Response.parseFrom(encodedResponse);
@@ -635,7 +637,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public Either<ErrorResponse, ClusterTopology> decodeClusterTopologyResponse(
+  public Either<ErrorResponse, ClusterConfiguration> decodeClusterTopologyResponse(
       final byte[] encodedResponse) {
     try {
       final var response = Response.parseFrom(encodedResponse);
@@ -654,22 +656,27 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     }
   }
 
-  public Builder encodeTopologyChangeResponse(final TopologyChangeResponse topologyChangeResponse) {
+  public Builder encodeTopologyChangeResponse(
+      final ClusterConfigurationChangeResponse clusterConfigurationChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
 
     builder
-        .setChangeId(topologyChangeResponse.changeId())
+        .setChangeId(clusterConfigurationChangeResponse.changeId())
         .addAllPlannedChanges(
-            topologyChangeResponse.plannedChanges().stream().map(this::encodeOperation).toList())
-        .putAllCurrentTopology(encodeMemberStateMap(topologyChangeResponse.currentTopology()))
-        .putAllExpectedTopology(encodeMemberStateMap(topologyChangeResponse.expectedTopology()));
+            clusterConfigurationChangeResponse.plannedChanges().stream()
+                .map(this::encodeOperation)
+                .toList())
+        .putAllCurrentTopology(
+            encodeMemberStateMap(clusterConfigurationChangeResponse.currentTopology()))
+        .putAllExpectedTopology(
+            encodeMemberStateMap(clusterConfigurationChangeResponse.expectedTopology()));
 
     return builder;
   }
 
-  public TopologyChangeResponse decodeTopologyChangeResponse(
+  public ClusterConfigurationChangeResponse decodeTopologyChangeResponse(
       final Requests.TopologyChangeResponse topologyChangeResponse) {
-    return new TopologyChangeResponse(
+    return new ClusterConfigurationChangeResponse(
         topologyChangeResponse.getChangeId(),
         decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
         decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),

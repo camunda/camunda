@@ -9,24 +9,24 @@ package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
+final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator {
 
-  private ClusterTopology currentTopology = ClusterTopology.init();
-  private final List<TopologyChangeOperation> lastAppliedOperation = new ArrayList<>();
+  private ClusterConfiguration currentTopology = ClusterConfiguration.init();
+  private final List<ClusterConfigurationChangeOperation> lastAppliedOperation = new ArrayList<>();
 
-  public void setCurrentTopology(final ClusterTopology topology) {
+  public void setCurrentTopology(final ClusterConfiguration topology) {
     currentTopology = topology;
   }
 
   @Override
-  public ActorFuture<ClusterTopology> getTopology() {
+  public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
     return TestActorFuture.completedFuture(currentTopology);
   }
 
@@ -58,11 +58,11 @@ final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
   }
 
   @Override
-  public ActorFuture<ClusterTopology> cancelChange(final long changeId) {
+  public ActorFuture<ClusterConfiguration> cancelChange(final long changeId) {
     return TestActorFuture.failedFuture(new UnsupportedOperationException());
   }
 
-  public List<TopologyChangeOperation> getLastAppliedOperation() {
+  public List<ClusterConfigurationChangeOperation> getLastAppliedOperation() {
     return lastAppliedOperation;
   }
 }

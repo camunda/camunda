@@ -10,20 +10,20 @@ package io.camunda.zeebe.topology.api;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
-import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.changes.NoopClusterMembershipChangeExecutor;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeAppliersImpl;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
 import java.util.List;
 
 final class TestTopologyChangeSimulator {
 
-  static ClusterTopology apply(
-      final ClusterTopology currentTopology, final List<TopologyChangeOperation> operations) {
+  static ClusterConfiguration apply(
+      final ClusterConfiguration currentTopology, final List<ClusterConfigurationChangeOperation> operations) {
     final var topologyChangeSimulator =
-        new TopologyChangeAppliersImpl(
-            new NoopPartitionChangeExecutor(), new NoopTopologyMembershipChangeExecutor());
-    ClusterTopology newTopology = currentTopology;
+        new ConfigurationChangeAppliersImpl(
+            new NoopPartitionChangeExecutor(), new NoopClusterMembershipChangeExecutor());
+    ClusterConfiguration newTopology = currentTopology;
     if (!operations.isEmpty()) {
       newTopology = currentTopology.startTopologyChange(operations);
     }

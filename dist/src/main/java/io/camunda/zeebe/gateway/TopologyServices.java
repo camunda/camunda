@@ -13,10 +13,10 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.topology.GatewayClusterTopologyService;
-import io.camunda.zeebe.topology.api.TopologyCoordinatorSupplier.ClusterTopologyAwareCoordinatorSupplier;
-import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
-import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.GatewayClusterConfigurationService;
+import io.camunda.zeebe.topology.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
+import io.camunda.zeebe.topology.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.topology.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +37,12 @@ public class TopologyServices {
   }
 
   @Bean
-  GatewayClusterTopologyService gatewayClusterTopologyService() {
+  GatewayClusterConfigurationService gatewayClusterTopologyService() {
     final var service =
-        new GatewayClusterTopologyService(
+        new GatewayClusterConfigurationService(
             clusterCommunicationService,
             clusterMembershipService,
-            new ClusterTopologyGossiperConfig(
+            new ClusterConfigurationGossiperConfig(
                 false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2));
     scheduler.submitActor(service).join();
     return service;
@@ -50,7 +50,7 @@ public class TopologyServices {
 
   @Bean
   BrokerTopologyManager brokerTopologyManager(
-      @Autowired final GatewayClusterTopologyService gatewayClusterTopologyService) {
+      @Autowired final GatewayClusterConfigurationService gatewayClusterTopologyService) {
     final var brokerTopologyManager =
         new BrokerTopologyManagerImpl(clusterMembershipService::getMembers);
     scheduler.submitActor(brokerTopologyManager).join();
@@ -61,11 +61,12 @@ public class TopologyServices {
   }
 
   @Bean
-  TopologyManagementRequestSender topologyManagementRequestSender(
+  ClusterConfigurationManagementRequestSender topologyManagementRequestSender(
       final BrokerTopologyManager brokerTopologyManager) {
-    return new TopologyManagementRequestSender(
+    return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        new ClusterTopologyAwareCoordinatorSupplier(brokerTopologyManager::getClusterTopology),
+        new ClusterClusterConfigurationAwareCoordinatorSupplier(
+            brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
   }
 }

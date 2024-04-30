@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import java.time.Duration;
 import java.util.Map;
@@ -28,11 +28,11 @@ final class MemberJoinApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier = new MemberJoinApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = memberJoinApplier.init(clusterTopologyWithMember);
+    final var result = memberJoinApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -46,15 +46,15 @@ final class MemberJoinApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier = new MemberJoinApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithMember =
-        ClusterTopology.init().addMember(memberId, MemberState.uninitialized().toJoining());
+    final ClusterConfiguration clusterConfigurationWithMember =
+        ClusterConfiguration.init().addMember(memberId, MemberState.uninitialized().toJoining());
 
     // when
-    final var result = memberJoinApplier.init(clusterTopologyWithMember);
+    final var result = memberJoinApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get().apply(clusterTopologyWithMember).getMember(memberId).state())
+    assertThat(result.get().apply(clusterConfigurationWithMember).getMember(memberId).state())
         .isEqualTo(JOINING);
   }
 
@@ -64,15 +64,15 @@ final class MemberJoinApplierTest {
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier = new MemberJoinApplier(memberId, null);
 
-    final ClusterTopology clusterTopologyWithMember = ClusterTopology.init();
+    final ClusterConfiguration clusterConfigurationWithMember = ClusterConfiguration.init();
 
     // when
-    final var result = memberJoinApplier.init(clusterTopologyWithMember);
+    final var result = memberJoinApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get()).isNotNull();
-    assertThat(result.get().apply(clusterTopologyWithMember).getMember(memberId).state())
+    assertThat(result.get().apply(clusterConfigurationWithMember).getMember(memberId).state())
         .isEqualTo(JOINING);
   }
 
@@ -81,11 +81,11 @@ final class MemberJoinApplierTest {
     // given
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier =
-        new MemberJoinApplier(memberId, new NoopTopologyMembershipChangeExecutor());
+        new MemberJoinApplier(memberId, new NoopClusterMembershipChangeExecutor());
 
-    final ClusterTopology clusterTopologyWithMember = ClusterTopology.init();
-    final var updater = memberJoinApplier.init(clusterTopologyWithMember).get();
-    final var topologyWithJoining = updater.apply(clusterTopologyWithMember);
+    final ClusterConfiguration clusterConfigurationWithMember = ClusterConfiguration.init();
+    final var updater = memberJoinApplier.init(clusterConfigurationWithMember).get();
+    final var topologyWithJoining = updater.apply(clusterConfigurationWithMember);
 
     // when
     final var result = memberJoinApplier.apply();
@@ -101,10 +101,10 @@ final class MemberJoinApplierTest {
     // given
     final MemberId memberId = MemberId.from("1");
     final var memberJoinApplier =
-        new MemberJoinApplier(memberId, new FailingTopologyMembershipChangeExecutor());
+        new MemberJoinApplier(memberId, new FailingClusterMembershipChangeExecutor());
 
-    final ClusterTopology clusterTopologyWithMember = ClusterTopology.init();
-    memberJoinApplier.init(clusterTopologyWithMember);
+    final ClusterConfiguration clusterConfigurationWithMember = ClusterConfiguration.init();
+    memberJoinApplier.init(clusterConfigurationWithMember);
 
     // when
     final var result = memberJoinApplier.apply();

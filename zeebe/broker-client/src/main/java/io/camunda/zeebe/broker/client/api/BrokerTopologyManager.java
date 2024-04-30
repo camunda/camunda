@@ -8,10 +8,10 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 
-public interface BrokerTopologyManager extends TopologyUpdateListener {
+public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 
   /**
    * Returns live topology that includes which brokers are available, who is leader for each
@@ -24,7 +24,7 @@ public interface BrokerTopologyManager extends TopologyUpdateListener {
    * are part of the cluster, and the partition distribution. Unlike {@link BrokerClusterState} this
    * also includes information about brokers which are currently unreachable.
    */
-  ClusterTopology getClusterTopology();
+  ClusterConfiguration getClusterConfiguration();
 
   /**
    * Adds the topology listener. For each existing brokers, the listener will be notified via {@link

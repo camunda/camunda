@@ -10,7 +10,7 @@ package io.camunda.zeebe.topology;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ public record StaticConfiguration(
     List<PartitionId> partitionIds,
     int replicationFactor) {
 
-  public ClusterTopology generateTopology() {
+  public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return TopologyUtil.getClusterTopologyFrom(partitionDistribution);
   }

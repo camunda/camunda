@@ -17,8 +17,8 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.ClusterConfigurationAssert;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
@@ -37,8 +37,8 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldRejectJoinIfPartitionIsAlreadyJoined() {
     // given
-    final ClusterTopology topologyWithPartitionJoined =
-        ClusterTopology.init()
+    final ClusterConfiguration topologyWithPartitionJoined =
+        ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
@@ -58,8 +58,8 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldRejectJoinIfPartitionIsAlreadyLeaving() {
     // given
-    final ClusterTopology topologyWithPartitionLeaving =
-        ClusterTopology.init()
+    final ClusterConfiguration topologyWithPartitionLeaving =
+        ClusterConfiguration.init()
             .addMember(
                 localMemberId,
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())))
@@ -81,8 +81,8 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldRejectJoinIfMemberIsNotActive() {
     // given
-    final ClusterTopology topologyWithMemberNotActive =
-        ClusterTopology.init()
+    final ClusterConfiguration topologyWithMemberNotActive =
+        ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .updateMember(localMemberId, MemberState::toLeaving);
 
@@ -102,7 +102,7 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldRejectJoinIfMemberDoesNotExists() {
     // given
-    final ClusterTopology topologyWithoutMember = ClusterTopology.init();
+    final ClusterConfiguration topologyWithoutMember = ClusterConfiguration.init();
     // when
     final var result =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
@@ -120,7 +120,8 @@ final class PartitionJoinApplierTest {
   void shouldRejectJoinIfPartitionDoesNotHaveActiveMembers() {
     // given
     final var topologyWithoutActiveMembers =
-        ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
+        ClusterConfiguration.init()
+            .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
 
     // when
     final var result =
@@ -139,7 +140,7 @@ final class PartitionJoinApplierTest {
   void shouldInitializeStateToJoining() {
     // when
     final var initialTopology =
-        ClusterTopology.init()
+        ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
                 new MemberId("2"),
@@ -151,7 +152,7 @@ final class PartitionJoinApplierTest {
     final var resultingTopology = updater.apply(initialTopology);
 
     // then
-    ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
         .hasPartitionWithState(1, new PartitionState(State.JOINING, 1));
@@ -161,7 +162,7 @@ final class PartitionJoinApplierTest {
   void shouldExecuteJoinCallBack() {
     // given
     final var initialTopology =
-        ClusterTopology.init()
+        ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
                 new MemberId("2"),
@@ -178,7 +179,7 @@ final class PartitionJoinApplierTest {
 
     // then
     verify(partitionChangeExecutor, times(1)).join(anyInt(), any());
-    ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
         .hasPartitionWithState(1, new PartitionState(State.ACTIVE, 1));

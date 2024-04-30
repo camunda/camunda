@@ -10,7 +10,7 @@ package io.camunda.zeebe.topology.util;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
@@ -25,7 +25,7 @@ public final class TopologyUtil {
 
   private TopologyUtil() {}
 
-  public static ClusterTopology getClusterTopologyFrom(
+  public static ClusterConfiguration getClusterTopologyFrom(
       final Set<PartitionMetadata> partitionDistribution) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {
@@ -42,22 +42,22 @@ public final class TopologyUtil {
       memberStates.put(e.getKey(), MemberState.initializeAsActive(e.getValue()));
     }
 
-    return new ClusterTopology(
-        ClusterTopology.INITIAL_VERSION,
+    return new ClusterConfiguration(
+        ClusterConfiguration.INITIAL_VERSION,
         Map.copyOf(memberStates),
         Optional.empty(),
         Optional.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
-      final ClusterTopology clusterTopology, final String groupName) {
-    if (clusterTopology.isUninitialized()) {
+      final ClusterConfiguration clusterConfiguration, final String groupName) {
+    if (clusterConfiguration.isUninitialized()) {
       throw new IllegalStateException(
           "Cannot generated partition distribution from uninitialized topology");
     }
 
     final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
-    clusterTopology
+    clusterConfiguration
         .members()
         .forEach(
             (memberId, member) -> {

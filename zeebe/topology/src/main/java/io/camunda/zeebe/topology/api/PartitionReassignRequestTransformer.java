@@ -11,13 +11,13 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.topology.PartitionDistributor;
-import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.topology.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import io.camunda.zeebe.util.Either;
@@ -43,8 +43,8 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
   }
 
   @Override
-  public Either<Exception, List<TopologyChangeOperation>> operations(
-      final ClusterTopology currentTopology) {
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentTopology) {
     if (members.isEmpty()) {
       return Either.left(
           new InvalidRequest(
@@ -55,26 +55,27 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
     return generatePartitionDistributionOperations(currentTopology, members);
   }
 
-  private int getReplicationFactor(final ClusterTopology clusterTopology) {
-    return newReplicationFactor.orElse(clusterTopology.minReplicationFactor());
+  private int getReplicationFactor(final ClusterConfiguration clusterConfiguration) {
+    return newReplicationFactor.orElse(clusterConfiguration.minReplicationFactor());
   }
 
-  private Either<Exception, List<TopologyChangeOperation>> generatePartitionDistributionOperations(
-      final ClusterTopology currentTopology, final Set<MemberId> brokers) {
-    final List<TopologyChangeOperation> operations = new ArrayList<>();
+  private Either<Exception, List<ClusterConfigurationChangeOperation>>
+      generatePartitionDistributionOperations(
+          final ClusterConfiguration currentTopology, final Set<MemberId> brokers) {
+    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
     final var oldDistribution = TopologyUtil.getPartitionDistributionFrom(currentTopology, "temp");
     final int replicationFactor = getReplicationFactor(currentTopology);
 
     if (replicationFactor <= 0) {
       return Either.left(
-          new TopologyRequestFailedException.InvalidRequest(
+          new ClusterConfigurationRequestFailedException.InvalidRequest(
               String.format("Replication factor [%d] must be greater than 0", replicationFactor)));
     }
 
     if (brokers.size() < replicationFactor) {
       return Either.left(
-          new TopologyRequestFailedException.InvalidRequest(
+          new ClusterConfigurationRequestFailedException.InvalidRequest(
               String.format(
                   "Number of brokers [%d] is less than the replication factor [%d]",
                   brokers.size(), replicationFactor)));
@@ -105,10 +106,10 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
     return Either.right(operations);
   }
 
-  private List<TopologyChangeOperation> movePartition(
+  private List<ClusterConfigurationChangeOperation> movePartition(
       final PartitionMetadata oldMetadata, final PartitionMetadata newMetadata) {
     final Integer partitionId = newMetadata.id().id();
-    final List<TopologyChangeOperation> operations = new ArrayList<>();
+    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
     final var membersToJoin =
         newMetadata.members().stream()

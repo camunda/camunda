@@ -10,8 +10,8 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.ClusterOperationApplier;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;
@@ -37,8 +37,8 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
   }
 
   @Override
-  public Either<Exception, UnaryOperator<ClusterTopology>> init(
-      final ClusterTopology currentClusterTopology) {
+  public Either<Exception, UnaryOperator<ClusterConfiguration>> init(
+      final ClusterConfiguration currentClusterConfiguration) {
 
     if (members.isEmpty()) {
       return Either.left(
@@ -58,8 +58,8 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
 
     for (final MemberId member : members) {
       final boolean memberIsActive =
-          currentClusterTopology.hasMember(member)
-              && currentClusterTopology.getMember(member).state() == State.ACTIVE;
+          currentClusterConfiguration.hasMember(member)
+              && currentClusterConfiguration.getMember(member).state() == State.ACTIVE;
       if (!memberIsActive) {
         return Either.left(
             new IllegalStateException(
@@ -68,7 +68,7 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
                     partitionId, members, memberId)));
       }
 
-      final var memberState = currentClusterTopology.getMember(member);
+      final var memberState = currentClusterConfiguration.getMember(member);
       if (!memberState.hasPartition(partitionId)) {
         return Either.left(
             new IllegalStateException(
@@ -82,8 +82,8 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
   }
 
   @Override
-  public ActorFuture<UnaryOperator<ClusterTopology>> apply() {
-    final var future = new CompletableActorFuture<UnaryOperator<ClusterTopology>>();
+  public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
+    final var future = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
     partitionChangeExecutor
         .forceReconfigure(partitionId, members)
         .onComplete(
@@ -98,12 +98,13 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
     return future;
   }
 
-  private ClusterTopology removePartitionFromNonMembers(final ClusterTopology clusterTopology) {
+  private ClusterConfiguration removePartitionFromNonMembers(
+      final ClusterConfiguration clusterConfiguration) {
     // remove this partition from the state of non-members
-    ClusterTopology updatedTopology = clusterTopology;
-    for (final var member : clusterTopology.members().keySet()) {
+    ClusterConfiguration updatedTopology = clusterConfiguration;
+    for (final var member : clusterConfiguration.members().keySet()) {
       if (!members.contains(member)
-          && clusterTopology.getMember(member).hasPartition(partitionId)) {
+          && clusterConfiguration.getMember(member).hasPartition(partitionId)) {
         updatedTopology = updatedTopology.updateMember(member, m -> m.removePartition(partitionId));
       }
     }

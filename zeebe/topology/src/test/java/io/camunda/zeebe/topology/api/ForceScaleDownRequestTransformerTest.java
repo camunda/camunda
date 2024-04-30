@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +28,8 @@ class ForceScaleDownRequestTransformerTest {
   private final MemberId id2 = MemberId.from("2");
   private final MemberId id3 = MemberId.from("3");
 
-  private final ClusterTopology currentTopology =
-      ClusterTopology.init()
+  private final ClusterConfiguration currentTopology =
+      ClusterConfiguration.init()
           .addMember(id0, MemberState.initializeAsActive(Map.of()))
           .addMember(id1, MemberState.initializeAsActive(Map.of()))
           .addMember(id2, MemberState.initializeAsActive(Map.of()))

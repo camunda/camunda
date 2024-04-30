@@ -8,9 +8,9 @@
 package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
+import io.camunda.zeebe.topology.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,7 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
 
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
-  private final ArrayList<TopologyChangeOperation> generatedOperations = new ArrayList<>();
+  private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations = new ArrayList<>();
 
   public ScaleRequestTransformer(final Set<MemberId> members) {
     this(members, Optional.empty());
@@ -35,8 +35,8 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
   }
 
   @Override
-  public Either<Exception, List<TopologyChangeOperation>> operations(
-      final ClusterTopology currentTopology) {
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentTopology) {
     generatedOperations.clear();
 
     // First add new members
@@ -61,8 +61,8 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
         .map(this::addToOperations);
   }
 
-  private ArrayList<TopologyChangeOperation> addToOperations(
-      final List<TopologyChangeOperation> reassignOperations) {
+  private ArrayList<ClusterConfigurationChangeOperation> addToOperations(
+      final List<ClusterConfigurationChangeOperation> reassignOperations) {
     generatedOperations.addAll(reassignOperations);
     return generatedOperations;
   }

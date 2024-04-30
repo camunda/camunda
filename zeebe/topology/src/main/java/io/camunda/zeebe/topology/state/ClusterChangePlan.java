@@ -27,10 +27,10 @@ public record ClusterChangePlan(
     Status status,
     Instant startedAt,
     List<CompletedOperation> completedOperations,
-    List<TopologyChangeOperation> pendingOperations) {
+    List<ClusterConfigurationChangeOperation> pendingOperations) {
 
   public static ClusterChangePlan init(
-      final long id, final List<TopologyChangeOperation> operations) {
+      final long id, final List<ClusterConfigurationChangeOperation> operations) {
     return new ClusterChangePlan(
         id, 1, Status.IN_PROGRESS, Instant.now(), List.of(), List.copyOf(operations));
   }
@@ -65,7 +65,7 @@ public record ClusterChangePlan(
     return !pendingOperations.isEmpty() && pendingOperations.get(0).memberId().equals(memberId);
   }
 
-  public TopologyChangeOperation nextPendingOperation() {
+  public ClusterConfigurationChangeOperation nextPendingOperation() {
     return pendingOperations().get(0);
   }
 
@@ -77,7 +77,7 @@ public record ClusterChangePlan(
     return new CompletedChange(id, Status.CANCELLED, startedAt(), Instant.now());
   }
 
-  public record CompletedOperation(TopologyChangeOperation operation, Instant completedAt) {}
+  public record CompletedOperation(ClusterConfigurationChangeOperation operation, Instant completedAt) {}
 
   public enum Status {
     IN_PROGRESS,

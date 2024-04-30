@@ -10,8 +10,8 @@ package io.camunda.zeebe.topology.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.MemberOperationApplier;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.changes.ConfigurationChangeAppliers.MemberOperationApplier;
+import io.camunda.zeebe.topology.state.ClusterConfiguration;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -43,17 +43,17 @@ public class PartitionReconfigurePriorityApplier implements MemberOperationAppli
 
   @Override
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
-      final ClusterTopology currentClusterTopology) {
+      final ClusterConfiguration currentClusterConfiguration) {
     final boolean localMemberIsActive =
-        currentClusterTopology.hasMember(localMemberId)
-            && currentClusterTopology.getMember(localMemberId).state() == State.ACTIVE;
+        currentClusterConfiguration.hasMember(localMemberId)
+            && currentClusterConfiguration.getMember(localMemberId).state() == State.ACTIVE;
     if (!localMemberIsActive) {
       return Either.left(
           new IllegalStateException(
               "Expected to change priority of a partition, but the local member is not active"));
     }
 
-    final MemberState localMemberState = currentClusterTopology.getMember(localMemberId);
+    final MemberState localMemberState = currentClusterConfiguration.getMember(localMemberId);
     final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
     if (!partitionExistsInLocalMember) {
       return Either.left(
