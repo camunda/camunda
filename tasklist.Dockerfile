@@ -5,10 +5,11 @@ ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761
 # Prepare tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
 
+ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/tasklist
 
 # download tasklist
-COPY dist/target/camunda-zeebe-*.tar.gz tasklist.tar.gz
+COPY ${DISTBALL} tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
 
@@ -37,7 +38,7 @@ LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="hto@camunda.com"
 LABEL org.opencontainers.image.url="https://camunda.com/platform/tasklist/"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/tasklist-deployment/install-and-start/"
-LABEL org.opencontainers.image.source="https://github.com/camunda/tasklist"
+LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"

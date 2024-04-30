@@ -15,48 +15,65 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {useLayoutEffect, useRef} from 'react';
-import {Loading} from '@carbon/react';
-import {TextInput} from '../TextInput';
-import styles from './styles.module.scss';
+import {InlineLoadingStatus} from '@carbon/react';
+import {AsyncActionButton} from './AsyncActionButton';
 
-type Props = React.ComponentProps<typeof TextInput> & {
-  isLoading: boolean;
-  isActive?: boolean;
+type Props = {
+  submissionState: InlineLoadingStatus;
+  onClick?: () => void;
+  onSuccess?: () => void;
+  onError?: () => void;
+  isHidden: boolean;
+  isDisabled: boolean;
 };
 
-const LoadingTextarea: React.FC<Props> = ({
-  isLoading,
-  isActive = false,
-  ...props
-}) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  useLayoutEffect(() => {
-    if (isActive && !isLoading) {
-      inputRef.current?.focus();
-      inputRef.current?.setSelectionRange(
-        inputRef.current.value.length,
-        inputRef.current.value.length,
-      );
-    }
-  }, [isLoading, isActive]);
-
-  if (isLoading) {
-    return (
-      <div
-        className={styles.loadingStateContainer}
-        data-testid="textarea-loading-overlay"
-      >
-        <div className={styles.overlay}>
-          <Loading className={styles.spinner} withOverlay={false} />
-        </div>
-        <TextInput ref={inputRef} {...props} disabled />
-      </div>
-    );
+function getCompletionButtonDescription(status: InlineLoadingStatus) {
+  if (status === 'active') {
+    return 'Completing task...';
   }
 
-  return <TextInput ref={inputRef} {...props} />;
+  if (status === 'error') {
+    return 'Completion failed';
+  }
+
+  if (status === 'finished') {
+    return 'Completed';
+  }
+
+  return undefined;
+}
+
+const CompleteTaskButton: React.FC<Props> = ({
+  submissionState,
+  isHidden,
+  isDisabled,
+  onClick,
+  onSuccess,
+  onError,
+}) => {
+  return (
+    <AsyncActionButton
+      inlineLoadingProps={{
+        description: getCompletionButtonDescription(submissionState),
+        'aria-live': 'polite',
+        onSuccess,
+      }}
+      buttonProps={{
+        size: 'md',
+        type: 'submit',
+        disabled: submissionState === 'active' || isDisabled,
+        onClick,
+        title: isDisabled
+          ? undefined
+          : 'You must first assign this task to complete it',
+      }}
+      status={submissionState}
+      isHidden={isHidden}
+      onError={onError}
+    >
+      Complete Task
+    </AsyncActionButton>
+  );
 };
 
-export {LoadingTextarea};
+export {CompleteTaskButton};
