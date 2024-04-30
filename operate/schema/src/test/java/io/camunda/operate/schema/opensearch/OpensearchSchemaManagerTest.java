@@ -77,6 +77,6 @@ public class OpensearchSchemaManagerTest {
     verify(openSearchISMOperations, times(1))
         .addPolicyToIndex("index1*", OPERATE_DELETE_ARCHIVED_INDICES);
     verify(openSearchISMOperations, times(1)).removePolicyFromIndex("index2*");
-    verify(openSearchISMOperations, times(1)).removePolicyFromIndex("index23");
+    verify(openSearchISMOperations, times(1)).removePolicyFromIndex("index3*");
   }
 }
