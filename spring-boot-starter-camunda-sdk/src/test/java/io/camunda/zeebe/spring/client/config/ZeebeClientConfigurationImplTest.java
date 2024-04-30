@@ -18,10 +18,9 @@ package io.camunda.zeebe.spring.client.config;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationSpringImpl;
+import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -33,15 +32,15 @@ import java.util.Map.Entry;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
-public class ZeebeClientConfigurationTest {
-  private static ZeebeClientConfiguration configuration(
+public class ZeebeClientConfigurationImplTest {
+  private static ZeebeClientConfigurationImpl configuration(
       final ZeebeClientConfigurationProperties legacyProperties,
       final CamundaClientProperties properties,
       final Authentication authentication,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final ZeebeClientExecutorService executorService) {
-    return new ZeebeClientConfigurationSpringImpl(
+    return new ZeebeClientConfigurationImpl(
         legacyProperties, properties, authentication, jsonMapper, interceptors, executorService);
   }
 
@@ -75,7 +74,7 @@ public class ZeebeClientConfigurationTest {
 
   @Test
   void shouldCreateSingletonCredentialProvider() {
-    final ZeebeClientConfiguration configuration =
+    final ZeebeClientConfigurationImpl configuration =
         configuration(
             legacyProperties(),
             properties(),

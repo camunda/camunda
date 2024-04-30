@@ -30,10 +30,6 @@ public class CamundaClientProperties {
   private String region;
   @NestedConfigurationProperty private List<String> tenantIds;
   @NestedConfigurationProperty private AuthProperties auth;
-
-  @NestedConfigurationProperty private ApiProperties operate;
-  @NestedConfigurationProperty private ApiProperties tasklist;
-  @NestedConfigurationProperty private ApiProperties optimize;
   @NestedConfigurationProperty private ApiProperties identity;
   @NestedConfigurationProperty private ZeebeClientProperties zeebe;
 
@@ -41,7 +37,7 @@ public class CamundaClientProperties {
     return mode;
   }
 
-  public void setMode(ClientMode mode) {
+  public void setMode(final ClientMode mode) {
     this.mode = mode;
   }
 
@@ -49,39 +45,15 @@ public class CamundaClientProperties {
     return auth;
   }
 
-  public void setAuth(AuthProperties auth) {
+  public void setAuth(final AuthProperties auth) {
     this.auth = auth;
-  }
-
-  public ApiProperties getOperate() {
-    return operate;
-  }
-
-  public void setOperate(ApiProperties operate) {
-    this.operate = operate;
-  }
-
-  public ApiProperties getTasklist() {
-    return tasklist;
-  }
-
-  public void setTasklist(ApiProperties tasklist) {
-    this.tasklist = tasklist;
-  }
-
-  public ApiProperties getOptimize() {
-    return optimize;
-  }
-
-  public void setOptimize(ApiProperties optimize) {
-    this.optimize = optimize;
   }
 
   public ZeebeClientProperties getZeebe() {
     return zeebe;
   }
 
-  public void setZeebe(ZeebeClientProperties zeebe) {
+  public void setZeebe(final ZeebeClientProperties zeebe) {
     this.zeebe = zeebe;
   }
 
@@ -89,7 +61,7 @@ public class CamundaClientProperties {
     return identity;
   }
 
-  public void setIdentity(ApiProperties identity) {
+  public void setIdentity(final ApiProperties identity) {
     this.identity = identity;
   }
 
@@ -97,7 +69,7 @@ public class CamundaClientProperties {
     return tenantIds;
   }
 
-  public void setTenantIds(List<String> tenantIds) {
+  public void setTenantIds(final List<String> tenantIds) {
     this.tenantIds = tenantIds;
   }
 
@@ -105,7 +77,7 @@ public class CamundaClientProperties {
     return clusterId;
   }
 
-  public void setClusterId(String clusterId) {
+  public void setClusterId(final String clusterId) {
     this.clusterId = clusterId;
   }
 
@@ -113,7 +85,7 @@ public class CamundaClientProperties {
     return region;
   }
 
-  public void setRegion(String region) {
+  public void setRegion(final String region) {
     this.region = region;
   }
 
