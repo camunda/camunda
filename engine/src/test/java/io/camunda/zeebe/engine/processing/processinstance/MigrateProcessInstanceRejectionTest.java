@@ -770,7 +770,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
               Expected to migrate process instance '%s' \
               but active element with id 'A' has a boundary event. \
               Migrating active elements with boundary events is not possible yet."""
@@ -892,7 +892,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
               Expected to migrate process instance '%s' \
               but target element with id 'A' has a boundary event. \
               Migrating target elements with boundary events is not possible yet."""
