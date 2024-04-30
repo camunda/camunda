@@ -8,6 +8,8 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer.calculateBatchLength;
+import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
@@ -19,7 +21,6 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -82,50 +83,45 @@ final class Sequencer implements LogStreamWriter, Closeable {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return Either.left(WriteFailure.CLOSED);
     }
-
+    if (appendEntries.isEmpty()) {
+      return Either.left(WriteFailure.INVALID_ARGUMENT);
+    }
     for (final var entry : appendEntries) {
       if (!isEntryValid(entry)) {
         LOG.warn("Reject write of invalid entry {}", entry);
         return Either.left(WriteFailure.INVALID_ARGUMENT);
       }
     }
-    final var batchSize = appendEntries.size();
-    if (batchSize == 0) {
-      return Either.left(WriteFailure.INVALID_ARGUMENT);
-    }
-
     final var permit = flowControl.tryAcquire();
     if (permit.isLeft()) {
       return Either.left(WriteFailure.FULL);
     }
     final var inflightAppend = permit.get();
 
-    final long currentPosition;
+    final int batchSize = appendEntries.size();
+    final int batchLength = calculateBatchLength(appendEntries);
+
+    // extract only the required metadata for metrics from the batch to avoid capturing the whole
+    // batch and holding onto its memory longer than necessary.
+    final var metadata = copyMetricsMetadata(appendEntries);
+    final var appendListener =
+        new InstrumentedAppendListener(inflightAppend, metadata, logStreamMetrics);
     lock.lock();
     try {
-      currentPosition = position;
+      final var currentPosition = position;
+      final var highestPosition = currentPosition + batchSize - 1;
       final var sequencedBatch =
           new SequencedBatch(
-              ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries);
-      final var lowestPosition = sequencedBatch.firstPosition();
-      final var highestPosition =
-          sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
-      // extract only the required metadata for metrics from the batch to avoid capturing the whole
-      // batch and holding onto its memory longer than necessary.
-      final var metricsMetadata = copyMetricsMetadata(sequencedBatch);
+              currentTimeMillis(), currentPosition, sourcePosition, appendEntries, batchLength);
       inflightAppend.start(highestPosition);
-      logStorage.append(
-          lowestPosition,
-          highestPosition,
-          sequencedBatch,
-          new InstrumentedAppendListener(inflightAppend, metricsMetadata, logStreamMetrics));
+      logStorage.append(currentPosition, highestPosition, sequencedBatch, appendListener);
       position = currentPosition + batchSize;
-      sequencerMetrics.observeBatchLengthBytes(sequencedBatch.length());
+      return Either.right(highestPosition);
     } finally {
       lock.unlock();
+      sequencerMetrics.observeBatchLengthBytes(batchLength);
+      sequencerMetrics.observeBatchSize(batchSize);
     }
-    sequencerMetrics.observeBatchSize(batchSize);
-    return Either.right(currentPosition + batchSize - 1);
   }
 
   /**
@@ -146,8 +142,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
   }
 
   private static List<LogAppendEntryMetadata> copyMetricsMetadata(
-      final SequencedBatch sequencedBatch) {
-    final var entries = sequencedBatch.entries();
+      final List<LogAppendEntry> entries) {
     final var metricsMetadata = new ArrayList<LogAppendEntryMetadata>(entries.size());
     for (final LogAppendEntry entry : entries) {
       metricsMetadata.add(new LogAppendEntryMetadata(entry));
