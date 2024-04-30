@@ -13,6 +13,7 @@ import {
   ContainedListItem,
   Section,
   SkeletonText,
+  TabsSkeleton,
 } from '@carbon/react';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styles from './styles.module.scss';
@@ -27,7 +28,7 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
   return (
     <div className={styles.container} data-testid={props['data-testid']}>
       <Section className={styles.content}>
-        <TaskDetailsRow className={headerStyles.header} as="header">
+        <header className={headerStyles.header}>
           <div className={headerStyles.headerLeftContainer}>
             <SkeletonText width="150px" />
             <SkeletonText width="100px" className={styles.margin0} />
@@ -36,9 +37,10 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
             <SkeletonText width="100px" className={styles.margin0} />
             <ButtonSkeleton size="sm" />
           </div>
-        </TaskDetailsRow>
+        </header>
+        <TabsSkeleton className={styles.tabs} />
         <TaskDetailsRow>
-          <SkeletonText width="150px" heading className={styles.margin0} />
+          <SkeletonText width="150px" heading />
         </TaskDetailsRow>
         <TaskDetailsRow $disabledSidePadding>
           <StructuredListSkeleton />

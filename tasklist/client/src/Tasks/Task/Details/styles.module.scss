@@ -26,6 +26,11 @@
   overflow-y: auto;
 }
 
+.tabs {
+  border-top: 1px solid var(--cds-border-subtle);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
 .margin0 {
   margin: 0;
 }

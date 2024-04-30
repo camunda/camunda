@@ -12,7 +12,6 @@ import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {Restricted} from 'modules/components/Restricted';
-import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import {CurrentUser, Task} from 'modules/types';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
@@ -47,11 +46,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
   const {id, name, processName, assignee, taskState} = task;
 
   return (
-    <TaskDetailsRow
-      className={styles.header}
-      as="header"
-      title="Task details header"
-    >
+    <header className={styles.header} title="Task details header">
       <div className={styles.headerLeftContainer}>
         <span className={styles.taskName}>{name}</span>
         <span className={styles.processName}>{processName}</span>
@@ -106,7 +101,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
           </Restricted>
         )}
       </div>
-    </TaskDetailsRow>
+    </header>
   );
 };
 
