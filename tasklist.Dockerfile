@@ -5,10 +5,11 @@ ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761
 # Prepare tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
 
+ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/tasklist
 
 # download tasklist
-COPY tasklist-distro/target/camunda-tasklist-*.tar.gz tasklist.tar.gz
+COPY ${DISTBALL} tasklist.tar.gz
 RUN tar xzvf tasklist.tar.gz --strip 1 && \
     rm tasklist.tar.gz
 
@@ -37,7 +38,7 @@ LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="hto@camunda.com"
 LABEL org.opencontainers.image.url="https://camunda.com/platform/tasklist/"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/tasklist-deployment/install-and-start/"
-LABEL org.opencontainers.image.source="https://github.com/camunda/tasklist"
+LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
@@ -58,12 +59,23 @@ EXPOSE 8080
 RUN apk update && apk upgrade && \
     apk add --no-cache bash openjdk21-jre tzdata
 
-WORKDIR /usr/local/tasklist
+ENV TASKLIST_HOME=/usr/local/tasklist
+
+WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
+VOLUME ${TASKLIST_HOME}/logs
 
-COPY --from=prepare /tmp/tasklist /usr/local/tasklist
+COPY --from=prepare /tmp/tasklist ${TASKLIST_HOME}
+# rename tasklist-migrate script to migrate (as expected by SaaS)
+RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
 
-RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/tasklist -G camunda -u 1001 camunda
+RUN addgroup --gid 1001 camunda && \
+    adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
+    mkdir ${TASKLIST_HOME}/logs && \
+    chown -R 1001:0 ${TASKLIST_HOME} && \
+    chmod -R 0775 ${TASKLIST_HOME}
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]

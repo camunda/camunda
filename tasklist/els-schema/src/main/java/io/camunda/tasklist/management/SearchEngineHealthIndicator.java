@@ -27,23 +27,22 @@ import org.springframework.stereotype.Component;
 @Component("searchEngineCheck")
 public class SearchEngineHealthIndicator implements HealthIndicator {
 
-  private static Logger logger = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineHealthIndicator.class);
 
-  @Autowired private SearchEngineCheck searchEngineCheck;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
-
-  @Override
-  public Health health() {
-    logger.debug("Search engine check is called");
-    if (searchEngineCheck.isHealthy() && indexSchemaValidator.schemaExists()) {
-      return Health.up().build();
-    } else {
-      return Health.down().build();
-    }
-  }
 
   @Override
   public Health getHealth(final boolean includeDetails) {
     return health();
+  }
+
+  @Override
+  public Health health() {
+    LOGGER.debug("Search engine check is called");
+    if (indexSchemaValidator.schemaExists()) {
+      return Health.up().build();
+    } else {
+      return Health.down().build();
+    }
   }
 }

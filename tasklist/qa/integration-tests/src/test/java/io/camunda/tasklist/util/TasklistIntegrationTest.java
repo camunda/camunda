@@ -28,7 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -47,13 +49,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
+  @Autowired private ApplicationContext applicationContext;
 
   @BeforeEach
   public void before() {
     testStartTime = OffsetDateTime.now();
+    new SpringContextHolder().setApplicationContext(applicationContext);
   }
 
-  protected void mockPartitionHolder(PartitionHolder partitionHolder) {
+  protected void mockPartitionHolder(final PartitionHolder partitionHolder) {
     final List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);

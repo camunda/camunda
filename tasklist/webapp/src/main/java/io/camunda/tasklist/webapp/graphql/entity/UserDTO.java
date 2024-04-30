@@ -16,6 +16,8 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
 import java.util.List;
@@ -24,16 +26,13 @@ import org.springframework.util.StringUtils;
 
 public class UserDTO {
 
-  private String userId;
-  private String displayName;
+  @GraphQLField @GraphQLNonNull private String userId;
+  @GraphQLField private String displayName;
   private boolean apiUser;
-
-  private List<Permission> permissions;
-  private List<String> roles;
-
-  private String salesPlanType;
-
-  private List<C8AppLink> c8Links = List.of();
+  @GraphQLField private List<Permission> permissions;
+  @GraphQLField private List<String> roles;
+  @GraphQLField private String salesPlanType;
+  @GraphQLField private List<C8AppLink> c8Links = List.of();
   private List<TasklistTenant> tenants = List.of();
   private List<String> groups = List.of();
 

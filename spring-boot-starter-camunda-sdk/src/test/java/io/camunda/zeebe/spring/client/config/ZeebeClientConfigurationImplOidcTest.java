@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationSpringImpl.IdentityCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.IdentityCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import org.junit.jupiter.api.Test;
@@ -31,13 +31,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
     properties = {
-      "camunda.client.mode=saas",
-      "camunda.client.cluster-id=12345",
-      "camunda.client.region=bru-2",
+      "camunda.client.mode=oidc",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
-public class ZeebeClientConfigurationSaasTest {
+public class ZeebeClientConfigurationImplOidcTest {
   @Autowired ZeebeClientConfiguration zeebeClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired ZeebeClientExecutorService zeebeClientExecutorService;
@@ -55,8 +53,7 @@ public class ZeebeClientConfigurationSaasTest {
 
   @Test
   void shouldHaveGatewayAddress() {
-    assertThat(zeebeClientConfiguration.getGatewayAddress())
-        .isEqualTo("12345.bru-2.zeebe.camunda.io:443");
+    assertThat(zeebeClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
   }
 
   @Test
@@ -115,7 +112,7 @@ public class ZeebeClientConfigurationSaasTest {
 
   @Test
   void shouldHavePlaintextConnectionEnabled() {
-    assertThat(zeebeClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(false);
+    assertThat(zeebeClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(true);
   }
 
   @Test
