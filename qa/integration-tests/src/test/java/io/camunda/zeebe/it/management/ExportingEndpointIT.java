@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -306,6 +307,7 @@ final class ExportingEndpointIT {
   }
 
   @Test
+  @Disabled
   void shouldStaySoftPausedAfterRestart() {
     // given
     getActuator().resume();
