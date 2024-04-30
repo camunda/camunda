@@ -15,6 +15,7 @@ public class FlowControlCfg implements ConfigurationEntry {
 
   public FlowControlCfg() {
     append.setAlgorithm(LimitAlgorithm.LEGACY_VEGAS);
+    append.setUseWindowed(false);
   }
 
   public LimitCfg getAppend() {
