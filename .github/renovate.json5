@@ -93,6 +93,10 @@
         "org.camunda.optimize:util",
         "org.camunda.optimize:qa",
         "org.camunda.optimize:optimize-plugin-parent",
+        "org.camunda.bpm.model:camunda-bpmn-model",
+        "org.camunda.bpm.model:camunda-dmn-model",
+        "org.camunda.bpm:camunda-engine-rest-core",
+        "org.camunda.bpm:camunda-engine",
         "org.camunda.bpm:camunda-license-check",
         "io.camunda:identity-sdk",
         "io.camunda:identity-spring-boot-starter",
@@ -109,16 +113,6 @@
         "@types/react-router-dom",
       ],
       enabled: false,
-    },
-    // Only upgrade minor versions. 7.19.x-ee
-    {
-      "matchDepNames": [
-        "org.camunda.bpm.model:camunda-bpmn-model",
-        "org.camunda.bpm.model:camunda-dmn-model",
-        "org.camunda.bpm:camunda-engine-rest-core",
-        "org.camunda.bpm:camunda-engine"],
-      "allowedVersions": "/^7\\.19\\.[0-9]+-ee$/",
-      separateMinorPatch: true,
     },
     // Frontend deps
     {
