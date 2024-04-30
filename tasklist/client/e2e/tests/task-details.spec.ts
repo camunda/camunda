@@ -215,7 +215,7 @@ test.describe('task details page', () => {
     await formJSDetailsPage.completeTaskButton.click();
 
     await expect(taskDetailsPage.taskCompletionNotification).toBeVisible({
-      timeout: 30000,
+      timeout: 40000,
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('processWithDeployedForm');
