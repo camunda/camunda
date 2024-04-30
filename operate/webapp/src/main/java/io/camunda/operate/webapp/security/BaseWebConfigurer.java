@@ -147,12 +147,16 @@ public abstract class BaseWebConfigurer {
   protected abstract void applyOAuth2Settings(final HttpSecurity http) throws Exception;
 
   protected void logoutSuccessHandler(
-      final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
   protected void failureHandler(
-      final HttpServletRequest request, final HttpServletResponse response, final AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     final String requestedUrl =
         request.getRequestURI().substring(request.getContextPath().length());
@@ -175,12 +179,16 @@ public abstract class BaseWebConfigurer {
   }
 
   private void successHandler(
-      final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
   protected void sendError(
-      final HttpServletRequest request, final HttpServletResponse response, final AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     request.getSession().invalidate();
     sendJSONErrorMessage(response, errorMessageService.getMessageByProfileFor(ex));

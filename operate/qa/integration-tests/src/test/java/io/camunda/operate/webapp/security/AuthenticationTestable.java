@@ -54,7 +54,8 @@ public interface AuthenticationTestable {
           "^" + OperateURIs.COOKIE_JSESSIONID + "=[0-9A-Z]{32}$", Pattern.CASE_INSENSITIVE);
   String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
-  default HttpEntity<Map<String, String>> prepareRequestWithCookies(final ResponseEntity<?> response) {
+  default HttpEntity<Map<String, String>> prepareRequestWithCookies(
+      final ResponseEntity<?> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_JSON);
     headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
