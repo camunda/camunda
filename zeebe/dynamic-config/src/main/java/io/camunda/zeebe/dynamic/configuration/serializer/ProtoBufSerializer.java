@@ -20,6 +20,14 @@ import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagement
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.configuration.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.configuration.gossip.ClusterConfigurationGossipState;
+import io.camunda.zeebe.dynamic.configuration.protocol.Requests;
+import io.camunda.zeebe.dynamic.configuration.protocol.Requests.ErrorCode;
+import io.camunda.zeebe.dynamic.configuration.protocol.Requests.Response;
+import io.camunda.zeebe.dynamic.configuration.protocol.Requests.TopologyChangeResponse.Builder;
+import io.camunda.zeebe.dynamic.configuration.protocol.Topology;
+import io.camunda.zeebe.dynamic.configuration.protocol.Topology.ChangeStatus;
+import io.camunda.zeebe.dynamic.configuration.protocol.Topology.CompletedChange;
+import io.camunda.zeebe.dynamic.configuration.protocol.Topology.MemberState;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
@@ -32,14 +40,6 @@ import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOp
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.configuration.state.PartitionState;
-import io.camunda.zeebe.topology.protocol.Requests;
-import io.camunda.zeebe.topology.protocol.Requests.ErrorCode;
-import io.camunda.zeebe.topology.protocol.Requests.Response;
-import io.camunda.zeebe.topology.protocol.Requests.TopologyChangeResponse.Builder;
-import io.camunda.zeebe.topology.protocol.Topology;
-import io.camunda.zeebe.topology.protocol.Topology.ChangeStatus;
-import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
-import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -55,7 +55,7 @@ public class ProtoBufSerializer
   public byte[] encode(final ClusterConfigurationGossipState gossipState) {
     final var builder = Topology.GossipState.newBuilder();
 
-    final ClusterConfiguration topologyToEncode = gossipState.getClusterTopology();
+    final ClusterConfiguration topologyToEncode = gossipState.getClusterConfiguration();
     if (topologyToEncode != null) {
       final Topology.ClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
       builder.setClusterTopology(clusterTopology);
@@ -79,7 +79,7 @@ public class ProtoBufSerializer
 
     if (gossipState.hasClusterTopology()) {
       try {
-        clusterConfigurationGossipState.setClusterTopology(
+        clusterConfigurationGossipState.setClusterConfiguration(
             decodeClusterTopology(gossipState.getClusterTopology()));
       } catch (final Exception e) {
         throw new DecodingFailed(
