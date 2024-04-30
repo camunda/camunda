@@ -112,7 +112,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
           sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
       // extract only the required metadata for metrics from the batch to avoid capturing the whole
       // batch and holding onto its memory longer than necessary.
-      final List<LogAppendEntryMetadata> metricsMetadata = copyMetricsMetadata(sequencedBatch);
+      final var metricsMetadata = copyMetricsMetadata(sequencedBatch);
       inflightAppend.start(highestPosition);
       logStorage.append(
           lowestPosition,
@@ -138,16 +138,17 @@ final class Sequencer implements LogStreamWriter, Closeable {
     isClosed = true;
   }
 
-  private boolean isEntryValid(final LogAppendEntry entry) {
+  private static boolean isEntryValid(final LogAppendEntry entry) {
     return entry.recordValue() != null
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null
         && entry.recordMetadata().getLength() > 0;
   }
 
-  static List<LogAppendEntryMetadata> copyMetricsMetadata(final SequencedBatch sequencedBatch) {
+  private static List<LogAppendEntryMetadata> copyMetricsMetadata(
+      final SequencedBatch sequencedBatch) {
     final var entries = sequencedBatch.entries();
-    final List<LogAppendEntryMetadata> metricsMetadata = new ArrayList<>(entries.size());
+    final var metricsMetadata = new ArrayList<LogAppendEntryMetadata>(entries.size());
     for (final LogAppendEntry entry : entries) {
       metricsMetadata.add(new LogAppendEntryMetadata(entry));
     }
@@ -155,16 +156,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     return metricsMetadata;
   }
 
-  record LogAppendEntryMetadata(RecordType recordType, ValueType valueType, Intent intent) {
-    private LogAppendEntryMetadata(final LogAppendEntry entry) {
-      this(
-          entry.recordMetadata().getRecordType(),
-          entry.recordMetadata().getValueType(),
-          entry.recordMetadata().getIntent());
-    }
-  }
-
-  record InstrumentedAppendListener(
+  private record InstrumentedAppendListener(
       AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, LogStreamMetrics metrics)
       implements AppendListener {
 
@@ -182,6 +174,15 @@ final class Sequencer implements LogStreamWriter, Closeable {
     private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {
       metrics.recordAppendedEntry(
           1, metadata.recordType(), metadata.valueType(), metadata.intent());
+    }
+  }
+
+  private record LogAppendEntryMetadata(RecordType recordType, ValueType valueType, Intent intent) {
+    private LogAppendEntryMetadata(final LogAppendEntry entry) {
+      this(
+          entry.recordMetadata().getRecordType(),
+          entry.recordMetadata().getValueType(),
+          entry.recordMetadata().getIntent());
     }
   }
 }
