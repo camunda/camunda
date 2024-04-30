@@ -1,9 +1,0 @@
-zeebe:
-  broker:
-    data:
-      backup:
-        store: s3
-        s3 :
-          bucketName: "bucket"
-          endpoint: "endpoint"
-          region: "region-1"

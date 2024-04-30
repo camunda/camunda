@@ -1,8 +1,0 @@
-zeebe:
-  broker:
-    network:
-      commandApi:
-        port: 1
-
-      internalApi:
-        port: 5

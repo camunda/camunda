@@ -1,6 +1,0 @@
-config-test:
-  setting: test
-  size: 2MB
-  timeout: 3s
-  args:
-    foo: bar

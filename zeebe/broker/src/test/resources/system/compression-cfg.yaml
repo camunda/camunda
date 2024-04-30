@@ -1,4 +1,0 @@
-zeebe:
-  broker:
-    cluster:
-      messageCompression: "SNAPPY"

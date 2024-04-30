@@ -1,4 +1,0 @@
-zeebe:
-  broker:
-    gateway:
-      enable: false
