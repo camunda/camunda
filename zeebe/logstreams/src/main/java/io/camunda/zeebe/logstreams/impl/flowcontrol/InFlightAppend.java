@@ -53,8 +53,4 @@ public final class InFlightAppend implements AppendListener {
     metrics.increaseTriedAppends();
     return this;
   }
-
-  public void discard() {
-    limiter.onIgnore();
-  }
 }
