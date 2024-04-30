@@ -45,7 +45,7 @@ export function ObjectVariableModal({
 
   return (
     <Modal className="ObjectVariableModal" open onClose={onClose}>
-      <Modal.Header>{t('report.table.rawData.objectVariable')}</Modal.Header>
+      <Modal.Header title={t('report.table.rawData.objectVariable')} />
       <Modal.Content>
         {objectString ? (
           <>

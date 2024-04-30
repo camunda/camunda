@@ -38,7 +38,7 @@ it('should render the modal properly', () => {
 it('should display the user name or ID', () => {
   const wrapper = shallow(<EditUserModal {...props} />);
   const header = wrapper.find(Modal.Header);
-  expect(header.text()).toEqual(`Edit ${props.identity.name}`);
+  expect(header.prop('title')).toEqual(`Edit ${props.identity.name}`);
 });
 
 it('should call the onConfirm prop', () => {

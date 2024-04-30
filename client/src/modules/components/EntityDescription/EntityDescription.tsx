@@ -127,11 +127,11 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
         )}
       </div>
       <Modal className="EntityDescriptionEditModal" open={isEditModalOpen} onClose={handleCancel}>
-        <Modal.Header>
-          {t(`common.${description ? 'editName' : 'addName'}`, {
+        <Modal.Header
+          title={t(`common.${description ? 'editName' : 'addName'}`, {
             name: t('common.description'),
           })}
-        </Modal.Header>
+        />
         <Modal.Content>
           <TextEditor
             label={t('common.description').toString()}

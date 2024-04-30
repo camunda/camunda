@@ -58,7 +58,7 @@ export function UsersModal({id, mightFail, onClose}: UsersModalProps): JSX.Eleme
 
   return (
     <Modal open={!!id} onClose={close} className="UsersModal" isOverflowVisible>
-      <Modal.Header>{t('common.editAccess')}</Modal.Header>
+      <Modal.Header title={t('common.editAccess')} />
       <Modal.Content>
         <p className="description">{t('events.permissions.description')}</p>
         <UserTypeahead

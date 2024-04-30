@@ -32,7 +32,7 @@ export default function ConflictModal({
 
   return (
     <Modal open={!!conflict} onClose={onClose} className="ConflictModal">
-      <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
+      <Modal.Header title={t('report.saveConflict.header')} />
       <Modal.Content>
         {conflict &&
           ['combined_report', 'alert'].map((type) => {

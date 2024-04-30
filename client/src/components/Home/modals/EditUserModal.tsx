@@ -29,7 +29,7 @@ export default function EditUserModal({
 
   return (
     <Modal className="EditUserModal" open onClose={onClose}>
-      <Modal.Header>{t('common.editName', {name: name || id})}</Modal.Header>
+      <Modal.Header title={t('common.editName', {name: name || id})} />
       <Modal.Content>
         <Form>
           <RadioButtonGroup

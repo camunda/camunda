@@ -37,7 +37,7 @@ export default function GenerationModal({onClose}) {
 
   return (
     <Modal className="GenerationModal" open onClose={onClose}>
-      <Modal.Header>{t('events.autogenerate')}</Modal.Header>
+      <Modal.Header title={t('events.autogenerate')} />
       <Modal.Content>
         <p className="description">
           {t('events.generationInfo')}{' '}

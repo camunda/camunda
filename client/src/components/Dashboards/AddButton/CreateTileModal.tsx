@@ -86,7 +86,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
 
   return (
     <Modal className="CreateTileModal" open onClose={close} isOverflowVisible>
-      <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
+      <Modal.Header title={t('dashboard.addButton.addTile')} />
       <Modal.Content>
         <Form>
           <Tabs<TabOpen> value={tabOpen} onChange={setTabOpen}>

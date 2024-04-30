@@ -44,7 +44,7 @@ export function ConfigureProcessModal({
 
   return (
     <Modal open onClose={onClose} className="ConfigureProcessModal" isOverflowVisible>
-      <Modal.Header>{t('processes.configureProcess')}</Modal.Header>
+      <Modal.Header title={t('processes.configureProcess')} />
       <Modal.Content>
         <Stack gap={4}>
           {!emailEnabled && (

@@ -140,11 +140,11 @@ export default function MultipleVariableFilter({
       onClose={close}
       className={classnames('MultipleVariableFilterModal', className)}
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         {definitions && (
           <FilterSingleDefinitionSelection

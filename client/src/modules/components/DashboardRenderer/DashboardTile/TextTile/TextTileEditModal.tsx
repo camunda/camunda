@@ -37,7 +37,7 @@ export default function TextTileEditModal({
 
   return (
     <Modal open onClose={onClose}>
-      <Modal.Header>{title}</Modal.Header>
+      <Modal.Header title={title} />
       <Modal.Content>
         <TextEditor
           label={title.toString()}

@@ -76,9 +76,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
       </Button>
 
       <Modal open={modalOpen} onClose={handleModalClose} className="AddDefinitionModal">
-        <Modal.Header>
-          {t('report.definition.add', {type: t('report.definition.' + type)})}
-        </Modal.Header>
+        <Modal.Header title={t('report.definition.add', {type: t('report.definition.' + type)})} />
         <Modal.Content>
           {isDefinitionLimitReached && (
             <InlineNotification

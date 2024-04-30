@@ -154,7 +154,7 @@ export default function TemplateModal({
       className={classnames('TemplateModal', className, {noProcess: !template})}
       isFullWidth
     >
-      <Modal.Header>{t(entity + '.createNew')}</Modal.Header>
+      <Modal.Header title={t(entity + '.createNew')} />
       <Modal.Content>
         <Grid className="gridContainer">
           <Column sm={3} md={6} lg={11} className="definitionSelection">

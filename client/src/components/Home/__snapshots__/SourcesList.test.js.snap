@@ -131,9 +131,9 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     open={null}
   >
-    <ForwardRef(ModalHeader)>
-      Destructive changes
-    </ForwardRef(ModalHeader)>
+    <ForwardRef(ModalHeader)
+      title="Destructive changes"
+    />
     <ForwardRef />
     <ForwardRef(ModalFooter)>
       <Button

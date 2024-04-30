@@ -40,7 +40,7 @@ export function InsertImageModal({editor, onClose}: {editor: LexicalEditor; onCl
 
   return (
     <Modal open onClose={onClose} className="InsertModal">
-      <Modal.Header>{t('textEditor.plugins.images.title')}</Modal.Header>
+      <Modal.Header title={t('textEditor.plugins.images.title')} />
       <Modal.Content>
         <Form>
           <Stack gap={6}>

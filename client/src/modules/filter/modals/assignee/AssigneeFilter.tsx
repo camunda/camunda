@@ -140,11 +140,11 @@ export default function AssigneeFilter(props: FilterProps<'assignee' | 'candidat
       className={classnames('AssigneeFilter', className)}
       isOverflowVisible
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         <Stack gap={6}>
           {!reportIds && (

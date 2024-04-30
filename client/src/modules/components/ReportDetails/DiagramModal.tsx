@@ -34,7 +34,7 @@ export function DiagramModal({definition, type, open, onClose, mightFail}: Diagr
 
   return (
     <Modal className="DiagramModal" open={open} size="lg" onClose={onClose}>
-      <Modal.Header>{definition.name || definition.key}</Modal.Header>
+      <Modal.Header title={definition.name || definition.key} />
       <Modal.Content>
         {!xml && <LoadingIndicator />}
 

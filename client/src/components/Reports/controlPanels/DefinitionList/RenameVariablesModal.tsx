@@ -96,7 +96,7 @@ export default function RenameVariablesModal({
 
   return (
     <Modal open={open} size="lg" onClose={onClose} className="RenameVariablesModal">
-      <Modal.Header>{t('report.definition.variables.rename')}</Modal.Header>
+      <Modal.Header title={t('report.definition.variables.rename')} />
       <Modal.Content>
         <div className="header">
           <div className="info">

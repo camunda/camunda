@@ -159,9 +159,9 @@ export default function EventsSourceModal({
 
   return (
     <Modal open onClose={onClose} className="EventsSourceModal" isOverflowVisible>
-      <Modal.Header>
-        {isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
-      </Modal.Header>
+      <Modal.Header
+        title={isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
+      />
       <Modal.Content>
         <Tabs value={type} onChange={setType} showButtons={!isEditing()}>
           <Tabs.Tab value="camunda" title={t('events.sources.camundaEvents')}>

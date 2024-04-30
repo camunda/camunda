@@ -87,7 +87,7 @@ export default function DateFilter({
       isOverflowVisible
       className={classnames('DateFilter', className)}
     >
-      <Modal.Header>{modalTitle}</Modal.Header>
+      <Modal.Header title={modalTitle} />
       <Modal.Content>
         <Stack gap={6}>
           <FilterDefinitionSelection

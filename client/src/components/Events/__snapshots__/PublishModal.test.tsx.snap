@@ -21,9 +21,9 @@ exports[`should show different text depending on the republish prop 1`] = `
   onClose={[MockFunction]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Publishing process
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Publishing process"
+  />
   <ForwardRef>
     <p>
       Published event-based processes will be available to use in reports by selected users.
@@ -74,9 +74,9 @@ exports[`should show different text depending on the republish prop 2`] = `
   onClose={[MockFunction]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Re-publishing process
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Re-publishing process"
+  />
   <ForwardRef>
     <p>
       Re-publishing will update data in all associated reports.

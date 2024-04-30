@@ -103,9 +103,7 @@ export default withErrorHandling(
 
       return (
         <Modal open onClose={this.close} className="Deleter">
-          <Modal.Header>
-            {deleteText || t('common.deleteEntity', {entity: translatedType})}
-          </Modal.Header>
+          <Modal.Header title={deleteText || t('common.deleteEntity', {entity: translatedType})} />
           <Modal.Content>
             {loading ? (
               <Loading />

@@ -6,9 +6,9 @@ exports[`should match snapshot 1`] = `
   onClose={[MockFunction]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Edit tenants - defName
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Edit tenants - defName"
+  />
   <ForwardRef>
     <Checklist
       allItems={

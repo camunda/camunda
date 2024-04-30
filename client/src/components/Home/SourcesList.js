@@ -211,7 +211,7 @@ export default withErrorHandling(
             deleteEntity={() => removeSource(collection, deleting.id)}
           />
           <Modal open={conflict} onClose={this.closeEditSourceModal} className="saveModal">
-            <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
+            <Modal.Header title={t('report.saveConflict.header')} />
             <Modal.Content>
               {conflict && conflict.length > 0 && (
                 <>

@@ -21,9 +21,9 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   onClose={[Function]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Delete Report
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Delete Report"
+  />
   <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
@@ -61,9 +61,9 @@ exports[`should use provided delete text for title and button 1`] = `
   onClose={[Function]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Remove entity
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Remove entity"
+  />
   <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.

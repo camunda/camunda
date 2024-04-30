@@ -35,7 +35,7 @@ export default function VisibleEventsModal({
 
   return (
     <Modal open onClose={onClose} className="VisibleEventsModal">
-      <Modal.Header>{t('events.sources.editScope')}</Modal.Header>
+      <Modal.Header title={t('events.sources.editScope')} />
       <Modal.Content>
         <Form>
           <Stack gap={4} orientation="vertical">

@@ -112,11 +112,11 @@ export function NodeDateFilter({
       size={isInstanceFilter ? 'lg' : 'sm'}
       isOverflowVisible={!isInstanceFilter}
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}

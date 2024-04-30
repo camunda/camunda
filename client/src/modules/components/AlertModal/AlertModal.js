@@ -251,9 +251,7 @@ export class AlertModal extends React.Component {
 
     return (
       <Modal open onClose={onClose} className="AlertModal">
-        <Modal.Header>
-          {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
-        </Modal.Header>
+        <Modal.Header title={this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')} />
         <Modal.Content>
           <Grid>
             <Column sm={4} md={8} lg={16}>

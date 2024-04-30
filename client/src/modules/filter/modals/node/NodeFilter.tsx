@@ -99,11 +99,11 @@ export function NodeFilter({
 
   return (
     <Modal open onClose={close} className="NodeFilter" size="lg">
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t('common.filter.types.flowNode'),
         })}
-      </Modal.Header>
+      />
       <Modal.Content className="modalContent">
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}

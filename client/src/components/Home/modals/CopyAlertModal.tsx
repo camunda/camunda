@@ -26,7 +26,7 @@ export default function CopyAlertModal({
 
   return (
     <Modal open onClose={onClose}>
-      <Modal.Header>{t('common.copyName', {name: initialAlertName})}</Modal.Header>
+      <Modal.Header title={t('common.copyName', {name: initialAlertName})} />
       <Modal.Content>
         <Form>
           <TextInput

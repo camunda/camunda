@@ -167,7 +167,7 @@ export default function SourcesModal({
 
   return (
     <Modal open onClose={onClose} size="lg" className="SourcesModal" isOverflowVisible>
-      <Modal.Header>{t('home.sources.add')}</Modal.Header>
+      <Modal.Header title={t('home.sources.add')} />
       <Modal.Content>
         <Table
           toolbar={

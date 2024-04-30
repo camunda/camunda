@@ -121,7 +121,7 @@ export default function NodeSelection({
 
   return (
     <Modal open onClose={close} className={classnames('NodeSelection', className)} size="lg">
-      <Modal.Header>{modalTitle}</Modal.Header>
+      <Modal.Header title={modalTitle} />
       <Modal.Content className="modalContent">
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}

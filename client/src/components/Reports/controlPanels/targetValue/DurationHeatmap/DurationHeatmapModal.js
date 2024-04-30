@@ -252,7 +252,7 @@ export default class DurationHeatmapModal extends React.Component {
         onClose={onClose}
         className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
       >
-        <Modal.Header>{t('report.heatTarget.title')}</Modal.Header>
+        <Modal.Header title={t('report.heatTarget.title')} />
         <Modal.Content className="content-container">
           {this.state.loading ? (
             <Loading />

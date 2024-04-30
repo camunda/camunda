@@ -72,9 +72,9 @@ export default function PublishModal({
 
   return (
     <Modal open={!!id} onClose={onClose} className="PublishModal">
-      <Modal.Header>
-        {republish ? t('events.publishModal.republishHead') : t('events.publishModal.head')}
-      </Modal.Header>
+      <Modal.Header
+        title={republish ? t('events.publishModal.republishHead') : t('events.publishModal.head')}
+      />
       <Modal.Content>
         {republish ? (
           <p>{t('events.publishModal.republishText')}</p>

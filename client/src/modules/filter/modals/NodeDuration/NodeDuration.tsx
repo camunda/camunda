@@ -200,7 +200,7 @@ export class NodeDuration extends Component<
 
     return (
       <Modal isOverflowVisible size="lg" open onClose={close} className="NodeDuration">
-        <Modal.Header>{t('common.filter.types.flowNodeDuration')} </Modal.Header>
+        <Modal.Header title={t('common.filter.types.flowNodeDuration')} />
         <Modal.Content className="contentContainer">
           <FilterSingleDefinitionSelection
             availableDefinitions={definitions}

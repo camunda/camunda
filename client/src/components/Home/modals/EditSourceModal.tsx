@@ -66,7 +66,7 @@ export default function EditSourceModal({source, onConfirm, onClose}: EditSource
 
   return (
     <Modal className="EditSourceModal" open onClose={onClose}>
-      <Modal.Header>{modalTitle}</Modal.Header>
+      <Modal.Header title={modalTitle} />
       <Modal.Content>
         <Checklist
           columnLabel={t('common.tenant.label')}

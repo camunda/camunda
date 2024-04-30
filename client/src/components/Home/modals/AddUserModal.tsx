@@ -51,11 +51,13 @@ export default function AddUserModal(props: AddUserModalProps) {
 
   return (
     <Modal className="AddUserModal" open={open} onClose={onClose} isOverflowVisible>
-      <Modal.Header>
-        {optimizeProfile === 'platform'
-          ? t('home.roles.addUserGroupTitle')
-          : t('home.roles.addUserTitle')}
-      </Modal.Header>
+      <Modal.Header
+        title={
+          optimizeProfile === 'platform'
+            ? t('home.roles.addUserGroupTitle')
+            : t('home.roles.addUserTitle')
+        }
+      />
       <Modal.Content>
         <Form>
           <Stack gap={6}>

@@ -71,11 +71,11 @@ export default class DurationFilter extends Component<
 
     return (
       <Modal size="sm" open onClose={this.props.close} className="DurationFilter" isOverflowVisible>
-        <Modal.Header>
-          {t('common.filter.modalHeader', {
+        <Modal.Header
+          title={t('common.filter.modalHeader', {
             type: t('common.filter.types.processInstanceDuration'),
           })}
-        </Modal.Header>
+        />
         <Modal.Content>
           <FilterDefinitionSelection
             availableDefinitions={definitions}

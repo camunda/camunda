@@ -84,7 +84,7 @@ export function CollectionModal({
   return (
     <>
       <Modal className="CollectionModal" open={!displaySourcesModal} onClose={onClose}>
-        <Modal.Header>{title}</Modal.Header>
+        <Modal.Header title={title} />
         <Modal.Content>
           <Form>
             {showSourcesModal && <div className="info">{t('common.collection.modal.info')}</div>}

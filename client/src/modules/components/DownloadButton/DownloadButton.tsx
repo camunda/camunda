@@ -93,7 +93,7 @@ export function DownloadButton({
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
       <Modal open={modalOpen} onClose={closeModal} className="DownloadButtonConfirmationModal">
-        <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
+        <Modal.Header title={t('report.downloadCSV')} />
         <Modal.Content>
           <p>
             <b>{t('common.csvLimit.Warning')}</b>

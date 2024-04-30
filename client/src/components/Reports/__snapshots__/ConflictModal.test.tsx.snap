@@ -6,9 +6,9 @@ exports[`should match snapshot 1`] = `
   onClose={[MockFunction]}
   open={true}
 >
-  <ForwardRef(ModalHeader)>
-    Destructive changes
-  </ForwardRef(ModalHeader)>
+  <ForwardRef(ModalHeader)
+    title="Destructive changes"
+  />
   <ForwardRef>
     <div
       key="alert"

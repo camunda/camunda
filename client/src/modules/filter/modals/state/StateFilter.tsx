@@ -45,7 +45,7 @@ export default function StateFilter({
 
   return (
     <Modal size="sm" open onClose={close} className="StateFilter">
-      <Modal.Header>{options?.modalTitle}</Modal.Header>
+      <Modal.Header title={options?.modalTitle} />
       <Modal.Content>
         <FilterDefinitionSelection
           availableDefinitions={definitions}
