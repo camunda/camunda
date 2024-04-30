@@ -110,25 +110,14 @@
       ],
       enabled: false,
     },
-    // Only upgrade patch versions for camunda deps
+    // Only upgrade minor versions. 7.19.x-ee
     {
       "matchDepNames": [
         "org.camunda.bpm.model:camunda-bpmn-model",
         "org.camunda.bpm.model:camunda-dmn-model",
         "org.camunda.bpm:camunda-engine-rest-core",
-        "org.camunda.bpm:camunda-engine"
-      ],
-      separateMinorPatch: true,
-    },
-    {
-      "matchDepNames": [
-        "org.camunda.bpm.model:camunda-bpmn-model",
-        "org.camunda.bpm.model:camunda-dmn-model",
-        "org.camunda.bpm:camunda-engine-rest-core",
-        "org.camunda.bpm:camunda-engine"
-      ],
-      matchUpdateTypes: ["major", "minor"],
-      enabled: false,
+        "org.camunda.bpm:camunda-engine"],
+      "allowedVersions": "/^7\\.19\\.[0-9]+-ee$/"
     },
     // Frontend deps
     {
