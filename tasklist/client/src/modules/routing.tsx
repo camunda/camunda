@@ -25,6 +25,9 @@ const pages = {
   taskDetails(id: string = ':id') {
     return `/${id}`;
   },
+  taskDetailsProcess(id: string = ':id') {
+    return `/${id}/process`;
+  },
   processes(
     options: {tenantId?: string; matchAllChildren?: boolean} = {
       matchAllChildren: false,

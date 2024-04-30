@@ -342,6 +342,115 @@ declare module '@carbon/react' {
 
   export const PopoverContent = React.FC<React.HTMLAttributes<HTMLSpanElement>>;
 
+  export interface TabsProps {
+    /**
+     * Provide child elements to be rendered inside the `Tabs`.
+     * These elements should render either `TabsList` or `TabsPanels`
+     */
+    children?: ReactNode;
+
+    /**
+     * Specify which content tab should be initially selected when the component
+     * is first rendered
+     */
+    defaultSelectedIndex?: number;
+
+    /**
+     * Whether the rendered Tab children should be dismissable.
+     */
+    dismissable?: boolean;
+
+    /**
+     * Provide an optional function which is called
+     * whenever the state of the `Tabs` changes
+     */
+    onChange?(state: {selectedIndex: number}): void;
+
+    /**
+     * If specifying the `onTabCloseRequest` prop, provide a callback function
+     * responsible for removing the tab when close button is pressed on one of the Tab elements
+     */
+    onTabCloseRequest?(tabIndex: number): void;
+
+    /**
+     * Control which content panel is currently selected. This puts the component
+     * in a controlled mode and should be used along with `onChange`
+     */
+    selectedIndex?: number;
+  }
+
+  export const Tabs: React.FunctionComponent<TabsProps>;
+
+  export interface TabListProps extends DivAttributes {
+    /**
+     * Specify whether the content tab should be activated automatically or
+     * manually
+     */
+    activation?: 'automatic' | 'manual';
+
+    /**
+     * Provide an accessible label to be read when a user interacts with this
+     * component
+     */
+    'aria-label': string;
+
+    /**
+     * Provide child elements to be rendered inside `ContentTabs`.
+     * These elements should render a `ContentTab`
+     */
+    children?: ReactNode;
+
+    /**
+     * Specify an optional className to be added to the container node
+     */
+    className?: string;
+
+    /**
+     * Specify whether component is contained type
+     */
+    contained?: boolean;
+
+    /**
+     * Used for tabs within a grid, this makes it so tabs span the full container width and have the same width. Only available on contained tabs with <9 children
+     */
+    fullWidth?: boolean;
+
+    /**
+     * If using `IconTab`, specify the size of the icon being used.
+     */
+    iconSize?: 'default' | 'lg';
+
+    /**
+     * Provide the props that describe the left overflow button
+     */
+    leftOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+
+    /**
+     * Specify whether to use the light component variant
+     */
+    light?: boolean;
+
+    /**
+     * Provide the props that describe the right overflow button
+     */
+    rightOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+
+    /**
+     * Optionally provide a delay (in milliseconds) passed to the lodash
+     * debounce of the onScroll handler. This will impact the responsiveness
+     * of scroll arrow buttons rendering when scrolling to the first or last tab.
+     */
+    scrollDebounceWait?: number;
+
+    /**
+     * Choose whether to automatically scroll to newly selected tabs
+     * on component rerender
+     */
+    scrollIntoView?: boolean;
+  }
+
+  export const TabList: React.FunctionComponent<TabListProps>;
+
   export * from 'carbon-components-react';
 }
 

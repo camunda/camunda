@@ -17,11 +17,12 @@
 @use '@carbon/type';
 
 .header {
+  width: 100%;
+  padding: 0 var(--cds-spacing-05);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  min-height: 40px;
   gap: var(--cds-spacing-05);
 }
 

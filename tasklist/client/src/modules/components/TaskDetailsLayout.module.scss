@@ -24,13 +24,12 @@
 }
 
 .container {
-  width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-rows: minmax(max-content, calc(100% - layout.to-rem(62px))) layout.to-rem(
-      62px
-    );
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .row {

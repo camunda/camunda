@@ -29,7 +29,6 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'modules/components/TaskDetailsLayout';
-import {Separator} from 'modules/components/Separator';
 import {useForm} from 'modules/queries/useForm';
 import {useVariables} from 'modules/queries/useVariables';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
@@ -123,85 +122,82 @@ const FormJS: React.FC<Props> = ({
   const {removeFormReference} = useRemoveFormReference(task);
 
   return (
-    <>
-      <Separator />
-      <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
-        <TaskDetailsContainer>
-          <TaskDetailsRow>
-            {match({schema, status})
-              .with(
-                {
-                  schema: null,
-                },
-                () => null,
-              )
-              .with(
-                {
-                  status: 'error',
-                },
-                () => <FailedVariableFetchError />,
-              )
-              .with(
-                {
-                  schema: Pattern.not(null),
-                  status: Pattern.union('pending', 'success'),
-                },
-                ({schema}) => (
-                  <FormJSRenderer
-                    schema={schema}
-                    data={formattedData}
-                    readOnly={!canCompleteTask}
-                    onMount={(formManager) => {
-                      formManagerRef.current = formManager;
-                    }}
-                    handleSubmit={onSubmit}
-                    onImportError={() => {
-                      removeFormReference();
-                      notificationsStore.displayNotification({
-                        kind: 'error',
-                        title: 'Invalid Form schema',
-                        isDismissable: true,
-                      });
-                    }}
-                    onSubmitStart={() => {
-                      setSubmissionState('active');
-                    }}
-                    onSubmitSuccess={() => {
-                      setSubmissionState('finished');
-                    }}
-                    onSubmitError={(error) => {
-                      onSubmitFailure(error as Error);
-                      setSubmissionState('error');
-                    }}
-                    onValidationError={() => {
-                      setSubmissionState('inactive');
-                    }}
-                  />
-                ),
-              )
-              .otherwise(() => null)}
-          </TaskDetailsRow>
-          <DetailsFooter>
-            <CompleteTaskButton
-              submissionState={submissionState}
-              onClick={() => {
-                setSubmissionState('active');
-                formManagerRef.current?.submit();
-              }}
-              onSuccess={() => {
-                onSubmitSuccess();
-                setSubmissionState('inactive');
-              }}
-              onError={() => {
-                setSubmissionState('inactive');
-              }}
-              isHidden={taskState === 'COMPLETED'}
-              isDisabled={!canCompleteTask}
-            />
-          </DetailsFooter>
-        </TaskDetailsContainer>
-      </ScrollableContent>
-    </>
+    <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
+      <TaskDetailsContainer>
+        <TaskDetailsRow>
+          {match({schema, status})
+            .with(
+              {
+                schema: null,
+              },
+              () => null,
+            )
+            .with(
+              {
+                status: 'error',
+              },
+              () => <FailedVariableFetchError />,
+            )
+            .with(
+              {
+                schema: Pattern.not(null),
+                status: Pattern.union('pending', 'success'),
+              },
+              ({schema}) => (
+                <FormJSRenderer
+                  schema={schema}
+                  data={formattedData}
+                  readOnly={!canCompleteTask}
+                  onMount={(formManager) => {
+                    formManagerRef.current = formManager;
+                  }}
+                  handleSubmit={onSubmit}
+                  onImportError={() => {
+                    removeFormReference();
+                    notificationsStore.displayNotification({
+                      kind: 'error',
+                      title: 'Invalid Form schema',
+                      isDismissable: true,
+                    });
+                  }}
+                  onSubmitStart={() => {
+                    setSubmissionState('active');
+                  }}
+                  onSubmitSuccess={() => {
+                    setSubmissionState('finished');
+                  }}
+                  onSubmitError={(error) => {
+                    onSubmitFailure(error as Error);
+                    setSubmissionState('error');
+                  }}
+                  onValidationError={() => {
+                    setSubmissionState('inactive');
+                  }}
+                />
+              ),
+            )
+            .otherwise(() => null)}
+        </TaskDetailsRow>
+        <DetailsFooter>
+          <CompleteTaskButton
+            submissionState={submissionState}
+            onClick={() => {
+              setSubmissionState('active');
+              formManagerRef.current?.submit();
+            }}
+            onSuccess={() => {
+              onSubmitSuccess();
+              setSubmissionState('inactive');
+            }}
+            onError={() => {
+              setSubmissionState('inactive');
+            }}
+            isHidden={taskState === 'COMPLETED'}
+            isDisabled={!canCompleteTask}
+          />
+        </DetailsFooter>
+      </TaskDetailsContainer>
+    </ScrollableContent>
   );
 };
 
