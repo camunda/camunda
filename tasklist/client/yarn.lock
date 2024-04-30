@@ -288,10 +288,10 @@
   dependencies:
     statuses "^2.0.1"
 
-"@camunda/camunda-composite-components@0.6.2":
-  version "0.6.2"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.2.tgz#f98140ad79149d1e93782c18c07c79490741ba32"
-  integrity sha512-pralrQl20hObEfFLIuzt/rLltuvD6TQmI4tTMj6Mpe1f4QANaTYoUgtQ0RVBTR7HAAfKDqLbsj7Yfr9H3CLbbg==
+"@camunda/camunda-composite-components@0.6.3":
+  version "0.6.3"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.3.tgz#0fb8f32f3ed5a9d23c3c1c30a22c87e7bbefc6dd"
+  integrity sha512-QIItq181jrLHPbbBqkzc5pQjk8nRf1IwwdJVEC23iCHyxcWrQQAHVVs2IVackHcEcV3NCPddpR0CKR8VP8PBsA==
   dependencies:
     jwt-decode "4.0.0"
     react-markdown "8.0.7"
