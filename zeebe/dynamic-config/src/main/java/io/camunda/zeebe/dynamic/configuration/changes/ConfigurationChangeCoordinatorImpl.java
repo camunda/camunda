@@ -45,12 +45,14 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   }
 
   @Override
-  public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
+  public ActorFuture<ConfigurationChangeResult> applyOperations(
+      final ConfigurationChangeRequest request) {
     return applyOrDryRun(false, request);
   }
 
   @Override
-  public ActorFuture<TopologyChangeResult> simulateOperations(final TopologyChangeRequest request) {
+  public ActorFuture<ConfigurationChangeResult> simulateOperations(
+      final ConfigurationChangeRequest request) {
     return applyOrDryRun(true, request);
   }
 
@@ -86,9 +88,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
     return future;
   }
 
-  private ActorFuture<TopologyChangeResult> applyOrDryRun(
-      final boolean dryRun, final TopologyChangeRequest request) {
-    final ActorFuture<TopologyChangeResult> future = executor.createFuture();
+  private ActorFuture<ConfigurationChangeResult> applyOrDryRun(
+      final boolean dryRun, final ConfigurationChangeRequest request) {
+    final ActorFuture<ConfigurationChangeResult> future = executor.createFuture();
     executor.run(
         () ->
             clusterTopologyManager
@@ -127,11 +129,11 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final boolean dryRun,
       final ClusterConfiguration currentClusterConfiguration,
       final List<ClusterConfigurationChangeOperation> operations,
-      final ActorFuture<TopologyChangeResult> future) {
+      final ActorFuture<ConfigurationChangeResult> future) {
     if (operations.isEmpty()) {
       // No operations to apply
       future.complete(
-          new TopologyChangeResult(
+          new ConfigurationChangeResult(
               currentClusterConfiguration,
               currentClusterConfiguration,
               currentClusterConfiguration.lastChange().map(CompletedChange::id).orElse(0L),
@@ -152,7 +154,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           // Validation was successful. If it's not a dry-run, apply the changes.
           final ActorFuture<ClusterConfiguration> applyFuture = executor.createFuture();
           if (dryRun) {
-            applyFuture.complete(currentClusterConfiguration.startTopologyChange(operations));
+            applyFuture.complete(currentClusterConfiguration.startConfigurationChange(operations));
           } else {
             applyTopologyChange(
                 operations, currentClusterConfiguration, simulatedFinalTopology, applyFuture);
@@ -169,7 +171,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                   // operations are not empty
 
                   future.complete(
-                      new TopologyChangeResult(
+                      new ConfigurationChangeResult(
                           currentClusterConfiguration,
                           simulatedFinalTopology,
                           changeId,
@@ -205,7 +207,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           new ConfigurationChangeAppliersImpl(
               new NoopPartitionChangeExecutor(), new NoopClusterMembershipChangeExecutor());
       final var topologyWithPendingOperations =
-          currentClusterConfiguration.startTopologyChange(operations);
+          currentClusterConfiguration.startConfigurationChange(operations);
 
       // Simulate applying the operations. The resulting configuration will be the expected final
       // topology. If the sequence of operations is not valid, the simulation fails.
@@ -229,7 +231,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         throw new ConcurrentModificationException(
                             "Topology changed while applying the change. Please retry.");
                       }
-                      return clusterTopology.startTopologyChange(operations);
+                      return clusterTopology.startConfigurationChange(operations);
                     })
                 .onComplete(
                     (topologyWithPendingOperations, errorOnUpdatingTopology) -> {
@@ -271,7 +273,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                 failFuture(simulationCompleted, new InvalidRequest(error));
                 return;
               }
-              final var newTopology = initializedChanges.advanceTopologyChange(topologyUpdater);
+              final var newTopology =
+                  initializedChanges.advanceConfigurationChange(topologyUpdater);
 
               simulateTopologyChange(newTopology, topologyChangeSimulator, simulationCompleted);
             });

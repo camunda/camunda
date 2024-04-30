@@ -334,8 +334,8 @@ public class ClusterEndpoint {
       final ClusterConfigurationChangeResponse response) {
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.currentTopology()))
-        .expectedTopology(mapBrokerStates(response.expectedTopology()))
+        .currentTopology(mapBrokerStates(response.currentConfiguration()))
+        .expectedTopology(mapBrokerStates(response.expectedConfiguration()))
         .plannedChanges(mapOperations(response.plannedChanges()));
   }
 

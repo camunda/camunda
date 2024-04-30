@@ -15,6 +15,6 @@ import java.util.Map;
 
 public record ClusterConfigurationChangeResponse(
     long changeId,
-    Map<MemberId, MemberState> currentTopology,
-    Map<MemberId, MemberState> expectedTopology,
+    Map<MemberId, MemberState> currentConfiguration,
+    Map<MemberId, MemberState> expectedConfiguration,
     List<ClusterConfigurationChangeOperation> plannedChanges) {}

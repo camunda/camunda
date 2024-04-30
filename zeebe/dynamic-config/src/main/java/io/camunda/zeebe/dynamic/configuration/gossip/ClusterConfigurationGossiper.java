@@ -46,13 +46,14 @@ public final class ClusterConfigurationGossiper
   private final ClusterConfigurationGossiperConfig config;
   private final ClusterConfigurationSerializer serializer;
 
-  private final Set<ClusterConfigurationUpdateListener> topologyUpdateListeners = new HashSet<>();
+  private final Set<ClusterConfigurationUpdateListener> configurationUpdateListeners =
+      new HashSet<>();
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
 
   // The handler which can merge configuration updates and reacts to the changes.
-  private final Consumer<ClusterConfiguration> clusterTopologyUpdateHandler;
+  private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
 
   public ClusterConfigurationGossiper(
       final ConcurrencyControl executor,
@@ -60,13 +61,13 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterTopologyUpdateHandler) {
+      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
-    this.clusterTopologyUpdateHandler = clusterTopologyUpdateHandler;
+    this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
   }
 
   public CompletableActorFuture<Void> start() {
@@ -166,23 +167,23 @@ public final class ClusterConfigurationGossiper
 
   private void update(final ClusterConfigurationGossipState receivedGossipState) {
     if (!receivedGossipState.equals(gossipState)) {
-      final ClusterConfiguration topology = receivedGossipState.getClusterTopology();
+      final ClusterConfiguration topology = receivedGossipState.getClusterConfiguration();
       if (topology != null) {
-        clusterTopologyUpdateHandler.accept(topology);
+        clusterConfigurationUpdateHandler.accept(topology);
       }
     }
   }
 
-  private void onTopologyUpdated(final ClusterConfiguration updatedTopology) {
-    gossipState.setClusterTopology(updatedTopology);
-    LOGGER.trace("Updated local gossipState to {}", updatedTopology);
+  private void onConfigurationUpdated(final ClusterConfiguration updatedConfiguration) {
+    gossipState.setClusterConfiguration(updatedConfiguration);
+    LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
-    notifyListeners(updatedTopology);
-    TopologyMetrics.updateFromTopology(updatedTopology);
+    notifyListeners(updatedConfiguration);
+    TopologyMetrics.updateFromTopology(updatedConfiguration);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {
-    topologyUpdateListeners.forEach(
+    configurationUpdateListeners.forEach(
         listener -> listener.onClusterConfigurationUpdated(updatedTopology));
   }
 
@@ -196,25 +197,25 @@ public final class ClusterConfigurationGossiper
     return gossipState;
   }
 
-  public void updateClusterTopology(final ClusterConfiguration clusterConfiguration) {
+  public void updateClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
     if (clusterConfiguration == null) {
       return;
     }
     executor.run(
         () -> {
-          if (!clusterConfiguration.equals(gossipState.getClusterTopology())) {
-            onTopologyUpdated(clusterConfiguration);
+          if (!clusterConfiguration.equals(gossipState.getClusterConfiguration())) {
+            onConfigurationUpdated(clusterConfiguration);
           }
         });
   }
 
-  public ActorFuture<ClusterConfiguration> queryClusterTopology(final MemberId memberId) {
+  public ActorFuture<ClusterConfiguration> queryClusterConfiguration(final MemberId memberId) {
     final ActorFuture<ClusterConfiguration> responseFuture = executor.createFuture();
     sendSyncRequest(memberId)
         .whenCompleteAsync(
             (response, error) -> {
               if (error == null) {
-                responseFuture.complete(response.getClusterTopology());
+                responseFuture.complete(response.getClusterConfiguration());
               } else {
                 responseFuture.completeExceptionally(error);
               }
@@ -263,16 +264,16 @@ public final class ClusterConfigurationGossiper
   public void addUpdateListener(final ClusterConfigurationUpdateListener listener) {
     executor.run(
         () -> {
-          topologyUpdateListeners.add(listener);
-          if (gossipState.getClusterTopology() != null) {
-            listener.onClusterConfigurationUpdated(gossipState.getClusterTopology());
+          configurationUpdateListeners.add(listener);
+          if (gossipState.getClusterConfiguration() != null) {
+            listener.onClusterConfigurationUpdated(gossipState.getClusterConfiguration());
           }
         });
   }
 
   @Override
   public void removeUpdateListener(final ClusterConfigurationUpdateListener listener) {
-    executor.run(() -> topologyUpdateListeners.remove(listener));
+    executor.run(() -> configurationUpdateListeners.remove(listener));
   }
 
   @Override

@@ -138,14 +138,14 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.uninitialized())
-            .startTopologyChange(
+            .startConfigurationChange(
                 List.of(
                     new PartitionLeaveOperation(member(1), 1),
                     new PartitionLeaveOperation(member(2), 2)));
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(
+        initialTopology.advanceConfigurationChange(
             t -> t.updateMember(member(1), MemberState::toActive));
 
     // then
@@ -160,11 +160,12 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startTopologyChange(List.of(new PartitionLeaveOperation(member(1), 1)));
+            .startConfigurationChange(List.of(new PartitionLeaveOperation(member(1), 1)));
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(t -> t.updateMember(member(1), MemberState::toLeft));
+        initialTopology.advanceConfigurationChange(
+            t -> t.updateMember(member(1), MemberState::toLeft));
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(updatedTopology)
@@ -178,14 +179,14 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.uninitialized())
-            .startTopologyChange(
+            .startConfigurationChange(
                 List.of(
                     new PartitionLeaveOperation(member(1), 1),
                     new PartitionLeaveOperation(member(2), 2)));
 
     // when
     final var updatedTopology =
-        initialTopology.advanceTopologyChange(
+        initialTopology.advanceConfigurationChange(
             t -> t.updateMember(member(1), MemberState::toActive));
 
     final var mergedTopology = initialTopology.merge(updatedTopology);
@@ -200,12 +201,12 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
-            .startTopologyChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
+            .startConfigurationChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
     final var changeId = initialTopology.pendingChanges().orElseThrow().id();
 
     // when
     final var finalTopology =
-        initialTopology.advanceTopologyChange(
+        initialTopology.advanceConfigurationChange(
             t -> t.updateMember(member(1), m -> m.addPartition(1, PartitionState.active(1))));
 
     // then

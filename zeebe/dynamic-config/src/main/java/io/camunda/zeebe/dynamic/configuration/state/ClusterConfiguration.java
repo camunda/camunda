@@ -106,7 +106,7 @@ public record ClusterConfiguration(
     return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges);
   }
 
-  public ClusterConfiguration startTopologyChange(
+  public ClusterConfiguration startConfigurationChange(
       final List<ClusterConfigurationChangeOperation> operations) {
     if (hasPendingChanges()) {
       throw new IllegalArgumentException(
@@ -184,18 +184,18 @@ public record ClusterConfiguration(
    * should be reflected in ClusterConfiguration by invoking this method. This removes the completed
    * operation from the pending changes and update the member state using the given updater.
    *
-   * @param topologyUpdater the method to update the topology
+   * @param configurationUpdater the method to update the configuration
    * @return the updated ClusterConfiguration
    */
-  public ClusterConfiguration advanceTopologyChange(
-      final UnaryOperator<ClusterConfiguration> topologyUpdater) {
-    return topologyUpdater.apply(this).advance();
+  public ClusterConfiguration advanceConfigurationChange(
+      final UnaryOperator<ClusterConfiguration> configurationUpdater) {
+    return configurationUpdater.apply(this).advance();
   }
 
   private ClusterConfiguration advance() {
     if (!hasPendingChanges()) {
       throw new IllegalStateException(
-          "Expected to advance the topology change, but there is no pending change");
+          "Expected to advance the configuration change, but there is no pending change");
     }
     final ClusterConfiguration result =
         new ClusterConfiguration(
@@ -203,17 +203,19 @@ public record ClusterConfiguration(
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
-      // topology. This operation will be executed in the member that executes the last operation.
+      // configuration. This operation will be executed in the member that executes the last
+      // operation.
       // This is ok because it is guaranteed that no other concurrent modification will be applied
-      // to the topology. This is because all the operations are applied sequentially, and no
-      // topology update will be done without adding a ClusterChangePlan.
+      // to the configuration. This is because all the operations are applied sequentially, and no
+      // configuration update will be done without adding a ClusterChangePlan.
       final var currentMembers =
           result.members().entrySet().stream()
               // remove the members that are marked as LEFT
               .filter(entry -> entry.getValue().state() != State.LEFT)
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-      // Increment the version so that other members can merge by overwriting their local topology.
+      // Increment the version so that other members can merge by overwriting their local
+      // configuration.
       final var completedChange = pendingChanges.orElseThrow().completed();
       return new ClusterConfiguration(
           result.version() + 1, currentMembers, Optional.of(completedChange), Optional.empty());
@@ -246,7 +248,7 @@ public record ClusterConfiguration(
   }
 
   public Integer minReplicationFactor() {
-    // return minimum replication factor. During a topology change, replication factor might
+    // return minimum replication factor. During a configuration change, replication factor might
     // increase temporarily.
     return members.values().stream()
         .filter(entry -> entry.state() != State.LEFT && entry.state() != State.UNINITIALIZED)
@@ -267,12 +269,12 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Cancel any pending changes and return a new topology with the already applied changes.
+   * Cancel any pending changes and return a new configuration with the already applied changes.
    *
-   * @note This is a dangerous operation that can lead to an inconsistent cluster topology. This
-   *     should be only called as a last resort when the topology change is stuck and not able to
-   *     make progress on its own.
-   * @return a new topology with the already applied changes and no pending changes.
+   * @note This is a dangerous operation that can lead to an inconsistent cluster configuration.
+   *     This should be only called as a last resort when the configuration change is stuck and not
+   *     able to make progress on its own.
+   * @return a new configuration with the already applied changes and no pending changes.
    */
   public ClusterConfiguration cancelPendingChanges() {
     if (hasPendingChanges()) {

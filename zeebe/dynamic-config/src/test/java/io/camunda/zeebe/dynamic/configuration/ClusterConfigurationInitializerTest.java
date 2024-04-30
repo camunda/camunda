@@ -17,7 +17,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.GossipInitializer;
-import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedTopologyIsBroken;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.configuration.serializer.ProtoBufSerializer;
@@ -164,7 +164,7 @@ final class ClusterConfigurationInitializerTest {
 
     // then
     assertThatClusterTopology(initializeFuture.join()).isInitialized();
-    assertThat(persistedClusterConfiguration.getTopology())
+    assertThat(persistedClusterConfiguration.getConfiguration())
         .describedAs("should update persisted topology after initialization")
         .isEqualTo(initialClusterConfiguration);
   }
@@ -303,7 +303,8 @@ final class ClusterConfigurationInitializerTest {
       // when
       final var initializeFuture = initializer.initialize();
       Awaitility.await().until(initializeFuture::isDone);
-      assertThat(initializeFuture.getException()).isInstanceOf(PersistedTopologyIsBroken.class);
+      assertThat(initializeFuture.getException())
+          .isInstanceOf(PersistedConfigurationIsBroken.class);
     }
 
     @Test
@@ -375,9 +376,9 @@ final class ClusterConfigurationInitializerTest {
       final ClusterConfigurationInitializer failingInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
-                  new PersistedTopologyIsBroken(topologyFile, null));
+                  new PersistedConfigurationIsBroken(topologyFile, null));
       final var recoveringInitializer =
-          failingInitializer.recover(PersistedTopologyIsBroken.class, recovery);
+          failingInitializer.recover(PersistedConfigurationIsBroken.class, recovery);
 
       // when
       Files.write(
@@ -393,7 +394,7 @@ final class ClusterConfigurationInitializerTest {
       final var recovery = Mockito.mock(ClusterConfigurationInitializer.class);
       final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
       final var recoveringInitializer =
-          fileInitializer.recover(PersistedTopologyIsBroken.class, recovery);
+          fileInitializer.recover(PersistedConfigurationIsBroken.class, recovery);
 
       // when
       persistedClusterConfiguration.update(initialClusterConfiguration);
@@ -420,7 +421,7 @@ final class ClusterConfigurationInitializerTest {
       // when
       final var chainedInitializer =
           unsuccessfulInitializer
-              .recover(PersistedTopologyIsBroken.class, recoveryInitializer)
+              .recover(PersistedConfigurationIsBroken.class, recoveryInitializer)
               .orThen(successfulInitializer);
 
       // then
@@ -433,7 +434,7 @@ final class ClusterConfigurationInitializerTest {
       final ClusterConfigurationInitializer failingInitializer =
           () ->
               CompletableActorFuture.completedExceptionally(
-                  new PersistedTopologyIsBroken(topologyFile, null));
+                  new PersistedConfigurationIsBroken(topologyFile, null));
 
       final ClusterConfigurationInitializer unsuccessfulRecovery =
           () -> CompletableActorFuture.completed(ClusterConfiguration.uninitialized());
@@ -444,7 +445,7 @@ final class ClusterConfigurationInitializerTest {
       // when
       final var chainedInitializer =
           failingInitializer
-              .recover(PersistedTopologyIsBroken.class, unsuccessfulRecovery)
+              .recover(PersistedConfigurationIsBroken.class, unsuccessfulRecovery)
               .orThen(finalInitializer);
 
       // then

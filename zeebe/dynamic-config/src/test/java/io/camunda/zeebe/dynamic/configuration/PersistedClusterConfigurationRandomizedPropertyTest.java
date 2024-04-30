@@ -50,8 +50,8 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
     persistedClusterTopology.update(updatedTopology);
 
     // then
-    assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getTopology());
-    assertThat(PersistedClusterConfiguration.ofFile(topologyFile, serializer).getTopology())
+    assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getConfiguration());
+    assertThat(PersistedClusterConfiguration.ofFile(topologyFile, serializer).getConfiguration())
         .usingRecursiveComparison()
         .isEqualTo(updatedTopology);
   }

@@ -17,8 +17,8 @@ import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagement
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeResult;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -138,9 +138,9 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(
-      final boolean dryRun, final TopologyChangeRequest request) {
+      final boolean dryRun, final ConfigurationChangeRequest request) {
     final ActorFuture<ClusterConfigurationChangeResponse> responseFuture = executor.createFuture();
-    final Function<TopologyChangeRequest, ActorFuture<TopologyChangeResult>> handler;
+    final Function<ConfigurationChangeRequest, ActorFuture<ConfigurationChangeResult>> handler;
     if (dryRun) {
       handler = coordinator::simulateOperations;
     } else {
@@ -156,8 +156,8 @@ public final class ClusterConfigurationManagementRequestsHandler
                         final var changeStatus =
                             new ClusterConfigurationChangeResponse(
                                 result.changeId(),
-                                result.currentTopology().members(),
-                                result.finalTopology().members(),
+                                result.currentConfiguration().members(),
+                                result.finalConfiguration().members(),
                                 result.operations());
                         responseFuture.complete(changeStatus);
                       } else {

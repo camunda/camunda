@@ -98,7 +98,7 @@ final class ClusterConfigurationManagerTest {
             persistedClusterConfiguration,
             Duration.ofMillis(100),
             Duration.ofMillis(200));
-    clusterTopologyManager.setTopologyGossiper(gossipHandler);
+    clusterTopologyManager.setConfigurationGossiper(gossipHandler);
     return clusterTopologyManager;
   }
 
@@ -108,7 +108,7 @@ final class ClusterConfigurationManagerTest {
     startTopologyManager(successInitializer).join();
 
     // then
-    final ClusterConfiguration topology = persistedClusterConfiguration.getTopology();
+    final ClusterConfiguration topology = persistedClusterConfiguration.getConfiguration();
     assertThat(topology).isEqualTo(initialTopology);
   }
 
@@ -166,7 +166,7 @@ final class ClusterConfigurationManagerTest {
     assertThat(gossipState.get())
         .describedAs("Gossip state contains same topology in topology manager")
         .isEqualTo(clusterConfiguration);
-    assertThat(persistedClusterConfiguration.getTopology())
+    assertThat(persistedClusterConfiguration.getConfiguration())
         .describedAs("Updated topology is persisted")
         .isEqualTo(clusterConfiguration);
   }
@@ -185,7 +185,7 @@ final class ClusterConfigurationManagerTest {
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
-    assertThat(persistedClusterConfiguration.getTopology().isUninitialized()).isTrue();
+    assertThat(persistedClusterConfiguration.getConfiguration().isUninitialized()).isTrue();
   }
 
   @Test
@@ -196,7 +196,8 @@ final class ClusterConfigurationManagerTest {
 
     // when
     final ClusterConfiguration topologyFromOtherMember =
-        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+        initialTopology.startConfigurationChange(
+            List.of(new PartitionLeaveOperation(localMemberId, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
@@ -216,7 +217,8 @@ final class ClusterConfigurationManagerTest {
   void shouldContinueClusterTopologyChangeOnRestart() {
     // given
     final ClusterConfiguration topologyWithPendingOperation =
-        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+        initialTopology.startConfigurationChange(
+            List.of(new PartitionLeaveOperation(localMemberId, 1)));
     final ClusterConfigurationInitializer initializer =
         () -> CompletableActorFuture.completed(topologyWithPendingOperation);
 
@@ -246,7 +248,8 @@ final class ClusterConfigurationManagerTest {
 
     // when
     final ClusterConfiguration topologyFromOtherMember =
-        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+        initialTopology.startConfigurationChange(
+            List.of(new PartitionLeaveOperation(localMemberId, 1)));
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then

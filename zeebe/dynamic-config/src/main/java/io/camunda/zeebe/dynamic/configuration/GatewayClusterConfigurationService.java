@@ -64,7 +64,7 @@ public class GatewayClusterConfigurationService extends Actor
                 clusterConfiguration,
                 mergedTopology);
             this.clusterConfiguration = mergedTopology;
-            clusterConfigurationGossiper.updateClusterTopology(this.clusterConfiguration);
+            clusterConfigurationGossiper.updateClusterConfiguration(this.clusterConfiguration);
           } catch (final Exception updateFailed) {
             LOG.warn(
                 "Failed to process received configuration update {}",

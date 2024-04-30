@@ -26,7 +26,7 @@ final class TestTopologyChangeSimulator {
             new NoopPartitionChangeExecutor(), new NoopClusterMembershipChangeExecutor());
     ClusterConfiguration newTopology = currentTopology;
     if (!operations.isEmpty()) {
-      newTopology = currentTopology.startTopologyChange(operations);
+      newTopology = currentTopology.startConfigurationChange(operations);
     }
     while (newTopology.hasPendingChanges()) {
       final var operation = newTopology.nextPendingOperation();
@@ -36,7 +36,7 @@ final class TestTopologyChangeSimulator {
         fail("Failed to init operation ", init.getLeft());
       }
       newTopology = init.get().apply(newTopology);
-      newTopology = newTopology.advanceTopologyChange(applier.apply().join());
+      newTopology = newTopology.advanceConfigurationChange(applier.apply().join());
     }
     return newTopology;
   }

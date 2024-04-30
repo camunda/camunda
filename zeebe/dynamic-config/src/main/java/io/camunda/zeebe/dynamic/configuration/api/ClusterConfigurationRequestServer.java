@@ -28,8 +28,8 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
   public ClusterConfigurationRequestServer(
       final ClusterCommunicationService communicationService,
       final ClusterConfigurationRequestsSerializer serializer,
-      final ClusterConfigurationManagementApi topologyManagementApi) {
-    clusterConfigurationManagementApi = topologyManagementApi;
+      final ClusterConfigurationManagementApi configurationManagementApi) {
+    clusterConfigurationManagementApi = configurationManagementApi;
     this.communicationService = communicationService;
     this.serializer = serializer;
   }

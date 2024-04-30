@@ -12,7 +12,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.configuration.PartitionDistributor;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 /** Reassign all partitions to the given members based on round-robin strategy. */
-public class PartitionReassignRequestTransformer implements TopologyChangeRequest {
+public class PartitionReassignRequestTransformer implements ConfigurationChangeRequest {
   final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
 
@@ -44,7 +44,7 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
 
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentTopology) {
+      final ClusterConfiguration clusterConfiguration) {
     if (members.isEmpty()) {
       return Either.left(
           new InvalidRequest(
@@ -52,7 +52,7 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
                   "Cannot reassign partitions if no brokers are provided")));
     }
 
-    return generatePartitionDistributionOperations(currentTopology, members);
+    return generatePartitionDistributionOperations(clusterConfiguration, members);
   }
 
   private int getReplicationFactor(final ClusterConfiguration clusterConfiguration) {

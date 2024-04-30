@@ -12,8 +12,8 @@ import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 public interface ClusterConfigurationUpdateNotifier {
 
   /**
-   * Register configuration update listener which is notified when Topology is changed. The listener
-   * is immediately invoked if the current configuration is not null.
+   * Register configuration update listener which is notified when cluster configuration is changed.
+   * The listener is immediately invoked if the current configuration is not null.
    *
    * @param listener which is notified
    */

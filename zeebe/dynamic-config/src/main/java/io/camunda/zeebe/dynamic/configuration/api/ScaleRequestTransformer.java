@@ -8,7 +8,7 @@
 package io.camunda.zeebe.dynamic.configuration.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.util.Either;
@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ScaleRequestTransformer implements TopologyChangeRequest {
+public class ScaleRequestTransformer implements ConfigurationChangeRequest {
 
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
@@ -37,27 +37,27 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
 
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentTopology) {
+      final ClusterConfiguration clusterConfiguration) {
     generatedOperations.clear();
 
     // First add new members
     return new AddMembersTransformer(members)
-        .operations(currentTopology)
+        .operations(clusterConfiguration)
         .map(this::addToOperations)
         // then reassign partitions
         .flatMap(
             ignore ->
                 new PartitionReassignRequestTransformer(members, newReplicationFactor)
-                    .operations(currentTopology))
+                    .operations(clusterConfiguration))
         .map(this::addToOperations)
         // then remove members that are not part of the new configuration
         .flatMap(
             ignore -> {
               final var membersToRemove =
-                  currentTopology.members().keySet().stream()
+                  clusterConfiguration.members().keySet().stream()
                       .filter(m -> !members.contains(m))
                       .collect(Collectors.toSet());
-              return new RemoveMembersTransformer(membersToRemove).operations(currentTopology);
+              return new RemoveMembersTransformer(membersToRemove).operations(clusterConfiguration);
             })
         .map(this::addToOperations);
   }

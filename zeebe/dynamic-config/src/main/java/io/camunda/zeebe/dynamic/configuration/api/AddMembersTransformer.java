@@ -8,7 +8,7 @@
 package io.camunda.zeebe.dynamic.configuration.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
@@ -16,7 +16,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Set;
 
-public class AddMembersTransformer implements TopologyChangeRequest {
+public class AddMembersTransformer implements ConfigurationChangeRequest {
 
   final Set<MemberId> members;
 
@@ -26,11 +26,11 @@ public class AddMembersTransformer implements TopologyChangeRequest {
 
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentTopology) {
+      final ClusterConfiguration clusterConfiguration) {
     final var operations =
         members.stream()
             // only add members that are not already part of the cluster
-            .filter(memberId -> !currentTopology.hasMember(memberId))
+            .filter(memberId -> !clusterConfiguration.hasMember(memberId))
             .map(MemberJoinOperation::new)
             .map(ClusterConfigurationChangeOperation.class::cast)
             .toList();

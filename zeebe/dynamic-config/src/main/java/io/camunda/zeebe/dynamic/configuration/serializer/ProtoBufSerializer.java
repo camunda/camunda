@@ -665,9 +665,9 @@ public class ProtoBufSerializer
                 .map(this::encodeOperation)
                 .toList())
         .putAllCurrentTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.currentTopology()))
+            encodeMemberStateMap(clusterConfigurationChangeResponse.currentConfiguration()))
         .putAllExpectedTopology(
-            encodeMemberStateMap(clusterConfigurationChangeResponse.expectedTopology()));
+            encodeMemberStateMap(clusterConfigurationChangeResponse.expectedConfiguration()));
 
     return builder;
   }

@@ -45,13 +45,13 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecode(final ClusterConfiguration initialClusterConfiguration) {
     // given
     final ClusterConfigurationGossipState gossipState = new ClusterConfigurationGossipState();
-    gossipState.setClusterTopology(initialClusterConfiguration);
+    gossipState.setClusterConfiguration(initialClusterConfiguration);
 
     // when
     final var decodedState = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
 
     // then
-    assertThat(decodedState.getClusterTopology())
+    assertThat(decodedState.getClusterConfiguration())
         .describedAs("Decoded clusterTopology must be equal to initial one")
         .isEqualTo(initialClusterConfiguration);
   }
@@ -252,7 +252,7 @@ final class ProtoBufSerializerTest {
             new MemberRemoveOperation(MemberId.from("5"), MemberId.from("6")));
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-        .startTopologyChange(changes);
+        .startConfigurationChange(changes);
   }
 
   private static ClusterConfiguration topologyWithCompletedClusterChangePlan() {
@@ -260,8 +260,8 @@ final class ProtoBufSerializerTest {
         List.of(new PartitionLeaveOperation(MemberId.from("1"), 1));
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-        .startTopologyChange(changes)
-        .advanceTopologyChange(topology -> topology);
+        .startConfigurationChange(changes)
+        .advanceConfigurationChange(topology -> topology);
   }
 
   private static ClusterConfiguration topologyWithClusterChangePlanWithMemberOperations() {
@@ -271,6 +271,6 @@ final class ProtoBufSerializerTest {
             new MemberLeaveOperation(MemberId.from("1")));
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-        .startTopologyChange(changes);
+        .startConfigurationChange(changes);
   }
 }

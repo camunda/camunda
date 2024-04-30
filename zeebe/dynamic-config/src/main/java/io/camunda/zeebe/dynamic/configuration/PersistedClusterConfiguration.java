@@ -64,7 +64,7 @@ final class PersistedClusterConfiguration {
     return new PersistedClusterConfiguration(topologyFile, serializer, currentlyPersisted);
   }
 
-  ClusterConfiguration getTopology() {
+  ClusterConfiguration getConfiguration() {
     return clusterConfiguration;
   }
 

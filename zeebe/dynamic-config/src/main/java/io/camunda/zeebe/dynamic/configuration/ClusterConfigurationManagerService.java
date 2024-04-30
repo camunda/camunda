@@ -12,7 +12,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.GossipInitializer;
-import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedTopologyIsBroken;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.RollingUpdateAwareInitializerV83ToV84;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.SyncInitializer;
@@ -45,14 +45,14 @@ public final class ClusterConfigurationManagerService
   // dynamically.
   private static final String COORDINATOR_ID = "0";
   private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
-  private final ClusterConfigurationManagerImpl clusterTopologyManager;
+  private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final ClusterMembershipService memberShipService;
   private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
-  private final Path topologyFile;
+  private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
-  private final ClusterConfigurationRequestServer topologyRequestServer;
+  private final ClusterConfigurationRequestServer configurationRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
 
@@ -69,12 +69,12 @@ public final class ClusterConfigurationManagerService
     }
 
     final MemberId localMemberId = memberShipService.getLocalMember().id();
-    topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
+    configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
-        PersistedClusterConfiguration.ofFile(topologyFile, new ProtoBufSerializer());
+        PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
     gossipActor = new Actor() {};
     managerActor = new Actor() {};
-    clusterTopologyManager =
+    clusterConfigurationManager =
         new ClusterConfigurationManagerImpl(
             managerActor, localMemberId, persistedClusterConfiguration);
     clusterConfigurationGossiper =
@@ -84,18 +84,20 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterTopologyManager::onGossipReceived);
+            clusterConfigurationManager::onGossipReceived);
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     configurationChangeCoordinator =
-        new ConfigurationChangeCoordinatorImpl(clusterTopologyManager, localMemberId, managerActor);
-    topologyRequestServer =
+        new ConfigurationChangeCoordinatorImpl(
+            clusterConfigurationManager, localMemberId, managerActor);
+    configurationRequestServer =
         new ClusterConfigurationRequestServer(
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
                 configurationChangeCoordinator, localMemberId, managerActor));
 
-    clusterTopologyManager.setTopologyGossiper(clusterConfigurationGossiper::updateClusterTopology);
+    clusterConfigurationManager.setConfigurationGossiper(
+        clusterConfigurationGossiper::updateClusterConfiguration);
   }
 
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
@@ -105,18 +107,18 @@ public final class ClusterConfigurationManagerService
         staticConfiguration.clusterMembers().stream()
             .filter(m -> !m.equals(staticConfiguration.localMemberId()))
             .toList();
-    return new FileInitializer(topologyFile, new ProtoBufSerializer())
+    return new FileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
         // This is important so that we don't silently revert to uninitialized configuration when
         // multiple members have a broken configuration file at the same time, for example because
         // of a serialization bug.
         .recover(
-            PersistedTopologyIsBroken.class,
+            PersistedConfigurationIsBroken.class,
             new SyncInitializer(
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterTopology))
+                clusterConfigurationGossiper::queryClusterConfiguration))
         // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
         .orThen(
             new RollingUpdateAwareInitializerV83ToV84(
@@ -125,7 +127,7 @@ public final class ClusterConfigurationManagerService
             new GossipInitializer(
                 clusterConfigurationGossiper,
                 persistedClusterConfiguration,
-                clusterConfigurationGossiper::updateClusterTopology,
+                clusterConfigurationGossiper::updateClusterConfiguration,
                 managerActor));
   }
 
@@ -135,7 +137,7 @@ public final class ClusterConfigurationManagerService
         staticConfiguration.clusterMembers().stream()
             .filter(m -> !m.equals(staticConfiguration.localMemberId()))
             .toList();
-    return new FileInitializer(topologyFile, new ProtoBufSerializer())
+    return new FileInitializer(configurationFile, new ProtoBufSerializer())
         // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
         .orThen(
             new RollingUpdateAwareInitializerV83ToV84(
@@ -145,7 +147,7 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterTopology))
+                clusterConfigurationGossiper::queryClusterConfiguration))
         .orThen(new StaticInitializer(staticConfiguration));
   }
 
@@ -174,7 +176,7 @@ public final class ClusterConfigurationManagerService
             ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer(memberShipService, staticConfiguration);
 
-    topologyRequestServer.start();
+    configurationRequestServer.start();
 
     // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
     // it
@@ -187,14 +189,16 @@ public final class ClusterConfigurationManagerService
               if (error != null) {
                 result.completeExceptionally(error);
               } else {
-                clusterTopologyManager.start(clusterConfigurationInitializer).onComplete(result);
+                clusterConfigurationManager
+                    .start(clusterConfigurationInitializer)
+                    .onComplete(result);
               }
             });
     return result;
   }
 
   public ActorFuture<ClusterConfiguration> getClusterTopology() {
-    return clusterTopologyManager.getClusterConfiguration();
+    return clusterConfigurationManager.getClusterConfiguration();
   }
 
   public Optional<ConfigurationChangeCoordinator> getTopologyChangeCoordinator() {
@@ -203,8 +207,8 @@ public final class ClusterConfigurationManagerService
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    if (topologyRequestServer != null) {
-      topologyRequestServer.close();
+    if (configurationRequestServer != null) {
+      configurationRequestServer.close();
     }
     clusterConfigurationGossiper.close();
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
@@ -213,21 +217,21 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutor(
       final PartitionChangeExecutor partitionChangeExecutor) {
     // TODO: pass concrete TopologyMembershipChangeExecutor
-    clusterTopologyManager.registerTopologyChangeAppliers(
+    clusterConfigurationManager.registerTopologyChangeAppliers(
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor, new NoopClusterMembershipChangeExecutor()));
   }
 
   public void removePartitionChangeExecutor() {
-    clusterTopologyManager.removeTopologyChangeAppliers();
+    clusterConfigurationManager.removeTopologyChangeAppliers();
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
-    clusterTopologyManager.registerTopologyChangedListener(listener);
+    clusterConfigurationManager.registerTopologyChangedListener(listener);
   }
 
   public void removeTopologyChangedListener() {
-    clusterTopologyManager.removeTopologyChangedListener();
+    clusterConfigurationManager.removeTopologyChangedListener();
   }
 
   @Override

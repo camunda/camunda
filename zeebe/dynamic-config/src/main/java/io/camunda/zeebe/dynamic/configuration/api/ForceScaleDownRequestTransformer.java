@@ -9,7 +9,7 @@ package io.camunda.zeebe.dynamic.configuration.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
+public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequest {
 
   private final Set<MemberId> membersToRetain;
 
@@ -36,26 +36,26 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
 
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
-      final ClusterConfiguration currentTopology) {
+      final ClusterConfiguration clusterConfiguration) {
     for (final var member : membersToRetain) {
-      if (!currentTopology.hasMember(member)) {
+      if (!clusterConfiguration.hasMember(member)) {
         return Either.left(
             new InvalidRequest(
                 String.format(
                     "Expected to force configure while retaining broker '%s', but broker '%s' is not in the current cluster. Current members are '%s'",
-                    member, member, currentTopology.members().keySet())));
+                    member, member, clusterConfiguration.members().keySet())));
       }
     }
 
     final List<Integer> partitions =
-        currentTopology.members().values().stream()
+        clusterConfiguration.members().values().stream()
             .map(MemberState::partitions)
             .flatMap(p -> p.keySet().stream())
             .distinct()
             .toList();
 
     final Map<Integer, ArrayList<MemberId>> partitionsWithNewMembers =
-        calculateNewConfiguration(currentTopology, membersToRetain, partitions);
+        calculateNewConfiguration(clusterConfiguration, membersToRetain, partitions);
 
     final var partitionsWithNoReplicas =
         partitions.stream()
@@ -77,7 +77,7 @@ public class ForceScaleDownRequestTransformer implements TopologyChangeRequest {
 
     // members that are not in membersToRetain
     final var memberToRemove =
-        currentTopology.members().keySet().stream()
+        clusterConfiguration.members().keySet().stream()
             .filter(m -> !membersToRetain.contains(m))
             .toList();
 

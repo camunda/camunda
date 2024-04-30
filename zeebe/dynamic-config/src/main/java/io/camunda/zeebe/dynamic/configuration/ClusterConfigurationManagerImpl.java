@@ -55,13 +55,13 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
   private final ConcurrencyControl executor;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
-  private Consumer<ClusterConfiguration> topologyGossiper;
+  private Consumer<ClusterConfiguration> configurationGossiper;
   private final ActorFuture<Void> startFuture;
   private ConfigurationChangeAppliers changeAppliers;
-  private InconsistentConfigurationListener onInconsistentTopologyDetected;
+  private InconsistentConfigurationListener onInconsistentConfigurationDetected;
   private final MemberId localMemberId;
   // Indicates whether there is a configuration change operation in progress on this member.
-  private boolean onGoingTopologyChangeOperation = false;
+  private boolean onGoingConfigurationChangeOperation = false;
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
@@ -90,24 +90,24 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   @Override
   public ActorFuture<ClusterConfiguration> getClusterConfiguration() {
     final var future = executor.<ClusterConfiguration>createFuture();
-    executor.run(() -> future.complete(persistedClusterConfiguration.getTopology()));
+    executor.run(() -> future.complete(persistedClusterConfiguration.getConfiguration()));
     return future;
   }
 
   @Override
   public ActorFuture<ClusterConfiguration> updateClusterConfiguration(
-      final UnaryOperator<ClusterConfiguration> updatedConfiguration) {
+      final UnaryOperator<ClusterConfiguration> configUpdater) {
     final ActorFuture<ClusterConfiguration> future = executor.createFuture();
     executor.run(
         () -> {
           try {
-            final ClusterConfiguration updatedTopology =
-                updatedConfiguration.apply(persistedClusterConfiguration.getTopology());
-            updateLocalTopology(updatedTopology)
+            final ClusterConfiguration updatedConfiguration =
+                configUpdater.apply(persistedClusterConfiguration.getConfiguration());
+            updateLocalConfiguration(updatedConfiguration)
                 .ifRightOrLeft(
                     updated -> {
                       future.complete(updated);
-                      applyTopologyChangeOperation(updatedTopology);
+                      applyConfigurationChangeOperation(updatedConfiguration);
                     },
                     future::completeExceptionally);
           } catch (final Exception e) {
@@ -131,34 +131,36 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return startFuture;
   }
 
-  public void setTopologyGossiper(final Consumer<ClusterConfiguration> topologyGossiper) {
-    this.topologyGossiper = topologyGossiper;
+  public void setConfigurationGossiper(final Consumer<ClusterConfiguration> configurationGossiper) {
+    this.configurationGossiper = configurationGossiper;
   }
 
   private void initialize(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
     clusterConfigurationInitializer
         .initialize()
         .onComplete(
-            (topology, error) -> {
+            (configuration, error) -> {
               if (error != null) {
-                LOG.error("Failed to initialize topology", error);
+                LOG.error("Failed to initialize configuration", error);
                 startFuture.completeExceptionally(error);
-              } else if (topology.isUninitialized()) {
+              } else if (configuration.isUninitialized()) {
                 final String errorMessage =
-                    "Expected to initialize topology, but got uninitialized topology";
+                    "Expected to initialize configuration, but got uninitialized configuration";
                 LOG.error(errorMessage);
                 startFuture.completeExceptionally(new IllegalStateException(errorMessage));
               } else {
                 try {
                   // merge in case there was a concurrent update via gossip
                   persistedClusterConfiguration.update(
-                      topology.merge(persistedClusterConfiguration.getTopology()));
+                      configuration.merge(persistedClusterConfiguration.getConfiguration()));
                   LOG.debug(
-                      "Initialized topology '{}'", persistedClusterConfiguration.getTopology());
-                  topologyGossiper.accept(persistedClusterConfiguration.getTopology());
+                      "Initialized cluster configuration '{}'",
+                      persistedClusterConfiguration.getConfiguration());
+                  configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
                   setStarted();
                 } catch (final IOException e) {
-                  startFuture.completeExceptionally("Failed to start update cluster topology", e);
+                  startFuture.completeExceptionally(
+                      "Failed to start update cluster configuration", e);
                 }
               }
             });
@@ -171,115 +173,118 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
   }
 
-  void onGossipReceived(final ClusterConfiguration receivedTopology) {
+  void onGossipReceived(final ClusterConfiguration receivedConfiguration) {
     executor.run(
         () -> {
           if (!initialized) {
             LOG.trace(
-                "Received topology {} before ClusterConfigurationManager is initialized.",
-                receivedTopology);
-            // When not started, do not update the local topology. This is to avoid any race
-            // condition between FileInitializer and concurrently received topology via gossip.
-            topologyGossiper.accept(receivedTopology);
+                "Received configuration {} before ClusterConfigurationManager is initialized.",
+                receivedConfiguration);
+            // When not started, do not update the local configuration. This is to avoid any race
+            // condition between FileInitializer and concurrently received configuration via gossip.
+            configurationGossiper.accept(receivedConfiguration);
             return;
           }
           try {
-            if (receivedTopology != null) {
-              final var mergedTopology =
-                  persistedClusterConfiguration.getTopology().merge(receivedTopology);
-              // If receivedTopology is an older version, the merged topology will be same as the
+            if (receivedConfiguration != null) {
+              final var mergedConfiguration =
+                  persistedClusterConfiguration.getConfiguration().merge(receivedConfiguration);
+              // If received configuration is an older version, the merged configuration will be
+              // same as the
               // local one. In that case, we can skip the next steps.
-              if (!mergedTopology.equals(persistedClusterConfiguration.getTopology())) {
+              if (!mergedConfiguration.equals(persistedClusterConfiguration.getConfiguration())) {
                 LOG.debug(
-                    "Received new topology {}. Updating local topology to {}",
-                    receivedTopology,
-                    mergedTopology);
+                    "Received new configuration {}. Updating local configuration to {}",
+                    receivedConfiguration,
+                    mergedConfiguration);
 
-                final var oldTopology = persistedClusterConfiguration.getTopology();
-                final var isConflictingTopology =
-                    isConflictingTopology(mergedTopology, oldTopology);
-                persistedClusterConfiguration.update(mergedTopology);
+                final var oldConfiguration = persistedClusterConfiguration.getConfiguration();
+                final var isConflictingConfiguration =
+                    isConflictingConfiguration(mergedConfiguration, oldConfiguration);
+                persistedClusterConfiguration.update(mergedConfiguration);
 
-                if (isConflictingTopology && onInconsistentTopologyDetected != null) {
-                  onInconsistentTopologyDetected.onInconsistentConfiguration(
-                      mergedTopology, oldTopology);
+                if (isConflictingConfiguration && onInconsistentConfigurationDetected != null) {
+                  onInconsistentConfigurationDetected.onInconsistentConfiguration(
+                      mergedConfiguration, oldConfiguration);
                 }
 
-                topologyGossiper.accept(mergedTopology);
-                applyTopologyChangeOperation(mergedTopology);
+                configurationGossiper.accept(mergedConfiguration);
+                applyConfigurationChangeOperation(mergedConfiguration);
               }
             }
           } catch (final IOException error) {
             LOG.warn(
-                "Failed to process cluster topology received via gossip. '{}'",
-                receivedTopology,
+                "Failed to process cluster configuration received via gossip. '{}'",
+                receivedConfiguration,
                 error);
           }
         });
   }
 
-  private boolean isConflictingTopology(
-      final ClusterConfiguration mergedTopology, final ClusterConfiguration oldTopology) {
-    if (!mergedTopology.hasMember(localMemberId)
-        && oldTopology.hasMember(localMemberId)
-        && oldTopology.getMember(localMemberId).state() == State.LEFT) {
-      // If the member has left, it's state will be removed from the topology by another member. See
-      // ClusterConfiguration#advance()
+  private boolean isConflictingConfiguration(
+      final ClusterConfiguration mergedConfiguration, final ClusterConfiguration oldConfiguration) {
+    if (!mergedConfiguration.hasMember(localMemberId)
+        && oldConfiguration.hasMember(localMemberId)
+        && oldConfiguration.getMember(localMemberId).state() == State.LEFT) {
+      // If the member has left, it's state will be removed from the configuration by another
+      // member. See ClusterConfiguration#advance()
       return false;
     }
     return !Objects.equals(
-        mergedTopology.getMember(localMemberId), oldTopology.getMember(localMemberId));
+        mergedConfiguration.getMember(localMemberId), oldConfiguration.getMember(localMemberId));
   }
 
-  private boolean shouldApplyTopologyChangeOperation(final ClusterConfiguration mergedTopology) {
-    // Topology change operation should be applied only once. The operation is removed
+  private boolean shouldApplyConfigurationChangeOperation(
+      final ClusterConfiguration mergedConfiguration) {
+    // Configuration change operation should be applied only once. The operation is removed
     // from the pending list only after the operation is completed. We should take care
     // not to repeatedly trigger the same operation while it is in progress. This
-    // usually would not happen, because no other member will update the topology while
-    // the current one is in progress. So the local topology is not changed. The topology change
-    // operation is triggered locally only when the local topology is changes. However, as
-    // an extra precaution we check if there is an ongoing operation before applying
-    // one.
-    return (!onGoingTopologyChangeOperation || shouldRetry)
-        && mergedTopology.pendingChangesFor(localMemberId).isPresent()
+    // usually would not happen, because no other member will update the configuration while
+    // the current one is in progress. So the local configuration is not changed. The configuration
+    // change operation is triggered locally only when the local configuration is changes. However,
+    // as
+    // an extra precaution we check if there is an ongoing operation before applying one.
+    return (!onGoingConfigurationChangeOperation || shouldRetry)
+        && mergedConfiguration.pendingChangesFor(localMemberId).isPresent()
         // changeApplier is registered only after PartitionManager in the Broker is started.
         && changeAppliers != null;
   }
 
-  private void applyTopologyChangeOperation(final ClusterConfiguration mergedTopology) {
-    if (!shouldApplyTopologyChangeOperation(mergedTopology)) {
+  private void applyConfigurationChangeOperation(final ClusterConfiguration mergedConfiguration) {
+    if (!shouldApplyConfigurationChangeOperation(mergedConfiguration)) {
       return;
     }
 
-    onGoingTopologyChangeOperation = true;
+    onGoingConfigurationChangeOperation = true;
     shouldRetry = false;
-    final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
+    final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
     final var observer = TopologyMetrics.observeOperation(operation);
-    LOG.info("Applying topology change operation {}", operation);
+    LOG.info("Applying configuration change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var operationInitialized =
         operationApplier
-            .init(mergedTopology)
-            .map(transformer -> transformer.apply(mergedTopology))
-            .flatMap(this::updateLocalTopology);
+            .init(mergedConfiguration)
+            .map(transformer -> transformer.apply(mergedConfiguration))
+            .flatMap(this::updateLocalConfiguration);
 
     if (operationInitialized.isLeft()) {
       // TODO: Mark ClusterChangePlan as failed
       observer.failed();
-      onGoingTopologyChangeOperation = false;
+      onGoingConfigurationChangeOperation = false;
       LOG.error(
-          "Failed to initialize topology change operation {}",
+          "Failed to initialize configuration change operation {}",
           operation,
           operationInitialized.getLeft());
       return;
     }
 
-    final var initializedTopology = operationInitialized.get();
+    final var initializedConfiguration = operationInitialized.get();
     operationApplier
         .apply()
         .onComplete(
             (transformer, error) ->
-                onOperationApplied(initializedTopology, operation, transformer, error, observer));
+                onOperationApplied(
+                    initializedConfiguration, operation, transformer, error, observer));
   }
 
   private void logAndScheduleRetry(
@@ -287,7 +292,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     shouldRetry = true;
     final Duration delay = backoffRetry.nextDelay();
     LOG.warn(
-        "Failed to apply topology change operation {}. Will be retried in {}.",
+        "Failed to apply configuration change operation {}. Will be retried in {}.",
         operation,
         delay,
         error);
@@ -295,7 +300,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         delay,
         () -> {
           LOG.debug("Retrying last applied operation");
-          applyTopologyChangeOperation(persistedClusterConfiguration.getTopology());
+          applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
         });
   }
 
@@ -305,30 +310,30 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final UnaryOperator<ClusterConfiguration> transformer,
       final Throwable error,
       final OperationObserver observer) {
-    onGoingTopologyChangeOperation = false;
+    onGoingConfigurationChangeOperation = false;
     if (error == null) {
       observer.applied();
       backoffRetry.reset();
-      if (persistedClusterConfiguration.getTopology().version()
+      if (persistedClusterConfiguration.getConfiguration().version()
           != topologyOnWhichOperationIsApplied.version()) {
         LOG.debug(
-            "Topology changed while applying operation {}. Expected topology is {}. Current topology is {}. Most likely the change operation was cancelled.",
+            "Configuration changed while applying operation {}. Expected configuration is {}. Current configuration is {}. Most likely the change operation was cancelled.",
             operation,
             topologyOnWhichOperationIsApplied,
-            persistedClusterConfiguration.getTopology());
+            persistedClusterConfiguration.getConfiguration());
         return;
       }
-      updateLocalTopology(
-          persistedClusterConfiguration.getTopology().advanceTopologyChange(transformer));
+      updateLocalConfiguration(
+          persistedClusterConfiguration.getConfiguration().advanceConfigurationChange(transformer));
       LOG.info(
-          "Operation {} applied. Updated local topology to {}",
+          "Operation {} applied. Updated local configuration to {}",
           operation,
-          persistedClusterConfiguration.getTopology());
+          persistedClusterConfiguration.getConfiguration());
 
       executor.run(
           () -> {
-            // Continue applying topology change, if the next operation is for the local member
-            applyTopologyChangeOperation(persistedClusterConfiguration.getTopology());
+            // Continue applying configuration change, if the next operation is for the local member
+            applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
           });
     } else {
       observer.failed();
@@ -338,15 +343,15 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
   }
 
-  private Either<Exception, ClusterConfiguration> updateLocalTopology(
-      final ClusterConfiguration topology) {
-    if (topology.equals(persistedClusterConfiguration.getTopology())) {
-      return Either.right(topology);
+  private Either<Exception, ClusterConfiguration> updateLocalConfiguration(
+      final ClusterConfiguration configuration) {
+    if (configuration.equals(persistedClusterConfiguration.getConfiguration())) {
+      return Either.right(configuration);
     }
     try {
-      persistedClusterConfiguration.update(topology);
-      topologyGossiper.accept(topology);
-      return Either.right(topology);
+      persistedClusterConfiguration.update(configuration);
+      configurationGossiper.accept(configuration);
+      return Either.right(configuration);
     } catch (final Exception e) {
       return Either.left(e);
     }
@@ -357,8 +362,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(
         () -> {
           changeAppliers = configurationChangeAppliers;
-          // Continue applying the topology change operation, after a broker restart.
-          applyTopologyChangeOperation(persistedClusterConfiguration.getTopology());
+          // Continue applying the configuration change operation, after a broker restart.
+          applyConfigurationChangeOperation(persistedClusterConfiguration.getConfiguration());
         });
   }
 
@@ -367,10 +372,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {
-    executor.run(() -> onInconsistentTopologyDetected = listener);
+    executor.run(() -> onInconsistentConfigurationDetected = listener);
   }
 
   void removeTopologyChangedListener() {
-    executor.run(() -> onInconsistentTopologyDetected = null);
+    executor.run(() -> onInconsistentConfigurationDetected = null);
   }
 }

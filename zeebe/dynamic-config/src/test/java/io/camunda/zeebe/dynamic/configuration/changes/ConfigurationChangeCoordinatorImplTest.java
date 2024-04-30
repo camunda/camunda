@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationManager;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.dynamic.configuration.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
@@ -67,7 +67,7 @@ final class ConfigurationChangeCoordinatorImplTest {
             "Expected to leave partition, but the local member does not exist in the topology");
   }
 
-  private TopologyChangeRequest getTransformer(
+  private ConfigurationChangeRequest getTransformer(
       final List<ClusterConfigurationChangeOperation> operations) {
     return ignore -> Either.right(operations);
   }
@@ -106,7 +106,7 @@ final class ConfigurationChangeCoordinatorImplTest {
   void shouldFailIfAnotherTopologyChangeIsInProgress() {
     // given
     clusterTopologyManager.setClusterTopology(
-        initialTopology.startTopologyChange(
+        initialTopology.startConfigurationChange(
             List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
 
     // when

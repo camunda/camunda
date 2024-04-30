@@ -31,7 +31,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
   }
 
   @Override
-  public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
+  public ActorFuture<ConfigurationChangeResult> applyOperations(
+      final ConfigurationChangeRequest request) {
     final var operationsEither = request.operations(currentTopology);
     if (operationsEither.isLeft()) {
       return TestActorFuture.failedFuture(operationsEither.getLeft());
@@ -41,10 +42,12 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
     lastAppliedOperation.clear();
     lastAppliedOperation.addAll(operations);
     final var newTopology =
-        operations.isEmpty() ? currentTopology : currentTopology.startTopologyChange(operations);
+        operations.isEmpty()
+            ? currentTopology
+            : currentTopology.startConfigurationChange(operations);
 
     return TestActorFuture.completedFuture(
-        new TopologyChangeResult(
+        new ConfigurationChangeResult(
             currentTopology,
             newTopology, // This is not correct, but enough for tests
             newTopology.pendingChanges().map(ClusterChangePlan::id).orElse(0L),
@@ -52,8 +55,8 @@ final class RecordingChangeCoordinator implements ConfigurationChangeCoordinator
   }
 
   @Override
-  public ActorFuture<TopologyChangeResult> simulateOperations(
-      final TopologyChangeRequest requestTransformer) {
+  public ActorFuture<ConfigurationChangeResult> simulateOperations(
+      final ConfigurationChangeRequest requestTransformer) {
     throw new UnsupportedOperationException("Simulating changes is not supported in tests");
   }
 

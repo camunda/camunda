@@ -11,7 +11,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.Version;
-import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedTopologyIsBroken;
+import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.configuration.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
@@ -44,26 +44,27 @@ import org.slf4j.LoggerFactory;
  *     uninitialized configuration, coordinator generates a new configuration from the provided
  *     static configuration. See {@link StaticInitializer}.
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
- *     valid topology from the coordinator via gossip. See {@link GossipInitializer}.
+ *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
  */
 public interface ClusterConfigurationInitializer {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
 
   /**
-   * Initializes the cluster topology.
+   * Initializes the cluster configuration.
    *
-   * @return a future that completes with a topology which can be initialized or uninitialized
+   * @return a future that completes with a configuration which can be initialized or uninitialized
    */
   ActorFuture<ClusterConfiguration> initialize();
 
   /**
-   * Chain initializers in oder. If this initializer returns an uninitialized topology, the provided
-   * initializer is tried instead. If this initializer completes exceptionally, the exceptions
-   * propagates. See {@link #recover(Class, ClusterConfigurationInitializer)} to handle exceptions.
+   * Chain initializers in oder. If this initializer returns an uninitialized configuration, the
+   * provided initializer is tried instead. If this initializer completes exceptionally, the
+   * exceptions propagates. See {@link #recover(Class, ClusterConfigurationInitializer)} to handle
+   * exceptions.
    *
-   * @param after the next initializer used to initialize topology if the current one did not
-   *     succeed with an initialized topology.
-   * @return a chained TopologyInitializer
+   * @param after the next initializer used to initialize configuration if the current one did not
+   *     succeed with an initialized configuration.
+   * @return a chained ClusterConfigurationInitializer
    */
   default ClusterConfigurationInitializer orThen(final ClusterConfigurationInitializer after) {
     final ClusterConfigurationInitializer actual = this;
@@ -72,14 +73,14 @@ public interface ClusterConfigurationInitializer {
       actual
           .initialize()
           .onComplete(
-              (topology, error) -> {
+              (configuration, error) -> {
                 if (error != null) {
-                  LOG.error("Failed to initialize topology", error);
+                  LOG.error("Failed to initialize configuration", error);
                   chainedInitialize.completeExceptionally(error);
-                } else if (topology.isUninitialized()) {
+                } else if (configuration.isUninitialized()) {
                   after.initialize().onComplete(chainedInitialize);
                 } else {
-                  chainedInitialize.complete(topology);
+                  chainedInitialize.complete(configuration);
                 }
               });
       return chainedInitialize;
@@ -106,30 +107,30 @@ public interface ClusterConfigurationInitializer {
       actual
           .initialize()
           .onComplete(
-              (topology, error) -> {
+              (configuration, error) -> {
                 if (error != null && exception.isAssignableFrom(error.getClass())) {
                   LOG.warn("Recovering from {} by falling back to {}", error, recovery);
                   recovery.initialize().onComplete(chainedInitialize);
                 } else if (error != null) {
                   chainedInitialize.completeExceptionally(error);
                 } else {
-                  chainedInitialize.complete(topology);
+                  chainedInitialize.complete(configuration);
                 }
               });
       return chainedInitialize;
     };
   }
 
-  /** Initialized topology from the locally persisted topology */
+  /** Initialized configuration from the locally persisted configuration */
   class FileInitializer implements ClusterConfigurationInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileInitializer.class);
 
-    private final Path topologyFile;
+    private final Path configurationFile;
     private final ClusterConfigurationSerializer serializer;
 
     public FileInitializer(
-        final Path topologyFile, final ClusterConfigurationSerializer serializer) {
-      this.topologyFile = topologyFile;
+        final Path configurationFile, final ClusterConfigurationSerializer serializer) {
+      this.configurationFile = configurationFile;
       this.serializer = serializer;
     }
 
@@ -137,23 +138,25 @@ public interface ClusterConfigurationInitializer {
     public ActorFuture<ClusterConfiguration> initialize() {
       try {
         final var persistedTopology =
-            PersistedClusterConfiguration.ofFile(topologyFile, serializer).getTopology();
+            PersistedClusterConfiguration.ofFile(configurationFile, serializer).getConfiguration();
         if (!persistedTopology.isUninitialized()) {
           LOGGER.debug(
-              "Initialized cluster topology '{}' from file '{}'", persistedTopology, topologyFile);
+              "Initialized cluster configuration '{}' from file '{}'",
+              persistedTopology,
+              configurationFile);
         }
         return CompletableActorFuture.completed(persistedTopology);
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(
-            new PersistedTopologyIsBroken(topologyFile, e));
+            new PersistedConfigurationIsBroken(configurationFile, e));
       }
     }
   }
 
   /**
-   * Initializes local topology from the topology received from other members via gossip.
-   * Initialization completes successfully, when it receives a valid initialized topology from any
-   * member. The future returned by initialize is never completed until a valid topology is
+   * Initializes local configuration from the configuration received from other members via gossip.
+   * Initialization completes successfully, when it receives a valid initialized configuration from
+   * any member. The future returned by initialize is never completed until a valid configuration is
    * received.
    */
   class GossipInitializer
@@ -162,7 +165,7 @@ public interface ClusterConfigurationInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final PersistedClusterConfiguration persistedClusterConfiguration;
-    private final Consumer<ClusterConfiguration> topologyGossiper;
+    private final Consumer<ClusterConfiguration> configurationGossiper;
     private final ActorFuture<ClusterConfiguration> initialized;
 
     private final ConcurrencyControl executor;
@@ -170,26 +173,26 @@ public interface ClusterConfigurationInitializer {
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final PersistedClusterConfiguration persistedClusterConfiguration,
-        final Consumer<ClusterConfiguration> topologyGossiper,
+        final Consumer<ClusterConfiguration> configurationGossiper,
         final ConcurrencyControl executor) {
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedClusterConfiguration = persistedClusterConfiguration;
-      this.topologyGossiper = topologyGossiper;
+      this.configurationGossiper = configurationGossiper;
       this.executor = executor;
       initialized = new CompletableActorFuture<>();
     }
 
     @Override
     public ActorFuture<ClusterConfiguration> initialize() {
-      LOGGER.debug("Waiting for initial cluster topology via gossip.");
+      LOGGER.debug("Waiting for initial cluster configuration via gossip.");
       clusterConfigurationUpdateNotifier.addUpdateListener(this);
       if (persistedClusterConfiguration.isUninitialized()) {
-        // When uninitialized, the member should gossip uninitialized topology so that the
+        // When uninitialized, the member should gossip uninitialized configuration so that the
         // coordinator is not waiting in SyncInitializer forever.
 
-        // Check persisted cluster topology directly, so as not to overwrite and concurrently
+        // Check persisted cluster configuration directly, so as not to overwrite and concurrently
         // received gossip
-        topologyGossiper.accept(persistedClusterConfiguration.getTopology());
+        configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
       }
       return initialized;
     }
@@ -202,7 +205,7 @@ public interface ClusterConfigurationInitializer {
               return;
             }
             if (!clusterConfiguration.isUninitialized()) {
-              LOGGER.debug("Received cluster topology {} via gossip.", clusterConfiguration);
+              LOGGER.debug("Received cluster configuration {} via gossip.", clusterConfiguration);
               initialized.complete(clusterConfiguration);
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
             }
@@ -211,9 +214,9 @@ public interface ClusterConfigurationInitializer {
   }
 
   /**
-   * Initializes topology by sending sync requests to other members. If any of them return a valid
-   * topology, it will be initialized. If any of them returns an uninitialized topology, the future
-   * returned by initialize completes as failed.
+   * Initializes configuration by sending sync requests to other members. If any of them return a
+   * valid configuration, it will be initialized. If any of them returns an uninitialized
+   * configuration, the future returned by initialize completes as failed.
    */
   class SyncInitializer
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
@@ -254,24 +257,26 @@ public interface ClusterConfigurationInitializer {
     private void tryInitializeFrom(final MemberId memberId) {
       requestSync(memberId)
           .onComplete(
-              (topology, error) -> {
+              (configuration, error) -> {
                 if (initialized.isDone()) {
                   return;
                 }
                 if (error != null) {
                   LOGGER.trace(
-                      "Failed to get a response for cluster topology sync query to {}. Will retry.",
+                      "Failed to get a response for cluster configuration sync query to {}. Will retry.",
                       memberId,
                       error);
-                } else if (topology == null) {
-                  LOGGER.trace("Received null cluster topology from {}. Will retry.", memberId);
-                } else if (topology.isUninitialized()) {
-                  LOGGER.trace("Cluster topology is uninitialized in {}", memberId);
-                  initialized.complete(topology);
+                } else if (configuration == null) {
+                  LOGGER.trace(
+                      "Received null cluster configuration from {}. Will retry.", memberId);
+                } else if (configuration.isUninitialized()) {
+                  LOGGER.trace("Cluster configuration is uninitialized in {}", memberId);
+                  initialized.complete(configuration);
                   return;
                 } else {
-                  LOGGER.debug("Received cluster topology {} from {}", topology, memberId);
-                  onClusterConfigurationUpdated(topology);
+                  LOGGER.debug(
+                      "Received cluster configuration {} from {}", configuration, memberId);
+                  onClusterConfigurationUpdated(configuration);
                   return;
                 }
                 // retry
@@ -300,7 +305,7 @@ public interface ClusterConfigurationInitializer {
     }
   }
 
-  /** Initialized topology from the given static partition distribution */
+  /** Initialized configuration from the given static partition distribution */
   class StaticInitializer implements ClusterConfigurationInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticInitializer.class);
@@ -314,9 +319,10 @@ public interface ClusterConfigurationInitializer {
     @Override
     public ActorFuture<ClusterConfiguration> initialize() {
       try {
-        final var topology = staticConfiguration.generateTopology();
-        LOGGER.debug("Generated cluster topology from provided configuration. {}", topology);
-        return CompletableActorFuture.completed(topology);
+        final var configuration = staticConfiguration.generateTopology();
+        LOGGER.debug(
+            "Generated cluster configuration from provided configuration. {}", configuration);
+        return CompletableActorFuture.completed(configuration);
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
@@ -358,21 +364,22 @@ public interface ClusterConfigurationInitializer {
         final boolean knowOtherMembers = hasOtherReachableBrokers(membershipService);
         if (knowOtherMembers && isRollingUpdate(membershipService)) {
           LOGGER.debug(
-              "Cluster is doing rolling update. Cannot initialize cluster topology via gossip. Initializing cluster topology from static configuration.");
+              "Cluster is doing rolling update. Cannot initialize cluster configuration via gossip. Initializing cluster configuration from static configuration.");
           staticInitializer.initialize().onComplete(initializeFuture);
         } else if (!knowOtherMembers) {
           LOGGER.debug(
-              "No other members are reachable. Cannot initialize topology. Will retry in {}",
+              "No other members are reachable. Cannot initialize configuration. Will retry in {}",
               RETRY_DELAY);
           executor.schedule(RETRY_DELAY, this::initialize);
         } else {
           // do not initialize. It is not rolling update so initialize via gossip or sync
           LOGGER.trace(
-              "Cluster is not doing rolling update. Will not initialize cluster topology.");
+              "Cluster is not doing rolling update. Will not initialize cluster configuration.");
           initializeFuture.complete(ClusterConfiguration.uninitialized());
         }
       } else {
-        LOGGER.trace("Cluster is not doing rolling update. Will not initialize cluster topology.");
+        LOGGER.trace(
+            "Cluster is not doing rolling update. Will not initialize cluster configuration.");
         initializeFuture.complete(ClusterConfiguration.uninitialized());
       }
       return initializeFuture;
@@ -428,10 +435,11 @@ public interface ClusterConfigurationInitializer {
     }
   }
 
-  sealed interface InitializerError permits PersistedTopologyIsBroken {
-    final class PersistedTopologyIsBroken extends RuntimeException implements InitializerError {
+  sealed interface InitializerError permits PersistedConfigurationIsBroken {
+    final class PersistedConfigurationIsBroken extends RuntimeException
+        implements InitializerError {
 
-      public PersistedTopologyIsBroken(final Path file, final Throwable cause) {
+      public PersistedConfigurationIsBroken(final Path file, final Throwable cause) {
         super("File %s is corrupted".formatted(file), cause);
       }
     }

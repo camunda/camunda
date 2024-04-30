@@ -14,11 +14,11 @@ public final class ClusterConfigurationGossipState {
   // TODO: This should also tracks the BrokerInfo which is currently in SWIM member.properties
   private ClusterConfiguration clusterConfiguration;
 
-  public ClusterConfiguration getClusterTopology() {
+  public ClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 
-  public void setClusterTopology(final ClusterConfiguration clusterConfiguration) {
+  public void setClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
     this.clusterConfiguration = clusterConfiguration;
   }
 

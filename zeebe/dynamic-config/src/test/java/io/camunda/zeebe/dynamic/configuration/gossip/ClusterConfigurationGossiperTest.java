@@ -144,7 +144,7 @@ final class ClusterConfigurationGossiperTest {
 
     void setTopology(final ClusterConfiguration clusterConfiguration) {
       this.clusterConfiguration = clusterConfiguration;
-      gossiper.updateClusterTopology(clusterConfiguration);
+      gossiper.updateClusterConfiguration(clusterConfiguration);
     }
 
     private ActorFuture<ClusterConfiguration> mergeTopology(final ClusterConfiguration t) {
