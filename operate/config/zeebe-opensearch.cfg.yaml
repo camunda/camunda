@@ -1,8 +1,0 @@
-zeebe.broker.exporters.opensearch:
-  className: io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-  args:
-    url: http://opensearch:9200
-    bulk:
-      size: 1
-    index:
-      processMessageSubscription: true

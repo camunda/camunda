@@ -1,8 +1,0 @@
-{
-  "description": "Assign default value to tenantId",
-  "@type": "processorStep",
-  "indexName": "event",
-  "version": "8.3.0",
-  "order": 7,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.tenantId = '<default>';\"}}"
-}

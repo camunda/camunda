@@ -1,8 +1,0 @@
-{
-  "description": "Fill in pending flag",
-  "@type": "processorStep",
-  "indexName": "incident",
-  "version": "1.3.0",
-  "order": 0,
-  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.pending = true;\"}}"
-}
