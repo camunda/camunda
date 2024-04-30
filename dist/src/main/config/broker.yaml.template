@@ -1055,6 +1055,20 @@
           # decision is evaluated. If the cache is full, the least used DRG gets evicted.
           # drgCacheCapacity: 1000
 
+          # Allows to configure the forms cache size. By default this is set to 1000.
+          # If there are more than 1000 different forms actively used in the cluster it is recommended
+          # to increase the size of this cache. The cache prevents having to query forms persistent
+          # state everytime form data is needed. If the cache is full, the least used form gets evicted.
+          # formCacheCapacity: 1000
+
+
+          # Allows to configure the deployed processes cache size. By default this is set to 1000.
+          # If there are more than 1000 different processes actively used in the cluster it is recommended
+          # to increase the size of this cache. The cache prevents having to query processes persistent
+          # state everytime process data is needed.
+          # If the cache is full, the least used process (version) gets evicted.
+          # processCacheCapacity: 1000
+
         # jobs:
           # Allows to configure the Job Timeout Checker's polling interval. This is the period during
           # which the checker is idle in between two of its executions. Note that it can mark multiple jobs
