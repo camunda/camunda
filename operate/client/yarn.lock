@@ -1229,12 +1229,12 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@0.2.17":
-  version "0.2.17"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.2.17.tgz#b2562151f79d40acf45e0023226c9127423cc8e4"
-  integrity sha512-44Eb8QDp36IXNWBY9ssyC/k4/8FRAo+hFsoPNJGuXkqZtFAolU65EAPm+YXM8QuI+jq+5tX7n6bSBwpreKkzZA==
+"@camunda/camunda-composite-components@0.6.3":
+  version "0.6.3"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.3.tgz#0fb8f32f3ed5a9d23c3c1c30a22c87e7bbefc6dd"
+  integrity sha512-QIItq181jrLHPbbBqkzc5pQjk8nRf1IwwdJVEC23iCHyxcWrQQAHVVs2IVackHcEcV3NCPddpR0CKR8VP8PBsA==
   dependencies:
-    jwt-decode "3.1.2"
+    jwt-decode "4.0.0"
     react-markdown "8.0.7"
 
 "@carbon/colors@^11.21.0":
@@ -7959,10 +7959,10 @@ jsonpointer@^5.0.0:
     object.assign "^4.1.4"
     object.values "^1.1.6"
 
-jwt-decode@3.1.2:
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-3.1.2.tgz#3fb319f3675a2df0c2895c8f5e9fa4b67b04ed59"
-  integrity sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==
+jwt-decode@4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-4.0.0.tgz#2270352425fd413785b2faf11f6e755c5151bd4b"
+  integrity sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==
 
 keyv@^4.0.0, keyv@^4.5.3:
   version "4.5.4"
