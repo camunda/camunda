@@ -88,8 +88,9 @@ public class WebSecurityProperties {
   }
 
   public WebSecurityProperties setHttpStrictTransPortSecurityIncludeSubDomains(
-      final boolean httpStrictTransPortSecurityIncludeSubDomains) {
-    httpStrictTransportSecurityIncludeSubDomains = httpStrictTransPortSecurityIncludeSubDomains;
+      final boolean httpStrictTransportSecurityIncludeSubDomains) {
+    this.httpStrictTransportSecurityIncludeSubDomains =
+        httpStrictTransportSecurityIncludeSubDomains;
     return this;
   }
 }
