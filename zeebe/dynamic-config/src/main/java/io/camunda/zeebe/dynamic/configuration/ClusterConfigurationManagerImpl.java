@@ -28,25 +28,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ClusterTopologyManager is responsible for initializing ClusterTopology and managing
- * ClusterTopology changes.
+ * ClusterConfigurationManager is responsible for initializing ClusterConfiguration and managing
+ * ClusterConfiguration changes.
  *
- * <p>On startup, ClusterTopologyManager initializes the topology using {@link
- * ClusterConfigurationInitializer}s. The initialized topology is gossiped to other members.
+ * <p>On startup, ClusterConfigurationManager initializes the configuration using {@link
+ * ClusterConfigurationInitializer}s. The initialized configuration is gossiped to other members.
  *
- * <p>When a topology is received via gossip, it is merged with the local topology. The merge
- * operation ensures that any concurrent update to the topology is not lost.
+ * <p>When a configuration is received via gossip, it is merged with the local configuration. The
+ * merge operation ensures that any concurrent update to the configuration is not lost.
  *
  * <h4>Making configuration changes</h4>
  *
- * <p>Only a coordinator can start a topology change. The steps to make a configuration change are
- * added to the {@link ClusterConfiguration}. To make a topology change, the coordinator update the
- * topology with a list of operations that needs to be executed to achieve the target topology and
- * gossip the updated topology. These operations are expected to be executed in the order given.
+ * <p>Only a coordinator can start a configuration change. The steps to make a configuration change
+ * are added to the {@link ClusterConfiguration}. To make a configuration change, the coordinator
+ * update the configuration with a list of operations that needs to be executed to achieve the
+ * target configuration and gossip the updated configuration. These operations are expected to be
+ * executed in the order given.
  *
- * <p>When a member receives a topology with pending changes, it applies the change if it is
- * applicable to the member. Only a member can make changes to its own state in the topology. See
- * {@link ConfigurationChangeAppliers} to see how a change is applied locally.
+ * <p>When a member receives a configuration with pending changes, it applies the change if it is
+ * applicable to the member. Only a member can make changes to its own state in the configuration.
+ * See {@link ConfigurationChangeAppliers} to see how a change is applied locally.
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterConfigurationManagerImpl.class);
@@ -59,7 +60,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private ConfigurationChangeAppliers changeAppliers;
   private InconsistentConfigurationListener onInconsistentTopologyDetected;
   private final MemberId localMemberId;
-  // Indicates whether there is a topology change operation in progress on this member.
+  // Indicates whether there is a configuration change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
@@ -110,7 +111,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                     },
                     future::completeExceptionally);
           } catch (final Exception e) {
-            LOG.error("Failed to update cluster topology", e);
+            LOG.error("Failed to update cluster configuration", e);
             future.completeExceptionally(e);
           }
         });
@@ -175,7 +176,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         () -> {
           if (!initialized) {
             LOG.trace(
-                "Received topology {} before ClusterTopologyManager is initialized.",
+                "Received topology {} before ClusterConfigurationManager is initialized.",
                 receivedTopology);
             // When not started, do not update the local topology. This is to avoid any race
             // condition between FileInitializer and concurrently received topology via gossip.
@@ -223,7 +224,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         && oldTopology.hasMember(localMemberId)
         && oldTopology.getMember(localMemberId).state() == State.LEFT) {
       // If the member has left, it's state will be removed from the topology by another member. See
-      // ClusterTopology#advance()
+      // ClusterConfiguration#advance()
       return false;
     }
     return !Objects.equals(

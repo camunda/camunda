@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Represents the cluster topology which describes the current active, joining or leaving brokers
- * and the partitions that each broker replicates.
+ * Represents the cluster configuration which describes the current active, joining or leaving
+ * brokers and the partitions that each broker replicates.
  *
- * <p>version - represents the current version of the topology. It is incremented only by the
+ * <p>version - represents the current version of the configuration. It is incremented only by the
  * coordinator when a new configuration change is triggered.
  *
  * <p>members - represents the state of each member
@@ -69,16 +69,16 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Adds or updates a member in the topology.
+   * Adds or updates a member in the configuration.
    *
    * <p>memberStateUpdater is invoked with the current state of the member. If the member does not
    * exist, and memberStateUpdater returns a non-null value, then the member is added to the
-   * topology. If the member exists, and the memberStateUpdater returns a null value, then the
+   * configuration. If the member exists, and the memberStateUpdater returns a null value, then the
    * member is removed.
    *
    * @param memberId id of the member to be updated
    * @param memberStateUpdater transforms the current state of the member to the new state
-   * @return the updated ClusterTopology
+   * @return the updated ClusterConfiguration
    */
   public ClusterConfiguration updateMember(
       final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
@@ -110,11 +110,11 @@ public record ClusterConfiguration(
       final List<ClusterConfigurationChangeOperation> operations) {
     if (hasPendingChanges()) {
       throw new IllegalArgumentException(
-          "Expected to start new topology change, but there is a topology change in progress "
+          "Expected to start new configuration change, but there is a configuration change in progress "
               + pendingChanges);
     } else if (operations.isEmpty()) {
       throw new IllegalArgumentException(
-          "Expected to start new topology change, but there is no operation");
+          "Expected to start new configuration change, but there is no operation");
     } else {
       final long newVersion = version + 1;
       return new ClusterConfiguration(
@@ -126,12 +126,12 @@ public record ClusterConfiguration(
   }
 
   /**
-   * Returns a new ClusterTopology after merging this and other. This doesn't overwrite this or
-   * other. If this.version == other.version then the new ClusterTopology contains merged members
-   * and changes. Otherwise, it returns the one with the highest version.
+   * Returns a new ClusterConfiguration after merging this and other. This doesn't overwrite this or
+   * other. If this.version == other.version then the new ClusterConfiguration contains merged
+   * members and changes. Otherwise, it returns the one with the highest version.
    *
-   * @param other ClusterTopology to merge
-   * @return merged ClusterTopology
+   * @param other ClusterConfiguration to merge
+   * @return merged ClusterConfiguration
    */
   public ClusterConfiguration merge(final ClusterConfiguration other) {
     if (version > other.version) {
@@ -181,11 +181,11 @@ public record ClusterConfiguration(
 
   /**
    * When the operation returned by {@link #pendingChangesFor(MemberId)} is completed, the changes
-   * should be reflected in ClusterTopology by invoking this method. This removes the completed
+   * should be reflected in ClusterConfiguration by invoking this method. This removes the completed
    * operation from the pending changes and update the member state using the given updater.
    *
    * @param topologyUpdater the method to update the topology
-   * @return the updated ClusterTopology
+   * @return the updated ClusterConfiguration
    */
   public ClusterConfiguration advanceTopologyChange(
       final UnaryOperator<ClusterConfiguration> topologyUpdater) {

@@ -16,7 +16,7 @@ import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagement
 import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
-/** Defines the API for the topology management requests. */
+/** Defines the API for the configuration management requests. */
 public interface ClusterConfigurationManagementApi {
 
   ActorFuture<ClusterConfigurationChangeResponse> addMembers(AddMembersRequest addMembersRequest);

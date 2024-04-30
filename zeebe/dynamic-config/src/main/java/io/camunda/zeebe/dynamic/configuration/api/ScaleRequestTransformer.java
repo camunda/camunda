@@ -50,7 +50,7 @@ public class ScaleRequestTransformer implements TopologyChangeRequest {
                 new PartitionReassignRequestTransformer(members, newReplicationFactor)
                     .operations(currentTopology))
         .map(this::addToOperations)
-        // then remove members that are not part of the new topology
+        // then remove members that are not part of the new configuration
         .flatMap(
             ignore -> {
               final var membersToRemove =

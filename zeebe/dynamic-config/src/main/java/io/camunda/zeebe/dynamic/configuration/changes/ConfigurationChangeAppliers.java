@@ -24,17 +24,17 @@ public interface ConfigurationChangeAppliers {
    */
   ClusterOperationApplier getApplier(ClusterConfigurationChangeOperation operation);
 
-  /** An operation applier that can apply and operation and changes the ClusterTopology. */
+  /** An operation applier that can apply and operation and changes the ClusterConfiguration. */
   interface ClusterOperationApplier {
 
     /**
      * This method will be called before invoking {@link ClusterOperationApplier#apply()}. This
-     * method can be used to validate the operation and to update the ClusterTopology to mark the
-     * start of the operation. For example, an operation for joining a partition can mark the state
-     * as JOINING.
+     * method can be used to validate the operation and to update the ClusterConfiguration to mark
+     * the start of the operation. For example, an operation for joining a partition can mark the
+     * state as JOINING.
      *
      * @return an either which contains an exception if the operation is not valid, or a function to
-     *     update the cluster topology
+     *     update the cluster configuration
      */
     Either<Exception, UnaryOperator<ClusterConfiguration>> init(
         final ClusterConfiguration currentClusterConfiguration);
@@ -42,12 +42,12 @@ public interface ConfigurationChangeAppliers {
     /**
      * Applies the operation. This can be run asynchronously and should complete the future when the
      * operation is completed. The future should be completed with a function that can update the
-     * ClusterTopology to mark the operation as completed. For example, an operation for joining a
-     * partition should mark the state of the partition as ACTIVE.
+     * ClusterConfiguration to mark the operation as completed. For example, an operation for
+     * joining a partition should mark the state of the partition as ACTIVE.
      *
      * <p>It is expected that no other operation is applied until this operation is completed. It is
-     * guaranteed that the ClusterTopology updated by {@link ClusterConfiguration#init()} remains
-     * the same until this operation is completed.
+     * guaranteed that the ClusterConfiguration updated by {@link ClusterConfiguration#init()}
+     * remains the same until this operation is completed.
      *
      * @return the future which is completed when the operation is completed successfully or failed.
      */
@@ -86,12 +86,12 @@ public interface ConfigurationChangeAppliers {
 
     /**
      * This method will be called before invoking {@link MemberOperationApplier#applyOperation()}.
-     * This method can be used to validate the operation and to update the ClusterTopology to mark
-     * the start of the operation. For example, an operation for joining a partition can mark the
-     * state as JOINING.
+     * This method can be used to validate the operation and to update the ClusterConfiguration to
+     * mark the start of the operation. For example, an operation for joining a partition can mark
+     * the state as JOINING.
      *
      * @return an either which contains an exception if the operation is not valid, or a function to
-     *     update the cluster topology
+     *     update the cluster configuration
      */
     Either<Exception, UnaryOperator<MemberState>> initMemberState(
         final ClusterConfiguration currentClusterConfiguration);

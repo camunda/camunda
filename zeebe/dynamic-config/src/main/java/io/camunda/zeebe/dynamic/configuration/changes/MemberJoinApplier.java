@@ -17,7 +17,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-/** A Member join operation is applied when the member is not already part of the topology. */
+/** A Member join operation is applied when the member is not already part of the cluster. */
 final class MemberJoinApplier implements MemberOperationApplier {
 
   private final MemberId memberId;
@@ -43,7 +43,7 @@ final class MemberJoinApplier implements MemberOperationApplier {
       return Either.left(
           new IllegalStateException(
               String.format(
-                  "Expected to join member %s, but the member is already part of the topology",
+                  "Expected to join member %s, but the member is already part of the cluster",
                   memberId)));
     }
 

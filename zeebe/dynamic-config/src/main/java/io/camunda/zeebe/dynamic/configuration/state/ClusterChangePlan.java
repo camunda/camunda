@@ -13,13 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the ongoing cluster topology changes. The pendingOperations are executed sequentially.
- * Only after completing one operation, the next operation is started. Once an operation is
- * completed, it should be removed from the plan, so that the next operation can be picked up.
+ * Represents the ongoing cluster configuration changes. The pendingOperations are executed
+ * sequentially. Only after completing one operation, the next operation is started. Once an
+ * operation is completed, it should be removed from the plan, so that the next operation can be
+ * picked up.
  *
  * <p>version starts at 1 and increments every time an operation is completed and removed from the
- * pending operations. This helps to choose the latest state of the topology change when receiving
- * gossip update out of order.
+ * pending operations. This helps to choose the latest state of the configuration change when
+ * receiving gossip update out of order.
  */
 public record ClusterChangePlan(
     long id,

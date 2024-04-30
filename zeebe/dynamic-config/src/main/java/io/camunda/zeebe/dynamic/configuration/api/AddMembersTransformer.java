@@ -29,7 +29,7 @@ public class AddMembersTransformer implements TopologyChangeRequest {
       final ClusterConfiguration currentTopology) {
     final var operations =
         members.stream()
-            // only add members that are not already part of the topology
+            // only add members that are not already part of the cluster
             .filter(memberId -> !currentTopology.hasMember(memberId))
             .map(MemberJoinOperation::new)
             .map(ClusterConfigurationChangeOperation.class::cast)

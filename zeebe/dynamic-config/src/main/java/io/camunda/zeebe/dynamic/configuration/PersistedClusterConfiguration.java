@@ -19,8 +19,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
 
 /**
- * Manages reading and updating ClusterTopology in a local persisted file. The file consists of a
- * fixed-size header containing a version and a checksum, followed by the serialized topology.
+ * Manages reading and updating ClusterConfiguration in a local persisted file. The file consists of
+ * a fixed-size header containing a version and a checksum, followed by the serialized
+ * configuration.
  */
 final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
@@ -41,12 +42,12 @@ final class PersistedClusterConfiguration {
   }
 
   /**
-   * Creates a new PersistedClusterTopology. If the file does not exist yet, the topology is
-   * uninitialized. The file is created on the first {@link #update(ClusterConfiguration)}.
+   * Creates a new PersistedClusterConfiguration. If the file does not exist yet, the configuration
+   * is uninitialized. The file is created on the first {@link #update(ClusterConfiguration)}.
    *
-   * @param topologyFile Path to the persisted topology file. Does not need to exist yet.
-   * @param serializer used to (de)serialize the topology. Does not need to care about versioning or
-   *     checksums.
+   * @param topologyFile Path to the persisted configuration file. Does not need to exist yet.
+   * @param serializer used to (de)serialize the configuration. Does not need to care about
+   *     versioning or checksums.
    * @throws UncheckedIOException if any unexpected IO error occurs.
    * @throws UnexpectedVersion if the file exists but has an unexpected version.
    * @throws ChecksumMismatch if the file exists but the checksum does not match.

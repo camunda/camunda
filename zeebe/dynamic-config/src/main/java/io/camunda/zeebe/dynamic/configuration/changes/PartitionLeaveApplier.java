@@ -37,7 +37,7 @@ record PartitionLeaveApplier(
     if (!currentClusterConfiguration.hasMember(localMemberId)) {
       return Either.left(
           new IllegalStateException(
-              "Expected to leave partition, but the local member does not exist in the topology"));
+              "Expected to leave partition, but the local member does not exist in the cluster"));
     }
 
     final boolean partitionExistsInLocalMember =
@@ -57,7 +57,7 @@ record PartitionLeaveApplier(
     if (partitionIsLeaving) {
       // If partition state is already set to leaving, then we don't need to set it again. This can
       // happen if the node was restarted while applying the leave operation. To ensure that the
-      // topology change can make progress, we do not treat this as an error.
+      // configuration change can make progress, we do not treat this as an error.
       return Either.right(m -> m);
     } else {
       final var partitionReplicaCount =

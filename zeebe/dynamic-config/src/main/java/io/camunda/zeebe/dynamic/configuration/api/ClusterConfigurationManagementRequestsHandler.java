@@ -30,8 +30,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Handles the requests for the topology management. This is expected be running on the coordinator
- * node.
+ * Handles the requests for the configuration management. This is expected be running on the
+ * coordinator node.
  */
 public final class ClusterConfigurationManagementRequestsHandler
     implements ClusterConfigurationManagementApi {

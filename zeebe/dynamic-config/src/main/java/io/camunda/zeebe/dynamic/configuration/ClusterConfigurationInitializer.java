@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Initializes topology using different strategies.
+ * Initializes configuration using different strategies.
  *
  * <h4>Initialization Process</h4>
  *
@@ -36,15 +36,15 @@ import org.slf4j.LoggerFactory;
  * partition distribution.
  *
  * <p>Both coordinator and other members first check the local persisted configuration to determine
- * the topology. If one exists, that is used to initialize the topology. See {@link
- * FileInitializer}. On bootstrap of the cluster, the local persisted topology is empty.
- * <li>When the local topology is empty, the coordinator queries cluster members in the static
- *     configuration for the current topology. See {@link SyncInitializer}. If any member replies
- *     with a valid topology, coordinator uses that one. If any member replies with an uninitialized
- *     topology, coordinator generates a new topology from the provided static configuration. See
- *     {@link StaticInitializer}.
- * <li>When the local topology is empty, a non-coordinating member waits until it receives a valid
- *     topology from the coordinator via gossip. See {@link GossipInitializer}.
+ * the configuration. If one exists, that is used to initialize the configuration. See {@link
+ * FileInitializer}. On bootstrap of the cluster, the local persisted configuration is empty.
+ * <li>When the local configuration is empty, the coordinator queries cluster members in the static
+ *     configuration for the current configuration. See {@link SyncInitializer}. If any member
+ *     replies with a valid configuration, coordinator uses that one. If any member replies with an
+ *     uninitialized configuration, coordinator generates a new configuration from the provided
+ *     static configuration. See {@link StaticInitializer}.
+ * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
+ *     valid topology from the coordinator via gossip. See {@link GossipInitializer}.
  */
 public interface ClusterConfigurationInitializer {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
@@ -243,7 +243,8 @@ public interface ClusterConfigurationInitializer {
       if (knownMembersToSync.isEmpty()) {
         initialized.complete(ClusterConfiguration.uninitialized());
       } else {
-        LOGGER.debug("Querying members {} before initializing ClusterTopology", knownMembersToSync);
+        LOGGER.debug(
+            "Querying members {} before initializing ClusterConfiguration", knownMembersToSync);
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
         knownMembersToSync.forEach(this::tryInitializeFrom);
       }

@@ -11,12 +11,12 @@ import io.atomix.cluster.MemberId;
 import java.util.Optional;
 import java.util.Set;
 
-/** Defines the supported requests for the topology management. */
+/** Defines the supported requests for the configuration management. */
 public sealed interface ClusterConfigurationManagementRequest {
 
   /**
    * Marks a request as dry run. Changes are planned and validated but not applied so the cluster
-   * topology remains unchanged.
+   * configuration remains unchanged.
    */
   boolean dryRun();
 

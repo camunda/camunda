@@ -95,7 +95,8 @@ final class PartitionJoinApplier implements MemberOperationApplier {
     if (partitionExistsInLocalMember
         && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
       // The state is already JOINING, so we don't need to change it. This can happen when the node
-      // was restarted while applying the join operation. To ensure that the topology change can
+      // was restarted while applying the join operation. To ensure that the configuration change
+      // can
       // make progress, we do not treat this as an error.
       return Either.right(memberState -> memberState);
     } else {

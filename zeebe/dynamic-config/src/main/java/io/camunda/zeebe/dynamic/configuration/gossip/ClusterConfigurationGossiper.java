@@ -51,7 +51,7 @@ public final class ClusterConfigurationGossiper
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
 
-  // The handler which can merge topology updates and reacts to the changes.
+  // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterTopologyUpdateHandler;
 
   public ClusterConfigurationGossiper(
@@ -189,7 +189,9 @@ public final class ClusterConfigurationGossiper
   private ClusterConfigurationGossipState handleSyncRequest(
       final MemberId memberId, final ClusterConfigurationGossipState clusterSharedGossipState) {
     LOGGER.trace(
-        "Received topology sync request from {} with state {}", memberId, clusterSharedGossipState);
+        "Received configuration sync request from {} with state {}",
+        memberId,
+        clusterSharedGossipState);
     update(clusterSharedGossipState);
     return gossipState;
   }

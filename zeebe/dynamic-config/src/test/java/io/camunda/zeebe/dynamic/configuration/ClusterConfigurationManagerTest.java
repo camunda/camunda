@@ -200,7 +200,7 @@ final class ClusterConfigurationManagerTest {
     clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
-    Awaitility.await("ClusterTopology is updated after applying topology change operation.")
+    Awaitility.await("ClusterConfiguration is updated after applying topology change operation.")
         .untilAsserted(
             () ->
                 ClusterConfigurationAssert.assertThatClusterTopology(

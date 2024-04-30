@@ -53,7 +53,7 @@ public final class TopologyUtil {
       final ClusterConfiguration clusterConfiguration, final String groupName) {
     if (clusterConfiguration.isUninitialized()) {
       throw new IllegalStateException(
-          "Cannot generated partition distribution from uninitialized topology");
+          "Cannot generated partition distribution from uninitialized configuration");
     }
 
     final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();

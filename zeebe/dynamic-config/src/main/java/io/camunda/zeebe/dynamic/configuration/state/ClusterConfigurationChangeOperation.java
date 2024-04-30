@@ -11,30 +11,30 @@ import io.atomix.cluster.MemberId;
 import java.util.Collection;
 
 /**
- * An operation that changes the topology. The operation could be a member join or leave a cluster,
- * or a member join or leave partition.
+ * An operation that changes the configuration. The operation could be a member join or leave a
+ * cluster, or a member join or leave partition.
  */
 public sealed interface ClusterConfigurationChangeOperation {
 
   MemberId memberId();
 
   /**
-   * Operation to add a member to the ClusterTopology.
+   * Operation to add a member to the ClusterConfiguration.
    *
    * @param memberId the member id of the member that joined the cluster
    */
   record MemberJoinOperation(MemberId memberId) implements ClusterConfigurationChangeOperation {}
 
   /**
-   * Operation to remove a member from the ClusterTopology.
+   * Operation to remove a member from the ClusterConfiguration.
    *
    * @param memberId the member id of the member that is leaving the cluster
    */
   record MemberLeaveOperation(MemberId memberId) implements ClusterConfigurationChangeOperation {}
 
   /**
-   * Operation to remove a member from the ClusterTopology. This operation is used to force remove a
-   * (unreachable) member.
+   * Operation to remove a member from the ClusterConfiguration. This operation is used to force
+   * remove a (unreachable) member.
    *
    * @param memberId the id of the member that applies this operations
    * @param memberToRemove the id of the member to remove

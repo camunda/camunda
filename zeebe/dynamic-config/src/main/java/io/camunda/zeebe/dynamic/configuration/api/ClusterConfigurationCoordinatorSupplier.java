@@ -28,7 +28,7 @@ public interface ClusterConfigurationCoordinatorSupplier {
 
     private MemberId lowestMemberId(final Collection<MemberId> members) {
       if (members.isEmpty()) {
-        // if cluster topology is not initialized, fall back to member 0
+        // if cluster configuration is not initialized, fall back to member 0
         return MemberId.from("0");
       }
       return members.stream().min(MemberId::compareTo).orElseThrow();

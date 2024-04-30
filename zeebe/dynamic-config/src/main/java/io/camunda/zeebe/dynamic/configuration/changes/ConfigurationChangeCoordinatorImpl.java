@@ -75,7 +75,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                           .map(ClusterChangePlan::pendingOperations)
                           .orElse(List.of());
                   LOG.warn(
-                      "Cancelling topology change '{}'. Following operations have been already applied: {}. Following pending operations won't be applied: {}",
+                      "Cancelling configuration change '{}'. Following operations have been already applied: {}. Following pending operations won't be applied: {}",
                       changeId,
                       completedOperation,
                       cancelledOperations);
@@ -106,7 +106,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                             future,
                             new InternalError(
                                 String.format(
-                                    "Cannot process request to change the topology. The broker '%s' is not the coordinator.",
+                                    "Cannot process request to change the configuration. The broker '%s' is not the coordinator.",
                                     localMemberId)));
                         return;
                       }
@@ -191,13 +191,13 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       failFuture(
           validationFuture,
           new OperationNotAllowed(
-              "Cannot apply topology change. The topology is not initialized."));
+              "Cannot apply configuration change. The configuration is not initialized."));
     } else if (currentClusterConfiguration.hasPendingChanges()) {
       failFuture(
           validationFuture,
           new ConcurrentModificationException(
               String.format(
-                  "Cannot apply topology change. Another topology change [%s] is in progress.",
+                  "Cannot apply configuration change. Another configuration change [%s] is in progress.",
                   currentClusterConfiguration)));
     } else {
       // simulate applying changes to validate the operations
@@ -207,7 +207,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
       final var topologyWithPendingOperations =
           currentClusterConfiguration.startTopologyChange(operations);
 
-      // Simulate applying the operations. The resulting topology will be the expected final
+      // Simulate applying the operations. The resulting configuration will be the expected final
       // topology. If the sequence of operations is not valid, the simulation fails.
       simulateTopologyChange(
           topologyWithPendingOperations, topologyChangeSimulator, validationFuture);

@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-/** Server that receives the topology management requests */
+/** Server that receives the configuration management requests */
 public final class ClusterConfigurationRequestServer implements AutoCloseable {
 
   private final ClusterConfigurationManagementApi clusterConfigurationManagementApi;

@@ -106,10 +106,10 @@ public final class ClusterConfigurationManagerService
             .filter(m -> !m.equals(staticConfiguration.localMemberId()))
             .toList();
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
-        // Recover via sync to ensure that we don't gossip an uninitialized topology.
-        // This is important so that we don't silently revert to uninitialized topology when
-        // multiple members have a broken topology file at the same time, for example because of
-        // a serialization bug.
+        // Recover via sync to ensure that we don't gossip an uninitialized configuration.
+        // This is important so that we don't silently revert to uninitialized configuration when
+        // multiple members have a broken configuration file at the same time, for example because
+        // of a serialization bug.
         .recover(
             PersistedTopologyIsBroken.class,
             new SyncInitializer(
@@ -149,7 +149,7 @@ public final class ClusterConfigurationManagerService
         .orThen(new StaticInitializer(staticConfiguration));
   }
 
-  /** Starts ClusterTopologyManager which initializes ClusterTopology */
+  /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
@@ -176,7 +176,9 @@ public final class ClusterConfigurationManagerService
 
     topologyRequestServer.start();
 
-    // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
+    // Start gossiper first so that when ClusterConfigurationManager initializes the configuration,
+    // it
+    // can
     // immediately gossip it.
     actorSchedulingService
         .submitActor(managerActor)

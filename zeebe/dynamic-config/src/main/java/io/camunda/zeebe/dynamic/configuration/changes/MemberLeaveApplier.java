@@ -40,7 +40,7 @@ public class MemberLeaveApplier implements MemberOperationApplier {
       return Either.left(
           new IllegalStateException(
               String.format(
-                  "Expected to remove member %s, but the member is not part of the topology",
+                  "Expected to remove member %s, but the member is not part of the cluster",
                   memberId)));
     }
 

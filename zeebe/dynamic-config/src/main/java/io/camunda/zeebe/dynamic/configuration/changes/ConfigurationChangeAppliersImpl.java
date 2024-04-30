@@ -100,7 +100,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
     private static class UnknownOperationException extends RuntimeException {
 
       public UnknownOperationException(final ClusterConfigurationChangeOperation operation) {
-        super("Unknown topology change operation " + operation);
+        super("Unknown configuration change operation " + operation);
       }
     }
   }

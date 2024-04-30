@@ -18,9 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The GatewayClusterTopologyService contains minimal functionality required for the Gateway. The
- * Gateway only listens to ClusterTopology changes. It cannot make changes to the topology. So the
- * service does not run ClusterTopologyManager, but only contains the ClusterTopologyGossiper.
+ * The GatewayClusterConfigurationService contains minimal functionality required for the Gateway.
+ * The Gateway only listens to ClusterConfiguration changes. It cannot make changes to the
+ * configuration. So the service does not run ClusterConfigurationManager, but only contains the
+ * ClusterConfigurationGossiper.
  */
 public class GatewayClusterConfigurationService extends Actor
     implements ClusterConfigurationUpdateNotifier {
@@ -28,7 +29,7 @@ public class GatewayClusterConfigurationService extends Actor
       LoggerFactory.getLogger(GatewayClusterConfigurationService.class);
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
 
-  // Keep an in memory copy of the topology. No need to persist it.
+  // Keep an in memory copy of the configuration. No need to persist it.
   private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
 
   public GatewayClusterConfigurationService(
@@ -59,14 +60,14 @@ public class GatewayClusterConfigurationService extends Actor
               return;
             }
             LOG.debug(
-                "Received new topology {}. Updating local topology to {}",
+                "Received new configuration {}. Updating local configuration to {}",
                 clusterConfiguration,
                 mergedTopology);
             this.clusterConfiguration = mergedTopology;
             clusterConfigurationGossiper.updateClusterTopology(this.clusterConfiguration);
           } catch (final Exception updateFailed) {
             LOG.warn(
-                "Failed to process received topology update {}",
+                "Failed to process received configuration update {}",
                 clusterConfiguration,
                 updateFailed);
           }
