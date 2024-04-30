@@ -90,7 +90,6 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private void validate() {
     Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
-    Objects.requireNonNull(appendLimit, "Must specify a append limit");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(

@@ -28,7 +28,10 @@ public final class FlowControl {
 
   public FlowControl(final LogStreamMetrics metrics, final Limit appendLimit) {
     this.metrics = metrics;
-    appendLimiter = AppendLimiter.builder().limit(appendLimit).metrics(metrics).build();
+    appendLimiter =
+        appendLimit != null
+            ? AppendLimiter.builder().limit(appendLimit).metrics(metrics).build()
+            : new NoopLimiter();
   }
 
   /**
