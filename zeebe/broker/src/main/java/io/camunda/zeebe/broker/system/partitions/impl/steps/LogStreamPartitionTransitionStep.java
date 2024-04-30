@@ -88,19 +88,15 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
 
   private ActorFuture<LogStream> buildLogstream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
-    final var appendLimitConfig = context.getBrokerCfg().getFlowControl().getAppend();
-    final var builder =
-        logStreamBuilderSupplier
-            .get()
-            .withLogStorage(atomixLogStorage)
-            .withLogName("logstream-" + context.getRaftPartition().name())
-            .withPartitionId(context.getPartitionId())
-            .withMaxFragmentSize(context.getMaxFragmentSize())
-            .withActorSchedulingService(context.getActorSchedulingService());
-    if (appendLimitConfig != null) {
-      builder.withAppendLimit(appendLimitConfig.buildLimit());
-    }
-    return builder.buildAsync();
+    return logStreamBuilderSupplier
+        .get()
+        .withLogStorage(atomixLogStorage)
+        .withLogName("logstream-" + context.getRaftPartition().name())
+        .withPartitionId(context.getPartitionId())
+        .withMaxFragmentSize(context.getMaxFragmentSize())
+        .withActorSchedulingService(context.getActorSchedulingService())
+        .withAppendLimit(context.getBrokerCfg().getFlowControl().getAppend().buildLimit())
+        .buildAsync();
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

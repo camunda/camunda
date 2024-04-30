@@ -8,9 +8,14 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg.LimitAlgorithm;
 
 public class FlowControlCfg implements ConfigurationEntry {
-  private LimitCfg append;
+  private LimitCfg append = new LimitCfg();
+
+  public FlowControlCfg() {
+    append.setAlgorithm(LimitAlgorithm.LEGACY_VEGAS);
+  }
 
   public LimitCfg getAppend() {
     return append;

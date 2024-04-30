@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.VegasConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -25,7 +24,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
-  private Limit appendLimit = new VegasConfig().get();
+  private Limit appendLimit;
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
