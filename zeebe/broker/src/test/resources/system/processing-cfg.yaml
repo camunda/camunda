@@ -1,6 +1,0 @@
-zeebe:
-  broker:
-    processing:
-      maxCommandsInBatch: 125
-      enableAsyncScheduledTasks: false
-      skipPositions: 1, 2, 3

@@ -1,2 +1,0 @@
--Xlog:disable
--XX:TieredStopAtLevel=1

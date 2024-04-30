@@ -1,7 +1,0 @@
-zeebe:
-  broker:
-    cluster:
-      partitionsCount: 3
-      clusterSize: 5
-      nodeId: 2
-      replicationFactor: 4
