@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
+import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.util.Either;
@@ -22,7 +23,7 @@ public final class FlowControl {
   private final LogStreamMetrics metrics;
 
   public FlowControl(final LogStreamMetrics metrics) {
-    this(metrics, new VegasConfig().get());
+    this(metrics, VegasLimit.newDefault());
   }
 
   public FlowControl(final LogStreamMetrics metrics, final Limit appendLimit) {

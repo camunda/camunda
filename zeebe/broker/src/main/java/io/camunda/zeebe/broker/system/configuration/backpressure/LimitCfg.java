@@ -27,6 +27,7 @@ public final class LimitCfg implements ConfigurationEntry {
   private final VegasCfg vegas = new VegasCfg();
   private final GradientCfg gradient = new GradientCfg();
   private final Gradient2Cfg gradient2 = new Gradient2Cfg();
+  private final LegacyVegasCfg legacyVegas = new LegacyVegasCfg();
 
   public boolean isEnabled() {
     return enabled;
@@ -53,6 +54,10 @@ public final class LimitCfg implements ConfigurationEntry {
     this.algorithm = LimitAlgorithm.valueOf(algorithm.toUpperCase());
   }
 
+  public void setAlgorithm(LimitAlgorithm algorithm) {
+    this.algorithm = algorithm;
+  }
+
   public AIMDCfg getAimd() {
     return aimd;
   }
@@ -71,6 +76,10 @@ public final class LimitCfg implements ConfigurationEntry {
 
   public Gradient2Cfg getGradient2() {
     return gradient2;
+  }
+
+  public LegacyVegasCfg getLegacyVegas() {
+    return legacyVegas;
   }
 
   @Override
@@ -93,6 +102,8 @@ public final class LimitCfg implements ConfigurationEntry {
         + gradient
         + ", gradient2="
         + gradient2
+        + ", legacyVegas="
+        + legacyVegas
         + '}';
   }
 
@@ -110,12 +121,25 @@ public final class LimitCfg implements ConfigurationEntry {
           case GRADIENT -> getGradientLimit(getGradient());
           case GRADIENT2 -> getGradient2Limit(getGradient2());
           case VEGAS -> getVegasLimit(getVegas());
+          case LEGACY_VEGAS -> getLegacyVegasLimit(getLegacyVegas());
         };
     if (useWindowed) {
       return WindowedLimit.newBuilder().build(baseLimit);
     } else {
       return baseLimit;
     }
+  }
+
+  private static VegasLimit getLegacyVegasLimit(final LegacyVegasCfg legacyVegas) {
+    return VegasLimit.newBuilder()
+        .alpha(limit -> Math.max(3, (int) (limit * legacyVegas.alphaLimit())))
+        .beta(limit -> Math.max(6, (int) (limit * legacyVegas.betaLimit())))
+        .initialLimit(legacyVegas.initialLimit())
+        .maxConcurrency(legacyVegas.getMaxConcurrency())
+        // per default Vegas uses log10
+        .increase(limit -> limit + Math.log(limit))
+        .decrease(limit -> limit - Math.log(limit))
+        .build();
   }
 
   private static VegasLimit getVegasLimit(final VegasCfg vegasCfg) {
@@ -158,6 +182,7 @@ public final class LimitCfg implements ConfigurationEntry {
     GRADIENT,
     GRADIENT2,
     FIXED,
-    AIMD
+    AIMD,
+    LEGACY_VEGAS,
   }
 }
