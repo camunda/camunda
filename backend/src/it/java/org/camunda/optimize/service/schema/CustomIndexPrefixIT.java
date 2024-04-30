@@ -91,7 +91,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     // then
     final List<IndexMappingCreator<?>> mappings =
         embeddedOptimizeExtension.getDatabaseSchemaManager().getMappings();
-    assertThat(mappings).hasSize(29);
+    assertThat(mappings).hasSize(28);
     for (final IndexMappingCreator mapping : mappings) {
       final String expectedAliasName =
           getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);

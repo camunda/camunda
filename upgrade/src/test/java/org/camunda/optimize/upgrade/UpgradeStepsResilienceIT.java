@@ -182,6 +182,6 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
   @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
-    return new DeleteIndexIfExistsStep(indexMapping);
+    return new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion());
   }
 }

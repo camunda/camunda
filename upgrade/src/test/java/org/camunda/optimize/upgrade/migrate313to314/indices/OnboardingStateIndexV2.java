@@ -3,20 +3,19 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.schema.index;
+package org.camunda.optimize.upgrade.migrate313to314.indices;
 
 import java.io.IOException;
-import org.camunda.optimize.dto.optimize.OnboardingStateDto;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-public abstract class OnboardingStateIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public class OnboardingStateIndexV2 extends DefaultIndexMappingCreator<XContentBuilder> {
+
   public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
-    return DatabaseConstants.ONBOARDING_INDEX_NAME;
+    return "onboarding-state";
   }
 
   @Override
@@ -28,18 +27,24 @@ public abstract class OnboardingStateIndex<TBuilder> extends DefaultIndexMapping
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-        .startObject(OnboardingStateDto.Fields.id)
+        .startObject("id")
         .field("type", "keyword")
         .endObject()
-        .startObject(OnboardingStateDto.Fields.key)
+        .startObject("key")
         .field("type", "keyword")
         .endObject()
-        .startObject(OnboardingStateDto.Fields.userId)
+        .startObject("userId")
         .field("type", "keyword")
         .endObject()
-        .startObject(OnboardingStateDto.Fields.seen)
+        .startObject("seen")
         .field("type", "boolean")
         .endObject();
     // @formatter:on
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

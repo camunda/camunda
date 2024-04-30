@@ -216,7 +216,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
     assertThat(updateLogEntries)
         .contains(
             UpgradeStepLogEntryDto.builder()
-                .indexName(getIndexNameWithVersion(upgradeStep.getIndex()))
+                .indexName(getIndexNameWithVersion(upgradeStep))
                 .optimizeVersion(TO_VERSION)
                 .stepNumber(1)
                 .stepType(stepType)
@@ -234,7 +234,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
         Arguments.of(
             UpgradeStepType.SCHEMA_DELETE_INDEX,
             ImmutableList.of(new CreateIndexStep(indexVersion1)),
-            new DeleteIndexIfExistsStep(indexVersion1)),
+            new DeleteIndexIfExistsStep(indexVersion1.getIndexName(), indexVersion1.getVersion())),
         Arguments.of(
             UpgradeStepType.SCHEMA_UPDATE_MAPPING,
             ImmutableList.of(new CreateIndexStep(indexVersion1)),

@@ -33,7 +33,6 @@ if (process.argv.indexOf('self-managed') > -1) {
 // if we are in ci mode we assume data generation is already complete
 let platformDataGenerationComplete = ciMode;
 let eventIngestionComplete = false;
-let seenStateInitializationComplete = false;
 
 let backendProcess;
 let buildBackendProcess;
@@ -102,9 +101,7 @@ setVersionInfo()
   .then(setupEnvironment)
   .then(startBackend)
   .then(setLicense)
-  .then(
-    () => mode === 'platform' && Promise.all([setWhatsNewSeenStateForAllUsers(), ingestEventData()])
-  );
+  .then(() => mode === 'platform' && Promise.all([ingestEventData()]));
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -245,21 +242,6 @@ function ingestEventData() {
   });
 }
 
-function setWhatsNewSeenStateForAllUsers() {
-  // wait for users to be generated before setting the what's new seen state
-  setTimeout(() => {
-    if (!platformDataGenerationComplete) {
-      return setWhatsNewSeenStateForAllUsers();
-    }
-
-    const seenStateProcess = runScript('set-whatsnew-seen-state');
-
-    seenStateProcess.on('exit', () => {
-      seenStateInitializationComplete = true;
-    });
-  }, 1000);
-}
-
 function downloadFile(downloadUrl, filePath) {
   return new Promise(async (resolve) => {
     const downloadFile = spawnWithArgs(`gsutil -q cp ${downloadUrl} ${filePath}`, {shell: true});
@@ -326,9 +308,7 @@ function setVersionInfo() {
 }
 
 function isDataGenerationCompleted() {
-  return (
-    platformDataGenerationComplete && eventIngestionComplete && seenStateInitializationComplete
-  );
+  return platformDataGenerationComplete && eventIngestionComplete;
 }
 
 function stopDocker() {

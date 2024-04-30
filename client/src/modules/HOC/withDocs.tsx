@@ -11,12 +11,15 @@ import {getDocsVersion} from 'config';
 
 export interface WithDocsProps {
   generateDocsLink: (path: string) => string;
+  getBaseDocsUrl: () => string;
 }
 
-const OPTIMIZE_DOCS_URL = 'https://docs.camunda.io/optimize/';
+const DOCS_BASE_URL = 'https://docs.camunda.io/';
+const OPTIMIZE_DOCS_URL = DOCS_BASE_URL + 'optimize/';
 
 export const DocsContext = createContext<WithDocsProps>({
   generateDocsLink: (path) => OPTIMIZE_DOCS_URL + path,
+  getBaseDocsUrl: () => DOCS_BASE_URL,
 });
 
 export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
@@ -33,8 +36,13 @@ export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
   const optimizeVersionWithSlash = optimizeVersion ? optimizeVersion + '/' : '';
   const docsLink = OPTIMIZE_DOCS_URL + optimizeVersionWithSlash;
   const generateDocsLink = (path: string) => docsLink + path;
+  const getBaseDocsUrl = () => DOCS_BASE_URL;
 
-  return <DocsContext.Provider value={{generateDocsLink}}>{children}</DocsContext.Provider>;
+  return (
+    <DocsContext.Provider value={{generateDocsLink, getBaseDocsUrl}}>
+      {children}
+    </DocsContext.Provider>
+  );
 }
 
 export default function withDocs<T extends object>(Component: ComponentType<T>) {

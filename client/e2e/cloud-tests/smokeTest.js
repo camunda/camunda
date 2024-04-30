@@ -26,7 +26,6 @@ test('create a report from a template', async (t) => {
     .typeText(e.passwordInput, process.env.AUTH0_USERPASSWORD)
     .click(e.submitButton);
 
-  await t.click(e.whatsNewCloseBtn);
   await t.click(Collection.navItem);
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));

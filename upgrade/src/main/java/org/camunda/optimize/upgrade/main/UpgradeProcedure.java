@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.main;
 
 import static org.camunda.optimize.upgrade.steps.UpgradeStepType.REINDEX;
+import static org.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_INDEX;
 
 import com.vdurmont.semver4j.Semver;
 import java.time.Instant;
@@ -21,6 +22,7 @@ import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 
 @Slf4j
@@ -143,6 +145,8 @@ public class UpgradeProcedure {
           esClient
               .getIndexNameService()
               .getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex()));
+    } else if (SCHEMA_DELETE_INDEX.equals(step.getType())) {
+      return ((DeleteIndexIfExistsStep) step).getVersionedIndexName();
     } else {
       return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
     }

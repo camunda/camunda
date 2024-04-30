@@ -9,7 +9,7 @@
     "logoutFailed": "Logout failed.",
     "logoutSuccess": "You logged out successfully.",
     "configLoadingError": "An error occurred while loading the UI configurations",
-    "userGuide": "User guide",
+    "documentation": "Documentation",
     "help": "Help",
     "profile": "Profile",
     "appSwitcher": "App switcher",
@@ -70,10 +70,6 @@
     "text": "The {label} has unsaved changes. Save before continuing?",
     "yes": "Save changes",
     "no": "Don't save"
-  },
-  "whatsNew": {
-    "buttonTitle": "What’s new",
-    "modalHeader": "What's new in Optimize"
   },
   "telemetry": {
     "updated": "Telemetry settings updated.",

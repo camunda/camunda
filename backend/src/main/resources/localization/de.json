@@ -9,7 +9,7 @@
     "logoutFailed": "Abmeldung fehlgeschlagen",
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten",
-    "userGuide": "Benutzerhandbuch",
+    "documentation": "Dokumentation",
     "help": "Hilfe",
     "profile": "Profil",
     "appSwitcher": "App Switcher",
@@ -70,10 +70,6 @@
     "text": "{label} hat ungespeicherte Änderungen. Wollen Sie speichern?",
     "yes": "Änderungen Speichern",
     "no": "Nicht Speichern"
-  },
-  "whatsNew": {
-    "buttonTitle": "Was ist neu",
-    "modalHeader": "Neues in Optimize"
   },
   "telemetry": {
     "updated": "Telemetrie-Einstellungen aktualisiert.",

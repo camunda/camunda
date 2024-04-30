@@ -14,7 +14,6 @@ import {getOptimizeDatabase, getOptimizeProfile, isEnterpriseMode} from 'config'
 
 import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
-import WhatsNewModal from './WhatsNewModal';
 
 jest.mock('config', () => ({
   getHeader: jest.fn().mockReturnValue({
@@ -39,7 +38,7 @@ jest.mock('hooks', () => ({
     mightFail: jest.fn(async (data, cb) => cb(await data)),
   })),
   useDocs: jest.fn(() => ({
-    generateDocsLink: (url: string) => url,
+    getBaseDocsUrl: () => 'docsUrl',
   })),
   useUser: jest.fn(() => ({
     user: undefined,
@@ -114,20 +113,7 @@ it('should show license warning if enterpriseMode is not set', async () => {
   expect(tags?.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
 });
 
-it('should open the whatsNewDialog on option click', async () => {
-  const node = shallow(<Header />);
-
-  expect(node.find(WhatsNewModal).prop('open')).toBe(false);
-
-  const sideBarEleemnts = node
-    .find(C3Navigation)
-    .prop<C3NavigationProps['infoSideBar']>('infoSideBar')?.elements;
-  sideBarEleemnts?.find((el) => el.key === 'whatsNew')?.onClick?.();
-
-  expect(node.find(WhatsNewModal).prop('open')).toBe(true);
-});
-
-it('should no display navbar and sidebar is noAction prop is specified', () => {
+it('should not display navbar and sidebar if noAction prop is specified', () => {
   const node = shallow(<Header noActions />);
 
   expect(node.find(C3Navigation).prop('navbar')).toEqual({elements: []});

@@ -13302,7 +13302,7 @@ react-list@^0.8.13:
   dependencies:
     prop-types "15"
 
-react-markdown@8.0.7, react-markdown@^8.0.7:
+react-markdown@8.0.7:
   version "8.0.7"
   resolved "https://registry.yarnpkg.com/react-markdown/-/react-markdown-8.0.7.tgz#c8dbd1b9ba5f1c5e7e5f2a44de465a3caafdf89b"
   integrity sha512-bvWbzG4MtOU62XqBx3Xx+zB2raaFFsq4mYiAzfjXJMEz2sixgeAfraA3tvzULF02ZdOMUOKTBFFaZJDDrq+BJQ==

@@ -32,7 +32,6 @@ import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIn
 import org.camunda.optimize.service.db.es.schema.index.InstantPreviewDashboardMetadataIndexES;
 import org.camunda.optimize.service.db.es.schema.index.LicenseIndexES;
 import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
-import org.camunda.optimize.service.db.es.schema.index.OnboardingStateIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessOverviewIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ReportShareIndexES;
@@ -468,7 +467,6 @@ public class ElasticSearchSchemaManager
         new DecisionDefinitionIndexES(),
         new LicenseIndexES(),
         new MetadataIndexES(),
-        new OnboardingStateIndexES(),
         new ProcessDefinitionIndexES(),
         new ReportShareIndexES(),
         new SettingsIndexES(),

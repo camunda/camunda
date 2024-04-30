@@ -96,7 +96,7 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
     // then
     final List<IndexMappingCreator<XContentBuilder>> mappings = getSchemaManager().getMappings();
-    assertThat(mappings).hasSize(29);
+    assertThat(mappings).hasSize(28);
     for (IndexMappingCreator<XContentBuilder> mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }

@@ -110,7 +110,9 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
                     buildUpdateTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1),
                     new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
                     buildDeleteTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
-                    new DeleteIndexIfExistsStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
+                    new DeleteIndexIfExistsStep(
+                        TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(),
+                        TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getVersion())))
             .build());
   }
 

@@ -93,7 +93,7 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // then
     final List<IndexMappingCreator<IndexSettings.Builder>> mappings =
         getSchemaManager().getMappings();
-    assertThat(mappings).hasSize(29);
+    assertThat(mappings).hasSize(28);
     for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }

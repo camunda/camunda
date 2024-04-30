@@ -38,8 +38,6 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String MANAGEMENT_DASHBOARD_FIELD = "managementDashboard";
   private static final String INSTANT_DASHBOARD_FIELD = "instantDashboard";
   private static final String JSON_FILE_EXTENSION = "json";
-  private static final String MARKDOWN_FILE_EXTENSION = "md";
-  private static final String LOCALIZATION_FILE_PREFIX_WHATSNEW = "whatsnew";
   private static final String REPORT_FIELD = "report";
   private static final String REPORT_GROUPING_FIELD = "groupBy";
   private static final String REPORT_VIEW_FIELD = "view";
@@ -68,7 +66,7 @@ public class LocalizationService implements ConfigurationReloadable {
 
   public String getDefaultLocaleMessageForApiErrorCode(final String code) {
     try {
-      return getMessageForApiErrorCode(configurationService.getFallbackLocale(), code);
+      return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
     } catch (Exception e) {
       return String.format("Failed to localize error message for code [%s]", code);
     }
@@ -83,10 +81,6 @@ public class LocalizationService implements ConfigurationReloadable {
           "Failed to localize label for missing assignee field with localization code: %s",
           MISSING_ASSIGNEE_FIELD);
     }
-  }
-
-  public byte[] getLocalizedWhatsNewMarkdown(final String localeCode) {
-    return getLocalizedMarkdownFile(LOCALIZATION_FILE_PREFIX_WHATSNEW, localeCode);
   }
 
   public String getLocalizationForManagementDashboardCode(
@@ -162,18 +156,6 @@ public class LocalizationService implements ConfigurationReloadable {
             });
   }
 
-  private void validateMarkdownFiles() {
-    configurationService
-        .getAvailableLocales()
-        .forEach(
-            locale -> {
-              final String filePath =
-                  resolveFilePath(
-                      LOCALIZATION_FILE_PREFIX_WHATSNEW, MARKDOWN_FILE_EXTENSION, locale);
-              validateFileExists(filePath);
-            });
-  }
-
   private void validateFileExists(final String fileName) {
     final URL localizationFile = getClass().getClassLoader().getResource(fileName);
     if (localizationFile == null) {
@@ -208,21 +190,12 @@ public class LocalizationService implements ConfigurationReloadable {
   }
 
   private byte[] getLocalizedJsonFile(final String localeCode) {
-    return getLocalizedFile(null, JSON_FILE_EXTENSION, localeCode);
-  }
-
-  private byte[] getLocalizedMarkdownFile(final String key, final String localeCode) {
-    return getLocalizedFile(key, MARKDOWN_FILE_EXTENSION, localeCode);
-  }
-
-  private byte[] getLocalizedFile(
-      final String filePrefix, final String fileExtension, final String localeCode) {
     final String resolvedLocaleCode =
         configurationService.getAvailableLocales().contains(localeCode)
             ? localeCode
             : configurationService.getFallbackLocale();
 
-    return getFileBytes(resolveFilePath(filePrefix, fileExtension, resolvedLocaleCode));
+    return getFileBytes(resolveFilePath(null, JSON_FILE_EXTENSION, resolvedLocaleCode));
   }
 
   private String resolveFilePath(final String fileExtension, final String localeCode) {
@@ -259,10 +232,6 @@ public class LocalizationService implements ConfigurationReloadable {
         () -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
   }
 
-  private String getMessageForApiErrorCode(final String localeCode, final String errorCode) {
-    return getMessageForCode(localeCode, API_ERRORS_FIELD, errorCode);
-  }
-
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private String getMessageForCode(
       final String localeCode, final String categoryCode, final String messageCode) {
@@ -290,7 +259,6 @@ public class LocalizationService implements ConfigurationReloadable {
 
   private void validateLocalizationSetup() {
     validateLocalizationFiles();
-    validateMarkdownFiles();
     validateFallbackLocale();
     localeToLocalizationMapCache =
         Caffeine.newBuilder()

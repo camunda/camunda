@@ -31,7 +31,6 @@ import {track} from 'tracking';
 import {useDocs, useErrorHandling} from 'hooks';
 
 import {isEventBasedProcessEnabled, getUserToken} from './service';
-import WhatsNewModal from './WhatsNewModal';
 import {TelemetrySettings} from './TelemetrySettings';
 import useUserMenu from './useUserMenu';
 
@@ -43,7 +42,6 @@ export function Header({noActions}: {noActions?: boolean}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
   const [webappLinks, setwebappLinks] = useState<Record<string, string> | null>(null);
-  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
   const [organizationId, setOrganizationId] = useState<string>();
@@ -52,7 +50,7 @@ export function Header({noActions}: {noActions?: boolean}) {
   const [notificationsUrl, setNotificationsUrl] = useState<string>();
   const {mightFail} = useErrorHandling();
   const [optimizeDatabase, setOptimizeDatabase] = useState<string>();
-  const {generateDocsLink} = useDocs();
+  const {getBaseDocsUrl} = useDocs();
   const userSideBar = useUserMenu({setTelemetrySettingsOpen});
 
   useEffect(() => {
@@ -103,7 +101,7 @@ export function Header({noActions}: {noActions?: boolean}) {
       location.pathname,
       optimizeDatabase
     );
-    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode);
+    props.infoSideBar = createInfoSideBarProps(getBaseDocsUrl(), enterpriseMode);
     props.userSideBar = userSideBar;
   }
 
@@ -124,7 +122,6 @@ export function Header({noActions}: {noActions?: boolean}) {
       organizationId={organizationId}
     >
       <C3Navigation {...props} />
-      <WhatsNewModal open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
       {telemetrySettingsOpen && (
         <TelemetrySettings onClose={() => setTelemetrySettingsOpen(false)} />
       )}
@@ -297,29 +294,17 @@ function isCurrentPage(active: string[], pathname: string): boolean {
 }
 
 function createInfoSideBarProps(
-  setWhatsNewOpen: (open: boolean) => void,
-  generateDocsLink: (route: string) => string,
+  docsUrl: string,
   enterpriseMode: boolean
 ): C3NavigationProps['infoSideBar'] {
   return {
     ariaLabel: 'Info',
     elements: [
       {
-        key: 'whatsNew',
-        label: t('whatsNew.buttonTitle').toString(),
+        key: 'documentation',
+        label: t('navigation.documentation').toString(),
         onClick: () => {
-          setWhatsNewOpen(true);
-        },
-      },
-      {
-        key: 'userguide',
-        label: t('navigation.userGuide').toString(),
-        onClick: () => {
-          window.open(
-            generateDocsLink('components/what-is-optimize/'),
-            '_blank',
-            'noopener,noreferrer'
-          );
+          window.open(docsUrl, '_blank');
         },
       },
       {
@@ -338,6 +323,13 @@ function createInfoSideBarProps(
           } else {
             window.open('https://forum.camunda.io/', '_blank');
           }
+        },
+      },
+      {
+        key: 'slackCommunityChannel',
+        label: 'Slack Community Channel',
+        onClick: () => {
+          window.open('https://camunda.com/slack', '_blank');
         },
       },
     ],
