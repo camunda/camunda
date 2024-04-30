@@ -16,4 +16,5 @@ export const getHeader = () => ({
   backgroundColor: '#FFFFFF',
   logo: '',
 });
+export const ConfigProvider = () => <div />;
 export {default as newReport} from '../modules/newReport.json';

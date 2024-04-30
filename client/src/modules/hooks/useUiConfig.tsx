@@ -5,30 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect} from 'react';
+import {useContext} from 'react';
 
-import {UiConfig, createAccessorFunction} from 'config';
+import {UiConfig, configContext} from 'config';
 
-export default function useUiConfig<T extends keyof UiConfig>(...keys: T[]): Pick<UiConfig, T> {
-  const [value, setValue] = useState<Partial<Pick<UiConfig, T>>>({});
+export default function useUiConfig(): UiConfig | {} {
+  const {config} = useContext(configContext);
+  return config;
+}
 
-  useEffect(() => {
-    if (Object.keys(value).length === keys.length) {
-      return;
-    }
-
-    const accessorFunctions = keys.map((k) => createAccessorFunction<UiConfig[T]>(k));
-    (async () => {
-      const values = await Promise.all(accessorFunctions.map((fn) => fn()));
-      setValue((currentState) => {
-        const newState = {...currentState};
-        keys.forEach((k, i) => {
-          newState[k] = values[i];
-        });
-        return newState;
-      });
-    })();
-  }, [keys, value]);
-
-  return value as Pick<UiConfig, T>;
+export function useLoadConfig() {
+  const {loadConfig} = useContext(configContext);
+  return loadConfig;
 }

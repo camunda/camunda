@@ -15,10 +15,7 @@ import {CarbonSelect} from 'components';
 import {useUiConfig} from 'hooks';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
-    'optimizeProfile',
-    'userTaskAssigneeAnalyticsEnabled'
-  );
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
 
   if (!report.groupBy) {
     return null;

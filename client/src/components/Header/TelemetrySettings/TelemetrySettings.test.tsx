@@ -8,21 +8,23 @@
 import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {loadConfig} from 'config';
+import {useLoadConfig} from 'hooks';
 
 import {updateTelemetry} from './service';
-
 import {TelemetrySettings} from './TelemetrySettings';
 
 jest.mock('config', () => ({
   isMetadataTelemetryEnabled: jest.fn().mockReturnValue(true),
-  loadConfig: jest.fn(),
 }));
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 jest.mock('./service', () => ({
   updateTelemetry: jest.fn(),
+}));
+
+jest.mock('hooks', () => ({
+  useLoadConfig: jest.fn().mockReturnValue(jest.fn()),
 }));
 
 const props = {
@@ -47,5 +49,5 @@ it('should update the telemetry when applying the changes', async () => {
   node.find('.confirm').simulate('click');
 
   expect(updateTelemetry).toHaveBeenCalledWith(false);
-  expect(loadConfig).toHaveBeenCalled();
+  expect(useLoadConfig()).toHaveBeenCalled();
 });

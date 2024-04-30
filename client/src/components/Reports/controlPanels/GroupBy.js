@@ -17,10 +17,7 @@ import {useUiConfig} from 'hooks';
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
-    'optimizeProfile',
-    'userTaskAssigneeAnalyticsEnabled'
-  );
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
 
   const reportType = type;
 

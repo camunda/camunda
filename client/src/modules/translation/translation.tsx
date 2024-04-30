@@ -5,9 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {ReactNode, useEffect, useState} from 'react';
+import {Loading} from '@carbon/react';
+
 import {getOptimizeVersion} from 'config';
 import {loadDateTranslation} from 'dates';
+
 import {loadTranslation} from './service';
 
 interface TranslationObject {
@@ -20,11 +23,24 @@ export function setTranslation(initialTranslationObject: TranslationObject) {
   translationObject = initialTranslationObject;
 }
 
-export async function initTranslation(): Promise<void> {
-  const localeCode = getLanguage();
-  document.documentElement.lang = localeCode;
-  await loadDateTranslation(localeCode);
-  translationObject = await loadTranslation(await getOptimizeVersion(), localeCode);
+export function TranslationProvider({children}: {children: ReactNode}): ReactNode {
+  const [translationLoaded, setTranslationLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const localeCode = getLanguage();
+      document.documentElement.lang = localeCode;
+      await loadDateTranslation(localeCode);
+      translationObject = await loadTranslation(await getOptimizeVersion(), localeCode);
+      setTranslationLoaded(true);
+    })();
+  }, []);
+
+  if (!translationLoaded) {
+    return <Loading />;
+  }
+
+  return children;
 }
 
 export function t(key: string, data?: Record<string, unknown>): string | JSX.Element[] {

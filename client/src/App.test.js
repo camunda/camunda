@@ -12,10 +12,6 @@ import App from './App';
 
 jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: () => <span />}));
 
-jest.mock('translation', () => ({
-  initTranslation: jest.fn(),
-}));
-
 jest.mock('hooks', () => ({
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),

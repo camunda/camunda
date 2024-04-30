@@ -11,10 +11,6 @@ import ReactDOM from 'react-dom';
 import './style.scss';
 import 'polyfills';
 
-import {loadConfig} from 'config';
-
 import App from './App';
-
-loadConfig();
 
 ReactDOM.render(<App />, document.getElementById('root'));

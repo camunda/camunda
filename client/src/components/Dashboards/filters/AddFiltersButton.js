@@ -32,10 +32,7 @@ export function AddFiltersButton({
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
   const {mightFail} = useErrorHandling();
-  const {optimizeProfile, userTaskAssigneeAnalyticsEnabled} = useUiConfig(
-    'optimizeProfile',
-    'userTaskAssigneeAnalyticsEnabled'
-  );
+  const {optimizeProfile, userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
   const hasUnsavedReports = reports.some(({id, report}) => report && !id);

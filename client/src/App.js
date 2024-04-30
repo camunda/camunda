@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useState} from 'react';
 import {HashRouter as Router, Route, Switch, matchPath} from 'react-router-dom';
-import {initTranslation} from 'translation';
 
 import {
   PrivateRoute,
@@ -26,26 +24,19 @@ import {
   ProcessReport,
 } from './components';
 
-import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
+import {ErrorBoundary, ErrorPage, Button} from 'components';
 
 import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 import {Prompt} from 'prompt';
 import {Tracking} from 'tracking';
 import {Onboarding} from 'onboarding';
-
+import {ConfigProvider} from 'config';
 import {Provider as Theme} from 'theme';
 import {UserProvider, DocsProvider} from 'HOC';
-import {useErrorHandling} from 'hooks';
+import {TranslationProvider} from 'translation';
 
 export default function App({error}) {
-  const [translationLoaded, setTranslationLoaded] = useState(false);
-  const {mightFail} = useErrorHandling();
-
-  useEffect(() => {
-    mightFail(initTranslation(), () => setTranslationLoaded(true));
-  }, [mightFail]);
-
   function renderEntity(props) {
     const components = {
       report: Report,
@@ -93,44 +84,44 @@ export default function App({error}) {
     );
   }
 
-  if (!translationLoaded) {
-    return <LoadingIndicator />;
-  }
-
   return (
-    <Theme>
-      <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
-        <WithLicense>
-          <div className="Root-container">
-            <ErrorBoundary>
-              <UserProvider>
-                <DocsProvider>
-                  <Switch>
-                    <PrivateRoute exact path="/" component={Processes} />
-                    <PrivateRoute path="/analysis" component={Analysis} />
-                    <PrivateRoute exact path="/events/processes" component={Events} />
-                    <PrivateRoute path="/events/ingested" component={Events} />
-                    <Route exact path="/share/:type/:id" component={Sharing} />
-                    <PrivateRoute
-                      path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
-                      render={renderEntity}
-                    />
-                    <PrivateRoute exact path="/collections" component={Home} />
-                    <Route path="/license" component={License} />
-                    <Route path="/logout" component={Logout} />
-                    <PrivateRoute path="*" component={ErrorPage} />
-                  </Switch>
-                </DocsProvider>
-                <Tracking />
-                <Onboarding />
-              </UserProvider>
-            </ErrorBoundary>
-          </div>
-        </WithLicense>
-        <SaveGuard />
-        <Prompt />
-      </Router>
-      <Notifications />
-    </Theme>
+    <ConfigProvider>
+      <TranslationProvider>
+        <Theme>
+          <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
+            <WithLicense>
+              <div className="Root-container">
+                <ErrorBoundary>
+                  <UserProvider>
+                    <DocsProvider>
+                      <Switch>
+                        <PrivateRoute exact path="/" component={Processes} />
+                        <PrivateRoute path="/analysis" component={Analysis} />
+                        <PrivateRoute exact path="/events/processes" component={Events} />
+                        <PrivateRoute path="/events/ingested" component={Events} />
+                        <Route exact path="/share/:type/:id" component={Sharing} />
+                        <PrivateRoute
+                          path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
+                          render={renderEntity}
+                        />
+                        <PrivateRoute exact path="/collections" component={Home} />
+                        <Route path="/license" component={License} />
+                        <Route path="/logout" component={Logout} />
+                        <PrivateRoute path="*" component={ErrorPage} />
+                      </Switch>
+                    </DocsProvider>
+                    <Tracking />
+                    <Onboarding />
+                  </UserProvider>
+                </ErrorBoundary>
+              </div>
+            </WithLicense>
+            <SaveGuard />
+            <Prompt />
+          </Router>
+          <Notifications />
+        </Theme>
+      </TranslationProvider>
+    </ConfigProvider>
   );
 }

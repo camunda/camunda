@@ -11,13 +11,13 @@ import {useLocation} from 'react-router';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
-import {isSharingEnabled, isUserSearchAvailable} from 'config';
+import {useUiConfig} from 'hooks';
 
 import ReportView from './ReportView';
 
-jest.mock('config', () => ({
-  isSharingEnabled: jest.fn().mockReturnValue(true),
-  isUserSearchAvailable: jest.fn().mockReturnValue(true),
+jest.mock('hooks', () => ({
+  useUiConfig: jest.fn().mockReturnValue({sharingEnabled: true, userSearchAvailable: true}),
+  useUser: jest.fn().mockReturnValue({user: {}}),
 }));
 
 jest.mock('services', () => {
@@ -111,7 +111,7 @@ it('should render sharing options', async () => {
 });
 
 it('should hide Sharing options if sharing is disabled', () => {
-  isSharingEnabled.mockReturnValueOnce(false);
+  useUiConfig.mockReturnValueOnce({sharingEnabled: false, userSearchAvailable: true});
   const node = shallow(<ReportView report={report} />);
 
   runLastEffect();
@@ -145,7 +145,7 @@ it('should show alert dropdown for number reports', async () => {
 });
 
 it('should hide alert dropdown if usersearch is not available', () => {
-  isUserSearchAvailable.mockReturnValueOnce(false);
+  useUiConfig.mockReturnValueOnce({sharingEnabled: true, userSearchAvailable: false});
   const node = shallow(
     <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
   );

@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+import {runLastEffect} from '__mocks__/react';
 import * as request from 'request';
 import {shallow} from 'enzyme';
 
-import {t, initTranslation} from './translation';
+import {t, TranslationProvider} from './translation';
 
 jest.mock('config', () => ({
   getOptimizeVersion: () => '2.7.0',
@@ -32,7 +33,9 @@ beforeEach(async () => {
       htmlString: 'This is an html <b>string</b> linking to <a href="testUrl" >{linkText}</a><br/>',
     })
   );
-  await initTranslation();
+
+  shallow(<TranslationProvider>content</TranslationProvider>);
+  runLastEffect();
 });
 
 it('should resolve the translation using a key ', async () => {

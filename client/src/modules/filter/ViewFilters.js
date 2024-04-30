@@ -13,10 +13,7 @@ import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig(
-    'userTaskAssigneeAnalyticsEnabled',
-    'optimizeProfile'
-  );
+  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
 
   return (
     <MenuDropdown

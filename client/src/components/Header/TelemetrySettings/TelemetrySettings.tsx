@@ -12,7 +12,9 @@ import {Modal, DocsLink} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
 import {showError, addNotification} from 'notifications';
-import {isMetadataTelemetryEnabled, loadConfig} from 'config';
+import {isMetadataTelemetryEnabled} from 'config';
+import {useLoadConfig} from 'hooks';
+
 import {updateTelemetry} from './service';
 
 interface TelemetrySettingsProps extends WithErrorHandlingProps {
@@ -22,6 +24,7 @@ interface TelemetrySettingsProps extends WithErrorHandlingProps {
 export function TelemetrySettings({onClose, mightFail}: TelemetrySettingsProps): JSX.Element {
   const [telemetryEnabled, setTelemetryEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const loadConfig = useLoadConfig();
 
   // set initial state of the checkbox
   useEffect(() => {

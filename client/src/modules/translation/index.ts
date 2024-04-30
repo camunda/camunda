@@ -5,4 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {setTranslation, initTranslation, t, getLanguage} from './translation';
+export {setTranslation, TranslationProvider, t, getLanguage} from './translation';

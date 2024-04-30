@@ -7,6 +7,7 @@
 
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
+import {ReactNode, createContext, useEffect, useState} from 'react';
 
 type WebappEndpoints = {
   [key: string]: {
@@ -61,25 +62,46 @@ export type UiConfig = {
   userTaskAssigneeAnalyticsEnabled: boolean;
 };
 
-let config: Record<string, unknown>;
+let globalConfig: UiConfig;
 const awaiting: Array<(config: Record<string, unknown>) => void> = [];
 
-export async function loadConfig(): Promise<void> {
-  try {
-    const response = await get('api/ui-configuration');
-    config = await response.json();
+interface configContextProps {
+  config: UiConfig | {};
+  loadConfig: () => Promise<void>;
+}
 
-    awaiting.forEach((cb) => cb(config));
-    awaiting.length = 0;
-  } catch (err) {
-    showError(err as ErrorResponse);
-  }
+export const configContext = createContext<configContextProps>({
+  config: {},
+  loadConfig: () => Promise.resolve(),
+});
+export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
+  const [config, setConfig] = useState<UiConfig | {}>({});
+
+  const loadConfig = async () => {
+    try {
+      const response = await get('api/ui-configuration');
+      const config = await response.json();
+
+      setConfig(config);
+      globalConfig = config;
+      awaiting.forEach((cb) => cb(config));
+      awaiting.length = 0;
+    } catch (err) {
+      showError(err as ErrorResponse);
+    }
+  };
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  return <configContext.Provider value={{config, loadConfig}}>{children}</configContext.Provider>;
 }
 
 export function createAccessorFunction<T>(property: keyof UiConfig): () => Promise<T> {
   return async function (): Promise<T> {
-    if (config) {
-      return config[property] as T;
+    if (globalConfig) {
+      return globalConfig[property] as T;
     }
 
     return new Promise((resolve) => {

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
@@ -24,11 +24,10 @@ import {
   InstanceViewTable,
   Popover,
 } from 'components';
-import {isSharingEnabled, isUserSearchAvailable} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
 import {t} from 'translation';
 import {track} from 'tracking';
-import {useUser} from 'hooks';
+import {useUiConfig, useUser} from 'hooks';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 import {CollapsibleContainer} from './CollapsibleContainer';
@@ -37,8 +36,7 @@ import './ReportView.scss';
 
 export default function ReportView({report, error, loadReport}) {
   const [deleting, setDeletting] = useState(null);
-  const [sharingEnabled, setSharingEnabled] = useState(false);
-  const [userSearchAvailable, setUserSearchAvailable] = useState(null);
+  const {sharingEnabled, userSearchAvailable} = useUiConfig();
   const [redirect, setRedirect] = useState(false);
   const location = useLocation();
   const isProcessReport = location.pathname.includes('processes/report');
@@ -47,13 +45,6 @@ export default function ReportView({report, error, loadReport}) {
   const reportContainerRef = useRef();
   const [showReportRenderer, setShowReportRenderer] = useState(true);
   const {user} = useUser();
-
-  useEffect(() => {
-    (async () => {
-      setSharingEnabled(await isSharingEnabled());
-      setUserSearchAvailable(await isUserSearchAvailable());
-    })();
-  }, []);
 
   function showTable(sectionState) {
     if (sectionState !== 'maximized') {
