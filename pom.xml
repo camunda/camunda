@@ -75,8 +75,8 @@
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
 
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
   </properties>
 
   <name>Camunda Optimize</name>

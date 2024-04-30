@@ -31,7 +31,7 @@ jobs:
       uses: ./.github/actions/setup-maven
       with:
           secrets: ${{ toJSON(secrets) }}
-          java-version: 17
+          java-version: 21
           distribution: zulu
     - name: "Read Java / Version Info"
       id: "pom-info"
