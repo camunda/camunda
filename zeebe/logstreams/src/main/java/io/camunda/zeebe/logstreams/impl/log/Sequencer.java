@@ -16,6 +16,7 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -31,9 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The sequencer takes concurrent {@link #tryWrite(List, long) tryWrite} calls and serializes them,
- * assigning positions to all entries. Writes that are accepted are written directly to the {@link
- * LogStorage}.
+ * The sequencer takes concurrent {@link #tryWrite(WriteContext, List, long) tryWrite} calls and
+ * serializes them, assigning positions to all entries. Writes that are accepted are written
+ * directly to the {@link LogStorage}.
  */
 final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
@@ -78,7 +79,9 @@ final class Sequencer implements LogStreamWriter, Closeable {
   /** {@inheritDoc} */
   @Override
   public Either<WriteFailure, Long> tryWrite(
-      final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+      final WriteContext context,
+      final List<LogAppendEntry> appendEntries,
+      final long sourcePosition) {
     if (isClosed) {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return Either.left(WriteFailure.CLOSED);
@@ -92,7 +95,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
         return Either.left(WriteFailure.INVALID_ARGUMENT);
       }
     }
-    final var permit = flowControl.tryAcquire();
+    final var permit = flowControl.tryAcquire(context);
     if (permit.isLeft()) {
       return Either.left(WriteFailure.FULL);
     }

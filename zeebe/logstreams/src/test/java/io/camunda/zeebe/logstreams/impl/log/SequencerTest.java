@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
@@ -48,7 +49,7 @@ final class SequencerTest {
             new FlowControl(logStreamMetrics));
 
     // when
-    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
+    final var result = sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // then
     EitherAssert.assertThat(result).isRight().right().isEqualTo(initialPosition);
@@ -71,7 +72,7 @@ final class SequencerTest {
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
-    final var result = sequencer.tryWrite(entries);
+    final var result = sequencer.tryWrite(WriteContext.internal(), entries);
 
     // then
     EitherAssert.assertThat(result)
@@ -96,7 +97,7 @@ final class SequencerTest {
     final var entry = TestEntry.ofDefaults();
 
     // when
-    sequencer.tryWrite(entry);
+    sequencer.tryWrite(WriteContext.internal(), entry);
 
     // then
     Mockito.verify(logStorage).append(eq(1L), eq(1L), any(BufferWriter.class), any());
@@ -119,7 +120,7 @@ final class SequencerTest {
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
     // when
-    sequencer.tryWrite(entries);
+    sequencer.tryWrite(WriteContext.internal(), entries);
 
     // then
     Mockito.verify(logStorage).append(eq(1L), eq(3L), any(BufferWriter.class), any());
@@ -257,7 +258,7 @@ final class SequencerTest {
               var batchesWritten = 0L;
               var lastWrittenPosition = initialPosition - 1;
               while (batchesWritten < batchesToWrite) {
-                final var result = sequencer.tryWrite(batchToWrite);
+                final var result = sequencer.tryWrite(WriteContext.internal(), batchToWrite);
                 if (result.isRight()) {
                   if (isOnlyWriter) {
                     Assertions.assertThat(result.get())

@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -250,6 +251,6 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             .rejectionReason("");
     final var entry =
         RecordBatchEntry.createEntry(processInstanceKey, recordMetadata, -1, errorRecord);
-    return writer.tryWrite(entry);
+    return writer.tryWrite(WriteContext.internal(), entry);
   }
 }

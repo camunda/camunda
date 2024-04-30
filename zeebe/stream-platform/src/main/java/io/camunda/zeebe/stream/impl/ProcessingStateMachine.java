@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -595,7 +596,8 @@ public final class ProcessingStateMachine {
           writeRetryStrategy.runWithRetry(
               () -> {
                 final var writeResult =
-                    logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+                    logStreamWriter.tryWrite(
+                        WriteContext.processingResult(), pendingWrites, sourceRecordPosition);
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;
