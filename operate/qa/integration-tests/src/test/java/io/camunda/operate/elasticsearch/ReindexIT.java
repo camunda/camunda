@@ -57,12 +57,6 @@ public class ReindexIT extends OperateSearchAbstractIT {
     super.afterAllTeardown();
   }
 
-  @Test
-  public void testStuff() {
-    operateProperties.getArchiver().setIlmEnabled(true);
-    schemaManager.createSchema();
-  }
-
   @Test // OPE-1312
   public void testReindexArchivedIndices() throws Exception {
     // Create archived index
