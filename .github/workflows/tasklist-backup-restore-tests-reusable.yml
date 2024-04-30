@@ -67,7 +67,7 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn clean install -B -T1C -DskipChecks -P skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Tests: run backup and restore tests
       - name: Run backup and restore tests

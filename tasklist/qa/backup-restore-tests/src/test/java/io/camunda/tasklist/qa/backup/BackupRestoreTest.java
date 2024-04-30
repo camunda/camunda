@@ -160,7 +160,7 @@ public class BackupRestoreTest {
     createOsSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(
-        ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
     createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 
