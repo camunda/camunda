@@ -705,7 +705,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // when
     waitUntilInstanceRecordWithElementTypeAndIntentExported(
         BpmnElementType.BOUNDARY_EVENT, ELEMENT_COMPLETED);
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(12);
     importAllZeebeEntitiesFromScratch();
 
     // then
