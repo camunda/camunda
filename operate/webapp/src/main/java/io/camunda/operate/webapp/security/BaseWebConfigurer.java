@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.webapp.security;
 
+import static io.camunda.operate.property.WebSecurityProperties.DEFAULT_SM_SECURITY_POLICY;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
@@ -41,7 +42,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 public abstract class BaseWebConfigurer {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired protected OperateProperties operateProperties;
 
@@ -63,7 +64,7 @@ public abstract class BaseWebConfigurer {
   }
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
     final var authenticationManagerBuilder =
         http.getSharedObject(AuthenticationManagerBuilder.class);
 
@@ -75,14 +76,30 @@ public abstract class BaseWebConfigurer {
     return http.build();
   }
 
-  protected void applySecurityHeadersSettings(HttpSecurity http) throws Exception {
+  protected void applySecurityHeadersSettings(final HttpSecurity http) throws Exception {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
-    http.headers()
-        .contentSecurityPolicy(webSecurityConfig.getContentSecurityPolicy())
-        .and()
-        .httpStrictTransportSecurity()
-        .maxAgeInSeconds(webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
-        .includeSubDomains(webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
+
+    // Only SaaS has CloudProperties
+    final String policyDirectives =
+        (operateProperties.getCloud().getClusterId() == null)
+            ? DEFAULT_SM_SECURITY_POLICY
+            : webSecurityConfig.getContentSecurityPolicy();
+
+    http.headers(
+        headers -> {
+          headers
+              .contentSecurityPolicy(
+                  cps -> {
+                    cps.policyDirectives(policyDirectives);
+                  })
+              .httpStrictTransportSecurity(
+                  sts -> {
+                    sts.maxAgeInSeconds(
+                            webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
+                        .includeSubDomains(
+                            webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
+                  });
+        });
   }
 
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
@@ -131,12 +148,16 @@ public abstract class BaseWebConfigurer {
   protected abstract void applyOAuth2Settings(final HttpSecurity http) throws Exception;
 
   protected void logoutSuccessHandler(
-      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
   protected void failureHandler(
-      HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     final String requestedUrl =
         request.getRequestURI().substring(request.getContextPath().length());
@@ -159,12 +180,16 @@ public abstract class BaseWebConfigurer {
   }
 
   private void successHandler(
-      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
   protected void sendError(
-      HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     request.getSession().invalidate();
     sendJSONErrorMessage(response, errorMessageService.getMessageByProfileFor(ex));
