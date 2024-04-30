@@ -19,6 +19,7 @@ package io.camunda.tasklist;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILES;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
 
+import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.HashMap;
@@ -27,7 +28,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
@@ -39,7 +39,11 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.core.env.ConfigurableEnvironment;
 
-@SpringBootApplication
+@SpringBootApplication(
+    exclude = {
+      ElasticsearchClientAutoConfiguration.class,
+      GraphQLAnnotationsAutoConfiguration.class
+    })
 @ComponentScan(
     basePackages = "io.camunda.tasklist",
     excludeFilters = {
@@ -54,7 +58,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration(exclude = ElasticsearchClientAutoConfiguration.class)
 public class Application {
 
   public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
