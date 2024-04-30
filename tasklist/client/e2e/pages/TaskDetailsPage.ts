@@ -40,7 +40,7 @@ class TaskDetailsPage {
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
-  readonly taskCompletedMsg: Locator;
+  readonly taskCompletionNotification: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -65,7 +65,7 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
-    this.taskCompletedMsg = page.getByText('Task completed');
+    this.taskCompletionNotification = page.getByText('Task completed');
   }
 
   async goto(id: string) {

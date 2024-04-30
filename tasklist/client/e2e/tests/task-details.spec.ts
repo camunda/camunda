@@ -182,7 +182,8 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
-  test('task completion with deployed form', async ({
+  test.only('task completion with deployed form', async ({
+    page,
     taskPanelPage,
     taskDetailsPage,
     formJSDetailsPage,
@@ -191,18 +192,18 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
-    await formJSDetailsPage.fillTextField('Client Name*', 'Jon');
-    await formJSDetailsPage.fillTextField('Client Address*', 'Earth');
+    await page.getByLabel('Client Name*').fill('Jon');
+    await page.getByLabel('Client Address*').fill('Earth');
     await formJSDetailsPage.fillDateField('Invoice Date*', '1/1/3000');
     await formJSDetailsPage.fillDateField('Due Date*', '1/2/3000');
-    await formJSDetailsPage.fillTextField('Invoice Number*', '123');
+    await page.getByLabel('Invoice Number*').fill('123');
 
     await formJSDetailsPage.selectValueFromDropdown(
       'USD - United States Dollar',
       'EUR - Euro',
     );
 
-    await formJSDetailsPage.dynamicListAddnewBtn.click();
+    await page.getByRole('button', {name: /add new/i}).click();
     await formJSDetailsPage.fillTextFields('Item Name*', 'Item#', 2);
     await formJSDetailsPage.fillTextFields('Unit Price*', '1', 2);
     await formJSDetailsPage.fillTextFields('Quantity*', '2', 2);
@@ -213,42 +214,34 @@ test.describe('task details page', () => {
 
     await formJSDetailsPage.completeTaskButton.click();
 
-    await expect(taskDetailsPage.taskCompletedMsg).toBeVisible({
+    await expect(taskDetailsPage.taskCompletionNotification).toBeVisible({
       timeout: 30000,
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('processWithDeployedForm');
 
-    let inputLocator =
-      await formJSDetailsPage.getLocatorByLabel('Client Name*');
-    await expect(inputLocator).toHaveValue('Jon');
-    inputLocator = await formJSDetailsPage.getLocatorByLabel('Client Address*');
-    await expect(inputLocator).toHaveValue('Earth');
-    inputLocator = await formJSDetailsPage.getLocatorByLabel('Invoice Date*');
-    await expect(inputLocator).toHaveValue('1/1/3000');
-    inputLocator = await formJSDetailsPage.getLocatorByLabel('Due Date*');
-    await expect(inputLocator).toHaveValue('1/2/3000');
-    inputLocator = await formJSDetailsPage.getLocatorByLabel('Invoice Number*');
-    await expect(inputLocator).toHaveValue('123');
+    expect(page.getByLabel('Client Name*')).toHaveValue('Jon');
+    expect(page.getByLabel('Client Address*')).toHaveValue('Earth');
+    await expect(page.getByLabel('Invoice Date*')).toHaveValue('1/1/3000');
+    expect(page.getByLabel('Due Date*')).toHaveValue('1/2/3000');
+    expect(page.getByLabel('Invoice Number*')).toHaveValue('123');
 
-    let inputLocators = await formJSDetailsPage.getLocatorsByLabel(
-      'Item Name*',
-      2,
+    expect(await formJSDetailsPage.getLocatorsByLabel('Item Name*', 2)).toEqual(
+      ['Item#1', 'Item#2'],
     );
-    await expect(inputLocators).toEqual(['Item#1', 'Item#2']);
 
-    inputLocators = await formJSDetailsPage.getLocatorsByLabel(
-      'Unit Price*',
-      2,
-    );
-    await expect(inputLocators).toEqual(['11', '12']);
+    expect(
+      await formJSDetailsPage.getLocatorsByLabel('Unit Price*', 2),
+    ).toEqual(['11', '12']);
 
-    inputLocators = await formJSDetailsPage.getLocatorsByLabel('Quantity*', 2);
-    await expect(inputLocators).toEqual(['21', '22']);
+    expect(await formJSDetailsPage.getLocatorsByLabel('Quantity*', 2)).toEqual([
+      '21',
+      '22',
+    ]);
 
-    await expect(formJSDetailsPage.form).toContainText('EUR 231');
-    await expect(formJSDetailsPage.form).toContainText('EUR 264');
-    await expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
+    expect(formJSDetailsPage.form).toContainText('EUR 231');
+    expect(formJSDetailsPage.form).toContainText('EUR 264');
+    expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
   });
 
   test('task completion with form from assigned to me filter', async ({
