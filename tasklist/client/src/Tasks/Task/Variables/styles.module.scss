@@ -29,50 +29,6 @@
   margin-right: var(--cds-spacing-01);
 }
 
-.list {
-  height: min-content;
-}
-
-.listCell {
-  vertical-align: middle;
-}
-
-.scrollableOuter {
-  height: min-content;
-  overflow-y: auto;
-}
-
-.scrollableInner {
-  max-height: 100px;
-  height: min(min-content, 100%);
-  overflow-y: auto;
-}
-
-.iconButtons {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  padding-right: var(--cds-spacing-03);
-
-  &.extraPadding {
-    padding-right: calc(var(--cds-spacing-03) + 32px);
-  }
-}
-
-.cellName {
-  width: 200px;
-}
-
-.valueCell {
-  overflow-y: hidden;
-  word-break: break-all;
-  height: min(100px, min-content);
-}
-
-.controlsCell {
-  width: 80px;
-}
-
 .panelHeader {
   display: flex;
   justify-content: space-between;

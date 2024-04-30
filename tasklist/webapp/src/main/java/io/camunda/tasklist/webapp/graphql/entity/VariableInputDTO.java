@@ -16,18 +16,38 @@
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLNonNull;
+import graphql.annotations.annotationTypes.GraphQLType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 
+@GraphQLType
+@GraphQLName("VariableInput")
 public class VariableInputDTO {
 
   @Schema(description = "The name of the variable.")
+  @GraphQLField
+  @GraphQLNonNull
   private String name;
 
   @Schema(
       description =
           "The value of the variable. When specifying the variable value, it's crucial to maintain consistency with JSON values (serialization for the complex objects such as list) and ensure that strings remain appropriately formatted.")
+  @GraphQLField
+  @GraphQLNonNull
   private String value;
+
+  // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
+  @GraphQLConstructor
+  public VariableInputDTO(final String name, final String value) {
+    this.name = name;
+    this.value = value;
+  }
+
+  public VariableInputDTO() {}
 
   public String getName() {
     return name;

@@ -28,6 +28,7 @@ import {processStatisticsBatchModificationStore} from 'modules/stores/processSta
 import {Title, DataTable} from './styled';
 import useOperationApply from '../../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import {tracking} from 'modules/tracking';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -93,6 +94,9 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
           if (isPrimaryButtonDisabled) {
             return;
           }
+          tracking.track({
+            eventName: 'batch-move-modification-apply-button-clicked',
+          });
           setOpen(false);
           batchModificationStore.reset();
           applyBatchOperation({

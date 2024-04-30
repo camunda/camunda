@@ -49,7 +49,7 @@ public @interface JobWorker {
    * the worker will stop activating new jobs in order to not overwhelm the client and give other
    * workers the chance to work on the jobs. The worker will try to activate new jobs again when
    * jobs are completed (or marked as failed). If no maximum is set then the default, from the
-   * ZeebeClientConfiguration, is used. <br>
+   * ZeebeClientConfigurationImpl, is used. <br>
    * <br>
    * Considerations: A greater value can avoid situations in which the client waits idle for the
    * broker to provide more jobs. This can improve the worker's throughput. The memory used by the
@@ -64,7 +64,7 @@ public @interface JobWorker {
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
    * request timeout is set then the default is used from the {@link
-   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfiguration}
+   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfigurationImpl}
    */
   long requestTimeout() default -1L;
 
@@ -73,7 +73,7 @@ public @interface JobWorker {
    * automatically try to always activate new jobs after completing jobs. If no jobs can be
    * activated after completing the worker will periodically poll for new jobs. If no poll interval
    * is set then the default is used from the {@link
-   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfiguration}
+   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfigurationImpl}
    */
   long pollInterval() default -1L;
 

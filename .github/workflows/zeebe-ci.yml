@@ -9,6 +9,7 @@ on:
       - trying
       - staging
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
@@ -22,6 +23,7 @@ on:
       - 'zeebe/**'
   pull_request:
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
@@ -385,7 +387,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v5
         with:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
           version: v1.55.2
@@ -473,7 +475,7 @@ jobs:
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
       - name: Verify Docker image
-        uses: ./.github/actions/verify-zeebe-docker
+        uses: ./.github/actions/verify-platform-docker
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
           date: ${{ steps.build-zeebe-docker.outputs.date }}
@@ -720,7 +722,8 @@ jobs:
       failure() &&
       fromJSON(github.run_attempt) < 3 &&
       github.repository == 'camunda/zeebe' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
+      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait') &&
+      github.event_name != 'merge_queue'
     runs-on: ubuntu-latest
     env:
       GH_REPO: ${{ github.repository }}

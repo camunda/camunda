@@ -62,12 +62,22 @@ EXPOSE 8080
 RUN apk update && apk upgrade
 RUN apk add --no-cache bash openjdk21-jre tzdata
 
-WORKDIR /usr/local/operate
+ENV OPE_HOME=/usr/local/operate
+
+WORKDIR ${OPE_HOME}
 VOLUME /tmp
+VOLUME ${OPE_HOME}/logs
 
-COPY --from=prepare /tmp/operate /usr/local/operate
+RUN addgroup --gid 1001 camunda && \
+    adduser -D -h ${OPE_HOME} -G camunda -u 1001 camunda && \
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
+    mkdir ${OPE_HOME}/logs && \
+    chown -R 1001:0 ${OPE_HOME} && \
+    chmod -R 0775 ${OPE_HOME}
 
-RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/operate -G camunda -u 1001 camunda
+COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
+
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/operate/bin/operate"]

@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
-@PropertySource("classpath:version.properties")
+@PropertySource("classpath:tasklist-version.properties")
 public class TasklistProperties {
 
   public static final String PREFIX = "camunda.tasklist";

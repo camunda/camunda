@@ -35,6 +35,11 @@ on:
         type: boolean
         required: false
         default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       name:
@@ -75,6 +80,11 @@ on:
         type: boolean
         required: false
         default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
 jobs:
   build-zeebe-image:
     name: Build Zeebe
@@ -117,6 +127,74 @@ jobs:
           build-args: DIST=build
           provenance: false
           target: app
+  build-operate-image:
+    name: Build + Push Operate Docker image
+    if: ${{ inputs.operate-tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.8.1
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+          cache: "maven"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+           [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: mvn clean install -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push to Zeebe gcr.io registry
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: gcr.io/zeebe-io/operate:${{ inputs.operate-tag }}
+          cache-from: type=gha,ignore-error=true
+          cache-to: type=gha,mode=max,ignore-error=true
+          file: operate.Dockerfile
+
   build-benchmark-images:
     name: Build Starter and Worker
     runs-on: ubuntu-latest

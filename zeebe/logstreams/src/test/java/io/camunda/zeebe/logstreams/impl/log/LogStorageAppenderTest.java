@@ -15,7 +15,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
@@ -60,7 +60,7 @@ final class LogStorageAppenderTest {
             INITIAL_POSITION,
             4 * 1024 * 1024,
             new SequencerMetrics(PARTITION_ID),
-            new AppenderMetrics(PARTITION_ID));
+            new LogStreamMetrics(PARTITION_ID));
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 

@@ -18,39 +18,72 @@
 import {useCallback, useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {useBlocker} from './useBlocker';
-import type {Location} from 'history';
+import type {Location, Transition} from 'history';
 
-export function useCallbackPrompt(when: boolean) {
+/**
+ * This effect interrupts the browser navigation whenever changes are detected in the URL.
+ */
+export function useCallbackPrompt({
+  shouldInterrupt,
+  onTransition,
+}: {
+  /**
+   * Indicates if the navigation should be interrupted.
+   */
+  shouldInterrupt: boolean;
+  /**
+   * A callback function which hooks into the navigation interruption.
+   *
+   * - needs to return true if the navigation should be allowed (passed)
+   * - needs to return false if the navigation should be interrupted
+   */
+  onTransition?: ({
+    transition,
+    location,
+  }: {
+    transition: Transition;
+    location: Pick<Location, 'pathname' | 'search'>;
+  }) => boolean;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [lastLocation, setLastLocation] = useState<{location: Location} | null>(
-    null,
-  );
+  const [isNavigationInterrupted, setIsNavigationInterrupted] = useState(false);
+  const [lastLocation, setLastLocation] = useState<Location | null>(null);
   const [confirmedNavigation, setConfirmedNavigation] = useState(false);
 
   const cancelNavigation = useCallback(() => {
-    setShowPrompt(false);
+    setIsNavigationInterrupted(false);
   }, []);
 
   const handleBlockedNavigation = useCallback(
-    (nextLocation: {location: Location}) => {
+    (transition: Transition) => {
+      const shouldPass = onTransition?.({
+        transition,
+        location: {pathname: location.pathname, search: location.search},
+      });
+
+      if (shouldPass === true) {
+        setLastLocation(transition.location);
+        transition.retry();
+        return;
+      }
+
       if (
         !confirmedNavigation &&
-        (nextLocation.location.pathname !== location.pathname ||
-          nextLocation.location.search !== location.search)
+        (transition.location.pathname !== location.pathname ||
+          transition.location.search !== location.search)
       ) {
-        setShowPrompt(true);
-        setLastLocation(nextLocation);
+        setIsNavigationInterrupted(true);
+        setLastLocation(transition.location);
         return false;
       }
       return true;
     },
-    [confirmedNavigation, location.pathname, location.search],
+    [confirmedNavigation, location.pathname, location.search, onTransition],
   );
 
   const confirmNavigation = useCallback(() => {
-    setShowPrompt(false);
+    setIsNavigationInterrupted(false);
     setConfirmedNavigation(true);
   }, []);
 
@@ -59,28 +92,38 @@ export function useCallbackPrompt(when: boolean) {
       const contextPath = window.clientConfig?.contextPath;
 
       if (contextPath !== undefined) {
-        const pathname = lastLocation.location.pathname.replace(
-          contextPath,
-          '',
-        );
+        const pathname = lastLocation.pathname.replace(contextPath, '');
 
         navigate({
-          ...lastLocation.location,
+          ...lastLocation,
           pathname: pathname === '' ? '/' : pathname,
         });
       } else {
-        navigate(lastLocation.location);
+        navigate(lastLocation);
       }
     }
   }, [confirmedNavigation, lastLocation, navigate]);
 
   useEffect(() => {
-    if (!when && confirmedNavigation) {
+    if (!shouldInterrupt && confirmedNavigation) {
       setConfirmedNavigation(false);
     }
-  }, [when, confirmedNavigation]);
+  }, [shouldInterrupt, confirmedNavigation]);
 
-  useBlocker(handleBlockedNavigation, when);
+  useBlocker(handleBlockedNavigation, shouldInterrupt);
 
-  return {showPrompt, confirmNavigation, cancelNavigation};
+  return {
+    /**
+     * Indicates if the browser navigation is currently interrupted
+     */
+    isNavigationInterrupted,
+    /**
+     * Continues the navigation in case it is currently interrupted
+     */
+    confirmNavigation,
+    /**
+     * Cancels the navigation in case it is currently interrupted
+     */
+    cancelNavigation,
+  };
 }

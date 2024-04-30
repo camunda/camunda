@@ -46,6 +46,24 @@
       <lineEnding>keep</lineEnding>
       <outputDirectory>/</outputDirectory>
     </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/TASKLIST_README.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/TASKLIST_LICENSE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/TASKLIST_NOTICE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/</outputDirectory>
+    </file>
   </files>
 
 </assembly>

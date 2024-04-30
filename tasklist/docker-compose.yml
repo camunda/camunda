@@ -4,7 +4,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -49,7 +49,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.9.2
+    image: docker.elastic.co/kibana/kibana:8.13.2
     ports:
       - 5601:5601
     environment:
@@ -119,9 +119,6 @@ services:
       - graphql.playground.settings.request.credentials=include
       - camunda.tasklist.database=opensearch
       - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
-    volumes:
-      - ./tasklist-distro/src/main/config/application.yml:/app/resources/application.yaml
-      - ./tasklist-distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
     depends_on:
       - opensearch
       - zeebe-opensearch
@@ -145,8 +142,6 @@ services:
       - graphql.playground.settings.request.credentials=include
     volumes:
       - ./config/application.yml:/usr/local/tasklist/config/application.yml
-      - ./tasklist-distro/src/main/config/application.yml:/app/resources/application.yaml
-      - ./tasklist-distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
     depends_on:
       - elasticsearch
       - zeebe
@@ -206,9 +201,6 @@ services:
       - camunda.tasklist.importer.readerBackoff=0
       - camunda.tasklist.importer.schedulerBackoff=0
       - spring.profiles.active=e2e-test
-    volumes:
-      - ./tasklist-distro/src/main/config/application.yml:/app/resources/application.yaml
-      - ./tasklist-distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
     depends_on:
       - elasticsearch
       - zeebe-e2e
@@ -234,9 +226,6 @@ services:
       - camunda.tasklist.auth0.organization=ebe81097-6657-4481-8fba-be5d94cac4ce
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
-    volumes:
-      - ./tasklist-distro/src/main/config/application.yml:/app/resources/application.yaml
-      - ./tasklist-distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
     depends_on:
       - elasticsearch
       - zeebe

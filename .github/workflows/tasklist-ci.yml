@@ -6,27 +6,25 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
+      - "main"
+      - "stable/**"
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
   pull_request:
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -35,6 +33,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check_changes:
+    name: Check for changes in the client folder
+    runs-on: ubuntu-latest
+    outputs:
+      has_changed_frontend: ${{ steps.filter.outputs.src_changed }}
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          echo "src_changed=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For pull requests, compare the PR base and head commits
+            git fetch origin ${{ github.base_ref }}
+
+            if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -q 'tasklist/client/'; then
+              echo 'src_changed=true' >> $GITHUB_OUTPUT
+            fi
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # For pushes, compare the current commit with the previous one
+            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q 'tasklist/client/'; then
+              echo 'src_changed=true' >> $GITHUB_OUTPUT
+            fi
+          fi
   run-build:
     name: run-build
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
@@ -49,6 +72,156 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
 
+  fe-type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn ts-check
+        name: Type checks
+
+  fe-eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn eslint
+        name: ESLint
+
+  fe-stylelint:
+    name: Stylelint
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn stylelint
+        name: Stylelint
+
+  fe-tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn test:ci
+        name: Unit & Integration tests
+
+  fe-visual-regression-tests:
+    name: Visual regression tests
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.43.1
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - name: Setup yarn cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - name: Install node dependencies
+        run: yarn
+      - name: Build frontend
+        run: yarn build:visual-regression
+      - name: Start server
+        run: yarn start:visual-regression &
+      - name: Run Playwright tests
+        run: yarn playwright e2e/visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-regression-report
+          path: tasklist/client/playwright-report/
+          retention-days: 30
+
+  fe-a11y-tests:
+    name: a11y tests
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.43.1
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - name: Setup yarn cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+          cache-dependency-path: tasklist/client/yarn.lock
+      - name: Install node dependencies
+        run: yarn
+      - name: Build frontend
+        run: yarn build
+      - name: Start server
+        run: yarn start:visual-regression &
+      - name: Run A11y tests
+        run: yarn playwright a11y
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: a11y-report
+          path: tasklist/client/playwright-report/
+          retention-days: 30
+
   test-summary:
     # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
     # https://github.com/orgs/community/discussions/26251
@@ -56,5 +229,14 @@ jobs:
     name: Test summary
     if: always()
     runs-on: ubuntu-latest
+    needs:
+      - run-build
+      - check_changes
+      - fe-type-check
+      - fe-eslint
+      - fe-tests
+      - fe-visual-regression-tests
+      - fe-a11y-tests
+      - fe-stylelint
     steps:
-      - run: exit 0
+      - run: exit ${{ ((needs.check_changes.outputs.has_changed_frontend == 'true' && contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}

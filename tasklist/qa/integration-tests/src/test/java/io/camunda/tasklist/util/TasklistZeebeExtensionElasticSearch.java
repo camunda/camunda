@@ -16,6 +16,8 @@
  */
 package io.camunda.tasklist.util;
 
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,9 +31,11 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
+@Scope(SCOPE_PROTOTYPE)
 @ConditionalOnProperty(
     name = "camunda.tasklist.database",
     havingValue = "elasticsearch",
@@ -42,19 +46,28 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  public void refreshIndices(Instant instant) {
+  @Override
+  public void refreshIndices(final Instant instant) {
     try {
       final String date =
           DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneId.systemDefault()).format(instant);
       final RefreshRequest refreshRequest = new RefreshRequest(getPrefix() + "*" + date);
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
   }
 
   @Override
-  protected void setZeebeIndexesPrefix(String prefix) {
+  public void afterEach(final ExtensionContext extensionContext) {
+    super.afterEach(extensionContext);
+    if (!failed) {
+      TestUtil.removeAllIndices(zeebeEsClient, getPrefix());
+    }
+  }
+
+  @Override
+  protected void setZeebeIndexesPrefix(final String prefix) {
     tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
   }
 
@@ -64,7 +77,7 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  protected Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix) {
+  protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     return Map.of(
         "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
         "http://host.testcontainers.internal:9200",
@@ -79,19 +92,11 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  public void afterEach(ExtensionContext extensionContext) {
-    super.afterEach(extensionContext);
-    if (!failed) {
-      TestUtil.removeAllIndices(zeebeEsClient, getPrefix());
-    }
-  }
+  public void setZeebeOsClient(final OpenSearchClient zeebeOsClient) {}
 
   @Override
-  public void setZeebeOsClient(OpenSearchClient zeebeOsClient) {}
-
-  @Override
-  public void setZeebeEsClient(RestHighLevelClient zeebeOsClient) {
-    this.zeebeEsClient = zeebeOsClient;
+  public void setZeebeEsClient(final RestHighLevelClient zeebeOsClient) {
+    zeebeEsClient = zeebeOsClient;
   }
 
   @Override
