@@ -71,6 +71,11 @@ public class SchemaStartup {
         LOGGER.info(
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
+
+      if (createSchema) {
+        schemaManager.checkAndUpdateIndices();
+      }
+
       if (!newFields.isEmpty()) {
         if (createSchema) {
           schemaManager.updateSchema(newFields);
@@ -84,7 +89,7 @@ public class SchemaStartup {
         migrator.migrateData();
       }
       LOGGER.info("SchemaStartup finished.");
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
       throw ex;
     }

@@ -19,6 +19,7 @@ package io.camunda.operate.elasticsearch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.Plan;
 import io.camunda.operate.schema.migration.ReindexPlan;
@@ -41,6 +42,7 @@ public class ReindexIT extends OperateSearchAbstractIT {
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private BeanFactory beanFactory;
+  @Autowired private OperateProperties operateProperties;
 
   @Override
   protected void runAdditionalBeforeEachSetup() throws Exception {
@@ -53,6 +55,12 @@ public class ReindexIT extends OperateSearchAbstractIT {
   public void afterAllTeardown() {
     schemaManager.deleteIndicesFor(idxName("index-*"));
     super.afterAllTeardown();
+  }
+
+  @Test
+  public void testStuff() {
+    operateProperties.getArchiver().setIlmEnabled(true);
+    schemaManager.createSchema();
   }
 
   @Test // OPE-1312

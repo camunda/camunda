@@ -109,6 +109,23 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   @Override
+  public void checkAndUpdateIndices() {
+    indexDescriptors.forEach(
+        descriptor -> {
+          if (operateProperties.getArchiver().isIlmEnabled()) {
+            richOpenSearchClient
+                .ism()
+                .addPolicyToIndex(
+                    descriptor.getDerivedIndexNamePattern(), OPERATE_DELETE_ARCHIVED_INDICES);
+          } else {
+            richOpenSearchClient
+                .ism()
+                .removePolicyFromIndex(descriptor.getDerivedIndexNamePattern());
+          }
+        });
+  }
+
+  @Override
   public void createDefaults() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
 

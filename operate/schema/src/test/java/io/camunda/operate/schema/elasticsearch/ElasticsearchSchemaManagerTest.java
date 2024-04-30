@@ -14,66 +14,63 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.schema;
+package io.camunda.operate.schema.elasticsearch;
 
-import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.operate.schema.indices.IndexDescriptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.operate.property.ArchiverProperties;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
-import java.util.Map;
-import java.util.Set;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import java.util.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
-public interface SchemaManager {
+@ExtendWith(MockitoExtension.class)
+public class ElasticsearchSchemaManagerTest {
 
-  String REFRESH_INTERVAL = "index.refresh_interval";
-  String NO_REFRESH = "-1";
-  String NUMBERS_OF_REPLICA = "index.number_of_replicas";
-  String NO_REPLICA = "0";
+  @Mock protected RetryElasticsearchClient retryElasticsearchClient;
+  @Mock protected OperateProperties operateProperties;
+  @Mock private List<AbstractIndexDescriptor> indexDescriptors;
+  @Mock private List<TemplateDescriptor> templateDescriptors;
+  @Mock private List<Integer> testList;
+  @InjectMocks private ElasticsearchSchemaManager underTest;
 
-  String OPERATE_DELETE_ARCHIVED_INDICES = "operate_delete_archived_indices";
-  String INDEX_LIFECYCLE_NAME = "index.lifecycle.name";
-  String DELETE_PHASE = "delete";
+  @Test
+  public void testCheckAndUpdateIndices() {
+    final AbstractIndexDescriptor abstractIndexDescriptor1 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor2 = mock(AbstractIndexDescriptor.class);
+    final AbstractIndexDescriptor abstractIndexDescriptor3 = mock(AbstractIndexDescriptor.class);
+    when(abstractIndexDescriptor1.getDerivedIndexNamePattern()).thenReturn("index1*");
+    when(abstractIndexDescriptor2.getDerivedIndexNamePattern()).thenReturn("index2*");
+    when(abstractIndexDescriptor3.getDerivedIndexNamePattern()).thenReturn("index3*");
 
-  void createSchema();
+    ReflectionTestUtils.setField(
+        underTest,
+        "indexDescriptors",
+        Arrays.asList(
+            abstractIndexDescriptor1, abstractIndexDescriptor2, abstractIndexDescriptor3));
 
-  void checkAndUpdateIndices();
+    final ArchiverProperties archiverProperties = mock(ArchiverProperties.class);
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.isIlmEnabled()).thenReturn(true).thenReturn(false);
 
-  void createDefaults();
+    when(retryElasticsearchClient.setIndexSettingsFor(any(), anyString())).thenReturn(true);
+    when(retryElasticsearchClient.deleteIndexPolicyFor(anyString())).thenReturn(true);
 
-  void createIndex(IndexDescriptor indexDescriptor, String indexClasspathResource);
+    underTest.checkAndUpdateIndices();
 
-  void createTemplate(TemplateDescriptor templateDescriptor, String templateClasspathResource);
-
-  boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern);
-
-  String getOrDefaultRefreshInterval(String indexName, String defaultValue);
-
-  String getOrDefaultNumbersOfReplica(String indexName, String defaultValue);
-
-  void refresh(final String indexPattern);
-
-  boolean isHealthy();
-
-  Set<String> getIndexNames(final String indexPattern);
-
-  Set<String> getAliasesNames(final String indexPattern);
-
-  long getNumberOfDocumentsFor(final String... indexPatterns);
-
-  boolean deleteIndicesFor(final String indexPattern);
-
-  boolean deleteTemplatesFor(final String deleteTemplatePattern);
-
-  void removePipeline(String pipelineName);
-
-  boolean addPipeline(String name, String pipelineDefinition);
-
-  Map<String, String> getIndexSettingsFor(String s, String... fields);
-
-  String getIndexPrefix();
-
-  Map<String, IndexMapping> getIndexMappings(String indexNamePattern);
-
-  void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
-
-  IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
+    verify(retryElasticsearchClient, times(1)).setIndexSettingsFor(any(), anyString());
+    verify(retryElasticsearchClient, times(2)).deleteIndexPolicyFor(anyString());
+  }
 }

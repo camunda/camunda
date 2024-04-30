@@ -93,6 +93,22 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   @Override
+  public void checkAndUpdateIndices() {
+    indexDescriptors.forEach(
+        descriptor -> {
+          final Map<String, String> indexSettings = new HashMap<>();
+
+          // Adds or removes policy
+          if (operateProperties.getArchiver().isIlmEnabled()) {
+            indexSettings.put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES);
+            setIndexSettingsFor(indexSettings, descriptor.getDerivedIndexNamePattern());
+          } else {
+            retryElasticsearchClient.deleteIndexPolicyFor(descriptor.getDerivedIndexNamePattern());
+          }
+        });
+  }
+
+  @Override
   public void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
