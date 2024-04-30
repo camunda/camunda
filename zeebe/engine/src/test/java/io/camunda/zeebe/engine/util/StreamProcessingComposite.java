@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -135,7 +136,9 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var writer = streams.newLogStreamWriter(getLogName(partitionId));
-    return writeActor.submit(() -> writer.tryWrite(Arrays.asList(recordsToWrite)).get()).join();
+    return writeActor
+        .submit(() -> writer.tryWrite(WriteContext.internal(), Arrays.asList(recordsToWrite)).get())
+        .join();
   }
 
   @Override

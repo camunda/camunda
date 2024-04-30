@@ -52,7 +52,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteBatchWithoutEvents() {
     // when
-    final var result = writer.tryWrite(List.of());
+    final var result = writer.tryWrite(WriteContext.internal(), List.of());
 
     // then
     EitherAssert.assertThat(result).isLeft().left().isEqualTo(WriteFailure.INVALID_ARGUMENT);
@@ -73,7 +73,10 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldReturnPositionOfLastEvent() {
     // when
-    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))).get();
+    final long position =
+        writer
+            .tryWrite(WriteContext.internal(), List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)))
+            .get();
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -201,7 +204,8 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteEventWithoutValue() {
     // when
-    final var res = writer.tryWrite(TestEntry.builder().withRecordValue(null).build());
+    final var res =
+        writer.tryWrite(WriteContext.internal(), TestEntry.builder().withRecordValue(null).build());
 
     // then
     EitherAssert.assertThat(res).isLeft();
@@ -251,14 +255,15 @@ public final class LogStreamWriterTest {
   private long tryWrite(final LogAppendEntry entry) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry), Either::isRight)
+        .until(() -> writer.tryWrite(WriteContext.internal(), entry), Either::isRight)
         .get();
   }
 
   private long tryWrite(final LogAppendEntry entry, final long sourcePosition) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry, sourcePosition), Either::isRight)
+        .until(
+            () -> writer.tryWrite(WriteContext.internal(), entry, sourcePosition), Either::isRight)
         .get();
   }
 }

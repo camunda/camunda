@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
@@ -40,7 +41,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
@@ -170,7 +170,7 @@ public class CommandApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    verify(logWriter).tryWrite(Mockito.<LogAppendEntry>any());
+    verify(logWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   @Test
@@ -178,7 +178,7 @@ public class CommandApiRequestHandlerTest {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    when(logWriter.tryWrite(any(LogAppendEntry.class)))
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.CLOSED));
     handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
     scheduler.workUntilDone();

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.jobstream;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
@@ -83,7 +84,8 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       final ActivatedJob job,
       final LogStreamWriter writer,
       final TaskResult result) {
-    final var writeResult = writer.tryWrite(result.getRecordBatch().entries());
+    final var writeResult =
+        writer.tryWrite(WriteContext.processingResult(), result.getRecordBatch().entries());
     if (writeResult.isLeft()) {
       FAILED_WRITER_LOGGER.warn(
           """

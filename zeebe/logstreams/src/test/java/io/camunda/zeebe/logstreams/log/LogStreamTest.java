@@ -64,10 +64,11 @@ public final class LogStreamTest {
   public void shouldIncreasePositionOnRestart() {
     // given
     final var writer = logStream.newSyncLogStreamWriter();
-    writer.tryWrite(TestEntry.ofDefaults());
-    writer.tryWrite(TestEntry.ofDefaults());
-    writer.tryWrite(TestEntry.ofDefaults());
-    final long positionBeforeClose = writer.tryWrite(TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+    final long positionBeforeClose =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
     Awaitility.await("until everything is written")
         .until(logStream::getLastWrittenPosition, position -> position >= positionBeforeClose);
 
@@ -75,7 +76,8 @@ public final class LogStreamTest {
     logStream.close();
     logStreamRule.createLogStream();
     final var newWriter = logStreamRule.getLogStream().newLogStreamWriter();
-    final long positionAfterReOpen = newWriter.tryWrite(TestEntry.ofDefaults()).get();
+    final long positionAfterReOpen =
+        newWriter.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
@@ -88,7 +90,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(latch::countDown);
 
     // when
-    logStreamRule.getLogStreamWriter().tryWrite(TestEntry.ofDefaults());
+    logStreamRule.getLogStreamWriter().tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
@@ -105,7 +107,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(secondListener::countDown);
 
     // when
-    logStreamRule.getLogStreamWriter().tryWrite(TestEntry.ofDefaults());
+    logStreamRule.getLogStreamWriter().tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // then
     assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();

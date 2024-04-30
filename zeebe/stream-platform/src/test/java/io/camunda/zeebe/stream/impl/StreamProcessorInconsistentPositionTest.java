@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -38,6 +39,7 @@ final class StreamProcessorInconsistentPositionTest {
         // the same backend. Both logstream will open a dispatcher with start at position one.
 
         firstWriter.tryWrite(
+            WriteContext.internal(),
             List.of(
                 RecordToWrite.command()
                     .processInstance(
@@ -46,6 +48,7 @@ final class StreamProcessorInconsistentPositionTest {
                     .processInstance(
                         ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1))));
         secondWriter.tryWrite(
+            WriteContext.internal(),
             List.of(
                 RecordToWrite.command()
                     .processInstance(

@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
@@ -114,7 +115,7 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    verify(logStreamWriter, times(1)).tryWrite(any(LogAppendEntry.class));
+    verify(logStreamWriter, times(1)).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   @Test
@@ -139,7 +140,7 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
         .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
-    verify(logStreamWriter, never()).tryWrite(any(LogAppendEntry.class));
+    verify(logStreamWriter, never()).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   @Test

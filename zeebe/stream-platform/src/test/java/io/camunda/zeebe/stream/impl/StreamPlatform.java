@@ -21,6 +21,7 @@ import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
@@ -344,7 +345,10 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    return logContext.setupWriter().tryWrite(Arrays.asList(recordsToWrite)).get();
+    return logContext
+        .setupWriter()
+        .tryWrite(WriteContext.internal(), Arrays.asList(recordsToWrite))
+        .get();
   }
 
   public void closeStreamProcessor() throws Exception {

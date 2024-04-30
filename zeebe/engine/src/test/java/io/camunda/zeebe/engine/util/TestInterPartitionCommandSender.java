@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -59,7 +60,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       entry = LogAppendEntry.of(metadata, command);
     }
 
-    writer.tryWrite(entry);
+    writer.tryWrite(WriteContext.interPartition(), entry);
   }
 
   // Pre-initialize dedicated writers.

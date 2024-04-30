@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
@@ -118,8 +119,10 @@ public class SyncLogStream implements SynchronousLogStream {
 
     @Override
     public Either<WriteFailure, Long> tryWrite(
-        final List<LogAppendEntry> appendEntries, final long sourcePosition) {
-      return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
+        final WriteContext context,
+        final List<LogAppendEntry> appendEntries,
+        final long sourcePosition) {
+      return syncTryWrite(() -> delegate.tryWrite(context, appendEntries, sourcePosition));
     }
   }
 }
