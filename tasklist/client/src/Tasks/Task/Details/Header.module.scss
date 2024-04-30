@@ -14,37 +14,63 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
+@use '@carbon/type';
 
-import {Section} from '@carbon/react';
-import {Task, CurrentUser} from 'modules/types';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-import {Aside} from './Aside';
-import {Header} from './Header';
-import styles from './styles.module.scss';
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+  gap: var(--cds-spacing-05);
+}
 
-type Props = {
-  children?: React.ReactNode;
-  task: Task;
-  onAssignmentError: () => void;
-  user: CurrentUser;
-};
+.headerLeftContainer {
+  display: flex;
+  flex-direction: column;
+}
 
-const Details: React.FC<Props> = ({
-  children,
-  onAssignmentError,
-  task,
-  user,
-}) => {
-  return (
-    <div className={styles.container} data-testid="details-info">
-      <Section className={styles.content} level={4}>
-        <TurnOnNotificationPermission />
-        <Header task={task} user={user} onAssignmentError={onAssignmentError} />
-        {children}
-      </Section>
-      <Aside task={task} user={user} />
-    </div>
-  );
-};
+.headerRightContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cds-spacing-05);
+  margin-left: auto;
+}
 
-export {Details};
+.taskName {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-02');
+}
+
+.processName {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
+}
+
+.taskStatus {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
+}
+
+.taskAssignee {
+  display: inline-flex;
+  align-items: center;
+  color: var(--cds-text-secondary);
+  @include type.type-style('label-01');
+}
+
+.assignButtonContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+  
+.alignItemsCenter {
+  align-items: center;
+}
+  

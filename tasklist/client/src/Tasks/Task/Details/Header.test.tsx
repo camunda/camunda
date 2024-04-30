@@ -15,7 +15,6 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Details} from '.';
 import {render, screen} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -28,6 +27,7 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
+import {Header} from './Header';
 
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
@@ -56,7 +56,7 @@ const getWrapper = (id: string = '0') => {
   return Wrapper;
 };
 
-describe('<Details />', () => {
+describe('<Header />', () => {
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
@@ -69,7 +69,7 @@ describe('<Details />', () => {
     );
 
     render(
-      <Details
+      <Header
         task={taskMocks.completedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -85,10 +85,6 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: /^unassign$/i}),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('01 Jan 2024 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.getByText('Completion date')).toBeInTheDocument();
-    expect(screen.getByText('01 Jan 2025 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.getByText('No candidates')).toBeInTheDocument();
   });
 
   it('should render unassigned task details', async () => {
@@ -99,7 +95,7 @@ describe('<Details />', () => {
     );
 
     render(
-      <Details
+      <Header
         task={taskMocks.unassignedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -116,9 +112,6 @@ describe('<Details />', () => {
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
     expect(screen.getByText('Unassigned')).toBeInTheDocument();
-    expect(screen.getByText('01 Jan 2024 - 12:00 AM')).toBeInTheDocument();
-    expect(screen.getByText('accounting candidate')).toBeInTheDocument();
-    expect(screen.getByText('jane candidate')).toBeInTheDocument();
   });
 
   it('should render unassigned task and assign it', async () => {
@@ -132,7 +125,7 @@ describe('<Details />', () => {
     );
 
     const {user, rerender} = render(
-      <Details
+      <Header
         task={taskMocks.unassignedTask('0')}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -157,7 +150,7 @@ describe('<Details />', () => {
     expect(screen.queryByText('Assigning...')).not.toBeInTheDocument();
 
     rerender(
-      <Details
+      <Header
         task={taskMocks.assignedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -182,7 +175,7 @@ describe('<Details />', () => {
     );
 
     const {user, rerender} = render(
-      <Details
+      <Header
         task={taskMocks.assignedTask('0')}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -204,7 +197,7 @@ describe('<Details />', () => {
     ).toBeInTheDocument();
 
     rerender(
-      <Details
+      <Header
         task={taskMocks.unassignedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -235,7 +228,7 @@ describe('<Details />', () => {
     );
 
     render(
-      <Details
+      <Header
         task={taskMocks.assignedTask()}
         user={userMocks.currentRestrictedUser}
         onAssignmentError={noop}
@@ -263,7 +256,7 @@ describe('<Details />', () => {
     );
 
     render(
-      <Details
+      <Header
         task={taskMocks.unassignedTask()}
         user={userMocks.currentRestrictedUser}
         onAssignmentError={noop}
@@ -290,7 +283,7 @@ describe('<Details />', () => {
     const MOCK_OTHER_ASSIGNEE = 'jane';
 
     render(
-      <Details
+      <Header
         task={{...taskMocks.assignedTask(), assignee: MOCK_OTHER_ASSIGNEE}}
         user={userMocks.currentUser}
         onAssignmentError={noop}
@@ -303,68 +296,5 @@ describe('<Details />', () => {
     expect(screen.getByTestId('assignee')).toHaveTextContent(
       `Assigned to ${MOCK_OTHER_ASSIGNEE}`,
     );
-  });
-
-  it('should render tenant name', () => {
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
-      isMultiTenancyEnabled: true,
-    };
-
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUserWithTenants);
-      }),
-    );
-
-    render(
-      <Details
-        task={{
-          ...taskMocks.unassignedTask(),
-          tenantId: 'tenantA',
-        }}
-        user={userMocks.currentUserWithTenants}
-        onAssignmentError={noop}
-      />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
-
-    expect(screen.getByText('Tenant A')).toBeInTheDocument();
-  });
-
-  it('should hide tenant name if user only has access to one tenant', () => {
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
-      isMultiTenancyEnabled: true,
-    };
-
-    const currentUserWithSingleTenant = {
-      ...userMocks.currentUserWithTenants,
-      tenants: [userMocks.currentUserWithTenants.tenants[0]],
-    };
-
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(currentUserWithSingleTenant);
-      }),
-    );
-
-    render(
-      <Details
-        task={{
-          ...taskMocks.unassignedTask(),
-          tenantId: 'tenantA',
-        }}
-        user={currentUserWithSingleTenant}
-        onAssignmentError={noop}
-      />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
-
-    expect(screen.queryByText('Tenant A')).not.toBeInTheDocument();
   });
 });
