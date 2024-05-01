@@ -6,17 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Section, Tabs, TabList, Tab} from '@carbon/react';
+import {Section} from '@carbon/react';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
-import {Outlet, useMatch, useNavigate} from 'react-router-dom';
+import {Outlet, useMatch} from 'react-router-dom';
 import {CurrentUser, Task} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
 import {useTaskDetailsParams, pages} from 'modules/routing';
 import {DetailsSkeleton} from './DetailsSkeleton';
+import {TabListNav} from './TabListNav';
 
 type OutletContext = [Task, CurrentUser, () => void];
 
@@ -28,12 +29,13 @@ const Details: React.FC = () => {
   });
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
-  const navigate = useNavigate();
   const tabs = [
     {
+      key: 'task',
       title: 'Task',
+      label: 'Show task',
       selected: useMatch(pages.taskDetails()) !== null,
-      path: pages.taskDetails(id),
+      href: pages.taskDetails(id),
     },
     // {
     //   title: 'Process',
@@ -55,21 +57,7 @@ const Details: React.FC = () => {
           user={currentUser}
           onAssignmentError={onAssignmentError}
         />
-        <Tabs
-          selectedIndex={tabs.findIndex((tab) => tab.selected)}
-          onChange={({selectedIndex}) => {
-            navigate(tabs[selectedIndex].path);
-          }}
-        >
-          <TabList
-            aria-label="Select task details view"
-            className={styles.tabs}
-          >
-            {tabs.map((tab, i) => (
-              <Tab key={i}>{tab.title}</Tab>
-            ))}
-          </TabList>
-        </Tabs>
+        <TabListNav label="Task Details Navigation" items={tabs} />
         <Outlet
           context={[task, currentUser, refetch] satisfies OutletContext}
         />
