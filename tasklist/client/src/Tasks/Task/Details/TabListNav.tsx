@@ -42,7 +42,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
             type="button"
             role="link"
             aria-label={label}
-            aria-selected={selected}
+            aria-current={selected ? 'page' : undefined}
             className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
               ['cds--tabs__nav-item--selected']: selected,
             })}
