@@ -129,6 +129,9 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   T getValue();
 
+  /**
+   * @return the id of the request that produced this record
+   */
   long getRequestId();
 
   /**

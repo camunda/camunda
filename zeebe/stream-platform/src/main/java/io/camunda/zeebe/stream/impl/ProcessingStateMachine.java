@@ -32,7 +32,6 @@ import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -342,7 +341,7 @@ public final class ProcessingStateMachine {
    * commands are created.
    */
   private void batchProcessing(final TypedRecord<?> initialCommand) {
-    final ProcessingResultBuilder processingResultBuilder =
+    final var processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
     var lastProcessingResultSize = 0;
 
@@ -362,6 +361,8 @@ public final class ProcessingStateMachine {
 
       final var command = pendingCommands.removeFirst();
 
+      // propagate the request id from the initial command to the processingResultBuilder to be
+      // appended to the followup events
       processingResultBuilder.setRequestId(command.getRequestId());
 
       currentProcessor =
@@ -527,7 +528,7 @@ public final class ProcessingStateMachine {
 
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
-    final ProcessingResultBuilder processingResultBuilder =
+    final var processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
@@ -568,7 +569,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          final ProcessingResultBuilder processingResultBuilder =
+          final var processingResultBuilder =
               new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
           processingResultBuilder.setRequestId(typedCommand.getRequestId());
           currentProcessingResult =
