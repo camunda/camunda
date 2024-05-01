@@ -17,12 +17,16 @@
 package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.IdentityProperties;
+import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -52,6 +56,27 @@ public class ProcessService {
   @Autowired private TenantService tenantService;
 
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
+
+  @Autowired private UserReader userReader;
+
+  @Autowired private ProcessStore processStore;
+
+  public ProcessEntity getProcessByProcessDefinitionKeyAndAccessRestriction(
+      final String processDefinitionKey) {
+
+    final ProcessEntity processEntity =
+        processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
+
+    final List<String> processReadAuthorizations =
+        identityAuthorizationService.getProcessReadFromAuthorization();
+
+    if (processReadAuthorizations.contains(processEntity.getBpmnProcessId())
+        || processReadAuthorizations.contains(IdentityProperties.ALL_RESOURCES)) {
+      return processEntity;
+    } else {
+      throw new ForbiddenActionException("Resource cannot be accessed");
+    }
+  }
 
   public ProcessInstanceDTO startProcessInstance(
       final String processDefinitionKey, final String tenantId) {
@@ -96,7 +121,7 @@ public class ProcessService {
     try {
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
       LOGGER.debug("Process instance created for process [{}]", processDefinitionKey);
-    } catch (ClientStatusException ex) {
+    } catch (final ClientStatusException ex) {
       if (Status.Code.NOT_FOUND.equals(ex.getStatusCode())) {
         throw new NotFoundApiException(
             String.format(
@@ -105,14 +130,14 @@ public class ProcessService {
             ex);
       }
       throw new TasklistRuntimeException(ex.getMessage(), ex);
-    } catch (ClientException ex) {
+    } catch (final ClientException ex) {
       throw new TasklistRuntimeException(ex.getMessage(), ex);
     }
 
     return new ProcessInstanceDTO().setId(processInstanceEvent.getProcessInstanceKey());
   }
 
-  private Object extractTypedValue(VariableInputDTO variable) {
+  private Object extractTypedValue(final VariableInputDTO variable) {
     if (variable.getValue().equals("null")) {
       return objectMapper
           .nullNode(); // JSON Object null must be instanced like "null", also should not send to
@@ -121,7 +146,7 @@ public class ProcessService {
 
     try {
       return objectMapper.readValue(variable.getValue(), Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }

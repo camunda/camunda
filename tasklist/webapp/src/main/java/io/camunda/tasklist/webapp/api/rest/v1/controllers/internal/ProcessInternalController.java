@@ -87,7 +87,7 @@ public class ProcessInternalController extends ApiErrorController {
   public ResponseEntity<ProcessResponse> getProcess(
       @PathVariable final String processDefinitionKey) {
     final ProcessEntity processEntity =
-        processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
+        processService.getProcessByProcessDefinitionKeyAndAccessRestriction(processDefinitionKey);
     final ProcessResponse processResponse =
         new ProcessResponse()
             .fromProcessEntity(processEntity, getStartEventFormIdByBpmnProcess(processEntity));
@@ -109,7 +109,7 @@ public class ProcessInternalController extends ApiErrorController {
               description =
                   "Used to search processes by processId, process name, and process definition id fields.")
           @RequestParam(defaultValue = StringUtils.EMPTY)
-          String query,
+          final String query,
       @Parameter(
               description =
                   "Identifies the tenant.<br>"
@@ -117,7 +117,7 @@ public class ProcessInternalController extends ApiErrorController {
                       + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.<br>"
                       + "If multi-tenancy is disabled, this parameter will be ignored.")
           @RequestParam(required = false)
-          String tenantId,
+          final String tenantId,
       @Parameter(
               description =
                   "If this parameter is set (Default value `null`): <br>"
@@ -125,7 +125,7 @@ public class ProcessInternalController extends ApiErrorController {
                       + "`false`: It will return all the processes that are not started by a form <br>"
                       + "`null`: The filter is not applied")
           @RequestParam(required = false)
-          Boolean isStartedByForm) {
+          final Boolean isStartedByForm) {
 
     final var processes =
         processStore
@@ -144,13 +144,13 @@ public class ProcessInternalController extends ApiErrorController {
   }
 
   /** Retrieving the start event form id when exists. */
-  private String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
+  private String getStartEventFormIdByBpmnProcess(final ProcessEntity process) {
     if (process.getIsFormEmbedded() != null && !process.getIsFormEmbedded()) {
       if (process.getFormId() != null) {
         try {
           final var form = formStore.getForm(process.getFormId(), process.getId(), null);
           return form.getBpmnId();
-        } catch (NotFoundException e) {
+        } catch (final NotFoundException e) {
           // Form not found, but maintain the Form ID in order to threat not found in front-end
           return process.getFormId();
         }
@@ -193,13 +193,13 @@ public class ProcessInternalController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
-      @PathVariable String bpmnProcessId,
+      @PathVariable final String bpmnProcessId,
       @Parameter(
               description =
                   "Required for multi-tenancy setups to ensure the process starts for the intended tenant. In environments without multi-tenancy, this parameter is not considered.")
           @RequestParam(required = false)
-          String tenantId,
-      @RequestBody(required = false) StartProcessRequest startProcessRequest) {
+          final String tenantId,
+      @RequestBody(required = false) final StartProcessRequest startProcessRequest) {
     final var variables =
         requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
     final var processInstance =
@@ -234,7 +234,7 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @PreAuthorize("hasPermission('write')")
   @DeleteMapping("{processInstanceId}")
-  public ResponseEntity<?> deleteProcessInstance(@PathVariable String processInstanceId) {
+  public ResponseEntity<?> deleteProcessInstance(@PathVariable final String processInstanceId) {
 
     return switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
       case DELETED -> ResponseEntity.noContent().build();
@@ -304,7 +304,7 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
-      @PathVariable String bpmnProcessId,
+      @PathVariable final String bpmnProcessId,
       @Parameter(
               description =
                   "If using multi-tenancy, this parameter ensures the system fetches the public endpoint for the correct tenant. In environments without multi-tenancy, this parameter is not considered.")
