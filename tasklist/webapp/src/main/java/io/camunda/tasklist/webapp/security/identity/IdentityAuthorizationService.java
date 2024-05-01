@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 @Component
 public class IdentityAuthorizationService {
@@ -30,39 +31,7 @@ public class IdentityAuthorizationService {
   private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationService.class);
 
   @Autowired private TasklistProperties tasklistProperties;
-
-  public List<String> getProcessDefinitionsFromAuthorization() {
-    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()
-        && tasklistProperties.getIdentity().getBaseUrl() != null) {
-      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-      if (authentication instanceof IdentityAuthentication) {
-        final IdentityAuthentication identityAuthentication =
-            (IdentityAuthentication) authentication;
-        return identityAuthentication.getAuthorizations().getProcessesAllowedToStart();
-      } else if (authentication instanceof JwtAuthenticationToken) {
-        final JwtAuthenticationToken jwtAuthenticationToken =
-            (JwtAuthenticationToken) authentication;
-        final Identity identity = SpringContextHolder.getBean(Identity.class);
-        return new IdentityAuthorization(
-                identity
-                    .authorizations()
-                    .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
-            .getProcessesAllowedToStart();
-      } else if (authentication instanceof TokenAuthentication) {
-        final Identity identity = SpringContextHolder.getBean(Identity.class);
-        return new IdentityAuthorization(
-                identity
-                    .authorizations()
-                    .forToken(
-                        ((TokenAuthentication) authentication).getAccessToken(),
-                        ((TokenAuthentication) authentication).getOrganization()))
-            .getProcessesAllowedToStart();
-      }
-    }
-    final List<String> result = new ArrayList<String>();
-    result.add(IdentityProperties.ALL_RESOURCES);
-    return result;
-  }
+  @Autowired private LocalValidatorFactoryBean defaultValidator;
 
   public List<String> getUserGroups() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -92,5 +61,77 @@ public class IdentityAuthorizationService {
     return !Collections.disjoint(
         getProcessDefinitionsFromAuthorization(),
         Set.of(IdentityProperties.ALL_RESOURCES, processDefinitionKey));
+  }
+
+  public List<String> getProcessReadFromAuthorization() {
+    return getFromAuthorization(IdentityAuthorization.PROCESS_PERMISSION_READ);
+  }
+
+  public List<String> getProcessDefinitionsFromAuthorization() {
+    return getFromAuthorization(IdentityAuthorization.PROCESS_PERMISSION_START);
+  }
+
+  private List<String> getFromAuthorization(final String type) {
+    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()
+        && tasklistProperties.getIdentity().getBaseUrl() != null) {
+      final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+      if (authentication instanceof IdentityAuthentication) {
+        final IdentityAuthentication identityAuthentication =
+            (IdentityAuthentication) authentication;
+        return switch (type) {
+          case IdentityAuthorization.PROCESS_PERMISSION_READ ->
+              identityAuthentication.getAuthorizations().getProcessesAllowedToRead();
+          case IdentityAuthorization.PROCESS_PERMISSION_START ->
+              identityAuthentication.getAuthorizations().getProcessesAllowedToStart();
+          default -> null;
+        };
+      } else if (authentication instanceof JwtAuthenticationToken) {
+        final JwtAuthenticationToken jwtAuthenticationToken =
+            (JwtAuthenticationToken) authentication;
+        final Identity identity = SpringContextHolder.getBean(Identity.class);
+
+        return switch (type) {
+          case IdentityAuthorization.PROCESS_PERMISSION_READ ->
+              new IdentityAuthorization(
+                      identity
+                          .authorizations()
+                          .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
+                  .getProcessesAllowedToRead();
+          case IdentityAuthorization.PROCESS_PERMISSION_START ->
+              new IdentityAuthorization(
+                      identity
+                          .authorizations()
+                          .forToken(jwtAuthenticationToken.getToken().getTokenValue()))
+                  .getProcessesAllowedToStart();
+          default -> null;
+        };
+
+      } else if (authentication instanceof TokenAuthentication) {
+        final Identity identity = SpringContextHolder.getBean(Identity.class);
+
+        return switch (type) {
+          case IdentityAuthorization.PROCESS_PERMISSION_READ ->
+              new IdentityAuthorization(
+                      identity
+                          .authorizations()
+                          .forToken(
+                              ((TokenAuthentication) authentication).getAccessToken(),
+                              ((TokenAuthentication) authentication).getOrganization()))
+                  .getProcessesAllowedToRead();
+          case IdentityAuthorization.PROCESS_PERMISSION_START ->
+              new IdentityAuthorization(
+                      identity
+                          .authorizations()
+                          .forToken(
+                              ((TokenAuthentication) authentication).getAccessToken(),
+                              ((TokenAuthentication) authentication).getOrganization()))
+                  .getProcessesAllowedToStart();
+          default -> null;
+        };
+      }
+    }
+    final List<String> result = new ArrayList<String>();
+    result.add(IdentityProperties.ALL_RESOURCES);
+    return result;
   }
 }

@@ -32,6 +32,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -224,7 +225,9 @@ class ProcessInternalControllerTest {
     @ParameterizedTest
     @MethodSource("deleteProcessExceptionTestData")
     void deleteProcessWhenDeleteWasNotSuccessfulThenExceptionExpected(
-        DeletionStatus deletionStatus, HttpStatus expectedHttpStatus, String errorMessageTemplate)
+        final DeletionStatus deletionStatus,
+        final HttpStatus expectedHttpStatus,
+        final String errorMessageTemplate)
         throws Exception {
       // given
       final var processInstanceId = "225599880033";
@@ -456,7 +459,8 @@ class ProcessInternalControllerTest {
               .setBpmnXml("<abc></abc>")
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
-      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey))
+      when(processService.getProcessByProcessDefinitionKeyAndAccessRestriction(
+              processDefinitionKey))
           .thenReturn(providedProcessEntity);
       final var response =
           mockMvc
@@ -475,11 +479,33 @@ class ProcessInternalControllerTest {
     }
 
     @Test
+    void getProcessShouldReturn403() throws Exception {
+      final String processDefinitionKey = "shouldReturn403";
+      final String errorMessage = "Resource cannot be accessed";
+      when(processService.getProcessByProcessDefinitionKeyAndAccessRestriction(
+              processDefinitionKey))
+          .thenThrow(new ForbiddenActionException(errorMessage));
+      final var response =
+          mockMvc
+              .perform(
+                  get(
+                      TasklistURIs.PROCESSES_URL_V1.concat(
+                          String.format("/%s", processDefinitionKey))))
+              .andDo(print())
+              .andReturn()
+              .getResponse();
+
+      assertThat(response.getStatus()).isEqualTo(HttpStatus.FORBIDDEN.value());
+      assertThat(response.getContentAsString()).contains(errorMessage);
+    }
+
+    @Test
     void getProcessShouldReturn404() throws Exception {
       final String processDefinitionKey = "shouldReturn404";
       final String errorMessage =
           String.format("Process with key %s not found", processDefinitionKey);
-      when(processStore.getProcessByProcessDefinitionKey(processDefinitionKey))
+      when(processService.getProcessByProcessDefinitionKeyAndAccessRestriction(
+              processDefinitionKey))
           .thenThrow(new NotFoundException(errorMessage));
       final var response =
           mockMvc
