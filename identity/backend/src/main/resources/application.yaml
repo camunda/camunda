@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:default}
+    active: ${SPRING_PROFILES_ACTIVE:identity-local-auth}
   web:
     resources:
       cache:
@@ -15,6 +15,9 @@ spring:
       accept-case-insensitive-enums: true
     deserialization:
       read-unknown-enum-values-using-default-value: true
+logging:
+  level:
+    org.springframework.security: trace
 management:
   server:
     port: 8082

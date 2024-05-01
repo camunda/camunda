@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{template.html}">
+<head>
+  <title>Roles</title>
+</head>
+<header>
+  <h1>Roles</h1>
+
+  <form th:action="@{/logout}" method="post">
+    <input type="submit" value="Logout">
+  </form>
+</header>
+<body>
+<tbody>
+<tr th:each="role: ${roles}">
+  <td th:text="${role}" />
+</tr>
+</tbody>
+</body>
+</html>
