@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,10 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(configuration.getFormCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY);
+    assertThat(configuration.getProcessCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY);
   }
 
   @Test
@@ -50,5 +55,7 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
+    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
+    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
   }
 }
