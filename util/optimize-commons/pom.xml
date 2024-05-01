@@ -184,6 +184,12 @@
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-core</artifactId>
+      <version>1.12.709</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sdk-core</artifactId>
       <version>${version.awssdk}</version>
