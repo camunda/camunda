@@ -139,6 +139,12 @@ public class ExecutionListenerJobTest {
         .hasErrorMessage("No more retries left.");
 
     // resolve incident & complete EL[start] job
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(START_EL_TYPE)
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
 
@@ -184,6 +190,12 @@ public class ExecutionListenerJobTest {
         .hasErrorMessage("No more retries left.");
 
     // and: resolve incident & complete 2nd EL[end] job
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(END_EL_TYPE + "_2")
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_2").complete();
 
@@ -388,6 +400,12 @@ public class ExecutionListenerJobTest {
             .getFirst();
 
     // and: resolve first incident
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE)
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
     // complete service task job (NO need to re-complete EL[start] job(s))
     ENGINE.job().ofInstance(processInstanceKey).withType(SERVICE_TASK_TYPE).complete();

@@ -96,6 +96,8 @@ public final class JobFailIncidentTest {
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withJobKey(failedEvent.getKey())
             .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).withRetries(1).updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
 
     // when
@@ -367,6 +369,14 @@ public final class JobFailIncidentTest {
         .fail();
 
     // when
+    ENGINE
+        .job()
+        .ofInstance(piKey)
+        .withType(JOB_TYPE)
+        .withRetries(1)
+        .withAuthorizedTenantIds(tenantId)
+        .updateRetries();
+
     final Record<IncidentRecordValue> resolvedIncident =
         ENGINE.incident().ofInstance(piKey).withAuthorizedTenantIds(tenantId).resolve();
 
@@ -449,5 +459,40 @@ public final class JobFailIncidentTest {
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId("failingTask")
         .hasVariableScopeKey(terminateTaskCommand.getKey());
+  }
+
+  @Test
+  public void shouldRejectResolveIncidentIfJobRetriesStillZero() {
+    // given
+    final Record<JobRecordValue> failedJob =
+        ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).withRetries(0).fail();
+
+    final Record<IncidentRecordValue> incidentCreatedEvent =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+
+    // when
+    final Record<IncidentRecordValue> resolvedIncidentRejection =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreatedEvent.getKey())
+            .expectRejection()
+            .resolve();
+
+    // then
+    assertThat(resolvedIncidentRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident",
+                incidentCreatedEvent.getKey(), failedJob.getKey()));
+
+    final var reactivatedJobs = ENGINE.jobs().withType(JOB_TYPE).activate();
+    assertThat(reactivatedJobs.getValue().getJobs())
+        .describedAs("Expected job not activatable because no retries left")
+        .isEmpty();
   }
 }
