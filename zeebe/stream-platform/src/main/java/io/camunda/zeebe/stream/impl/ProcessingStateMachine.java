@@ -341,8 +341,11 @@ public final class ProcessingStateMachine {
    * commands are created.
    */
   private void batchProcessing(final TypedRecord<?> initialCommand) {
+    // propagate the request id from the initial command to the processingResultBuilder to be
+    // appended to the followup events
     final var processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+            .withRequestId(initialCommand.getRequestId());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -360,10 +363,6 @@ public final class ProcessingStateMachine {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
-
-      // propagate the request id from the initial command to the processingResultBuilder to be
-      // appended to the followup events
-      processingResultBuilder.setRequestId(command.getRequestId());
 
       currentProcessor =
           recordProcessors.stream()
@@ -529,7 +528,8 @@ public final class ProcessingStateMachine {
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final var processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+            .withRequestId(typedCommand.getRequestId());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -543,7 +543,7 @@ public final class ProcessingStateMachine {
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
             .requestId(typedCommand.getRequestId());
-    processingResultBuilder.setRequestId(typedCommand.getRequestId());
+
     processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
@@ -570,8 +570,8 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final var processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
-          processingResultBuilder.setRequestId(typedCommand.getRequestId());
+              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+                  .withRequestId(typedCommand.getRequestId());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);

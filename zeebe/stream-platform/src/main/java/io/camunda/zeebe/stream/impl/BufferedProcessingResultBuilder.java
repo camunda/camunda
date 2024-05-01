@@ -118,8 +118,9 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
   }
 
-  public void setRequestId(final long requestId) {
+  public ProcessingResultBuilder withRequestId(final long requestId) {
     this.requestId = requestId;
+    return this;
   }
 
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
