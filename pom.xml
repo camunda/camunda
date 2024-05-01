@@ -25,6 +25,7 @@
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
+    <module>auth-starter</module>
   </modules>
 
   <scm>
