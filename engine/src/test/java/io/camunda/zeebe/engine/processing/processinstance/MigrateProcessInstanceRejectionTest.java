@@ -218,6 +218,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasKey(processInstanceKey);
 
     // after resolving the incident, the migration should succeed
+    ENGINE.job().ofInstance(processInstanceKey).withType("jobType").withRetries(1).updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE
         .processInstance()
