@@ -385,9 +385,11 @@ public final class StreamProcessorTest {
 
     streamPlatform.startStreamProcessor();
 
+    final long requestId = 1234L;
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+        RecordToWrite.command(requestId)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -407,10 +409,18 @@ public final class StreamProcessorTest {
     assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
     final var firstRecordPosition = firstRecord.getPosition();
 
+    final var firstRecordMetadata = new RecordMetadata();
+    firstRecord.readMetadata(firstRecordMetadata);
+    assertThat(firstRecordMetadata.getRequestId()).isEqualTo(requestId);
+
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     while (logStreamReader.hasNext()) {
-      assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+      final LoggedEvent followup = logStreamReader.next();
+      assertThat(followup.getSourceEventPosition()).isEqualTo(firstRecordPosition);
+      final var followupMetadata = new RecordMetadata();
+      followup.readMetadata(followupMetadata);
+      assertThat(followupMetadata.getRequestId()).isEqualTo(requestId);
     }
   }
 
