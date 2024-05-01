@@ -7,6 +7,7 @@
  */
 
 import {Component} from './index';
+import {Component as LayoutComponent} from './Details';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
@@ -53,7 +54,9 @@ const getWrapper = (
         <MockThemeProvider>
           <MemoryRouter initialEntries={initialEntries}>
             <Routes>
-              <Route path="/:id" element={children} />
+              <Route path=":id" Component={LayoutComponent}>
+                <Route index element={children} />
+              </Route>
             </Routes>
             <LocationLog />
           </MemoryRouter>
