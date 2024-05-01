@@ -15,66 +15,48 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Section} from '@carbon/react';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-import {Aside} from './Aside';
-import {Header} from './Header';
-import styles from './styles.module.scss';
-import {Outlet, useMatch} from 'react-router-dom';
-import {CurrentUser, Task} from 'modules/types';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {useTask} from 'modules/queries/useTask';
-import {useTaskDetailsParams, pages} from 'modules/routing';
-import {DetailsSkeleton} from './DetailsSkeleton';
-import {TabListNav} from './TabListNav';
+import {useNavigate} from 'react-router-dom';
+import styles from './TabListNav.module.scss';
+import cn from 'classnames';
 
-type OutletContext = [Task, CurrentUser, () => void];
+type Props = {
+  className?: string;
+  label: string;
+  items: Array<{
+    key: string;
+    title: string;
+    label: string;
+    selected: boolean;
+    href: string;
+  }>;
+};
 
-const Details: React.FC = () => {
-  const {id} = useTaskDetailsParams();
-  const {data: task, refetch} = useTask(id, {
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
-  const {data: currentUser} = useCurrentUser();
-  const onAssignmentError = () => refetch();
-  const tabs = [
-    {
-      key: 'task',
-      title: 'Task',
-      label: 'Show task',
-      selected: useMatch(pages.taskDetails()) !== null,
-      href: pages.taskDetails(id),
-    },
-    // {
-    //   title: 'Process',
-    //   selected: useMatch(pages.taskDetailsProcess()) !== null,
-    //   path: pages.taskDetailsProcess(id),
-    // },
-  ];
-
-  if (task === undefined || currentUser === undefined) {
-    return <DetailsSkeleton data-testid="details-skeleton" />;
-  }
-
+const TabListNav: React.FC<Props> = ({className, label, items}) => {
+  const navigate = useNavigate();
   return (
-    <div className={styles.container} data-testid="details-info">
-      <Section className={styles.content} level={4}>
-        <TurnOnNotificationPermission />
-        <Header
-          task={task}
-          user={currentUser}
-          onAssignmentError={onAssignmentError}
-        />
-        <TabListNav label="Task Details Navigation" items={tabs} />
-        <Outlet
-          context={[task, currentUser, refetch] satisfies OutletContext}
-        />
-      </Section>
-      <Aside task={task} user={currentUser} />
-    </div>
+    <nav className={cn(className, styles.tabs, 'cds--tabs')}>
+      <div className="cds--tab--list" aria-label={label}>
+        {items.map(({key, title, label, selected, href}) => (
+          <button
+            key={key}
+            type="button"
+            role="link"
+            aria-label={label}
+            aria-selected={selected}
+            className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
+              ['cds--tabs__nav-item--selected']: selected,
+            })}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => navigate(href)}
+          >
+            <div className="cds--tabs__nav-item-label-wrapper">
+              <span className="cds--tabs__nav-item-label">{title}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </nav>
   );
 };
 
-export {Details as Component};
-export type {OutletContext};
+export {TabListNav};
