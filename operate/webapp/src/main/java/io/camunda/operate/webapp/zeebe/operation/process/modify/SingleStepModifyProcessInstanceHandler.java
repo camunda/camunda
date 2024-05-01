@@ -27,7 +27,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeHelper;
+import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeWrapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.List;
@@ -52,7 +52,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   @Autowired private MoveTokenHandler moveTokenHandler;
   @Autowired private AddTokenHandler addTokenHandler;
   @Autowired private CancelTokenHandler cancelTokenHandler;
-  @Autowired private ModifyProcessZeebeHelper modifyProcessZeebeHelper;
+  @Autowired private ModifyProcessZeebeWrapper modifyProcessZeebeWrapper;
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -67,7 +67,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep =
         processTokenModifications(modifyProcessInstanceRequest, operation);
 
-    modifyProcessZeebeHelper.sendModificationsToZeebe(lastStep);
+    modifyProcessZeebeWrapper.sendModificationsToZeebe(lastStep);
     markAsSent(operation);
     operationsManager.completeOperation(operation, false);
   }
@@ -81,7 +81,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
   @Override
   public void setZeebeClient(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
-    modifyProcessZeebeHelper.setZeebeClient(zeebeClient);
+    modifyProcessZeebeWrapper.setZeebeClient(zeebeClient);
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
@@ -94,7 +94,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     final Long processInstanceKey =
         Long.parseLong(modifyProcessInstanceRequest.getProcessInstanceKey());
     ModifyProcessInstanceCommandStep1 currentStep =
-        modifyProcessZeebeHelper.newModifyProcessInstanceCommand(processInstanceKey);
+        modifyProcessZeebeWrapper.newModifyProcessInstanceCommand(processInstanceKey);
     final List<Modification> tokenModifications =
         getTokenModifications(modifyProcessInstanceRequest.getModifications());
 
@@ -149,7 +149,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     for (final Modification modification : modifications) {
       final Long scopeKey =
           modification.getScopeKey() == null ? processInstanceKey : modification.getScopeKey();
-      modifyProcessZeebeHelper.setVariablesInZeebe(scopeKey, modification.getVariables());
+      modifyProcessZeebeWrapper.setVariablesInZeebe(scopeKey, modification.getVariables());
       updateFinishedInBatchOperation(operation);
     }
   }

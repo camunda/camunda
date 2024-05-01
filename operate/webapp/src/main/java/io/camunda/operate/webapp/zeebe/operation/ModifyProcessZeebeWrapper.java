@@ -26,11 +26,11 @@ import org.springframework.stereotype.Component;
  * created and sent to zeebe
  */
 @Component
-public class ModifyProcessZeebeHelper {
+public class ModifyProcessZeebeWrapper {
 
   private ZeebeClient zeebeClient;
 
-  public ModifyProcessZeebeHelper(final ZeebeClient zeebeClient) {
+  public ModifyProcessZeebeWrapper(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }
 

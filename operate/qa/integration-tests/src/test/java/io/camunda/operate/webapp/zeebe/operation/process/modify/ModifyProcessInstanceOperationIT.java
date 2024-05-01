@@ -38,7 +38,7 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeHelper;
+import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeWrapper;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
@@ -56,71 +56,13 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
   private static final Long MOCK_PROCESS_DEFINITION_KEY = 2251799813685249L;
   private static final Long MOCK_PROCESS_INSTANCE_KEY = 2251799813685251L;
 
-  @MockBean private ModifyProcessZeebeHelper mockZeebeHelper;
+  @MockBean private ModifyProcessZeebeWrapper mockZeebeHelper;
   @Autowired private SingleStepModifyProcessInstanceHandler modifyProcessInstanceHandler;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private OperateProperties operateProperties;
   @MockBean private FlowNodeInstanceReader mockFlowNodeInstanceReader;
   private ModifyProcessInstanceCommandStep1 mockZeebeCommand;
-
-  private void createMockZeebeCommand() {
-    mockZeebeCommand =
-        Mockito.mock(
-            ModifyProcessInstanceCommandStep1.class,
-            withSettings()
-                .extraInterfaces(
-                    ModifyProcessInstanceCommandStep2.class,
-                    ModifyProcessInstanceCommandStep3.class));
-
-    when(mockZeebeCommand.activateElement(anyString()))
-        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
-    when(mockZeebeCommand.terminateElement(anyLong()))
-        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
-    when(((ModifyProcessInstanceCommandStep2) mockZeebeCommand).and()).thenReturn(mockZeebeCommand);
-    when(((ModifyProcessInstanceCommandStep3) mockZeebeCommand)
-            .withVariables(anyMap(), anyString()))
-        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
-
-    when(mockZeebeHelper.newModifyProcessInstanceCommand(MOCK_PROCESS_INSTANCE_KEY))
-        .thenReturn(mockZeebeCommand);
-  }
-
-  private void createBatchCommandDocument(final String batchOperationId) throws IOException {
-    final BatchOperationEntity batchOperation =
-        new BatchOperationEntity()
-            .setId(batchOperationId)
-            .setType(OperationType.MODIFY_PROCESS_INSTANCE)
-            .setStartDate(OffsetDateTime.now())
-            .setUsername("testuser")
-            .setInstancesCount(1)
-            .setOperationsTotalCount(1);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        batchOperationTemplate.getFullQualifiedName(), batchOperationId, batchOperation);
-  }
-
-  private OperationEntity createOperationEntityDocument(
-      final String batchOperationId,
-      final String operationId,
-      final ModifyProcessInstanceRequestDto modifyInstructions)
-      throws IOException {
-    final OperationEntity operation =
-        new OperationEntity()
-            .setId(operationId)
-            .setProcessInstanceKey(MOCK_PROCESS_INSTANCE_KEY)
-            .setProcessDefinitionKey(MOCK_PROCESS_DEFINITION_KEY)
-            .setBpmnProcessId("demoProcess")
-            .setType(OperationType.MODIFY_PROCESS_INSTANCE)
-            .setState(OperationState.LOCKED)
-            .setBatchOperationId(batchOperationId)
-            .setLockOwner(operateProperties.getOperationExecutor().getWorkerId())
-            .setModifyInstructions(objectMapper.writeValueAsString(modifyInstructions));
-
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        operationTemplate.getFullQualifiedName(), operationId, operation);
-
-    return operation;
-  }
 
   @Test
   public void shouldAddToken() throws Exception {
@@ -254,6 +196,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
+    // Validate that the flow node instance ids were read
+    verify(mockFlowNodeInstanceReader, times(1))
+        .getFlowNodeInstanceKeysByIdAndStates(
+            MOCK_PROCESS_INSTANCE_KEY, "taskA", List.of(FlowNodeState.ACTIVE));
+
     // Validate the command sent to zeebe has all expected subcommands
     assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(1);
     verify(mockZeebeCommand, times(1)).terminateElement(123L);
@@ -307,6 +254,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
+    // Validate that the flow node instance ids were read
+    verify(mockFlowNodeInstanceReader, times(2))
+        .getFlowNodeInstanceKeysByIdAndStates(
+            MOCK_PROCESS_INSTANCE_KEY, "taskA", List.of(FlowNodeState.ACTIVE));
+
     // Validate the command sent to zeebe has all expected subcommands
     assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(3);
     verify(mockZeebeCommand, times(1)).activateElement("taskB");
@@ -326,5 +278,63 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     assertThat(updatedOps.getLockOwner()).isNull();
     assertThat(updatedOps.getLockExpirationTime()).isNull();
     assertThat(updatedOps.getState()).isEqualTo(OperationState.COMPLETED);
+  }
+
+  private void createMockZeebeCommand() {
+    mockZeebeCommand =
+        Mockito.mock(
+            ModifyProcessInstanceCommandStep1.class,
+            withSettings()
+                .extraInterfaces(
+                    ModifyProcessInstanceCommandStep2.class,
+                    ModifyProcessInstanceCommandStep3.class));
+
+    when(mockZeebeCommand.activateElement(anyString()))
+        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
+    when(mockZeebeCommand.terminateElement(anyLong()))
+        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
+    when(((ModifyProcessInstanceCommandStep2) mockZeebeCommand).and()).thenReturn(mockZeebeCommand);
+    when(((ModifyProcessInstanceCommandStep3) mockZeebeCommand)
+            .withVariables(anyMap(), anyString()))
+        .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
+
+    when(mockZeebeHelper.newModifyProcessInstanceCommand(MOCK_PROCESS_INSTANCE_KEY))
+        .thenReturn(mockZeebeCommand);
+  }
+
+  private void createBatchCommandDocument(final String batchOperationId) throws IOException {
+    final BatchOperationEntity batchOperation =
+        new BatchOperationEntity()
+            .setId(batchOperationId)
+            .setType(OperationType.MODIFY_PROCESS_INSTANCE)
+            .setStartDate(OffsetDateTime.now())
+            .setUsername("testuser")
+            .setInstancesCount(1)
+            .setOperationsTotalCount(1);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        batchOperationTemplate.getFullQualifiedName(), batchOperationId, batchOperation);
+  }
+
+  private OperationEntity createOperationEntityDocument(
+      final String batchOperationId,
+      final String operationId,
+      final ModifyProcessInstanceRequestDto modifyInstructions)
+      throws IOException {
+    final OperationEntity operation =
+        new OperationEntity()
+            .setId(operationId)
+            .setProcessInstanceKey(MOCK_PROCESS_INSTANCE_KEY)
+            .setProcessDefinitionKey(MOCK_PROCESS_DEFINITION_KEY)
+            .setBpmnProcessId("demoProcess")
+            .setType(OperationType.MODIFY_PROCESS_INSTANCE)
+            .setState(OperationState.LOCKED)
+            .setBatchOperationId(batchOperationId)
+            .setLockOwner(operateProperties.getOperationExecutor().getWorkerId())
+            .setModifyInstructions(objectMapper.writeValueAsString(modifyInstructions));
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationTemplate.getFullQualifiedName(), operationId, operation);
+
+    return operation;
   }
 }
