@@ -9,12 +9,22 @@ import {useContext} from 'react';
 
 import {UiConfig, configContext} from 'config';
 
-export default function useUiConfig(): UiConfig | {} {
-  const {config} = useContext(configContext);
-  return config;
+export default function useUiConfig(): Partial<UiConfig> {
+  const contextValue = useContext(configContext);
+
+  if (!contextValue) {
+    throw new Error('useUiConfig has to be used within <ConfigProvider>');
+  }
+
+  return contextValue.config;
 }
 
 export function useLoadConfig() {
-  const {loadConfig} = useContext(configContext);
-  return loadConfig;
+  const contextValue = useContext(configContext);
+
+  if (!contextValue) {
+    throw new Error('useUiConfig has to be used within <ConfigProvider>');
+  }
+
+  return contextValue.loadConfig;
 }

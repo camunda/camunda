@@ -65,17 +65,14 @@ export type UiConfig = {
 let globalConfig: UiConfig;
 const awaiting: Array<(config: Record<string, unknown>) => void> = [];
 
-interface configContextProps {
-  config: UiConfig | {};
+interface ConfigContextProps {
+  config: Partial<UiConfig>;
   loadConfig: () => Promise<void>;
 }
 
-export const configContext = createContext<configContextProps>({
-  config: {},
-  loadConfig: () => Promise.resolve(),
-});
+export const configContext = createContext<ConfigContextProps | null>(null);
 export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
-  const [config, setConfig] = useState<UiConfig | {}>({});
+  const [config, setConfig] = useState<Partial<UiConfig>>({});
 
   const loadConfig = async () => {
     try {

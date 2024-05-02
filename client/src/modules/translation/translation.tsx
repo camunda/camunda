@@ -23,7 +23,7 @@ export function setTranslation(initialTranslationObject: TranslationObject) {
   translationObject = initialTranslationObject;
 }
 
-export function TranslationProvider({children}: {children: ReactNode}): ReactNode {
+export function TranslationProvider({children}: {children: ReactNode}): JSX.Element {
   const [translationLoaded, setTranslationLoaded] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function TranslationProvider({children}: {children: ReactNode}): ReactNod
     return <Loading />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 export function t(key: string, data?: Record<string, unknown>): string | JSX.Element[] {
