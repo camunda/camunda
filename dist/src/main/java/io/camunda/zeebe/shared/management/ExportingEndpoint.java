@@ -39,10 +39,9 @@ public final class ExportingEndpoint {
       final var result =
           switch (operationKey) {
             case RESUME -> exportingService.resumeExporting();
-            case PAUSE ->
-                softPause
-                    ? exportingService.softPauseExporting()
-                    : exportingService.pauseExporting();
+            case PAUSE -> softPause
+                ? exportingService.softPauseExporting()
+                : exportingService.pauseExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();
