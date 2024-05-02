@@ -220,12 +220,15 @@ final class AdminApiRequestHandlerTest {
 
     public SoftPauseExportingRequest(
         @Mock final PartitionAdminAccess adminAccess,
-        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
+        @Mock final PartitionManagerImpl partitionManager,
         @Mock final AtomixServerTransport transport) {
       this.adminAccess = adminAccess;
       final int partitionId = 1;
       when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
-      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
+      when(partitionManager.getPartitionGroup()).thenReturn(mock(ManagedPartitionGroup.class));
+      when(partitionManager.getPartitions()).thenReturn(List.of());
+      when(partitionManager.createAdminAccess(any())).thenReturn(adminAccess);
+      handler = new AdminApiRequestHandler(transport, partitionManager);
 
       request = new AdminRequest();
       request.setPartitionId(partitionId);
