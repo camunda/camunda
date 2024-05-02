@@ -10,7 +10,7 @@ package io.camunda.operate.rest.dto.incidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class IncidentsByErrorMsgStatisticsTest {
 

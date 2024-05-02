@@ -7,253 +7,314 @@
  */
 package io.camunda.operate.schema;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
-import io.camunda.operate.qa.util.TestOpensearchSchemaManager;
+import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.indices.UserIndex;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import java.util.HashSet;
-import java.util.List;
+import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
+import io.camunda.operate.schema.util.SchemaTestHelper;
+import io.camunda.operate.schema.util.TestDynamicIndex;
+import io.camunda.operate.schema.util.TestIndex;
+import io.camunda.operate.schema.util.TestTemplate;
+import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
+import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
+import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
+import io.camunda.operate.store.opensearch.OpensearchTaskStore;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.ContextConfiguration;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(
+@ContextConfiguration(
     classes = {
-      TestApplicationWithNoBeans.class,
-      OperateProperties.class,
-      DatabaseInfo.class,
       IndexSchemaValidator.class,
-      TestElasticsearchSchemaManager.class,
-      TestOpensearchSchemaManager.class,
-      RichOpenSearchClient.class,
+      TestIndex.class,
+      TestTemplate.class,
+      TestDynamicIndex.class,
+      ElasticsearchSchemaManager.class,
+      ElasticsearchConnector.class,
+      ElasticsearchTaskStore.class,
+      ElasticsearchSchemaTestHelper.class,
+      OpensearchSchemaManager.class,
       OpensearchConnector.class,
-      IndexDescriptor.class,
-      // Assume we have only 3 indices:
-      ProcessIndex.class,
-      UserIndex.class,
-      IncidentTemplate.class
+      OpensearchTaskStore.class,
+      OpenSearchSchemaTestHelper.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class
     })
-public class IndexSchemaValidatorIT {
+@SpringBootTest(properties = {"spring.profiles.active="})
+public class IndexSchemaValidatorIT extends AbstractSchemaIT {
 
-  @MockBean RetryElasticsearchClient retryElasticsearchClient;
+  @Autowired public IndexSchemaValidator validator;
 
-  @MockBean RichOpenSearchClient richOpenSearchClient;
+  @Autowired public SchemaManager schemaManager;
+  @Autowired public SchemaTestHelper schemaHelper;
 
-  @Autowired List<IndexDescriptor> indexDescriptors;
+  @Autowired public TestIndex testIndex;
+  @Autowired public TestDynamicIndex testDynamicIndex;
+  @Autowired public TestTemplate testTemplate;
 
-  @Autowired ProcessIndex processIndex;
+  @BeforeEach
+  public void createDefault() {
+    schemaManager.createDefaults();
+  }
 
-  @Autowired IndexSchemaValidator indexSchemaValidator;
-
-  @Autowired OperateProperties operateProperties;
-
-  private String operatePrefix;
-
-  private List<String> allIndexNames;
-  private List<String> allIndexAliases;
-
-  private Set<String> newerVersions;
-
-  private Set<String> olderVersions;
-
-  @Before
-  public void setUp() {
-    operatePrefix =
-        DatabaseInfo.isOpensearch()
-            ? operateProperties.getOpensearch().getIndexPrefix()
-            : operateProperties.getElasticsearch().getIndexPrefix();
-    allIndexNames =
-        indexDescriptors.stream()
-            .map(IndexDescriptor::getFullQualifiedName)
-            .collect(Collectors.toList());
-    allIndexAliases =
-        indexDescriptors.stream().map(IndexDescriptor::getAlias).collect(Collectors.toList());
-    newerVersions = Set.of("100.1.1", "100.1.2", "100.0.1", "100.2.3");
-    olderVersions = Set.of("0.2.5", "0.1.2");
+  @AfterEach
+  public void dropSchema() {
+    schemaHelper.dropSchema();
   }
 
   @Test
-  public void testHasAnyOperateIndices() {
-    // No indices
-    whenDatabaseClientReturnsIndexNames(Set.of());
-    assertThat(indexSchemaValidator.hasAnyOperateIndices()).isFalse();
-    // At least one operate index
-    whenDatabaseClientReturnsIndexNames(Set.of(operatePrefix + "-index", "not-operate"));
-    assertThat(indexSchemaValidator.hasAnyOperateIndices()).isTrue();
+  public void shouldValidateDynamicIndexWithAddedProperty() {
+    // Create a dynamic index and insert data
+    schemaManager.createIndex(
+        testDynamicIndex,
+        "/schema/elasticsearch/create/index/operate-testdynamicindex-property-removed.json");
+    final Map<String, Object> subDocument =
+        Map.of(
+            "requestedUrl",
+            "test",
+            "SPRING_SECURITY_CONTEXT",
+            "test",
+            "SPRING_SECURITY_SAVED_REQUEST",
+            "test");
+    final Map<String, Object> document = Map.of("propA", "test", "propC", subDocument);
+    clientTestHelper.createDocument(testDynamicIndex.getFullQualifiedName(), "1", document);
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // Only property B shows up in the diff, and no exception is thrown due to the data adding
+    // fields dynamically in propC
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testDynamicIndex,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propB")
+                        .setTypeDefinition(Map.of("type", "text")))));
   }
 
   @Test
-  public void testSchemaExists() {
-    // No indices
-    whenDatabaseClientReturnsIndexNames(Set.of());
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
-    // Only 2 operate indices
-    whenDatabaseClientReturnsIndexNames(Set.of(allIndexNames.get(0), allIndexNames.get(1)));
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
-    // All indices, but no aliases
-    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames));
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
-    // All indices, but only two aliases
-    whenDatabaseClientReturnsIndexNames(
-        new HashSet<>(allIndexNames), Set.of(allIndexAliases.get(0), allIndexAliases.get(1)));
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
-    // All operate indices
-    whenDatabaseClientReturnsIndexNames(
-        new HashSet<>(allIndexNames), new HashSet<>(allIndexAliases));
-    assertThat(indexSchemaValidator.schemaExists()).isTrue();
+  public void shouldValidateDynamicIndexWithDataAddingFields() {
+    // Create a dynamic index and insert data
+    schemaManager.createIndex(
+        testDynamicIndex, "/schema/elasticsearch/create/index/operate-testdynamicindex.json");
+    final Map<String, Object> subDocument =
+        Map.of(
+            "requestedUrl",
+            "test",
+            "SPRING_SECURITY_CONTEXT",
+            "test",
+            "SPRING_SECURITY_SAVED_REQUEST",
+            "test");
+    final Map<String, Object> document =
+        Map.of("propA", "test", "propB", "test", "propC", subDocument);
+    clientTestHelper.createDocument(testDynamicIndex.getFullQualifiedName(), "1", document);
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // No diff should show and no exception thrown due to fields dynamically added from propC data
+    assertThat(indexDiff).isEmpty();
   }
 
   @Test
-  public void testNewerVersionsForIndex() {
+  public void shouldIgnoreMissingIndexes() {
+    // given an empty schema
 
-    // Only older versions
-    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
-    // Only current version
-    whenDatabaseClientReturnsIndexNames(
-        versionsOf(processIndex, Set.of(processIndex.getVersion())));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
-    // Only newer versions
-    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
-    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).containsAll(newerVersions);
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    // no exception was thrown and:
+    assertThat(indexDiff).isEmpty();
   }
 
   @Test
-  public void testOlderVersionsForIndex() {
-    // Only newer versions
-    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, newerVersions));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
-    // Only current version
-    whenDatabaseClientReturnsIndexNames(
-        versionsOf(processIndex, Set.of(processIndex.getVersion())));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
-    // Only older versions
-    whenDatabaseClientReturnsIndexNames(versionsOf(processIndex, olderVersions));
-    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEqualTo(olderVersions);
+  public void shouldValidateAnUpToDateSchema() {
+    // given
+    schemaManager.createSchema();
+
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    assertThat(indexDiff).isEmpty();
   }
 
   @Test
-  public void testIsValid() {
-    // No indices
-    whenDatabaseClientReturnsIndexNames(Set.of());
-    indexSchemaValidator.validateIndexVersions();
+  public void shouldDetectAnAddedIndexProperty() {
+    // given
+    // a schema that has a missing field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
 
-    // Current indices
-    whenDatabaseClientReturnsIndexNames(new HashSet<>(allIndexNames));
-    indexSchemaValidator.validateIndexVersions();
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
 
-    // 1 older version for index
-    whenDatabaseClientReturnsIndexNames(Set.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
-    indexSchemaValidator.validateIndexVersions();
-
-    // two indices with one name substring of another name
-    whenDatabaseClientReturnsIndexNames(
-        Set.of(
-            getFullQualifiedIndexName("process", "0.8.0"),
-            getFullQualifiedIndexName("process-instance", "0.9.0")));
-    indexSchemaValidator.validateIndexVersions();
-
-    // two indices with one name substring of another name
-    whenDatabaseClientReturnsIndexNames(
-        Set.of(
-            getFullQualifiedIndexName("operation", "0.8.0"),
-            getFullQualifiedIndexName("batch-operation", "0.9.0")));
-    indexSchemaValidator.validateIndexVersions();
+    // then
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testIndex,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propC")
+                        .setTypeDefinition(Map.of("type", "keyword")))));
   }
 
   @Test
-  public void testIsNotValidForMoreThanOneOlderVersion() {
-    // 2 older version for index
-    whenDatabaseClientReturnsIndexNames(
-        Set.of(
-            getFullQualifiedIndexName(processIndex, "0.9.0"),
-            getFullQualifiedIndexName(processIndex, "0.8.0")));
-    assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> indexSchemaValidator.validateIndexVersions())
-        .withMessageContaining(
-            "More than one older version for process ("
-                + processIndex.getVersion()
-                + ") found: [0.8.0, 0.9.0]");
+  public void shouldDetectAnAddedIndexPropertyOnTwoIndicesWithMissingField() {
+    // given
+    // a schema with two indices that has a missing field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
+    schemaHelper.createIndex(
+        testIndex,
+        testIndex.getFullQualifiedName() + "2024-01-01",
+        "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
+
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testIndex,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propC")
+                        .setTypeDefinition(Map.of("type", "keyword")))));
   }
 
   @Test
-  public void testIsNotValidForANewerVersion() {
-    // 1 newer version for index
-    final var newerVersion = "10.0.0";
-    whenDatabaseClientReturnsIndexNames(
-        Set.of(getFullQualifiedIndexName(processIndex, newerVersion)));
-    assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> indexSchemaValidator.validateIndexVersions())
-        .withMessageContaining(
-            "Newer version(s) for process ("
-                + processIndex.getVersion()
-                + ") already exists: ["
-                + newerVersion
-                + "]");
+  public void shouldDetectAnAddedIndexPropertyOnTwoIndicesOnlyOneMissingField() {
+    // given
+    // a schema with two indices that has a missing field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
+    schemaHelper.createIndex(
+        testIndex,
+        testIndex.getFullQualifiedName() + "2024-01-01",
+        "/schema/elasticsearch/create/index/operate-testindex.json");
+
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testIndex,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propC")
+                        .setTypeDefinition(Map.of("type", "keyword")))));
   }
 
-  private void whenDatabaseClientReturnsIndexNames(Set<String> givenIndexNames) {
-    whenDatabaseClientReturnsIndexNames(givenIndexNames, null);
+  @Test
+  public void shouldDetectAmbiguousIndexDifference() {
+    // given
+    // a schema with two indices that has a missing field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
+    schemaHelper.createIndex(
+        testIndex,
+        testIndex.getFullQualifiedName() + "2024-01-01",
+        "/schema/elasticsearch/create/index/operate-testindex-another-property-removed.json");
+
+    // when/then
+    assertThatThrownBy(() -> validator.validateIndexMappings())
+        .isInstanceOf(OperateRuntimeException.class)
+        .hasMessageContaining(
+            "Ambiguous schema update. First bring runtime and date indices to one schema.");
   }
 
-  private void mockElasticsearchReturnIndexNames(
-      Set<String> givenIndexNames, Set<String> givenAliasesNames) {
-    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(givenIndexNames);
-    if (givenAliasesNames != null) {
-      when(retryElasticsearchClient.getAliasesNames(anyString())).thenReturn(givenAliasesNames);
-    }
+  @Test
+  public void shouldIgnoreARemovedIndexProperty() {
+    // given
+    // a schema that has a added field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-added.json");
+
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    assertThat(indexDiff).isEmpty();
   }
 
-  private void mockOpenSearchReturnIndexNames(
-      Set<String> givenIndexNames, Set<String> givenAliasesNames) {
-    final OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
-    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(givenIndexNames);
-    if (givenAliasesNames != null) {
-      when(indexMock.getAliasesNamesWithRetries(anyString())).thenReturn(givenAliasesNames);
-    }
-    when(richOpenSearchClient.index()).thenReturn(indexMock);
+  @Test
+  public void shouldDetectChangedIndexMappingParameters() {
+    // given
+    // a schema that has a added field
+    schemaManager.createIndex(
+        testIndex, "/schema/elasticsearch/create/index/operate-testindex-nullvalue.json");
+
+    // when/then
+    assertThatThrownBy(() -> validator.validateIndexMappings())
+        .isInstanceOf(OperateRuntimeException.class)
+        .hasMessageContaining(
+            "Not supported index changes are introduced. Data migration is required.");
   }
 
-  private void whenDatabaseClientReturnsIndexNames(
-      Set<String> givenIndexNames, Set<String> givenAliasesNames) {
-    mockElasticsearchReturnIndexNames(givenIndexNames, givenAliasesNames);
-    mockOpenSearchReturnIndexNames(givenIndexNames, givenAliasesNames);
+  @Test
+  public void shouldDetectAnAddedTemplateProperty() {
+    // given
+    // a schema that has a missing field
+    schemaManager.createTemplate(
+        testTemplate,
+        "/schema/elasticsearch/create/template/operate-testtemplate-property-removed.json");
+
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
+
+    // then
+    assertThat(indexDiff)
+        .containsExactly(
+            entry(
+                testTemplate,
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("propC")
+                        .setTypeDefinition(Map.of("type", "keyword")))));
   }
 
-  private Set<String> versionsOf(IndexDescriptor index, Set<String> versions) {
-    return new HashSet<>(map(versions, version -> getFullQualifiedIndexName(index, version)));
-  }
+  @Test
+  public void shouldIgnoreARemovedTemplateProperty() {
+    // given
+    // a schema that has an added field
+    schemaManager.createTemplate(
+        testTemplate,
+        "/schema/elasticsearch/create/template/operate-testtemplate-property-added.json");
 
-  // See AbstractIndexDescriptor::getFullQualifiedIndexName
-  private String getFullQualifiedIndexName(IndexDescriptor index, String version) {
-    return getFullQualifiedIndexName(index.getIndexName(), version);
-  }
+    // when
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        validator.validateIndexMappings();
 
-  private String getFullQualifiedIndexName(String indexNamePart, String version) {
-    return String.format("%s-%s-%s_", operatePrefix, indexNamePart, version);
+    // then
+    assertThat(indexDiff).isEmpty();
   }
 }

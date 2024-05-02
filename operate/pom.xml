@@ -192,6 +192,16 @@
     </profile>
 
     <profile>
+      <id>operateItOpensearch</id>
+      <properties>
+        <includeITNames>**/schema/*IT.java</includeITNames>
+        <excludeITNames>**/SchemaManagerIT.java</excludeITNames>
+        <failsafeForkCount>1</failsafeForkCount>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
       <!--
         We have to skip spotbugs analysis until Operate team have fixed several findings
         See https://github.com/camunda/zeebe/issues/17331

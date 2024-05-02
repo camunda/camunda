@@ -10,7 +10,7 @@ package io.camunda.operate.rest.dto.incidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class IncidentByProcessGroupStatisticsTest {
 
@@ -49,7 +49,7 @@ public class IncidentByProcessGroupStatisticsTest {
   }
 
   protected IncidentsByProcessGroupStatisticsDto newWithInstancesAndIncidents(
-      int instances, int incidents) {
+      final int instances, final int incidents) {
     final IncidentsByProcessGroupStatisticsDto newObject =
         new IncidentsByProcessGroupStatisticsDto();
     newObject.setActiveInstancesCount(Long.valueOf(instances));
@@ -58,7 +58,8 @@ public class IncidentByProcessGroupStatisticsTest {
   }
 
   protected void assertIsBefore(
-      IncidentsByProcessGroupStatisticsDto first, IncidentsByProcessGroupStatisticsDto second) {
+      final IncidentsByProcessGroupStatisticsDto first,
+      final IncidentsByProcessGroupStatisticsDto second) {
     assertThat(IncidentsByProcessGroupStatisticsDto.COMPARATOR.compare(first, second))
         .isLessThan(0);
   }

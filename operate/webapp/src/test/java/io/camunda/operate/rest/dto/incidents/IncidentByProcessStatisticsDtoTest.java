@@ -13,7 +13,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class IncidentByProcessStatisticsDtoTest {
 
@@ -76,7 +76,7 @@ public class IncidentByProcessStatisticsDtoTest {
   }
 
   protected IncidentByProcessStatisticsDto newWithInstancesAndIncidents(
-      int instances, int incidents) {
+      final int instances, final int incidents) {
     final IncidentByProcessStatisticsDto newObject = new IncidentByProcessStatisticsDto();
     newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
@@ -84,7 +84,7 @@ public class IncidentByProcessStatisticsDtoTest {
   }
 
   protected void assertIsBefore(
-      IncidentByProcessStatisticsDto first, IncidentByProcessStatisticsDto second) {
+      final IncidentByProcessStatisticsDto first, final IncidentByProcessStatisticsDto second) {
     assertThat(IncidentByProcessStatisticsDto.COMPARATOR.compare(first, second)).isLessThan(0);
   }
 }
