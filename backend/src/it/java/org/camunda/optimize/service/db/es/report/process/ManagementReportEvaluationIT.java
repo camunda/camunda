@@ -224,6 +224,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     final String firstDefName = "first";
     engineIntegrationExtension.deployAndStartProcess(
         createSimpleProcessWithName(FIRST_DEF_KEY, firstDefName));
+    engineIntegrationExtension.finishAllRunningUserTasks();
     final String secondDefName = "second";
     engineIntegrationExtension.deployAndStartProcess(
         createSimpleProcessWithName(SECOND_DEF_KEY, secondDefName));
@@ -242,7 +243,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
               assertThat(response.getReportDefinition().getData().getDefinitions())
                   .extracting(ReportDataDefinitionDto::getKey)
                   .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
-              assertThat(response.getResult().getFirstMeasureData()).isNotNull();
+              assertThat(response.getResult().getFirstMeasureData()).isEqualTo(1);
             });
     assertThat(
             reportClient.evaluateMapReportById(

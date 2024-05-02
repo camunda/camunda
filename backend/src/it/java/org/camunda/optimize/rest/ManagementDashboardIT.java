@@ -268,6 +268,8 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
                                 ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
                         .groupBy(new NoneGroupByDto())
                         .visualization(ProcessVisualization.NUMBER)
+                        .filter(
+                            ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList())
                         .managementReport(true)
                         .build()),
                 new PositionDto(0, 0),
