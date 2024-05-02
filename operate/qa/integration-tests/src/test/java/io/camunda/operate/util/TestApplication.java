@@ -8,11 +8,8 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.Application;
-import io.camunda.operate.data.DataGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -31,11 +28,5 @@ public class TestApplication {
 
   public static void main(String[] args) throws Exception {
     SpringApplication.run(TestApplication.class, args);
-  }
-
-  @Bean(name = "dataGenerator")
-  @ConditionalOnMissingBean
-  public DataGenerator stubDataGenerator() {
-    return DataGenerator.DO_NOTHING;
   }
 }

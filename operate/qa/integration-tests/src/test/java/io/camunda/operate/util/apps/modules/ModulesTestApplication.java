@@ -8,12 +8,9 @@
 package io.camunda.operate.util.apps.modules;
 
 import io.camunda.operate.Application;
-import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.util.TestApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -31,6 +28,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
       @ComponentScan.Filter(
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.operate\\.archiver\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.operate\\.data\\..*"),
       @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.operate\\.it\\..*"),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class)
@@ -40,11 +40,5 @@ public class ModulesTestApplication {
 
   public static void main(String[] args) throws Exception {
     SpringApplication.run(ModulesTestApplication.class, args);
-  }
-
-  @Bean(name = "dataGenerator")
-  @ConditionalOnMissingBean
-  public DataGenerator stubDataGenerator() {
-    return DataGenerator.DO_NOTHING;
   }
 }

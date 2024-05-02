@@ -126,6 +126,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-data-generator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -541,6 +546,7 @@
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
 
             <dependency>io.camunda:operate-webapp</dependency>
+            <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:tasklist-webapp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->

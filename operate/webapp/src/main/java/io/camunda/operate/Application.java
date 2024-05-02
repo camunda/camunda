@@ -7,7 +7,6 @@
  */
 package io.camunda.operate;
 
-import io.camunda.operate.data.DataGenerator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -16,10 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -37,7 +34,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.operate\\.webapp\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.archiver\\..*")
+          pattern = "io\\.camunda\\.operate\\.archiver\\..*"),
+      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.operate\\.data\\..*")
     },
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
@@ -125,13 +123,6 @@ public class Application {
 
         // add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");
-  }
-
-  @Bean(name = "dataGenerator")
-  @ConditionalOnMissingBean
-  public DataGenerator stubDataGenerator() {
-    LOGGER.debug("Create Data generator stub");
-    return DataGenerator.DO_NOTHING;
   }
 
   public static class ApplicationErrorListener
