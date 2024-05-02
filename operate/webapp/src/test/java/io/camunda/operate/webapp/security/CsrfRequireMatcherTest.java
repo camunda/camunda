@@ -16,33 +16,74 @@
  */
 package io.camunda.operate.webapp.security;
 
-public final class OperateURIs {
+import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
-  public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
-  public static final String X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN";
-  public static final String ROOT = "/";
-  public static final String API = "/api/**";
-  public static final String PUBLIC_API = "/v*/**";
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
-  public static final String COOKIE_JSESSIONID = "OPERATE-SESSION";
-  public static final String SSO_CALLBACK_URI = "/sso-callback";
-  public static final String NO_PERMISSION = "/noPermission";
-  public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
-  public static final String // For redirects after login
-      REQUESTED_URL = "requestedUrl";
-  public static final String[] AUTH_WHITELIST = {
-    "/swagger-resources",
-    "/swagger-resources/**",
-    "/swagger-ui.html",
-    "/documentation",
-    "/actuator/**",
-    LOGIN_RESOURCE,
-    SSO_CALLBACK_URI,
-    NO_PERMISSION,
-    LOGOUT_RESOURCE
-  };
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-  // Used as constants class
-  private OperateURIs() {}
+@ExtendWith(MockitoExtension.class)
+class CsrfRequireMatcherTest {
+
+  @Mock HttpServletRequest request;
+
+  final CsrfRequireMatcher csrfRequireMatcher = new CsrfRequireMatcher();
+
+  @Test
+  void shouldNotMatchHttpMethods() {
+    Stream.of("GET", "HEAD", "TRACE", "OPTIONS")
+        .forEach(
+            method -> {
+              when(request.getMethod()).thenReturn(method);
+              assertThat(csrfRequireMatcher.matches(request)).isFalse();
+            });
+  }
+
+  @Test
+  void shouldNotMatchPaths() {
+    when(request.getMethod()).thenReturn("POST");
+    Stream.of(LOGIN_RESOURCE, LOGOUT_RESOURCE)
+        .forEach(
+            path -> {
+              when(request.getServletPath()).thenReturn(path);
+              assertThat(csrfRequireMatcher.matches(request)).isFalse();
+            });
+  }
+
+  @Test
+  void shouldNotMatchForSwagger() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/swagger-ui.html");
+    when(request.getHeader("Referer")).thenReturn("http://localhost:8080/swagger-ui.html");
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080/swagger-ui.html"));
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
+  }
+
+  @Test
+  void shouldNotMatchForPublicAPIAccessWithBearerToken() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/v1/process-definitions/search");
+    when(request.getHeader("Referer")).thenReturn(null);
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080/v1/process-definitions/search"));
+    when(request.getHeader("Authorization")).thenReturn("Bearer eyBlackCoffee");
+    assertThat(csrfRequireMatcher.matches(request)).isFalse();
+  }
+
+  @Test
+  void shouldMatchForInternalAPIAccess() {
+    when(request.getMethod()).thenReturn("POST");
+    when(request.getServletPath()).thenReturn("/api/processes/grouped");
+    when(request.getHeader("Referer")).thenReturn(null);
+    when(request.getRequestURL())
+        .thenReturn(new StringBuffer("http://localhost:8080//api/processes/grouped"));
+    assertThat(csrfRequireMatcher.matches(request)).isTrue();
+  }
 }

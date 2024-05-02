@@ -16,33 +16,57 @@
  */
 package io.camunda.operate.webapp.security;
 
-public final class OperateURIs {
+import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 
-  public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
-  public static final String X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN";
-  public static final String ROOT = "/";
-  public static final String API = "/api/**";
-  public static final String PUBLIC_API = "/v*/**";
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
-  public static final String COOKIE_JSESSIONID = "OPERATE-SESSION";
-  public static final String SSO_CALLBACK_URI = "/sso-callback";
-  public static final String NO_PERMISSION = "/noPermission";
-  public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
-  public static final String // For redirects after login
-      REQUESTED_URL = "requestedUrl";
-  public static final String[] AUTH_WHITELIST = {
-    "/swagger-resources",
-    "/swagger-resources/**",
-    "/swagger-ui.html",
-    "/documentation",
-    "/actuator/**",
-    LOGIN_RESOURCE,
-    SSO_CALLBACK_URI,
-    NO_PERMISSION,
-    LOGOUT_RESOURCE
-  };
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.regex.Pattern;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
-  // Used as constants class
-  private OperateURIs() {}
+public class CsrfRequireMatcher implements RequestMatcher {
+  private static final Pattern ALLOWED_METHODS = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
+
+  private static final Pattern ALLOWED_PATHS =
+      Pattern.compile(LOGIN_RESOURCE + "|" + LOGOUT_RESOURCE);
+
+  @Override
+  public boolean matches(final HttpServletRequest request) {
+    // If request is from Allowed Methods, Login and Logout
+    if (ALLOWED_METHODS.matcher(request.getMethod()).matches()) {
+      return false;
+    }
+    if (ALLOWED_PATHS.matcher(request.getServletPath()).matches()) {
+      return false;
+    }
+
+    final String referer = request.getHeader("Referer");
+
+    // If request is from Swagger UI
+    final String baseRequestUrl;
+    try {
+      final URL requestUrl = URI.create(request.getRequestURL().toString()).toURL();
+      baseRequestUrl =
+          requestUrl.getProtocol()
+              + "://"
+              + requestUrl.getHost()
+              + (requestUrl.getPort() > 0 ? ":" + requestUrl.getPort() : "");
+    } catch (final MalformedURLException e) {
+      throw new OperateRuntimeException(e);
+    }
+
+    if (referer != null && referer.matches(baseRequestUrl + "/swagger-ui.*")) {
+      return false;
+    }
+
+    // If is authenticated from as API user using Bearer Token
+    final String authorizationHeader = request.getHeader("Authorization");
+    final boolean isAuthorizationHeaderPresent =
+        authorizationHeader != null && authorizationHeader.startsWith("Bearer ");
+
+    return !isAuthorizationHeaderPresent;
+  }
 }

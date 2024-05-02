@@ -47,7 +47,7 @@ public class OperateProperties {
   private boolean persistentSessionsEnabled = false;
 
   /** Indicates, whether CSRF prevention is enabled. */
-  @Deprecated private boolean csrfPreventionEnabled = true;
+  private boolean csrfPreventionEnabled = true;
 
   /** Standard user data */
   private String userId = "demo";
@@ -116,7 +116,7 @@ public class OperateProperties {
     return importerEnabled;
   }
 
-  public void setImporterEnabled(boolean importerEnabled) {
+  public void setImporterEnabled(final boolean importerEnabled) {
     this.importerEnabled = importerEnabled;
   }
 
@@ -124,7 +124,7 @@ public class OperateProperties {
     return archiverEnabled;
   }
 
-  public void setArchiverEnabled(boolean archiverEnabled) {
+  public void setArchiverEnabled(final boolean archiverEnabled) {
     this.archiverEnabled = archiverEnabled;
   }
 
@@ -132,7 +132,7 @@ public class OperateProperties {
     return webappEnabled;
   }
 
-  public void setWebappEnabled(boolean webappEnabled) {
+  public void setWebappEnabled(final boolean webappEnabled) {
     this.webappEnabled = webappEnabled;
   }
 
@@ -140,17 +140,15 @@ public class OperateProperties {
     return batchOperationMaxSize;
   }
 
-  public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
+  public void setBatchOperationMaxSize(final Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
-  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
-  @Deprecated
-  public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
+  public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
@@ -162,7 +160,7 @@ public class OperateProperties {
     return opensearch;
   }
 
-  public void setOpensearch(OperateOpensearchProperties opensearch) {
+  public void setOpensearch(final OperateOpensearchProperties opensearch) {
     this.opensearch = opensearch;
   }
 
@@ -170,7 +168,7 @@ public class OperateProperties {
     return zeebeElasticsearch;
   }
 
-  public void setZeebeElasticsearch(ZeebeElasticsearchProperties zeebeElasticsearch) {
+  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
     this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
@@ -178,7 +176,7 @@ public class OperateProperties {
     return zeebeOpensearch;
   }
 
-  public void setZeebeOpensearch(ZeebeOpensearchProperties zeebeOpensearch) {
+  public void setZeebeOpensearch(final ZeebeOpensearchProperties zeebeOpensearch) {
     this.zeebeOpensearch = zeebeOpensearch;
   }
 
@@ -186,7 +184,7 @@ public class OperateProperties {
     return zeebe;
   }
 
-  public void setZeebe(ZeebeProperties zeebe) {
+  public void setZeebe(final ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
 
@@ -194,7 +192,7 @@ public class OperateProperties {
     return ldap;
   }
 
-  public void setLdap(LdapProperties ldap) {
+  public void setLdap(final LdapProperties ldap) {
     this.ldap = ldap;
   }
 
@@ -218,7 +216,7 @@ public class OperateProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -226,7 +224,7 @@ public class OperateProperties {
     return operationExecutor;
   }
 
-  public void setOperationExecutor(OperationExecutorProperties operationExecutor) {
+  public void setOperationExecutor(final OperationExecutorProperties operationExecutor) {
     this.operationExecutor = operationExecutor;
   }
 
@@ -234,7 +232,7 @@ public class OperateProperties {
     return importer;
   }
 
-  public void setImporter(ImportProperties importer) {
+  public void setImporter(final ImportProperties importer) {
     this.importer = importer;
   }
 
@@ -242,7 +240,7 @@ public class OperateProperties {
     return archiver;
   }
 
-  public void setArchiver(ArchiverProperties archiver) {
+  public void setArchiver(final ArchiverProperties archiver) {
     this.archiver = archiver;
   }
 
@@ -250,7 +248,7 @@ public class OperateProperties {
     return clusterNode;
   }
 
-  public void setClusterNode(ClusterNodeProperties clusterNode) {
+  public void setClusterNode(final ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
 
@@ -258,7 +256,7 @@ public class OperateProperties {
     return enterprise;
   }
 
-  public void setEnterprise(boolean enterprise) {
+  public void setEnterprise(final boolean enterprise) {
     this.enterprise = enterprise;
   }
 
@@ -310,7 +308,7 @@ public class OperateProperties {
     return persistentSessionsEnabled;
   }
 
-  public OperateProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
+  public OperateProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -337,7 +335,7 @@ public class OperateProperties {
     return backup;
   }
 
-  public OperateProperties setBackup(BackupProperties backup) {
+  public OperateProperties setBackup(final BackupProperties backup) {
     this.backup = backup;
     return this;
   }
@@ -346,7 +344,7 @@ public class OperateProperties {
     return tasklistUrl;
   }
 
-  public void setTasklistUrl(String tasklistUrl) {
+  public void setTasklistUrl(final String tasklistUrl) {
     this.tasklistUrl = tasklistUrl;
   }
 
@@ -354,7 +352,7 @@ public class OperateProperties {
     return version;
   }
 
-  public OperateProperties setVersion(String version) {
+  public OperateProperties setVersion(final String version) {
     this.version = version;
     return this;
   }
@@ -372,20 +370,20 @@ public class OperateProperties {
     return rfc3339ApiDateFormat;
   }
 
-  public void setRfc3339ApiDateFormat(boolean rfc3339ApiDateFormat) {
+  public void setRfc3339ApiDateFormat(final boolean rfc3339ApiDateFormat) {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
   }
 
   public String getIndexPrefix() {
     if (DatabaseInfo.isElasticsearch()) {
-      if (this.getElasticsearch() != null) {
-        return this.getElasticsearch().getIndexPrefix();
+      if (getElasticsearch() != null) {
+        return getElasticsearch().getIndexPrefix();
       } else {
         return null;
       }
     } else {
-      if (this.getOpensearch() != null) {
-        return this.getOpensearch().getIndexPrefix();
+      if (getOpensearch() != null) {
+        return getOpensearch().getIndexPrefix();
       } else {
         return null;
       }
