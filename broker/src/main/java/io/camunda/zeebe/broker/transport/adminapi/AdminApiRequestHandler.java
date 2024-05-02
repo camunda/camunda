@@ -57,6 +57,7 @@ public class AdminApiRequestHandler
       case STEP_DOWN_IF_NOT_PRIMARY -> CompletableActorFuture.completed(
           stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
       case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
+      case SOFT_PAUSE_EXPORTING -> softPauseExporting(responseWriter, partitionId, errorWriter);
       case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
       case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
@@ -122,6 +123,39 @@ public class AdminApiRequestHandler
                     Either.left(
                         errorWriter.internalError(
                             "Partition %s failed to pause exporting", partitionId)));
+              }
+            });
+
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> softPauseExporting(
+      final ApiResponseWriter responseWriter,
+      final int partitionId,
+      final ErrorResponseWriter errorWriter) {
+    final var partitionAdminAccess = adminAccess.forPartition(partitionId);
+    if (partitionAdminAccess.isEmpty()) {
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.internalError(
+                  "Partition %s failed to soft pause exporting. Could not find the partition.",
+                  partitionId)));
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    partitionAdminAccess
+        .orElseThrow()
+        .softPauseExporting()
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to soft pause exporting on partition {}", partitionId, t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Partition %s failed to soft pause exporting", partitionId)));
               }
             });
 
