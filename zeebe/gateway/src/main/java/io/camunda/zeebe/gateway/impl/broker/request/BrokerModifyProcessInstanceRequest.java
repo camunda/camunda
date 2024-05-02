@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.zeebe.gateway.RequestUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
@@ -60,7 +60,7 @@ public final class BrokerModifyProcessInstanceRequest
       final VariableInstruction instruction) {
     return new ProcessInstanceModificationVariableInstruction()
         .setElementId(instruction.getScopeId())
-        .setVariables(RequestMapper.ensureJsonSet(instruction.getVariables()));
+        .setVariables(RequestUtil.ensureJsonSet(instruction.getVariables()));
   }
 
   public BrokerModifyProcessInstanceRequest addTerminateInstructions(
