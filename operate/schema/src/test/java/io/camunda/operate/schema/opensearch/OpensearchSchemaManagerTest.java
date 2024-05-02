@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchISMOperations;
@@ -50,22 +49,34 @@ public class OpensearchSchemaManagerTest {
 
   @Test
   public void testCheckAndUpdateIndices() {
-    final AbstractIndexDescriptor abstractIndexDescriptor1 = mock(AbstractIndexDescriptor.class);
-    final AbstractIndexDescriptor abstractIndexDescriptor2 = mock(AbstractIndexDescriptor.class);
-    final AbstractIndexDescriptor abstractIndexDescriptor3 = mock(AbstractIndexDescriptor.class);
-    when(abstractIndexDescriptor1.getDerivedIndexNamePattern()).thenReturn("index1*");
-    when(abstractIndexDescriptor2.getDerivedIndexNamePattern()).thenReturn("index2*");
-    when(abstractIndexDescriptor3.getDerivedIndexNamePattern()).thenReturn("index3*");
+    final IndexDescriptor indexDescriptor1 = mock(IndexDescriptor.class);
+    final IndexDescriptor indexDescriptor2 = mock(IndexDescriptor.class);
+    final IndexDescriptor indexDescriptor3 = mock(IndexDescriptor.class);
+    when(indexDescriptor1.getDerivedIndexNamePattern()).thenReturn("index1*");
+    when(indexDescriptor2.getDerivedIndexNamePattern()).thenReturn("index2*");
+    when(indexDescriptor3.getDerivedIndexNamePattern()).thenReturn("index3*");
+
+    final TemplateDescriptor templateDescriptor1 = mock(TemplateDescriptor.class);
+    when(templateDescriptor1.getDerivedIndexNamePattern()).thenReturn("template1*");
+    final TemplateDescriptor templateDescriptor2 = mock(TemplateDescriptor.class);
+    when(templateDescriptor2.getDerivedIndexNamePattern()).thenReturn("template2*");
 
     ReflectionTestUtils.setField(
         underTest,
         "indexDescriptors",
-        Arrays.asList(
-            abstractIndexDescriptor1, abstractIndexDescriptor2, abstractIndexDescriptor3));
+        Arrays.asList(indexDescriptor1, indexDescriptor2, indexDescriptor3));
+
+    ReflectionTestUtils.setField(
+        underTest, "templateDescriptors", Arrays.asList(templateDescriptor1, templateDescriptor2));
 
     final ArchiverProperties archiverProperties = mock(ArchiverProperties.class);
     when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.isIlmEnabled()).thenReturn(true).thenReturn(false);
+    when(archiverProperties.isIlmEnabled())
+        .thenReturn(true)
+        .thenReturn(false)
+        .thenReturn(false)
+        .thenReturn(true)
+        .thenReturn(false);
 
     final OpenSearchISMOperations openSearchISMOperations = mock(OpenSearchISMOperations.class);
     when(richOpenSearchClient.ism()).thenReturn(openSearchISMOperations);
@@ -78,5 +89,8 @@ public class OpensearchSchemaManagerTest {
         .addPolicyToIndex("index1*", OPERATE_DELETE_ARCHIVED_INDICES);
     verify(openSearchISMOperations, times(1)).removePolicyFromIndex("index2*");
     verify(openSearchISMOperations, times(1)).removePolicyFromIndex("index3*");
+    verify(openSearchISMOperations, times(1))
+        .addPolicyToIndex("template1*", OPERATE_DELETE_ARCHIVED_INDICES);
+    verify(openSearchISMOperations, times(1)).removePolicyFromIndex("template2*");
   }
 }
