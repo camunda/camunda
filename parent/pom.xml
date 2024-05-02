@@ -156,7 +156,7 @@
     <version.aws-java-sdk>1.12.713</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.7</version.postgres-test-container>
-    <version.elasticsearch7>7.17.20</version.elasticsearch7>
+    <version.elasticsearch7>7.17.21</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
