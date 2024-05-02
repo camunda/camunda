@@ -60,7 +60,6 @@ import org.springframework.test.util.ReflectionTestUtils;
     classes = {
       CamundaAutoConfiguration.class,
       ZeebeClientStarterAutoConfigurationTest.TestConfig.class,
-      ZeebeClientStarterAutoConfigurationTest.TestConfig.class,
       JsonMapperConfiguration.class
     })
 public class ZeebeClientStarterAutoConfigurationTest {

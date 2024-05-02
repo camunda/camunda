@@ -858,6 +858,9 @@ func mockAuthorizationServerWithAudienceAndScope(t *testing.T, token *mutableTok
 
 		if scope != "" {
 			require.Equal(t, scope, query.Get("scope"))
+		} else {
+			// if the scope is empty the param should not be set at all
+			require.False(t, query.Has("scope"))
 		}
 
 		writer.Header().Set("Content-Type", "application/json")

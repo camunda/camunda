@@ -16,7 +16,6 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
@@ -59,25 +58,25 @@ public class ZeebeClientProdAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 
   @Bean
-  public ZeebeClientConfiguration zeebeClientConfiguration(
+  public ZeebeClientConfigurationImpl zeebeClientConfiguration(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final Authentication authentication,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
-    return new ZeebeClientConfigurationSpringImpl(
+    return new ZeebeClientConfigurationImpl(
         properties,
         camundaClientProperties,
         authentication,
         jsonMapper,
         interceptors,
-        zeebeClientExecutorService);
+        zeebeClientExecutorService) {};
   }
 
   @Bean(destroyMethod = "close")
-  public ZeebeClient zeebeClient(final ZeebeClientConfiguration configuration) {
-    LOG.info("Creating ZeebeClient using ZeebeClientConfiguration [" + configuration + "]");
+  public ZeebeClient zeebeClient(final ZeebeClientConfigurationImpl configuration) {
+    LOG.info("Creating ZeebeClient using ZeebeClientConfigurationImpl [" + configuration + "]");
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
       final ManagedChannel managedChannel = ZeebeClientImpl.buildChannel(configuration);

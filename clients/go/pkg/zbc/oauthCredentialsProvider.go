@@ -133,7 +133,6 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		TokenConfig: &clientcredentials.Config{
 			ClientID:       config.ClientID,
 			ClientSecret:   config.ClientSecret,
-			Scopes:         []string{config.Scope},
 			EndpointParams: map[string][]string{"audience": {config.Audience}},
 			TokenURL:       config.AuthorizationServerURL,
 			AuthStyle:      oauth2.AuthStyleInParams,
@@ -141,6 +140,10 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		Audience: config.Audience,
 		Cache:    config.Cache,
 		timeout:  config.Timeout,
+	}
+
+	if config.Scope != "" {
+		provider.TokenConfig.Scopes = []string{config.Scope}
 	}
 
 	return &provider, nil

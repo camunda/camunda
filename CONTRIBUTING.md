@@ -99,7 +99,7 @@ If you report a bug, please help speed up problem diagnosis by
 providing as much information as possible. Ideally, that would include a small
 [sample project][sample] that reproduces the problem.
 
-If you have a general usage question please ask on the [forum](http://forum.camunda.io/) or [Slack](https://www.camunda.com/slack) channel.
+If you have a general usage question please ask on the [forum].
 
 ## GitHub Issue Guidelines
 
@@ -308,8 +308,8 @@ need to sign the CLA once.
 
 ## Licenses
 
-Zeebe source files are made available under the [Zeebe Community License
-Version 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt) except for the parts listed
+Zeebe, Operate, and Tasklist source files are made available under the
+[Camunda License Version 1.0](/licenses/CAMUNDA-LICENSE-1.0.txt) except for the parts listed
 below, which are made available under the [Apache License, Version
 2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
 
@@ -330,24 +330,10 @@ This project adheres to the [Camunda Code of Conduct](https://camunda.com/events
 By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
 unacceptable behavior as soon as possible.
 
-[issues]: https://github.com/zeebe-io/zeebe/issues
-[forum]: https://forum.zeebe.io/
-[slack]: https://www.camunda.com/slack
+[issues]: https://github.com/camunda/zeebe/issues
+[forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
-[status]: https://github.com/zeebe-io/zeebe/labels?q=Type
-[planned]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
-[ready]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
-[in progress]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
-[needs review]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
-[type]: https://github.com/zeebe-io/zeebe/labels?q=Type
-[enhancement]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
-[maintenance]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
-[bug]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
-[docs]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
-[question]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Question
-[scope]: https://github.com/zeebe-io/zeebe/labels?q=Scope
-[broker]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20broker
-[clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
-[clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
+[clients/java]: https://github.com/camunda/zeebe/labels/scope%2Fclients-java
+[clients/go]: https://github.com/camunda/zeebe/labels/scope%2Fclients-go
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
 
