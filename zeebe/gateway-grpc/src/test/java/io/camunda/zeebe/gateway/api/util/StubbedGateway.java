@@ -13,7 +13,9 @@ import static org.mockito.Mockito.mock;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
+import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
+import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
@@ -132,19 +135,27 @@ public final class StubbedGateway {
     future.join();
   }
 
-  private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+  private ActivateJobsHandler<ActivateJobsResponse> buildActivateJobsHandler(
+      final BrokerClient brokerClient) {
     if (config.getLongPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
     } else {
-      return new RoundRobinActivateJobsHandler(
-          brokerClient, config.getNetwork().getMaxMessageSize().toBytes());
+      return new RoundRobinActivateJobsHandler<>(
+          brokerClient,
+          config.getNetwork().getMaxMessageSize().toBytes(),
+          ResponseMapper::toActivateJobsResponse,
+          Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER);
     }
   }
 
-  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder()
+  private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
+      final BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.getNetwork().getMaxMessageSize().toBytes())
+        .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+        .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+        .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .build();
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import com.google.rpc.Code;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
@@ -41,7 +43,9 @@ import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
+import io.grpc.StatusException;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.protobuf.StatusProto;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -55,12 +59,19 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
 public final class Gateway implements CloseableSilently {
+
+  public static final Function<String, Exception> NO_JOBS_RECEIVED_EXCEPTION_PROVIDER =
+      msg -> grpcStatusException(Code.RESOURCE_EXHAUSTED_VALUE, msg);
+  public static final Function<String, Throwable> REQUEST_CANCELED_EXCEPTION_PROVIDER =
+      msg -> grpcStatusException(Code.CANCELLED_VALUE, msg);
+
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final MonitoringServerInterceptor MONITORING_SERVER_INTERCEPTOR =
       MonitoringServerInterceptor.create(Configuration.allMetrics());
@@ -175,7 +186,8 @@ public final class Gateway implements CloseableSilently {
   }
 
   private Server createServer(
-      final ActivateJobsHandler activateJobsHandler, final StreamJobsHandler streamJobsHandler) {
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
+      final StreamJobsHandler streamJobsHandler) {
     final NetworkCfg network = gatewayCfg.getNetwork();
     final MultiTenancyCfg multiTenancy = gatewayCfg.getMultiTenancy();
 
@@ -317,15 +329,15 @@ public final class Gateway implements CloseableSilently {
     }
   }
 
-  private CompletableFuture<ActivateJobsHandler> createAndStartActivateJobsHandler(
-      final BrokerClient brokerClient) {
+  private CompletableFuture<ActivateJobsHandler<ActivateJobsResponse>>
+      createAndStartActivateJobsHandler(final BrokerClient brokerClient) {
     final var handler = buildActivateJobsHandler(brokerClient);
     return submitActorToActivateJobs(handler);
   }
 
-  private CompletableFuture<ActivateJobsHandler> submitActorToActivateJobs(
-      final ActivateJobsHandler handler) {
-    final var future = new CompletableFuture<ActivateJobsHandler>();
+  private CompletableFuture<ActivateJobsHandler<ActivateJobsResponse>> submitActorToActivateJobs(
+      final ActivateJobsHandler<ActivateJobsResponse> handler) {
+    final var future = new CompletableFuture<ActivateJobsHandler<ActivateJobsResponse>>();
     final var actor =
         Actor.newActor()
             .name("ActivateJobsHandler")
@@ -335,22 +347,30 @@ public final class Gateway implements CloseableSilently {
     return future;
   }
 
-  private ActivateJobsHandler buildActivateJobsHandler(final BrokerClient brokerClient) {
+  private ActivateJobsHandler<ActivateJobsResponse> buildActivateJobsHandler(
+      final BrokerClient brokerClient) {
     if (gatewayCfg.getLongPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
     } else {
-      return new RoundRobinActivateJobsHandler(
-          brokerClient, gatewayCfg.getNetwork().getMaxMessageSize().toBytes());
+      return new RoundRobinActivateJobsHandler<>(
+          brokerClient,
+          gatewayCfg.getNetwork().getMaxMessageSize().toBytes(),
+          ResponseMapper::toActivateJobsResponse,
+          REQUEST_CANCELED_EXCEPTION_PROVIDER);
     }
   }
 
-  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder()
+  private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
+      final BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
         .setLongPollingTimeout(gatewayCfg.getLongPolling().getTimeout())
         .setProbeTimeoutMillis(gatewayCfg.getLongPolling().getProbeTimeout())
         .setMinEmptyResponses(gatewayCfg.getLongPolling().getMinEmptyResponses())
+        .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+        .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
+        .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .build();
   }
 
@@ -384,6 +404,11 @@ public final class Gateway implements CloseableSilently {
 
   private boolean isZeebeIdentityConfigurationNotNull(final IdentityCfg identityCfg) {
     return identityCfg.getIssuerBackendUrl() != null || identityCfg.getBaseUrl() != null;
+  }
+
+  private static StatusException grpcStatusException(final int code, final String msg) {
+    return StatusProto.toStatusException(
+        com.google.rpc.Status.newBuilder().setCode(code).setMessage(msg).build());
   }
 
   private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {

@@ -83,14 +83,14 @@ public final class EndpointManager {
 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final ActivateJobsHandler activateJobsHandler;
+  private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
   private final MultiTenancyCfg multiTenancy;
 
   public EndpointManager(
       final BrokerClient brokerClient,
-      final ActivateJobsHandler activateJobsHandler,
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
       final MultiTenancyCfg multiTenancy) {
     this.brokerClient = brokerClient;
@@ -187,7 +187,10 @@ public final class EndpointManager {
           (BrokerActivateJobsRequest)
               mapToBrokerRequest(request, RequestMapper::toActivateJobsRequest);
       activateJobsHandler.activateJobs(
-          brokerRequest, responseObserver, request.getRequestTimeout());
+          brokerRequest,
+          responseObserver,
+          responseObserver::setOnCancelHandler,
+          request.getRequestTimeout());
     } catch (final Exception e) {
       responseObserver.onError(e);
     }

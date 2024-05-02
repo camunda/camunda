@@ -10,6 +10,9 @@ package io.camunda.zeebe.gateway;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
@@ -43,7 +46,6 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -294,16 +296,16 @@ public final class ResponseMapper {
    * containing the activated jobs and the client cancels the channel/stream/connection as well.
    * Leaving failed jobs non-activatable until their configured timeout.
    *
-   * @param key the key of the request
-   * @param brokerResponse the broker response
-   * @param maxResponseSize the maximum size of the response
-   * @return a pair of the response and a list of jobs that could not be included in the response
-   *     because the response size exceeded the maximum response size
+   * @param activationResponse the response for job activation, containing the key of the request,
+   *     the broker response, and the maximum size of the response
+   * @return job activation result, allowing access to the response and a list of jobs that could
+   *     not be included in the response because the response size exceeded the maximum response
+   *     size
    */
-  public static JobActivationResult toActivateJobsResponse(
-      final long key, final JobBatchRecord brokerResponse, final long maxResponseSize) {
-    final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
-    final Iterator<JobRecord> jobs = brokerResponse.jobs().iterator();
+  public static JobActivationResult<ActivateJobsResponse> toActivateJobsResponse(
+      final JobActivationResponse activationResponse) {
+    final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
+    final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
     long currentResponseSize = 0L;
     final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
@@ -315,7 +317,7 @@ public final class ResponseMapper {
       final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
 
       final int activatedJobSize = activatedJob.getSerializedSize();
-      if (currentResponseSize + activatedJobSize <= maxResponseSize) {
+      if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
         responseJobs.add(activatedJob);
         currentResponseSize += activatedJobSize;
       } else {
@@ -330,12 +332,13 @@ public final class ResponseMapper {
     // is still exceeding the maximum response size, we remove the last added job from the response
     // and add it to the list of jobs to be reactivated.
     // We do this until the response size is below the maximum response size.
-    while (!responseJobs.isEmpty() && response.getSerializedSize() > maxResponseSize) {
+    while (!responseJobs.isEmpty()
+        && response.getSerializedSize() > activationResponse.maxResponseSize()) {
       sizeExceedingJobs.add(responseJobs.removeLast());
       response = ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
     }
 
-    return new JobActivationResult(response, sizeExceedingJobs);
+    return new GrcpJobActivationResult(response, sizeExceedingJobs);
   }
 
   public static ActivatedJob toActivatedJob(
@@ -397,8 +400,42 @@ public final class ResponseMapper {
     return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
 
-  public record JobActivationResult(
-      ActivateJobsResponse activateJobsResponse, List<ActivatedJob> jobsToDefer) {}
+  static class GrcpJobActivationResult implements JobActivationResult<ActivateJobsResponse> {
+
+    private final ActivateJobsResponse response;
+    private final List<GatewayOuterClass.ActivatedJob> sizeExceedingJobs;
+
+    GrcpJobActivationResult(
+        final ActivateJobsResponse response,
+        final List<GatewayOuterClass.ActivatedJob> sizeExceedingJobs) {
+      this.response = response;
+      this.sizeExceedingJobs = sizeExceedingJobs;
+    }
+
+    @Override
+    public int getJobsCount() {
+      return response.getJobsCount();
+    }
+
+    @Override
+    public List<ActivatedJob> getJobs() {
+      return response.getJobsList().stream()
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .toList();
+    }
+
+    @Override
+    public ActivateJobsResponse getActivateJobsResponse() {
+      return response;
+    }
+
+    @Override
+    public List<ActivatedJob> getJobsToDefer() {
+      return sizeExceedingJobs.stream()
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .toList();
+    }
+  }
 
   @FunctionalInterface
   public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponseT> {
