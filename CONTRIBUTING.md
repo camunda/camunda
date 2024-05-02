@@ -24,7 +24,7 @@ run the command: `mvn clean install -Dquickly` in the root folder.
 > 21, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
 > zeebe-gateway-protocol-impl, zeebe-protocol and zeebe-protocol-jackson which use language level 8
 >
-> The Go client and zbctl are built and tested with Go 1.15
+> The Go client and zbctl are built and tested with Go 1.22
 >
 > The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
 
