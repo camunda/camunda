@@ -10,7 +10,7 @@ import {Button} from '@carbon/react';
 import {CopyFile, Edit, Notification, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {Deleter, BulkDeleter, AlertModal, CarbonEntityList, EmptyState} from 'components';
+import {Deleter, BulkDeleter, AlertModal, EntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {
   loadAlerts,
@@ -129,7 +129,7 @@ export default withErrorHandling(
 
       return (
         <div className="AlertList">
-          <CarbonEntityList
+          <EntityList
             action={
               !readOnly && (
                 <Button className="createAlert" kind="primary" onClick={this.openAddAlertModal}>

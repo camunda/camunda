@@ -28,26 +28,25 @@ export const submenuOption = (text) =>
   Selector('.cds--menu-item[aria-expanded=true] > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
-export const entityList = Selector('.CarbonEntityList');
-export const edit = Selector('.CarbonListItemSingleAction').withText('Edit');
-export const copy = Selector('.CarbonListItemSingleAction').withText('Copy');
-export const del = Selector('.CarbonListItemSingleAction').withText('Delete');
+export const entityList = Selector('.EntityList');
+export const edit = Selector('.ListItemSingleAction').withText('Edit');
+export const copy = Selector('.ListItemSingleAction').withText('Copy');
+export const del = Selector('.ListItemSingleAction').withText('Delete');
 export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
 export const listItemTrigger = (entity, trigger) =>
   entity
     .find('td .cds--tooltip-content')
     .withText(trigger)
     .parent('.cds--popover-container')
-    .find('button.CarbonListItemAction');
+    .find('button.ListItemAction');
 export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
-export const bulkMenu = Selector('.bulkMenu');
 export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
 export const listItem = (type, viewerMode = false) =>
-  Selector(`.CarbonEntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
+  Selector(`.EntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
     .withText(new RegExp(type, 'i'))
     .parent('tr');
 export const listItemWithText = (text) =>
-  Selector('.CarbonEntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
+  Selector('.EntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
 export const listItemLink = (type, viewerMode = false) =>
   listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
 export const listItemCheckbox = (item) => item.find('.cds--checkbox-label');

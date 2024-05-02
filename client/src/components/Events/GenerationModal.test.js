@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {CarbonEntityList} from 'components';
+import {EntityList} from 'components';
 
 import GenerationModal from './GenerationModal';
 import EventsSourceModal from './EventsSourceModal';
@@ -25,22 +25,22 @@ jest.mock('hooks', () => ({
 it('should add/remove a source from the list', () => {
   const node = shallow(<GenerationModal />);
 
-  node.find(CarbonEntityList).prop('action').props.onClick({});
+  node.find(EntityList).prop('action').props.onClick({});
 
   node.find(EventsSourceModal).prop('onConfirm')([{type: 'external', configuration: {}}]);
 
-  expect(node.find(CarbonEntityList).prop('rows')[0].name).toBe('all events');
+  expect(node.find(EntityList).prop('rows')[0].name).toBe('all events');
 
-  node.find(CarbonEntityList).prop('rows')[0].actions[0].action();
+  node.find(EntityList).prop('rows')[0].actions[0].action();
 
-  expect(node.find(CarbonEntityList).prop('rows').length).toBe(0);
+  expect(node.find(EntityList).prop('rows').length).toBe(0);
 });
 
 it('should redirect to the process view on confirmation', () => {
   const sources = [{type: 'external', configuration: {}}];
   const node = shallow(<GenerationModal />);
 
-  node.find(CarbonEntityList).prop('action').props.onClick({});
+  node.find(EntityList).prop('action').props.onClick({});
   node.find(EventsSourceModal).prop('onConfirm')(sources);
   node.find('Button').at(1).simulate('click');
 

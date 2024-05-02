@@ -1,35 +1,6 @@
-.ListItemAction {
-  margin: 0 14px;
-  height: 32px;
-  width: 32px;
-  position: relative;
+@use '@carbon/styles/scss/spacing';
 
-  .activateButton {
-    width: 32px;
-    height: 32px;
-
-    .Icon {
-      width: 24px;
-      height: 24px;
-      font-size: 24px;
-    }
-
-    .downIcon {
-      display: none;
-    }
-  }
-
-  &.Dropdown .menu {
-    transform: translateY(-6px);
-    left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
-    right: 0;
-  }
-
-  .DropdownOption {
-    padding-left: 10px;
-
-    .Icon {
-      margin-right: 8px;
-    }
-  }
+.ListItemSingleAction > svg {
+  display: block;
+  margin-right: spacing.$spacing-04;
 }

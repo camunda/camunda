@@ -10,7 +10,7 @@ import {Button} from '@carbon/react';
 import {Db2Database, DecisionTree, Edit, TableSplit, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {Deleter, BulkDeleter, Modal, CarbonEntityList, EmptyState} from 'components';
+import {Deleter, BulkDeleter, Modal, EntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {formatters, addSources, UNAUTHORIZED_TENANT_ID} from 'services';
@@ -109,7 +109,7 @@ export default withErrorHandling(
 
       return (
         <div className="SourcesList">
-          <CarbonEntityList
+          <EntityList
             action={
               !readOnly && (
                 <Button kind="primary" onClick={() => this.setState({addingSource: true})}>

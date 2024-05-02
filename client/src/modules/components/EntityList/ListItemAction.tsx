@@ -25,7 +25,7 @@ export default function ListItemAction({actions = [], showInlineIconButtons}: Li
     return actions.map(({icon, action, text}, idx) => (
       <IconButton
         key={idx}
-        className="CarbonListItemAction"
+        className="ListItemAction"
         label={text}
         kind="ghost"
         onClick={() => action()}
@@ -40,7 +40,7 @@ export default function ListItemAction({actions = [], showInlineIconButtons}: Li
     <OverflowMenu size="sm" flipped>
       {actions.map(({action, icon, text}, idx) => (
         <OverflowMenuItem
-          className="CarbonListItemSingleAction"
+          className="ListItemSingleAction"
           key={idx}
           onClick={action}
           itemText={

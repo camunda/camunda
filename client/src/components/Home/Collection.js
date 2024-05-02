@@ -34,7 +34,7 @@ import {
   PageTitle,
   Tabs,
   KpiCreationModal,
-  CarbonEntityList,
+  EntityList,
   EmptyState,
   Icon,
 } from 'components';
@@ -206,7 +206,7 @@ export class Collection extends Component {
                 title={t('home.collectionTitleWithAmpersand')}
                 onClick={() => this.props.history.push('.')}
               >
-                <CarbonEntityList
+                <EntityList
                   emptyStateComponent={
                     hasEditRights ? (
                       <EmptyState

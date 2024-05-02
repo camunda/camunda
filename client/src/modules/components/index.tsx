@@ -49,7 +49,7 @@ export {DefinitionSelection} from './DefinitionSelection';
 // @ts-ignore
 export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
-export {CarbonEntityList} from './CarbonEntityList';
+export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
 
 export type {InputProps} from './Input';

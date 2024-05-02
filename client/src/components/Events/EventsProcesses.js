@@ -11,7 +11,7 @@ import {parseISO} from 'date-fns';
 import {MenuButton, MenuItem} from '@carbon/react';
 import {DecisionTree, Edit, Error, TrashCan, Upload, User} from '@carbon/icons-react';
 
-import {BulkDeleter, Deleter, PageTitle, EmptyState, CarbonEntityList} from 'components';
+import {BulkDeleter, Deleter, PageTitle, EmptyState, EntityList} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
@@ -144,7 +144,7 @@ export class EventsProcesses extends Component {
     return (
       <div className="EventsProcesses">
         <PageTitle pageName={t('navigation.events')} />
-        <CarbonEntityList
+        <EntityList
           emptyStateComponent={
             <EmptyState
               icon={<DecisionTree />}

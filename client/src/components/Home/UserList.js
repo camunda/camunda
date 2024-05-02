@@ -10,7 +10,7 @@ import {Button} from '@carbon/react';
 import {Edit, Group, TrashCan, User} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {Deleter, BulkDeleter, CarbonEntityList, EmptyState} from 'components';
+import {Deleter, BulkDeleter, EntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';
@@ -79,7 +79,7 @@ export default withErrorHandling(
 
       return (
         <div className="UserList">
-          <CarbonEntityList
+          <EntityList
             action={
               !readOnly && (
                 <Button kind="primary" onClick={this.openAddUserModal}>

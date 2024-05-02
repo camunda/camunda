@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportTemplateModal, KpiCreationModal, CarbonEntityList} from 'components';
+import {ReportTemplateModal, KpiCreationModal, EntityList} from 'components';
 import {loadEntities} from 'services';
 
 import {Home} from './Home';
@@ -110,7 +110,7 @@ it('should not pass empty state component if user is not an editor', async () =>
 
   await flushPromises();
 
-  expect(node.find(CarbonEntityList).prop('emptyStateComponent')).toBe(false);
+  expect(node.find(EntityList).prop('emptyStateComponent')).toBe(false);
 });
 
 it('should hide edit options for read only users', () => {

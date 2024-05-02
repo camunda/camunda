@@ -103,7 +103,7 @@ export default function EntityList({
   if ((!Array.isArray(rows) || rows?.length === 0) && emptyStateComponent) {
     if (isLoading) {
       return (
-        <div className="CarbonEntityList">
+        <div className="EntityList">
           <Loading className="loadingIndicator" withOverlay={false} />
         </div>
       );
@@ -159,14 +159,14 @@ export default function EntityList({
 
   if (isLoading) {
     return (
-      <div className="CarbonEntityList">
+      <div className="EntityList">
         <DataTableSkeleton rowCount={dataTableRows.length} headers={dataTableHeaders} />
       </div>
     );
   }
 
   return (
-    <div className="CarbonEntityList">
+    <div className="EntityList">
       <DataTable
         rows={dataTableRows}
         headers={dataTableHeaders}

@@ -1,198 +1,38 @@
+@use '@carbon/styles/scss/spacing';
+
 .EntityList {
-  width: 100%;
-  height: 100%;
-  padding: 0 65px;
-  overflow: auto;
+  .entityIcon {
+    align-self: center;
 
-  .empty {
-    margin-top: 50px;
-    margin-bottom: 20px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--grey-lighten-56);
-  }
-
-  &.scrolled .header {
-    border-bottom: 1px solid var(--silver-darken-80);
-    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.1);
-  }
-
-  &.embedded {
-    padding: 0;
-
-    .header {
-      margin: 0;
-      padding: 18px 0;
-      width: 100%;
-
-      .titleBar h1 {
-        font-weight: bold;
-        font-size: 16px;
-        color: initial;
-        line-height: normal;
-        align-self: flex-end;
-      }
+    > svg {
+      display: block;
+      width: 20px;
+      height: 20px;
     }
   }
 
-  .header {
-    margin: 0 -65px;
-    padding: 0 65px;
-    width: calc(100% + 130px);
-    position: sticky;
-    padding-top: 32px;
-    top: 0;
-    background-color: var(--white);
-    box-shadow: none;
-    border-bottom: 1px solid transparent;
-    transition:
-      box-shadow 0.2s,
-      border 0.2s;
-    z-index: var(--z-above);
+  .rowName {
+    font-weight: 500;
+  }
 
-    .titleBar {
-      line-height: 32px;
+  thead th.tableHeader {
+    white-space: nowrap;
+
+    .cds--table-header-label {
       display: flex;
-      padding-bottom: 18px;
-
-      .leftSection {
-        flex-grow: 1;
-
-        h1 {
-          font-size: 24px;
-          line-height: 32px;
-          font-weight: normal;
-          color: var(--grey-darken-23);
-          margin: 0;
-        }
-
-        .searchInfo {
-          font-size: 14px;
-          line-height: 18px;
-          color: var(--grey-darken-33);
-        }
-      }
-
-      > .action:not(:empty) {
-        margin-left: 20px;
-      }
-
-      .sortMenu {
-        width: 32px;
-        height: 32px;
-        margin-left: 20px;
-        margin-top: 2px;
-
-        .activateButton .Icon {
-          font-size: 24px;
-        }
-        .downIcon {
-          display: none;
-        }
-        .menu {
-          margin-top: -6px;
-        }
-      }
-
-      .bulkMenu {
-        margin-left: 20px;
-      }
+      align-items: center;
+      gap: spacing.$spacing-02;
     }
   }
 
-  .columnHeaders {
-    display: flex;
-    padding-bottom: 11px;
-    padding-left: 0px;
-    padding-right: 61px;
-    color: var(--grey-lighten-56);
-    font-size: 14px;
-    line-height: 18px;
-
-    > .Input[type='checkbox'] {
-      margin-left: 20px;
-      margin-right: 0;
-      flex: 0 0 18px;
-      height: 18px;
-      margin-right: 60px;
-
-      &.hidden {
-        visibility: hidden;
-      }
-    }
-
-    > div {
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-      padding-right: 10px;
-
-      &.sortable > span {
-        cursor: pointer;
-
-        &:hover {
-          color: var(--grey-darken-23);
-        }
-      }
-
-      &.sorted {
-        color: var(--grey-darken-23);
-      }
-
-      > .Icon {
-        font-size: 24px;
-        position: absolute;
-        margin-left: 4px;
-        margin-top: -3px;
-        transition: 0.2s transform;
-
-        &.desc {
-          transform: rotate(180deg);
-        }
-      }
-    }
-
-    .name {
-      flex: 1;
-    }
-
-    .meta {
-      flex: 0 0 200px;
-    }
-
-    &:not(:hover) {
-      .Input[type='checkbox'] {
-        opacity: 0;
-
-        &.active,
-        &.focus-visible {
-          opacity: 1;
-        }
-      }
-    }
+  tbody tr:hover .ListItemAction {
+    opacity: 1;
   }
 
-  &.selectionMode {
-    .ListItem:not(.selectable) {
-      opacity: 0.5;
-
-      .Input[type='checkbox'] {
-        visibility: hidden;
-      }
-    }
-
-    .columnHeaders:not(:hover) .Input[type='checkbox'] {
-      opacity: 1;
-    }
-  }
-
-  .itemsList {
-    margin-bottom: 20px;
-    transition: 0.1s opacity;
-
-    &.isLoading {
-      opacity: 0.34;
-      pointer-events: none;
-    }
+  .loadingIndicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%);
   }
 }

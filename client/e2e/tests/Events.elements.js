@@ -9,7 +9,7 @@ import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a[href="#/events/processes/"]');
 export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
-export const editAccess = Selector('.CarbonListItemSingleAction').withText('Edit access');
+export const editAccess = Selector('.ListItemSingleAction').withText('Edit access');
 export const fileInput = Selector('input').withAttribute('type', 'file');
 export const firstEl = Selector('.djs-hit');
 export const activityTask = Selector('.bpmn-icon-task');

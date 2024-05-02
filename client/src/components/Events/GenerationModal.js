@@ -10,7 +10,7 @@ import {Redirect} from 'react-router';
 import {Button, Layer} from '@carbon/react';
 import {Db2Database, DecisionTree, TrashCan} from '@carbon/icons-react';
 
-import {Modal, DocsLink, CarbonEntityList, EmptyState} from 'components';
+import {Modal, DocsLink, EntityList, EmptyState} from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
@@ -46,7 +46,7 @@ export default function GenerationModal({onClose}) {
           </DocsLink>
         </p>
         <Layer>
-          <CarbonEntityList
+          <EntityList
             action={
               <Button kind="secondary" onClick={() => setOpenEventsSourceModal(true)}>
                 {t('events.sources.add')}

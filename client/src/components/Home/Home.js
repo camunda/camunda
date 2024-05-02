@@ -22,7 +22,7 @@ import {
   DashboardTemplateModal,
   EmptyState,
   KpiCreationModal,
-  CarbonEntityList,
+  EntityList,
   Icon,
 } from 'components';
 import {
@@ -113,7 +113,7 @@ export function Home({mightFail, user}) {
   return (
     <Grid condensed className="Home" fullWidth>
       <Column sm={4} md={8} lg={16}>
-        <CarbonEntityList
+        <EntityList
           isLoading={isLoading}
           emptyStateComponent={
             isEditor && (

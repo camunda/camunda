@@ -9,7 +9,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {DecisionTree, Settings} from '@carbon/icons-react';
 import {Column, Grid} from '@carbon/react';
 
-import {CarbonEntityList, EmptyState, PageTitle, Tooltip} from 'components';
+import {EntityList, EmptyState, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -98,7 +98,7 @@ export function Processes({mightFail, user}) {
             )}
           </>
         )}
-        <CarbonEntityList
+        <EntityList
           title={t('processes.defaultDashboardAndKPI')}
           description={(query, count) =>
             processes && query
