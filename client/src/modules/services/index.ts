@@ -35,4 +35,4 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {loadDefinitions} from './loadDefinitions';
 
 export type {Definition} from './loadDefinitions';
-export type {ReportPayload} from './reportService';
+export type {ReportEvaluationPayload} from './reportService';

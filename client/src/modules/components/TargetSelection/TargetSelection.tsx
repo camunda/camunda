@@ -20,11 +20,11 @@ interface TargetSelectionProps {
 export default function TargetSelection({report, onChange, hideBaseLine}: TargetSelectionProps) {
   const {configuration, view} = report.data;
   const targetValue = configuration.targetValue;
-  const isPercentageReport = view.properties.includes('percentage');
+  const isPercentageReport = view?.properties.includes('percentage');
   const countOperation =
-    view.properties.includes('frequency') ||
+    view?.properties.includes('frequency') ||
     isPercentageReport ||
-    ('entity' in view && view.entity === 'variable');
+    (view && 'entity' in view && view.entity === 'variable');
 
   if (countOperation) {
     return (

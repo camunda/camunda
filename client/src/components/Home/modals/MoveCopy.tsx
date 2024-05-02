@@ -12,15 +12,15 @@ import {showError} from 'notifications';
 import {loadEntities} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
-import {GenericEntity} from 'types';
+import {EntityListEntity} from 'types';
 
 interface MoveCopyProps {
   parentCollection: string;
-  entity: Partial<GenericEntity<{subEntityCounts: {report: number}}>>;
+  entity: Partial<EntityListEntity<{subEntityCounts: {report: number}}>>;
   moving: boolean;
-  collection?: Partial<GenericEntity> | null;
+  collection?: Partial<EntityListEntity> | null;
   setMoving: (moving: boolean) => void;
-  setCollection: (collection: Partial<GenericEntity> | null) => void;
+  setCollection: (collection: Partial<EntityListEntity> | null) => void;
 }
 
 export default function MoveCopy({
@@ -31,7 +31,7 @@ export default function MoveCopy({
   setCollection,
 }: MoveCopyProps) {
   const {mightFail} = useErrorHandling();
-  const [availableCollections, setAvailableCollections] = useState<Partial<GenericEntity>[]>([]);
+  const [availableCollections, setAvailableCollections] = useState<Partial<EntityListEntity>[]>([]);
 
   useEffect(() => {
     mightFail(
@@ -85,10 +85,10 @@ export default function MoveCopy({
       />
       {moving && (
         <>
-          <ComboBox<Partial<GenericEntity>>
+          <ComboBox<Partial<EntityListEntity>>
             id="collectionSelection"
             items={availableCollections}
-            itemToString={(collection) => (collection as GenericEntity)?.name}
+            itemToString={(collection) => (collection as EntityListEntity)?.name}
             onChange={({selectedItem}) => {
               const collection =
                 availableCollections.find((col) => col.id === selectedItem?.id) || null;

@@ -10,13 +10,13 @@ import {Button, TextInput, Form, Checkbox, Stack} from '@carbon/react';
 
 import {Modal} from 'components';
 import {t} from 'translation';
-import {GenericEntity} from 'types';
+import {EntityListEntity} from 'types';
 
 import MoveCopy from './MoveCopy';
 
 interface CopyModaProps {
   onConfirm: (name: string, shouldMove: boolean, value?: string | boolean | null) => void;
-  entity: Partial<GenericEntity<{subEntityCounts: {report: number}}>>;
+  entity: Partial<EntityListEntity<{subEntityCounts: {report: number}}>>;
   jumpToEntity?: boolean;
   onClose: (event: MouseEvent) => boolean | void;
   collection: string;
@@ -31,7 +31,7 @@ export default function CopyModal({
 }: CopyModaProps) {
   const [name, setName] = useState(`${entity.name} (${t('common.copyLabel')})`);
   const [moving, setMoving] = useState(false);
-  const [collection, setCollection] = useState<Partial<GenericEntity> | null>(null);
+  const [collection, setCollection] = useState<Partial<EntityListEntity> | null>(null);
   const [gotoNew, setGotoNew] = useState(true);
 
   const handleConfirm = () => {

@@ -8,7 +8,7 @@
 import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 
 import {get, post} from 'request';
-import {GenericEntity, GenericReport} from 'types';
+import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
@@ -23,7 +23,7 @@ export async function loadReports(collection?: string | null): Promise<GenericRe
 export async function loadEntities<T extends Record<string, unknown>>(
   sortBy?: string,
   sortOrder?: string
-): Promise<GenericEntity<T>[]> {
+): Promise<EntityListEntity<T>[]> {
   const params: Record<string, unknown> = {};
   if (sortBy && sortOrder) {
     params.sortBy = sortBy;

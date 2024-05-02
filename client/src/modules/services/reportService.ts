@@ -42,10 +42,10 @@ type DeepPartial<T> = T extends object
     }
   : T;
 
-export type ReportPayload<T extends ReportType> = DeepPartial<Report<T>>;
+export type ReportEvaluationPayload<T extends ReportType> = DeepPartial<Report<T>>;
 
 export async function evaluateReport<T extends ReportType>(
-  payload: ReportPayload<T>,
+  payload: ReportEvaluationPayload<T>,
   filter = [],
   query = {}
 ): Promise<Report<T>> {

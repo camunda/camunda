@@ -25,7 +25,7 @@ export default function ChartTargetInput({onChange, report}: ChartTargetInputPro
   } = report.data;
   const referenceReport = report.combined ? Object.values(report.result.data)[0] : report;
   const isCountReport = ['frequency', 'percentage'].includes(
-    referenceReport?.data.view.properties[0] as string
+    referenceReport?.data.view?.properties[0] as string
   );
   const type = isCountReport ? 'countChart' : 'durationChart';
 

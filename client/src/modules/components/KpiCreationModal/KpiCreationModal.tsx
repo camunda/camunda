@@ -13,7 +13,7 @@ import update from 'immutability-helper';
 
 import {DefinitionSelection, TargetSelection, ReportRenderer} from 'components';
 import {t} from 'translation';
-import {getCollection, createEntity, evaluateReport, ReportPayload} from 'services';
+import {getCollection, createEntity, evaluateReport, ReportEvaluationPayload} from 'services';
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {newReport} from 'config';
@@ -56,9 +56,9 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     track('openKpiWizzard');
   }, []);
 
-  const loadReport = async (reportPayload: ReportPayload<'process'>) => {
+  const loadReport = async (reportPayload: ReportEvaluationPayload<'process'>) => {
     setLoading(true);
-    await mightFail(evaluateReport(reportPayload, []), setEvaluatedReport, showError, () =>
+    await mightFail(evaluateReport(reportPayload), setEvaluatedReport, showError, () =>
       setLoading(false)
     );
   };
@@ -153,7 +153,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                   return;
                 }
 
-                const newReportPayload = newReport.new as unknown as ReportPayload<'process'>;
+                const newReportPayload = newReport.new as ReportEvaluationPayload<'process'>;
                 await loadReport({
                   ...newReportPayload,
                   collectionId: getCollection(pathname),
