@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
 
@@ -26,6 +27,7 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 class UsersServiceTest {
 
   @Autowired private UsersService usersService;
+  @Autowired private PasswordEncoder passwordEncoder;
 
   @Test
   void uniqueUserNameCreateUserCreated() {
@@ -81,11 +83,18 @@ class UsersServiceTest {
   }
 
   @Test
-  void existingDisabledUserEnableUserEnabled() {
+  void nonExistingUserUpdateUserThrowsException() {
+    final var username = "user" + UUID.randomUUID();
+    final var user = new User(username, "password", false);
+    Assertions.assertThrows(RuntimeException.class, () -> usersService.updateUser(user));
+  }
+
+  @Test
+  void existingUserEnableUpdateUserEnabled() {
     final var username = "user" + UUID.randomUUID();
     usersService.createUser(new User(username, "password", false));
 
-    usersService.enableUser(username);
+    usersService.updateUser(new User(username, "password", true));
 
     final var existingUser = usersService.findUserByUsername(username);
     assertTrue(existingUser.isPresent());
@@ -93,11 +102,11 @@ class UsersServiceTest {
   }
 
   @Test
-  void existingEnabledUserDisableUserDisabled() {
+  void existingUserDisableUpdateUserDisabled() {
     final var username = "user" + UUID.randomUUID();
     usersService.createUser(new User(username, "password"));
 
-    usersService.disableUser(username);
+    usersService.updateUser(new User(username, "password", false));
 
     final var existingUser = usersService.findUserByUsername(username);
     assertTrue(existingUser.isPresent());
@@ -105,14 +114,30 @@ class UsersServiceTest {
   }
 
   @Test
-  void existingDisabledUserDisableUserDisabled() {
+  void noChangePassUpdateUserPasswordNotChanged() {
     final var username = "user" + UUID.randomUUID();
-    usersService.createUser(new User(username, "password", false));
+    final var user = new User(username, "password", false);
+    usersService.createUser(user);
 
-    usersService.disableUser(username);
+    usersService.updateUser(user);
 
-    final var existingUser = usersService.findUserByUsername(username);
-    assertTrue(existingUser.isPresent());
-    assertFalse(existingUser.get().enabled());
+    final var updatedUser = usersService.findUserByUsername(username);
+    assertTrue(updatedUser.isPresent());
+    assertTrue(passwordEncoder.matches(user.password(), updatedUser.get().password()));
+  }
+
+  @Test
+  void newPassUpdateUserPasswordChanged() {
+    final var username = "user" + UUID.randomUUID();
+    final var password = "password";
+    final var newPassword = "password1";
+    usersService.createUser(new User(username, password, false));
+
+    usersService.updateUser(new User(username, newPassword, false));
+
+    final var updatedUser = usersService.findUserByUsername(username);
+    assertTrue(updatedUser.isPresent());
+    assertTrue(passwordEncoder.matches(newPassword, updatedUser.get().password()));
+    assertFalse(passwordEncoder.matches(password, updatedUser.get().password()));
   }
 }

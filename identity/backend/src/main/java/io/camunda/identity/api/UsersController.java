@@ -50,13 +50,8 @@ public class UsersController {
     return usersService.findAllUsers();
   }
 
-  @PutMapping("/{username}/enable")
-  public void enableUser(final String username) {
-    usersService.enableUser(username);
-  }
-
-  @PutMapping("/{username}/disable")
-  public void disableUser(final String username) {
-    usersService.disableUser(username);
+  @PutMapping("/{username}")
+  public void updateUser(final User user) {
+    usersService.updateUser(user);
   }
 }

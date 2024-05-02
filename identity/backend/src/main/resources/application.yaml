@@ -33,8 +33,3 @@ server:
       force: true
     context-path: ${IDENTITY_BASE_PATH:}
   max-http-request-header-size: ${SERVER_REQUEST_HEADER_MAX_SIZE:8KB}
-logging:
-  level:
-    org:
-      springframework:
-        security: DEBUG
