@@ -25,6 +25,8 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
+import {C3AppTeaserPage} from '@camunda/camunda-composite-components';
+import {C3Provider} from './C3Provider';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -69,42 +71,56 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ThemeSwitcher />
-      <Notifications />
-      <NetworkStatusWatcher />
-      <HistoryRouter
-        history={createBrowserHistory({window})}
-        basename={window.clientConfig?.contextPath ?? '/'}
-      >
-        <RedirectDeprecatedRoutes />
-        <SessionWatcher />
-        <TrackPagination />
-        <Routes>
-          <Route path={Paths.login()} element={<CarbonLogin />} />
-          <Route
-            path={Paths.dashboard()}
-            element={
-              <AuthenticationCheck redirectPath={Paths.login()}>
-                <CarbonLayout />
-              </AuthenticationCheck>
-            }
-          >
-            <Route index element={<CarbonDashboard />} />
-            <Route path={Paths.processes()} element={<CarbonProcesses />} />
+    <C3Provider>
+      <ThemeProvider>
+        <ThemeSwitcher />
+        <Notifications />
+        <NetworkStatusWatcher />
+        <HistoryRouter
+          history={createBrowserHistory({window})}
+          basename={window.clientConfig?.contextPath ?? '/'}
+        >
+          <RedirectDeprecatedRoutes />
+          <SessionWatcher />
+          <TrackPagination />
+          <Routes>
+            <Route path={Paths.login()} element={<CarbonLogin />} />
             <Route
-              path={Paths.processInstance()}
-              element={<CarbonProcessInstance />}
-            />
-            <Route path={Paths.decisions()} element={<CarbonDecisions />} />
-            <Route
-              path={Paths.decisionInstance()}
-              element={<CarbonDecisionInstance />}
-            />
-          </Route>
-        </Routes>
-      </HistoryRouter>
-    </ThemeProvider>
+              path={Paths.dashboard()}
+              element={
+                <AuthenticationCheck redirectPath={Paths.login()}>
+                  <CarbonLayout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route index element={<CarbonDashboard />} />
+              <Route path={Paths.processes()} element={<CarbonProcesses />} />
+              <Route
+                path={Paths.processInstance()}
+                element={<CarbonProcessInstance />}
+              />
+              <Route path={Paths.decisions()} element={<CarbonDecisions />} />
+              <Route
+                path={Paths.decisionInstance()}
+                element={<CarbonDecisionInstance />}
+              />
+              <Route
+                path="/org/:orgId/appTeaser/operate"
+                element={<C3AppTeaserPage appName="operate" />}
+              />
+              <Route
+                path="/org/:orgId/appTeaser/optimize"
+                element={<C3AppTeaserPage appName="optimize" />}
+              />
+              <Route
+                path="/org/:orgId/appTeaser/tasklist"
+                element={<C3AppTeaserPage appName="tasklist" />}
+              />
+            </Route>
+          </Routes>
+        </HistoryRouter>
+      </ThemeProvider>
+    </C3Provider>
   );
 };
 

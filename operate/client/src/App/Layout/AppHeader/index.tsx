@@ -16,20 +16,11 @@ import {useEffect} from 'react';
 import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
-import capitalize from 'lodash/capitalize';
 import {InlineLink} from './styled';
-
-const orderedApps = [
-  'console',
-  'modeler',
-  'tasklist',
-  'operate',
-  'optimize',
-] as const;
 
 const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
-  const {displayName, canLogout, userId, salesPlanType, roles, c8Links} =
+  const {displayName, canLogout, userId, salesPlanType, roles} =
     authenticationStore.state;
 
   useEffect(() => {
@@ -144,16 +135,17 @@ const AppHeader: React.FC = observer(() => {
       appBar={{
         ariaLabel: 'App Panel',
         isOpen: false,
-        elements: window.clientConfig?.organizationId
-          ? orderedApps.map((appName) => ({
-              key: appName,
-              label: capitalize(appName),
-              href: c8Links[appName],
-              active: appName === 'operate',
-              routeProps:
-                appName === 'operate' ? {to: Paths.dashboard()} : undefined,
-            }))
-          : [],
+        appTeaserRouteProps: {
+          operate: {
+            to: `/org/${window.clientConfig?.organizationId}/appTeaser/operate`,
+          },
+          optimize: {
+            to: `/org/${window.clientConfig?.organizationId}/appTeaser/optimize`,
+          },
+          tasklist: {
+            to: `/org/${window.clientConfig?.organizationId}/appTeaser/tasklist`,
+          },
+        },
         elementClicked: (app) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',
