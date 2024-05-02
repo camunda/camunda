@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CamundaCloudCondition.class)
 public class CloudOptimizeVersionService extends OptimizeVersionService {
 
-  private static final String C8_VERSION = "8.5.0";
+  private static final String C8_VERSION = "8.5.0-alpha1";
 
   public CloudOptimizeVersionService() {
     super(
