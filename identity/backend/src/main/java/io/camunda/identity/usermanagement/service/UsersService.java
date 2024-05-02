@@ -68,25 +68,20 @@ public class UsersService {
         .toList();
   }
 
-  public void enableUser(final String username) {
-    changeEnabledStatus(username, true);
-  }
+  public void updateUser(final User user) {
+    try {
+      final UserDetails existingUser = userDetailsManager.loadUserByUsername(user.username());
 
-  public void disableUser(final String username) {
-    changeEnabledStatus(username, false);
-  }
-
-  private void changeEnabledStatus(final String username, final boolean enabled) {
-    final UserDetails existingUser = userDetailsManager.loadUserByUsername(username);
-    if (existingUser != null && existingUser.isEnabled() != enabled) {
-      final UserDetails user =
-          org.springframework.security.core.userdetails.User.withUsername(username)
-              .password(existingUser.getPassword())
+      final UserDetails userDetails =
+          org.springframework.security.core.userdetails.User.withUsername(user.username())
+              .password(user.password())
               .passwordEncoder(passwordEncoder::encode)
               .authorities(existingUser.getAuthorities())
-              .disabled(!enabled)
+              .disabled(!user.enabled())
               .build();
-      userDetailsManager.updateUser(user);
+      userDetailsManager.updateUser(userDetails);
+    } catch (final UsernameNotFoundException e) {
+      throw new RuntimeException("user.notFound");
     }
   }
 }

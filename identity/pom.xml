@@ -19,6 +19,12 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spring-boot.version>3.2.5</spring-boot.version>
+    <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
+    <spring.version>6.1.6</spring.version>
+    <spring-security.version>6.2.4</spring-security.version>
+    <h2.version>2.2.224</h2.version>
+    <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
   </properties>
 
   <build>
