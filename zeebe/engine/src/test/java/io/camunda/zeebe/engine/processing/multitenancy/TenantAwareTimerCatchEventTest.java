@@ -175,8 +175,8 @@ public class TenantAwareTimerCatchEventTest {
     final var timerRescheduled =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .limit(2)
-            .getLast();
+            .skip(1)
+            .getFirst();
 
     // then
     assertThat(timerRescheduled.getKey()).isGreaterThan(timerCreated.getKey());
