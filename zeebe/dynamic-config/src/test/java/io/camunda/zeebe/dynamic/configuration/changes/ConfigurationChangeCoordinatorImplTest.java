@@ -64,7 +64,7 @@ final class ConfigurationChangeCoordinatorImplTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
         .withMessageContaining(
-            "Expected to leave partition, but the local member does not exist in the topology");
+            "Expected to leave partition, but the local member does not exist in the cluster");
   }
 
   private ConfigurationChangeRequest getTransformer(
@@ -186,7 +186,7 @@ final class ConfigurationChangeCoordinatorImplTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
         .withMessageContaining(
-            "Expected to leave partition, but the local member does not exist in the topology");
+            "Expected to leave partition, but the local member does not exist in the cluster");
   }
 
   @Test

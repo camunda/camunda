@@ -35,7 +35,7 @@ final class MemberLeaveApplierTest {
     EitherAssert.assertThat(result).isLeft();
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("but the member is not part of the topology");
+        .hasMessageContaining("but the member is not part of the cluster");
   }
 
   @Test

@@ -38,7 +38,7 @@ final class MemberJoinApplierTest {
     EitherAssert.assertThat(result).isLeft();
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("but the member is already part of the topology");
+        .hasMessageContaining("but the member is already part of the cluster");
   }
 
   @Test
