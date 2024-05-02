@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(
@@ -80,6 +81,7 @@ import org.springframework.test.context.ContextConfiguration;
       OperateDateTimeFormatter.class,
       TestSchemaStartup.class
     })
+@SpringBootTest(properties = {"spring.profiles.active="})
 public class SchemaStartupIT extends AbstractSchemaIT {
 
   @Autowired public SchemaManager schemaManager;

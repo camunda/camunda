@@ -18,82 +18,58 @@ package io.camunda.operate.rest.dto.incidents;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
-import org.junit.Test;
+import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
+import org.junit.jupiter.api.Test;
 
-public class IncidentByProcessStatisticsDtoTest {
+public class IncidentByProcessGroupStatisticsTest {
 
   @Test
   public void testComparatorSameInstances() {
-    final IncidentByProcessStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
-    final IncidentByProcessStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
+    final IncidentsByProcessGroupStatisticsDto moreIncidents = newWithInstancesAndIncidents(5, 3);
+    final IncidentsByProcessGroupStatisticsDto lesserIncidents = newWithInstancesAndIncidents(5, 2);
     assertIsBefore(moreIncidents, lesserIncidents);
   }
 
   @Test
-  public void testComparatorNoInstances() {
-    final IncidentByProcessStatisticsDto worfklowVersionOne = new IncidentByProcessStatisticsDto();
-    worfklowVersionOne.setVersion(1);
-    final IncidentByProcessStatisticsDto worfklowVersionThree =
-        new IncidentByProcessStatisticsDto();
-    worfklowVersionThree.setVersion(3);
-    final IncidentByProcessStatisticsDto processVersionFour = new IncidentByProcessStatisticsDto();
-    processVersionFour.setVersion(4);
-
-    assertIsBefore(worfklowVersionOne, worfklowVersionThree);
-    assertIsBefore(worfklowVersionThree, processVersionFour);
-
-    // and with TreeSet
-    final Set<IncidentByProcessStatisticsDto> processes =
-        new TreeSet<>(IncidentByProcessStatisticsDto.COMPARATOR);
-    processes.add(worfklowVersionThree);
-    processes.add(worfklowVersionOne);
-    processes.add(processVersionFour);
-
-    final Iterator<IncidentByProcessStatisticsDto> processesIterator = processes.iterator();
-    assertThat(processesIterator.next().getVersion()).isEqualTo(1);
-    assertThat(processesIterator.next().getVersion()).isEqualTo(3);
-    assertThat(processesIterator.next().getVersion()).isEqualTo(4);
-  }
-
-  @Test
   public void testComparatorDifferentInstancesAndIncidents() {
-    final IncidentByProcessStatisticsDto moreIncidents =
+    final IncidentsByProcessGroupStatisticsDto moreIncidents =
         newWithInstancesAndIncidents(1314 + 845, 845);
-    final IncidentByProcessStatisticsDto lessIncidents =
+    final IncidentsByProcessGroupStatisticsDto lessIncidents =
         newWithInstancesAndIncidents(1351 + 831, 831);
     assertIsBefore(moreIncidents, lessIncidents);
   }
 
   @Test
   public void testComparatorZeroIncidents() {
-    final IncidentByProcessStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
-    final IncidentByProcessStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
+    final IncidentsByProcessGroupStatisticsDto moreInstances = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto lessInstances = newWithInstancesAndIncidents(114, 0);
     assertIsBefore(moreInstances, lessInstances);
   }
 
   @Test
   public void testComparatorSameIncidentsAndInstances() {
-    final IncidentByProcessStatisticsDto onlyOtherBPMN1 = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto onlyOtherBPMN1 =
+        newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN1.setBpmnProcessId("1");
-    final IncidentByProcessStatisticsDto onlyOtherBPMN2 = newWithInstancesAndIncidents(172, 0);
+    final IncidentsByProcessGroupStatisticsDto onlyOtherBPMN2 =
+        newWithInstancesAndIncidents(172, 0);
     onlyOtherBPMN2.setBpmnProcessId("2");
     assertIsBefore(onlyOtherBPMN1, onlyOtherBPMN2);
   }
 
-  protected IncidentByProcessStatisticsDto newWithInstancesAndIncidents(
-      int instances, int incidents) {
-    final IncidentByProcessStatisticsDto newObject = new IncidentByProcessStatisticsDto();
+  protected IncidentsByProcessGroupStatisticsDto newWithInstancesAndIncidents(
+      final int instances, final int incidents) {
+    final IncidentsByProcessGroupStatisticsDto newObject =
+        new IncidentsByProcessGroupStatisticsDto();
     newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
     return newObject;
   }
 
   protected void assertIsBefore(
-      IncidentByProcessStatisticsDto first, IncidentByProcessStatisticsDto second) {
-    assertThat(IncidentByProcessStatisticsDto.COMPARATOR.compare(first, second)).isLessThan(0);
+      final IncidentsByProcessGroupStatisticsDto first,
+      final IncidentsByProcessGroupStatisticsDto second) {
+    assertThat(IncidentsByProcessGroupStatisticsDto.COMPARATOR.compare(first, second))
+        .isLessThan(0);
   }
 }
