@@ -200,6 +200,80 @@ final class AdminApiRequestHandlerTest {
 
   @Nested
   @ExtendWith(MockitoExtension.class)
+  final class SoftPauseExportingRequest {
+    @RegisterExtension
+    final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
+
+    private final PartitionAdminAccess adminAccess;
+    private final AdminApiRequestHandler handler;
+    private final AdminRequest request;
+
+    public SoftPauseExportingRequest(
+        @Mock final PartitionAdminAccess adminAccess,
+        @Mock(answer = RETURNS_MOCKS) final RaftPartition raftPartition,
+        @Mock final AtomixServerTransport transport) {
+      this.adminAccess = adminAccess;
+      final int partitionId = 1;
+      when(adminAccess.forPartition(partitionId)).thenReturn(Optional.of(adminAccess));
+      handler = new AdminApiRequestHandler(transport, adminAccess, raftPartition);
+
+      request = new AdminRequest();
+      request.setPartitionId(partitionId);
+      request.setType(AdminRequestType.SOFT_PAUSE_EXPORTING);
+    }
+
+    @BeforeEach
+    void startHandler() {
+      scheduler.submitActor(handler);
+      scheduler.workUntilDone();
+    }
+
+    @Test
+    void shouldSoftPauseExportingForGivenPartition() {
+      when(adminAccess.softPauseExporting()).thenReturn(CompletableActorFuture.completed(null));
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+      verify(adminAccess).forPartition(request.getPartitionId());
+      verify(adminAccess).softPauseExporting();
+    }
+
+    @Test
+    void shouldRespondWithFailureIfPausingFails() {
+      // given
+      when(adminAccess.softPauseExporting())
+          .thenReturn(
+              CompletableActorFuture.completedExceptionally(
+                  new RuntimeException("Exporting fails")));
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
+    }
+
+    @Test
+    void shouldRespondWithFailureIfPartitionNotFound() {
+      // given
+      request.setPartitionId(5);
+
+      // when
+      final var responseFuture = handleRequest(request, handler);
+      scheduler.workUntilDone();
+
+      // then
+      assertErrorCode(responseFuture, ErrorCode.INTERNAL_ERROR);
+    }
+  }
+
+  @Nested
+  @ExtendWith(MockitoExtension.class)
   final class ResumeExportingRequest {
     @RegisterExtension
     final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();

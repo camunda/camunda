@@ -90,6 +90,54 @@ public class BrokerAdminServiceTest {
   }
 
   @Test
+  public void shouldSoftPauseExporterWhenRequested() {
+    // when
+    leaderAdminService.softPauseExporting();
+
+    // then
+    assertExporterPhase(leaderAdminService, ExporterPhase.SOFT_PAUSED);
+  }
+
+  @Test
+  public void shouldContinueToExportWhileSoftPaused() {
+    // given
+    leaderAdminService.softPauseExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.SOFT_PAUSED);
+
+    // when
+    final String messageName = "test";
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey("test-key")
+        .send()
+        .join();
+
+    // then
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(60))
+        .until(
+            () ->
+                RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                    .withName(messageName)
+                    .exists());
+  }
+
+  @Test
+  public void shouldResumeExportingFromSoftPausedWhenRequested() {
+    // given
+    leaderAdminService.softPauseExporting();
+    assertExporterPhase(leaderAdminService, ExporterPhase.SOFT_PAUSED);
+
+    // when
+    leaderAdminService.resumeExporting();
+
+    // then
+    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+  }
+
+  @Test
   public void shouldResumeExportingWhenRequested() {
     // given
     leaderAdminService.pauseExporting();

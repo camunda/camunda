@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -94,6 +95,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setPartitionCommandSender(InterPartitionCommandSenderService sender);
 
   boolean shouldExport();
+
+  ExporterPhase getExporterPhase();
 
   Collection<ExporterDescriptor> getExportedDescriptors();
 
