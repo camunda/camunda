@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -406,69 +405,30 @@ public final class StreamProcessorTest {
     final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
     logStreamReader.seekToFirstEvent();
     final var firstRecord = logStreamReader.next();
-    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    assertThat(firstRecord.getSourceEventPosition())
+        .as("First record should not point to any source events")
+        .isEqualTo(-1);
     final var firstRecordPosition = firstRecord.getPosition();
 
     final var firstRecordMetadata = new RecordMetadata();
     firstRecord.readMetadata(firstRecordMetadata);
-    assertThat(firstRecordMetadata.getRequestId()).isEqualTo(requestId);
+    assertThat(firstRecordMetadata.getRequestId())
+        .as("Record metadata should contain the requestId passed in the initial command")
+        .isEqualTo(requestId);
 
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     while (logStreamReader.hasNext()) {
       final LoggedEvent followup = logStreamReader.next();
-      assertThat(followup.getSourceEventPosition()).isEqualTo(firstRecordPosition);
+      assertThat(followup.getSourceEventPosition())
+          .as("Followup records should point to source event")
+          .isEqualTo(firstRecordPosition);
       final var followupMetadata = new RecordMetadata();
       followup.readMetadata(followupMetadata);
-      assertThat(followupMetadata.getRequestId()).isEqualTo(requestId);
+      assertThat(followupMetadata.getRequestId())
+          .as("Followup records should contain the same request id of the initial command")
+          .isEqualTo(requestId);
     }
-  }
-
-  @Test
-  public void shouldSetSourcePointerForFollowUpRecords() {
-    // given
-    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
-    resultBuilder.appendRecordReturnEither(
-        1,
-        Records.processInstance(1),
-        new RecordMetadata()
-            .recordType(RecordType.EVENT)
-            .intent(ACTIVATE_ELEMENT)
-            .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason(""));
-    resultBuilder.appendRecordReturnEither(
-        2,
-        Records.processInstance(1),
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .intent(COMPLETE_ELEMENT)
-            .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason(""));
-
-    when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
-
-    streamPlatform.startStreamProcessor();
-
-    // when
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
-
-    // then
-    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
-
-    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
-    logStreamReader.seekToFirstEvent();
-    final var firstRecord = logStreamReader.next();
-    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
-    final var firstRecordPosition = firstRecord.getPosition();
-
-    await("should write follow up events")
-        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
-    assertThat(logStreamReader.hasNext()).isTrue();
-    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
-    assertThat(logStreamReader.hasNext()).isTrue();
-    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
   }
 
   @Test
