@@ -94,6 +94,7 @@
     "serve": "14.2.3",
     "source-map-explorer": "2.5.3",
     "stylelint": "16.4.0",
+    "stylelint-prettier": "5.0.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.4.5",
     "typescript-plugin-css-modules": "5.1.0",

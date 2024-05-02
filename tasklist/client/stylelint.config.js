@@ -8,8 +8,9 @@
 
 /** @type {import('stylelint').Config} */
 export default {
-  plugins: ['./stylelint-plugin-license-header.js'],
+  plugins: ['./stylelint-plugin-license-header.js', 'stylelint-prettier'],
   rules: {
     'camunda/license-header': ['./resources/license-header.js'],
   },
+  extends: ['stylelint-prettier/recommended'],
 };
