@@ -96,15 +96,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   public void checkAndUpdateIndices() {
     indexDescriptors.forEach(
         descriptor -> {
-          final Map<String, String> indexSettings = new HashMap<>();
+          updateILM(descriptor.getDerivedIndexNamePattern());
+        });
 
-          // Adds or removes policy
-          if (operateProperties.getArchiver().isIlmEnabled()) {
-            indexSettings.put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES);
-            setIndexSettingsFor(indexSettings, descriptor.getDerivedIndexNamePattern());
-          } else {
-            retryElasticsearchClient.deleteIndexPolicyFor(descriptor.getDerivedIndexNamePattern());
-          }
+    templateDescriptors.forEach(
+        descriptor -> {
+          updateILM(descriptor.getDerivedIndexNamePattern());
         });
   }
 
@@ -286,6 +283,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
                   .collect(Collectors.toSet()));
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
+    }
+  }
+
+  private void updateILM(final String indexName) {
+    final Map<String, String> indexSettings = new HashMap<>();
+    // Adds or removes policy
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      indexSettings.put(INDEX_LIFECYCLE_NAME, OPERATE_DELETE_ARCHIVED_INDICES);
+      setIndexSettingsFor(indexSettings, indexName);
+    } else {
+      retryElasticsearchClient.deleteIndexPolicyFor(indexName);
     }
   }
 

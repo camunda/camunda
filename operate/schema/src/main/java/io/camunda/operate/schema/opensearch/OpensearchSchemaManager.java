@@ -123,6 +123,20 @@ public class OpensearchSchemaManager implements SchemaManager {
                 .removePolicyFromIndex(descriptor.getDerivedIndexNamePattern());
           }
         });
+
+    templateDescriptors.forEach(
+        descriptor -> {
+          if (operateProperties.getArchiver().isIlmEnabled()) {
+            richOpenSearchClient
+                .ism()
+                .addPolicyToIndex(
+                    descriptor.getDerivedIndexNamePattern(), OPERATE_DELETE_ARCHIVED_INDICES);
+          } else {
+            richOpenSearchClient
+                .ism()
+                .removePolicyFromIndex(descriptor.getDerivedIndexNamePattern());
+          }
+        });
   }
 
   @Override
