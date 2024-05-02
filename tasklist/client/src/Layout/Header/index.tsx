@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {Link} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
-import {TermsConditionsModal} from 'modules/components/TermsConditionsModal';
 import {pages} from 'modules/routing';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -95,9 +94,6 @@ const Header: React.FC = observer(() => {
     salesPlanType: null,
   };
 
-  const [isTermsConditionModalOpen, setTermsConditionModalOpen] =
-    useState(false);
-
   useEffect(() => {
     if (currentUser) {
       tracking.identifyUser(currentUser);
@@ -105,211 +101,201 @@ const Header: React.FC = observer(() => {
   }, [currentUser]);
 
   return (
-    <>
-      <C3Navigation
-        notificationSideBar={IS_SAAS ? {} : undefined}
-        appBar={{
-          ariaLabel: 'App Panel',
-          isOpen: false,
-          elementClicked: (app: string) => {
+    <C3Navigation
+      notificationSideBar={IS_SAAS ? {} : undefined}
+      appBar={{
+        ariaLabel: 'App Panel',
+        isOpen: false,
+        elementClicked: (app: string) => {
+          tracking.track({
+            eventName: 'app-switcher-item-clicked',
+            app,
+          });
+        },
+        appTeaserRouteProps: IS_SAAS ? {} : undefined,
+      }}
+      app={{
+        ariaLabel: 'Camunda Tasklist',
+        name: 'Tasklist',
+        routeProps: {
+          to: pages.initial,
+          onClick: () => {
             tracking.track({
-              eventName: 'app-switcher-item-clicked',
-              app,
+              eventName: 'navigation',
+              link: 'header-logo',
             });
           },
-          appTeaserRouteProps: IS_SAAS ? {} : undefined,
-        }}
-        app={{
-          ariaLabel: 'Camunda Tasklist',
-          name: 'Tasklist',
-          routeProps: {
-            to: pages.initial,
+        },
+      }}
+      forwardRef={RouterLink}
+      navbar={{
+        elements: [
+          {
+            isCurrentPage: !isProcessesPage,
+            key: 'tasks',
+            label: 'Tasks',
+            routeProps: {
+              to: pages.initial,
+              onClick: () => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'header-tasks',
+                });
+              },
+            },
+          },
+          {
+            isCurrentPage: isProcessesPage,
+            key: 'processes',
+            label: 'Processes',
+            routeProps: {
+              to: pages.processes({
+                tenantId: getStateLocally('tenantId') ?? undefined,
+              }),
+              onClick: () => {
+                tracking.track({
+                  eventName: 'navigation',
+                  link: 'header-processes',
+                });
+              },
+            },
+          },
+        ],
+        tags:
+          IS_ENTERPRISE || IS_SAAS
+            ? []
+            : [
+                {
+                  key: 'non-production-license',
+                  label: 'Non-Production License',
+                  color: 'cool-gray',
+                  tooltip: {
+                    content: (
+                      <div>
+                        Non-Production License. If you would like information on
+                        production usage, please refer to our{' '}
+                        <Link
+                          className={styles.inlineLink}
+                          href="https://legal.camunda.com/#self-managed-non-production-terms"
+                          target="_blank"
+                          inline
+                        >
+                          terms & conditions page
+                        </Link>{' '}
+                        or{' '}
+                        <Link
+                          className={styles.inlineLink}
+                          href="https://camunda.com/contact/"
+                          target="_blank"
+                          inline
+                        >
+                          contact sales
+                        </Link>
+                        .
+                      </div>
+                    ),
+                    buttonLabel: 'Non-Production License',
+                  },
+                },
+              ],
+      }}
+      infoSideBar={{
+        isOpen: false,
+        ariaLabel: 'Info',
+        elements: getInfoSidebarItems(
+          ['paid-cc', 'enterprise'].includes(salesPlanType!),
+        ),
+      }}
+      userSideBar={{
+        ariaLabel: 'Settings',
+        version: import.meta.env.VITE_VERSION,
+        customElements: {
+          profile: {
+            label: 'Profile',
+            user: {
+              name: displayName ?? '',
+              email: '',
+            },
+          },
+          themeSelector: {
+            currentTheme: selectedTheme,
+            onChange: (theme: string) => {
+              changeTheme(theme as 'system' | 'dark' | 'light');
+            },
+          },
+        },
+        elements: [
+          ...(window.Osano?.cm === undefined
+            ? []
+            : [
+                {
+                  key: 'cookie',
+                  label: 'Cookie preferences',
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'user-side-bar',
+                      link: 'cookies',
+                    });
+
+                    window.Osano?.cm?.showDrawer(
+                      'osano-cm-dom-info-dialog-open',
+                    );
+                  },
+                },
+              ]),
+          {
+            key: 'terms',
+            label: 'Terms of use',
             onClick: () => {
               tracking.track({
-                eventName: 'navigation',
-                link: 'header-logo',
+                eventName: 'user-side-bar',
+                link: 'terms-conditions',
               });
+
+              window.open(
+                'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
+                '_blank',
+              );
             },
           },
-        }}
-        forwardRef={RouterLink}
-        navbar={{
-          elements: [
-            {
-              isCurrentPage: !isProcessesPage,
-              key: 'tasks',
-              label: 'Tasks',
-              routeProps: {
-                to: pages.initial,
-                onClick: () => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'header-tasks',
-                  });
-                },
-              },
-            },
-            {
-              isCurrentPage: isProcessesPage,
-              key: 'processes',
-              label: 'Processes',
-              routeProps: {
-                to: pages.processes({
-                  tenantId: getStateLocally('tenantId') ?? undefined,
-                }),
-                onClick: () => {
-                  tracking.track({
-                    eventName: 'navigation',
-                    link: 'header-processes',
-                  });
-                },
-              },
-            },
-          ],
-          tags:
-            IS_ENTERPRISE || IS_SAAS
-              ? []
-              : [
-                  {
-                    key: 'non-production-license',
-                    label: 'Non-Production License',
-                    color: 'cool-gray',
-                    tooltip: {
-                      content: (
-                        <div>
-                          Non-Production License. If you would like information
-                          on production usage, please refer to our{' '}
-                          <Link
-                            className={styles.inlineLink}
-                            href="#"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              setTermsConditionModalOpen(true);
-                            }}
-                          >
-                            terms & conditions page
-                          </Link>{' '}
-                          or{' '}
-                          <Link
-                            className={styles.inlineLink}
-                            href="https://camunda.com/contact/"
-                            target="_blank"
-                            inline
-                          >
-                            contact sales
-                          </Link>
-                          .
-                        </div>
-                      ),
-                      buttonLabel: 'Non-Production License',
-                    },
-                  },
-                ],
-        }}
-        infoSideBar={{
-          isOpen: false,
-          ariaLabel: 'Info',
-          elements: getInfoSidebarItems(
-            ['paid-cc', 'enterprise'].includes(salesPlanType!),
-          ),
-        }}
-        userSideBar={{
-          ariaLabel: 'Settings',
-          version: import.meta.env.VITE_VERSION,
-          customElements: {
-            profile: {
-              label: 'Profile',
-              user: {
-                name: displayName ?? '',
-                email: '',
-              },
-            },
-            themeSelector: {
-              currentTheme: selectedTheme,
-              onChange: (theme: string) => {
-                changeTheme(theme as 'system' | 'dark' | 'light');
-              },
+          {
+            key: 'privacy',
+            label: 'Privacy policy',
+            onClick: () => {
+              tracking.track({
+                eventName: 'user-side-bar',
+                link: 'privacy-policy',
+              });
+
+              window.open('https://camunda.com/legal/privacy/', '_blank');
             },
           },
-          elements: [
-            ...(window.Osano?.cm === undefined
-              ? []
-              : [
-                  {
-                    key: 'cookie',
-                    label: 'Cookie preferences',
-                    onClick: () => {
-                      tracking.track({
-                        eventName: 'user-side-bar',
-                        link: 'cookies',
-                      });
+          {
+            key: 'imprint',
+            label: 'Imprint',
+            onClick: () => {
+              tracking.track({
+                eventName: 'user-side-bar',
+                link: 'imprint',
+              });
 
-                      window.Osano?.cm?.showDrawer(
-                        'osano-cm-dom-info-dialog-open',
-                      );
-                    },
-                  },
-                ]),
-            {
-              key: 'terms',
-              label: 'Terms of use',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'user-side-bar',
-                  link: 'terms-conditions',
-                });
-
-                window.open(
-                  'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
-                  '_blank',
-                );
-              },
+              window.open('https://camunda.com/legal/imprint/', '_blank');
             },
-            {
-              key: 'privacy',
-              label: 'Privacy policy',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'user-side-bar',
-                  link: 'privacy-policy',
-                });
-
-                window.open('https://camunda.com/legal/privacy/', '_blank');
+          },
+        ],
+        bottomElements: window.clientConfig?.canLogout
+          ? [
+              {
+                key: 'logout',
+                label: 'Log out',
+                renderIcon: ArrowRight,
+                kind: 'ghost',
+                onClick: authenticationStore.handleLogout,
               },
-            },
-            {
-              key: 'imprint',
-              label: 'Imprint',
-              onClick: () => {
-                tracking.track({
-                  eventName: 'user-side-bar',
-                  link: 'imprint',
-                });
-
-                window.open('https://camunda.com/legal/imprint/', '_blank');
-              },
-            },
-          ],
-          bottomElements: window.clientConfig?.canLogout
-            ? [
-                {
-                  key: 'logout',
-                  label: 'Log out',
-                  renderIcon: ArrowRight,
-                  kind: 'ghost',
-                  onClick: authenticationStore.handleLogout,
-                },
-              ]
-            : undefined,
-        }}
-      />
-      {IS_ENTERPRISE || IS_SAAS ? null : (
-        <TermsConditionsModal
-          isModalOpen={isTermsConditionModalOpen}
-          onModalClose={() => setTermsConditionModalOpen(false)}
-        />
-      )}
-    </>
+            ]
+          : undefined,
+      }}
+    />
   );
 });
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -109,38 +109,5 @@ describe('license note', () => {
     expect(
       screen.queryByText('Non-Production License'),
     ).not.toBeInTheDocument();
-  });
-
-  it('should open terms and conditions dialog', async () => {
-    const {user} = render(<Header />, {
-      wrapper: getWrapper(),
-    });
-
-    await user.click(
-      screen.getByRole('button', {name: 'Non-Production License'}),
-    );
-
-    expect(
-      screen.getByRole('button', {
-        name: 'Non-Production License',
-        expanded: true,
-      }),
-    ).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('link', {
-        name: 'terms & conditions page',
-      }),
-    );
-
-    expect(
-      within(
-        screen.getByRole('dialog', {
-          name: /terms & conditions/i,
-        }),
-      ).getByRole('button', {
-        name: /close/i,
-      }),
-    ).toHaveFocus();
   });
 });
