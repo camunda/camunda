@@ -7,7 +7,6 @@
  */
 
 import {formatDate} from 'modules/utils/date';
-import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
 import OperationEntryStatus from './OperationEntryStatus';
@@ -23,7 +22,6 @@ import {
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED} from 'modules/feature-flags';
 
 type OperationLabelType =
   | 'Edit'
@@ -57,7 +55,6 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     type,
     name,
     endDate,
-    instancesCount,
     operationsTotalCount,
     operationsFinishedCount,
     failedOperationsCount,
@@ -112,7 +109,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           <Move size={16} data-testid="operation-move-icon" />
         )}
       </Header>
-      {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && shouldHaveIdLink ? (
+      {shouldHaveIdLink ? (
         <Link
           data-testid="operation-id"
           to={{
@@ -129,32 +126,12 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
       )}
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
-        {IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && (
-          <OperationEntryStatus
-            isTypeDeleteProcessOrDecision={isTypeDeleteProcessOrDecision}
-            label={label}
-            failedOperationsCount={failedOperationsCount}
-            completedOperationsCount={completedOperationsCount}
-          />
-        )}
-
-        {!IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED && label !== 'Delete' && (
-          <Link
-            to={{
-              pathname: Paths.processes(),
-              search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${id}`,
-            }}
-            state={{hideOptionalFilters: true}}
-            onClick={panelStatesStore.expandFiltersPanel}
-          >
-            {`${pluralSuffix(instancesCount, 'Instance')}`}
-          </Link>
-        )}
-
-        {!IS_OPERATIONS_PANEL_IMPROVEMENT_ENABLED &&
-          isTypeDeleteProcessOrDecision && (
-            <div>{`${pluralSuffix(instancesCount, 'instance')} deleted`}</div>
-          )}
+        <OperationEntryStatus
+          isTypeDeleteProcessOrDecision={isTypeDeleteProcessOrDecision}
+          label={label}
+          failedOperationsCount={failedOperationsCount}
+          completedOperationsCount={completedOperationsCount}
+        />
 
         {endDate !== null && isComplete && <div>{formatDate(endDate)}</div>}
       </Details>
