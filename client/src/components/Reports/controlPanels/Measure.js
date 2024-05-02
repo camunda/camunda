@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {CarbonSelect, SelectionPreview} from 'components';
+import {Select, SelectionPreview} from 'components';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 
@@ -33,19 +33,19 @@ export default function Measure({report, onChange}) {
 
   const options = (
     <>
-      <CarbonSelect.Option
+      <Select.Option
         label={getLabel('frequency', isIncidentReport)}
         value="frequency"
         disabled={firstMeasure === 'frequency'}
       />
       {report.view.entity === 'processInstance' && (
-        <CarbonSelect.Option
+        <Select.Option
           label={getLabel('percentage', isIncidentReport)}
           value="percentage"
           disabled={firstMeasure === 'percentage'}
         />
       )}
-      <CarbonSelect.Option
+      <Select.Option
         label={getLabel('duration', isIncidentReport)}
         value="duration"
         disabled={firstMeasure === 'duration'}
@@ -78,13 +78,13 @@ export default function Measure({report, onChange}) {
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <CarbonSelect value={firstMeasure} onChange={(property) => updateMeasure([property])}>
+          <Select value={firstMeasure} onChange={(property) => updateMeasure([property])}>
             {options}
-          </CarbonSelect>
+          </Select>
           <AggregationType report={report} onChange={onChange} />
         </li>
         <li className="addMeasure">
-          <CarbonSelect
+          <Select
             onChange={(secondMeasure) => {
               updateMeasure(
                 [firstMeasure, secondMeasure].sort(
@@ -95,7 +95,7 @@ export default function Measure({report, onChange}) {
             placeholder={'+ ' + t('report.addMeasure')}
           >
             {options}
-          </CarbonSelect>
+          </Select>
         </li>
       </>
     );

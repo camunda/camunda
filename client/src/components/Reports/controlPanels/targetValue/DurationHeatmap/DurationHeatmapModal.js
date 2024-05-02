@@ -16,7 +16,7 @@ import {
   BPMNDiagram,
   Table,
   Loading,
-  CarbonSelect,
+  Select,
   TargetValueBadge,
   ClickBehavior,
 } from 'components';
@@ -157,22 +157,22 @@ export default class DurationHeatmapModal extends React.Component {
               }}
               invalid={!this.isValidInput(settings.value)}
             />
-            <CarbonSelect
+            <Select
               value={settings.unit}
               onChange={(value) => {
                 this.setTarget('unit', id)(value);
                 this.updateFocus(id);
               }}
             >
-              <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
-              <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
-              <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
-              <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
-              <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
-              <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
-              <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
-              <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
-            </CarbonSelect>
+              <Select.Option value="millis" label={t('common.unit.milli.label-plural')} />
+              <Select.Option value="seconds" label={t('common.unit.second.label-plural')} />
+              <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+              <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+              <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+              <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+              <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+              <Select.Option value="years" label={t('common.unit.year.label-plural')} />
+            </Select>
           </div>
         </>,
       ];

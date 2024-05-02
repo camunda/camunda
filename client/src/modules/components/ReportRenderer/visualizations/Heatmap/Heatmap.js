@@ -178,9 +178,7 @@ export default function Heatmap({report, context}) {
         <Select value={selectedMeasure} onChange={(measure) => setSelectedMeasure(+measure)}>
           {result.measures.map((measure, idx) => {
             return (
-              <Select.Option value={idx} key={idx}>
-                Heat: {getMeasureString(measure)}
-              </Select.Option>
+              <Select.Option value={idx} key={idx} label={`Heat: ${getMeasureString(measure)}`} />
             );
           })}
         </Select>

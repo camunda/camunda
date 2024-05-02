@@ -9,7 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import {NumberInput} from '@carbon/react';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 
 import BucketSize from './BucketSize';
 
@@ -84,7 +84,7 @@ it('should include a unit selection when report is grouped by duration', () => {
     <BucketSize {...props} groupBy={{type: 'duration', value: {type: 'Integer'}}} />
   );
 
-  expect(node.find(CarbonSelect)).toExist();
+  expect(node.find(Select)).toExist();
 });
 
 it('should include a unit selection when report is distributed by number variable', () => {

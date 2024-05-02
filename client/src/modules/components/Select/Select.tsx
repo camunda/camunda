@@ -5,53 +5,61 @@
  * except in compliance with the proprietary license.
  */
 
-import {Children, cloneElement, Component, ComponentProps, ReactNode, UIEvent} from 'react';
+import {BaseSyntheticEvent, Children, cloneElement, ComponentProps, ReactNode} from 'react';
+import {MenuItemSelectable} from '@carbon/react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
-import {Dropdown} from 'components';
 import {ignoreFragments, isReactElement} from 'services';
 import classnames from 'classnames';
 import {t} from 'translation';
 
-interface Selectprops<T extends object | string | number = string>
-  extends Omit<ComponentProps<typeof Dropdown>, 'label'> {
+export interface SelectProps<T extends object | string | number = string>
+  extends Omit<ComponentProps<typeof MenuDropdown>, 'label' | 'onChange'> {
+  id: string;
   value?: T;
   onChange?: (value: T) => void;
-  label?: string | JSX.Element[];
+  labelText?: string | JSX.Element[];
+  helperText?: string | JSX.Element[];
+  placeholder?: string;
 }
 
-export default class Select<T extends object | string | number = string> extends Component<
-  Selectprops<T>
-> {
-  renderChildrenWithProps = (children: ReactNode) => {
+export default function Select<T extends object | string | number>(props: SelectProps<T>) {
+  const {labelText, helperText, ...rest} = props;
+  const renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
       .filter(isReactElement)
       .map((child) => {
-        const props:
-          | ComponentProps<typeof Dropdown.Option>
-          | ComponentProps<typeof Dropdown.Submenu> = {};
+        const newProps: SubmenuProps | OptionProps = {
+          ...child.props,
+          label: child.props.label?.toString() || '',
+        };
 
         if (child.type === Select.Submenu) {
-          props.checked = Children.toArray(child.props.children).some(
-            (child) => isReactElement(child) && child.props.value === this.props.value
+          newProps.selected = Children.toArray(child.props.children).some(
+            (child) => isReactElement(child) && child.props.value === props.value
           );
 
-          props.children = this.renderChildrenWithProps(child.props.children);
+          newProps.children = renderChildrenWithProps(child.props.children);
+        } else if (child.type === Select.Option) {
+          newProps.onChange = onChange;
+          newProps.selected = child.props.value === props.value;
         } else {
-          props.onClick = this.onChange;
-          props.checked = child && child.props.value === this.props.value;
+          console.error('Select `children` should be either an `Submenu` or `Option` component.');
+          return null;
         }
-        return child && cloneElement(child, props);
+
+        return child && cloneElement(child, newProps);
       });
   };
 
-  getLabel = (children = this.props.children) => {
+  const getLabel = (children = props.children) => {
     let label;
 
     Children.forEach(ignoreFragments(children), (child) => {
-      if (child?.props.value === this.props.value) {
-        label = child.props.label || child.props.children;
-      } else if (child?.type === Select.Submenu && child?.props.children) {
-        const sublabel = this.getLabel(child.props.children);
+      if (child.props.value === props.value) {
+        label = child.props.label;
+      } else if (child.type === Select.Submenu && child.props.children) {
+        const sublabel = getLabel(child.props.children);
         if (sublabel) {
           label = child.props.label + ' : ' + sublabel;
         }
@@ -61,36 +69,67 @@ export default class Select<T extends object | string | number = string> extends
     return label;
   };
 
-  onChange = (evt: UIEvent<HTMLElement>) => {
+  const onChange = (evt: BaseSyntheticEvent) => {
     const value = (evt.target as HTMLElement | null)
       ?.closest('[value]')
-      ?.getAttribute('value') as T;
-    if (value && this.props.onChange) {
-      this.props.onChange(value);
+      ?.getAttribute('value') as T | null;
+    if (value) {
+      props.onChange?.(value);
     }
   };
 
-  render() {
-    const children = ignoreFragments(this.props.children);
+  const children = ignoreFragments(props.children);
 
-    return (
-      <Dropdown
-        {...this.props}
-        label={this.props.label || this.getLabel() || t('common.select')}
-        className={classnames('Select', this.props.className)}
+  return (
+    <div className={classnames('Select', props.className)}>
+      {labelText && (
+        <div className="cds--text-input__label-wrapper">
+          <label htmlFor={props.id} className="cds--label">
+            {labelText}
+          </label>
+        </div>
+      )}
+      <MenuDropdown
+        {...rest}
+        onChange={(e: any) => onChange(e)}
+        label={props.placeholder || getLabel() || t('common.select').toString()}
+        menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
       >
-        {this.renderChildrenWithProps(children)}
-      </Dropdown>
-    );
-  }
-
-  static Option = function Option<T extends object | string | number = string>(
-    props: ComponentProps<typeof Dropdown.Option<T>>
-  ) {
-    return <Dropdown.Option {...props}>{props.children}</Dropdown.Option>;
-  };
-
-  static Submenu = function Submenu(props: ComponentProps<typeof Dropdown.Submenu>) {
-    return <Dropdown.Submenu {...props}>{props.children}</Dropdown.Submenu>;
-  };
+        {renderChildrenWithProps(children)}
+      </MenuDropdown>
+      {helperText && !props.invalid && <div className="cds--form__helper-text">{helperText}</div>}
+    </div>
+  );
 }
+
+type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
+  label?: string | JSX.Element[];
+  children?: ReactNode;
+  disabled?: boolean;
+};
+
+Select.Submenu = function Submenu(props: SubmenuProps) {
+  return (
+    // @ts-ignore
+    // To make disabled state work, we can't pass children to it
+    <MenuItemSelectable className="Submenu" {...props} label={props.label?.toString() || ''}>
+      {!props.disabled && props.children}
+    </MenuItemSelectable>
+  );
+};
+
+type OptionProps<T extends object | string | number = string> = SubmenuProps & {
+  value?: T;
+};
+
+Select.Option = function Option<T extends object | string | number = string>(
+  props: OptionProps<T>
+) {
+  return (
+    // @ts-ignore
+    // To make disabled state work, we can't pass children to it
+    <MenuItemSelectable className="Option" {...props} label={props.label?.toString() || ''}>
+      {!props.disabled && props.children}
+    </MenuItemSelectable>
+  );
+};

@@ -144,7 +144,7 @@ it('should show empty message if all columns are hidden', () => {
 });
 
 it('should add a noOverflow classname to tds with Selects', () => {
-  const node = mount(<Table head={['a']} body={[[<Select />]]} />);
+  const node = mount(<Table head={['a']} body={[[<Select id="id" children={[]} />]]} />);
 
   expect(node.find('td')).toHaveClassName('noOverflow');
 });

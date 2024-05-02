@@ -30,7 +30,7 @@ it('should load initial values correctly', () => {
   const node = shallow(<RollingFilter {...props} />);
 
   expect(node.find(NumberInput).prop('value')).toBe(2);
-  expect(node.find('CarbonSelect').prop('value')).toBe('days');
+  expect(node.find('Select').prop('value')).toBe('days');
 });
 
 it('should invoke onChange when update the value input or the unit selection', () => {
@@ -42,7 +42,7 @@ it('should invoke onChange when update the value input or the unit selection', (
 
   spy.mockClear();
 
-  node.find('CarbonSelect').simulate('change', 'months');
+  node.find('Select').simulate('change', 'months');
   expect(spy).toHaveBeenCalledWith({unit: 'months'});
 });
 

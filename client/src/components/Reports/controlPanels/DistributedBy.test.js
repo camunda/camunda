@@ -8,7 +8,7 @@
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
 import {useUiConfig} from 'hooks';
 
@@ -92,13 +92,13 @@ it('should disable options which would create a wrong combination', () => {
 
   const node = shallow(<DistributedBy {...config} />);
 
-  expect(node.find(CarbonSelect.Option).first()).toBeDisabled();
+  expect(node.find(Select.Option).first()).toBeDisabled();
 });
 
 it('should disable the variable view submenu if there are no variables', () => {
   const node = shallow(<DistributedBy {...config} />);
 
-  expect(node.find(CarbonSelect.Submenu)).toBeDisabled();
+  expect(node.find(Select.Submenu)).toBeDisabled();
 });
 
 it('invoke configUpdate with the correct variable data', async () => {
@@ -118,7 +118,7 @@ it('invoke configUpdate with the correct variable data', async () => {
 
   createReportUpdate.mockReturnValue({content: 'change'});
 
-  node.find(CarbonSelect).simulate('change', 'variable_testName');
+  node.find(Select).simulate('change', 'variable_testName');
 
   expect(createReportUpdate.mock.calls[0][4].distributedBy.value.$set).toEqual(
     CarbonselectedOption.value

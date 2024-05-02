@@ -7,7 +7,7 @@
 
 import {shallow, ShallowWrapper} from 'enzyme';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 
 import DateRangeInput from './DateRangeInput';
 
@@ -20,8 +20,8 @@ const props = {
   onChange: () => {},
 };
 
-const dateTypeSelect = (node: ShallowWrapper) => node.find(CarbonSelect).at(0);
-const unitSelect = (node: ShallowWrapper) => node.find(CarbonSelect).at(1);
+const dateTypeSelect = (node: ShallowWrapper) => node.find(Select).at(0);
+const unitSelect = (node: ShallowWrapper) => node.find(Select).at(1);
 
 it('should disable the unit selection when not selecting this or last', () => {
   const node = shallow(<DateRangeInput {...props} type="today" />);

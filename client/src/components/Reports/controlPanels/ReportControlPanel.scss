@@ -60,7 +60,7 @@
         margin-top: 10px;
       }
 
-      .CarbonSelect {
+      .Select {
         min-width: 0;
         flex-grow: 1;
       }
@@ -93,15 +93,6 @@
         vertical-align: middle;
         text-align: right;
         padding-right: 6px;
-      }
-
-      > .Select {
-        flex: 0 1 200px;
-        min-width: 0;
-
-        .activateButton {
-          padding-left: 10px;
-        }
       }
     }
   }

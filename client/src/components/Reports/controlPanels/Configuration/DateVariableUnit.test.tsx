@@ -65,7 +65,7 @@ it('should reevaluate the report when changing the unit', () => {
 
   const node = shallow(<DateVariableUnit {...props} onChange={spy} />);
 
-  node.find('CarbonSelect').simulate('change', 'month');
+  node.find('Select').simulate('change', 'month');
 
   expect(spy).toHaveBeenCalledWith({groupByDateVariableUnit: {$set: 'month'}}, true);
 });

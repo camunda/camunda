@@ -11,7 +11,7 @@ import deepEqual from 'fast-deep-equal';
 import {Button, TableSelectRow, TableToolbar, TableToolbarContent, Toggle} from '@carbon/react';
 import {ChevronDown, ChevronUp} from '@carbon/icons-react';
 
-import {Table, CarbonSelect} from 'components';
+import {Table, Select} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -259,7 +259,7 @@ export default withErrorHandling(
                           }
                         />,
                         showDropdown ? (
-                          <CarbonSelect
+                          <Select
                             size="sm"
                             id={`${eventName}-${group}-${source}-mapping`}
                             value={mappedAs}
@@ -267,17 +267,17 @@ export default withErrorHandling(
                               mappedAs !== value && onMappingChange(eventAsMapping, true, value)
                             }
                           >
-                            <CarbonSelect.Option
+                            <Select.Option
                               value="end"
                               disabled={mappedAs !== 'end' && numberOfMappings === 2}
                               label={t('events.table.end')}
                             />
-                            <CarbonSelect.Option
+                            <Select.Option
                               value="start"
                               disabled={mappedAs !== 'start' && numberOfMappings === 2}
                               label={t('events.table.start')}
                             />
-                          </CarbonSelect>
+                          </Select>
                         ) : (
                           <span className={classnames({disabled})}>
                             {mappedAs ? t(`events.table.${mappedAs}`) : '--'}

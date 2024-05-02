@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {createReportUpdate, getDefaultSorting, reportConfig} from 'services';
 import {t} from 'translation';
 
@@ -31,11 +31,11 @@ export default function Sorting({type: reportType, report, onChange}) {
   return (
     <li className="sortingOrder">
       <span className="label">{t('report.sorting.label')}</span>
-      <CarbonSelect onChange={onSortingChange('sortingOrder')} value={order}>
+      <Select onChange={onSortingChange('sortingOrder')} value={order}>
         {options.map(({key, label}) => (
-          <CarbonSelect.Option key={key} value={key} label={label()} />
+          <Select.Option key={key} value={key} label={label()} />
         ))}
-      </CarbonSelect>
+      </Select>
     </li>
   );
 }

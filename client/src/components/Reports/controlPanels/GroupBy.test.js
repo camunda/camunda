@@ -9,7 +9,7 @@ import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
 import {useUiConfig} from 'hooks';
 
@@ -112,13 +112,13 @@ it('should disable options which would create a wrong combination', () => {
 
   const node = shallow(<GroupBy {...config} />);
 
-  expect(node.find(CarbonSelect.Option).first()).toBeDisabled();
+  expect(node.find(Select.Option).first()).toBeDisabled();
 });
 
 it('should disable the variable view submenu if there are no variables', () => {
   const node = shallow(<GroupBy {...config} />);
 
-  expect(node.find(CarbonSelect.Submenu)).toBeDisabled();
+  expect(node.find(Select.Submenu)).toBeDisabled();
 });
 
 it('invoke configUpdate with the correct variable data', async () => {
@@ -131,18 +131,16 @@ it('invoke configUpdate with the correct variable data', async () => {
     />
   );
 
-  const CarbonSelectedOption = {
+  const SelectedOption = {
     type: 'variable',
     value: {id: 'test', name: 'testName', type: 'date'},
   };
 
   createReportUpdate.mockReturnValue({content: 'change'});
 
-  node.find(CarbonSelect).simulate('change', 'variable_testName');
+  node.find(Select).simulate('change', 'variable_testName');
 
-  expect(createReportUpdate.mock.calls[0][4].groupBy.value.$set).toEqual(
-    CarbonSelectedOption.value
-  );
+  expect(createReportUpdate.mock.calls[0][4].groupBy.value.$set).toEqual(SelectedOption.value);
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
@@ -155,10 +153,10 @@ it('should use the distributedBy value when removing the groupBy', () => {
   expect(createReportUpdate.mock.calls[0][4].groupBy.$set).toEqual({type: 'distribution'});
 });
 
-it('should pass null as a value to CarbonSelect if groupBy is null', () => {
+it('should pass null as a value to Select if groupBy is null', () => {
   const node = shallow(<GroupBy {...config} report={{...config.report, groupBy: null}} />);
 
-  expect(node.find(CarbonSelect).prop('value')).toBe(null);
+  expect(node.find(Select).prop('value')).toBe(null);
 });
 
 it('should not fail if variables are null', () => {

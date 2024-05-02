@@ -24,7 +24,7 @@ export const viewDropdown = checkbox('View').nextSibling();
 export const distributedBySelect = checkbox('and').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const removeGroupButton = Selector('.removeGrouping');
-export const visualizationDropdown = Selector('.CarbonSelect.Visualization button');
+export const visualizationDropdown = Selector('.Select.Visualization button');
 export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');
@@ -47,7 +47,7 @@ export const badge = (id) =>
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('input');
 export const nodeFilterOperator = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.CarbonSelect:first-child');
+  Selector('.Modal tbody tr').withText(name).find('.Select:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel button').withText(
   'Process instance part'
@@ -102,7 +102,7 @@ export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
 export const objectVariableModalCloseButton = Selector('.ObjectVariableModal .close');
 export const rawDataModalCloseButton = Selector('.RawDataModal .close');
 export const bucketSizeSwitch = Selector('.BucketSize .cds--toggle');
-export const bucketSizeUnitSelect = Selector('.BucketSize .CarbonSelect').nth(0);
+export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
 export const nextPageButton = Selector('.Table .cds--pagination__button--forward');
 export const rowsPerPageButton = Selector('.Table .cds--select-input');
 export const rowsPerPageOption = (text) => Selector('.Table .cds--select-option').withText(text);

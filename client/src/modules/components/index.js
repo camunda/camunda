@@ -11,7 +11,7 @@ export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
 export {Deleter} from './Deleter';
 export {Input} from './Input';
-export {Select, CarbonSelect} from './Select';
+export {Select} from './Select';
 export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
 export {DMNDiagram} from './DMNDiagram';
 export {CopyToClipboard} from './CopyToClipboard';

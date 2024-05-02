@@ -8,7 +8,7 @@
 import {shallow} from 'enzyme';
 import {TextInput} from '@carbon/react';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 
 import ThresholdInput from './ThresholdInput';
 
@@ -24,14 +24,14 @@ it('should contain a single input field if the type is not duration', () => {
   const node = shallow(<ThresholdInput {...props} type="number" value="123" />);
 
   expect(node.find(TextInput)).toExist();
-  expect(node.find(CarbonSelect)).not.toExist();
+  expect(node.find(Select)).not.toExist();
 });
 
 it('should contain a input and a select field if the type is duration', () => {
   const node = shallow(<ThresholdInput {...props} />);
 
   expect(node.find(TextInput)).toExist();
-  expect(node.find(CarbonSelect)).toExist();
+  expect(node.find(Select)).toExist();
 });
 
 it('should call the change handler when changing the value', () => {

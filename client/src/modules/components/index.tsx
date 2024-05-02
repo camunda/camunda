@@ -17,7 +17,7 @@ export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
-export {Select, CarbonSelect} from './Select';
+export {Select} from './Select';
 export {TextEditor} from './TextEditor';
 export {PageTitle} from './PageTitle';
 export {EntityDescription} from './EntityDescription';

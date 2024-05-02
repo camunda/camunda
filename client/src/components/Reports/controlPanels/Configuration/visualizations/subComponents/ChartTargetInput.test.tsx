@@ -68,7 +68,7 @@ it('should display the current target values target', () => {
 it('should display select dateFormat dropdown when viewProperty equal duration', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
-  expect(node.find('CarbonSelect')).toExist();
+  expect(node.find('Select')).toExist();
 });
 
 it('should hide select dateFormat dropdown when viewProperty is not equal duration', () => {
@@ -88,7 +88,7 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
     onChange: jest.fn(),
   } as unknown as ComponentProps<typeof ChartTargetInput>;
   const node = shallow(<ChartTargetInput {...newProps} />);
-  expect(node.find('CarbonSelect')).not.toExist();
+  expect(node.find('Select')).not.toExist();
 });
 
 it('should invoke the onChange prop on button click', async () => {
@@ -127,7 +127,7 @@ it('should display select date format if combined report is duration report', as
   } as unknown as ComponentProps<typeof ChartTargetInput>;
   const node = shallow(<ChartTargetInput {...combinedProps} />);
 
-  expect(node.find('CarbonSelect')).toExist();
+  expect(node.find('Select')).toExist();
 });
 
 it('should include an error message when invalid target value is typed', () => {

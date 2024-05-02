@@ -7,7 +7,7 @@
 
 import {Stack, TextInput} from '@carbon/react';
 
-import {CarbonSelect, DatePicker} from 'components';
+import {Select, DatePicker} from 'components';
 import {t} from 'translation';
 import {numberParser} from 'services';
 
@@ -45,7 +45,7 @@ export default function DateRangeInput({
     <div className="DateRangeInput">
       <Stack gap={6}>
         <Stack gap={4} orientation="horizontal" className="selectGroup">
-          <CarbonSelect
+          <Select
             size="md"
             id={`date-range-input-${type}-type-selector`}
             onChange={(type) =>
@@ -59,39 +59,33 @@ export default function DateRangeInput({
             }
             value={type}
           >
-            <CarbonSelect.Option value="today" label={t('common.filter.dateModal.unit.today')} />
-            <CarbonSelect.Option
-              value="yesterday"
-              label={t('common.filter.dateModal.unit.yesterday')}
-            />
-            <CarbonSelect.Option value="this" label={t('common.filter.dateModal.unit.this')} />
-            <CarbonSelect.Option value="last" label={t('common.filter.dateModal.unit.last')} />
-            <CarbonSelect.Option
-              value="between"
-              label={t('common.filter.dateModal.unit.between')}
-            />
-            <CarbonSelect.Option value="before" label={t('common.filter.dateModal.unit.before')} />
-            <CarbonSelect.Option value="after" label={t('common.filter.dateModal.unit.after')} />
-            <CarbonSelect.Option
+            <Select.Option value="today" label={t('common.filter.dateModal.unit.today')} />
+            <Select.Option value="yesterday" label={t('common.filter.dateModal.unit.yesterday')} />
+            <Select.Option value="this" label={t('common.filter.dateModal.unit.this')} />
+            <Select.Option value="last" label={t('common.filter.dateModal.unit.last')} />
+            <Select.Option value="between" label={t('common.filter.dateModal.unit.between')} />
+            <Select.Option value="before" label={t('common.filter.dateModal.unit.before')} />
+            <Select.Option value="after" label={t('common.filter.dateModal.unit.after')} />
+            <Select.Option
               className="customDate"
               value="custom"
               label={t('common.filter.dateModal.unit.custom')}
             />
-          </CarbonSelect>
+          </Select>
           <div className="unitSelection">
             {!isFixed(type) && type !== 'custom' && (
-              <CarbonSelect
+              <Select
                 size="md"
                 id={`date-range-input-${unit}-unit-selector`}
                 disabled={type !== 'this' && type !== 'last'}
                 onChange={(unit) => onChange({unit})}
                 value={unit}
               >
-                <CarbonSelect.Option value="weeks" label={t('common.unit.week.label')} />
-                <CarbonSelect.Option value="months" label={t('common.unit.month.label')} />
-                <CarbonSelect.Option value="years" label={t('common.unit.year.label')} />
-                <CarbonSelect.Option value="quarters" label={t('common.unit.quarter.label')} />
-              </CarbonSelect>
+                <Select.Option value="weeks" label={t('common.unit.week.label')} />
+                <Select.Option value="months" label={t('common.unit.month.label')} />
+                <Select.Option value="years" label={t('common.unit.year.label')} />
+                <Select.Option value="quarters" label={t('common.unit.quarter.label')} />
+              </Select>
             )}
             {isFixed(type) && (
               <DatePicker
@@ -119,22 +113,19 @@ export default function DateRangeInput({
                   invalid={!!customNum && !numberParser.isPositiveInt(customNum)}
                   invalidText={t('common.errors.positiveInt')}
                 />
-                <CarbonSelect
+                <Select
                   size="md"
                   id={`date-range-input-${unit}-unit-selector`}
                   onChange={(unit) => onChange({unit})}
                   value={unit}
                 >
-                  <CarbonSelect.Option
-                    value="minutes"
-                    label={t('common.unit.minute.label-plural')}
-                  />
-                  <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
-                  <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
-                  <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
-                  <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
-                  <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
-                </CarbonSelect>
+                  <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+                  <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                  <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+                  <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                  <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+                  <Select.Option value="years" label={t('common.unit.year.label-plural')} />
+                </Select>
               </>
             )}
           </div>

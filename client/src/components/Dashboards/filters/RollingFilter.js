@@ -9,7 +9,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {NumberInput, Stack} from '@carbon/react';
 
 import {numberParser} from 'services';
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {t} from 'translation';
 
 import './RollingFilter.scss';
@@ -49,20 +49,20 @@ export default function RollingFilter({filter, onChange}) {
         invalid={!numberParser.isPositiveInt(value)}
         invalidText={t('common.errors.positiveInt')}
       />
-      <CarbonSelect
+      <Select
         value={filter?.start?.unit}
         onChange={(unit) => {
           onChange({unit});
         }}
         helperText={t('common.filter.dateModal.rollingInfo')}
       >
-        <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
-        <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
-        <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
-        <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
-        <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
-        <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
-      </CarbonSelect>
+        <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+        <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+        <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+        <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+        <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+        <Select.Option value="years" label={t('common.unit.year.label-plural')} />
+      </Select>
     </Stack>
   );
 }

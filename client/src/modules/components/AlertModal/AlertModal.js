@@ -19,7 +19,7 @@ import {
   Column,
 } from '@carbon/react';
 
-import {Modal, CarbonSelect} from 'components';
+import {Modal, Select} from 'components';
 import {formatters, evaluateReport, getReportResult} from 'services';
 import {isEmailEnabled} from 'config';
 import {t} from 'translation';
@@ -305,15 +305,15 @@ export class AlertModal extends React.Component {
                     }
                   />
                   <Stack gap={6} orientation="horizontal">
-                    <CarbonSelect
+                    <Select
                       id="threshold"
                       labelText={t('alert.form.threshold')}
                       value={thresholdOperator}
                       onChange={(value) => this.setState({thresholdOperator: value})}
                     >
-                      <CarbonSelect.Option value=">" label={t('common.above')} />
-                      <CarbonSelect.Option value="<" label={t('common.below')} />
-                    </CarbonSelect>
+                      <Select.Option value=">" label={t('common.above')} />
+                      <Select.Option value="<" label={t('common.below')} />
+                    </Select>
                     <ThresholdInput
                       className="labelHidden"
                       value={threshold}
@@ -342,7 +342,7 @@ export class AlertModal extends React.Component {
                         invalid={!numberParser.isPositiveInt(checkInterval.value)}
                         invalidText={t('common.errors.positiveInt')}
                       />
-                      <CarbonSelect
+                      <Select
                         id="frequencyUnits"
                         labelText={t('common.units')}
                         className="labelHidden"
@@ -351,31 +351,19 @@ export class AlertModal extends React.Component {
                           this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
                         }
                       >
-                        <CarbonSelect.Option
+                        <Select.Option
                           value="seconds"
                           label={t('common.unit.second.label-plural')}
                         />
-                        <CarbonSelect.Option
+                        <Select.Option
                           value="minutes"
                           label={t('common.unit.minute.label-plural')}
                         />
-                        <CarbonSelect.Option
-                          value="hours"
-                          label={t('common.unit.hour.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="days"
-                          label={t('common.unit.day.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="weeks"
-                          label={t('common.unit.week.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="months"
-                          label={t('common.unit.month.label-plural')}
-                        />
-                      </CarbonSelect>
+                        <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                        <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+                        <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                        <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+                      </Select>
                     </Stack>
                   </Stack>
                   <MultiEmailInput
@@ -434,7 +422,7 @@ export class AlertModal extends React.Component {
                         }
                         maxLength="8"
                       />
-                      <CarbonSelect
+                      <Select
                         id="reminderFrequencyUnits"
                         labelText={t('common.units')}
                         className="labelHidden"
@@ -443,27 +431,15 @@ export class AlertModal extends React.Component {
                           this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
                         }
                       >
-                        <CarbonSelect.Option
+                        <Select.Option
                           value="minutes"
                           label={t('common.unit.minute.label-plural')}
                         />
-                        <CarbonSelect.Option
-                          value="hours"
-                          label={t('common.unit.hour.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="days"
-                          label={t('common.unit.day.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="weeks"
-                          label={t('common.unit.week.label-plural')}
-                        />
-                        <CarbonSelect.Option
-                          value="months"
-                          label={t('common.unit.month.label-plural')}
-                        />
-                      </CarbonSelect>
+                        <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                        <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+                        <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                        <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+                      </Select>
                     </Stack>
                   )}
                 </Stack>

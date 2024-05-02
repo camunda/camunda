@@ -9,7 +9,7 @@ import {useMemo, useState} from 'react';
 import {FormGroup, NumberInput, Stack, Toggle} from '@carbon/react';
 import debounce from 'debounce';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {numberParser, formatters} from 'services';
 import {t} from 'translation';
 
@@ -54,14 +54,14 @@ export default function BucketSize({
 
     const units = (
       <>
-        <CarbonSelect.Option value="millisecond" label={t('common.unit.milli.label-plural')} />
-        <CarbonSelect.Option value="second" label={t('common.unit.second.label-plural')} />
-        <CarbonSelect.Option value="minute" label={t('common.unit.minute.label-plural')} />
-        <CarbonSelect.Option value="hour" label={t('common.unit.hour.label-plural')} />
-        <CarbonSelect.Option value="day" label={t('common.unit.day.label-plural')} />
-        <CarbonSelect.Option value="week" label={t('common.unit.week.label-plural')} />
-        <CarbonSelect.Option value="month" label={t('common.unit.month.label-plural')} />
-        <CarbonSelect.Option value="year" label={t('common.unit.year.label-plural')} />
+        <Select.Option value="millisecond" label={t('common.unit.milli.label-plural')} />
+        <Select.Option value="second" label={t('common.unit.second.label-plural')} />
+        <Select.Option value="minute" label={t('common.unit.minute.label-plural')} />
+        <Select.Option value="hour" label={t('common.unit.hour.label-plural')} />
+        <Select.Option value="day" label={t('common.unit.day.label-plural')} />
+        <Select.Option value="week" label={t('common.unit.week.label-plural')} />
+        <Select.Option value="month" label={t('common.unit.month.label-plural')} />
+        <Select.Option value="year" label={t('common.unit.year.label-plural')} />
       </>
     );
 
@@ -128,7 +128,7 @@ export default function BucketSize({
               hideSteppers
             />
             {isGroupedByDuration && (
-              <CarbonSelect
+              <Select
                 labelText={t('common.units')}
                 size="md"
                 id="bucketSizeUnit"
@@ -140,7 +140,7 @@ export default function BucketSize({
                 }}
               >
                 {units}
-              </CarbonSelect>
+              </Select>
             )}
           </Stack>
           <Stack gap={4} orientation="horizontal">
@@ -162,7 +162,7 @@ export default function BucketSize({
               hideSteppers
             />
             {isGroupedByDuration && (
-              <CarbonSelect
+              <Select
                 labelText={t('common.units')}
                 size="md"
                 disabled={!active}
@@ -173,7 +173,7 @@ export default function BucketSize({
                 }}
               >
                 {units}
-              </CarbonSelect>
+              </Select>
             )}
           </Stack>
         </Stack>

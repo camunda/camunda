@@ -17,7 +17,7 @@ exports[`should match snapshot 1`] = `
               name="OrderProcessed"
               onSelect={[Function]}
             />,
-            <CarbonSelect
+            <Select
               id="OrderProcessed-eventGroup-order-service-mapping"
               onChange={[Function]}
               size="sm"
@@ -33,7 +33,7 @@ exports[`should match snapshot 1`] = `
                 label="Start"
                 value="start"
               />
-            </CarbonSelect>,
+            </Select>,
             "Order Processed",
             "eventGroup",
             "order-service",

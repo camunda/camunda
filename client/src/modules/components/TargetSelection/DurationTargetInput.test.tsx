@@ -20,9 +20,9 @@ it('should display the current target values', () => {
   const node = shallow(<DurationTargetInput {...validProps} />);
 
   expect(node.find('TextInput').first()).toHaveValue('15');
-  expect(node.find('CarbonSelect').first()).toHaveValue('months');
+  expect(node.find('Select').first()).toHaveValue('months');
   expect(node.find({labelText: 'Baseline'})).toHaveValue('12');
-  expect(node.find('CarbonSelect').at(1)).toHaveValue('weeks');
+  expect(node.find('Select').at(1)).toHaveValue('weeks');
 });
 
 it('should update target values', () => {

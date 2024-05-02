@@ -11,7 +11,7 @@ import {Close} from '@carbon/icons-react';
 
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {useUiConfig} from 'hooks';
 
 import './GroupBy.scss';
@@ -48,33 +48,29 @@ export default function GroupBy({type, report, onChange, variables}) {
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
         return (
-          <CarbonSelect.Submenu
+          <Select.Submenu
             key={key}
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
           >
             {variables?.[key]?.map(({name, label}, idx) => {
-              return (
-                <CarbonSelect.Option key={idx} value={key + '_' + name} label={label || name} />
-              );
+              return <Select.Option key={idx} value={key + '_' + name} label={label || name} />;
             })}
-          </CarbonSelect.Submenu>
+          </Select.Submenu>
         );
       } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {
         return (
-          <CarbonSelect.Submenu key={key} label={label()} disabled={!enabled(report)}>
-            <CarbonSelect.Option label={t('report.groupBy.automatic')} value={key + '_automatic'} />
-            <CarbonSelect.Option label={t('report.groupBy.year')} value={key + '_year'} />
-            <CarbonSelect.Option label={t('report.groupBy.month')} value={key + '_month'} />
-            <CarbonSelect.Option label={t('report.groupBy.week')} value={key + '_week'} />
-            <CarbonSelect.Option label={t('report.groupBy.day')} value={key + '_day'} />
-            <CarbonSelect.Option label={t('report.groupBy.hour')} value={key + '_hour'} />
-          </CarbonSelect.Submenu>
+          <Select.Submenu key={key} label={label()} disabled={!enabled(report)}>
+            <Select.Option label={t('report.groupBy.automatic')} value={key + '_automatic'} />
+            <Select.Option label={t('report.groupBy.year')} value={key + '_year'} />
+            <Select.Option label={t('report.groupBy.month')} value={key + '_month'} />
+            <Select.Option label={t('report.groupBy.week')} value={key + '_week'} />
+            <Select.Option label={t('report.groupBy.day')} value={key + '_day'} />
+            <Select.Option label={t('report.groupBy.hour')} value={key + '_hour'} />
+          </Select.Submenu>
         );
       }
-      return (
-        <CarbonSelect.Option key={key} value={key} disabled={!enabled(report)} label={label()} />
-      );
+      return <Select.Option key={key} value={key} disabled={!enabled(report)} label={label()} />;
     });
 
   if (options.every(({props}) => props.disabled)) {
@@ -84,7 +80,7 @@ export default function GroupBy({type, report, onChange, variables}) {
   return (
     <li className="GroupBy">
       <span className="label">{t('report.groupBy.label')}</span>
-      <CarbonSelect
+      <Select
         className={classnames({hasNoGrouping: !hasGroup})}
         label={!hasGroup && '+ ' + t('report.addGrouping')}
         onChange={(selection) => {
@@ -114,7 +110,7 @@ export default function GroupBy({type, report, onChange, variables}) {
         value={getValue(selectedOption.key, report.groupBy)}
       >
         {options}
-      </CarbonSelect>
+      </Select>
       {((hasGroup && groups.find(({key}) => key === 'none').enabled(report)) ||
         hasDistribution) && (
         <Button

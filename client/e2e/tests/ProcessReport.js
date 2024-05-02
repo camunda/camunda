@@ -1044,7 +1044,7 @@ test('multi-measure reports', async (t) => {
   await t.expect(e.reportDiagram.visible).ok();
 
   await t.click(e.heatDropdown);
-  await t.click(Common.option('Heat: Duration - Avg'));
+  await t.click(Common.menuOption('Heat: Duration - Avg'));
 
   await t.expect(e.reportDiagram.visible).ok();
 });

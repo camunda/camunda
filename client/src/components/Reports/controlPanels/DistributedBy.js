@@ -11,7 +11,7 @@ import {Button} from '@carbon/react';
 
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {useUiConfig} from 'hooks';
 
 export default function DistributedBy({report, onChange, variables}) {
@@ -36,34 +36,30 @@ export default function DistributedBy({report, onChange, variables}) {
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
         return (
-          <CarbonSelect.Submenu
+          <Select.Submenu
             key="variable"
             label={label()}
             disabled={!enabled(report) || !variables || !variables?.length}
             openToLeft
           >
             {variables?.map?.(({name, label}, idx) => {
-              return (
-                <CarbonSelect.Option key={idx} value={key + '_' + name} label={label || name} />
-              );
+              return <Select.Option key={idx} value={key + '_' + name} label={label || name} />;
             })}
-          </CarbonSelect.Submenu>
+          </Select.Submenu>
         );
       } else if (['startDate', 'endDate'].includes(key)) {
         return (
-          <CarbonSelect.Submenu key={key} label={label()} disabled={!enabled(report)} openToLeft>
-            <CarbonSelect.Option value={key + '_automatic'} label={t('report.groupBy.automatic')} />
-            <CarbonSelect.Option value={key + '_year'} label={t('report.groupBy.year')} />
-            <CarbonSelect.Option value={key + '_month'} label={t('report.groupBy.month')} />
-            <CarbonSelect.Option value={key + '_week'} label={t('report.groupBy.week')} />
-            <CarbonSelect.Option value={key + '_day'} label={t('report.groupBy.day')} />
-            <CarbonSelect.Option value={key + '_hour'} label={t('report.groupBy.hour')} />
-          </CarbonSelect.Submenu>
+          <Select.Submenu key={key} label={label()} disabled={!enabled(report)} openToLeft>
+            <Select.Option value={key + '_automatic'} label={t('report.groupBy.automatic')} />
+            <Select.Option value={key + '_year'} label={t('report.groupBy.year')} />
+            <Select.Option value={key + '_month'} label={t('report.groupBy.month')} />
+            <Select.Option value={key + '_week'} label={t('report.groupBy.week')} />
+            <Select.Option value={key + '_day'} label={t('report.groupBy.day')} />
+            <Select.Option value={key + '_hour'} label={t('report.groupBy.hour')} />
+          </Select.Submenu>
         );
       }
-      return (
-        <CarbonSelect.Option key={key} value={key} disabled={!enabled(report)} label={label()} />
-      );
+      return <Select.Option key={key} value={key} disabled={!enabled(report)} label={label()} />;
     });
 
   if (!options.length) {
@@ -73,7 +69,7 @@ export default function DistributedBy({report, onChange, variables}) {
   return (
     <li className="DistributedBy GroupBy">
       <span className="label">{t('common.and')}</span>
-      <CarbonSelect
+      <Select
         className={classnames({hasNoGrouping: !hasDistribution})}
         label={!hasDistribution && '+ ' + t('report.addGrouping')}
         onChange={(selection) => {
@@ -96,7 +92,7 @@ export default function DistributedBy({report, onChange, variables}) {
         value={getValue(selectedOption.key, report.distributedBy)}
       >
         {options}
-      </CarbonSelect>
+      </Select>
       {hasDistribution && (
         <Button
           size="sm"

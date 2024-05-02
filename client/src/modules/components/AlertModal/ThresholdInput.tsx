@@ -8,7 +8,7 @@
 import {ComponentProps} from 'react';
 import {TextInput} from '@carbon/react';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {t} from 'translation';
 import {getRandomId} from 'services';
 
@@ -48,21 +48,21 @@ export default function ThresholdInput(props: ThresholdInputProps) {
           onChange={({target}) => onChange({...value, value: target.value})}
           maxLength={8}
         />
-        <CarbonSelect
+        <Select
           id={`${id}Units`}
           labelText={t('common.units')}
           className={rest.className}
           value={value.unit}
           onChange={(unit) => onChange({...value, unit})}
         >
-          <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
-          <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
-          <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
-          <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
-          <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
-          <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
-          <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
-        </CarbonSelect>
+          <Select.Option value="millis" label={t('common.unit.milli.label-plural')} />
+          <Select.Option value="seconds" label={t('common.unit.second.label-plural')} />
+          <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+          <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+          <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+          <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+          <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+        </Select>
       </>
     );
   } else {

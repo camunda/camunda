@@ -6,4 +6,3 @@
  */
 
 export {default as Select} from './Select';
-export {CarbonSelect} from './CarbonSelect';

@@ -7,7 +7,7 @@
 
 import {RadioButton, RadioButtonGroup, Stack, TextInput} from '@carbon/react';
 
-import {CarbonSelect} from 'components';
+import {Select} from 'components';
 import {formatters, numberParser} from 'services';
 import {t} from 'translation';
 
@@ -71,7 +71,7 @@ export default function DurationTargetInput({
           }
           onChange={(evt) => onChange('target', 'value', evt.target.value)}
         />
-        <CarbonSelect
+        <Select
           labelText={t('common.units')}
           size="md"
           id="targetUnitSelector"
@@ -80,7 +80,7 @@ export default function DurationTargetInput({
           onChange={(value) => onChange('target', 'unit', value)}
         >
           {selectionOptions()}
-        </CarbonSelect>
+        </Select>
       </Stack>
       {!hideBaseLine && (
         <Stack gap={4} orientation="horizontal">
@@ -95,7 +95,7 @@ export default function DurationTargetInput({
             invalidText={t('report.config.goal.invalidInput')}
             onChange={(evt) => onChange('baseline', 'value', evt.target.value)}
           />
-          <CarbonSelect
+          <Select
             labelText={t('common.units')}
             size="md"
             id="baselineUnitSelector"
@@ -104,7 +104,7 @@ export default function DurationTargetInput({
             onChange={(value) => onChange('baseline', 'unit', value)}
           >
             {selectionOptions()}
-          </CarbonSelect>
+          </Select>
         </Stack>
       )}
     </Stack>
@@ -114,14 +114,14 @@ export default function DurationTargetInput({
 function selectionOptions() {
   return (
     <>
-      <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
-      <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
-      <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
-      <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
-      <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
-      <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
-      <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
-      <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
+      <Select.Option value="millis" label={t('common.unit.milli.label-plural')} />
+      <Select.Option value="seconds" label={t('common.unit.second.label-plural')} />
+      <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+      <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+      <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+      <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+      <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+      <Select.Option value="years" label={t('common.unit.year.label-plural')} />
     </>
   );
 }
