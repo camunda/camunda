@@ -61,7 +61,7 @@ export function CollapsibleContainer({
           {sectionState !== 'maximized' && (
             <Button
               hasIconOnly
-              label={t('common.expand')}
+              iconDescription={t('common.expand').toString()}
               kind="ghost"
               onClick={() => {
                 const newState = sectionState === 'minimized' ? 'half' : 'maximized';
@@ -71,14 +71,13 @@ export function CollapsibleContainer({
               }}
               className="expandButton"
               tooltipPosition="left"
-            >
-              <RowCollapse />
-            </Button>
+              renderIcon={RowCollapse}
+            />
           )}
           {sectionState !== 'minimized' && (
             <Button
               hasIconOnly
-              label={t('common.collapse')}
+              iconDescription={t('common.collapse').toString()}
               kind="ghost"
               onClick={() => {
                 const newState = sectionState === 'maximized' ? 'half' : 'minimized';
@@ -87,9 +86,8 @@ export function CollapsibleContainer({
               }}
               className="collapseButton"
               tooltipPosition="left"
-            >
-              <RowExpand />
-            </Button>
+              renderIcon={RowExpand}
+            />
           )}
         </div>
       </div>
