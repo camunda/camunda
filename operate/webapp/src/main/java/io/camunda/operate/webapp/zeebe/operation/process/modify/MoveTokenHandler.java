@@ -26,13 +26,9 @@ import org.springframework.util.StringUtils;
 public class MoveTokenHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(MoveTokenHandler.class);
   private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final CancelTokenHelper cancelTokenHelper;
 
-  public MoveTokenHandler(
-      final FlowNodeInstanceReader flowNodeInstanceReader,
-      final CancelTokenHelper cancelTokenHelper) {
+  public MoveTokenHandler(final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.cancelTokenHelper = cancelTokenHelper;
   }
 
   public ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 moveToken(
@@ -80,11 +76,11 @@ public class MoveTokenHandler {
         toFlowNodeId,
         activatedNodeVariables);
 
-    if (newTokensCount > activatedNodeVariables.size()) {
+    if (newTokensCount < activatedNodeVariables.size()) {
       LOGGER.warn(
           "There are {} variables to move but only {} elements to activate, some variables might be lost",
-          newTokensCount,
-          activatedNodeVariables.size());
+          activatedNodeVariables.size(),
+          newTokensCount);
     }
 
     ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep = null;
@@ -132,12 +128,14 @@ public class MoveTokenHandler {
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
       cancelTokensOnOriginalNodes(
-          final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep,
+          final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep,
           final Long processInstanceKey,
           final Modification modification) {
     final String fromFlowNodeId = modification.getFromFlowNodeId();
     final String fromFlowNodeInstanceKey = modification.getFromFlowNodeInstanceKey();
     final List<Long> flowNodeInstanceKeysToCancel;
+
+    // Build the list of instances to cancel
     if (StringUtils.hasText(fromFlowNodeInstanceKey)) {
       final Long flowNodeInstanceKey = Long.parseLong(fromFlowNodeInstanceKey);
       flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
@@ -145,14 +143,22 @@ public class MoveTokenHandler {
       flowNodeInstanceKeysToCancel =
           flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
               processInstanceKey, fromFlowNodeId, List.of(FlowNodeState.ACTIVE));
-      if (flowNodeInstanceKeysToCancel.isEmpty()) {
-        throw new OperateRuntimeException(
-            String.format(
-                "Abort MOVE_TOKEN (CANCEL step): Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
-                processInstanceKey, fromFlowNodeId));
-      }
     }
-    return cancelTokenHelper.cancelFlowNodeInstances(nextStep.and(), flowNodeInstanceKeysToCancel);
+
+    if (flowNodeInstanceKeysToCancel.isEmpty()) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Abort MOVE_TOKEN (CANCEL step): Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s",
+              processInstanceKey, fromFlowNodeId));
+    }
+
+    LOGGER.debug(
+        "Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeysToCancel);
+    for (final Long flowNodeInstanceKey : flowNodeInstanceKeysToCancel) {
+      nextStep.and().terminateElement(flowNodeInstanceKey);
+    }
+
+    return nextStep;
   }
 
   private int calculateNewTokensCount(
