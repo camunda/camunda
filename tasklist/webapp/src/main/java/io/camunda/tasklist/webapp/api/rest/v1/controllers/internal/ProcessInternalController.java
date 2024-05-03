@@ -72,6 +72,9 @@ public class ProcessInternalController extends ApiErrorController {
             description = "On success returned",
             responseCode = "200",
             useReturnTypeSchema = true),
+        @ApiResponse(
+            description = "Forbidden - User without privileges to read process",
+            responseCode = "403"),
         @ApiResponse(description = "Process Not Found", responseCode = "404")
       })
   @GetMapping("{processDefinitionKey}")

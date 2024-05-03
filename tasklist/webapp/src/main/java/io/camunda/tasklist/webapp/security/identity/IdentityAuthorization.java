@@ -27,23 +27,23 @@ public class IdentityAuthorization implements Serializable {
     processesAllowedToRead = new ArrayList<String>();
     for (final Authorization authorization : authorizations) {
       if (authorization.getResourceType().equals(PROCESS_DEFINITION)) {
-        if (authorization.getPermissions().contains(PROCESS_PERMISSION_START)) {
-          if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
-            processesAllowedToStart.clear();
-            processesAllowedToStart.add(IdentityProperties.ALL_RESOURCES);
-          } else {
-            processesAllowedToStart.add(authorization.getResourceKey());
-          }
-        }
+        addPermissions(authorization, processesAllowedToStart, PROCESS_PERMISSION_START);
+        addPermissions(authorization, processesAllowedToRead, PROCESS_PERMISSION_READ);
+      }
+    }
+  }
 
-        if (authorization.getPermissions().contains(PROCESS_PERMISSION_READ)) {
-          if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
-            processesAllowedToRead.clear();
-            processesAllowedToRead.add(IdentityProperties.ALL_RESOURCES);
-          } else {
-            processesAllowedToRead.add(authorization.getResourceKey());
-          }
-        }
+  private void addPermissions(
+      final Authorization authorization,
+      final List<String> processesAllowed,
+      final String expectedPermission) {
+    if (!processesAllowed.contains(IdentityProperties.ALL_RESOURCES)
+        && authorization.getPermissions().contains(expectedPermission)) {
+      if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
+        processesAllowed.clear();
+        processesAllowed.add(IdentityProperties.ALL_RESOURCES);
+      } else {
+        processesAllowed.add(authorization.getResourceKey());
       }
     }
   }
