@@ -18,11 +18,11 @@ public record DynamicPartitionConfig(ExportersConfig exporting) {
     return new DynamicPartitionConfig(ExportersConfig.empty());
   }
 
-  public DynamicPartitionConfig updateExporter(final ExportersConfig exporter) {
+  public DynamicPartitionConfig updateExporting(final ExportersConfig exporter) {
     return new DynamicPartitionConfig(exporter);
   }
 
-  public DynamicPartitionConfig updateExporter(
+  public DynamicPartitionConfig updateExporting(
       final UnaryOperator<ExportersConfig> exporterUpdater) {
     return new DynamicPartitionConfig(exporterUpdater.apply(exporting));
   }
