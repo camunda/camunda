@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Requests.TopologyChangeResponse.
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ChangeStatus;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -38,6 +39,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.util.Either;
@@ -168,8 +172,37 @@ public class ProtoBufSerializer
   }
 
   private PartitionState decodePartitionState(final Topology.PartitionState partitionState) {
-    return new PartitionState(
-        toPartitionState(partitionState.getState()), partitionState.getPriority());
+    if (partitionState.hasConfig()) {
+      return new PartitionState(
+          toPartitionState(partitionState.getState()),
+          partitionState.getPriority(),
+          decodePartitionConfig(partitionState.getConfig()));
+    } else {
+      return new PartitionState(
+          toPartitionState(partitionState.getState()),
+          partitionState.getPriority(),
+          DynamicPartitionConfig.init());
+    }
+  }
+
+  private DynamicPartitionConfig decodePartitionConfig(final PartitionConfig config) {
+    return new DynamicPartitionConfig(decodeExportingConfig(config.getExporting()));
+  }
+
+  private ExportersConfig decodeExportingConfig(final Topology.ExportersConfig exporting) {
+    return new ExportersConfig(
+        exporting.getExportersMap().entrySet().stream()
+            .map(e -> Map.entry(e.getKey(), decodeExporterState(e.getValue())))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue)));
+  }
+
+  private ExporterState decodeExporterState(final Topology.ExporterState value) {
+    return switch (value.getState()) {
+      case ENABLED -> new ExporterState(ExporterState.State.ENABLED);
+      case DISABLED -> new ExporterState(ExporterState.State.DISABLED);
+      case UNRECOGNIZED, ENABLED_DISBALED_UNKNOWN ->
+          throw new IllegalStateException("Unknown exporter state " + value.getState());
+    };
   }
 
   private Topology.MemberState encodeMemberState(final MemberState memberState) {
@@ -194,7 +227,32 @@ public class ProtoBufSerializer
     return Topology.PartitionState.newBuilder()
         .setState(toSerializedState(partitionState.state()))
         .setPriority(partitionState.priority())
+        .setConfig(encodePartitionConfig(partitionState.config()))
         .build();
+  }
+
+  private PartitionConfig encodePartitionConfig(final DynamicPartitionConfig config) {
+    return PartitionConfig.newBuilder()
+        .setExporting(encodeExportingConfig(config.exporting()))
+        .build();
+  }
+
+  private Topology.ExportersConfig encodeExportingConfig(final ExportersConfig exporting) {
+    return Topology.ExportersConfig.newBuilder()
+        .putAllExporters(
+            exporting.exporters().entrySet().stream()
+                .map(e -> Map.entry(e.getKey(), encodeExporterState(e.getValue())))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
+        .build();
+  }
+
+  private Topology.ExporterState encodeExporterState(final ExporterState value) {
+    final var state =
+        switch (value.state()) {
+          case ENABLED -> Topology.EnabledDisabledState.ENABLED;
+          case DISABLED -> Topology.EnabledDisabledState.DISABLED;
+        };
+    return Topology.ExporterState.newBuilder().setState(state).build();
   }
 
   private Topology.State toSerializedState(final MemberState.State state) {
