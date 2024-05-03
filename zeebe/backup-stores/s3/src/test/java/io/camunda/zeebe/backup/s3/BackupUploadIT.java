@@ -26,6 +26,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -84,6 +85,7 @@ final class BackupUploadIT {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/zeebe/issues/18177")
   void shouldSaveBackupWithManyFiles() throws IOException {
     // given
     // Default values for the configuration
