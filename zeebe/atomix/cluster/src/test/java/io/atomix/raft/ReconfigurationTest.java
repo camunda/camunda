@@ -71,6 +71,10 @@ final class ReconfigurationTest {
         .get();
   }
 
+  private static void awaitNoLeader(final RaftServer... servers) {
+    Awaitility.await("There is no leader").until(() -> getLeader(servers), Optional::isEmpty);
+  }
+
   private static Optional<LeaderRole> getLeader(final RaftServer... servers) {
     return Arrays.stream(servers)
         .filter(RaftServer::isLeader)
@@ -734,14 +738,14 @@ final class ReconfigurationTest {
       m4.shutdown().join();
 
       // when
+      awaitNoLeader(m1);
       // no leader when m2 restarts. So its state is outdated
       final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
       m2Restarted.bootstrap(id1, id2, id3, id4);
       m2Restarted.forceConfigure(newMembers()).join();
 
       // then
-      awaitLeader(m1, m2);
-      assertThat(m1.getContext().isLeader()).isTrue();
+      awaitLeader(m1, m2Restarted);
     }
 
     @Test
