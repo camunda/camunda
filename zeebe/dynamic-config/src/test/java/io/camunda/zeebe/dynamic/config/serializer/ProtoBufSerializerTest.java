@@ -26,6 +26,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.List;
@@ -180,7 +184,8 @@ final class ProtoBufSerializerTest {
         topologyWithTwoMembers(),
         topologyWithClusterChangePlan(),
         topologyWithCompletedClusterChangePlan(),
-        topologyWithClusterChangePlanWithMemberOperations());
+        topologyWithClusterChangePlanWithMemberOperations(),
+        topologyWithExporterState());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -272,5 +277,23 @@ final class ProtoBufSerializerTest {
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startConfigurationChange(changes);
+  }
+
+  private static ClusterConfiguration topologyWithExporterState() {
+    final var dynamicConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(
+                    "expA",
+                    new ExporterState(State.ENABLED),
+                    "expB",
+                    new ExporterState(State.DISABLED))));
+    return ClusterConfiguration.init()
+        .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+        .updateMember(
+            MemberId.from("1"),
+            m ->
+                m.addPartition(
+                    1, new PartitionState(PartitionState.State.ACTIVE, 1, dynamicConfig)));
   }
 }
