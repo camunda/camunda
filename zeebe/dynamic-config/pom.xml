@@ -15,7 +15,7 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-cluster-configuration</artifactId>
+  <artifactId>zeebe-cluster-config</artifactId>
   <name>Zeebe Dynamic Cluster Configuration</name>
 
   <properties>
