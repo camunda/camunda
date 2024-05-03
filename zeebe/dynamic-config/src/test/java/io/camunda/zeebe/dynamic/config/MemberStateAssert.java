@@ -23,7 +23,8 @@ public final class MemberStateAssert extends AbstractAssert<MemberStateAssert, M
     return new MemberStateAssert(actual, MemberStateAssert.class);
   }
 
-  public MemberStateAssert hasPartitionWithState(final int partitionId, final State state) {
+  public MemberStateAssert hasPartitionWithState(
+      final int partitionId, final PartitionState.State state) {
     final Map<Integer, PartitionState> partitions = actual.partitions();
     Assertions.assertThat(partitions)
         .hasEntrySatisfying(
