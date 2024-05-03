@@ -24,13 +24,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TopologyServices {
+public class DynamicClusterServices {
   private final ActorScheduler scheduler;
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService clusterCommunicationService;
 
   @Autowired
-  public TopologyServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
+  public DynamicClusterServices(final ActorScheduler scheduler, final AtomixCluster atomixCluster) {
     this.scheduler = scheduler;
     clusterMembershipService = atomixCluster.getMembershipService();
     clusterCommunicationService = atomixCluster.getCommunicationService();
@@ -61,7 +61,7 @@ public class TopologyServices {
   }
 
   @Bean
-  ClusterConfigurationManagementRequestSender topologyManagementRequestSender(
+  ClusterConfigurationManagementRequestSender clusterManagementRequestSender(
       final BrokerTopologyManager brokerTopologyManager) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
