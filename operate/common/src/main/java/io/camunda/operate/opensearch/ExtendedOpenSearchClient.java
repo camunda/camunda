@@ -26,6 +26,7 @@ import jakarta.json.stream.JsonGenerator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,12 +54,13 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   private static <R> SimpleEndpoint<Map<String, Object>, R> arbitraryEndpoint(
       final String method, final String path, final JsonpDeserializer<R> responseParser) {
+    final boolean hasBody = !List.of("GET", "DELETE").contains(method.toUpperCase());
     return new SimpleEndpoint<>(
         request -> method, // Request method
         request -> path, // Request path
         request -> Map.of(), // Request parameters
         request -> Map.of(), // Headers
-        true, // Has body
+        hasBody, // Has body
         responseParser);
   }
 

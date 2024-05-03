@@ -197,8 +197,10 @@ public class Migrator {
     LOGGER.debug("Set reindex settings for {}", indexDescriptor.getDerivedIndexNamePattern());
     schemaManager.setIndexSettingsFor(
         Map.of(
-            NUMBERS_OF_REPLICA, NO_REPLICA,
-            REFRESH_INTERVAL, NO_REFRESH),
+            NUMBERS_OF_REPLICA,
+            indexSettings.get(NUMBERS_OF_REPLICA),
+            REFRESH_INTERVAL,
+            NO_REFRESH),
         indexDescriptor.getDerivedIndexNamePattern());
 
     LOGGER.info("Execute plan: {} ", plan);
