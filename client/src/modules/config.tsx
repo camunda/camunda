@@ -5,9 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
+import {ReactNode, createContext, useEffect, useState} from 'react';
+import {Loading} from '@carbon/react';
+
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
-import {ReactNode, createContext, useEffect, useState} from 'react';
 
 type WebappEndpoints = {
   [key: string]: {
@@ -66,13 +68,13 @@ let globalConfig: UiConfig;
 const awaiting: Array<(config: Record<string, unknown>) => void> = [];
 
 interface ConfigContextProps {
-  config: Partial<UiConfig>;
+  config: UiConfig;
   loadConfig: () => Promise<void>;
 }
 
 export const configContext = createContext<ConfigContextProps | null>(null);
 export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
-  const [config, setConfig] = useState<Partial<UiConfig>>({});
+  const [config, setConfig] = useState<UiConfig>();
 
   const loadConfig = async () => {
     try {
@@ -91,6 +93,10 @@ export function ConfigProvider({children}: {children: ReactNode}): JSX.Element {
   useEffect(() => {
     loadConfig();
   }, []);
+
+  if (!config) {
+    return <Loading />;
+  }
 
   return <configContext.Provider value={{config, loadConfig}}>{children}</configContext.Provider>;
 }

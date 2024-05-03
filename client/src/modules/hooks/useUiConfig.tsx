@@ -9,7 +9,7 @@ import {useContext} from 'react';
 
 import {UiConfig, configContext} from 'config';
 
-export default function useUiConfig(): Partial<UiConfig> {
+export default function useUiConfig(): UiConfig {
   const contextValue = useContext(configContext);
 
   if (!contextValue) {
