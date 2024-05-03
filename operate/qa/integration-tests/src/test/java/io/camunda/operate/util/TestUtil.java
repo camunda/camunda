@@ -14,6 +14,7 @@ import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_I
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 
 import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.IncidentEntity;
@@ -317,6 +318,20 @@ public abstract class TestUtil {
         null);
   }
 
+  public static EventEntity createEvent() {
+    return createEvent(RANDOM.nextLong(), RANDOM.nextLong());
+  }
+
+  public static EventEntity createEvent(
+      final long processInstanceKey, final Long flowNodeInstanceKey) {
+    return new EventEntity()
+        .setId(String.format("%s_%s", processInstanceKey, flowNodeInstanceKey))
+        .setProcessInstanceKey(processInstanceKey)
+        .setFlowNodeInstanceKey(flowNodeInstanceKey)
+        .setPartitionId(1)
+        .setTenantId(DEFAULT_TENANT_ID);
+  }
+
   public static IncidentEntity createIncident(final IncidentState state, final String errorMsg) {
     return createIncident(state, "start", RANDOM.nextLong(), errorMsg);
   }
@@ -437,13 +452,14 @@ public abstract class TestUtil {
       final String name,
       final String value) {
     final VariableEntity variable = new VariableEntity();
-    variable.setId(scopeKey + "_" + name);
+    variable.setId(scopeKey + "-" + name);
     variable.setProcessInstanceKey(processInstanceKey);
     variable.setProcessDefinitionKey(processDefinitionKey);
     variable.setBpmnProcessId(bpmnProcessId);
     variable.setScopeKey(scopeKey);
     variable.setName(name);
-    variable.setName(value);
+    variable.setValue(value);
+    variable.setFullValue(value);
     return variable;
   }
 

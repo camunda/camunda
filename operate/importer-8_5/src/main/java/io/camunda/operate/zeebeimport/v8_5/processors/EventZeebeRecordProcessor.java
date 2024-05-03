@@ -424,23 +424,6 @@ public class EventZeebeRecordProcessor {
             + "ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
             + "ctx._source.%s = params.%s; " // FLOW_NODE_ID
             + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // INCIDENT_ERROR_MSG
-            + "   ctx._source.%s = params.%s; " // INCIDENT_ERROR_TYPE
-            + "}"
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // JOB_KEY
-            + "}"
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // JOB_TYPE
-            + "   ctx._source.%s = params.%s; " // JOB_RETRIES
-            + "   ctx._source.%s = params.%s; " // JOB_WORKER
-            + "   ctx._source.%s = params.%s; " // JOB_CUSTOM_HEADERS
-            + "}"
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // MESSAGE_NAME
-            + "   ctx._source.%s = params.%s; " // CORRELATION_KEY
-            + "}"
-            + "if (params.%s != null) {"
             + "   ctx._source.%s = params.%s; " // METADATA
             + "}"
             + "}",
@@ -463,28 +446,6 @@ public class EventZeebeRecordProcessor {
         BPMN_PROCESS_ID,
         FLOW_NODE_ID,
         FLOW_NODE_ID,
-        INCIDENT_ERROR_MSG,
-        INCIDENT_ERROR_MSG,
-        INCIDENT_ERROR_MSG,
-        INCIDENT_ERROR_TYPE,
-        INCIDENT_ERROR_TYPE,
-        JOB_KEY,
-        JOB_KEY,
-        JOB_KEY,
-        JOB_TYPE,
-        JOB_TYPE,
-        JOB_TYPE,
-        JOB_RETRIES,
-        JOB_RETRIES,
-        JOB_WORKER,
-        JOB_WORKER,
-        JOB_CUSTOM_HEADERS,
-        JOB_CUSTOM_HEADERS,
-        MESSAGE_NAME,
-        MESSAGE_NAME,
-        MESSAGE_NAME,
-        CORRELATION_KEY,
-        CORRELATION_KEY,
         METADATA,
         METADATA,
         METADATA);

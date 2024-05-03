@@ -24,6 +24,8 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOI
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstance;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.util.TestUtil.createVariableForListView;
+import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromFni;
+import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromPi;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,25 +48,20 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
-import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -771,61 +768,5 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
         (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
-  }
-
-  @NotNull
-  private static Record<ProcessInstanceRecordValue> createZeebeRecordFromPi(
-      final ProcessInstanceForListViewEntity pi,
-      final Consumer<Builder> recordBuilderFunction,
-      final Consumer<ImmutableProcessInstanceRecordValue.Builder> recordValueBuilderFunction) {
-    final Builder<ProcessInstanceRecordValue> builder = ImmutableRecord.builder();
-    final ImmutableProcessInstanceRecordValue.Builder valueBuilder =
-        ImmutableProcessInstanceRecordValue.builder();
-    valueBuilder
-        .withProcessInstanceKey(pi.getProcessInstanceKey())
-        .withBpmnProcessId(pi.getBpmnProcessId())
-        .withBpmnElementType(BpmnElementType.PROCESS)
-        .withProcessDefinitionKey(pi.getProcessDefinitionKey())
-        .withVersion(pi.getProcessVersion())
-        .withTenantId(pi.getTenantId());
-    if (recordValueBuilderFunction != null) {
-      recordValueBuilderFunction.accept(valueBuilder);
-    }
-    builder
-        .withKey(pi.getKey())
-        .withPartitionId(1)
-        .withTimestamp(Instant.now().toEpochMilli())
-        .withValue(valueBuilder.build());
-    if (recordBuilderFunction != null) {
-      recordBuilderFunction.accept(builder);
-    }
-    return builder.build();
-  }
-
-  @NotNull
-  private static Record<ProcessInstanceRecordValue> createZeebeRecordFromFni(
-      final FlowNodeInstanceForListViewEntity fni,
-      final Consumer<Builder> recordBuilderFunction,
-      final Consumer<ImmutableProcessInstanceRecordValue.Builder> recordValueBuilderFunction) {
-    final Builder<ProcessInstanceRecordValue> builder = ImmutableRecord.builder();
-    final ImmutableProcessInstanceRecordValue.Builder valueBuilder =
-        ImmutableProcessInstanceRecordValue.builder();
-    valueBuilder
-        .withBpmnElementType(BpmnElementType.valueOf(fni.getActivityType().toString()))
-        .withElementId(fni.getActivityId())
-        .withProcessInstanceKey(fni.getProcessInstanceKey())
-        .withTenantId(fni.getTenantId());
-    if (recordValueBuilderFunction != null) {
-      recordValueBuilderFunction.accept(valueBuilder);
-    }
-    builder
-        .withKey(fni.getKey())
-        .withPartitionId(1)
-        .withTimestamp(Instant.now().toEpochMilli())
-        .withValue(valueBuilder.build());
-    if (recordBuilderFunction != null) {
-      recordBuilderFunction.accept(builder);
-    }
-    return builder.build();
   }
 }

@@ -7,12 +7,12 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.VAR_VALUE;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.schema.templates.VariableTemplate.BPMN_PROCESS_ID;
 import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
 import static io.camunda.operate.schema.templates.VariableTemplate.IS_PREVIEW;
 import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.operate.schema.templates.VariableTemplate.VALUE;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.VariableEntity;
@@ -78,7 +78,7 @@ public class VariableZeebeRecordProcessor {
           updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
           updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
         } else {
-          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
+          updateFields.put(VALUE, variableEntity.getValue());
           updateFields.put(FULL_VALUE, variableEntity.getFullValue());
           updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
           updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
@@ -123,12 +123,14 @@ public class VariableZeebeRecordProcessor {
         POSITION,
         POSITION,
         POSITION,
-        VAR_VALUE,
-        VAR_VALUE,
+        VALUE,
+        VALUE,
+        VALUE,
         FULL_VALUE,
         FULL_VALUE,
         IS_PREVIEW,
         IS_PREVIEW,
+        PROCESS_DEFINITION_KEY,
         PROCESS_DEFINITION_KEY,
         PROCESS_DEFINITION_KEY,
         BPMN_PROCESS_ID,

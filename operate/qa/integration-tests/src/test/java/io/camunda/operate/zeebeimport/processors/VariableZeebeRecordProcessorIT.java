@@ -16,24 +16,24 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.util.TestUtil.createIncident;
-import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromIncident;
+import static io.camunda.operate.util.TestUtil.createVariable;
+import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromVariable;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.MIGRATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -42,17 +42,15 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
+public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
 
-  private final String newBpmnProcessId = "newBpmnProcessId";
-  private final long newProcessDefinitionKey = 111;
-  private final String newFlowNodeId = "newFlowNodeId";
-  @Autowired private IncidentTemplate incidentTemplate;
-  @Autowired private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor;
+  @Autowired private VariableTemplate variableTemplate;
+  @Autowired private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
   @Autowired private BeanFactory beanFactory;
   @MockBean private PartitionHolder partitionHolder;
   @Autowired private ImportPositionHolder importPositionHolder;
   private boolean concurrencyModeBefore;
+  private final String newVarValue = "newVarValue";
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -69,124 +67,117 @@ public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   }
 
   @Test
-  public void shouldOverrideIncidentFields() throws IOException, PersistenceException {
+  public void shouldOverrideVariableFields() throws IOException, PersistenceException {
     // having
-    // incident entity with position = 1
-    final IncidentEntity inc = createIncident(IncidentState.ACTIVE).setPosition(1L);
+    // variable entity with position = 1
+    final VariableEntity var = createVariable(111L, 222L, "varName", "varValue").setPosition(1L);
     testSearchRepository.createOrUpdateDocumentFromObject(
-        incidentTemplate.getFullQualifiedName(), inc.getId(), inc);
+        variableTemplate.getFullQualifiedName(), var.getId(), var);
 
     // when
     // importing Zeebe record with bigger position
     final long newPosition = 2L;
-    final Record<IncidentRecordValue> zeebeRecord =
-        createZeebeRecordFromIncident(
-            inc,
+    final Record<VariableRecordValue> zeebeRecord =
+        createZeebeRecordFromVariable(
+            var,
             b -> b.withPosition(newPosition).withIntent(MIGRATED),
-            b ->
-                b.withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(newProcessDefinitionKey)
-                    .withElementId(newFlowNodeId));
-    importIncidentZeebeRecord(zeebeRecord);
+            b -> b.withValue(newVarValue));
+    importVariableZeebeRecord(zeebeRecord);
 
     // then
     // process instance fields are updated
-    final IncidentEntity updatedInc = findIncidentByKey(inc.getKey());
+    final VariableEntity updatedVar = findVariableById(var.getId());
     // old values
-    assertThat(updatedInc.getTenantId()).isEqualTo(inc.getTenantId());
-    assertThat(updatedInc.getKey()).isEqualTo(inc.getKey());
+    assertThat(updatedVar.getTenantId()).isEqualTo(var.getTenantId());
+    assertThat(updatedVar.getName()).isEqualTo(var.getName());
     // new values
-    assertThat(updatedInc.getBpmnProcessId()).isEqualTo(newBpmnProcessId);
-    assertThat(updatedInc.getProcessDefinitionKey()).isEqualTo(newProcessDefinitionKey);
-    assertThat(updatedInc.getFlowNodeId()).isEqualTo(newFlowNodeId);
-    assertThat(updatedInc.getPosition()).isEqualTo(newPosition);
+    assertThat(updatedVar.getValue()).isEqualTo(newVarValue);
+    assertThat(updatedVar.getFullValue()).isEqualTo(null);
+    assertThat(updatedVar.getIsPreview()).isFalse();
+    assertThat(updatedVar.getPosition()).isEqualTo(newPosition);
   }
 
   @Test
-  public void shouldOverrideIncidentFieldsForNullPosition()
+  public void shouldOverrideVariableFieldsForNullPosition()
       throws IOException, PersistenceException {
     // having
-    // incident entity with position = 1
-    final IncidentEntity inc = createIncident(IncidentState.ACTIVE); // null positions field
+    // variable entity with empty position
+    final VariableEntity var = createVariable(111L, 222L, "varName", "varValue"); // null position
     testSearchRepository.createOrUpdateDocumentFromObject(
-        incidentTemplate.getFullQualifiedName(), inc.getId(), inc);
+        variableTemplate.getFullQualifiedName(), var.getId(), var);
 
     // when
     // importing Zeebe record with bigger position
     final long newPosition = 2L;
-    final Record<IncidentRecordValue> zeebeRecord =
-        createZeebeRecordFromIncident(
-            inc,
+    final Record<VariableRecordValue> zeebeRecord =
+        createZeebeRecordFromVariable(
+            var,
             b -> b.withPosition(newPosition).withIntent(MIGRATED),
-            b ->
-                b.withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(newProcessDefinitionKey)
-                    .withElementId(newFlowNodeId));
-    importIncidentZeebeRecord(zeebeRecord);
+            b -> b.withValue(newVarValue));
+    importVariableZeebeRecord(zeebeRecord);
 
     // then
     // process instance fields are updated
-    final IncidentEntity updatedInc = findIncidentByKey(inc.getKey());
+    final VariableEntity updatedVar = findVariableById(var.getId());
     // old values
-    assertThat(updatedInc.getTenantId()).isEqualTo(inc.getTenantId());
-    assertThat(updatedInc.getKey()).isEqualTo(inc.getKey());
+    assertThat(updatedVar.getTenantId()).isEqualTo(var.getTenantId());
+    assertThat(updatedVar.getName()).isEqualTo(var.getName());
     // new values
-    assertThat(updatedInc.getBpmnProcessId()).isEqualTo(newBpmnProcessId);
-    assertThat(updatedInc.getProcessDefinitionKey()).isEqualTo(newProcessDefinitionKey);
-    assertThat(updatedInc.getFlowNodeId()).isEqualTo(newFlowNodeId);
-    assertThat(updatedInc.getPosition()).isEqualTo(newPosition);
+    assertThat(updatedVar.getValue()).isEqualTo(newVarValue);
+    assertThat(updatedVar.getFullValue()).isEqualTo(null);
+    assertThat(updatedVar.getIsPreview()).isFalse();
+    assertThat(updatedVar.getPosition()).isEqualTo(newPosition);
   }
 
   @Test
-  public void shouldNotOverrideIncidentFields() throws IOException, PersistenceException {
+  public void shouldNotOverrideVariableFields() throws IOException, PersistenceException {
     // having
-    // incident entity with position = 2
+    // variable entity with position = 2L
     final long oldPosition = 2L;
-    final IncidentEntity inc = createIncident(IncidentState.ACTIVE).setPosition(oldPosition);
+    final VariableEntity var =
+        createVariable(111L, 222L, "varName", "varValue").setPosition(oldPosition);
     testSearchRepository.createOrUpdateDocumentFromObject(
-        incidentTemplate.getFullQualifiedName(), inc.getId(), inc);
+        variableTemplate.getFullQualifiedName(), var.getId(), var);
 
     // when
     // importing Zeebe record with smaller position
     final long newPosition = 1L;
-    final Record<IncidentRecordValue> zeebeRecord =
-        createZeebeRecordFromIncident(
-            inc,
+    final Record<VariableRecordValue> zeebeRecord =
+        createZeebeRecordFromVariable(
+            var,
             b -> b.withPosition(newPosition).withIntent(MIGRATED),
-            b ->
-                b.withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(newProcessDefinitionKey)
-                    .withElementId(newFlowNodeId));
-    importIncidentZeebeRecord(zeebeRecord);
+            b -> b.withValue(newVarValue));
+    importVariableZeebeRecord(zeebeRecord);
 
     // then
     // process instance fields are updated
-    final IncidentEntity updatedInc = findIncidentByKey(inc.getKey());
+    final VariableEntity updatedVar = findVariableById(var.getId());
     // old values
-    assertThat(updatedInc.getTenantId()).isEqualTo(inc.getTenantId());
-    assertThat(updatedInc.getKey()).isEqualTo(inc.getKey());
+    assertThat(updatedVar.getTenantId()).isEqualTo(var.getTenantId());
+    assertThat(updatedVar.getName()).isEqualTo(var.getName());
     // old values
-    assertThat(updatedInc.getBpmnProcessId()).isEqualTo(inc.getBpmnProcessId());
-    assertThat(updatedInc.getProcessDefinitionKey()).isEqualTo(inc.getProcessDefinitionKey());
-    assertThat(updatedInc.getFlowNodeId()).isEqualTo(inc.getFlowNodeId());
-    assertThat(updatedInc.getPosition()).isEqualTo(oldPosition);
+    assertThat(updatedVar.getValue()).isEqualTo(var.getValue());
+    assertThat(updatedVar.getFullValue()).isEqualTo(var.getFullValue());
+    assertThat(updatedVar.getIsPreview()).isEqualTo(var.getIsPreview());
+    assertThat(updatedVar.getPosition()).isEqualTo(oldPosition);
   }
 
   @NotNull
-  private IncidentEntity findIncidentByKey(final long key) throws IOException {
-    final List<IncidentEntity> entities =
+  private VariableEntity findVariableById(final String id) throws IOException {
+    final List<VariableEntity> entities =
         testSearchRepository.searchTerm(
-            incidentTemplate.getFullQualifiedName(), "key", key, IncidentEntity.class, 10);
-    final Optional<IncidentEntity> first = entities.stream().findFirst();
+            variableTemplate.getFullQualifiedName(), "_id", id, VariableEntity.class, 10);
+    final Optional<VariableEntity> first = entities.stream().findFirst();
     assertThat(first.isPresent()).isTrue();
     return first.get();
   }
 
-  private void importIncidentZeebeRecord(final Record<IncidentRecordValue> zeebeRecord)
+  private void importVariableZeebeRecord(final Record<VariableRecordValue> zeebeRecord)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
-    incidentZeebeRecordProcessor.processIncidentRecord(List.of(zeebeRecord), batchRequest);
+    variableZeebeRecordProcessor.processVariableRecords(
+        Map.of(zeebeRecord.getValue().getScopeKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
-    searchContainerManager.refreshIndices(incidentTemplate.getFullQualifiedName());
+    searchContainerManager.refreshIndices(variableTemplate.getFullQualifiedName());
   }
 }
