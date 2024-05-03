@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+/**
+ * Represents the state of an exporter. The full configuration of this exporter must be provided as
+ * part of the application configuration. Here we only keep track of whether it is enabled or
+ * disabled. Sensitive information like access details must not be added here.
+ */
 public record ExporterState(State state) {
   public enum State {
     ENABLED,

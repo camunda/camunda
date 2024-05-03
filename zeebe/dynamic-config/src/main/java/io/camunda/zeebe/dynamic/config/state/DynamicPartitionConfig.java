@@ -9,8 +9,12 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import java.util.function.UnaryOperator;
 
+/** Represents configuration of a partition that can be updated during runtime. */
 public record DynamicPartitionConfig(ExportersConfig exporting) {
+
   public static DynamicPartitionConfig init() {
+    // This is temporary until we have a way to initialize this during bootstrap or first update to
+    // the version that added this
     return new DynamicPartitionConfig(ExportersConfig.empty());
   }
 

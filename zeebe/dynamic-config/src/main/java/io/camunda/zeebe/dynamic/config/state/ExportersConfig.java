@@ -10,6 +10,11 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 
+/**
+ * Represents configuration or state of exporting in a partition that can be updated during runtime.
+ *
+ * @param exporters the state of each exporter in this partition
+ */
 public record ExportersConfig(Map<String, ExporterState> exporters) {
 
   public static ExportersConfig empty() {
