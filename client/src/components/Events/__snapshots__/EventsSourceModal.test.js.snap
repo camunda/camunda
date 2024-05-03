@@ -39,6 +39,7 @@ exports[`should contain a change warning and not contain event scope selection 1
           onChange={[Function]}
           placeholder="Select or search for a variable here"
           selectedItem={null}
+          titleText="Variable"
         />
       </ForwardRef(Stack)>
     </FormGroup>

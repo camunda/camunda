@@ -36,30 +36,30 @@ exports[`should render a user task duration selection for user task duration rep
         >
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="total"
             key="total"
-            labelA="Total"
-            labelB="Total"
+            labelText="Total"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="work"
             key="work"
-            labelA="Assigned"
-            labelB="Assigned"
+            labelText="Assigned"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={true}
+            hideLabel={true}
             id="idle"
             key="idle"
-            labelA="Unassigned"
-            labelB="Unassigned"
+            labelText="Unassigned"
             onToggle={[Function]}
             size="sm"
             toggled={true}
@@ -74,40 +74,40 @@ exports[`should render a user task duration selection for user task duration rep
         >
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="sum"
             key="sum"
-            labelA="Sum"
-            labelB="Sum"
+            labelText="Sum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="min"
             key="min"
-            labelA="Minimum"
-            labelB="Minimum"
+            labelText="Minimum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="avg"
             key="avg"
-            labelA="Average"
-            labelB="Average"
+            labelText="Average"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="max"
             key="max"
-            labelA="Maximum"
-            labelB="Maximum"
+            labelText="Maximum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
@@ -122,60 +122,60 @@ exports[`should render a user task duration selection for user task duration rep
         >
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P99"
             key="P99"
-            labelA="P99"
-            labelB="P99"
+            labelText="P99"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P95"
             key="P95"
-            labelA="P95"
-            labelB="P95"
+            labelText="P95"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P90"
             key="P90"
-            labelA="P90"
-            labelB="P90"
+            labelText="P90"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P75"
             key="P75"
-            labelA="P75"
-            labelB="P75"
+            labelText="P75"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={true}
+            hideLabel={true}
             id="P50"
             key="P50"
-            labelA="P50 (median)"
-            labelB="P50 (median)"
+            labelText="P50 (median)"
             onToggle={[Function]}
             size="sm"
             toggled={true}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P25"
             key="P25"
-            labelA="P25"
-            labelB="P25"
+            labelText="P25"
             onToggle={[Function]}
             size="sm"
             toggled={false}
@@ -223,40 +223,40 @@ exports[`should render an aggregation selection for duration reports 1`] = `
         >
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="sum"
             key="sum"
-            labelA="Sum"
-            labelB="Sum"
+            labelText="Sum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="min"
             key="min"
-            labelA="Minimum"
-            labelB="Minimum"
+            labelText="Minimum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="avg"
             key="avg"
-            labelA="Average"
-            labelB="Average"
+            labelText="Average"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="max"
             key="max"
-            labelA="Maximum"
-            labelB="Maximum"
+            labelText="Maximum"
             onToggle={[Function]}
             size="sm"
             toggled={false}
@@ -271,60 +271,60 @@ exports[`should render an aggregation selection for duration reports 1`] = `
         >
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P99"
             key="P99"
-            labelA="P99"
-            labelB="P99"
+            labelText="P99"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P95"
             key="P95"
-            labelA="P95"
-            labelB="P95"
+            labelText="P95"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P90"
             key="P90"
-            labelA="P90"
-            labelB="P90"
+            labelText="P90"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P75"
             key="P75"
-            labelA="P75"
-            labelB="P75"
+            labelText="P75"
             onToggle={[Function]}
             size="sm"
             toggled={false}
           />
           <Toggle
             disabled={true}
+            hideLabel={true}
             id="P50"
             key="P50"
-            labelA="P50 (median)"
-            labelB="P50 (median)"
+            labelText="P50 (median)"
             onToggle={[Function]}
             size="sm"
             toggled={true}
           />
           <Toggle
             disabled={false}
+            hideLabel={true}
             id="P25"
             key="P25"
-            labelA="P25"
-            labelB="P25"
+            labelText="P25"
             onToggle={[Function]}
             size="sm"
             toggled={false}

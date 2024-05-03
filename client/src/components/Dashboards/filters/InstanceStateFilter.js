@@ -69,8 +69,8 @@ export default function InstanceStateFilter({filter = [], setFilter, children}) 
                   key={type}
                   id={type}
                   size="sm"
-                  labelA={t('dashboard.filter.types.' + type)}
-                  labelB={t('dashboard.filter.types.' + type)}
+                  labelText={t('dashboard.filter.types.' + type)}
+                  hideLabel
                   toggled={hasFilter(type)}
                   disabled={!isAllowed(type)}
                   onToggle={(checked) => {

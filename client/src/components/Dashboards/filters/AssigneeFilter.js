@@ -172,8 +172,8 @@ export default function AssigneeFilter({
                     id={`assignee-${idx}`}
                     size="sm"
                     toggled={!!filter?.values.includes(value)}
-                    labelA={label}
-                    labelB={label}
+                    labelText={label}
+                    hideLabel
                     onToggle={(checked) => {
                       if (checked) {
                         addValue(value);
@@ -189,8 +189,8 @@ export default function AssigneeFilter({
                   <Toggle
                     id="customValue"
                     size="sm"
-                    labelA={t('common.filter.assignee.allowCustomValues')}
-                    labelB={t('common.filter.assignee.allowCustomValues')}
+                    labelText={t('common.filter.assignee.allowCustomValues')}
+                    hideLabel
                     toggled={!!filter?.values.some((user) => !values.includes(user))}
                     onToggle={(checked) => {
                       if (checked) {

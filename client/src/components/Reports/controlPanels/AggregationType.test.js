@@ -74,7 +74,7 @@ it('should render sum field for variable reports', () => {
     />
   );
 
-  expect(node.find('Toggle').first()).toHaveProp('labelA', 'Sum');
+  expect(node.find('Toggle').first()).toHaveProp('labelText', 'Sum');
 });
 
 it('should hide sum field for incident reports', () => {
@@ -88,7 +88,7 @@ it('should hide sum field for incident reports', () => {
     />
   );
 
-  expect(node.find('Toggle').first()).not.toHaveProp('labelA', 'Sum');
+  expect(node.find('Toggle').first()).not.toHaveProp('labelText', 'Sum');
 });
 
 it('should reevaluate the report when changing the aggregation type', () => {

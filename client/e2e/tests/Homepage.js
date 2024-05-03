@@ -206,7 +206,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.contextMenu(Common.listItem('dashboard')));
   await t.click(Common.copy);
 
-  await t.click(e.moveCopySwitch);
+  await t.click(Common.toggleElement('Move copy to'));
   await t.click(e.copyTargetsInput);
   await t.click(Common.carbonOption('Sales'));
 

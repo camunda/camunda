@@ -130,8 +130,8 @@ export default function AggregationType({report, onChange}) {
                       key={type}
                       id={type}
                       size="sm"
-                      labelA={t('report.config.userTaskDuration.' + type)}
-                      labelB={t('report.config.userTaskDuration.' + type)}
+                      labelText={t('report.config.userTaskDuration.' + type)}
+                      hideLabel
                       toggled={hasAggregation('userTaskDurationTimes', type)}
                       disabled={isLastAggregation('userTaskDurationTimes', type)}
                       onToggle={(checked) => {
@@ -158,8 +158,8 @@ export default function AggregationType({report, onChange}) {
                     key={type}
                     id={type}
                     size="sm"
-                    labelA={t('report.config.aggregation.' + type)}
-                    labelB={t('report.config.aggregation.' + type)}
+                    labelText={t('report.config.aggregation.' + type)}
+                    hideLabel
                     toggled={hasAggregation('aggregationTypes', type)}
                     disabled={isLastAggregation('aggregationTypes', type)}
                     onToggle={(checked) => {
@@ -183,8 +183,8 @@ export default function AggregationType({report, onChange}) {
                         key={defaultLabel}
                         id={defaultLabel}
                         size="sm"
-                        labelA={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
-                        labelB={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        labelText={value === 50 ? t('report.config.aggregation.p50') : defaultLabel}
+                        hideLabel
                         toggled={hasAggregation('aggregationTypes', 'percentile', value)}
                         disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
                         onToggle={(checked) => {

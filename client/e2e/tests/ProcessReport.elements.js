@@ -93,7 +93,8 @@ export const versionCheckbox = (number) =>
   Selector('.specificVersions .cds--checkbox-label').nth(number);
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
-export const aggregationOption = (text) => Selector('.AggregationType .cds--toggle').withText(text);
+export const aggregationOption = (text) =>
+  Selector('.AggregationType .cds--toggle__label').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');

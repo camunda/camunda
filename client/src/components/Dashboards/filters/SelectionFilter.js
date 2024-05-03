@@ -154,7 +154,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
                         id={`${idx}`}
                         size="sm"
                         hideLabel
-                        labelA="cutom value"
+                        labelText={t('dashboard.filter.customValue')}
                         toggled={hasValue(value)}
                         disabled={!isValidValue(value)}
                         onToggle={toggleValue(value)}

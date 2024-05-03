@@ -78,8 +78,8 @@ export default function MoveCopy({
       <Toggle
         size="sm"
         id="moveToggle"
-        labelA={t('home.copy.moveLabel').toString()}
-        labelB={t('home.copy.moveLabel').toString()}
+        labelText={t('home.copy.moveLabel').toString()}
+        hideLabel
         toggled={moving}
         onToggle={(checked) => setMoving(checked)}
       />

@@ -74,8 +74,8 @@ export default function BarChartConfig({onChange, report}) {
                 size="sm"
                 toggled={configuration.horizontalBar}
                 onToggle={(checked) => onChange({horizontalBar: {$set: checked}})}
-                labelA={t('report.config.display.horizontalBars')}
-                labelB={t('report.config.display.horizontalBars')}
+                labelText={t('report.config.display.horizontalBars')}
+                hideLabel
               />
             )}
             {isStackingPossible && (
@@ -84,8 +84,8 @@ export default function BarChartConfig({onChange, report}) {
                 size="sm"
                 toggled={configuration.stackedBar}
                 onToggle={(checked) => onChange({stackedBar: {$set: checked}})}
-                labelA={t('report.config.display.enableStackedBars')}
-                labelB={t('report.config.display.enableStackedBars')}
+                labelText={t('report.config.display.enableStackedBars')}
+                hideLabel
               />
             )}
           </Stack>
@@ -98,8 +98,8 @@ export default function BarChartConfig({onChange, report}) {
             size="sm"
             toggled={configuration.logScale}
             onToggle={(checked) => onChange({logScale: {$set: checked}})}
-            labelA={t('report.config.axisSettings.logScale')}
-            labelB={t('report.config.axisSettings.logScale')}
+            labelText={t('report.config.axisSettings.logScale')}
+            hideLabel
           />
           <TextInput
             id="axis1LabelInput"
@@ -125,8 +125,8 @@ export default function BarChartConfig({onChange, report}) {
               size="sm"
               toggled={configuration.targetValue.active}
               onToggle={(checked) => onChange({targetValue: {active: {$set: checked}}})}
-              labelA={t('report.config.goal.legend')}
-              labelB={t('report.config.goal.legend')}
+              labelText={t('report.config.goal.legend')}
+              hideLabel
             />
           }
         >

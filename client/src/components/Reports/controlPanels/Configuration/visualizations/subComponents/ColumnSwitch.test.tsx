@@ -20,7 +20,7 @@ const props = {
 it('should display a label', () => {
   const node = shallow(<ColumnSwitch {...props} />);
 
-  expect(node.find('.ColumnSwitch').prop('labelA')).toBe('this is a label');
+  expect(node.find('.ColumnSwitch').prop('labelText')).toBe('this is a label');
 });
 
 it('should not be checked when switch id is in excluded columns', () => {

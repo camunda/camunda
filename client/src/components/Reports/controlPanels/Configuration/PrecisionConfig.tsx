@@ -42,8 +42,8 @@ export default function PrecisionConfig({
             size="sm"
             toggled={precisionSet}
             onToggle={(checked) => onChange({precision: {$set: checked ? 1 : null}})}
-            labelA={t('report.config.limitPrecision.legend').toString()}
-            labelB={t('report.config.limitPrecision.legend').toString()}
+            labelText={t('report.config.limitPrecision.legend').toString()}
+            hideLabel
           />
           {type !== 'number' && type !== 'table' && (
             <Tooltip label={t('report.config.limitPrecision.tooltip')}>

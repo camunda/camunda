@@ -22,8 +22,8 @@ export default function PointMarkersConfig({configuration, onChange}: PointMarke
         size="sm"
         toggled={configuration.pointMarkers}
         onToggle={(checked) => onChange({pointMarkers: {$set: checked}})}
-        labelA={t('report.config.pointMarkers.enableMarkers').toString()}
-        labelB={t('report.config.pointMarkers.enableMarkers').toString()}
+        labelText={t('report.config.pointMarkers.enableMarkers').toString()}
+        hideLabel
       />
     </FormGroup>
   );

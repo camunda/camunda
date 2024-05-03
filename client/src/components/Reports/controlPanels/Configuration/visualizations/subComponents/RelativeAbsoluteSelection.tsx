@@ -31,8 +31,8 @@ export default function RelativeAbsoluteSelection({
         size="sm"
         toggled={absolute}
         onToggle={(checked) => onChange('absolute', checked)}
-        labelA={t('report.config.tooltips.showAbsolute').toString()}
-        labelB={t('report.config.tooltips.showAbsolute').toString()}
+        labelText={t('report.config.tooltips.showAbsolute').toString()}
+        hideLabel
       />
 
       {!hideRelative && (
@@ -41,8 +41,8 @@ export default function RelativeAbsoluteSelection({
           size="sm"
           toggled={relative}
           onToggle={(checked) => onChange('relative', checked)}
-          labelA={t('report.config.tooltips.showRelative.' + reportType).toString()}
-          labelB={t('report.config.tooltips.showRelative.' + reportType).toString()}
+          labelText={t('report.config.tooltips.showRelative.' + reportType).toString()}
+          hideLabel
         />
       )}
     </Stack>

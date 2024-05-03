@@ -38,8 +38,8 @@ export default function NumberConfig({report, onChange}) {
               },
             });
           }}
-          labelA={t('report.config.goal.legend')}
-          labelB={t('report.config.goal.legend')}
+          labelText={t('report.config.goal.legend')}
+          hideLabel
         />
       }
     >

@@ -369,8 +369,8 @@ export class ReportEdit extends React.Component {
               size="sm"
               toggled={shouldAutoReloadPreview}
               onToggle={this.toggleAutoPreviewUpdate}
-              labelA={t('report.updateReportPreview.switchLabel')}
-              labelB={t('report.updateReportPreview.switchLabel')}
+              labelText={t('report.updateReportPreview.switchLabel')}
+              hideLabel
             />
           </div>
         </div>

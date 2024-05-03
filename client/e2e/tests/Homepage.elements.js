@@ -16,7 +16,6 @@ export const dashboardReportLink = Selector('.OptimizeReportTile .EntityName a')
 export const breadcrumb = (text) => Selector('.cds--header__menu-bar a').withText(text);
 export const dashboardView = Selector('.DashboardView');
 export const searchField = Selector('input.cds--search-input');
-export const moveCopySwitch = Selector('.CopyModal .cds--toggle');
 export const copyTargetsInput = Selector('.CopyModal .cds--combo-box .cds--text-input');
 export const copyModal = Selector('.CopyModal');
 export const bulkDelete = Selector('.bulkMenu .DropdownOption');

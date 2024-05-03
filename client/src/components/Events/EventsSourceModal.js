@@ -213,6 +213,7 @@ export default function EventsSourceModal({
                         />
                       </RadioButtonGroup>
                       <ComboBox
+                        titleText={t('dashboard.filter.types.variable')}
                         className="variablesSelector"
                         id="variable-selector"
                         items={variables || []}

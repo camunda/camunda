@@ -907,6 +907,7 @@
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
       "selectValue": "Variablenwert auswählen",
+      "customValue": "Benutzerdefinierten Wert",
       "modal": {
         "pretext": {
           "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",

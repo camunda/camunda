@@ -197,8 +197,8 @@ export default withErrorHandling(
                       className="showSuggestionsToggle"
                       size="sm"
                       toggled={showSuggested}
-                      labelA={t('events.table.showSuggestions')}
-                      labelB={t('events.table.showSuggestions')}
+                      labelText={t('events.table.showSuggestions')}
+                      hideLabel
                       onToggle={(checked) =>
                         this.setState({showSuggested: checked}, async () => {
                           this.setState({events: await this.loadEvents(searchQuery)});

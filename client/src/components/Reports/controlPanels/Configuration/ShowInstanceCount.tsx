@@ -27,8 +27,8 @@ export default function ShowInstanceCount({
         size="sm"
         toggled={!!showInstanceCount}
         onToggle={(checked) => onChange({showInstanceCount: {$set: checked}})}
-        labelA={t('common.off').toString()}
-        labelB={t('common.on').toString()}
+        labelText={t('common.off').toString()}
+        hideLabel
       />
     </FormGroup>
   );

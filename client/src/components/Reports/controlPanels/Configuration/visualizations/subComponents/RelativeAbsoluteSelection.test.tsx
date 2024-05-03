@@ -22,16 +22,16 @@ it('should render toggles', () => {
   expect(node.find('Toggle').length).toBe(2);
   expect(node.find('Toggle').at(0).props()).toEqual({
     id: 'showAbsoluteValueToggle',
-    labelA: 'Show absolute value',
-    labelB: 'Show absolute value',
+    labelText: 'Show absolute value',
+    hideLabel: true,
     onToggle: expect.any(Function),
     size: 'sm',
     toggled: true,
   });
   expect(node.find('Toggle').at(1).props()).toEqual({
     id: 'showRelativeValueToggle',
-    labelA: 'Show relative value based on process instance count',
-    labelB: 'Show relative value based on process instance count',
+    labelText: 'Show relative value based on process instance count',
+    hideLabel: true,
     onToggle: expect.any(Function),
     size: 'sm',
     toggled: true,

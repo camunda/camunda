@@ -126,9 +126,9 @@ exports[`should match snapshot 1`] = `
           </b>
           <Toggle
             className="showSuggestionsToggle"
+            hideLabel={true}
             id="showSuggestionsToggle"
-            labelA="Show suggested events"
-            labelB="Show suggested events"
+            labelText="Show suggested events"
             onToggle={[Function]}
             size="sm"
             toggled={true}

@@ -21,8 +21,8 @@ export default function GradientBarsSwitch({configuration, onChange}: GradientBa
       id="showGradientBarsToggle"
       toggled={!!configuration.showGradientBars}
       onToggle={(checked) => onChange({showGradientBars: {$set: checked}})}
-      labelA={t('report.config.showGradientBars').toString()}
-      labelB={t('report.config.showGradientBars').toString()}
+      labelText={t('report.config.showGradientBars').toString()}
+      hideLabel
     />
   );
 }

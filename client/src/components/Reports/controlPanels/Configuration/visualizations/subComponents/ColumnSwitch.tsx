@@ -51,8 +51,8 @@ export default function ColumnSwitch({
           });
         }
       }}
-      labelA={label}
-      labelB={label}
+      labelText={label}
+      hideLabel
     />
   );
 }

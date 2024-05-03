@@ -364,7 +364,7 @@ it('should show update preview switch disabled by default', () => {
 
   expect(node.state().shouldAutoReloadPreview).toBe(false);
   expect(sessionStorage.getItem).toHaveBeenCalledWith('shouldAutoReloadPreview');
-  expect(updateSwicth.prop('labelA')).toBe('Update preview automatically');
+  expect(updateSwicth.prop('labelText')).toBe('Update preview automatically');
   expect(updateSwicth.prop('toggled')).toBe(false);
   expect(node.find('.RunPreviewButton')).toExist();
 });

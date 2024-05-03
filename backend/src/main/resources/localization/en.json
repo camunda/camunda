@@ -907,6 +907,7 @@
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
       "selectValue": "Select variable value",
+      "customValue": "Custom value",
       "modal": {
         "pretext": {
           "Date": "Date selection will be available in the resulting filter.",

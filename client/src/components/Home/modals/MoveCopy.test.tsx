@@ -93,7 +93,7 @@ it('should render properly', () => {
   const node = shallow(<MoveCopy {...props} />);
   runLastEffect();
 
-  expect(node.find('Toggle').prop('labelA')).toBe('Move copy to …');
+  expect(node.find('Toggle').prop('labelText')).toBe('Move copy to …');
   expect(node.find('ComboBox').prop('items')).toEqual([
     {id: null, name: 'Collections', entityType: 'collection'},
     {

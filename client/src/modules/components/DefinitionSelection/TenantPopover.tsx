@@ -87,8 +87,8 @@ export default function TenantPopover({
                     toggled={selected.includes(tenant.id)}
                     disabled={loading}
                     size="sm"
-                    labelA={formatTenantName(tenant).toString()}
-                    labelB={formatTenantName(tenant).toString()}
+                    labelText={formatTenantName(tenant).toString()}
+                    hideLabel
                     onToggle={(checked) => {
                       if (checked) {
                         onChange(selected.concat([tenant.id]));

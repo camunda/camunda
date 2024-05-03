@@ -182,6 +182,7 @@ export default function SourcesModal({
                     itemToString={(tenant) =>
                       (tenant as (typeof tenantsSelectorItems)[number])?.label.toString()
                     }
+                    titleText={t('common.tenant.label-plural')}
                     initialSelectedItem={tenantsSelectorItems[0]}
                     onChange={({selectedItem}) => {
                       setSelected([]);

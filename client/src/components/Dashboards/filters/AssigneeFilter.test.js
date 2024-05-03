@@ -64,7 +64,7 @@ it('should allow selecting values', () => {
   const valueSwitch = node.find('Toggle').first();
 
   expect(valueSwitch).toExist();
-  expect(valueSwitch.prop('labelA')).toBe('User 1');
+  expect(valueSwitch.prop('labelText')).toBe('User 1');
 
   valueSwitch.simulate('toggle', true);
 
