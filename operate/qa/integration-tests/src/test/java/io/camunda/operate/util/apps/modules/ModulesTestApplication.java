@@ -8,7 +8,6 @@
 package io.camunda.operate.util.apps.modules;
 
 import io.camunda.operate.StandaloneOperate;
-import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.util.TestApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
