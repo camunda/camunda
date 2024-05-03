@@ -25,13 +25,15 @@ import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TenantAwareTimerCatchEventTest {
 
   private static final String PROCESS_ID = "process";
   private static final String TIMER_ID = "timer";
   private static final String TENANT = "tenant-a";
-
+  private static final Logger LOG = LoggerFactory.getLogger(TenantAwareTimerCatchEventTest.class);
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   private static BpmnModelInstance processWithTimer(
@@ -169,8 +171,17 @@ public class TenantAwareTimerCatchEventTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
+    // the timer has been created, which means an async actor job to schedule this timer has been
+    // created. However, this happens async so the actor job may not have been executed yet.
+    // In that case, we could be increasing the time here before that actor job executes.
+    // If so, the timer will be scheduled in a further future then we'll ever reach.
+    // To avoid this, we need to wait until the actor job has been executed; or we need to
+    // find a way to define the actor job's scheduled time beforehand.
+
     // when
+    LOG.debug("Increasing time by 1 minute");
     engine.increaseTime(Duration.ofMinutes(1));
+    LOG.debug("Increased time by 1 minute");
 
     final var timerRescheduled =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
