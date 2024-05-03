@@ -85,7 +85,7 @@ final class PartitionLeaveApplierTest {
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .member(localMemberId)
-        .hasPartitionWithState(1, new PartitionState(State.LEAVING, 1));
+        .hasPartitionWithState(1, State.LEAVING);
   }
 
   @Test

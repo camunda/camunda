@@ -90,7 +90,8 @@ public class PartitionReconfigurePriorityApplier implements MemberOperationAppli
                         memberState.updatePartition(
                             partitionId,
                             partitionState ->
-                                new PartitionState(partitionState.state(), newPriority)));
+                                new PartitionState(
+                                    partitionState.state(), newPriority, partitionState.config())));
               } else {
                 result.completeExceptionally(error);
               }
