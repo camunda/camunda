@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
@@ -32,7 +33,9 @@ import org.springframework.test.util.ReflectionTestUtils;
       TestApplicationWithNoBeans.class,
       IdentityAuthentication.class,
       OperateProperties.class,
-      IdentityOAuth2WebConfigurer.class
+      IdentityOAuth2WebConfigurer.class,
+      IdentityWebSecurityConfig.class,
+      OperateProfileService.class
     },
     properties = {
       "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:2222/auth"

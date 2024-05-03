@@ -43,6 +43,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-zeebe</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
@@ -65,7 +72,6 @@
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch-testcontainers</artifactId>
-      <version>2.0.1</version>
       <scope>test</scope>
     </dependency>
 
@@ -406,6 +412,14 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <usedDependencies>
+            <dependency>io.camunda:operate-mvc-auth-commons</dependency>
+            <dependency>com.vaadin.external.google:android-json</dependency>
+          </usedDependencies>
+          <ignoredDependencies>
+            <dependency>io.camunda:tasklist-mvc-auth-commons</dependency>
+            <dependency>org.json:json:jar</dependency>
+          </ignoredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>

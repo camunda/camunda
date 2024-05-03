@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.Application;
+import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
@@ -43,7 +43,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {Application.class},
+    classes = {StandaloneOperate.class},
     properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class BatchOperationPerformanceIT {
 
