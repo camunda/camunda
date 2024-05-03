@@ -26,6 +26,8 @@ public interface SchemaManager {
 
   void createSchema();
 
+  void checkAndUpdateIndices();
+
   void createDefaults();
 
   void createIndex(IndexDescriptor indexDescriptor, String indexClasspathResource);
