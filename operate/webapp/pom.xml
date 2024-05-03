@@ -23,11 +23,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-data-generator</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
       <scope>runtime</scope>
     </dependency>
@@ -401,7 +396,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-importer</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-webjar</dependency>

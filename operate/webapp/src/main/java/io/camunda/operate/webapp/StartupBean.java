@@ -10,7 +10,6 @@ package io.camunda.operate.webapp;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -43,8 +42,6 @@ public class StartupBean {
   @Autowired(required = false)
   private OperateUserDetailsService operateUserDetailsService;
 
-  @Autowired private DataGenerator dataGenerator;
-
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private OperationExecutor operationExecutor;
@@ -56,13 +53,7 @@ public class StartupBean {
           "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
       operateUserDetailsService.initializeUsers();
     }
-    LOGGER.debug("INIT: Generate demo data...");
-    try {
-      dataGenerator.createZeebeDataAsync(false);
-    } catch (Exception ex) {
-      LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
-      LOGGER.error("Error occurred when generating demo data.", ex);
-    }
+
     LOGGER.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     LOGGER.info("INIT: DONE");

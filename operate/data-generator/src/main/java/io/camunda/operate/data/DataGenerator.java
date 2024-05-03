@@ -9,7 +9,5 @@ package io.camunda.operate.data;
 
 public interface DataGenerator {
 
-  DataGenerator DO_NOTHING = (boolean manuallyCalled) -> {};
-
   void createZeebeDataAsync(boolean manuallyCalled);
 }
