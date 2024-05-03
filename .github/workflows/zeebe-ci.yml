@@ -122,6 +122,14 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "[IT] ${{ matrix.name }}"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "integration-tests/${{ matrix.group }}"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -165,6 +173,13 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "unit tests"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
@@ -223,6 +238,14 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "smoke-tests/${{ matrix.os }}"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   property-tests:
     name: Property Tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -258,6 +281,13 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: Property Tests
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   performance-tests:
     name: Performance Tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -307,6 +337,13 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: Performance Tests
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -329,6 +366,13 @@ jobs:
       - name: Run Go tests
         working-directory: clients/go
         run: go test -mod=vendor -v ./...
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -349,6 +393,13 @@ jobs:
           skip-pkg-cache: true
           skip-build-cache: true
           working-directory: clients/go
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-apidiff:
     name: Go Backward Compatibility
     runs-on: ubuntu-latest
@@ -371,6 +422,13 @@ jobs:
       - uses: joelanford/go-apidiff@main
         with:
           base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
@@ -384,6 +442,13 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -434,6 +499,14 @@ jobs:
           revision: ${{ github.sha }}
           version: ${{ steps.build-zeebe-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
