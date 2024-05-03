@@ -1,4 +1,4 @@
-name: Check renovate configuration
+name: [Optimize] Check renovate configuration
 
 on:
   pull_request: 

@@ -1,5 +1,5 @@
 ---
-name: assert-camunda-git-emails
+name: optimize-assert-camunda-git-emails
 
 on: [pull_request]
 

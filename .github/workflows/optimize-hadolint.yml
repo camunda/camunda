@@ -1,4 +1,4 @@
-name: Test dockerfiles with Hadolint
+name: Optimize test dockerfiles with Hadolint
 on: [pull_request]
 jobs:
   hadolint:

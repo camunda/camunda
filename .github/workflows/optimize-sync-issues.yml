@@ -1,5 +1,5 @@
 ---
-name: sync-issues
+name: optimize-sync-issues
 # This workflow syncs comments and issues from this private repository to https://github.com/camunda/issues for the possibility
 # of sharing selected issues with the public (e.g. for the support context)
 

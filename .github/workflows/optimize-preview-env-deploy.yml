@@ -1,5 +1,5 @@
 ---
-name: preview-env-deploy
+name: optimize-preview-env-deploy
 on:
   pull_request:
     types: [ labeled,synchronize ]
@@ -112,7 +112,7 @@ jobs:
 
   clean:
     if: always() && github.event_name == 'pull_request' && needs.deploy-preview.result != 'skipped'
-    uses: camunda/camunda-optimize/.github/workflows/preview-env-clean.yml@master
+    uses: camunda/camunda-optimize/.github/workflows/optimize-preview-env-clean.yml@master
     needs: [deploy-preview]
     secrets: inherit
     with:

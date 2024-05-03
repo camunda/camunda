@@ -1,5 +1,5 @@
 
-name: Deploy Artifacts
+name: Optimize Deploy Artifacts
 on:
   workflow_call:
 

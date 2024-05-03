@@ -455,7 +455,7 @@ jobs:
     if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
     name: Deploy Artifacts
     needs: [unit-tests, migration, data-upgrade-test, integration-tests]
-    uses: ./.github/workflows/deploy-artifacts.yml
+    uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption

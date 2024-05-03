@@ -1,5 +1,5 @@
 ---
-name: preview-env-teardown
+name: optimize-preview-env-teardown
 on:
   pull_request:
     types: [ unlabeled,closed ]
@@ -53,7 +53,7 @@ jobs:
 
   clean:
     if: always() && needs.teardown-preview.result != 'skipped'
-    uses: camunda/camunda-optimize/.github/workflows/preview-env-clean.yml@master
+    uses: camunda/camunda-optimize/.github/workflows/optimize-preview-env-clean.yml@master
     needs: [teardown-preview]
     secrets: inherit
     with:
