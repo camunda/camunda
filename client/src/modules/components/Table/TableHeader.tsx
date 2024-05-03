@@ -35,13 +35,13 @@ export default function TableHeader({
   sortByLabel,
   sorting,
   updateSorting,
-}: TableHeaderProps): JSX.Element {
+}: TableHeaderProps) {
   if (
     typeof header.Header === 'object' &&
     isReactElement(header.Header) &&
     header.Header?.type === TableSelectAll
   ) {
-    return <>{header.render('Header')}</>;
+    return header.render('Header');
   }
 
   function getSortingProps(header: Header): Record<string, unknown> {
@@ -95,11 +95,12 @@ export default function TableHeader({
     return 'ASC';
   }
 
+  const {role, ...reactTableHeaderProps} = header.getHeaderProps();
+
   const headerProps = {
     ...getSortingProps(header),
-    ...header.getHeaderProps(),
+    ...reactTableHeaderProps,
     className: classNames('tableHeader', {placeholder: header.placeholderOf}),
-    scope: 'col',
     title: undefined,
     'data-group': header.group,
   };
