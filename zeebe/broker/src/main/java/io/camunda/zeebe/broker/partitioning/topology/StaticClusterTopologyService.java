@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationManager.InconsistentConfigurationListener;
-import io.camunda.zeebe.dynamic.configuration.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 

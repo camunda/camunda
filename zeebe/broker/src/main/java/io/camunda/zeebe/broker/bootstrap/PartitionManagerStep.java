@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.slf4j.Logger;

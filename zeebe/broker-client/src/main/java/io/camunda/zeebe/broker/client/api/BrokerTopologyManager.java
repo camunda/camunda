@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.configuration.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 public interface BrokerTopologyManager extends ClusterConfigurationUpdateListener {
 

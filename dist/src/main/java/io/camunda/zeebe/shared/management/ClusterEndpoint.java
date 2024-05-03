@@ -9,30 +9,30 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationChangeResponse;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.AddMembersRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequest.ScaleRequest;
-import io.camunda.zeebe.dynamic.configuration.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.configuration.api.ErrorResponse;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.configuration.state.CompletedChange;
-import io.camunda.zeebe.dynamic.configuration.state.MemberState;
-import io.camunda.zeebe.dynamic.configuration.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -422,7 +422,7 @@ public class ClusterEndpoint {
   }
 
   private static List<PartitionState> mapPartitionStates(
-      final Map<Integer, io.camunda.zeebe.dynamic.configuration.state.PartitionState> partitions) {
+      final Map<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
             entry ->

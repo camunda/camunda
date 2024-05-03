@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.client.impl;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.configuration.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final BrokerClusterStateImpl topology;

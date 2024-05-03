@@ -21,7 +21,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
-import io.camunda.zeebe.dynamic.configuration.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;

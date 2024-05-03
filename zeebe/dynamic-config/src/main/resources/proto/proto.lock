@@ -231,7 +231,7 @@
         "options": [
           {
             "name": "java_package",
-            "value": "io.camunda.zeebe.dynamic.configuration.protocol"
+            "value": "io.camunda.zeebe.dynamic.config.protocol"
           }
         ]
       }
@@ -581,7 +581,7 @@
         "options": [
           {
             "name": "java_package",
-            "value": "io.camunda.zeebe.dynamic.configuration.protocol"
+            "value": "io.camunda.zeebe.dynamic.config.protocol"
           }
         ]
       }
