@@ -27,6 +27,9 @@ run the command: `mvn clean install -Dquickly` in the root folder.
 > The Go client and zbctl are built and tested with Go 1.22
 >
 > The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
+>
+> For macs using arm64 (Apple Silicon), must install Rosetta as some dependencies do not have native
+> arm binaries.
 
 For contributions to Zeebe, building quickly is typically sufficient.
 However, users of Zeebe are recommended to build the full distribution.
