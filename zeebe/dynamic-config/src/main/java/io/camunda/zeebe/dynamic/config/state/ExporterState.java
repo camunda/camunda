@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-public record ExporterState(final State state) {
+public record ExporterState(State state) {
   public enum State {
     ENABLED,
     DISABLED
