@@ -9,12 +9,18 @@ package io.camunda.zeebe.scheduler.clock;
 
 import java.time.Duration;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** For testcases */
 public final class ControlledActorClock implements ActorClock {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ControlledActorClock.class);
+
   private volatile long currentTime;
   private volatile long currentOffset;
   private volatile long updatedTime;
+  private volatile boolean isModified;
 
   public ControlledActorClock() {
     reset();
@@ -30,6 +36,7 @@ public final class ControlledActorClock implements ActorClock {
     } else {
       currentOffset += durationToAdd.toMillis();
     }
+    isModified = true;
   }
 
   public void reset() {
@@ -60,6 +67,10 @@ public final class ControlledActorClock implements ActorClock {
       updatedTime = currentTime;
     } else {
       updatedTime = System.currentTimeMillis() + currentOffset;
+    }
+    if (isModified) {
+      LOG.debug("Traveled through time to {}", Instant.ofEpochMilli(updatedTime));
+      isModified = false;
     }
     return true;
   }
