@@ -55,6 +55,8 @@ public class ProcessingScheduleServiceImpl
     if (actorControl == null) {
       LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
+    } else {
+      LOG.debug("Schedule task with delay: {}", delay);
     }
     final var scheduledTimer = actorControl.schedule(delay, followUpTask);
     return scheduledTimer::cancel;

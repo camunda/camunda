@@ -13,8 +13,13 @@ import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ExtendedProcessingScheduleServiceImpl.class);
 
   private final SimpleProcessingScheduleService processorActorService;
   private final SimpleProcessingScheduleService asyncActorService;
@@ -47,6 +52,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
     concurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
+          LOG.debug("Scheduling task with delay: {}", delay);
           final var scheduledTask = asyncActorService.runDelayed(delay, task);
           futureScheduledTask.complete(scheduledTask);
         });
