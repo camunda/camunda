@@ -164,4 +164,32 @@ public class ProcessResponse {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(bpmnXml, that.bpmnXml);
   }
+
+  @Override
+  public String toString() {
+    return "ProcessResponse{"
+        + "id='"
+        + id
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", sortValues="
+        + Arrays.toString(sortValues)
+        + ", version="
+        + version
+        + ", startEventFormId='"
+        + startEventFormId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", bpmnXml='"
+        + bpmnXml
+        + '\''
+        + '}';
+  }
 }
