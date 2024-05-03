@@ -1901,6 +1901,7 @@
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>org.apache.logging.log4j:log4j-jul</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
