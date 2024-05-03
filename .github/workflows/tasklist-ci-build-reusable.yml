@@ -39,6 +39,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
