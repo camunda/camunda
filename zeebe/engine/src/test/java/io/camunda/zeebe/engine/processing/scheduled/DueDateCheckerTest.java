@@ -31,7 +31,7 @@ public class DueDateCheckerTest {
   public void shouldNotScheduleTwoTasks() {
     // given
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker("test", timerResolution, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
 
@@ -54,7 +54,7 @@ public class DueDateCheckerTest {
   public void shouldScheduleForAnEarlierTasks() {
     // given
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
+    final var dueDateChecker = new DueDateChecker("test", timerResolution, false, (builder) -> 0L);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -84,7 +84,7 @@ public class DueDateCheckerTest {
         (builder) -> ActorClock.currentTimeMillis() + 1000L;
 
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
+    final var dueDateChecker = new DueDateChecker("test", timerResolution, false, visitor);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -110,7 +110,7 @@ public class DueDateCheckerTest {
         (builder) -> ActorClock.currentTimeMillis() + 1000L;
 
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
+    final var dueDateChecker = new DueDateChecker("test", timerResolution, false, visitor);
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);

@@ -24,6 +24,7 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
   public JobBackoffChecker(final JobState jobState) {
     backOffDueDateChecker =
         new DueDateChecker(
+            "JobBackoff",
             BACKOFF_RESOLUTION,
             false,
             taskResultBuilder ->

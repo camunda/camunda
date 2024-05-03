@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -21,6 +22,8 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Due Date Checker is a special purpose checker (for due date related tasks) that doesn't
@@ -32,6 +35,8 @@ import java.util.function.Function;
  * for details.
  */
 public final class DueDateChecker implements StreamProcessorLifecycleAware {
+
+  private final Logger log;
   private final boolean scheduleAsync;
   private final long timerResolution;
   private final Function<TaskResultBuilder, Long> visitor;
@@ -51,14 +56,17 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(new None());
 
   /**
+   * @param topic The topic of the checker, used for logging
    * @param timerResolution The resolution in ms for the timer
    * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
    * @param visitor Function that runs the task and returns the next due date or -1 if there is none
    */
   public DueDateChecker(
+      final String topic,
       final long timerResolution,
       final boolean scheduleAsync,
       final Function<TaskResultBuilder, Long> visitor) {
+    log = LoggerFactory.getLogger("io.camunda.zeebe.engine.DueDateChecker[%s]".formatted(topic));
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
     this.visitor = visitor;
@@ -118,13 +126,27 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
                   || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {
                 final var delay = Duration.ofMillis(scheduleFor - now);
                 final var task = scheduleService.runDelayed(delay, this::execute);
-                return Optional.of(new Scheduled(scheduleFor, task));
+                final var scheduled = new Scheduled(scheduleFor, task);
+                log.debug("Scheduled next execution in {} ms: {}", delay.toMillis(), scheduled);
+                return Optional.of(scheduled);
               }
               return Optional.empty();
             },
-            NextExecution::cancel);
+            nextExecution -> {
+              log.debug(
+                  "Cancelling next execution {}, because of concurrent modification",
+                  nextExecution);
+              nextExecution.cancel();
+            });
 
     if (replacedExecution != null) {
+      switch (replacedExecution) {
+        case final Scheduled ignored ->
+            log.debug(
+                "Cancelled next execution {}, because it was replaced by an earlier one",
+                replacedExecution);
+        case final None ignored -> {}
+      }
       replacedExecution.cancel();
     }
   }
@@ -163,23 +185,17 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
     schedule(-1);
   }
 
-  /**
-   * Abstracts over async and sync scheduling methods of {@link
-   * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}.
-   */
+  /** Abstracts over async and sync scheduling methods of {@link ProcessingScheduleService}. */
   @FunctionalInterface
   interface ScheduleDelayed {
     /**
-     * Implemented by either {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayed(Duration, Task)}
-     * or {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
-     * Task)}
+     * Implemented by either {@link ProcessingScheduleService#runDelayed(Duration, Task)} or {@link
+     * ProcessingScheduleService#runDelayedAsync(Duration, Task)}
      */
     ScheduledTask runDelayed(final Duration delay, final Task task);
   }
 
-  interface NextExecution {
+  sealed interface NextExecution {
     void cancel();
 
     /** Sentinel value to signal that nothing is scheduled. */

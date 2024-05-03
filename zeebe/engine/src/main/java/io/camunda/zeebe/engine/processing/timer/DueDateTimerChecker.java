@@ -31,6 +31,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
       final TimerInstanceState timerInstanceState, final FeatureFlags featureFlags) {
     dueDateChecker =
         new DueDateChecker(
+            "Timer",
             TIMER_RESOLUTION,
             featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(
