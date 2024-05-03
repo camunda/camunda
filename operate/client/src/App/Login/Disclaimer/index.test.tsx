@@ -27,12 +27,12 @@ describe('<Disclaimer />', () => {
       }),
     ).toBeInTheDocument();
 
-    //     expect(
-    //       screen.getByRole('link', {name: 'terms & conditions page'}),
-    //     ).toHaveAttribute(
-    //       'href',
-    //       'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
-    //     );
+    expect(
+      screen.getByRole('link', {name: 'terms & conditions page'}),
+    ).toHaveAttribute(
+      'href',
+      'https://legal.camunda.com/#self-managed-non-production-terms',
+    );
 
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
@@ -50,12 +50,12 @@ describe('<Disclaimer />', () => {
       }),
     ).toBeInTheDocument();
 
-    //     expect(
-    //       screen.getByRole('link', {name: 'terms & conditions page'}),
-    //     ).toHaveAttribute(
-    //       'href',
-    //       'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/',
-    //     );
+    expect(
+      screen.getByRole('link', {name: 'terms & conditions page'}),
+    ).toHaveAttribute(
+      'href',
+      'https://legal.camunda.com/#self-managed-non-production-terms',
+    );
 
     expect(screen.getByRole('link', {name: 'contact sales'})).toHaveAttribute(
       'href',
