@@ -38,15 +38,18 @@ class ClusterConfigurationTest {
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.active(1));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(2, PartitionState.active(1));
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(3, State.ACTIVE)
         .member(3)
-        .hasPartitionWithState(3, PartitionState.active(1));
+        .hasPartitionWithState(3, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(3, 1);
   }
 
   @Test
@@ -93,11 +96,13 @@ class ClusterConfigurationTest {
     ClusterConfigurationAssert.assertThatClusterTopology(mergedTopologyOne)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.active(1));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(mergedTopologyOne)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(2, PartitionState.active(1));
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 1);
 
     assertThat(mergedTopologyTwo).isEqualTo(mergedTopologyOne);
   }

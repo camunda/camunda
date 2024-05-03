@@ -52,20 +52,26 @@ class TopologyUtilTest {
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(0, State.ACTIVE)
         .member(0)
-        .hasPartitionWithState(1, PartitionState.active(1))
-        .hasPartitionWithState(2, PartitionState.active(3));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 1)
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 3);
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.active(2))
-        .hasPartitionWithState(2, PartitionState.active(2));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 2)
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 2);
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(1, PartitionState.active(3))
-        .hasPartitionWithState(2, PartitionState.active(1));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 3)
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 1);
   }
 
   @Test

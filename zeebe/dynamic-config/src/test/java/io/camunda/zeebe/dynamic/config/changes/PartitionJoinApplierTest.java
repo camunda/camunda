@@ -155,7 +155,8 @@ final class PartitionJoinApplierTest {
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
-        .hasPartitionWithState(1, new PartitionState(State.JOINING, 1));
+        .hasPartitionWithState(1, State.JOINING)
+        .hasPartitionWithPriority(1, 1);
   }
 
   @Test
@@ -182,7 +183,8 @@ final class PartitionJoinApplierTest {
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
-        .hasPartitionWithState(1, new PartitionState(State.ACTIVE, 1));
+        .hasPartitionWithState(1, State.ACTIVE)
+        .hasPartitionWithPriority(1, 1);
   }
 
   @Test
