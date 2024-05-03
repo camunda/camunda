@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.FilenameValidatorUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -194,6 +195,9 @@ public class LocalizationService implements ConfigurationReloadable {
         configurationService.getAvailableLocales().contains(localeCode)
             ? localeCode
             : configurationService.getFallbackLocale();
+
+    // localeCode is used to construct a file path, make sure its not doing anything malicious
+    FilenameValidatorUtil.validateFilename(resolvedLocaleCode);
 
     return getFileBytes(resolveFilePath(null, JSON_FILE_EXTENSION, resolvedLocaleCode));
   }

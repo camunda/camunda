@@ -46,6 +46,7 @@ import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.util.FilenameValidatorUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -285,10 +286,11 @@ public class InstantPreviewDashboardService {
 
   private Optional<Set<OptimizeEntityExportDto>> readAndProcessDashboardTemplate(
       final String dashboardJsonTemplateFilename) {
+    FilenameValidatorUtil.validateFilename(dashboardJsonTemplateFilename);
     final String fullyQualifiedPath =
         INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename;
     try (InputStream dashboardTemplate =
-        this.getClass().getClassLoader().getResourceAsStream(fullyQualifiedPath)) {
+        getClass().getClassLoader().getResourceAsStream(fullyQualifiedPath)) {
       if (dashboardTemplate != null) {
         String exportedDtoJson =
             new String(dashboardTemplate.readAllBytes(), StandardCharsets.UTF_8);
@@ -362,8 +364,7 @@ public class InstantPreviewDashboardService {
   public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {
     CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
     byte[] buffer = new byte[bufferSize];
-    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0)
-      ;
+    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0) {}
     return checkedInputStream.getChecksum().getValue();
   }
 
