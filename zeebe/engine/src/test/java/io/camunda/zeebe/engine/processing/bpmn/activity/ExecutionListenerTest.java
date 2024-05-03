@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
@@ -159,6 +159,12 @@ public class ExecutionListenerTest {
         .hasErrorMessage("No more retries left.");
 
     // and: resolve first incident
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE)
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     // complete service task job (NO need to re-complete start EL job(s))
     ENGINE.job().ofInstance(processInstanceKey).withType(SERVICE_TASK_TYPE).complete();
@@ -752,7 +758,7 @@ public class ExecutionListenerTest {
   // process related tests: end
 
   // test util methods
-  private static long createProcessInstance(BpmnModelInstance modelInstance) {
+  private static long createProcessInstance(final BpmnModelInstance modelInstance) {
     ENGINE.deployment().withXmlResource(modelInstance).deploy();
     return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
   }
@@ -786,7 +792,7 @@ public class ExecutionListenerTest {
   }
 
   static void assertExecutionListenerJobsCompletedForElement(
-      final long processInstanceKey, String elementId, final String... elJobTypes) {
+      final long processInstanceKey, final String elementId, final String... elJobTypes) {
     assertThat(
             RecordingExporter.jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
