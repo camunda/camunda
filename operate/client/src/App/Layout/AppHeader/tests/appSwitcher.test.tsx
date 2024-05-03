@@ -51,7 +51,7 @@ describe('App switcher', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: /camunda apps/i,
+        name: /camunda components/i,
       }),
     );
 
@@ -109,7 +109,7 @@ describe('App switcher', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: /camunda apps/i,
+        name: /camunda components/i,
       }),
     );
 
