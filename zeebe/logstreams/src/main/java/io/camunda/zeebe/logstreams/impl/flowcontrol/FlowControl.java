@@ -2,11 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import com.netflix.concurrency.limits.Limit;
+import com.netflix.concurrency.limits.Limiter;
+import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.util.Either;
@@ -16,12 +19,19 @@ import org.slf4j.LoggerFactory;
 public final class FlowControl {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
-  private final AppendLimiter appendLimiter;
+  private final Limiter<Void> appendLimiter;
   private final LogStreamMetrics metrics;
 
   public FlowControl(final LogStreamMetrics metrics) {
+    this(metrics, VegasLimit.newDefault());
+  }
+
+  public FlowControl(final LogStreamMetrics metrics, final Limit appendLimit) {
     this.metrics = metrics;
-    appendLimiter = configureAppendLimiter();
+    appendLimiter =
+        appendLimit != null
+            ? AppendLimiter.builder().limit(appendLimit).metrics(metrics).build()
+            : new NoopLimiter();
   }
 
   /**
@@ -39,13 +49,6 @@ public final class FlowControl {
     }
 
     return Either.right(new InFlightAppend(appendListener, metrics));
-  }
-
-  private AppendLimiter configureAppendLimiter() {
-    final var algorithmCfg = new VegasConfig();
-    LOG.debug(
-        "Configured log appender back pressure as {}. Window limiting is disabled", algorithmCfg);
-    return AppendLimiter.builder().limit(algorithmCfg.get()).metrics(metrics).build();
   }
 
   public sealed interface Rejection {

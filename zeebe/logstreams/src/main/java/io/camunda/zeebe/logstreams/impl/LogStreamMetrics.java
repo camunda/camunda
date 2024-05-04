@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl;
 
@@ -154,5 +154,16 @@ public final class LogStreamMetrics {
     RECORD_APPENDED
         .labels(partitionLabel, recordType.name(), valueType.name(), intent.name())
         .inc(amount);
+  }
+
+  public void remove() {
+    TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
+    TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
+    CURRENT_INFLIGHT.remove(partitionLabel);
+    CURRENT_LIMIT.remove(partitionLabel);
+    LAST_COMMITTED_POSITION.remove(partitionLabel);
+    LAST_WRITTEN_POSITION.remove(partitionLabel);
+    COMMIT_LATENCY.remove(partitionLabel);
+    WRITE_LATENCY.remove(partitionLabel);
   }
 }

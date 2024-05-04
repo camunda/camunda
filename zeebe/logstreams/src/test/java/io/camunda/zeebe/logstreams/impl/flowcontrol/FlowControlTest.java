@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
@@ -21,7 +21,8 @@ final class FlowControlTest {
   @Test
   void eventuallyRejects() {
     // given
-    final var flow = new FlowControl(new LogStreamMetrics(1));
+    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var flow = new FlowControl(logStreamMetrics);
 
     // when - then
     Awaitility.await("Rejects new appends")
@@ -33,7 +34,8 @@ final class FlowControlTest {
   @Test
   void recoversWhenCompletingAppends() {
     // given
-    final var flow = new FlowControl(new LogStreamMetrics(1));
+    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var flow = new FlowControl(logStreamMetrics);
     // when
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();

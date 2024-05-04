@@ -126,6 +126,22 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-data-generator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -442,7 +458,7 @@
             </program>
             <program>
               <id>operate</id>
-              <mainClass>io.camunda.operate.Application</mainClass>
+              <mainClass>io.camunda.operate.StandaloneOperate</mainClass>
             </program>
             <program>
               <id>migrate</id>
@@ -541,6 +557,7 @@
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
 
             <dependency>io.camunda:operate-webapp</dependency>
+            <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:tasklist-webapp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
