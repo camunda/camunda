@@ -19,6 +19,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
@@ -44,6 +45,7 @@ class LogStreamPartitionTransitionStepTest {
 
   @BeforeEach
   void setup() {
+    transitionContext.setBrokerCfg(new BrokerCfg());
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
     transitionContext.setLogStorage(mock(AtomixLogStorage.class));
 

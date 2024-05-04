@@ -51,7 +51,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final long initialPosition,
       final int maxFragmentSize,
       final SequencerMetrics sequencerMetrics,
-      final LogStreamMetrics logStreamMetrics) {
+      final LogStreamMetrics logStreamMetrics,
+      final FlowControl flowControl) {
     this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
@@ -60,7 +61,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
     this.logStreamMetrics =
         Objects.requireNonNull(logStreamMetrics, "must specify appender metrics");
-    flowControl = new FlowControl(logStreamMetrics);
+    this.flowControl = flowControl;
   }
 
   /** {@inheritDoc} */

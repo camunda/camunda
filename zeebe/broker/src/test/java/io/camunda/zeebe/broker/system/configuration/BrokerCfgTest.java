@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg.LimitAlgorithm;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
@@ -419,7 +419,7 @@ public final class BrokerCfgTest {
   public void shouldSetBackpressureConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
-    final BackpressureCfg backpressure = cfg.getBackpressure();
+    final LimitCfg backpressure = cfg.getBackpressure();
 
     // then
     assertThat(backpressure.isEnabled()).isTrue();
@@ -430,7 +430,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldUseConfiguredBackpressureAlgorithms() {
 
-    final BackpressureCfg backpressure = new BackpressureCfg();
+    final LimitCfg backpressure = new LimitCfg();
 
     // when
     backpressure.setAlgorithm("gradient");

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -55,6 +56,8 @@ public interface LogStreamBuilder {
    * @return this builder
    */
   LogStreamBuilder withLogName(String logName);
+
+  LogStreamBuilder withAppendLimit(Limit appendLimit);
 
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.

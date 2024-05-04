@@ -155,4 +155,15 @@ public final class LogStreamMetrics {
         .labels(partitionLabel, recordType.name(), valueType.name(), intent.name())
         .inc(amount);
   }
+
+  public void remove() {
+    TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
+    TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
+    CURRENT_INFLIGHT.remove(partitionLabel);
+    CURRENT_LIMIT.remove(partitionLabel);
+    LAST_COMMITTED_POSITION.remove(partitionLabel);
+    LAST_WRITTEN_POSITION.remove(partitionLabel);
+    COMMIT_LATENCY.remove(partitionLabel);
+    WRITE_LATENCY.remove(partitionLabel);
+  }
 }
