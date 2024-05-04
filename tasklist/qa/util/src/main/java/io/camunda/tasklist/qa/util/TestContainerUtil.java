@@ -85,6 +85,7 @@ public class TestContainerUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
   private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
+  private static final Integer TASKLIST_MGMT_HTTP_PORT = 9600;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
@@ -104,7 +105,8 @@ public class TestContainerUtil {
 
   private Keycloak keycloakClient;
 
-  public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
+  public void startIdentity(
+      final TestContext testContext, final String version, final boolean multiTenancyEnabled) {
     startPostgres(testContext);
     startKeyCloak(testContext);
 
@@ -185,7 +187,7 @@ public class TestContainerUtil {
         testContext.getExternalIdentityPort());
   }
 
-  public void startKeyCloak(TestContext testContext) {
+  public void startKeyCloak(final TestContext testContext) {
     LOGGER.info("************ Starting Keycloak ************");
     keycloakContainer =
         new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
@@ -229,7 +231,7 @@ public class TestContainerUtil {
             "admin-cli");
   }
 
-  public void startPostgres(TestContext testContext) {
+  public void startPostgres(final TestContext testContext) {
     LOGGER.info("************ Starting Postgres ************");
     postgreSQLContainer =
         new PostgreSQLContainer("postgres:15.2-alpine")
@@ -251,7 +253,7 @@ public class TestContainerUtil {
         testContext.getExternalPostgresPort());
   }
 
-  public void startOpenSearch(TestContext testContext) {
+  public void startOpenSearch(final TestContext testContext) {
     LOGGER.info("************ Starting OpenSearch ************");
     osContainer =
         (OpensearchContainer)
@@ -278,7 +280,7 @@ public class TestContainerUtil {
         testContext.getExternalOsPort());
   }
 
-  public void startElasticsearch(TestContext testContext) {
+  public void startElasticsearch(final TestContext testContext) {
     LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
@@ -324,7 +326,7 @@ public class TestContainerUtil {
                       .getSecret())
           .build()
           .retry();
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
   }
@@ -333,7 +335,7 @@ public class TestContainerUtil {
       retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public void checkElasctisearchHealth(TestContext testContext) {
+  public void checkElasctisearchHealth(final TestContext testContext) {
     try {
       final RestHighLevelClient esClient =
           new RestHighLevelClient(
@@ -349,7 +351,7 @@ public class TestContainerUtil {
       } else {
         LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (IOException | ElasticsearchException ex) {
+    } catch (final IOException | ElasticsearchException ex) {
       throw new TasklistRuntimeException();
     }
   }
@@ -358,7 +360,7 @@ public class TestContainerUtil {
       retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public void checkOpenSearchHealth(OpenSearchClient osClient) {
+  public void checkOpenSearchHealth(final OpenSearchClient osClient) {
     try {
       final HealthResponse healthResponse = osClient.cluster().health();
       final HealthStatus healthStatus = healthResponse.status();
@@ -368,12 +370,12 @@ public class TestContainerUtil {
       } else {
         LOGGER.warn("OpenSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (IOException | OpenSearchException ex) {
+    } catch (final IOException | OpenSearchException ex) {
       throw new TasklistRuntimeException();
     }
   }
 
-  public GenericContainer startTasklist(String version, TestContext testContext) {
+  public GenericContainer startTasklist(final String version, final TestContext testContext) {
     if (tasklistContainer == null) {
       LOGGER.info("************ Starting Tasklist {} ************", version);
       tasklistContainer = createTasklistContainer(version, testContext);
@@ -386,7 +388,7 @@ public class TestContainerUtil {
   }
 
   public GenericContainer createTasklistContainer(
-      String dockerImageName, String version, TestContext testContext) {
+      final String dockerImageName, final String version, final TestContext testContext) {
     tasklistContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
             .withExposedPorts(8080, 9600)
@@ -401,20 +403,24 @@ public class TestContainerUtil {
     return tasklistContainer;
   }
 
-  public GenericContainer createTasklistContainer(String version, TestContext testContext) {
+  public GenericContainer createTasklistContainer(
+      final String version, final TestContext testContext) {
     return createTasklistContainer(DOCKER_TASKLIST_IMAGE_NAME, version, testContext);
   }
 
-  public void startTasklistContainer(GenericContainer tasklistContainer, TestContext testContext) {
+  public void startTasklistContainer(
+      final GenericContainer tasklistContainer, final TestContext testContext) {
     tasklistContainer.start();
 
     testContext.setExternalTasklistHost(tasklistContainer.getHost());
     testContext.setExternalTasklistPort(tasklistContainer.getMappedPort(TASKLIST_HTTP_PORT));
+    testContext.setExternalTasklistMgmtPort(
+        tasklistContainer.getMappedPort(TASKLIST_MGMT_HTTP_PORT));
   }
 
   // for newer versions
   private void applyConfiguration(
-      final GenericContainer<?> tasklistContainer, TestContext testContext) {
+      final GenericContainer<?> tasklistContainer, final TestContext testContext) {
     if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
@@ -455,7 +461,7 @@ public class TestContainerUtil {
     }
   }
 
-  public ZeebeContainer startZeebe(final String version, TestContext testContext) {
+  public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
     if (broker == null) {
       LOGGER.info("************ Starting Zeebe {} ************", version);
       broker =
@@ -489,7 +495,7 @@ public class TestContainerUtil {
     return broker;
   }
 
-  protected void addConfig(ZeebeContainer zeebeBroker, TestContext testContext) {
+  protected void addConfig(final ZeebeContainer zeebeBroker, final TestContext testContext) {
     if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
       zeebeBroker
           .withEnv(
@@ -518,12 +524,12 @@ public class TestContainerUtil {
     }
   }
 
-  public void stopZeebeAndTasklist(TestContext testContext) {
+  public void stopZeebeAndTasklist(final TestContext testContext) {
     stopZeebe(testContext);
     stopTasklist(testContext);
   }
 
-  public void stopIdentity(TestContext testcontext) {
+  public void stopIdentity(final TestContext testcontext) {
     if (identityContainer != null) {
       identityContainer.close();
     }
@@ -535,7 +541,7 @@ public class TestContainerUtil {
     }
   }
 
-  protected void stopZeebe(TestContext testContext) {
+  protected void stopZeebe(final TestContext testContext) {
     if (broker != null) {
       broker.shutdownGracefully(Duration.ofSeconds(3));
       broker = null;
@@ -544,13 +550,14 @@ public class TestContainerUtil {
     testContext.setExternalZeebeContactPoint(null);
   }
 
-  protected void stopTasklist(TestContext testContext) {
+  protected void stopTasklist(final TestContext testContext) {
     if (tasklistContainer != null) {
       tasklistContainer.close();
       tasklistContainer = null;
     }
     testContext.setExternalTasklistHost(null);
     testContext.setExternalTasklistPort(null);
+    testContext.setExternalTasklistMgmtPort(null);
   }
 
   @PreDestroy

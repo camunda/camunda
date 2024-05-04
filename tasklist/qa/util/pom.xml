@@ -10,10 +10,6 @@
 
   <name>Tasklist QA Util</name>
 
-  <properties>
-    <plugin.version.license>4.3</plugin.version.license>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -177,6 +173,12 @@
 
   </dependencies>
   <build>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources/</directory>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

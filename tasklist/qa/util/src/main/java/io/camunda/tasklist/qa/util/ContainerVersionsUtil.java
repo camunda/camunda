@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.qa.util;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import java.io.IOException;
@@ -19,10 +19,11 @@ public class ContainerVersionsUtil {
 
   public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
       "identity.currentVersion.docker";
-  private static final String VERSIONS_FILE = "/container-versions.properties";
+  private static final String VERSIONS_FILE = "container-versions.properties";
 
   public static String readProperty(String propertyName) {
-    try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
+    try (InputStream propsFile =
+        ContainerVersionsUtil.class.getClassLoader().getResourceAsStream(VERSIONS_FILE)) {
       final Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);
