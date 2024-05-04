@@ -14,7 +14,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.30.0
 	golang.org/x/net v0.24.0
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/oauth2 v0.20.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.0
 	gopkg.in/yaml.v3 v3.0.1
