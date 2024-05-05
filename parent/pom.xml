@@ -159,7 +159,7 @@
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
-    <version.hdr-histogram>2.1.12</version.hdr-histogram>
+    <version.hdr-histogram>2.2.1</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.jetty>11.0.20</version.jetty>
