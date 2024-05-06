@@ -38,6 +38,9 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   // used both for process instance and flow node instance
   public static final String INCIDENT = "incident"; // true/false
 
+  public static final String INCIDENT_POSITION = "positionIncident";
+  public static final String JOB_POSITION = "positionJob";
+
   public static final String VAR_NAME = "varName";
   public static final String VAR_VALUE = "varValue";
   public static final String SCOPE_KEY = "scopeKey";

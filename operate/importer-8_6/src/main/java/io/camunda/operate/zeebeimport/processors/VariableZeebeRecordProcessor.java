@@ -5,8 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors;
+package io.camunda.operate.zeebeimport.processors;
 
+import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
+import static io.camunda.operate.schema.templates.VariableTemplate.BPMN_PROCESS_ID;
+import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
+import static io.camunda.operate.schema.templates.VariableTemplate.IS_PREVIEW;
+import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.operate.schema.templates.VariableTemplate.VALUE;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.VariableEntity;
@@ -15,6 +21,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -32,6 +39,8 @@ public class VariableZeebeRecordProcessor {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
 
   @Autowired private VariableTemplate variableTemplate;
+
+  @Autowired private ImportStore importStore;
 
   @Autowired private OperateProperties operateProperties;
 
@@ -63,26 +72,28 @@ public class VariableZeebeRecordProcessor {
 
         LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
-        if (initialIntent == VariableIntent.CREATED) {
-          batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
-        } else if (initialIntent == VariableIntent.MIGRATED) {
-          final Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(
-              VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
-          batchRequest.upsert(
+        final Map<String, Object> updateFields = new HashMap<>();
+        updateFields.put(POSITION, variableEntity.getPosition());
+        if (initialIntent == VariableIntent.MIGRATED) {
+          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        } else {
+          updateFields.put(VALUE, variableEntity.getValue());
+          updateFields.put(FULL_VALUE, variableEntity.getFullValue());
+          updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
+          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        }
+
+        final boolean concurrencyMode = importStore.getConcurrencyMode();
+        if (concurrencyMode) {
+          batchRequest.upsertWithScript(
               variableTemplate.getFullQualifiedName(),
               variableEntity.getId(),
               variableEntity,
+              getScript(),
               updateFields);
         } else {
-          final Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
-          updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
-          updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-          updateFields.put(
-              VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
           batchRequest.upsert(
               variableTemplate.getFullQualifiedName(),
               variableEntity.getId(),
@@ -91,6 +102,39 @@ public class VariableZeebeRecordProcessor {
         }
       }
     }
+  }
+
+  private String getScript() {
+    return String.format(
+        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
+            + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // VALUE
+            + "   ctx._source.%s = params.%s; " // FULL_VALUE
+            + "   ctx._source.%s = params.%s; " // IS_PREVIEW
+            + "}"
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
+            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
+            + "}"
+            + "}",
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        VALUE,
+        VALUE,
+        VALUE,
+        FULL_VALUE,
+        FULL_VALUE,
+        IS_PREVIEW,
+        IS_PREVIEW,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        BPMN_PROCESS_ID,
+        BPMN_PROCESS_ID);
   }
 
   private void processVariableRecord(
@@ -106,7 +150,8 @@ public class VariableZeebeRecordProcessor {
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setName(recordValue.getName())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setPosition(record.getPosition());
     if (recordValue.getValue().length()
         > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview

@@ -26,9 +26,15 @@ public interface TestSearchRepository {
   boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data)
       throws IOException;
 
+  boolean createOrUpdateDocumentFromObject(
+      String indexName, String docId, Object data, String routing) throws IOException;
+
   String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException;
 
   boolean createOrUpdateDocument(String indexName, String docId, Map<String, ?> doc)
+      throws IOException;
+
+  boolean createOrUpdateDocument(String name, String id, Map<String, ?> doc, String routing)
       throws IOException;
 
   String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException;

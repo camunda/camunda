@@ -5,8 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_6.processors;
+package io.camunda.operate.zeebeimport.processors;
 
+import static io.camunda.operate.schema.templates.IncidentTemplate.FLOW_NODE_ID;
+import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
+import static io.camunda.operate.schema.templates.VariableTemplate.BPMN_PROCESS_ID;
+import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.*;
@@ -17,6 +21,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
@@ -45,6 +50,8 @@ public class IncidentZeebeRecordProcessor {
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private IncidentTemplate incidentTemplate;
+
+  @Autowired private ImportStore importStore;
 
   @Autowired private PostImporterQueueTemplate postImporterQueueTemplate;
 
@@ -120,7 +127,8 @@ public class IncidentZeebeRecordProcessor {
           new IncidentEntity()
               .setId(ConversionUtils.toStringOrNull(incidentKey))
               .setKey(incidentKey)
-              .setPartitionId(record.getPartitionId());
+              .setPartitionId(record.getPartitionId())
+              .setPosition(record.getPosition());
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
@@ -149,12 +157,22 @@ public class IncidentZeebeRecordProcessor {
       LOGGER.debug("Index incident: id {}", incident.getId());
 
       final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, incident);
-      // we only insert incidents but never update -> update will be performed in post importer
-      batchRequest.upsert(
-          incidentTemplate.getFullQualifiedName(),
-          String.valueOf(incident.getKey()),
-          incident,
-          updateFields);
+      updateFields.put(POSITION, incident.getPosition());
+      final boolean concurrencyMode = importStore.getConcurrencyMode();
+      if (concurrencyMode) {
+        batchRequest.upsertWithScript(
+            incidentTemplate.getFullQualifiedName(),
+            String.valueOf(incident.getKey()),
+            incident,
+            getScript(),
+            updateFields);
+      } else {
+        batchRequest.upsert(
+            incidentTemplate.getFullQualifiedName(),
+            String.valueOf(incident.getKey()),
+            incident,
+            updateFields);
+      }
       newIncidentHandler.accept(incident);
     }
   }
@@ -166,8 +184,32 @@ public class IncidentZeebeRecordProcessor {
       updateFields.put(IncidentTemplate.BPMN_PROCESS_ID, incidentEntity.getBpmnProcessId());
       updateFields.put(
           IncidentTemplate.PROCESS_DEFINITION_KEY, incidentEntity.getProcessDefinitionKey());
-      updateFields.put(IncidentTemplate.FLOW_NODE_ID, incidentEntity.getFlowNodeId());
+      updateFields.put(FLOW_NODE_ID, incidentEntity.getFlowNodeId());
     }
     return updateFields;
+  }
+
+  private String getScript() {
+    return String.format(
+        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
+            + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
+            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
+            + "   ctx._source.%s = params.%s; " // FLOW_NODE_ID
+            + "}"
+            + "}",
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        BPMN_PROCESS_ID,
+        BPMN_PROCESS_ID,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID);
   }
 }

@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -44,6 +43,8 @@ public class ProcessInstanceForListViewEntity
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
+
+  private Long position;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -193,8 +194,17 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public ProcessInstanceForListViewEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -219,29 +229,27 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(treePath, that.treePath)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Objects.equals(position, that.position);
   }
 
   @Override
   public int hashCode() {
-    int result =
-        Objects.hash(
-            super.hashCode(),
-            processDefinitionKey,
-            processName,
-            processVersion,
-            bpmnProcessId,
-            startDate,
-            endDate,
-            state,
-            batchOperationIds,
-            parentProcessInstanceKey,
-            parentFlowNodeInstanceKey,
-            treePath,
-            incident,
-            tenantId,
-            joinRelation);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
+    return Objects.hash(
+        super.hashCode(),
+        processDefinitionKey,
+        processName,
+        processVersion,
+        bpmnProcessId,
+        startDate,
+        endDate,
+        state,
+        batchOperationIds,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        treePath,
+        incident,
+        tenantId,
+        joinRelation,
+        position);
   }
 }

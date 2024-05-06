@@ -32,6 +32,10 @@ public class FlowNodeInstanceForListViewEntity
 
   @Deprecated @JsonIgnore private boolean pendingIncident;
 
+  private Long position;
+  private Long positionIncident;
+  private Long positionJob;
+
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
 
@@ -42,7 +46,7 @@ public class FlowNodeInstanceForListViewEntity
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public void setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
@@ -50,7 +54,7 @@ public class FlowNodeInstanceForListViewEntity
     return activityId;
   }
 
-  public void setActivityId(String activityId) {
+  public void setActivityId(final String activityId) {
     this.activityId = activityId;
   }
 
@@ -58,7 +62,7 @@ public class FlowNodeInstanceForListViewEntity
     return activityState;
   }
 
-  public void setActivityState(FlowNodeState activityState) {
+  public void setActivityState(final FlowNodeState activityState) {
     this.activityState = activityState;
   }
 
@@ -66,7 +70,7 @@ public class FlowNodeInstanceForListViewEntity
     return activityType;
   }
 
-  public void setActivityType(FlowNodeType activityType) {
+  public void setActivityType(final FlowNodeType activityType) {
     this.activityType = activityType;
   }
 
@@ -74,13 +78,13 @@ public class FlowNodeInstanceForListViewEntity
     return incidentKeys;
   }
 
-  public FlowNodeInstanceForListViewEntity setIncidentKeys(List<Long> incidentKeys) {
+  public FlowNodeInstanceForListViewEntity setIncidentKeys(final List<Long> incidentKeys) {
     this.incidentKeys = incidentKeys;
     return this;
   }
 
-  public FlowNodeInstanceForListViewEntity addIncidentKey(Long incidentKey) {
-    this.incidentKeys.add(incidentKey);
+  public FlowNodeInstanceForListViewEntity addIncidentKey(final Long incidentKey) {
+    incidentKeys.add(incidentKey);
     return this;
   }
 
@@ -88,7 +92,7 @@ public class FlowNodeInstanceForListViewEntity
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public void setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 
@@ -105,7 +109,7 @@ public class FlowNodeInstanceForListViewEntity
     return tenantId;
   }
 
-  public FlowNodeInstanceForListViewEntity setTenantId(String tenantId) {
+  public FlowNodeInstanceForListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -114,7 +118,7 @@ public class FlowNodeInstanceForListViewEntity
     return pendingIncident;
   }
 
-  public FlowNodeInstanceForListViewEntity setPendingIncident(boolean pendingIncident) {
+  public FlowNodeInstanceForListViewEntity setPendingIncident(final boolean pendingIncident) {
     this.pendingIncident = pendingIncident;
     return this;
   }
@@ -123,7 +127,7 @@ public class FlowNodeInstanceForListViewEntity
     return joinRelation;
   }
 
-  public void setJoinRelation(ListViewJoinRelation joinRelation) {
+  public void setJoinRelation(final ListViewJoinRelation joinRelation) {
     this.joinRelation = joinRelation;
   }
 
@@ -131,7 +135,7 @@ public class FlowNodeInstanceForListViewEntity
     return startTime;
   }
 
-  public void setStartTime(Long startTime) {
+  public void setStartTime(final Long startTime) {
     this.startTime = startTime;
   }
 
@@ -139,7 +143,7 @@ public class FlowNodeInstanceForListViewEntity
     return endTime;
   }
 
-  public void setEndTime(Long endTime) {
+  public void setEndTime(final Long endTime) {
     this.endTime = endTime;
   }
 
@@ -148,13 +152,62 @@ public class FlowNodeInstanceForListViewEntity
   }
 
   public FlowNodeInstanceForListViewEntity setJobFailedWithRetriesLeft(
-      boolean jobFailedWithRetriesLeft) {
+      final boolean jobFailedWithRetriesLeft) {
     this.jobFailedWithRetriesLeft = jobFailedWithRetriesLeft;
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public FlowNodeInstanceForListViewEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
+  public Long getPositionIncident() {
+    return positionIncident;
+  }
+
+  public FlowNodeInstanceForListViewEntity setPositionIncident(final Long positionIncident) {
+    this.positionIncident = positionIncident;
+    return this;
+  }
+
+  public Long getPositionJob() {
+    return positionJob;
+  }
+
+  public FlowNodeInstanceForListViewEntity setPositionJob(final Long positionJob) {
+    this.positionJob = positionJob;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        activityId,
+        activityState,
+        activityType,
+        incidentKeys,
+        errorMessage,
+        incident,
+        jobFailedWithRetriesLeft,
+        tenantId,
+        pendingIncident,
+        position,
+        positionIncident,
+        positionJob,
+        joinRelation,
+        startTime,
+        endTime);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -166,24 +219,20 @@ public class FlowNodeInstanceForListViewEntity
     }
     final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
     return incident == that.incident
+        && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
+        && pendingIncident == that.pendingIncident
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(activityId, that.activityId)
         && activityState == that.activityState
         && activityType == that.activityType
+        && Objects.equals(incidentKeys, that.incidentKeys)
         && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(joinRelation, that.joinRelation);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processInstanceKey,
-        activityId,
-        activityState,
-        activityType,
-        errorMessage,
-        incident,
-        joinRelation);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
+        && Objects.equals(positionIncident, that.positionIncident)
+        && Objects.equals(positionJob, that.positionJob)
+        && Objects.equals(joinRelation, that.joinRelation)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime);
   }
 }

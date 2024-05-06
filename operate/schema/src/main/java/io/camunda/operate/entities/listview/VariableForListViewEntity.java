@@ -17,8 +17,8 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   private Long scopeKey;
   private String varName;
   private String varValue;
-
   private String tenantId;
+  private Long position;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
@@ -76,8 +76,17 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
     this.joinRelation = joinRelation;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public VariableForListViewEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -93,12 +102,20 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
         && Objects.equals(varName, that.varName)
         && Objects.equals(varValue, that.varValue)
         && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
         && Objects.equals(joinRelation, that.joinRelation);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(), processInstanceKey, scopeKey, varName, varValue, tenantId, joinRelation);
+        super.hashCode(),
+        processInstanceKey,
+        scopeKey,
+        varName,
+        varValue,
+        tenantId,
+        position,
+        joinRelation);
   }
 }

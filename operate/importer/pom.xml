@@ -149,7 +149,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:operate-importer-8_6</dependency>
+            <dependency>io.camunda:operate-importer-8_5</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
