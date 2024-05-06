@@ -19,7 +19,6 @@ package io.atomix.cluster.messaging.impl;
 import com.google.common.collect.Maps;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.util.StringUtil;
-import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,7 +72,8 @@ abstract class AbstractClientConnection implements ClientConnection {
     if (closed.compareAndSet(false, true)) {
       for (final CompletableFuture<byte[]> responseFuture : responseFutures.values()) {
         responseFuture.completeExceptionally(
-            new ConnectException(String.format("Connection %s was closed", this)));
+            new MessagingException.ConnectionClosed(
+                String.format("Connection %s was closed", this)));
       }
     }
   }
