@@ -90,7 +90,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
     if (permit.isLeft()) {
       return Either.left(WriteFailure.FULL);
     }
-    final var inflightAppend = permit.get();
 
     final int batchSize = appendEntries.size();
     final int batchLength = calculateBatchLength(appendEntries);
@@ -102,8 +101,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final var sequencedBatch =
           new SequencedBatch(
               currentTimeMillis(), currentPosition, sourcePosition, appendEntries, batchLength);
-      inflightAppend.start(highestPosition);
-      logStorage.append(currentPosition, highestPosition, sequencedBatch, inflightAppend);
+      flowControl.onAppend(permit.get(), highestPosition);
+      logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;
       return Either.right(highestPosition);
     } finally {

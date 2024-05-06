@@ -14,16 +14,20 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FlowControl {
+public final class FlowControl implements AppendListener {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
   private final Limiter<Void> appendLimiter;
   private final LogStreamMetrics metrics;
+  private final ConcurrentSkipListMap<Long, InFlightEntry> inFlightEntries =
+      new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault());
@@ -53,6 +57,21 @@ public final class FlowControl {
     }
 
     return Either.right(new InFlightEntry(batchMetadata, appendListener, metrics));
+  }
+
+  public void onAppend(final InFlightEntry inFlightEntry, final long highestPosition) {
+    inFlightEntries.put(highestPosition, inFlightEntry);
+    inFlightEntry.onAppend(highestPosition);
+  }
+
+  @Override
+  public void onWrite(final long index, final long highestPosition) {
+    inFlightEntries.get(highestPosition).onWrite();
+  }
+
+  @Override
+  public void onCommit(final long index, final long highestPosition) {
+    inFlightEntries.get(highestPosition).onCommit();
   }
 
   public sealed interface Rejection {

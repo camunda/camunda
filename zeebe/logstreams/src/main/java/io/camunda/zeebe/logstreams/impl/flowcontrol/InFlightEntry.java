@@ -10,17 +10,16 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
-import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.prometheus.client.Histogram;
 import java.util.List;
 
 /**
  * Represents an in-flight entry and its lifecycle from being written, committed, processed and
  * finally exported. Updates metrics and backpressure limits after being {@link
- * InFlightEntry#start(long) started} and handles callbacks from the log storage and other
+ * InFlightEntry#onAppend(long) started} and handles callbacks from the log storage and other
  * components involved.
  */
-public final class InFlightEntry implements AppendListener {
+public final class InFlightEntry {
 
   private final List<LogAppendEntryMetadata> entryMetadata;
   private final Limiter.Listener limiter;
@@ -38,8 +37,16 @@ public final class InFlightEntry implements AppendListener {
     this.metrics = metrics;
   }
 
-  @Override
-  public void onWrite(final long index, final long highestPosition) {
+  public InFlightEntry onAppend(final long position) {
+    this.position = position;
+    writeTimer = metrics.startWriteTimer();
+    commitTimer = metrics.startCommitTimer();
+    metrics.increaseInflight();
+    metrics.increaseTriedAppends();
+    return this;
+  }
+
+  public void onWrite() {
     writeTimer.close();
     entryMetadata.forEach(
         metadata ->
@@ -48,22 +55,12 @@ public final class InFlightEntry implements AppendListener {
     metrics.setLastWrittenPosition(position);
   }
 
-  @Override
-  public void onCommit(final long index, final long highestPosition) {
+  public void onCommit() {
     metrics.decreaseInflight();
     metrics.setLastCommittedPosition(position);
     if (commitTimer != null) {
       commitTimer.close();
     }
     limiter.onSuccess();
-  }
-
-  public InFlightEntry start(final long position) {
-    this.position = position;
-    writeTimer = metrics.startWriteTimer();
-    commitTimer = metrics.startCommitTimer();
-    metrics.increaseInflight();
-    metrics.increaseTriedAppends();
-    return this;
   }
 }
