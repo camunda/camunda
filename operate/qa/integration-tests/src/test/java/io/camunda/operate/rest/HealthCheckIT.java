@@ -14,8 +14,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.operate.StandaloneOperate;
 import io.camunda.operate.management.IndicesHealthIndicator;
+import io.camunda.operate.property.OperateApplicationProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.ArrayList;
@@ -111,7 +111,7 @@ public class HealthCheckIT {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      final Map<String, Object> map = StandaloneOperate.getManagementProperties();
+      final Map<String, Object> map = OperateApplicationProperties.getManagementProperties();
       final List<String> properties = new ArrayList();
       map.forEach(
           (key, value) -> {

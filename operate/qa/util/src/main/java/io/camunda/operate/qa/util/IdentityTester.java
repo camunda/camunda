@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.qa.util;
 
-import static io.camunda.operate.StandaloneOperate.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.operate.StandaloneOperate.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.operate.property.OperateApplicationProperties.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.operate.property.OperateApplicationProperties.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.operate.qa.util.TestContainerUtil.*;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 
@@ -28,7 +28,7 @@ public class IdentityTester {
   private static final String REALM = "camunda-platform";
   private static final String CONTEXT_PATH = "/auth";
 
-  public static void startIdentityBeforeTestClass(boolean multiTenancyEnabled) {
+  public static void startIdentityBeforeTestClass(final boolean multiTenancyEnabled) {
 
     testContainerUtil = new TestContainerUtil();
     testContext = new TestContext();
@@ -53,7 +53,7 @@ public class IdentityTester {
   }
 
   public static void registerProperties(
-      DynamicPropertyRegistry registry, boolean multiTenancyEnabled) {
+      final DynamicPropertyRegistry registry, final boolean multiTenancyEnabled) {
     registry.add("camunda.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
     //    registry.add("camunda.operate.identity.resourcePermissionsEnabled", () -> true);
     registry.add(

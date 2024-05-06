@@ -7,13 +7,15 @@
  */
 package io.camunda.operate;
 
+import static io.camunda.operate.property.OperateApplicationProperties.OPERATE_STATIC_RESOURCES_LOCATION;
+import static io.camunda.operate.property.OperateApplicationProperties.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.operate.property.OperateApplicationProperties.SPRING_THYMELEAF_PREFIX_VALUE;
+
+import io.camunda.operate.property.OperateApplicationProperties;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
@@ -40,14 +42,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration
-public class StandaloneOperate {
-
-  public static final String OPERATE_STATIC_RESOURCES_LOCATION =
-      "classpath:/META-INF/resources/operate/";
-  public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = OPERATE_STATIC_RESOURCES_LOCATION;
-  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneOperate.class);
+public class StandaloneOperate implements OperateMainApplication {
 
   public static void main(final String[] args) {
 
@@ -87,7 +82,7 @@ public class StandaloneOperate {
   private static void setDefaultProperties(final SpringApplication springApplication) {
     final Map<String, Object> defaultsProperties = new HashMap<>();
     defaultsProperties.putAll(getWebProperties());
-    defaultsProperties.putAll(getManagementProperties());
+    defaultsProperties.putAll(OperateApplicationProperties.getManagementProperties());
     springApplication.setDefaultProperties(defaultsProperties);
   }
 
@@ -105,24 +100,6 @@ public class StandaloneOperate {
         // Internal API error handling is defined in InternalAPIErrorController.
         "server.error.include-message",
         "always");
-  }
-
-  public static Map<String, Object> getManagementProperties() {
-    return Map.of(
-        // disable default health indicators:
-        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
-        "management.health.defaults.enabled", "false",
-
-        // enable Kubernetes health groups:
-        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
-        "management.endpoint.health.probes.enabled", "true",
-
-        // enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include",
-            "health, prometheus, loggers, usage-metrics, backups",
-
-        // add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");
   }
 
   public static class ApplicationErrorListener
