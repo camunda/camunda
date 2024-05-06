@@ -18,10 +18,6 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
 
   // @formatter:off
   public static final String DEF_USERS_QUERY = "select username from users ";
-  public static final String DEF_USERS_GROUPS_QUERY =
-      "select g.id, g.group_name"
-          + " from groups g, group_members gm"
-          + " where gm.username = ? and g.id = gm.group_id";
 
   // @formatter:on
 
