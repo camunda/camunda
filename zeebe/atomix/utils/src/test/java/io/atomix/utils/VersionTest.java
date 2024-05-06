@@ -23,6 +23,23 @@ import org.junit.Test;
 
 /** Version test. */
 public class VersionTest {
+
+  @Test
+  public void shouldAllowAlphaReleaseCandidates() {
+    // given
+    final var version = "8.6.0-alpha1-rc1";
+
+    // when
+    final Version from = Version.from(version);
+
+    // then
+    assertThat(from.major()).isEqualTo(8);
+    assertThat(from.minor()).isEqualTo(6);
+    assertThat(from.patch()).isEqualTo(0);
+    assertThat(from.preRelease()).isEqualTo("alpha1-rc1");
+    assertThat(from.buildMetadata()).isNull();
+  }
+
   @Test
   public void testVersionComparison() {
     assertThat(Version.from("1.0.0")).isLessThan(Version.from("2.0.0"));
