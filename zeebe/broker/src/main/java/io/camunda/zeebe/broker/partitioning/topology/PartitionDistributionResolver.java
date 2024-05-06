@@ -16,9 +16,9 @@ import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistribut
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
-import io.camunda.zeebe.topology.PartitionDistributor;
-import io.camunda.zeebe.topology.StaticConfiguration;
-import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
+import io.camunda.zeebe.dynamic.config.StaticConfiguration;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
