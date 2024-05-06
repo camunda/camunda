@@ -427,16 +427,6 @@
 
   <build>
     <finalName>camunda-zeebe-${project.version}</finalName>
-    <resources>
-      <resource>
-        <targetPath>${project.build.outputDirectory}/META-INF/resources/operate</targetPath>
-        <directory>${maven.multiModuleProjectDirectory}/operate/client/build</directory>
-      </resource>
-      <resource>
-        <targetPath>${project.build.outputDirectory}/META-INF/resources/tasklist</targetPath>
-        <directory>${maven.multiModuleProjectDirectory}/tasklist/client/build</directory>
-      </resource>
-    </resources>
 
     <plugins>
       <plugin>
@@ -629,6 +619,16 @@
     <profile>
       <id>buildDistFrontend</id>
       <build>
+        <resources>
+          <resource>
+            <targetPath>${project.build.outputDirectory}/META-INF/resources/operate</targetPath>
+            <directory>${maven.multiModuleProjectDirectory}/operate/client/build</directory>
+          </resource>
+          <resource>
+            <targetPath>${project.build.outputDirectory}/META-INF/resources/tasklist</targetPath>
+            <directory>${maven.multiModuleProjectDirectory}/tasklist/client/build</directory>
+          </resource>
+        </resources>
         <plugins>
           <plugin>
             <groupId>com.github.eirslett</groupId>
@@ -653,10 +653,8 @@
                   <goal>yarn</goal>
                 </goals>
                 <configuration>
-                  <arguments>version --new-version=${project.version} --no-git-tag-version
-                  </arguments>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client
-                  </workingDirectory>
+                  <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
                 </configuration>
               </execution>
               <execution>
@@ -666,8 +664,7 @@
                 </goals>
                 <configuration>
                   <failOnError>false</failOnError>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client
-                  </workingDirectory>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
                 </configuration>
               </execution>
               <execution>
@@ -678,8 +675,7 @@
                 <configuration>
                   <failOnError>false</failOnError>
                   <arguments>build</arguments>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client
-                  </workingDirectory>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
                 </configuration>
               </execution>
               <execution>
@@ -688,10 +684,8 @@
                   <goal>yarn</goal>
                 </goals>
                 <configuration>
-                  <arguments>version --new-version=${project.version} --no-git-tag-version
-                  </arguments>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client
-                  </workingDirectory>
+                  <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
                 </configuration>
               </execution>
               <execution>
@@ -701,8 +695,7 @@
                 </goals>
                 <configuration>
                   <failOnError>false</failOnError>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client
-                  </workingDirectory>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
                 </configuration>
               </execution>
               <execution>
@@ -713,8 +706,7 @@
                 <configuration>
                   <failOnError>false</failOnError>
                   <arguments>build</arguments>
-                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client
-                  </workingDirectory>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
                 </configuration>
               </execution>
             </executions>
