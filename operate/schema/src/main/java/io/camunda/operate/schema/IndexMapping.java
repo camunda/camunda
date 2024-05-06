@@ -33,6 +33,8 @@ public class IndexMapping {
 
   private Set<IndexMappingProperty> properties;
 
+  private Map<String, Object> metaProperties;
+
   public String getIndexName() {
     return indexName;
   }
@@ -71,9 +73,18 @@ public class IndexMapping {
                 IndexMappingProperty::getName, IndexMappingProperty::getTypeDefinition));
   }
 
+  public Map<String, Object> getMetaProperties() {
+    return metaProperties;
+  }
+
+  public IndexMapping setMetaProperties(final Map<String, Object> metaProperties) {
+    this.metaProperties = metaProperties;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(indexName, dynamic, properties);
+    return Objects.hash(indexName, dynamic, properties, metaProperties);
   }
 
   @Override
@@ -86,8 +97,8 @@ public class IndexMapping {
     }
     final IndexMapping that = (IndexMapping) o;
     return Objects.equals(indexName, that.indexName)
-        && Objects.equals(dynamic, that.dynamic)
-        && Objects.equals(properties, that.properties);
+        && Objects.equals(properties, that.properties)
+        && Objects.equals(metaProperties, that.metaProperties);
   }
 
   @Override
@@ -101,6 +112,8 @@ public class IndexMapping {
         + '\''
         + ", properties="
         + properties
+        + ", metaProperties="
+        + metaProperties
         + '}';
   }
 

@@ -54,6 +54,10 @@ public class EventTemplate extends AbstractTemplateDescriptor
   public static final String MESSAGE_NAME = "messageName";
   public static final String CORRELATION_KEY = "correlationKey";
 
+  public static final String POSITION_INCIDENT = "positionIncident";
+  public static final String POSITION_JOB = "positionJob";
+  public static final String POSITION_MESSAGE = "positionProcessMessageSubscription";
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

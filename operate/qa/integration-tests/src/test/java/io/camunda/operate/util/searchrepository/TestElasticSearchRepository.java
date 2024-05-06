@@ -108,6 +108,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public boolean createOrUpdateDocumentFromObject(
+      final String indexName, final String docId, final Object data, final String routing)
+      throws IOException {
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, docId, entityMap, routing);
+  }
+
+  @Override
   public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
     final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, entityMap);
@@ -116,9 +124,18 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Override
   public boolean createOrUpdateDocument(String name, String id, Map<String, ?> doc)
       throws IOException {
-    final IndexResponse response =
-        esClient.index(
-            new IndexRequest(name).id(id).source(doc, XContentType.JSON), RequestOptions.DEFAULT);
+    return createOrUpdateDocument(name, id, doc, null);
+  }
+
+  @Override
+  public boolean createOrUpdateDocument(
+      final String name, final String id, final Map<String, ?> doc, final String routing)
+      throws IOException {
+    final IndexRequest source = new IndexRequest(name).id(id).source(doc, XContentType.JSON);
+    if (routing != null) {
+      source.routing(routing);
+    }
+    final IndexResponse response = esClient.index(source, RequestOptions.DEFAULT);
     final DocWriteResponse.Result result = response.getResult();
     return result.equals(DocWriteResponse.Result.CREATED)
         || result.equals(DocWriteResponse.Result.UPDATED);

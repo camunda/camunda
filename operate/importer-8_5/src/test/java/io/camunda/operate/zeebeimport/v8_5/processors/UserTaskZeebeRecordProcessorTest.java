@@ -26,6 +26,7 @@ import io.camunda.operate.entities.UserTaskEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.zeebeimport.processors.UserTaskZeebeRecordProcessor;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;

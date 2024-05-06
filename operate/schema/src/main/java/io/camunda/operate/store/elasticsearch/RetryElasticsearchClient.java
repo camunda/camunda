@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -221,6 +222,8 @@ public class RetryElasticsearchClient {
                       new TypeReference<HashMap<String, Object>>() {});
               final Map<String, Object> properties =
                   (Map<String, Object>) mappingMetadata.get("properties");
+              final Map<String, Object> metaProperties =
+                  (Map<String, Object>) mappingMetadata.get("_meta");
               final String dynamic = (String) mappingMetadata.get("dynamic");
               mappingsMap.put(
                   entry.getKey(),
@@ -230,7 +233,8 @@ public class RetryElasticsearchClient {
                       .setProperties(
                           properties.entrySet().stream()
                               .map(p -> createIndexMappingProperty(p))
-                              .collect(Collectors.toSet())));
+                              .collect(Collectors.toSet()))
+                      .setMetaProperties(metaProperties));
             }
             return mappingsMap;
           } catch (final ElasticsearchException e) {
@@ -771,5 +775,28 @@ public class RetryElasticsearchClient {
         String.format("Put Mapping %s ", request.indices()),
         () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
+  }
+
+  public void updateMetaField(
+      final IndexDescriptor indexDescriptor, final String fieldName, final Object value) {
+    LOGGER.debug("Meta field will be updated. Index name: {}. ");
+    final PutMappingRequest request;
+    try {
+      request =
+          new PutMappingRequest(indexDescriptor.getFullQualifiedName())
+              .source(
+                  "{\"_meta\": {\""
+                      + fieldName
+                      + "\": "
+                      + objectMapper.writeValueAsString(value)
+                      + "}}",
+                  XContentType.JSON);
+    } catch (final JsonProcessingException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Exception occurred when serializing meta field value for update. Field name: %s. Field value: %s.",
+              fieldName, value));
+    }
+    putMapping(request);
   }
 }

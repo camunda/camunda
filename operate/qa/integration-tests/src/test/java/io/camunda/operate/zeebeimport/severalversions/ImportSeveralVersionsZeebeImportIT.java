@@ -42,7 +42,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
+import io.camunda.operate.zeebeimport.processors.ImportBulkProcessor;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;

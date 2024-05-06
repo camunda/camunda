@@ -14,70 +14,34 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.zeebeimport.v8_5.processors;
+package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.OperationsManager;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import java.util.HashSet;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DecisionZeebeRecordProcessor {
+public class OperationZeebeRecordProcessor {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionZeebeRecordProcessor.class);
-
-  private static final Set<String> STATES = new HashSet<>();
+  private static final Set<String> VARIABLE_DOCUMENT_STATES = new HashSet<>();
 
   static {
-    STATES.add(ProcessIntent.CREATED.name());
+    VARIABLE_DOCUMENT_STATES.add(VariableDocumentIntent.UPDATED.name());
   }
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private OperationsManager operationsManager;
 
-  @Autowired private DecisionIndex decisionIndex;
-
-  public void processDecisionRecord(final Record record, final BatchRequest batchRequest)
+  public void processVariableDocumentRecords(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
-    final String intentStr = record.getIntent().name();
-    if (STATES.contains(intentStr)) {
-      final DecisionRecordValue decision = (DecisionRecordValue) record.getValue();
-      persistDecision(decision, batchRequest);
+    if (!VARIABLE_DOCUMENT_STATES.contains(record.getIntent().name())) {
+      return;
     }
-  }
-
-  private void persistDecision(final DecisionRecordValue decision, final BatchRequest batchRequest)
-      throws PersistenceException {
-    final DecisionDefinitionEntity decisionEntity = createEntity(decision);
-    LOGGER.debug(
-        "Decision: key {}, decisionId {}", decisionEntity.getKey(), decisionEntity.getDecisionId());
-    batchRequest.addWithId(
-        decisionIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(decisionEntity.getKey()),
-        decisionEntity);
-  }
-
-  private DecisionDefinitionEntity createEntity(final DecisionRecordValue decision) {
-    return new DecisionDefinitionEntity()
-        .setId(String.valueOf(decision.getDecisionKey()))
-        .setKey(decision.getDecisionKey())
-        .setName(decision.getDecisionName())
-        .setVersion(decision.getVersion())
-        .setDecisionId(decision.getDecisionId())
-        .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-        .setTenantId(tenantOrDefault(decision.getTenantId()));
+    operationsManager.completeOperation(record.getKey(), null, null, null, batchRequest);
   }
 }
