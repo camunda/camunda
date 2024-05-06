@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.IndexRequest.Builder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -93,17 +94,33 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
+  public boolean createOrUpdateDocumentFromObject(
+      final String indexName, final String docId, final Object data, final String routing)
+      throws IOException {
+    final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, docId, entityMap, routing);
+  }
+
+  @Override
   public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
     final Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
     return createOrUpdateDocument(indexName, entityMap);
   }
 
   @Override
-  public boolean createOrUpdateDocument(String indexName, String id, Map<String, ?> doc)
-      throws IOException {
-    return richOpenSearchClient
-        .doc()
-        .indexWithRetries(indexRequestBuilder(indexName).id(id).document(doc));
+  public boolean createOrUpdateDocument(
+      final String indexName, final String id, final Map<String, ?> doc) {
+    return createOrUpdateDocument(indexName, id, doc, null);
+  }
+
+  @Override
+  public boolean createOrUpdateDocument(
+      final String indexName, final String id, final Map<String, ?> doc, final String routing) {
+    final Builder<Object> document = indexRequestBuilder(indexName).id(id).document(doc);
+    if (routing != null) {
+      document.routing(routing);
+    }
+    return richOpenSearchClient.doc().indexWithRetries(document);
   }
 
   @Override

@@ -39,13 +39,15 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   private String tenantId = DEFAULT_TENANT_ID;
 
+  private Long position;
+
   @JsonIgnore private Object[] sortValues;
 
   public String getName() {
     return name;
   }
 
-  public VariableEntity setName(String name) {
+  public VariableEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -54,7 +56,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return value;
   }
 
-  public VariableEntity setValue(String value) {
+  public VariableEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -81,7 +83,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return scopeKey;
   }
 
-  public VariableEntity setScopeKey(Long scopeKey) {
+  public VariableEntity setScopeKey(final Long scopeKey) {
     this.scopeKey = scopeKey;
     return this;
   }
@@ -90,7 +92,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return processInstanceKey;
   }
 
-  public VariableEntity setProcessInstanceKey(Long processInstanceKey) {
+  public VariableEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -99,7 +101,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return processDefinitionKey;
   }
 
-  public VariableEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public VariableEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -108,7 +110,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return bpmnProcessId;
   }
 
-  public VariableEntity setBpmnProcessId(String bpmnProcessId) {
+  public VariableEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -117,7 +119,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return tenantId;
   }
 
-  public VariableEntity setTenantId(String tenantId) {
+  public VariableEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -131,8 +133,36 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public VariableEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            super.hashCode(),
+            name,
+            value,
+            fullValue,
+            isPreview,
+            scopeKey,
+            processInstanceKey,
+            processDefinitionKey,
+            bpmnProcessId,
+            tenantId,
+            position);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -152,24 +182,33 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
         && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            super.hashCode(),
-            name,
-            value,
-            fullValue,
-            isPreview,
-            scopeKey,
-            processInstanceKey,
-            processDefinitionKey,
-            bpmnProcessId,
-            tenantId);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
+  public String toString() {
+    return "VariableEntity{"
+        + "name='"
+        + name
+        + '\''
+        + ", isPreview="
+        + isPreview
+        + ", scopeKey="
+        + scopeKey
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", position="
+        + position
+        + "} "
+        + super.toString();
   }
 }

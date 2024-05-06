@@ -16,6 +16,7 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
+import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -24,6 +25,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
@@ -32,6 +34,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -56,6 +59,8 @@ public class ElasticsearchImportStore implements ImportStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchImportStore.class);
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -128,6 +133,26 @@ public class ElasticsearchImportStore implements ImportStore {
     } catch (final Throwable e) {
       LOGGER.error("Error occurred while persisting latest loaded position", e);
       return Either.left(e);
+    }
+  }
+
+  @Override
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    retryElasticsearchClient.updateMetaField(
+        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
+  }
+
+  @Override
+  public boolean getConcurrencyMode() {
+    final String indexName = importPositionType.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings =
+        retryElasticsearchClient.getIndexMappings(indexName);
+    if (indexMappings.get(indexName).getMetaProperties() == null) {
+      return false;
+    } else {
+      final Object concurrencyMode =
+          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
+      return concurrencyMode == null ? false : (boolean) concurrencyMode;
     }
   }
 
