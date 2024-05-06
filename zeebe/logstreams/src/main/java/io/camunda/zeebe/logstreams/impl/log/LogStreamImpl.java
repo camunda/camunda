@@ -212,7 +212,6 @@ public final class LogStreamImpl extends Actor
         getWriteBuffersInitialPosition(),
         maxFragmentSize,
         new SequencerMetrics(partitionId),
-        logStreamMetrics,
         new FlowControl(logStreamMetrics, appendLimit));
   }
 

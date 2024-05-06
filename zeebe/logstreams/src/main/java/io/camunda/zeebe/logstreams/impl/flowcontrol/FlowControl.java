@@ -12,8 +12,10 @@ import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,8 @@ public final class FlowControl {
    * @return An Optional containing a {@link InFlightEntry} if append was accepted, an empty
    *     Optional otherwise.
    */
-  public Either<Rejection, InFlightEntry> tryAcquire(final WriteContext context) {
+  public Either<Rejection, InFlightEntry> tryAcquire(
+      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     final var appendListener = appendLimiter.acquire(null).orElse(null);
     if (appendListener == null) {
       metrics.increaseDeferredAppends();
@@ -49,7 +52,7 @@ public final class FlowControl {
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightEntry(appendListener, metrics));
+    return Either.right(new InFlightEntry(batchMetadata, appendListener, metrics));
   }
 
   public sealed interface Rejection {
