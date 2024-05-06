@@ -7,8 +7,9 @@
  */
 package io.camunda.identity.api;
 
-import io.camunda.identity.usermanagement.User;
-import io.camunda.identity.usermanagement.service.UsersService;
+import io.camunda.identity.usermanagement.CamundaUser;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.service.UserService;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,37 +22,36 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
-public class UsersController {
-  private final UsersService usersService;
+public class UserController {
+  private final UserService userService;
 
-  public UsersController(final UsersService usersService) {
-    this.usersService = usersService;
+  public UserController(final UserService userService) {
+    this.userService = userService;
   }
 
   @PostMapping
-  public User createUser(@RequestBody final User user) {
-    return usersService.createUser(user);
+  public CamundaUser createUser(@RequestBody final CamundaUserWithPassword user) {
+    return userService.createUser(user);
   }
 
   @DeleteMapping("/{username}")
-  public void deleteUser(@PathVariable("username") final String userName) {
-    usersService.deleteUser(userName);
+  public void deleteUser(@PathVariable("username") final String username) {
+    userService.deleteUser(username);
   }
 
   @GetMapping("/{username}")
-  public User findUserByUsername(@PathVariable("username") final String username) {
-    return usersService
-        .findUserByUsername(username)
-        .orElseThrow(() -> new RuntimeException("not found"));
+  public CamundaUser findUserByUsername(@PathVariable("username") final String username) {
+    return userService.findUserByUsername(username);
   }
 
   @GetMapping
-  public List<User> findAllUsers() {
-    return usersService.findAllUsers();
+  public List<CamundaUser> findAllUsers() {
+    return userService.findAllUsers();
   }
 
   @PutMapping("/{username}")
-  public void updateUser(final User user) {
-    usersService.updateUser(user);
+  public CamundaUser updateUser(
+      @PathVariable("username") final String username, final CamundaUserWithPassword user) {
+    return userService.updateUser(username, user);
   }
 }
