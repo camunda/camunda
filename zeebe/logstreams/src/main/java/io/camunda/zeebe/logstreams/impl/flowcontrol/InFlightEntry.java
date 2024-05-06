@@ -39,7 +39,7 @@ public final class InFlightEntry implements AppendListener {
   }
 
   @Override
-  public void onWrite(final long index) {
+  public void onWrite(final long index, final long highestPosition) {
     writeTimer.close();
     entryMetadata.forEach(
         metadata ->
@@ -49,7 +49,7 @@ public final class InFlightEntry implements AppendListener {
   }
 
   @Override
-  public void onCommit(final long index) {
+  public void onCommit(final long index, final long highestPosition) {
     metrics.decreaseInflight();
     metrics.setLastCommittedPosition(position);
     if (commitTimer != null) {

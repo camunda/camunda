@@ -103,14 +103,14 @@ public interface LogStorage {
      *
      * @param index the index of the written entry
      */
-    default void onWrite(final long index) {}
+    default void onWrite(final long index, final long highestPosition) {}
 
     /**
      * Called when the entry has been successfully committed.
      *
      * @param index the index of the committed entry
      */
-    default void onCommit(final long index) {}
+    default void onCommit(final long index, final long highestPosition) {}
   }
 
   /**

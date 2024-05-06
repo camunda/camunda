@@ -175,7 +175,7 @@ final class AtomixLogStorageReaderTest {
       final var indexed = log.append(new RaftLogEntry(1, entry));
       appendListener.onWrite(indexed);
       log.setCommitIndex(indexed.index());
-      appendListener.onCommit(indexed.index());
+      appendListener.onCommit(indexed.index(), entry.highestPosition());
     }
   }
 }

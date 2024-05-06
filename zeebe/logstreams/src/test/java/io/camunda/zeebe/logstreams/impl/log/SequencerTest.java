@@ -265,7 +265,7 @@ final class SequencerTest {
         Assertions.assertThat(lowestPosition).isEqualTo(position + 1);
       }
       position = highestPosition;
-      listener.onCommit(position);
+      listener.onCommit(position, highestPosition);
     }
 
     @Override
