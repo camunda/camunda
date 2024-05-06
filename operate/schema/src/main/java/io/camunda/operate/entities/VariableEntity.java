@@ -10,6 +10,7 @@ package io.camunda.operate.entities;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Arrays;
 import java.util.Objects;
 
 public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
@@ -37,7 +38,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return name;
   }
 
-  public VariableEntity setName(String name) {
+  public VariableEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -46,7 +47,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return value;
   }
 
-  public VariableEntity setValue(String value) {
+  public VariableEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -73,7 +74,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return scopeKey;
   }
 
-  public VariableEntity setScopeKey(Long scopeKey) {
+  public VariableEntity setScopeKey(final Long scopeKey) {
     this.scopeKey = scopeKey;
     return this;
   }
@@ -82,7 +83,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return processInstanceKey;
   }
 
-  public VariableEntity setProcessInstanceKey(Long processInstanceKey) {
+  public VariableEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -91,7 +92,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return processDefinitionKey;
   }
 
-  public VariableEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public VariableEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -100,7 +101,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return bpmnProcessId;
   }
 
-  public VariableEntity setBpmnProcessId(String bpmnProcessId) {
+  public VariableEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -109,7 +110,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return tenantId;
   }
 
-  public VariableEntity setTenantId(String tenantId) {
+  public VariableEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -133,6 +134,14 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   }
 
   @Override
+  public int hashCode() {
+    int result = Objects.hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey,
+        processInstanceKey, processDefinitionKey, bpmnProcessId, tenantId, position);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -144,31 +153,11 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
       return false;
     }
     final VariableEntity that = (VariableEntity) o;
-    return isPreview == that.isPreview
-        && Objects.equals(name, that.name)
-        && Objects.equals(value, that.value)
-        && Objects.equals(fullValue, that.fullValue)
-        && Objects.equals(scopeKey, that.scopeKey)
-        && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(position, that.position);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        name,
-        value,
-        fullValue,
-        isPreview,
-        scopeKey,
-        processInstanceKey,
-        processDefinitionKey,
-        bpmnProcessId,
-        tenantId,
-        position);
+    return isPreview == that.isPreview && Objects.equals(name, that.name) && Objects.equals(value,
+        that.value) && Objects.equals(fullValue, that.fullValue) && Objects.equals(scopeKey,
+        that.scopeKey) && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position) && Arrays.equals(sortValues, that.sortValues);
   }
 }
