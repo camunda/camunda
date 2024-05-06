@@ -551,11 +551,17 @@ public abstract class TestUtil {
     final OperationEntity oe = new OperationEntity();
     oe.generateId();
     oe.setProcessInstanceKey(processInstanceKey);
+    oe.setScopeKey(processInstanceKey);
     oe.setProcessDefinitionKey(processDefinitionKey);
     oe.setBpmnProcessId(bpmnProcessId);
     oe.setIncidentKey(incidentKey);
     oe.setVariableName(varName);
-    oe.setType(OperationType.RESOLVE_INCIDENT);
+    if (varName != null) {
+      oe.setType(OperationType.UPDATE_VARIABLE);
+      oe.setVariableValue(varName);
+    } else {
+      oe.setType(OperationType.RESOLVE_INCIDENT);
+    }
     if (username != null) {
       oe.setUsername(username);
     } else {

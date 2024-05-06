@@ -135,8 +135,19 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey,
-        processInstanceKey, processDefinitionKey, bpmnProcessId, tenantId, position);
+    int result =
+        Objects.hash(
+            super.hashCode(),
+            name,
+            value,
+            fullValue,
+            isPreview,
+            scopeKey,
+            processInstanceKey,
+            processDefinitionKey,
+            bpmnProcessId,
+            tenantId,
+            position);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -153,11 +164,42 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
       return false;
     }
     final VariableEntity that = (VariableEntity) o;
-    return isPreview == that.isPreview && Objects.equals(name, that.name) && Objects.equals(value,
-        that.value) && Objects.equals(fullValue, that.fullValue) && Objects.equals(scopeKey,
-        that.scopeKey) && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
-        bpmnProcessId, that.bpmnProcessId) && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(position, that.position) && Arrays.equals(sortValues, that.sortValues);
+    return isPreview == that.isPreview
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(fullValue, that.fullValue)
+        && Objects.equals(scopeKey, that.scopeKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(position, that.position)
+        && Arrays.equals(sortValues, that.sortValues);
+  }
+
+  @Override
+  public String toString() {
+    return "VariableEntity{"
+        + "name='"
+        + name
+        + '\''
+        + ", isPreview="
+        + isPreview
+        + ", scopeKey="
+        + scopeKey
+        + ", processInstanceKey="
+        + processInstanceKey
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", position="
+        + position
+        + "} "
+        + super.toString();
   }
 }
