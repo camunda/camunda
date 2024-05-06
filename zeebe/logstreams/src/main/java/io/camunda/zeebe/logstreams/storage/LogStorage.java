@@ -101,16 +101,16 @@ public interface LogStorage {
     /**
      * Called when the entry has been successfully written to the local storage.
      *
-     * @param address the address of the written entry
+     * @param index the index of the written entry
      */
-    default void onWrite(final long address) {}
+    default void onWrite(final long index) {}
 
     /**
      * Called when the entry has been successfully committed.
      *
-     * @param address the address of the committed entry
+     * @param index the index of the committed entry
      */
-    default void onCommit(final long address) {}
+    default void onCommit(final long index) {}
   }
 
   /**
