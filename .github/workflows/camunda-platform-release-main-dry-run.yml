@@ -20,7 +20,7 @@ jobs:
           - version: 0.8.2-alpha1
             latest: false
     with:
-      releaseBranch: main
+      releaseBranch: build-fe-dist
       releaseVersion: ${{ matrix.version }}
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
