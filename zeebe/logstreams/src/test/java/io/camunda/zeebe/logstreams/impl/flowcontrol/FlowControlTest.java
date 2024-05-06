@@ -49,7 +49,7 @@ final class FlowControlTest {
         inFlight.push(result.get());
       }
     } while (!rejecting);
-    inFlight.forEach(append -> append.onCommit(1));
+    inFlight.forEach(append -> append.onCommit(1, -1));
 
     // then
     Awaitility.await("Eventually accepts appends again")

@@ -737,6 +737,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private void replicate(final IndexedRaftLogEntry indexed, final AppendListener appendListener) {
     raft.checkThread();
     final var appendEntriesFuture = appender.appendEntries(indexed.index());
+    final var committedPosition =
+        indexed.isApplicationEntry() ? indexed.getApplicationEntry().highestPosition() : -1;
 
     if (indexed.isApplicationEntry()) {
       // We have some services which are waiting for the application records, especially position
@@ -744,7 +746,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       // passing the complete object (IndexedRaftLogEntry) threw the listeners and
       // keep them in heap until they are committed. This had the risk of going out of OOM
       // if records can't be committed, see https://github.com/camunda/zeebe/issues/14275
-      final var committedPosition = indexed.getApplicationEntry().highestPosition();
       appendEntriesFuture.whenCompleteAsync(
           (commitIndex, commitError) -> {
             if (isRunning() && commitError == null) {
@@ -764,7 +765,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           // up to date with the latest entries, so it can handle configuration and initial
           // entries properly on fail over
           if (commitError == null) {
-            appendListener.onCommit(commitIndex);
+            appendListener.onCommit(commitIndex, committedPosition);
           } else {
             appendListener.onCommitError(commitIndex, commitError);
             // replicating the entry will be retried on the next append request
