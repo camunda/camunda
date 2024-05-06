@@ -12,6 +12,7 @@ import static io.camunda.tasklist.util.CollectionUtil.map;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -41,7 +42,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
 
   @Autowired RetryOpenSearchClient retryOpenSearchClient;
 
-  private Set<String> getAllIndexNamesForIndex(String index) {
+  private Set<String> getAllIndexNamesForIndex(final String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryOpenSearchClient.getIndexNames(indexPattern);
@@ -57,7 +58,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     return tasklistProperties.getOpenSearch().getIndexPrefix();
   }
 
-  public Set<String> newerVersionsForIndex(IndexDescriptor indexDescriptor) {
+  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
     final SemanticVersion currentVersion =
         SemanticVersion.fromVersion(indexDescriptor.getVersion());
     final Set<String> versions = versionsForIndex(indexDescriptor);
@@ -67,30 +68,13 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
   }
 
   @Override
-  public Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor) {
+  public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
     final SemanticVersion currentVersion =
         SemanticVersion.fromVersion(indexDescriptor.getVersion());
     final Set<String> versions = versionsForIndex(indexDescriptor);
     return versions.stream()
         .filter(version -> currentVersion.isNewerThan(SemanticVersion.fromVersion(version)))
         .collect(Collectors.toSet());
-  }
-
-  private Set<String> versionsForIndex(IndexDescriptor indexDescriptor) {
-    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
-    return allIndexNames.stream()
-        .map(this::getVersionFromIndexName)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toSet());
-  }
-
-  private Optional<String> getVersionFromIndexName(String indexName) {
-    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
-    if (matcher.matches() && matcher.groupCount() > 0) {
-      return Optional.of(matcher.group(1));
-    }
-    return Optional.empty();
   }
 
   @Override
@@ -138,14 +122,43 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
       return indices.containsAll(allIndexNames) && validateNumberOfReplicas(allIndexNames);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
     }
   }
 
+  @Override
+  public void validateIndexVersions() {
+    // TODO: Implement this method on Open Search Scope
+
+  }
+
+  @Override
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
+    // TODO: Implement this method on Open Search Scope
+    return null;
+  }
+
+  private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return allIndexNames.stream()
+        .map(this::getVersionFromIndexName)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toSet());
+  }
+
+  private Optional<String> getVersionFromIndexName(final String indexName) {
+    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
+    if (matcher.matches() && matcher.groupCount() > 0) {
+      return Optional.of(matcher.group(1));
+    }
+    return Optional.empty();
+  }
+
   public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (String index : indexes) {
+    for (final String index : indexes) {
       final IndexSettings response =
           retryOpenSearchClient.getIndexSettingsFor(
               index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);

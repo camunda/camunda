@@ -8,12 +8,15 @@
 package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,33 +41,42 @@ public class SchemaStartup {
 
   @PostConstruct
   public void initializeSchema() throws MigrationException {
-    LOGGER.info("SchemaStartup started.");
-    LOGGER.info("SchemaStartup: validate schema.");
-    schemaValidator.validate();
-
-    Boolean isCreateSchema = false;
-    if (TasklistProperties.ELASTIC_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())) {
-      isCreateSchema = tasklistProperties.getElasticsearch().isCreateSchema();
-    } else if (TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())) {
-      isCreateSchema = tasklistProperties.getOpenSearch().isCreateSchema();
-    }
-
-    if (isCreateSchema && !schemaValidator.schemaExists()) {
-      LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
-      schemaManager.createSchema();
-    } else {
-      LOGGER.info(
-          "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
-    }
-    if (migrationProperties.isMigrationEnabled()) {
-      LOGGER.info("SchemaStartup: migrate schema.");
-      try {
-        migrator.migrate();
-      } catch (Exception e) {
-        LOGGER.error("An issue occurred during schema migration, details:", e);
-        throw new TasklistRuntimeException("An issue occurred during schema migration", e);
+    try {
+      LOGGER.info("SchemaStartup started.");
+      LOGGER.info("SchemaStartup: validate index versions.");
+      schemaValidator.validateIndexVersions();
+      LOGGER.info("SchemaStartup: validate index mappings.");
+      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields =
+          schemaValidator.validateIndexMappings();
+      final boolean createSchema =
+          tasklistProperties.getDatabaseType().equals("opensearch")
+              ? tasklistProperties.getOpenSearch().isCreateSchema()
+              : tasklistProperties.getElasticsearch().isCreateSchema();
+      if (createSchema && !schemaValidator.schemaExists()) {
+        LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
+        schemaManager.createSchema();
+        LOGGER.info("SchemaStartup: update index mappings.");
+      } else {
+        LOGGER.info(
+            "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
+
+      if (!newFields.isEmpty()) {
+        if (createSchema) {
+          schemaManager.updateSchema(newFields);
+        } else {
+          LOGGER.info(
+              "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
+        }
+      }
+      if (migrationProperties.isMigrationEnabled()) {
+        LOGGER.info("SchemaStartup: migrate schema.");
+        migrator.migrate();
+      }
+      LOGGER.info("SchemaStartup finished.");
+    } catch (final Exception ex) {
+      LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
+      throw ex;
     }
-    LOGGER.info("SchemaStartup: finished.");
   }
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.property;
 
+import java.util.Map;
+
 public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "tasklist";
@@ -16,6 +18,8 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
+  private Map<String, Integer> numberOfShardsForIndices = Map.of();
+  private Map<String, Integer> numberOfReplicasForIndices = Map.of();
 
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
@@ -53,5 +57,21 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public void setRefreshInterval(final String refreshInterval) {
     this.refreshInterval = refreshInterval;
+  }
+
+  public Map<String, Integer> getNumberOfShardsForIndices() {
+    return numberOfShardsForIndices;
+  }
+
+  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
+    this.numberOfShardsForIndices = numberOfShardsForIndices;
+  }
+
+  public Map<String, Integer> getNumberOfReplicasForIndices() {
+    return numberOfReplicasForIndices;
+  }
+
+  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
+    this.numberOfReplicasForIndices = numberOfReplicasForIndices;
   }
 }

@@ -7,7 +7,9 @@
  */
 package io.camunda.tasklist.schema;
 
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import java.util.Map;
 import java.util.Set;
 
 public interface IndexSchemaValidator {
@@ -18,4 +20,8 @@ public interface IndexSchemaValidator {
   boolean hasAnyTasklistIndices();
 
   boolean schemaExists();
+
+  void validateIndexVersions();
+
+  Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings();
 }
