@@ -749,7 +749,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .addListener(
             onClose ->
                 future.completeExceptionally(
-                    new ConnectException(
+                    new MessagingException.ConnectionClosed(
                         String.format(
                             "Channel %s for address %s was closed unexpectedly before the request was handled",
                             channel, address))));
