@@ -12,10 +12,13 @@ on:
       - '.github/actions/**'
       - '.github/workflows/spring-boot-starter-camunda-sdk-ci.yml'
       - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/client/java/**'
   pull_request:
     paths:
+      - '.github/actions/**'
       - '.github/workflows/spring-boot-starter-camunda-sdk-ci.yml'
       - 'spring-boot-starter-camunda-sdk/**'
+      - 'zeebe/client/java/**'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }

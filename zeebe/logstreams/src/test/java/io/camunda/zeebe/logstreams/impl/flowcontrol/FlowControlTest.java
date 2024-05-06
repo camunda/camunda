@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import java.time.Duration;
 import java.util.LinkedList;
 import org.awaitility.Awaitility;
@@ -28,7 +29,7 @@ final class FlowControlTest {
     Awaitility.await("Rejects new appends")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> flow.tryAcquire().isLeft());
+        .until(() -> flow.tryAcquire(WriteContext.internal()).isLeft());
   }
 
   @Test
@@ -40,7 +41,7 @@ final class FlowControlTest {
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();
     do {
-      final var result = flow.tryAcquire();
+      final var result = flow.tryAcquire(WriteContext.internal());
       if (result.isLeft()) {
         rejecting = true;
       } else {
@@ -50,6 +51,7 @@ final class FlowControlTest {
     inFlight.forEach(append -> append.onCommit(1));
 
     // then
-    Awaitility.await("Eventually accepts appends again").until(() -> flow.tryAcquire().isRight());
+    Awaitility.await("Eventually accepts appends again")
+        .until(() -> flow.tryAcquire(WriteContext.internal()).isRight());
   }
 }

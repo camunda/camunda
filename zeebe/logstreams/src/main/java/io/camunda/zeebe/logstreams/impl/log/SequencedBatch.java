@@ -32,7 +32,7 @@ public record SequencedBatch(
         firstPosition,
         sourcePosition,
         Objects.requireNonNull(entries, "must specify a list of entries"),
-        SequencedBatchSerializer.calculateBatchSize(entries));
+        SequencedBatchSerializer.calculateBatchLength(entries));
   }
 
   @Override

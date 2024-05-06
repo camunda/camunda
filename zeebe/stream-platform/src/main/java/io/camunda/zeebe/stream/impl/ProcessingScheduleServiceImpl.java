@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -152,7 +153,9 @@ public class ProcessingScheduleServiceImpl
                   return true;
                 }
 
-                return logStreamWriter.tryWrite(recordBatch.entries()).isRight();
+                return logStreamWriter
+                    .tryWrite(WriteContext.scheduled(), recordBatch.entries())
+                    .isRight();
               },
               abortCondition);
 
