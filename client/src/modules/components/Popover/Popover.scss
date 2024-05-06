@@ -3,7 +3,7 @@
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
-.dark .Popover > .cds--popover > .popoverContent {
+.dark .Popover > .cds--popover {
   @include theme.theme(themes.$g100);
 }
 
@@ -14,12 +14,15 @@
     min-width: 100%;
   }
 
-  > .cds--popover > .popoverContent {
+  > .cds--popover {
     @include theme.theme(themes.$g10);
-    padding: spacing.$spacing-05;
 
-    &.scrollable {
-      @include scrollable;
+    > .popoverContent {
+      padding: spacing.$spacing-05;
+
+      &.scrollable {
+        @include scrollable;
+      }
     }
   }
 

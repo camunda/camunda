@@ -32,29 +32,13 @@ import classNames from 'classnames';
 
 import './Popover.scss';
 
-const possibleAlignments: PopoverAlignment[] = [
-  'top',
-  'top-left',
-  'top-right',
-  'bottom',
-  'bottom-left',
-  'bottom-right',
-  'left',
-  'left-bottom',
-  'left-top',
-  'right',
-  'right-bottom',
-  'right-top',
-];
-
-interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'open' | 'align'> {
+interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'open'> {
   className?: string;
   children: ReactNode;
   floating?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
   autoOpen?: boolean;
-  align?: PopoverAlignment;
   trigger: ReactNode;
 }
 
@@ -85,18 +69,19 @@ export default function Popover({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const transformParent = useRef<HTMLElement | null>(null);
+  const parentContainer = useRef<HTMLElement | null>(null);
   const isInsideClick = useRef<boolean>(false);
+  const [alignment, setAlignment] = useState<PopoverAlignment | undefined>(align);
 
   const calculateDialogStyle = useCallback(() => {
-    const popoverClassList = popoverRef.current?.classList;
-    if (!popoverClassList || !buttonRef.current || !dialogRef.current || !contentRef.current) {
+    if (!buttonRef.current || !dialogRef.current || !contentRef.current) {
       return;
     }
 
+    setScrollable(false);
+
     const dialogStyles = dialogRef.current.style;
 
-    popoverClassList.remove(...possibleAlignments.map(getClassName));
     dialogRef.current.removeAttribute('style');
 
     const overlayWidth = dialogRef.current.clientWidth;
@@ -105,32 +90,37 @@ export default function Popover({
     const buttonRect = buttonRef.current.getBoundingClientRect();
     const buttonCenter = buttonRect.left + buttonRect.width / 2;
 
-    const bounds = getScrollBounds(transformParent.current);
+    const bounds = getScrollBounds(parentContainer.current);
 
     const bodyWidth = document.body.clientWidth;
     const margin = 10;
     const padding = 10 + 15;
+    const caretSpacing = props.isTabTip ? 0 : 10;
 
-    let newAlignment: PopoverAlignment = props.isTabTip ? 'bottom-left' : 'bottom';
+    let newAlignment: PopoverAlignment = align || props.isTabTip ? 'bottom-left' : 'bottom';
 
-    if (buttonCenter + overlayWidth / 2 > bodyWidth) {
+    // if the button is centered we are using half of its width to calculate the position, if its sticking to the left or right we are using the full width
+    const divisor = newAlignment.includes('left') || newAlignment.includes('right') ? 1 : 2;
+
+    if (buttonCenter + overlayWidth / divisor > bodyWidth) {
       newAlignment = 'bottom-right';
     }
 
-    if (buttonCenter - overlayWidth / 2 < 0) {
+    if (buttonCenter - overlayWidth / divisor < 0) {
       newAlignment = 'bottom-left';
     }
+
+    const bottomSpace = bounds.bottom - buttonRect.bottom - margin - caretSpacing;
+    const topSpace = buttonRect.top - bounds.top - margin - caretSpacing;
 
     if (
       overlayHeight + buttonRect.bottom > bounds.bottom - margin ||
       contentHeight > overlayHeight
     ) {
-      dialogStyles.height = bounds.bottom - buttonRect.bottom - 2 * margin + 'px';
+      dialogStyles.height = bottomSpace + 'px';
       setScrollable(true);
     }
 
-    const topSpace = buttonRect.bottom - bounds.top - margin;
-    const bottomSpace = bounds.bottom - buttonRect.bottom - margin;
     const contentHeightWithPadding = contentHeight + padding;
 
     if (bottomSpace < contentHeightWithPadding && topSpace > bottomSpace) {
@@ -140,7 +130,7 @@ export default function Popover({
       newAlignment = newAlignment.replace('bottom', 'top') as PopoverAlignment;
     }
 
-    popoverClassList.add(getClassName(align || newAlignment));
+    setAlignment(newAlignment);
   }, [align, props.isTabTip]);
 
   const fixPositioning = useCallback(() => {
@@ -148,7 +138,7 @@ export default function Popover({
       return;
     }
 
-    const {top, left} = transformParent.current?.getBoundingClientRect() || {
+    const {top, left} = parentContainer.current?.getBoundingClientRect() || {
       top: 0,
       left: 0,
     };
@@ -183,10 +173,13 @@ export default function Popover({
 
     if (open) {
       if (floating) {
-        transformParent.current = getClosestElementByStyle(
+        parentContainer.current = getClosestElementByStyle(
           popoverRef.current,
           (style) => style.transform !== 'none'
         );
+      } else {
+        parentContainer.current =
+          popoverRef.current?.closest<HTMLElement>('.popoverContent.scrollable') || null;
       }
       handleResize();
       window.addEventListener('resize', handleResize);
@@ -239,6 +232,7 @@ export default function Popover({
       <CarbonPopover
         className={classNames(className, 'Popover')}
         {...props}
+        align={alignment}
         open={open}
         ref={popoverRef}
       >
@@ -329,10 +323,6 @@ Popover.Button = function ButtonTrigger(
     />
   );
 };
-
-function getClassName(alignment: PopoverAlignment) {
-  return 'cds--popover--' + alignment;
-}
 
 function getScrollBounds(element: HTMLElement | null) {
   if (!element) {

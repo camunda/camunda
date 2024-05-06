@@ -1354,7 +1354,7 @@ test('change popover alignment and height to stay visible', async (t) => {
   await t.click(e.definitionEditor);
 
   // alignment
-  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--bottom-right')).ok();
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--bottom-end')).ok();
 
   // height adjustment
   await t.resizeWindow(1200, 600);
@@ -1363,7 +1363,7 @@ test('change popover alignment and height to stay visible', async (t) => {
 
   // vertical flip
   await t.resizeWindow(1200, 300);
-  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--top-right')).ok();
+  await t.expect(e.definitionEditorPopover.hasClass('cds--popover--top-end')).ok();
 });
 
 test('display raw data report in collapsible section under the main report renderer', async (t) => {
