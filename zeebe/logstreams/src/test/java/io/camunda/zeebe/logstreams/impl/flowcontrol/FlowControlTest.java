@@ -39,7 +39,7 @@ final class FlowControlTest {
     final var flow = new FlowControl(logStreamMetrics);
     // when
     boolean rejecting = false;
-    final var inFlight = new LinkedList<InFlightAppend>();
+    final var inFlight = new LinkedList<InFlightEntry>();
     do {
       final var result = flow.tryAcquire(WriteContext.internal());
       if (result.isLeft()) {

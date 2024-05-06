@@ -38,10 +38,10 @@ public final class FlowControl {
   /**
    * Tries to acquire a free in-flight spot, applying backpressure as needed.
    *
-   * @return An Optional containing a {@link InFlightAppend} if append was accepted, an empty
+   * @return An Optional containing a {@link InFlightEntry} if append was accepted, an empty
    *     Optional otherwise.
    */
-  public Either<Rejection, InFlightAppend> tryAcquire(final WriteContext context) {
+  public Either<Rejection, InFlightEntry> tryAcquire(final WriteContext context) {
     final var appendListener = appendLimiter.acquire(null).orElse(null);
     if (appendListener == null) {
       metrics.increaseDeferredAppends();
@@ -49,7 +49,7 @@ public final class FlowControl {
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightAppend(appendListener, metrics));
+    return Either.right(new InFlightEntry(appendListener, metrics));
   }
 
   public sealed interface Rejection {
