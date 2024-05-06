@@ -26,7 +26,7 @@
     <!-- database config -->
     <elasticsearch.version>7.17.20</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
-    <version.awssdk>2.25.39</version.awssdk>
+    <version.awssdk>2.25.40</version.awssdk>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -483,7 +483,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven3-plugin</artifactId>
-          <version>1.10.12</version>
+          <version>1.10.13</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -499,7 +499,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>com.github.eirslett</groupId>
