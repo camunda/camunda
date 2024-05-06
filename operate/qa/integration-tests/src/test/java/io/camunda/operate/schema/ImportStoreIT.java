@@ -56,7 +56,7 @@ public class ImportStoreIT extends AbstractSchemaIT {
 
   @Autowired public ImportStore importStore;
 
-  @Autowired public ElasticsearchSchemaManager schemaManager;
+  @Autowired public SchemaManager schemaManager;
 
   @Autowired public ImportPositionIndex importPositionIndex;
 
