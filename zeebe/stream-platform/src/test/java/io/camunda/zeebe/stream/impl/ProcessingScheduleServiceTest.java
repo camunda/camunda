@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -491,7 +492,9 @@ class ProcessingScheduleServiceTest {
 
     @Override
     public Either<WriteFailure, Long> tryWrite(
-        final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+        final WriteContext context,
+        final List<LogAppendEntry> appendEntries,
+        final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
         return Either.left(WriteFailure.FULL);
       }
