@@ -13,10 +13,12 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.prometheus.client.Histogram;
 
 /**
- * Represents an in-flight append. Updates metrics and backpressure limits after being {@link
- * InFlightAppend#start(long) started} and handles callbacks from the log storage.
+ * Represents an in-flight entry and its lifecycle from being written, committed, processed and
+ * finally exported. Updates metrics and backpressure limits after being {@link
+ * InFlightEntry#start(long) started} and handles callbacks from the log storage and other
+ * components involved.
  */
-public final class InFlightAppend implements AppendListener {
+public final class InFlightEntry implements AppendListener {
 
   private final Limiter.Listener limiter;
   private final LogStreamMetrics metrics;
@@ -24,7 +26,7 @@ public final class InFlightAppend implements AppendListener {
   private Histogram.Timer commitTimer;
   private long position;
 
-  public InFlightAppend(final Limiter.Listener limiter, final LogStreamMetrics metrics) {
+  public InFlightEntry(final Limiter.Listener limiter, final LogStreamMetrics metrics) {
     this.limiter = limiter;
     this.metrics = metrics;
   }
@@ -45,7 +47,7 @@ public final class InFlightAppend implements AppendListener {
     limiter.onSuccess();
   }
 
-  public InFlightAppend start(final long position) {
+  public InFlightEntry start(final long position) {
     this.position = position;
     writeTimer = metrics.startWriteTimer();
     commitTimer = metrics.startCommitTimer();
