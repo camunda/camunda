@@ -9,8 +9,10 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.prometheus.client.Histogram;
+import java.util.List;
 
 /**
  * Represents an in-flight entry and its lifecycle from being written, committed, processed and
@@ -20,13 +22,18 @@ import io.prometheus.client.Histogram;
  */
 public final class InFlightEntry implements AppendListener {
 
+  private final List<LogAppendEntryMetadata> entryMetadata;
   private final Limiter.Listener limiter;
   private final LogStreamMetrics metrics;
   private Histogram.Timer writeTimer;
   private Histogram.Timer commitTimer;
   private long position;
 
-  public InFlightEntry(final Limiter.Listener limiter, final LogStreamMetrics metrics) {
+  public InFlightEntry(
+      final List<LogAppendEntryMetadata> entryMetadata,
+      final Limiter.Listener limiter,
+      final LogStreamMetrics metrics) {
+    this.entryMetadata = entryMetadata;
     this.limiter = limiter;
     this.metrics = metrics;
   }
@@ -34,6 +41,10 @@ public final class InFlightEntry implements AppendListener {
   @Override
   public void onWrite(final long address) {
     writeTimer.close();
+    entryMetadata.forEach(
+        metadata ->
+            metrics.recordAppendedEntry(
+                1, metadata.recordType(), metadata.valueType(), metadata.intent()));
     metrics.setLastWrittenPosition(position);
   }
 

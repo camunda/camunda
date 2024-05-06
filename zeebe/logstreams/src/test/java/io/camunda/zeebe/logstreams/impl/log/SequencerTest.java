@@ -45,7 +45,6 @@ final class SequencerTest {
             initialPosition,
             16,
             new SequencerMetrics(1),
-            logStreamMetrics,
             new FlowControl(logStreamMetrics));
 
     // when
@@ -67,7 +66,6 @@ final class SequencerTest {
             initialPosition,
             16,
             new SequencerMetrics(1),
-            logStreamMetrics,
             new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
@@ -88,12 +86,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
 
     // when
@@ -110,12 +103,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -133,12 +121,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -160,12 +143,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -192,12 +170,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -219,12 +192,7 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage,
-            1,
-            16,
-            new SequencerMetrics(1),
-            logStreamMetrics,
-            new FlowControl(logStreamMetrics));
+            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
