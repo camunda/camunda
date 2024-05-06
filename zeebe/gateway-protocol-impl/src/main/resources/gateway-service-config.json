@@ -31,10 +31,10 @@
         {"service": "gateway_protocol.Gateway", "method": "DeployResource"},
         {"service": "gateway_protocol.Gateway", "method": "ModifyProcessInstance"},
         {"service": "gateway_protocol.Gateway", "method": "PublishMessage"},
+        {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
         {"service": "gateway_protocol.Gateway", "method": "ThrowError"},
         {"service": "gateway_protocol.Gateway", "method": "UpdateJobRetries"},
-        {"service": "gateway_protocol.Gateway", "method": "UpdateJobTimeout"},
-        {"service": "gateway_protocol.Gateway", "method": "SetVariables"}
+        {"service": "gateway_protocol.Gateway", "method": "UpdateJobTimeout"}
       ],
       "waitForReady": true,
       "retryPolicy": {
