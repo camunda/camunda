@@ -17,13 +17,13 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState.ExporterState;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
@@ -248,8 +248,13 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public ExporterPhase getExporterPhase() {
+    return partitionProcessingState.getExporterPhase();
+  }
+
+  @Override
   public boolean shouldExport() {
-    return !partitionProcessingState.getExporterState().equals(ExporterState.PAUSED);
+    return !partitionProcessingState.getExporterPhase().equals(ExporterPhase.PAUSED);
   }
 
   @Override
