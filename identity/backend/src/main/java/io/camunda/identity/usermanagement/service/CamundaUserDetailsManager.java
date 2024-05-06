@@ -7,8 +7,6 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import javax.sql.DataSource;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,25 +14,26 @@ import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.stereotype.Service;
 
 @Service
-public class IdentityLocalUserDetailsManager extends JdbcUserDetailsManager {
+public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
 
   // @formatter:off
   public static final String DEF_USERS_QUERY = "select username from users ";
+  public static final String DEF_USERS_GROUPS_QUERY =
+      "select g.id, g.group_name"
+          + " from groups g, group_members gm"
+          + " where gm.username = ? and g.id = gm.group_id";
 
   // @formatter:on
 
-  public IdentityLocalUserDetailsManager(final DataSource dataSource) {
+  public CamundaUserDetailsManager(final DataSource dataSource) {
     super(dataSource);
-    setEnableGroups(false);
+    setEnableGroups(true);
     setEnableAuthorities(true);
   }
 
   public List<UserDetails> loadUsers() {
-    return getJdbcTemplate().query(DEF_USERS_QUERY, this::mapUsernameToUser);
-  }
-
-  private UserDetails mapUsernameToUser(final ResultSet resultSet, final int i)
-      throws SQLException {
-    return loadUserByUsername(resultSet.getString("username"));
+    return getJdbcTemplate().queryForList(DEF_USERS_QUERY, String.class).stream()
+        .map(this::loadUserByUsername)
+        .toList();
   }
 }
