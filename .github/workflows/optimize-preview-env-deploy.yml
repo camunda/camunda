@@ -88,6 +88,7 @@ jobs:
           --helm-set global.identity.auth.operate.redirectUrl=https://operate-${app_url} \
           --helm-set global.identity.auth.optimize.redirectUrl=https://${app_url} \
           --helm-set global.identity.auth.tasklist.redirectUrl=https://tasklist-${app_url} \
+          --helm-set camunda-platform.identity.fullURL=https://identity-${app_url} \
           --name ${app_name} \
           --revision ${revision} \
           --upsert" >> $GITHUB_ENV
