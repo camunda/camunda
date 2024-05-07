@@ -54,7 +54,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
   public void processUserTaskRecord(
-      Record<UserTaskRecordValue> record, List<BulkOperation> operations)
+      final Record<UserTaskRecordValue> record, final List<BulkOperation> operations)
       throws PersistenceException {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
@@ -64,14 +64,14 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
     if (!record.getValue().getVariables().isEmpty()) {
       final List<TaskVariableEntity> variables =
           userTaskRecordToVariableEntityMapper.mapVariables(record);
-      for (TaskVariableEntity variable : variables) {
+      for (final TaskVariableEntity variable : variables) {
         operations.add(getVariableQuery(variable));
       }
     }
     // else skip task
   }
 
-  private BulkOperation getTaskQuery(TaskEntity entity, Record record) {
+  private BulkOperation getTaskQuery(final TaskEntity entity, final Record record) {
     final Map<String, Object> updateFields =
         userTaskRecordToTaskEntityMapper.getUpdateFieldsMap(entity, record);
     return new BulkOperation.Builder()
@@ -86,16 +86,21 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
         .build();
   }
 
-  private BulkOperation getVariableQuery(TaskVariableEntity variable) throws PersistenceException {
+  private BulkOperation getVariableQuery(final TaskVariableEntity variable)
+      throws PersistenceException {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(
           TaskVariableTemplate.VALUE,
-          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
+          "null".equals(variable.getValue())
+              ? "null"
+              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
-          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
+          "null".equals(variable.getFullValue())
+              ? "null"
+              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new BulkOperation.Builder()
@@ -108,7 +113,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
                           .upsert(CommonUtils.getJsonObjectFromEntity(variable))
                           .retryOnConflict(UPDATE_RETRY_COUNT)))
           .build();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",
