@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public final class ProcessInstanceMigrationPreconditionChecker {
+public final class ProcessInstanceMigrationPreconditions {
 
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
