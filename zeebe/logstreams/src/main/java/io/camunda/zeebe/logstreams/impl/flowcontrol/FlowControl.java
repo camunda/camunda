@@ -71,7 +71,7 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
-    inFlightEntries.get(highestPosition).onCommit();
+    inFlightEntries.remove(highestPosition).onCommit();
   }
 
   public sealed interface Rejection {
