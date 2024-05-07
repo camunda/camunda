@@ -179,7 +179,7 @@
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
+    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
     <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
