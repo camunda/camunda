@@ -17,6 +17,7 @@ jobs:
       nextDevelopmentVersion: ${{ github.event.client_payload.nextDevelopmentVersion }}
       isLatest: ${{ github.event.client_payload.isLatest }}
       dryRun: ${{ github.event.client_payload.dryRun }}
+      releaseBranch: ${{ github.event.client_payload.releaseBranch }}
   notify-if-failed:
     name: Send slack notification on failure
     runs-on: ubuntu-latest
