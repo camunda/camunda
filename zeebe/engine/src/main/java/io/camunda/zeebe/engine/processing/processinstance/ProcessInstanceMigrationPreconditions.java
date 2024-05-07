@@ -38,7 +38,8 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.PROCESS,
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
-          BpmnElementType.SUB_PROCESS);
+          BpmnElementType.SUB_PROCESS,
+          BpmnElementType.CALL_ACTIVITY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
 
