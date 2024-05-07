@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.auth.jwt;
+package io.camunda.common.auth;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.platform.commons.util.ReflectionUtils.tryToReadFieldValue;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.spring.common.auth.Product;
-import io.camunda.zeebe.spring.common.auth.jwt.JwtAuthentication.JwtToken;
+import io.camunda.common.auth.JwtAuthentication.JwtToken;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Map.Entry;
