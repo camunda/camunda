@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.metric.ImporterMetricsZeebeImportIT.ManagementPropertyRemoval;
 import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestImportListener;
@@ -28,7 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.test.context.ContextConfiguration;
 
+@ContextConfiguration(initializers = ManagementPropertyRemoval.class)
 public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ZeebeImporter zeebeImporter;
