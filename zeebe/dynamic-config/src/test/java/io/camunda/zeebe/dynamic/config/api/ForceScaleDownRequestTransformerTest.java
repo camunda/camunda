@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -28,16 +29,18 @@ class ForceScaleDownRequestTransformerTest {
   private final MemberId id2 = MemberId.from("2");
   private final MemberId id3 = MemberId.from("3");
 
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+
   private final ClusterConfiguration currentTopology =
       ClusterConfiguration.init()
           .addMember(id0, MemberState.initializeAsActive(Map.of()))
           .addMember(id1, MemberState.initializeAsActive(Map.of()))
           .addMember(id2, MemberState.initializeAsActive(Map.of()))
           .addMember(id3, MemberState.initializeAsActive(Map.of()))
-          .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
-          .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2)))
-          .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1)))
-          .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2)));
+          .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+          .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+          .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+          .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
 
   @Test
   void shouldGenerateForceConfigureOperations() {

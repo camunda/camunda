@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.MissingHead
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.io.IOException;
@@ -23,6 +24,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 final class PersistedClusterConfigurationTest {
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+
   @Test
   void shouldDetectFileWithMoreDataThanExpected() throws IOException {
     // given
@@ -104,12 +107,14 @@ final class PersistedClusterConfigurationTest {
         ClusterConfiguration.init()
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(2))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, partitionConfig))));
     final var changedTopology =
         ClusterConfiguration.init()
             .addMember(
                 MemberId.from("1"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(3))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(3, partitionConfig))));
 
     persistedClusterTopology.update(initialTopology);
 

@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -96,12 +97,14 @@ final class PartitionJoinApplier implements MemberOperationApplier {
         && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
       // The state is already JOINING, so we don't need to change it. This can happen when the node
       // was restarted while applying the join operation. To ensure that the configuration change
-      // can
-      // make progress, we do not treat this as an error.
+      // can make progress, we do not treat this as an error.
       return Either.right(memberState -> memberState);
     } else {
+      final var partitionConfig = getPartitionConfig(currentClusterConfiguration);
       return Either.right(
-          memberState -> memberState.addPartition(partitionId, PartitionState.joining(priority)));
+          memberState ->
+              memberState.addPartition(
+                  partitionId, PartitionState.joining(priority, partitionConfig)));
     }
   }
 
@@ -123,6 +126,12 @@ final class PartitionJoinApplier implements MemberOperationApplier {
               }
             });
     return result;
+  }
+
+  private DynamicPartitionConfig getPartitionConfig(
+      final ClusterConfiguration currentClusterConfiguration) {
+    // TODO: Init partitionConfig from other partitions
+    return DynamicPartitionConfig.init();
   }
 
   private HashMap<MemberId, Integer> collectPriorityByMembers(

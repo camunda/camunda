@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -26,6 +27,9 @@ import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 
 class ScaleRequestTransformerTest {
+
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+
   @Property(tries = 10)
   void shouldScaleAndReassignWithReplicationFactor1(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
@@ -82,7 +86,8 @@ class ScaleRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    final var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
+    final var oldClusterTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
 
     //  when
     final var operationsEither =
@@ -115,7 +120,8 @@ class ScaleRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    final var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
+    final var oldClusterTopology =
+        ConfigurationUtil.getClusterConfigFrom(oldDistribution, partitionConfig);
 
     // when
     final var operations =

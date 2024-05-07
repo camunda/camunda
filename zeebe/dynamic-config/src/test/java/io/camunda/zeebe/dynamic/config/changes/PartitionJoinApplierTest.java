@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -34,13 +35,16 @@ final class PartitionJoinApplierTest {
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
 
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+
   @Test
   void shouldRejectJoinIfPartitionIsAlreadyJoined() {
     // given
     final ClusterConfiguration topologyWithPartitionJoined =
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
-            .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
+            .updateMember(
+                localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)));
 
     // when
     final var result =
@@ -62,10 +66,12 @@ final class PartitionJoinApplierTest {
         ClusterConfiguration.init()
             .addMember(
                 localMemberId,
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())))
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig).toLeaving())))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
 
     // when - then
     final var result =
@@ -144,7 +150,8 @@ final class PartitionJoinApplierTest {
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
                 new MemberId("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     final var updater =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
             .init(initialTopology)
@@ -167,7 +174,8 @@ final class PartitionJoinApplierTest {
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
             .addMember(
                 new MemberId("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     final var partitionJoinApplier =
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
     final var updatedTopology =

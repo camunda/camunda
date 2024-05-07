@@ -14,6 +14,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 class ConfigurationUtilTest {
 
   private static final String GROUP_NAME = "test";
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @Test
   void shouldGenerateTopologyFromPartitionDistribution() {
@@ -46,7 +48,8 @@ class ConfigurationUtilTest {
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
 
     // when
-    final var topology = ConfigurationUtil.getClusterConfigFrom(partitionDistribution);
+    final var topology =
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
@@ -101,25 +104,29 @@ class ConfigurationUtilTest {
                 MemberState.initializeAsActive(
                     Map.of(
                         1,
-                        PartitionState.active(1),
+                        PartitionState.active(1, partitionConfig),
                         2,
-                        PartitionState.active(3),
+                        PartitionState.active(3, partitionConfig),
                         // A joining member should not be included in the partition distribution
                         3,
-                        PartitionState.joining(4))))
+                        PartitionState.joining(4, partitionConfig))))
             .addMember(
                 member(1),
                 MemberState.initializeAsActive(
                     Map.of(
                         1,
-                        PartitionState.active(2),
+                        PartitionState.active(2, partitionConfig),
                         // A leaving member should be included in the partition distribution
                         2,
-                        PartitionState.active(2).toLeaving())))
+                        PartitionState.active(2, partitionConfig).toLeaving())))
             .addMember(
                 member(2),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(3), 2, PartitionState.active(1))));
+                    Map.of(
+                        1,
+                        PartitionState.active(3, partitionConfig),
+                        2,
+                        PartitionState.active(1, partitionConfig))));
 
     // when
     final var partitionDistribution =
@@ -155,11 +162,19 @@ class ConfigurationUtilTest {
             .addMember(
                 member(0),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, partitionConfig),
+                        2,
+                        PartitionState.active(3, partitionConfig))))
             .addMember(
                 member(1),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(2, partitionConfig),
+                        2,
+                        PartitionState.active(2, partitionConfig))))
             .addMember(member(2), MemberState.initializeAsActive(Map.of()).toLeaving());
 
     // when
