@@ -166,7 +166,11 @@ public class MoveTokenHandler {
     Integer newTokensCount = modification.getNewTokensCount();
 
     if (newTokensCount == null) {
-      if (modification.getFromFlowNodeId() != null) {
+      if (modification.getFromFlowNodeInstanceKey() != null) {
+        // If a flow node instance key was specified, assume that flow node is valid. Zeebe
+        // will correctly fail attempts to migrate off an invalid flow node
+        newTokensCount = 1;
+      } else if (modification.getFromFlowNodeId() != null) {
         newTokensCount =
             flowNodeInstanceReader
                 .getFlowNodeInstanceKeysByIdAndStates(
@@ -174,10 +178,6 @@ public class MoveTokenHandler {
                     modification.getFromFlowNodeId(),
                     List.of(FlowNodeState.ACTIVE))
                 .size();
-      } else if (modification.getFromFlowNodeInstanceKey() != null) {
-        // If a flow node instance key was specified, assume that flow node is valid. Zeebe
-        // will correctly fail attempts to migrate off an invalid flow node
-        newTokensCount = 1;
       } else {
         LOGGER.warn(
             "MOVE_TOKEN attempted with no flowNodeId, flowNodeInstanceKey, or newTokenCount specified");

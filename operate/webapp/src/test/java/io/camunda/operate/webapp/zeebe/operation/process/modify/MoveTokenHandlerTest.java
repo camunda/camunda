@@ -215,4 +215,28 @@ public class MoveTokenHandlerTest {
 
     verifyNoInteractions(mockFlowNodeInstanceReader);
   }
+
+  @Test
+  public void testMoveTokenWithIdAndInstanceKeySpecified() {
+    final Modification modification =
+        new Modification()
+            .setModification(Type.MOVE_TOKEN)
+            .setFromFlowNodeId("taskA")
+            .setFromFlowNodeInstanceKey("888")
+            .setToFlowNodeId("taskB");
+
+    final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 result =
+        moveTokenHandler.moveToken(mockZeebeCommand, 123L, modification);
+
+    assertThat(result).isNotNull();
+
+    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(3);
+    verify(mockZeebeCommand, times(1)).activateElement("taskB");
+    verify(mockZeebeCommand, times(1)).terminateElement(888L);
+    verify((ModifyProcessInstanceCommandStep2) mockZeebeCommand, times(1)).and();
+
+    // Since an instance key was specified, reader should not be called during token count or
+    // cancelling existing tokens
+    verifyNoInteractions(mockFlowNodeInstanceReader);
+  }
 }
