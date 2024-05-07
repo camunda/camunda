@@ -37,11 +37,6 @@ const Details: React.FC = () => {
       selected: useMatch(pages.taskDetails()) !== null,
       href: pages.taskDetails(id),
     },
-    // {
-    //   title: 'Process',
-    //   selected: useMatch(pages.taskDetailsProcess()) !== null,
-    //   path: pages.taskDetailsProcess(id),
-    // },
   ];
 
   if (task === undefined || currentUser === undefined) {
