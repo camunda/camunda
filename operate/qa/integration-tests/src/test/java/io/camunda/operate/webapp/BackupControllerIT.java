@@ -81,7 +81,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       "management.endpoints.web.exposure.include = backups",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@ActiveProfiles({"test"})
+@ActiveProfiles({"test", "standalone"})
 public class BackupControllerIT {
   @SpyBean private BackupService backupService;
 

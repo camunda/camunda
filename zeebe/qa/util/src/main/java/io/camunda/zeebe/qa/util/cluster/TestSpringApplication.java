@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.application.MainSupport;
+import io.camunda.application.Profile;
+import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
-import io.camunda.zeebe.shared.MainSupport;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.prometheus.client.CollectorRegistry;
 import java.time.Duration;
@@ -161,9 +162,10 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   protected SpringApplicationBuilder createSpringBuilder() {
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
-        .lazyInitialization(true)
         .registerShutdownHook(false)
-        .initializers(new ContextOverrideInitializer(beans, propertyOverrides))
+        .initializers(
+            new ContextOverrideInitializer(beans, propertyOverrides),
+            new HealthConfigurationInitializer())
         .profiles(additionalProfiles.toArray(String[]::new))
         .sources(springApplication);
   }

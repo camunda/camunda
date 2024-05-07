@@ -14,7 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import io.camunda.operate.StandaloneOperate;
+import io.camunda.application.StandaloneOperate;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;

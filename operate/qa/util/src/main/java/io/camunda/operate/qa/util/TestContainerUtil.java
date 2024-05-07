@@ -446,6 +446,12 @@ public class TestContainerUtil {
       properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.prefix", zeebeIndexPrefix);
     }
     properties.setProperty(PROPERTIES_PREFIX + "archiver.waitPeriodBeforeArchiving", "2m");
+
+    // Operate's test container mounts another "application.properties" file that prevents
+    // Spring from loading the default "application.properties" file which by default
+    // configures the matching strategy
+    properties.setProperty("spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER");
+
     return properties;
   }
 
