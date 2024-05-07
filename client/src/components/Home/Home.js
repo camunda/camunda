@@ -153,7 +153,6 @@ export function Home({mightFail, user}) {
                 deleteEntities={removeEntities}
                 checkConflicts={checkConflicts}
                 conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                useCarbonAction
               />,
             ]
           }

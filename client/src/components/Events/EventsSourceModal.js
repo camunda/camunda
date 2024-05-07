@@ -213,7 +213,7 @@ export default function EventsSourceModal({
                         />
                       </RadioButtonGroup>
                       <ComboBox
-                        titleText={t('dashboard.filter.types.variable')}
+                        titleText={t('events.sources.variables')}
                         className="variablesSelector"
                         id="variable-selector"
                         items={variables || []}
@@ -279,11 +279,11 @@ export default function EventsSourceModal({
                   )}
                   {isEditing() && (
                     <ActionableNotification
+                      subtitle={t('events.sources.definitionChangeWarning')}
                       kind="warning"
                       className="editingWarning"
                       hideCloseButton
                     >
-                      {t('events.sources.definitionChangeWarning')}{' '}
                       <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
                         {t('events.sources.learnMore')}
                       </DocsLink>

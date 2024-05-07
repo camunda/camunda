@@ -14,14 +14,4 @@
   .deleteLimitReached {
     max-width: 100%;
   }
-
-  .Table {
-    flex-grow: 1;
-    margin-bottom: spacing.$spacing-04;
-
-    .cds--batch-actions--active {
-      // we do this because otherwise the search icon is colliding
-      z-index: 2;
-    }
-  }
 }

@@ -259,7 +259,6 @@ export class Collection extends Component {
                           await checkConflicts(selected, collection)
                         }
                         conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                        useCarbonAction
                       />,
                     ]
                   }

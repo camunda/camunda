@@ -39,7 +39,7 @@ exports[`should contain a change warning and not contain event scope selection 1
           onChange={[Function]}
           placeholder="Select or search for a variable here"
           selectedItem={null}
-          titleText="Variable"
+          titleText="Variables"
         />
       </ForwardRef(Stack)>
     </FormGroup>
@@ -47,9 +47,8 @@ exports[`should contain a change warning and not contain event scope selection 1
       className="editingWarning"
       hideCloseButton={true}
       kind="warning"
+      subtitle="Changing the process definition may add or remove events. Existing event mappings may be removed."
     >
-      Changing the process definition may add or remove events. Existing event mappings may be removed.
-       
       <DocsLink
         location="components/userguide/additional-features/event-based-processes/#camunda-events"
       >

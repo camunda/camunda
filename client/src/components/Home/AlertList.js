@@ -165,11 +165,7 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
-            bulkActions={
-              !readOnly && [
-                <BulkDeleter type="delete" deleteEntities={removeAlerts} useCarbonAction />,
-              ]
-            }
+            bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
             onChange={this.loadAlerts}
             rows={
               !isLoading &&

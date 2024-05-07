@@ -258,20 +258,30 @@ export class AlertModal extends React.Component {
               <Form autoComplete="off">
                 <Stack gap={6}>
                   {!emailNotificationIsEnabled && (
-                    <ActionableNotification inline kind="warning" hideCloseButton>
-                      {t('alert.emailWarning', {
+                    <ActionableNotification
+                      inline
+                      kind="warning"
+                      hideCloseButton
+                      subtitle={t('alert.emailWarning', {
                         docsLink: generateDocsLink(
                           'self-managed/optimize-deployment/configuration/system-configuration/#email'
                         ),
                       })}
-                    </ActionableNotification>
+                    />
                   )}
                   {inactive && (
-                    <ActionableNotification inline kind="warning" hideCloseButton>
-                      {t('alert.inactiveStatus')}
-                      <br />
-                      {t('alert.activateInfo')}
-                    </ActionableNotification>
+                    <ActionableNotification
+                      inline
+                      kind="warning"
+                      hideCloseButton
+                      subtitle={
+                        <>
+                          {t('alert.inactiveStatus')}
+                          <br />
+                          {t('alert.activateInfo')}
+                        </>
+                      }
+                    />
                   )}
                   <TextInput
                     id="alertName"

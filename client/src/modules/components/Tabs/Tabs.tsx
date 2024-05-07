@@ -53,11 +53,13 @@ export default function Tabs<T extends string | number>({
     >
       {showButtons && !isLoading && (
         <TabList aria-label="tabs">
-          {tabs.map(({props: {value, title, disabled, ...rest}}, idx) => (
-            <Tab {...rest} key={getIndex(values, value || idx)} disabled={disabled}>
-              {title}
-            </Tab>
-          ))}
+          {tabs
+            .filter((tab) => !tab.props.hidden)
+            .map(({props: {value, title, disabled, ...rest}}, idx) => (
+              <Tab {...rest} key={getIndex(values, value || idx)} disabled={disabled}>
+                {title}
+              </Tab>
+            ))}
         </TabList>
       )}
       {isLoading && <TabsSkeleton />}

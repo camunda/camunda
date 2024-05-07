@@ -1,14 +1,8 @@
 @use '@carbon/styles/scss/spacing';
 
 .Events {
-  padding: 0 20px;
-  height: calc(100% - 42px - spacing.$spacing-04);
-
-  .tabList {
-    margin-bottom: spacing.$spacing-04;
-
-    > .cds--tab--list > a {
-      line-height: 38px;
-    }
-  }
+  padding: spacing.$spacing-06;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }

@@ -63,8 +63,8 @@ export default function VisibleEventsModal({
               kind="warning"
               hideCloseButton
               className="eventListChangeWarning"
+              subtitle={t('events.sources.eventListChangeWarning')}
             >
-              {t('events.sources.eventListChangeWarning')}{' '}
               <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
                 {t('events.sources.learnMore')}
               </DocsLink>

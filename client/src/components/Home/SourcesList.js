@@ -128,7 +128,6 @@ export default withErrorHandling(
                     await checkSourcesConflicts(collection, selectedSources)
                   }
                   conflictMessage={t('common.deleter.affectedMessage.bulk.process')}
-                  useCarbonAction
                 />,
               ]
             }

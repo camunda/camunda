@@ -9,23 +9,23 @@ import React, {useState} from 'react';
 import {TableBatchAction} from '@carbon/react';
 import {TrashCan} from '@carbon/icons-react';
 
-import {Dropdown, Deleter} from 'components';
+import {Deleter} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 
-export function BulkDeleter({
+export default function BulkDeleter({
   deleteEntities,
   checkConflicts,
   conflictMessage,
   onDelete,
   selectedEntries,
   type = 'delete',
-  mightFail,
-  useCarbonAction,
+  ...rest
 }) {
   const [deleting, setDeleting] = useState(false);
   const [conflict, setConflict] = useState(false);
+  const {mightFail} = useErrorHandling();
 
   function reset() {
     setConflict(false);
@@ -34,13 +34,9 @@ export function BulkDeleter({
 
   return (
     <>
-      {useCarbonAction ? (
-        <TableBatchAction onClick={() => setDeleting(true)} renderIcon={TrashCan}>
-          {t('common.' + type)}
-        </TableBatchAction>
-      ) : (
-        <Dropdown.Option onClick={() => setDeleting(true)}>{t('common.' + type)}</Dropdown.Option>
-      )}
+      <TableBatchAction {...rest} onClick={() => setDeleting(true)} renderIcon={TrashCan}>
+        {t('common.' + type)}
+      </TableBatchAction>
       <Deleter
         type="items"
         entity={deleting && selectedEntries}
@@ -76,5 +72,3 @@ export function BulkDeleter({
     </>
   );
 }
-
-export default withErrorHandling(BulkDeleter);

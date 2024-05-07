@@ -215,13 +215,13 @@ export default withErrorHandling(
                   />
                 </TableToolbarContent>
                 <Button
+                  tooltipPosition="left"
                   hasIconOnly
                   iconDescription={t(collapsed ? 'common.expand' : 'common.collapse')}
                   kind="ghost"
                   onClick={() => this.setState({collapsed: !collapsed})}
                   className="collapseButton"
                   renderIcon={collapsed ? ChevronUp : ChevronDown}
-                  tooltipPosition="left"
                 />
               </TableToolbar>
             }

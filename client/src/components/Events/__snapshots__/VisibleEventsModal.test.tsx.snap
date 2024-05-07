@@ -32,9 +32,8 @@ exports[`should match snapshot 1`] = `
       className="eventListChangeWarning"
       hideCloseButton={true}
       kind="warning"
+      subtitle="Changing the event list may add or remove events. Existing event mappings may be removed."
     >
-      Changing the event list may add or remove events. Existing event mappings may be removed.
-       
       <DocsLink
         location="components/userguide/additional-features/event-based-processes/#camunda-events"
       >

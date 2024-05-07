@@ -24,9 +24,23 @@
       }
     }
   }
+}
 
-  .cds--tab-content {
-    padding-left: 0;
-    padding-right: 0;
+.cds--tabs {
+  .cds--tab--list > a {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.cds--tab-content {
+  min-height: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+
+  &:not([hidden]) {
+    height: 100%;
+    flex-grow: 1;
   }
 }

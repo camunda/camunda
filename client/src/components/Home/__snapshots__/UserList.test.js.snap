@@ -15,10 +15,9 @@ exports[`should match snapshot 1`] = `
     }
     bulkActions={
       Array [
-        <BulkDeleterErrorHandler
+        <BulkDeleter
           deleteEntities={[Function]}
           type="remove"
-          useCarbonAction={true}
         />,
       ]
     }

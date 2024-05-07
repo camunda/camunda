@@ -151,8 +151,12 @@ export default withErrorHandling(
               </div>
             </div>
             {this.props.generated && (
-              <ActionableNotification className="generationWarning" kind="warning" hideCloseButton>
-                {t('events.generationWarning')}{' '}
+              <ActionableNotification
+                className="generationWarning"
+                kind="warning"
+                subtitle={t('events.generationWarning')}
+                hideCloseButton
+              >
                 <DocsLink location="components/userguide/additional-features/event-based-processes/#event-based-process-auto-generation">
                   {t('common.seeDocs')}
                 </DocsLink>

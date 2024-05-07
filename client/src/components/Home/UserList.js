@@ -94,7 +94,6 @@ export default withErrorHandling(
                   deleteEntities={async (selectedUsers) =>
                     await removeUsers(collection, selectedUsers)
                   }
-                  useCarbonAction
                 />,
               ]
             }

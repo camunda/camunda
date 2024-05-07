@@ -32,7 +32,7 @@ export const permissionButton = Selector('.permission button');
 export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add event source');
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
-export const externalEventsTab = Selector('.tabList a').withText('External events');
+export const externalEventsTab = Selector('.cds--tab--list a').withText('External events');
 export const batchDeleteButton = Selector('.cds--action-list button').withText('Delete');
 export const eventCheckbox = (index) =>
   Selector('.Table tbody tr').nth(index).find('.cds--table-column-checkbox label');

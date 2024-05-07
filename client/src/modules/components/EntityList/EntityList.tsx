@@ -233,6 +233,7 @@ export default function EntityList({
                     {Children.map(bulkActions, (child, idx) =>
                       cloneElement(child, {
                         key: idx,
+                        tabIndex: batchActionProps.shouldShowBatchActions ? 0 : -1,
                         onDelete: onChange,
                         selectedEntries: rows.filter((row) =>
                           selectedRows.some((selectedRow) => selectedRow.id === row.id)

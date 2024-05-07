@@ -36,12 +36,11 @@ exports[`should match snapshot 1`] = `
     }
     bulkActions={
       Array [
-        <BulkDeleterErrorHandler
+        <BulkDeleter
           checkConflicts={[Function]}
           conflictMessage="Removing data sources deletes all associated reports and their alerts."
           deleteEntities={[Function]}
           type="remove"
-          useCarbonAction={true}
         />,
       ]
     }

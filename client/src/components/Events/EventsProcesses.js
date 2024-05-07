@@ -155,9 +155,7 @@ export class EventsProcesses extends Component {
           }
           isLoading={!processes}
           action={this.renderMenuButton('lg')}
-          bulkActions={[
-            <BulkDeleter type="delete" deleteEntities={deleteProcesses} useCarbonAction />,
-          ]}
+          bulkActions={[<BulkDeleter type="delete" deleteEntities={deleteProcesses} />]}
           onChange={this.loadList}
           headers={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
           rows={

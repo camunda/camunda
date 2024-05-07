@@ -5,11 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {Link, Route, Switch, useLocation} from 'react-router-dom';
-import {Tab, TabList, Tabs} from '@carbon/react';
 
-import {ErrorPage} from 'components';
+import {ErrorPage, Tabs} from 'components';
 import {t} from 'translation';
 
 import EventsProcesses from './EventsProcesses';
@@ -22,21 +20,29 @@ export default function Events() {
 
   return (
     <div className="Events">
-      <Tabs selectedIndex={pathname.includes('events/processes') ? 0 : 1}>
-        <TabList aria-label="tabs" className="tabList">
-          <Tab as={Link} to="/events/processes/">
-            {t('events.label')}
-          </Tab>
-          <Tab as={Link} to="/events/ingested/">
-            {t('events.ingested.eventSources')}
-          </Tab>
-        </TabList>
-      </Tabs>
       <Switch>
-        <Route path="/events/processes/" exact component={EventsProcesses} />
-        <Route path="/events/ingested/" component={IngestedEvents} />
-        <Route path="*" component={() => <ErrorPage noLink />} />
+        <Tabs value={getTabValue(pathname)}>
+          <Tabs.Tab as={Link} to="/events/processes/" title={t('events.label')}>
+            <Route path="/events/processes/" exact component={EventsProcesses} />
+          </Tabs.Tab>
+          <Tabs.Tab as={Link} to="/events/ingested/" title={t('events.ingested.eventSources')}>
+            <Route path="/events/ingested/" component={IngestedEvents} />
+          </Tabs.Tab>
+        </Tabs>
+        <Tabs.Tab hidden>
+          <Route path="*" component={() => <ErrorPage noLink />} />
+        </Tabs.Tab>
       </Switch>
     </div>
   );
+}
+
+function getTabValue(pathname) {
+  if (!!pathname.match(/\/events\/processes(\/?)$/)) {
+    return 0;
+  }
+  if (!!pathname.match(/\/events\/ingested/)) {
+    return 1;
+  }
+  return 2;
 }
