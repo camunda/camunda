@@ -69,15 +69,6 @@ const router = createBrowserRouter(
               lazy={() => import('./Tasks/Task')}
               ErrorBoundary={ErrorWithinLayout}
             />
-            {/* <Route
-              path="process"
-              element={
-                <>
-                  <p>Todo</p>
-                </>
-              }
-              ErrorBoundary={ErrorWithinLayout}
-            /> */}
           </Route>
         </Route>
       </Route>
