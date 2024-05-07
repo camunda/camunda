@@ -1224,10 +1224,10 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@0.6.3":
-  version "0.6.3"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.3.tgz#0fb8f32f3ed5a9d23c3c1c30a22c87e7bbefc6dd"
-  integrity sha512-QIItq181jrLHPbbBqkzc5pQjk8nRf1IwwdJVEC23iCHyxcWrQQAHVVs2IVackHcEcV3NCPddpR0CKR8VP8PBsA==
+"@camunda/camunda-composite-components@0.6.4":
+  version "0.6.4"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.6.4.tgz#4804a24dff5ae32f2b4cf8add4a2622fa84a78b3"
+  integrity sha512-xyDUoz4R8DvI95q/HsTLfeCurhYzD98wk3LUKnEvvBHRBCpi4UqmVmCasHKDqJfu5LUSLhBuL+4kyOJYNP3a9A==
   dependencies:
     jwt-decode "4.0.0"
     react-markdown "8.0.7"
@@ -2410,10 +2410,10 @@
     lz-string "^1.5.0"
     pretty-format "^27.0.2"
 
-"@testing-library/jest-dom@6.4.2":
-  version "6.4.2"
-  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.4.2.tgz#38949f6b63722900e2d75ba3c6d9bf8cffb3300e"
-  integrity sha512-CzqH0AFymEMG48CpzXFriYYkOjk6ZGPCLMhW9e9jg3KMCn5OfJecF8GtGW7yGfR/IgCe3SX8BSwjdzI6BBbZLw==
+"@testing-library/jest-dom@6.4.5":
+  version "6.4.5"
+  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.4.5.tgz#badb40296477149136dabef32b572ddd3b56adf1"
+  integrity sha512-AguB9yvTXmCnySBP1lWjfNNUwpbElsaQ567lt2VdGqAdHtpieLgjmcVyv1q7PMIvLbgpDdkWV5Ydv3FEejyp2A==
   dependencies:
     "@adobe/css-tools" "^4.3.2"
     "@babel/runtime" "^7.9.2"
@@ -2421,7 +2421,7 @@
     chalk "^3.0.0"
     css.escape "^1.5.1"
     dom-accessibility-api "^0.6.3"
-    lodash "^4.17.15"
+    lodash "^4.17.21"
     redent "^3.0.0"
 
 "@testing-library/react-hooks@8.0.1":
@@ -2432,10 +2432,10 @@
     "@babel/runtime" "^7.12.5"
     react-error-boundary "^3.1.0"
 
-"@testing-library/react@15.0.6":
-  version "15.0.6"
-  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-15.0.6.tgz#76be2e9e6da98c044823dfbc9d62ad3f10a3a401"
-  integrity sha512-UlbazRtEpQClFOiYp+1BapMT+xyqWMnE+hh9tn5DQ6gmlE7AIZWcGpzZukmDZuFk3By01oiqOf8lRedLS4k6xQ==
+"@testing-library/react@15.0.7":
+  version "15.0.7"
+  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-15.0.7.tgz#ff733ce0893c875cb5a47672e8e772897128f4ae"
+  integrity sha512-cg0RvEdD1TIhhkm1IeYMQxrzy0MtUNfa3minv4MjbgcYzJAZ7yD0i0lwoPOTPr+INtiXFezt2o8xMSnyHhEn2Q==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@testing-library/dom" "^10.0.0"
@@ -2702,10 +2702,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/lodash@4.17.0":
-  version "4.17.0"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.0.tgz#d774355e41f372d5350a4d0714abb48194a489c3"
-  integrity sha512-t7dhREVv6dbNj0q17X12j7yDG4bD/DHYX7o5/DbDxobP0HnGPgpRz2Ej77aL7TZT3DSw13fqUTj8J4mMnqa7WA==
+"@types/lodash@4.17.1":
+  version "4.17.1"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.1.tgz#0fabfcf2f2127ef73b119d98452bd317c4a17eb8"
+  integrity sha512-X+2qazGS3jxLAIz5JDXDzglAF3KpijdhFxlf/V1+hEsOUc+HnWi81L/uv/EvGuV90WY+7mPGFCUDGfQC3Gj95Q==
 
 "@types/mdast@^3.0.0":
   version "3.0.15"
@@ -2736,17 +2736,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
+"@types/node@*", "@types/node@20.12.10", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "20.12.10"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.10.tgz#8f0c3f12b0f075eee1fe20c1afb417e9765bef76"
   integrity sha512-Eem5pH9pmWBHoGAT8Dr5fdc5rYA+4NAovdM4EktRPVAAiJhmWWfQrA0cFhAbOsQdSfIHjAud6YdkbL69+zSKjw==
-  dependencies:
-    undici-types "~5.26.4"
-
-"@types/node@20.12.8":
-  version "20.12.8"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.8.tgz#35897bf2bfe3469847ab04634636de09552e8256"
-  integrity sha512-NU0rJLJnshZWdE/097cdCBbyW1h4hEg0xpovcoAQYHl8dnEyp/NAOiE45pvc+Bd1Dt+2r94v2eGFpQJ4R7g+2w==
   dependencies:
     undici-types "~5.26.4"
 
@@ -3796,13 +3789,13 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.6.0:
-  version "17.6.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.6.0.tgz#ef1fcd83c70b329dd40f86ad758b65606734f4c1"
-  integrity sha512-HNUFMU6VRh6rY/GWBoG4zpZFgwwQom+O0NXUeLxf6peIhqqJ7nrDsE8khXCXhBxJBoyJ36KdXQ3zscbX0seEyw==
+bpmn-js@17.6.1:
+  version "17.6.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.6.1.tgz#07eb2c61e2eb02a85d0d910c59253001f8e69970"
+  integrity sha512-3RM8caHEtf4CB6vF37AtVPsdT6mKSHiFI2YC8TZPCdlI97oXlAMvHi+vJGLKGx50X/VwCBMQPrRE9UETqRY7uQ==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.4.1"
+    diagram-js "^14.5.1"
     diagram-js-direct-editing "^3.0.1"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -4903,7 +4896,7 @@ diagram-js-direct-editing@^3.0.1:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^14.0.0, diagram-js@^14.3.1, diagram-js@^14.4.1:
+diagram-js@^14.0.0, diagram-js@^14.3.1, diagram-js@^14.5.1:
   version "14.5.1"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.5.1.tgz#b0be880deb81da360e8b0dddf47416ce6a92b317"
   integrity sha512-51lhbCFeBfPLyK7u6VOdcaLdDbVk28Zd2SLcYuc/zkqR33uhz6nxgFBqOw87191X1D+8svrs4dL1tl6SDt3Cxw==
@@ -4955,10 +4948,10 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-boxed-expression@^16.2.1:
-  version "16.2.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.2.2.tgz#895cd202f2c32a0ef7ad18c59150166dfa66f5d6"
-  integrity sha512-WAzwwAIJzQeZTH42IDEaXd1jsJAgRLwdZo/zTEycIgdDqSebE6RBU5JagdvD+vcpQKJWBtiaIpDF1GUyO74brg==
+dmn-js-boxed-expression@^16.2.3:
+  version "16.2.3"
+  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.2.3.tgz#2575207d6bfb56f29bbdac90754a3afa51635eb4"
+  integrity sha512-iZtvn2UfIfZjWmRopksvCOrcV2SxswZOMAvl6wYtCPoamGyAFdexedjtA0e4yQoLXrKyvGgqwXa7SeDP6rHngA==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.5.0"
     diagram-js "^14.0.0"
@@ -4968,10 +4961,10 @@ dmn-js-boxed-expression@^16.2.1:
     min-dom "^4.0.3"
     table-js "^9.1.0"
 
-dmn-js-decision-table@^16.2.0:
-  version "16.2.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.2.0.tgz#72b47ae640bf9553eb733c43df42b021e1a1214f"
-  integrity sha512-MzTICXFjbu5xmtGRo6cerJpOt7WyTXEvHE/GJDhh2iZBH+c9LwjTo3HMhDgjarioiTfLfHOYqGHO962u+AVMjA==
+dmn-js-decision-table@^16.2.3:
+  version "16.2.3"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.2.3.tgz#aab972c4386aa763e52b7f533c55e4789618aa4f"
+  integrity sha512-BTb9xN8BT9Ol4Bcfxj6xpNrh6WTW+VUJpB9DKD9jTRutZg8SB5b5Wsex78rGWCUDscUwSQX5dvGboP14S1qVhw==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.5.0"
     css.escape "^1.5.1"
@@ -4998,10 +4991,10 @@ dmn-js-drd@^16.2.1:
     object-refs "^0.4.0"
     tiny-svg "^3.0.0"
 
-dmn-js-literal-expression@^16.2.0:
-  version "16.2.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.2.0.tgz#78c1c6bc4272c3b6fbcf7008660ac078c98276dd"
-  integrity sha512-FHpXcjxNOwyvlECmnTdy/FOZRl63+1751auu5E3sKDuMVF3tyqLYFdY3w97KM6HDXuEyNGLxZeaHotLMzs/74A==
+dmn-js-literal-expression@^16.2.3:
+  version "16.2.3"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.2.3.tgz#b74122f47156997f07e83681cf0813f25c7d7a97"
+  integrity sha512-4eD0IOa4CF9Fbyf2yT7PKof3CAipNGygxdZl9sAgL9tguaU/czgdS4h/CQRs/+YgkN/jo38lsB69AxXGIBImCQ==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.5.0"
     diagram-js "^14.3.1"
@@ -5029,15 +5022,15 @@ dmn-js-shared@^16.2.0:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.2.1:
-  version "16.2.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.2.1.tgz#edbe8ba215e813ed3b8e373a5a9189bbcad510ca"
-  integrity sha512-ZN6WVqC6sYR+4uODWonWzsIPQMRYlmRFnj3a7AyqIJe8/4AucGc8RM0oqwYFBiGq/ZJwy9wQdHcWx29oYNOeGw==
+dmn-js@16.2.3:
+  version "16.2.3"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.2.3.tgz#cf82e45780b3a7e09a5ba6dbde892051e3a91ec0"
+  integrity sha512-qLXd/RuWcli0cmXBqP3tRvV+tLA5UD4tb8H+D49fNhqEMARKw8f/qtPuYHMEbZhAFIjEv3srpwWzRzjZnqINiQ==
   dependencies:
-    dmn-js-boxed-expression "^16.2.1"
-    dmn-js-decision-table "^16.2.0"
+    dmn-js-boxed-expression "^16.2.3"
+    dmn-js-decision-table "^16.2.3"
     dmn-js-drd "^16.2.1"
-    dmn-js-literal-expression "^16.2.0"
+    dmn-js-literal-expression "^16.2.3"
     dmn-js-shared "^16.2.0"
 
 dmn-moddle@^10.0.0:
@@ -8158,7 +8151,7 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha512-xfBaXQd9ryd9dlSDvnvI0lvxfLJlYAZzXomUYzLKtUeOQvOP5piqAWuGtrhWeqaXK9hhoM/iyJc5AV+XfsX3HQ==
 
-lodash@4.17.21, lodash@^4.17.15, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.7.0:
+lodash@4.17.21, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.7.0:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
