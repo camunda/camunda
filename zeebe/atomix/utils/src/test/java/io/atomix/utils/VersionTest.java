@@ -16,63 +16,69 @@
  */
 package io.atomix.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.Test;
 
 /** Version test. */
 public class VersionTest {
+
+  @Test
+  public void shouldAllowAlphaReleaseCandidates() {
+    // given
+    final var version = "8.6.0-alpha1-rc1";
+
+    // when
+    final Version from = Version.from(version);
+
+    // then
+    assertThat(from.major()).isEqualTo(8);
+    assertThat(from.minor()).isEqualTo(6);
+    assertThat(from.patch()).isEqualTo(0);
+    assertThat(from.preRelease()).isEqualTo("alpha1-rc1");
+    assertThat(from.buildMetadata()).isNull();
+  }
+
   @Test
   public void testVersionComparison() {
-    assertTrue(Version.from("1.0.0").compareTo(Version.from("2.0.0")) < 0);
-    assertTrue(Version.from("2.0.0").compareTo(Version.from("1.0.0")) > 0);
-    assertTrue(Version.from("1.0.0").compareTo(Version.from("0.1.0")) > 0);
-    assertTrue(Version.from("0.1.0").compareTo(Version.from("1.0.0")) < 0);
-    assertTrue(Version.from("0.1.0").compareTo(Version.from("0.1.1")) < 0);
-    assertTrue(Version.from("1.0.0").compareTo(Version.from("0.0.1")) > 0);
-    assertTrue(Version.from("1.1.1").compareTo(Version.from("1.0.3")) > 0);
-    assertTrue(Version.from("1.0.0").compareTo(Version.from("1.0.0-beta1")) > 0);
-    assertTrue(Version.from("1.0.0-rc2").compareTo(Version.from("1.0.0-rc1")) > 0);
-    assertTrue(Version.from("1.0.0-rc2.1").compareTo(Version.from("1.0.0-rc2")) > 0);
-    assertTrue(Version.from("1.0.0-rc2.1.1").compareTo(Version.from("1.0.0-rc2.1")) > 0);
-    assertTrue(Version.from("1.0.0-rc2").compareTo(Version.from("1.0.0-rc2.1")) < 0);
-    assertTrue(Version.from("1.0.0-rc1").compareTo(Version.from("1.0.0-beta1")) > 0);
-    assertTrue(Version.from("2.0.0-beta1").compareTo(Version.from("1.0.0")) > 0);
-    assertTrue(Version.from("1.0.0-alpha1").compareTo(Version.from("1.0.0-SNAPSHOT")) > 0);
+    assertThat(Version.from("1.0.0")).isLessThan(Version.from("2.0.0"));
+    assertThat(Version.from("2.0.0")).isGreaterThan(Version.from("1.0.0"));
+    assertThat(Version.from("1.0.0")).isGreaterThan(Version.from("0.1.0"));
+    assertThat(Version.from("0.1.0"))
+        .isLessThan(Version.from("1.0.0"))
+        .isLessThan(Version.from("0.1.1"));
+    assertThat(Version.from("1.0.0")).isGreaterThan(Version.from("0.0.1"));
+    assertThat(Version.from("1.1.1")).isGreaterThan(Version.from("1.0.3"));
+    assertThat(Version.from("1.0.0")).isGreaterThan(Version.from("1.0.0-beta1"));
+    assertThat(Version.from("1.0.0-rc2")).isGreaterThan(Version.from("1.0.0-rc1"));
+    assertThat(Version.from("1.0.0-rc2.1")).isGreaterThan(Version.from("1.0.0-rc2"));
+    assertThat(Version.from("1.0.0-rc2.1.1")).isGreaterThan(Version.from("1.0.0-rc2.1"));
+    assertThat(Version.from("1.0.0-rc2")).isLessThan(Version.from("1.0.0-rc2.1"));
+    assertThat(Version.from("1.0.0-rc1")).isGreaterThan(Version.from("1.0.0-beta1"));
+    assertThat(Version.from("2.0.0-beta1")).isGreaterThan(Version.from("1.0.0"));
+    assertThat(Version.from("1.0.0-alpha1")).isGreaterThan(Version.from("1.0.0-SNAPSHOT"));
+    assertThat(Version.from("1.0.0-alpha1-rc1")).isLessThan(Version.from("1.0.0-alpha1-rc2"));
   }
 
   @Test
   public void testVersionToString() {
-    assertEquals("1.0.0", Version.from("1.0.0").toString());
-    assertEquals("1.0.0-alpha1", Version.from("1.0.0-alpha1").toString());
-    assertEquals("1.0.0-beta1", Version.from("1.0.0-beta1").toString());
-    assertEquals("1.0.0-rc1", Version.from("1.0.0-rc1").toString());
-    assertEquals("1.0.0-rc1.2", Version.from("1.0.0-rc1.2").toString());
-    assertEquals("1.0.0-SNAPSHOT", Version.from("1.0.0-SNAPSHOT").toString());
+    assertThat(Version.from("1.0.0")).hasToString("1.0.0");
+    assertThat(Version.from("1.0.0-alpha1")).hasToString("1.0.0-alpha1");
+    assertThat(Version.from("1.0.0-beta1")).hasToString("1.0.0-beta1");
+    assertThat(Version.from("1.0.0-rc1")).hasToString("1.0.0-rc1");
+    assertThat(Version.from("1.0.0-rc1.2")).hasToString("1.0.0-rc1.2");
+    assertThat(Version.from("1.0.0-SNAPSHOT")).hasToString("1.0.0-SNAPSHOT");
   }
 
   @Test
   public void testInvalidVersions() {
-    assertIllegalArgument(() -> Version.from("1"));
-    assertIllegalArgument(() -> Version.from("1.0"));
-    assertIllegalArgument(() -> Version.from("1.0-beta1"));
-    assertIllegalArgument(() -> Version.from("1.0.0-beta1XYZ"));
-    assertIllegalArgument(() -> Version.from("1.0.0.0"));
-    assertIllegalArgument(() -> Version.from("1.0.0.0-beta1"));
-    assertIllegalArgument(() -> Version.from("1.0.0-not1"));
-    assertIllegalArgument(() -> Version.from("1.0.0-alpha"));
-    assertIllegalArgument(() -> Version.from("1.0.0-beta"));
-    assertIllegalArgument(() -> Version.from("1.0.0-rc"));
-  }
-
-  private void assertIllegalArgument(final Runnable callback) {
-    try {
-      callback.run();
-      fail();
-    } catch (final IllegalArgumentException e) {
-      // expected
-    }
+    assertThatThrownBy(() -> Version.from("1")).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> Version.from("1.0")).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> Version.from("1.0-beta1"))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> Version.from("1.0.0.0")).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> Version.from("1.0.0.0-beta1"))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }
