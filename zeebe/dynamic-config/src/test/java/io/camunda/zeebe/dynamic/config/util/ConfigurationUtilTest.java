@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class TopologyUtilTest {
+class ConfigurationUtilTest {
 
   private static final String GROUP_NAME = "test";
 
@@ -46,7 +46,7 @@ class TopologyUtilTest {
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
 
     // when
-    final var topology = TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+    final var topology = ConfigurationUtil.getClusterConfigFrom(partitionDistribution);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
@@ -123,7 +123,7 @@ class TopologyUtilTest {
 
     // when
     final var partitionDistribution =
-        TopologyUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);
@@ -164,7 +164,7 @@ class TopologyUtilTest {
 
     // when
     final var partitionDistribution =
-        TopologyUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);

@@ -21,11 +21,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class TopologyUtil {
+public final class ConfigurationUtil {
 
-  private TopologyUtil() {}
+  private ConfigurationUtil() {}
 
-  public static ClusterConfiguration getClusterTopologyFrom(
+  public static ClusterConfiguration getClusterConfigFrom(
       final Set<PartitionMetadata> partitionDistribution) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {

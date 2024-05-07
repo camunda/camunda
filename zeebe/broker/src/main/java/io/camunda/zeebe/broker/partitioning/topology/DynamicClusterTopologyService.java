@@ -14,7 +14,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
@@ -74,7 +74,7 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
                         try {
                           partitionDistribution =
                               new PartitionDistribution(
-                                  TopologyUtil.getPartitionDistributionFrom(
+                                  ConfigurationUtil.getPartitionDistributionFrom(
                                       topology, PartitionManagerImpl.GROUP_NAME));
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
