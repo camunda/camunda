@@ -93,10 +93,14 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(
           TaskVariableTemplate.VALUE,
-          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
+          "null".equals(variable.getValue())
+              ? "null"
+              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
-          objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
+          "null".equals(variable.getFullValue())
+              ? "null"
+              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new BulkOperation.Builder()
