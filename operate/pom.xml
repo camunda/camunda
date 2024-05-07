@@ -72,7 +72,7 @@
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.5.0</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
-    <version.identity>8.5.0</version.identity>
+    <version.identity>8.5.1</version.identity>
     <version.parsson>1.1.6</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
