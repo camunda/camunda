@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.List;
 import java.util.Set;
 
@@ -24,7 +24,7 @@ public record StaticConfiguration(
 
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
-    return TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+    return ConfigurationUtil.getClusterConfigFrom(partitionDistribution);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

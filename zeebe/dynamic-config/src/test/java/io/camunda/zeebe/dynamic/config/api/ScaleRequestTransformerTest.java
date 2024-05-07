@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
 import java.util.Set;
@@ -82,7 +82,7 @@ class ScaleRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    final var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
+    final var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
 
     //  when
     final var operationsEither =
@@ -115,7 +115,7 @@ class ScaleRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    final var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
+    final var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
 
     // when
     final var operations =
@@ -128,7 +128,7 @@ class ScaleRequestTransformerTest {
         TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
 
     // then
-    final var newDistribution = TopologyUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
     assertThat(newTopology.members().keySet())
         .containsExactlyInAnyOrderElementsOf(getClusterMembers(newClusterSize));

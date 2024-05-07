@@ -14,8 +14,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +99,7 @@ class PartitionReassignRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
+    var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
     for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
       oldClusterTopology =
           oldClusterTopology.updateMember(
@@ -150,7 +150,7 @@ class PartitionReassignRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 oldReplicationFactor);
-    var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
+    var oldClusterTopology = ConfigurationUtil.getClusterConfigFrom(oldDistribution);
     for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
       oldClusterTopology =
           oldClusterTopology.updateMember(
@@ -173,7 +173,7 @@ class PartitionReassignRequestTransformerTest {
     final ClusterConfiguration newTopology =
         TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
     // then
-    final var newDistribution = TopologyUtil.getPartitionDistributionFrom(newTopology, "temp");
+    final var newDistribution = ConfigurationUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
   }
 
