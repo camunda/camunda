@@ -52,9 +52,7 @@ export default function OutlierControlPanel({
         align="bottom"
         className="zScoreTooltip"
       >
-        <button>
-          <Information />
-        </button>
+        <Information />
       </Tooltip>
     </ControlPanel>
   );

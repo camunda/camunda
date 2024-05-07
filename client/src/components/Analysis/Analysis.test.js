@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import Analysis from './Analysis';
@@ -18,5 +17,5 @@ jest.mock('react-router-dom', () => ({
 it('should select the correct table', () => {
   const node = shallow(<Analysis />);
 
-  expect(node.find('Tabs').prop('selectedIndex')).toBe(1);
+  expect(node.find('Tabs').prop('value')).toBe(1);
 });

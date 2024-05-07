@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-import {Button} from 'components';
+import {Button} from '@carbon/react';
+
 import ZoomControls from './ZoomControls';
 
 it('should match snapshot', () => {

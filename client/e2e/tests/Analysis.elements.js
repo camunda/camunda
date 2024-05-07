@@ -13,7 +13,7 @@ export const endEventOverlay = Selector('.DiagramBehavior__end-event-statistics'
 export const gatewayCancelButton = Selector('[name="gateway"] button');
 export const gatewayInput = Selector('[name="gateway"] .SelectionPreview');
 export const endEventInput = Selector('[name="endEvent"] .SelectionPreview');
-export const branchAnalysisLink = Selector('.tabList a').withText('Branch analysis');
+export const branchAnalysisLink = Selector('.cds--tab--list a').withText('Branch analysis');
 export const heatmapEl = Selector('svg .viewport image');
 export const chart = Selector('.DurationChart canvas');
 export const variablesTable = Selector('.VariablesTable.Table');

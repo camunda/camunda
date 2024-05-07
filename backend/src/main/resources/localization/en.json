@@ -1635,6 +1635,11 @@
           }
         }
       }
+    },
+    "zoomControls": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset zoom"
     }
   },
   "apiErrors": {

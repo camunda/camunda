@@ -1635,6 +1635,11 @@
           }
         }
       }
+    },
+    "zoomControls": {
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "resetZoom": "Zoom zurücksetzen"
     }
   },
   "apiErrors": {

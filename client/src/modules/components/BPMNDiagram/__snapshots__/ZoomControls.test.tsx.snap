@@ -1,0 +1,62 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="ZoomControls"
+>
+  <Button
+    className="reset"
+    hasIconOnly={true}
+    iconDescription="Reset zoom"
+    kind="ghost"
+    onClick={[MockFunction]}
+    renderIcon={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "propTypes": Object {
+          "size": [Function],
+        },
+        "render": [Function],
+      }
+    }
+    size="sm"
+    tooltipAlignment="end"
+  />
+  <Button
+    className="zoomIn"
+    hasIconOnly={true}
+    iconDescription="Zoom in"
+    kind="ghost"
+    onClick={[Function]}
+    renderIcon={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "propTypes": Object {
+          "size": [Function],
+        },
+        "render": [Function],
+      }
+    }
+    size="sm"
+    tooltipAlignment="end"
+  />
+  <Button
+    className="zoomOut"
+    hasIconOnly={true}
+    iconDescription="Zoom out"
+    kind="ghost"
+    onClick={[Function]}
+    renderIcon={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "propTypes": Object {
+          "size": [Function],
+        },
+        "render": [Function],
+      }
+    }
+    size="sm"
+    tooltipAlignment="end"
+  />
+</div>
+`;
