@@ -42,7 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 final class ProtoBufSerializerTest {
 
-  final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
+  private final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
 
   @ParameterizedTest
   @MethodSource("provideClusterTopologies")
@@ -212,21 +212,24 @@ final class ProtoBufSerializerTest {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
   }
 
   private static ClusterConfiguration topologyWithOneMemberOneLeavingPartition() {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()).toLeaving())));
   }
 
   private static ClusterConfiguration topologyWithOneMemberOneJoiningPartition() {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.joining(1))));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.joining(1, DynamicPartitionConfig.init()))));
   }
 
   private static ClusterConfiguration topologyWithOneMemberTwoPartitions() {
@@ -234,7 +237,11 @@ final class ProtoBufSerializerTest {
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(1), 2, PartitionState.active(2).toLeaving())));
+                Map.of(
+                    1,
+                    PartitionState.active(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init()).toLeaving())));
   }
 
   private static ClusterConfiguration topologyWithTwoMembers() {
@@ -242,7 +249,11 @@ final class ProtoBufSerializerTest {
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
-                Map.of(1, PartitionState.joining(1), 2, PartitionState.active(2))))
+                Map.of(
+                    1,
+                    PartitionState.joining(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init()))))
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeaving());
   }
 
