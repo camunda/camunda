@@ -269,6 +269,50 @@ jobs:
           fi
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Install Zeebe changelog tool
+        run: |
+          wget https://github.com/zeebe-io/zeebe-changelog/releases/download/0.7.0/zeebe-changelog_0.7.0_Linux_i386.tar.gz
+          tar -xzvf zeebe-changelog_0.7.0_Linux_i386.tar.gz
+          chmod +x zcl
+      - name: Generate Changelog for patch release
+        id: gen-changelog
+        run: |
+          changelog="Release ${{ inputs.releaseVersion }}"
+          # Right now we only support patch release for generating the change log
+          # as it is the easiest to automate and the most repetitive work to do on a release
+          if [[ "$version" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
+          then
+            # Next, to add the release labels to release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
+            #
+            # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and 
+            # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
+            #
+            # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
+            # To find the previous patch version we extract the patch version and subsctract by one
+            patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]\*\.//')
+            majorMinor=$(echo ${{ inputs.releaseVersion }} | sed 's/\.[1-9][0-9]\*$//')
+            ZCL_FROM_REV="$majorMinor".$(( patchVersion - 1 ))
+            ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
+
+            # This will add labels to the issues in GitHub. You can verify this step by looking at closed issues. They should now be tagged with the release.
+            ./zcl add-labels \
+            --token=${{ secrets.GITHUB_TOKEN }} \
+            --from=$ZCL_FROM_REV \
+            --target=$ZCL_TARGET_REV \
+            --label="version:$ZCL_TARGET_REV" \
+            --org camunda --repo zeebe
+
+            # This command will print markdown code to the console. You will need to manually insert this output into the release draft.
+            changelog=$(./zcl generate \
+            --token=${{ secrets.GITHUB_TOKEN }} \
+            --label="version:$ZCL_TARGET_REV" \
+            --org camunda --repo zeebe)
+          fi
+
+          echo "changelog=$changelog" >> $GITHUB_OUTPUT
       - name: Create Github release
         uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
@@ -277,9 +321,9 @@ jobs:
           artifacts: "*"
           artifactErrorsFailBuild: true
           draft: true
-          body: Release ${{ inputs.releaseVersion }}
+          body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: ${{ steps.pre-release.result }}
+          prerelease: ${{ steps.pre-release.outputs.result }}
           tag: ${{ inputs.releaseVersion }}
   zeebe-docker:
     needs: release
