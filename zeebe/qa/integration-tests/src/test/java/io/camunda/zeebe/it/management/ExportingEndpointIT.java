@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -325,12 +326,8 @@ final class ExportingEndpointIT {
 
     // when
     getActuator().softPause();
-    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
     CLUSTER.shutdown();
     CLUSTER.start();
-
-    // all partitions should be soft paused after restart
-    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
 
     client
         .newPublishMessageCommand()
@@ -346,15 +343,32 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
-    final Map<Integer, Long> exportedPositionsAfterSoftPause = getExportedPositions();
-
     // then
+    assertThat(
+            RecordingExporter.messageRecords()
+                .withCorrelationKey("11")
+                .withIntent(MessageIntent.PUBLISHED)
+                .limit(1)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.messageRecords()
+                .withCorrelationKey("12")
+                .withIntent(MessageIntent.PUBLISHED)
+                .limit(1)
+                .exists())
+        .isTrue();
+
     assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
+
+    // all partitions should be soft paused after restart
+    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
+
     // all partitions should have -1 as exported position due to restart and the exporter positions
     // not being able to update due to soft pause.
+    final Map<Integer, Long> exportedPositionsAfterSoftPause = getExportedPositions();
+
     try {
-      // TODO: after reason for flakiness is found, remove the debug try-catch block.
-      //  https://github.com/camunda/zeebe/issues/17836
       assertTrue(
           exportedPositionsAfterSoftPause.entrySet().stream()
               .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
