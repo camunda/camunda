@@ -60,10 +60,11 @@ const AvailableTasks: React.FC<Props> = ({
                 const target = event.target as HTMLDivElement;
 
                 if (
-                  target.scrollHeight -
-                    target.clientHeight -
-                    target.scrollTop <=
-                  0
+                  Math.floor(
+                    target.scrollHeight -
+                      target.clientHeight -
+                      target.scrollTop,
+                  ) <= 0
                 ) {
                   await onScrollDown();
                 } else if (target.scrollTop === 0) {
