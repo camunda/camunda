@@ -41,7 +41,7 @@ public final class MainSupport {
     // simplify bounding direct memory usage of Netty by ensuring all servers use the same allocator
     putSystemPropertyIfAbsent("io.grpc.netty.useCustomAllocator", Boolean.toString(false));
 
-    // Logging adapter to Log4
+    // Logging adapter to Log4j
     putSystemPropertyIfAbsent(
         "java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
   }
