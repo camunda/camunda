@@ -18,6 +18,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ public class XMLUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(XMLUtil.class);
 
   @Bean
+  @ConditionalOnMissingBean
   public SAXParserFactory getSAXParserFactory() {
     final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     saxParserFactory.setNamespaceAware(true);

@@ -34,6 +34,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
 
@@ -55,7 +56,10 @@ public class GenericDAO<T extends OperateEntity, I extends IndexDescriptor> {
    * @param esClient
    */
   @SuppressWarnings("unchecked")
-  GenericDAO(ObjectMapper objectMapper, I index, RestHighLevelClient esClient) {
+  GenericDAO(
+      @Qualifier("operateObjectMapper") ObjectMapper objectMapper,
+      I index,
+      RestHighLevelClient esClient) {
     if (objectMapper == null) {
       throw new IllegalStateException("ObjectMapper can't be null");
     }

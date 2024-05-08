@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRequest.Builder> {
 
-  @Autowired private TenantService tenantService;
+  @Autowired(required = false) private TenantService tenantService;
 
   @Override
   public void apply(final SearchRequest.Builder searchRequest) {

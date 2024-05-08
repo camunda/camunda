@@ -18,7 +18,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
 @Service
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 public class ILMService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ILMService.class);
 

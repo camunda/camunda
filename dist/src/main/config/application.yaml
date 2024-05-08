@@ -87,6 +87,16 @@ zeebe:
       # Controls the number of io threads to be used.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       ioThreadCount: 2
+    exporters:
+      elasticsearch:
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        args:
+          url: http://localhost:9200
+          requestTimeoutMs: 1000
+          bulk:
+            delay: 1
+            size: 10
+            memoryLimit: 10485760
 
 camunda:
   # Operate configuration properties
@@ -114,6 +124,8 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
+    importer:
+      readerBackoff: 1000
   # Tasklist configuration properties
   tasklist:
     # Set Tasklist username and password.
@@ -139,3 +151,5 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
+    importer:
+      readerBackoff: 1000

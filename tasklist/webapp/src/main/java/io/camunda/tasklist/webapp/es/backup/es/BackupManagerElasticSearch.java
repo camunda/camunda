@@ -62,6 +62,7 @@ import org.elasticsearch.transport.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -80,9 +81,11 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   private Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
@@ -445,7 +448,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  @Bean("backupThreadPoolExecutor")
+  @Bean("tasklistBackupThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);

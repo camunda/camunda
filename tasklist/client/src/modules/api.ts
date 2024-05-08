@@ -220,13 +220,14 @@ const api = {
       },
     });
   },
-  assignTask: (taskId: Task['id']) => {
+  assignTask: ({taskId, ...body}: {taskId: Task['id']}) => {
     return new Request(getFullURL(`/v1/tasks/${taskId}/assign`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(body)
     });
   },
   completeTask: ({

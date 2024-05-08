@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
+
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -15,9 +17,11 @@ import io.camunda.operate.property.OperateProperties;
 import java.util.Date;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -26,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 /** Class to get and cache M2M Auth0 access token. */
 @Component
 @Configuration
+@Profile(SSO_AUTH_PROFILE)
 public class M2mTokenManager {
 
   protected static final String FIELD_NAME_GRANT_TYPE = "grant_type";
@@ -37,7 +42,9 @@ public class M2mTokenManager {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private RestTemplateBuilder builder;
 

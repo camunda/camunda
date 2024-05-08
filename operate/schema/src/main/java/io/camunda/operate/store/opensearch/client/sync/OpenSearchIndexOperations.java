@@ -29,6 +29,7 @@ import org.opensearch.client.opensearch.indices.update_aliases.Action;
 import org.opensearch.client.opensearch.indices.update_aliases.AddAction;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
@@ -41,7 +42,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public OpenSearchIndexOperations(
       final Logger logger,
       final OpenSearchClient openSearchClient,
-      final ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     super(logger, openSearchClient);
     this.objectMapper = objectMapper;
   }

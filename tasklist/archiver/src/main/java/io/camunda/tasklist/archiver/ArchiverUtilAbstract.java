@@ -20,7 +20,7 @@ public abstract class ArchiverUtilAbstract implements ArchiverUtil {
   private static final String INDEX_NAME_PATTERN = "%s%s";
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
+  @Qualifier("tasklistArchiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
   @Autowired protected Metrics metrics;

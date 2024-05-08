@@ -24,6 +24,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +41,7 @@ public class EventReader implements io.camunda.operate.webapp.reader.EventReader
   public EventReader(
       final EventTemplate eventTemplate,
       final TenantAwareElasticsearchClient tenantAwareClient,
-      final ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.eventTemplate = eventTemplate;
     this.tenantAwareClient = tenantAwareClient;
     this.objectMapper = objectMapper;

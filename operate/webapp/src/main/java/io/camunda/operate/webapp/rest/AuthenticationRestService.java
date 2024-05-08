@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(value = AUTHENTICATION_URL)
+@RequestMapping(value = {AUTHENTICATION_URL, "/v1/internal/users"})
 public class AuthenticationRestService extends InternalAPIErrorController {
 
   public static final String AUTHENTICATION_URL = "/api/authentications";
@@ -30,7 +30,7 @@ public class AuthenticationRestService extends InternalAPIErrorController {
 
   @Autowired private UserService userService;
 
-  @GetMapping(path = USER_ENDPOINT)
+  @GetMapping(path = {USER_ENDPOINT, "/current"})
   public UserDto getCurrentAuthentication() {
     try {
       return userService.getCurrentUser();

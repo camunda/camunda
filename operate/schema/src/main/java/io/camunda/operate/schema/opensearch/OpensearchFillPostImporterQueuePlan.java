@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -64,7 +65,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   @Autowired
   public OpensearchFillPostImporterQueuePlan(
       final RichOpenSearchClient richOpenSearchClient,
-      final ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       final MigrationProperties migrationProperties) {
     this.richOpenSearchClient = richOpenSearchClient;

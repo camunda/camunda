@@ -17,6 +17,7 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,7 @@ public class RichOpenSearchClient {
       BeanFactory beanFactory,
       OpenSearchClient openSearchClient,
       OpenSearchAsyncClient openSearchAsyncClient,
-      ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") ObjectMapper objectMapper) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     async = new Async(openSearchAsyncClient);

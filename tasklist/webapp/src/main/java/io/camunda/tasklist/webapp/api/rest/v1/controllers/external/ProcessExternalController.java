@@ -58,7 +58,7 @@ public class ProcessExternalController extends ApiErrorController {
 
   @Autowired private FormStore formStore;
 
-  @Autowired private TenantService tenantService;
+  @Autowired(required = false) private TenantService tenantService;
 
   @Operation(
       summary = "Get Form by Process BPMN id.",
@@ -134,7 +134,7 @@ public class ProcessExternalController extends ApiErrorController {
           String tenantId,
       @RequestBody(required = false) StartProcessRequest startProcessRequest) {
 
-    if (tenantService.isMultiTenancyEnabled()) {
+    if (tenantService != null && tenantService.isMultiTenancyEnabled()) {
       if (StringUtils.isBlank(tenantId)
           || !tenantService.getAuthenticatedTenants().contains(tenantId)) {
         throw new InvalidRequestException("Invalid Tenant");

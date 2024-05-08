@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -33,7 +34,7 @@ public final class ProblemAuthFailureHandler
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public ProblemAuthFailureHandler(final ObjectMapper objectMapper) {
+  public ProblemAuthFailureHandler(@Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

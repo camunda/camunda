@@ -52,7 +52,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
   @MockBean private ImportPositionHolder importPositionHolder;
 
   @MockBean
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
   @MockBean private RecordsReaderHolder recordsReaderHolder;

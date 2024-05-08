@@ -18,7 +18,7 @@ public class SSOConfigurator {
 
   @Autowired private RestTemplateBuilder builder;
 
-  @Bean("auth0_restTemplate")
+  @Bean("tasklist_auth0_restTemplate")
   public RestTemplate restTemplate() {
     return builder.build();
   }

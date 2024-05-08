@@ -31,7 +31,10 @@ public final class OperateURIs {
     LOGIN_RESOURCE,
     SSO_CALLBACK_URI,
     NO_PERMISSION,
-    LOGOUT_RESOURCE
+    LOGOUT_RESOURCE,
+    "operate/**",
+    "tasklist/**",
+    "/v1/user-tasks/**"
   };
 
   // Used as constants class

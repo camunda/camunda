@@ -57,7 +57,7 @@ public class OpenSearchSessionRepository
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSessionRepository.class);
 
   @Autowired
-  @Qualifier("sessionThreadPoolScheduler")
+  @Qualifier("tasklistSessionThreadPoolScheduler")
   public ThreadPoolTaskScheduler taskScheduler;
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
@@ -68,7 +68,9 @@ public class OpenSearchSessionRepository
 
   @Autowired private HttpServletRequest request;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @PostConstruct
   private void setUp() {

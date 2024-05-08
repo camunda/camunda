@@ -53,7 +53,7 @@ public class Auth0Service {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
-  @Qualifier("auth0_restTemplate")
+  @Qualifier("tasklist_auth0_restTemplate")
   private RestTemplate restTemplate;
 
   public Authentication authenticate(final HttpServletRequest req, final HttpServletResponse res) {

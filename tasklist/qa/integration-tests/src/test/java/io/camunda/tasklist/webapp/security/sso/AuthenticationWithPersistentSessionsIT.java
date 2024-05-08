@@ -105,7 +105,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
 
   @MockBean
-  @Qualifier("auth0_restTemplate")
+  @Qualifier("tasklist_auth0_restTemplate")
   private RestTemplate restTemplate;
 
   @Autowired private ObjectMapper objectMapper;

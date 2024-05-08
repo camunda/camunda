@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(OpenSearchCondition.class)
 public class UserStoreOpenSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreOpenSearch.class);

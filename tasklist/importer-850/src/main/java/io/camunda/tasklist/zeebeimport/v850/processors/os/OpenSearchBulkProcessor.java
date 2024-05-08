@@ -33,6 +33,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -55,7 +56,7 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
 
   @Autowired private UserTaskZeebeRecordProcessorOpenSearch userTaskZeebeRecordProcessor;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 

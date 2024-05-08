@@ -38,10 +38,12 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorElasticSearch.class);
 
   @Autowired
-  @Qualifier("zeebeEsClient")
+  @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   public void createUser(String username, String firstname, String lastname) {
     final String password = username;

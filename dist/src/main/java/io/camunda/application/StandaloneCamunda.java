@@ -13,6 +13,7 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import java.util.HashMap;
@@ -24,7 +25,8 @@ public class StandaloneCamunda {
 
   private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
   private static final String DEFAULT_CAMUNDA_PROFILES =
-      String.format("%s,%s", Profile.OPERATE.getId(), Profile.BROKER.getId());
+      String.format(
+          "%s,%s,%s", Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.BROKER.getId());
 
   public static void main(final String[] args) {
     MainSupport.setDefaultGlobalConfiguration();
@@ -36,6 +38,7 @@ public class StandaloneCamunda {
         MainSupport.createDefaultApplicationBuilder()
             .sources(
                 OperateModuleConfiguration.class,
+                TasklistModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
                 GatewayModuleConfiguration.class)
             .properties(defaultActiveProfiles)

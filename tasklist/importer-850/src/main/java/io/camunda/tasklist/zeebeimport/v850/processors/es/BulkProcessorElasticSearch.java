@@ -33,6 +33,7 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -55,7 +56,7 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
   @Autowired private UserTaskZeebeRecordProcessorElasticSearch userTaskZeebeRecordProcessor;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 

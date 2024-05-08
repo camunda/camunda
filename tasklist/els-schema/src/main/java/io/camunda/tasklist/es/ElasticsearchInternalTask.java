@@ -28,6 +28,7 @@ import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -57,9 +58,13 @@ public class ElasticsearchInternalTask {
   private static final String TASKS_ENDPOINT = "_tasks";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchInternalTask.class);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public Either<IOException, TaskResponse> getTaskResponse(final String taskId) {
     try {

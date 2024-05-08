@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 
 @EnableWebSecurity
 @Configuration
-@Component("importerWebSecurityConfig")
-@ConditionalOnMissingBean(name = "webSecurityConfig")
+@Component("tasklistImporterWebSecurityConfig")
+@ConditionalOnMissingBean(name = "tasklistWebSecurityConfig")
 @Order(10)
 public class DefaultWebSecurityConfig {
 

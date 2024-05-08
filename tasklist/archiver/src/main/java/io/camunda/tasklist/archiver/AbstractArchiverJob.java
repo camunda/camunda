@@ -27,7 +27,7 @@ public abstract class AbstractArchiverJob implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
+  @Qualifier("tasklistArchiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
   @Autowired protected ArchiverUtil archiverUtil;

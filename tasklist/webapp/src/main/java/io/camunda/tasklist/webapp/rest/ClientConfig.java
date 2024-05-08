@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.rest;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +22,7 @@ public class ClientConfig {
   public boolean canLogout;
   public boolean isLoginDelegated;
   public String contextPath;
+  public String baseName;
 
   // Cloud related properties for mixpanel events
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
@@ -46,7 +46,7 @@ public class ClientConfig {
   @Value("${CAMUNDA_TASKLIST_IDENTITY_USER_ACCESS_RESTRICTIONS_ENABLED:#{true}}")
   public boolean isUserAccessRestrictionsEnabled;
 
-  @Autowired private TasklistProfileService profileService;
+  //  @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ServletContext context;
 
@@ -55,7 +55,8 @@ public class ClientConfig {
     isEnterprise = tasklistProperties.isEnterprise();
     isMultiTenancyEnabled = tasklistProperties.getMultiTenancy().isEnabled();
     contextPath = context.getContextPath();
-    canLogout = profileService.currentProfileCanLogout();
-    isLoginDelegated = profileService.isLoginDelegated();
+    baseName = context.getContextPath() + "/tasklist";
+    canLogout = true; // profileService.currentProfileCanLogout();
+    isLoginDelegated = false; // profileService.isLoginDelegated();
   }
 }

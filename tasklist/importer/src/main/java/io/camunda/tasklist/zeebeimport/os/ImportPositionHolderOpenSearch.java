@@ -39,7 +39,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(OpenSearchCondition.class)
 public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
     implements ImportPositionHolder {
@@ -49,7 +49,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
 
   // this is the in-memory only storage
 
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   @Autowired
   private OpenSearchClient osClient;
 

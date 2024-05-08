@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,7 @@ import org.springframework.web.client.RestTemplate;
 
 /** Class that sends notifications about the created incidents on configured URL. */
 @Component
+@Profile(SSO_AUTH_PROFILE)
 public class IncidentNotifier {
 
   protected static final String FIELD_NAME_ALERTS = "alerts";
@@ -56,7 +59,9 @@ public class IncidentNotifier {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private M2mTokenManager m2mTokenManager;
 

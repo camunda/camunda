@@ -33,7 +33,8 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
   public static final String USER_DATA_LOADER = "userDataLoader";
   public static final String VARIABLE_DATA_LOADER = "variableDataLoader";
 
-  @Autowired private UserReader userReader;
+  @Autowired(required = false)
+  private UserReader userReader;
 
   @Autowired private VariableService variableService;
 

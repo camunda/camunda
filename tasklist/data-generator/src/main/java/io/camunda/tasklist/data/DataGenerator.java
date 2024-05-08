@@ -9,29 +9,6 @@ package io.camunda.tasklist.data;
 
 public interface DataGenerator {
 
-  DataGenerator DO_NOTHING =
-      new DataGenerator() {
-        @Override
-        public void createZeebeDataAsync() {
-          /*empty*/
-        }
-
-        @Override
-        public void createUser(String username, String firstname, String lastname) {
-          /*empty*/
-        }
-
-        @Override
-        public boolean shouldCreateData() {
-          return false;
-        }
-
-        @Override
-        public void createDemoUsers() {
-          /*empty*/
-        }
-      };
-
   void createZeebeDataAsync();
 
   public void createUser(String username, String firstname, String lastname);

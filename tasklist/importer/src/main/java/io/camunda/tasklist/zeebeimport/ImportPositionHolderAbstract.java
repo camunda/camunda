@@ -41,14 +41,14 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
   @Autowired protected ImportPositionIndex importPositionType;
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") protected ObjectMapper objectMapper;
 
   @Autowired protected TasklistProperties tasklistProperties;
 
   @Autowired protected Metrics metrics;
 
   @Autowired
-  @Qualifier("importPositionUpdateThreadPoolExecutor")
+  @Qualifier("tasklistImportPositionUpdateThreadPoolExecutor")
   protected ThreadPoolTaskScheduler importPositionUpdateExecutor;
 
   @PostConstruct

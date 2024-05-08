@@ -40,6 +40,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +62,7 @@ public class OpensearchListViewReader implements ListViewReader {
   public OpensearchListViewReader(
       final RichOpenSearchClient richOpenSearchClient,
       final OpenSearchQueryHelper openSearchQueryHelper,
-      final ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final ListViewTemplate listViewTemplate,
       final OperationReader operationReader) {
     this.richOpenSearchClient = richOpenSearchClient;

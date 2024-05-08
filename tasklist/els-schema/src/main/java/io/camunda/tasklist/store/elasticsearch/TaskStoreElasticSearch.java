@@ -74,6 +74,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -87,7 +88,9 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -99,7 +102,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Override
   public TaskEntity getTask(final String id) {

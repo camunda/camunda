@@ -66,7 +66,7 @@ public class ElasticsearchSessionRepository
       LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
 
   @Autowired
-  @Qualifier("sessionThreadPoolScheduler")
+  @Qualifier("tasklistSessionThreadPoolScheduler")
   public ThreadPoolTaskScheduler taskScheduler;
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;

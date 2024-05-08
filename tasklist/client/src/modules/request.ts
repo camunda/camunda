@@ -16,7 +16,7 @@ type RequestError = {
 };
 
 function getCsrfTokenFromStorage() {
-  return sessionStorage.getItem('X-CSRF-TOKEN');
+  return sessionStorage.getItem('OPERATE-X-CSRF-TOKEN');
 }
 
 async function request(
@@ -42,7 +42,7 @@ async function request(
         method &&
         ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())
       ) {
-        input.headers.append('X-CSRF-TOKEN', csrfToken);
+        input.headers.append('OPERATE-X-CSRF-TOKEN', csrfToken);
       }
     }
 
@@ -50,11 +50,11 @@ async function request(
 
     if (response.ok) {
       authenticationStore.activateSession();
-      const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
+      const tokenFromResponse = response.headers.get('OPERATE-X-CSRF-TOKEN');
 
       // If the token is found in the response headers, use it
       if (tokenFromResponse) {
-        sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
+        sessionStorage.setItem('OPERATE-X-CSRF-TOKEN', tokenFromResponse);
       }
     }
 

@@ -43,6 +43,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -55,9 +56,16 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       LoggerFactory.getLogger(DraftVariablesStoreElasticSearch.class);
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
+
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public void createOrUpdate(Collection<DraftTaskVariableEntity> draftVariables) {
     final BulkRequest bulkRequest = new BulkRequest();

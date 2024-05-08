@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -51,6 +52,7 @@ public abstract class BaseWebConfigurer {
   @Autowired private TasklistProfileService profileService;
 
   @Bean
+  @ConditionalOnMissingBean
   public SecurityFilterChain filterChain(
       final HttpSecurity http, final HandlerMappingIntrospector introspector) throws Exception {
     final var authenticationManagerBuilder =

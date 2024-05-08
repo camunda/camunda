@@ -37,7 +37,7 @@ public class SSOUserReader implements UserReader {
 
   @Autowired private C8ConsoleService c8ConsoleService;
 
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired(required = false) private IdentityAuthorizationService identityAuthorizationService;
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {

@@ -29,7 +29,7 @@ public class ZeebeConnector {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Bean // will be closed automatically
-  public ZeebeClient zeebeClient() {
+  public ZeebeClient tasklistZeebeClient() {
     return newZeebeClient(tasklistProperties.getZeebe());
   }
 

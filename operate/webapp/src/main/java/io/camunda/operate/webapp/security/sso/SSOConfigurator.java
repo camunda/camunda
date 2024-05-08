@@ -7,13 +7,17 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
+@Profile(SSO_AUTH_PROFILE)
 public class SSOConfigurator {
 
   @Autowired private RestTemplateBuilder builder;

@@ -29,26 +29,30 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<SearchRequest> {
 
-  @Autowired private TenantService tenantService;
+  @Autowired(required = false) private TenantService tenantService;
 
   @Override
   public void apply(final SearchRequest searchRequest) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var searchByTenantIds = tenants.getTenantIds();
-
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    if (tenantService != null) {
+      final var tenants = tenantService.getAuthenticatedTenants();
+      final var tenantCheckQueryType = tenants.getTenantAccessType();
+      final var searchByTenantIds = tenants.getTenantIds();
+      
+      applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    }
   }
 
   @Override
   public void apply(SearchRequest searchRequest, Collection<String> tenantIds) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
-    final var searchByTenantIds =
-        tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
-
-    applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    if (tenantService != null) {
+      final var tenants = tenantService.getAuthenticatedTenants();
+      final var tenantCheckQueryType = tenants.getTenantAccessType();
+      final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
+      final var searchByTenantIds =
+          tenantIds.stream().filter(authorizedTenantIds::contains).collect(Collectors.toSet());
+      
+      applyTenantCheckOnQuery(searchRequest, tenantCheckQueryType, searchByTenantIds);
+    }
   }
 
   private static void applyTenantCheckOnQuery(

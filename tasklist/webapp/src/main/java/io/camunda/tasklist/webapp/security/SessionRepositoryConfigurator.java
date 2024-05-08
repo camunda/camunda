@@ -21,7 +21,7 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
         + "${camunda.tasklist.persistentSessionsEnabled:false}")
 public class SessionRepositoryConfigurator {
 
-  @Bean("sessionThreadPoolScheduler")
+  @Bean("tasklistSessionThreadPoolScheduler")
   public ThreadPoolTaskScheduler getTaskScheduler() {
     final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(5);

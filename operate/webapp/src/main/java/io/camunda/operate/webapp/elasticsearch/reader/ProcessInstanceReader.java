@@ -22,6 +22,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,7 +30,10 @@ public class ProcessInstanceReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceReader.class);
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  protected ObjectMapper objectMapper;
+
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired private ProcessStore processStore;

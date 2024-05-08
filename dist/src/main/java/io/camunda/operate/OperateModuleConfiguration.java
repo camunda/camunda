@@ -7,15 +7,21 @@
  */
 package io.camunda.operate;
 
+import static org.springframework.web.servlet.function.RequestPredicates.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 /**
  * Entry point for the Operate modules by using the the {@link
@@ -52,4 +58,10 @@ public class OperateModuleConfiguration {
   // that the gateway is started first
   @Autowired(required = false)
   private Gateway gateway;
+
+  @Bean
+  MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+    return new MappingJackson2HttpMessageConverter(objectMapper);
+  }
 }

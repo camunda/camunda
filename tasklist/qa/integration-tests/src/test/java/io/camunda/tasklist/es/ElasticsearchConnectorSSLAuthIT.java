@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
@@ -63,7 +64,9 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
           .withExposedPorts(9200)
           .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
 
-  @Autowired RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  RestHighLevelClient esClient;
 
   @Autowired RestHighLevelClient zeebeEsClient;
 

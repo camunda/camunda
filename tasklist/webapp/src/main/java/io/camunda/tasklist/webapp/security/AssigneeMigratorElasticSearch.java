@@ -26,6 +26,7 @@ import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,7 +37,10 @@ import org.springframework.stereotype.Component;
 public class AssigneeMigratorElasticSearch implements AssigneeMigrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AssigneeMigratorElasticSearch.class);
-  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private MetricIndex metricIndex;
   @Autowired private TasklistProperties tasklistProperties;

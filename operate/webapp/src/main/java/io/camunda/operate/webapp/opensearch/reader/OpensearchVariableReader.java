@@ -32,6 +32,7 @@ import java.util.Map;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,9 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request) {

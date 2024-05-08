@@ -26,6 +26,7 @@ public class HealthConfigurationInitializer
   private static final String INDICATOR_BROKER_READY = "brokerReady";
   private static final String INDICATOR_GATEWAY_STARTED = "gatewayStarted";
   private static final String INDICATOR_OPERATE_INDICES_CHECK = "indicesCheck";
+  private static final String INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK = "searchEngineCheck";
   private static final String INDICATOR_SPRING_READINESS_STATE = "readinessState";
 
   private static final String SPRING_READINESS_PROPERTY =
@@ -62,7 +63,11 @@ public class HealthConfigurationInitializer
   }
 
   protected boolean shouldEnableProbes(final List<String> activeProfiles) {
-    return activeProfiles.stream().anyMatch(p -> p.equalsIgnoreCase(Profile.OPERATE.getId()));
+    return activeProfiles.stream()
+        .anyMatch(
+            p ->
+                p.equalsIgnoreCase(Profile.OPERATE.getId())
+                    || p.equalsIgnoreCase(Profile.TASKLIST.getId()));
   }
 
   protected boolean shouldReadinessState(final List<String> activeProfiles) {
@@ -70,6 +75,7 @@ public class HealthConfigurationInitializer
         .anyMatch(
             p ->
                 p.equalsIgnoreCase(Profile.OPERATE.getId())
+                    || p.equalsIgnoreCase(Profile.TASKLIST.getId())
                     || p.equalsIgnoreCase(Profile.BROKER.getId()));
   }
 
@@ -93,6 +99,10 @@ public class HealthConfigurationInitializer
     if (activeProfiles.contains(Profile.OPERATE.getId())) {
       healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
+    }
+
+    if (activeProfiles.contains(Profile.TASKLIST.getId())) {
+      healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
     }
 
     return healthIndicators;

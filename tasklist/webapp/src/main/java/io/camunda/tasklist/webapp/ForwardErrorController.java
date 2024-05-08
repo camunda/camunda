@@ -32,7 +32,8 @@ public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
-  @Autowired private TasklistProfileService profileService;
+  @Autowired(required = false)
+  private TasklistProfileService profileService;
 
   @RequestMapping("/error")
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
@@ -41,7 +42,8 @@ public class ForwardErrorController implements ErrorController {
     if (requestedURI == null) {
       return forwardToRootPage();
     }
-    if (profileService.isLoginDelegated()
+    if (profileService != null
+        && profileService.isLoginDelegated()
         && !requestedURI.contains(LOGIN_RESOURCE)
         && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);

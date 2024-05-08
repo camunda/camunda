@@ -58,7 +58,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderElasticSearch.class);
 
   @Autowired
-  @Qualifier("zeebeEsClient")
+  @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
   public RecordsReaderElasticSearch(

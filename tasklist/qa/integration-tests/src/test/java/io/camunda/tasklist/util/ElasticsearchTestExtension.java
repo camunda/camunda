@@ -69,10 +69,12 @@ public class ElasticsearchTestExtension
   private static final String PATH_SEARCH_STATISTICS =
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
-  @Autowired protected RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  protected RestHighLevelClient esClient;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
+  @Qualifier("tasklistZeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
   @Autowired protected TasklistProperties tasklistProperties;

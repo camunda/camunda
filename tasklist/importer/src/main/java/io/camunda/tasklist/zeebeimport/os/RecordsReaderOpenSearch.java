@@ -58,7 +58,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderOpenSearch.class);
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
   public RecordsReaderOpenSearch(

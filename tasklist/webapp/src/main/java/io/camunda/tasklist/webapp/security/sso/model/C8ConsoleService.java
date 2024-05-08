@@ -31,7 +31,7 @@ public class C8ConsoleService {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
-  @Qualifier("auth0_restTemplate")
+  @Qualifier("tasklist_auth0_restTemplate")
   private RestTemplate restTemplate;
 
   private ClusterMetadata clusterMetadata;

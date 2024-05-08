@@ -53,6 +53,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -78,7 +79,7 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
   public OpensearchDecisionInstanceReader(
       final DecisionInstanceTemplate decisionInstanceTemplate,
       final DateTimeFormatter dateTimeFormatter,
-      final ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       @Autowired(required = false) final PermissionsService permissionsService,
       final RichOpenSearchClient richOpenSearchClient) {

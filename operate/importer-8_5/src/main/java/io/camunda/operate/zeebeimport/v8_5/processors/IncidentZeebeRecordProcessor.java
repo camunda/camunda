@@ -57,7 +57,7 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired private OperationsManager operationsManager;
 
-  @Autowired private IncidentNotifier incidentNotifier;
+  @Autowired(required = false) private IncidentNotifier incidentNotifier;
 
   public void processIncidentRecord(final List<Record> records, final BatchRequest batchRequest)
       throws PersistenceException {

@@ -30,6 +30,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,11 +39,14 @@ public class ProcessService {
 
   @Autowired private ZeebeClient zeebeClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
-  @Autowired private TenantService tenantService;
+  @Autowired(required = false)
+  private TenantService tenantService;
 
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired(required = false) private IdentityAuthorizationService identityAuthorizationService;
 
   public ProcessInstanceDTO startProcessInstance(
       final String processDefinitionKey, final String tenantId) {
@@ -54,15 +58,18 @@ public class ProcessService {
       final List<VariableInputDTO> variables,
       final String tenantId) {
 
-    if (!identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
+    if (identityAuthorizationService != null && !identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
       throw new ForbiddenActionException(
           "User does not have the permission to start this process.");
     }
 
-    final boolean isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
+    boolean isMultiTenancyEnabled = false;
+    if (tenantService != null) {
+      isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
 
-    if (isMultiTenancyEnabled && !tenantService.getAuthenticatedTenants().contains(tenantId)) {
-      throw new InvalidRequestException("Invalid tenant.");
+      if (isMultiTenancyEnabled && !tenantService.getAuthenticatedTenants().contains(tenantId)) {
+        throw new InvalidRequestException("Invalid tenant.");
+      }
     }
 
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3

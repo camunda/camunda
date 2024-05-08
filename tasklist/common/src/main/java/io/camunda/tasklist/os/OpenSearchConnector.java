@@ -81,7 +81,7 @@ public class OpenSearchConnector {
   @Autowired private ObjectMapper tasklistObjectMapper;
 
   @Bean
-  public OpenSearchClient openSearchClient() {
+  public OpenSearchClient tasklistOpenSearchClient() {
     final OpenSearchClient openSearchClient = createOsClient(tasklistProperties.getOpenSearch());
     try {
       final HealthResponse response = openSearchClient.cluster().health();
@@ -96,7 +96,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public RestClient opensearchRestClient() {
+  public RestClient tasklistOpensearchRestClient() {
     final var originalHttpHost = getHttpHost(tasklistProperties.getOpenSearch());
     final org.apache.http.HttpHost httpHost =
         new org.apache.http.HttpHost(
@@ -107,7 +107,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public RestClient opensearchZeebeRestClient() {
+  public RestClient tasklistOpensearchZeebeRestClient() {
     final var originalHttpHost = getHttpHost(tasklistProperties.getZeebeOpenSearch());
     final org.apache.http.HttpHost httpHost =
         new org.apache.http.HttpHost(
@@ -118,7 +118,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public OpenSearchAsyncClient openSearchAsyncClient() {
+  public OpenSearchAsyncClient tasklistOpenSearchAsyncClient() {
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(tasklistProperties.getOpenSearch());
     final CompletableFuture<HealthResponse> healthResponse;
@@ -141,7 +141,7 @@ public class OpenSearchConnector {
     return openSearchClient;
   }
 
-  @Bean("zeebeOsClient")
+  @Bean("tasklistZeebeOsClient")
   public OpenSearchClient zeebeOsClient() {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createOsClient(tasklistProperties.getZeebeOpenSearch());

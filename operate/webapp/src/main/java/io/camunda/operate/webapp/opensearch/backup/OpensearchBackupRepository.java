@@ -39,6 +39,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +55,8 @@ public class OpensearchBackupRepository implements BackupRepository {
   private final ObjectMapper objectMapper;
 
   public OpensearchBackupRepository(
-      final RichOpenSearchClient richOpenSearchClient, final ObjectMapper objectMapper) {
+      final RichOpenSearchClient richOpenSearchClient,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.richOpenSearchClient = richOpenSearchClient;
     this.objectMapper = objectMapper;
   }

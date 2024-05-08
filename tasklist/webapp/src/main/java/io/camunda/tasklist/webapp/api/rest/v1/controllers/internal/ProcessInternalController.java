@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import static java.util.Objects.requireNonNullElse;
-
+import java.util.ArrayList;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -61,8 +61,8 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private ProcessService processService;
   @Autowired private ProcessInstanceStore processInstanceStore;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
-  @Autowired private TenantService tenantService;
+  @Autowired(required = false) private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired(required = false) private TenantService tenantService;
 
   @Operation(
       summary = "Returns the list of processes by search query",
@@ -97,11 +97,18 @@ public class ProcessInternalController extends ApiErrorController {
           @RequestParam(required = false)
           Boolean isStartedByForm) {
 
+    List<String> processDefinitionKeys;
+    if (identityAuthorizationService != null) {
+      processDefinitionKeys = identityAuthorizationService.getProcessDefinitionsFromAuthorization();
+    } else {
+      processDefinitionKeys = new ArrayList<>();
+    }
+
     final var processes =
         processStore
             .getProcesses(
                 query,
-                identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+                processDefinitionKeys,
                 tenantId,
                 isStartedByForm)
             .stream()
@@ -278,7 +285,7 @@ public class ProcessInternalController extends ApiErrorController {
           @RequestParam(required = false)
           final String tenantId) {
 
-    if (!tenantService.isTenantValid(tenantId)) {
+    if (tenantService != null && !tenantService.isTenantValid(tenantId)) {
       throw new InvalidRequestException("Invalid Tenant");
     }
 

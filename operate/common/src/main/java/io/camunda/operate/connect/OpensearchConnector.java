@@ -60,6 +60,7 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -81,7 +82,7 @@ public class OpensearchConnector {
   private final ObjectMapper objectMapper;
 
   public OpensearchConnector(
-      final OperateProperties operateProperties, final ObjectMapper objectMapper) {
+      final OperateProperties operateProperties, @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.operateProperties = operateProperties;
     this.objectMapper = objectMapper;
   }

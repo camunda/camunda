@@ -96,6 +96,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
                 id={id}
                 assignee={assignee}
                 onAssignmentError={onAssignmentError}
+                currentUser={user.userId}
               />
             </span>
           </Restricted>
@@ -109,7 +110,8 @@ const AssignButton: React.FC<{
   id: string;
   assignee: string | null;
   onAssignmentError: () => void;
-}> = ({id, assignee, onAssignmentError}) => {
+  currentUser: string | null;
+}> = ({id, assignee, onAssignmentError, currentUser}) => {
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
@@ -127,7 +129,7 @@ const AssignButton: React.FC<{
         tracking.track({eventName: 'task-unassigned'});
       } else {
         setAssignmentStatus('assigning');
-        await assignTask(id);
+        await assignTask({'taskId': id, 'assignee': currentUser });
         setAssignmentStatus('assignmentSuccessful');
         tracking.track({eventName: 'task-assigned'});
       }

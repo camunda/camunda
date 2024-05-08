@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
+
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
@@ -17,12 +19,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 @Component
+@Profile(SSO_AUTH_PROFILE)
 public class C8ConsoleService {
   private static final Logger LOGGER = LoggerFactory.getLogger(C8ConsoleService.class);
 

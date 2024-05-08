@@ -493,7 +493,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         .setVersion(jsonDataMap.get("version").to(String.class));
   }
 
-  @Bean("backupThreadPoolExecutor")
+  @Bean("tasklistBackupThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);

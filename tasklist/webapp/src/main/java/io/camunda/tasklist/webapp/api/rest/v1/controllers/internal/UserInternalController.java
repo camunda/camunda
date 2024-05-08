@@ -26,7 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = TasklistURIs.USERS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserInternalController extends ApiErrorController {
 
-  @Autowired private UserReader userReader;
+  @Autowired(required = false)
+  private UserReader userReader;
 
   @Operation(
       summary = "Get details about the current user.",
@@ -38,7 +39,10 @@ public class UserInternalController extends ApiErrorController {
       })
   @GetMapping("current")
   public ResponseEntity<UserDTO> getCurrentUser() {
-    return ResponseEntity.ok(userReader.getCurrentUser());
+    if (userReader != null) {
+      return ResponseEntity.ok(userReader.getCurrentUser());
+    }
+    return ResponseEntity.ok(null);
   }
 
   @Operation(

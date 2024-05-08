@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ClientConfigRestService {
 
-  public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
+  public static final String CLIENT_CONFIG_RESOURCE = "tasklist/client-config.js";
 
   @Autowired private ClientConfig clientConfig;
 

@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,7 +57,8 @@ public class UserTaskZeebeRecordProcessor {
           this::getCanceledFields);
 
   public UserTaskZeebeRecordProcessor(
-      final UserTaskTemplate userTaskTemplate, final ObjectMapper objectMapper) {
+      final UserTaskTemplate userTaskTemplate,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.userTaskTemplate = userTaskTemplate;
     this.objectMapper = objectMapper;
   }
@@ -200,7 +202,7 @@ public class UserTaskZeebeRecordProcessor {
   }
 
   private OffsetDateTime toDateOrNull(final String dateString) {
-    if (dateString == null) {
+    if (dateString == null || dateString.isBlank()) {
       return null;
     }
     try {

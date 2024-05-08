@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -57,6 +58,7 @@ public class JacksonConfig {
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public DateTimeFormatter dateTimeFormatter() {
     return DateTimeFormatter.ofPattern(tasklistProperties.getElasticsearch().getDateFormat());
   }

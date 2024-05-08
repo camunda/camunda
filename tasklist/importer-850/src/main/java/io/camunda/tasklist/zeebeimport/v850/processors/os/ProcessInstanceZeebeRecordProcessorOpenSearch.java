@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -62,7 +63,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 

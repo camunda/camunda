@@ -50,7 +50,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(DraftVariablesStoreOpenSearch.class);
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOpenSearchClient")
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;

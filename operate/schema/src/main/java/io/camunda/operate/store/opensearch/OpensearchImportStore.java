@@ -28,6 +28,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,7 @@ public class OpensearchImportStore implements ImportStore {
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("operateObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 

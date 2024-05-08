@@ -79,8 +79,13 @@ public class TaskController extends ApiErrorController {
   @Autowired private TaskService taskService;
   @Autowired private VariableService variableService;
   @Autowired private TaskMapper taskMapper;
-  @Autowired private UserReader userReader;
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+
+  @Autowired(required = false)
+  private UserReader userReader;
+
+  @Autowired(required = false)
+  private IdentityAuthorizationService identityAuthorizationService;
+
   @Autowired private TasklistProperties tasklistProperties;
 
   @Operation(
@@ -111,7 +116,8 @@ public class TaskController extends ApiErrorController {
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
 
-    if (tasklistProperties.getIdentity() != null
+    if (userReader != null
+        && tasklistProperties.getIdentity() != null
         && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()) {
       final String userName = userReader.getCurrentUser().getUserId();
       final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
@@ -213,6 +219,7 @@ public class TaskController extends ApiErrorController {
 
   private void checkTaskImplementation(LazySupplier<TaskDTO> taskSupplier) {
     if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
+        && userReader != null
         && userReader.getCurrentUser().isApiUser()) {
       final TaskDTO task = taskSupplier.get();
       LOGGER.warn(
@@ -227,25 +234,31 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(LazySupplier<TaskDTO> taskSupplier) {
-    final String userName = userReader.getCurrentUser().getUserId();
-    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
-    final var task = taskSupplier.get();
-    final boolean allUsersTask =
-        task.getCandidateUsers() == null && task.getCandidateGroups() == null;
-    final boolean candidateGroupTasks =
-        task.getCandidateGroups() != null
-            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
-    final boolean candidateUserTasks =
-        task.getCandidateUsers() != null
-            && Arrays.asList(task.getCandidateUsers()).contains(userName);
-    final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
-    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
+    if (userReader != null) {
+      final String userName = userReader.getCurrentUser().getUserId();
+      final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+      final var task = taskSupplier.get();
+      final boolean allUsersTask =
+          task.getCandidateUsers() == null && task.getCandidateGroups() == null;
+      final boolean candidateGroupTasks =
+          task.getCandidateGroups() != null
+              && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+      final boolean candidateUserTasks =
+          task.getCandidateUsers() != null
+              && Arrays.asList(task.getCandidateUsers()).contains(userName);
+      final boolean assigneeTasks =
+          task.getAssignee() != null && task.getAssignee().equals(userName);
+      final boolean noRestrictions =
+          listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
 
-    return candidateUserTasks
-        || assigneeTasks
-        || candidateGroupTasks
-        || allUsersTask
-        || noRestrictions;
+      return candidateUserTasks
+          || assigneeTasks
+          || candidateGroupTasks
+          || allUsersTask
+          || noRestrictions;
+    } else {
+      return true;
+    }
   }
 
   @Operation(

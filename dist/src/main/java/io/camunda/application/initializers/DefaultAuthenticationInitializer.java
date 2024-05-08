@@ -30,7 +30,7 @@ public class DefaultAuthenticationInitializer
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Set<String> activeProfiles) {
-    if (activeProfiles.contains(Profile.OPERATE.getId())) {
+    if (activeProfiles.contains(Profile.OPERATE.getId()) || activeProfiles.contains(Profile.TASKLIST.getId())) {
       return OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains);
     } else {
       return false;

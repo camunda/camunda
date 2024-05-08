@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
@@ -68,7 +69,9 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
                   ))
           .withExposedPorts(9200);
 
-  @Autowired RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  RestHighLevelClient esClient;
 
   @Autowired RestHighLevelClient zeebeEsClient;
 

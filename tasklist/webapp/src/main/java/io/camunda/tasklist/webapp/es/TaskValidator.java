@@ -18,7 +18,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskValidator {
 
-  @Autowired private UserReader userReader;
+  @Autowired(required = false)
+  private UserReader userReader;
 
   public void validateCanPersistDraftTaskVariables(final TaskEntity task) {
     validateTaskStateAndAssignment(task);
@@ -49,13 +50,13 @@ public class TaskValidator {
     validateTaskIsActive(task);
 
     final UserDTO currentUser = getCurrentUser();
-    if (currentUser.isApiUser()) {
+    if (currentUser != null && currentUser.isApiUser()) {
       // JWT Token/API users are allowed to complete task assigned to anyone
       return;
     }
 
     validateTaskIsAssigned(task);
-    if (!task.getAssignee().equals(currentUser.getUserId())) {
+    if (currentUser != null && !task.getAssignee().equals(currentUser.getUserId())) {
       throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
     }
   }
@@ -63,7 +64,7 @@ public class TaskValidator {
   public void validateCanAssign(final TaskEntity taskBefore, boolean allowOverrideAssignment) {
     validateTaskIsActive(taskBefore);
 
-    if (getCurrentUser().isApiUser() && allowOverrideAssignment) {
+    if (userReader != null && getCurrentUser().isApiUser() && allowOverrideAssignment) {
       // JWT Token/API users can reassign task
       return;
     }
@@ -91,6 +92,10 @@ public class TaskValidator {
   }
 
   private UserDTO getCurrentUser() {
-    return userReader.getCurrentUser();
+    if (userReader != null) {
+      return userReader.getCurrentUser();
+    } else {
+      return null;
+    }
   }
 }

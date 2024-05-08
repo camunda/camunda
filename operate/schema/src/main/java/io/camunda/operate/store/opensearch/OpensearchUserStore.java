@@ -22,6 +22,7 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -43,7 +44,7 @@ public class OpensearchUserStore implements UserStore {
 
   @Autowired protected OpenSearchClient openSearchClient;
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired @Qualifier("operateObjectMapper") protected ObjectMapper objectMapper;
 
   @Autowired private UserIndex userIndex;
 

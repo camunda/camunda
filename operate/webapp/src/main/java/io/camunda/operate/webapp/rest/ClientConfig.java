@@ -21,6 +21,7 @@ public class ClientConfig {
   public boolean isEnterprise;
   public boolean canLogout;
   public String contextPath;
+  public String baseName;
   public String organizationId;
   public String clusterId;
   public String mixpanelAPIHost;
@@ -40,6 +41,7 @@ public class ClientConfig {
     mixpanelAPIHost = operateProperties.getCloud().getMixpanelAPIHost();
     mixpanelToken = operateProperties.getCloud().getMixpanelToken();
     contextPath = context.getContextPath();
+    baseName = context.getContextPath() + "/operate";
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();

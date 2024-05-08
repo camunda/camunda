@@ -30,7 +30,7 @@ public class ZeebeRichOpenSearchClient {
   public ZeebeRichOpenSearchClient(
       BeanFactory beanFactory,
       @Qualifier("zeebeOpensearchClient") OpenSearchClient openSearchClient,
-      ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") ObjectMapper objectMapper) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);

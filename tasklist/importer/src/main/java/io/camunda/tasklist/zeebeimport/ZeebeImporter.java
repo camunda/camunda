@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 public class ZeebeImporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);
@@ -32,7 +32,7 @@ public class ZeebeImporter {
   @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
-  @Qualifier("recordsReaderThreadPoolExecutor")
+  @Qualifier("tasklistRecordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
   @PostConstruct

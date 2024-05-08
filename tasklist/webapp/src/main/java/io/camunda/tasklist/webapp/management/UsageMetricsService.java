@@ -14,12 +14,14 @@ import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Component
 @RestControllerEndpoint(id = "usage-metrics")
+@Profile("standalone")
 public class UsageMetricsService extends InternalAPIErrorController {
 
   @Autowired private TaskMetricsStore taskMetricsStore;

@@ -48,7 +48,7 @@ public class FormStoreOpenSearch implements FormStore {
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOpenSearchClient")
   private OpenSearchClient osClient;
 
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {

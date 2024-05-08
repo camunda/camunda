@@ -48,7 +48,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component("schemaManager")
+@Component("tasklistSchemaManager")
 @Profile("!test")
 @Conditional(ElasticSearchCondition.class)
 public class ElasticsearchSchemaManager implements SchemaManager {

@@ -163,6 +163,32 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>tasklist-data-generator</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-archiver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
     </dependency>
 
@@ -482,7 +508,7 @@
             </program>
             <program>
               <id>tasklist</id>
-              <mainClass>io.camunda.tasklist.Application</mainClass>
+              <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
             <program>
               <id>tasklist-migrate</id>
@@ -582,6 +608,9 @@
             <dependency>io.camunda:operate-importer</dependency>
 
             <dependency>io.camunda:tasklist-webapp</dependency>
+            <dependency>io.camunda:tasklist-data-generator</dependency>
+            <dependency>io.camunda:tasklist-archiver</dependency>
+            <dependency>io.camunda:tasklist-importer</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>

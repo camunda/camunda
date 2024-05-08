@@ -23,13 +23,15 @@ public class UserDto {
 
   private List<Permission> permissions;
 
-  private List<OperateTenant> tenants;
+  private List<OperateTenant> tenants = List.of();
 
   private List<String> roles;
 
   private String salesPlanType;
 
   private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
+
+  private List<String> groups = List.of();
 
   public boolean isCanLogout() {
     return canLogout;

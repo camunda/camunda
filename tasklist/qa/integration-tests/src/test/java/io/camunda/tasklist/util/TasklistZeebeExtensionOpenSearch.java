@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   protected OpenSearchClient zeebeOsClient;
 
   @Override

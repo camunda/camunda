@@ -12,12 +12,14 @@ import io.camunda.operate.webapp.management.dto.UsageMetricDTO;
 import io.camunda.operate.webapp.management.dto.UsageMetricQueryDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Component
 @RestControllerEndpoint(id = "usage-metrics")
+@Profile("standalone")
 public class UsageMetricsService {
 
   @Autowired private MetricsStore metricsStore;

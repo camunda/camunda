@@ -27,16 +27,24 @@ public class ForwardErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
-  @Autowired private OperateProfileService operateProfileService;
+  @Autowired(required = false)
+  private OperateProfileService operateProfileService;
 
   @GetMapping(value = {"/{regex:[\\w-]+}", "/**/{regex:[\\w-]+}"})
   public String forward404(HttpServletRequest request) {
     final String requestedURI =
         request.getRequestURI().substring(request.getContextPath().length());
-    if (operateProfileService.isLoginDelegated() && isNotLoggedIn()) {
+    if (operateProfileService != null
+        && operateProfileService.isLoginDelegated()
+        && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURI);
     } else {
-      return "forward:/";
+
+      if (requestedURI != null && requestedURI.contains("tasklist")) {
+        return "forward:/tasklist";
+      }
+
+      return "forward:/operate";
     }
   }
 

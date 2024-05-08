@@ -38,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpServerErrorException;
 
@@ -46,14 +47,23 @@ public class TaskService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
-  @Autowired private UserReader userReader;
+  @Autowired(required = false)
+  private UserReader userReader;
+
   @Autowired private ZeebeClient zeebeClient;
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private Metrics metrics;
   @Autowired private TaskMetricsStore taskMetricsStore;
-  @Autowired private AssigneeMigrator assigneeMigrator;
+
+  @Autowired(required = false)
+  private AssigneeMigrator assigneeMigrator;
+
   @Autowired private TaskValidator taskValidator;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query) {
@@ -124,11 +134,12 @@ public class TaskService {
     }
 
     final UserDTO currentUser = getCurrentUser();
-    if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
+    if (StringUtils.isEmpty(assignee) && currentUser != null && currentUser.isApiUser()) {
       throw new InvalidRequestException("Assignee must be specified");
     }
 
     if (StringUtils.isNotEmpty(assignee)
+        && currentUser != null
         && !currentUser.isApiUser()
         && !assignee.equals(currentUser.getUserId())) {
       throw new ForbiddenActionException(
@@ -160,7 +171,7 @@ public class TaskService {
 
   private String determineTaskAssignee(String assignee) {
     final UserDTO currentUser = getCurrentUser();
-    return StringUtils.isEmpty(assignee) && !currentUser.isApiUser()
+    return StringUtils.isEmpty(assignee) && currentUser != null && !currentUser.isApiUser()
         ? currentUser.getUserId()
         : assignee;
   }
@@ -262,7 +273,11 @@ public class TaskService {
   }
 
   private UserDTO getCurrentUser() {
-    return userReader.getCurrentUser();
+    if (userReader != null) {
+      return userReader.getCurrentUser();
+    } else {
+      return null;
+    }
   }
 
   private void updateClaimedMetric(final TaskEntity task) {
@@ -272,8 +287,10 @@ public class TaskService {
   private void updateCompletedMetric(final TaskEntity task) {
     LOGGER.info("Updating completed task metric for task with ID: {}", task.getId());
     try {
-      metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
-      assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
+      if (userReader != null) {
+        metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
+        assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
+      }
       taskMetricsStore.registerTaskCompleteEvent(task);
     } catch (Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
@@ -284,22 +301,40 @@ public class TaskService {
 
   private String[] getTaskMetricLabels(final TaskEntity task) {
     final String keyUserId;
+    final String organizationId;
 
-    if (getCurrentUser().isApiUser()) {
-      if (task.getAssignee() != null) {
-        keyUserId = task.getAssignee();
+    if (userReader != null) {
+      if (getCurrentUser().isApiUser()) {
+        if (task.getAssignee() != null) {
+          keyUserId = task.getAssignee();
+        } else {
+          keyUserId = UserReader.DEFAULT_USER;
+        }
       } else {
-        keyUserId = UserReader.DEFAULT_USER;
+        keyUserId = userReader.getCurrentUserId();
       }
-    } else {
-      keyUserId = userReader.getCurrentUserId();
-    }
+      organizationId = userReader.getCurrentOrganizationId();
 
-    return new String[] {
-      TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
-      TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-      TAG_KEY_USER_ID, keyUserId,
-      TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
-    };
+      return new String[] {
+        TAG_KEY_BPMN_PROCESS_ID,
+        task.getBpmnProcessId(),
+        TAG_KEY_FLOW_NODE_ID,
+        task.getFlowNodeBpmnId(),
+        TAG_KEY_USER_ID,
+        keyUserId,
+        TAG_KEY_ORGANIZATION_ID,
+        organizationId
+      };
+
+    } else {
+      keyUserId = null;
+      organizationId = null;
+      return new String[] {
+        TAG_KEY_BPMN_PROCESS_ID,
+        task.getBpmnProcessId(),
+        TAG_KEY_FLOW_NODE_ID,
+        task.getFlowNodeBpmnId()
+      };
+    }
   }
 }

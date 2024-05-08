@@ -12,11 +12,16 @@ import {getUseTaskQueryKey} from 'modules/queries/useTask';
 import {RequestError, request} from 'modules/request';
 import {Task} from 'modules/types';
 
+type Payload = {
+  taskId: Task['id'];
+  assignee: string | null;
+};
+
 function useAssignTask() {
   const client = useQueryClient();
-  return useMutation<Task, RequestError | Error, Task['id']>({
-    mutationFn: async (taskId) => {
-      const {response, error} = await request(api.assignTask(taskId));
+  return useMutation<Task, RequestError | Error, Payload>({
+    mutationFn: async (payload) => {
+      const {response, error} = await request(api.assignTask(payload));
 
       if (response !== null) {
         return response.json();

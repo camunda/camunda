@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Profile(AUTH_PROFILE)
 @EnableWebSecurity
 @Configuration
-@Component("webSecurityConfig")
+@Component("tasklistWebSecurityConfig")
 public class WebSecurityConfig extends BaseWebConfigurer {
 
   @Autowired private UserDetailsService userDetailsService;
