@@ -73,4 +73,8 @@ class RecordExporter {
   TypedRecordImpl getTypedEvent() {
     return typedEvent;
   }
+
+  public void resetExporterIndex() {
+    exporterIndex = 0;
+  }
 }
