@@ -90,16 +90,18 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onWrite(final long index, final long highestPosition) {
-    inFlightEntries.get(highestPosition).onWrite();
+    inFlightEntries.headMap(highestPosition, true).forEach((key, value) -> value.onWrite());
   }
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
-    inFlightEntries.get(highestPosition).onCommit();
+    inFlightEntries.headMap(highestPosition, true).forEach((key, value) -> value.onCommit());
   }
 
   public void onProcessed(final long position) {
-    inFlightEntries.remove(position).onProcessed();
+    final var processed = inFlightEntries.headMap(position, true);
+    processed.forEach((key, value) -> value.onProcessed());
+    processed.clear();
   }
 
   public sealed interface Rejection {
