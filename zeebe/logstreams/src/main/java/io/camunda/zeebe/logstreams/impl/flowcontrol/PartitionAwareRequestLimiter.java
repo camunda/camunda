@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +25,8 @@ public final class PartitionAwareRequestLimiter {
     if (limit == null) {
       limiterSupplier = i -> new NoopRequestLimiter<>();
     } else {
-      limiterSupplier = i -> CommandRateLimiter.builder().limit(limit).build(i);
+      limiterSupplier =
+          i -> CommandRateLimiter.builder().limit(limit).build(new LogStreamMetrics(i));
     }
   }
 

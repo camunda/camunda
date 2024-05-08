@@ -48,6 +48,22 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge INFLIGHT_REQUESTS =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("backpressure_inflight_requests_count")
+          .help("Current number of request inflight")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge REQUEST_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("backpressure_requests_limit")
+          .help("Current limit for number of inflight requests")
+          .labelNames("partition")
+          .register();
+
   private static final Gauge LAST_COMMITTED_POSITION =
       Gauge.build()
           .namespace("zeebe")
@@ -92,6 +108,8 @@ public final class LogStreamMetrics {
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
   private final Gauge.Child appendLimit;
+  private final Gauge.Child inflightRequests;
+  private final Gauge.Child requestLimit;
   private final Gauge.Child lastCommitted;
   private final Gauge.Child lastWritten;
   private final Histogram.Child commitLatency;
@@ -104,6 +122,8 @@ public final class LogStreamMetrics {
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
     inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
     appendLimit = APPEND_LIMIT.labels(partitionLabel);
+    inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
+    requestLimit = REQUEST_LIMIT.labels(partitionLabel);
     lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
     lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
@@ -124,6 +144,22 @@ public final class LogStreamMetrics {
 
   public void increaseTriedAppends() {
     triedAppends.inc();
+  }
+
+  public void setInflightRequests(final int count) {
+    inflightRequests.set(count);
+  }
+
+  public void setRequestLimit(final int limit) {
+    requestLimit.set(limit);
+  }
+
+  public void increaseInflightRequests() {
+    inflightRequests.inc();
+  }
+
+  public void decreaseInflightRequests() {
+    inflightRequests.dec();
   }
 
   public void increaseDeferredAppends() {
@@ -161,6 +197,8 @@ public final class LogStreamMetrics {
     TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
     INFLIGHT_APPENDS.remove(partitionLabel);
     APPEND_LIMIT.remove(partitionLabel);
+    INFLIGHT_REQUESTS.remove(partitionLabel);
+    REQUEST_LIMIT.remove(partitionLabel);
     LAST_COMMITTED_POSITION.remove(partitionLabel);
     LAST_WRITTEN_POSITION.remove(partitionLabel);
     COMMIT_LATENCY.remove(partitionLabel);

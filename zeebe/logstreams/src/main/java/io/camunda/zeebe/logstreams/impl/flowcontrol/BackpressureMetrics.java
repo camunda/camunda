@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
 
 public final class BackpressureMetrics {
 
@@ -28,43 +27,11 @@ public final class BackpressureMetrics {
           .labelNames("partition")
           .register();
 
-  private static final Gauge CURRENT_INFLIGHT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_inflight_requests_count")
-          .help("Current number of request inflight")
-          .labelNames("partition")
-          .register();
-
-  private static final Gauge CURRENT_LIMIT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_requests_limit")
-          .help("Current limit for number of inflight requests")
-          .labelNames("partition")
-          .register();
-
   public void dropped(final int partitionId) {
     DROPPED_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
   }
 
   public void receivedRequest(final int partitionId) {
     TOTAL_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
-  }
-
-  public void incInflight(final int partitionId) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).inc();
-  }
-
-  public void decInflight(final int partitionId) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).dec();
-  }
-
-  public void setNewLimit(final int partitionId, final int newLimit) {
-    CURRENT_LIMIT.labels(String.valueOf(partitionId)).set(newLimit);
-  }
-
-  public void setInflight(final int partitionId, final int count) {
-    CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).set(0);
   }
 }

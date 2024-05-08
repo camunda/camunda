@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -37,14 +38,14 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
           DeploymentDistributionIntent.COMPLETE,
           CommandDistributionIntent.ACKNOWLEDGE);
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
-  private final int partitionId;
-  private final BackpressureMetrics metrics = new BackpressureMetrics();
+  private final LogStreamMetrics metrics;
 
-  private CommandRateLimiter(final CommandRateLimiterBuilder builder, final int partitionId) {
+  private CommandRateLimiter(
+      final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
     super(builder);
-    this.partitionId = partitionId;
-    metrics.setInflight(partitionId, 0);
-    metrics.setNewLimit(partitionId, getLimit());
+    this.metrics = metrics;
+    metrics.setInflightRequests(0);
+    metrics.setRequestLimit(getLimit());
   }
 
   @Override
@@ -68,7 +69,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
         .map(
             listener -> {
               registerListener(streamId, requestId, listener);
-              metrics.incInflight(partitionId);
+              metrics.increaseInflightRequests();
               return true;
             })
         .orElse(false);
@@ -87,7 +88,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
         listener.onIgnore();
       }
 
-      metrics.decInflight(partitionId);
+      metrics.decreaseInflightRequests();
     } else {
       // Ignore this message, if it happens immediately after failover. It can happen when a request
       // committed by the old leader is processed by the new leader.
@@ -103,7 +104,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     final Listener listener = responseListeners.remove(new ListenerId(streamId, requestId));
     if (listener != null) {
       listener.onIgnore();
-      metrics.decInflight(partitionId);
+      metrics.decreaseInflightRequests();
     }
   }
 
@@ -115,7 +116,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
   @Override
   protected void onNewLimit(final int newLimit) {
     super.onNewLimit(newLimit);
-    metrics.setNewLimit(partitionId, newLimit);
+    metrics.setRequestLimit(newLimit);
   }
 
   public static CommandRateLimiterBuilder builder() {
@@ -130,8 +131,8 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
       return this;
     }
 
-    public CommandRateLimiter build(final int partitionId) {
-      return new CommandRateLimiter(this, partitionId);
+    public CommandRateLimiter build(final LogStreamMetrics metrics) {
+      return new CommandRateLimiter(this, metrics);
     }
   }
 

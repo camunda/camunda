@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.CommandRateLimiter;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -30,7 +31,8 @@ class CommandRateLimiterTest {
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
 
-  private final CommandRateLimiter rateLimiter = CommandRateLimiter.builder().limit(limit).build(0);
+  private final CommandRateLimiter rateLimiter =
+      CommandRateLimiter.builder().limit(limit).build(new LogStreamMetrics(0));
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test
