@@ -17,7 +17,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
@@ -29,8 +28,6 @@ import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.impl.records.RecordValues;
-import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -521,67 +518,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
-  }
-
-  private static class RecordExporter {
-
-    private final RecordValues recordValues = new RecordValues();
-    private final RecordMetadata rawMetadata = new RecordMetadata();
-    private final List<ExporterContainer> containers;
-    private final TypedRecordImpl typedEvent;
-    private final ExporterMetrics exporterMetrics;
-
-    private boolean shouldExport;
-    private int exporterIndex;
-
-    RecordExporter(
-        final ExporterMetrics exporterMetrics,
-        final List<ExporterContainer> containers,
-        final int partitionId) {
-      this.containers = containers;
-      typedEvent = new TypedRecordImpl(partitionId);
-      this.exporterMetrics = exporterMetrics;
-    }
-
-    void wrap(final LoggedEvent rawEvent) {
-      rawEvent.readMetadata(rawMetadata);
-
-      final UnifiedRecordValue recordValue =
-          recordValues.readRecordValue(rawEvent, rawMetadata.getValueType());
-
-      shouldExport = recordValue != null;
-      if (shouldExport) {
-        typedEvent.wrap(rawEvent, rawMetadata, recordValue);
-        exporterIndex = 0;
-      }
-    }
-
-    public boolean export() {
-      if (!shouldExport) {
-        return true;
-      }
-
-      final int exportersCount = containers.size();
-
-      // current error handling strategy is simply to repeat forever until the record can be
-      // successfully exported.
-      while (exporterIndex < exportersCount) {
-        final ExporterContainer container = containers.get(exporterIndex);
-
-        if (container.exportRecord(rawMetadata, typedEvent)) {
-          exporterIndex++;
-          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
-        } else {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    TypedRecordImpl getTypedEvent() {
-      return typedEvent;
-    }
   }
 
   private static class ExporterEventFilter implements EventFilter {
