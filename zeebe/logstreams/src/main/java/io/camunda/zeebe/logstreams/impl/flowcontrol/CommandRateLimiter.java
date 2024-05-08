@@ -23,8 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CommandRateLimiter extends AbstractLimiter<Intent>
-    implements RequestLimiter<Intent> {
+public final class CommandRateLimiter extends AbstractLimiter<Intent> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.transport.backpressure");
@@ -62,7 +61,6 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     responseListeners.put(new ListenerId(streamId, requestId), listener);
   }
 
-  @Override
   public boolean tryAcquire(final int streamId, final long requestId, final Intent context) {
     final Optional<Listener> acquired = acquire(context);
     return acquired
@@ -75,7 +73,6 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
         .orElse(false);
   }
 
-  @Override
   public void onResponse(final int streamId, final long requestId) {
     final Listener listener = responseListeners.remove(new ListenerId(streamId, requestId));
     if (listener != null) {
@@ -99,7 +96,6 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     }
   }
 
-  @Override
   public void onIgnore(final int streamId, final long requestId) {
     final Listener listener = responseListeners.remove(new ListenerId(streamId, requestId));
     if (listener != null) {
@@ -108,7 +104,6 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     }
   }
 
-  @Override
   public int getInflightCount() {
     return getInflight();
   }
