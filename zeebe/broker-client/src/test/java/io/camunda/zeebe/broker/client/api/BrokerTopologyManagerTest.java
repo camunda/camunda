@@ -17,6 +17,7 @@ import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -435,11 +436,19 @@ final class BrokerTopologyManagerTest {
             .addMember(
                 MemberId.from("1"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
+                    Map.of(
+                        1,
+                        PartitionState.active(2, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(1, DynamicPartitionConfig.init()))));
     topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
@@ -457,11 +466,19 @@ final class BrokerTopologyManagerTest {
             .addMember(
                 MemberId.from("1"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
+                    Map.of(
+                        1,
+                        PartitionState.active(2, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(1, DynamicPartitionConfig.init()))));
     topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
