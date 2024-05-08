@@ -65,12 +65,12 @@ public final class CommandDistributionBehavior {
   /**
    * Distributes a command to all other partitions.
    *
-   * @param distributionKey the key to identify this unique command distribution. The key is used to
-   *     store the pending distribution, as the key of distributed command, to identify the
-   *     distributing partition when processing the distributed command, and as the key to correlate
-   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
-   *     the key identifying the entity that's being distributed. Please note that it must be unique
-   *     for command distribution. Don't reuse the key to distribute another command.
+   * @param distributionKey the key to identify this unique command distribution. The key used for
+   *     three purposes: storing the pending distribution as the key of distributed command,
+   *     identifying for the distributed command's partition, and correlating the ACKNOWLEDGE
+   *     command to the pending distribution. This can be a newly generated key, or the key
+   *     identifying the entity that's being distributed. Please note that it must be unique for
+   *     command distribution. Don't reuse the key to distribute another command.
    * @param command the command to distribute
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
