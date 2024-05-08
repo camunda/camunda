@@ -41,7 +41,7 @@ public final class InFlightEntry {
     this.position = position;
     writeTimer = metrics.startWriteTimer();
     commitTimer = metrics.startCommitTimer();
-    metrics.increaseInflight();
+    metrics.increaseInflightAppends();
     metrics.increaseTriedAppends();
     return this;
   }
@@ -56,7 +56,7 @@ public final class InFlightEntry {
   }
 
   public void onCommit() {
-    metrics.decreaseInflight();
+    metrics.decreaseInflightAppends();
     metrics.setLastCommittedPosition(position);
     if (commitTimer != null) {
       commitTimer.close();

@@ -32,7 +32,7 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
-  private static final Gauge CURRENT_INFLIGHT =
+  private static final Gauge INFLIGHT_APPENDS =
       Gauge.build()
           .namespace("zeebe")
           .name("backpressure_inflight_append_count")
@@ -40,7 +40,7 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
-  private static final Gauge CURRENT_LIMIT =
+  private static final Gauge APPEND_LIMIT =
       Gauge.build()
           .namespace("zeebe")
           .name("backpressure_append_limit")
@@ -91,7 +91,7 @@ public final class LogStreamMetrics {
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
-  private final Gauge.Child inflightLimit;
+  private final Gauge.Child appendLimit;
   private final Gauge.Child lastCommitted;
   private final Gauge.Child lastWritten;
   private final Histogram.Child commitLatency;
@@ -102,24 +102,24 @@ public final class LogStreamMetrics {
     partitionLabel = String.valueOf(partitionId);
     deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
-    inflightAppends = CURRENT_INFLIGHT.labels(partitionLabel);
-    inflightLimit = CURRENT_LIMIT.labels(partitionLabel);
+    inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
+    appendLimit = APPEND_LIMIT.labels(partitionLabel);
     lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
     lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
   }
 
-  public void increaseInflight() {
+  public void increaseInflightAppends() {
     inflightAppends.inc();
   }
 
-  public void decreaseInflight() {
+  public void decreaseInflightAppends() {
     inflightAppends.dec();
   }
 
-  public void setInflightLimit(final long limit) {
-    inflightLimit.set(limit);
+  public void setAppendLimit(final long limit) {
+    appendLimit.set(limit);
   }
 
   public void increaseTriedAppends() {
@@ -159,8 +159,8 @@ public final class LogStreamMetrics {
   public void remove() {
     TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
     TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
-    CURRENT_INFLIGHT.remove(partitionLabel);
-    CURRENT_LIMIT.remove(partitionLabel);
+    INFLIGHT_APPENDS.remove(partitionLabel);
+    APPEND_LIMIT.remove(partitionLabel);
     LAST_COMMITTED_POSITION.remove(partitionLabel);
     LAST_WRITTEN_POSITION.remove(partitionLabel);
     COMMIT_LATENCY.remove(partitionLabel);
