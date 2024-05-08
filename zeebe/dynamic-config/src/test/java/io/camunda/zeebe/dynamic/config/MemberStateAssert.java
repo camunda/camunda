@@ -24,15 +24,31 @@ public final class MemberStateAssert extends AbstractAssert<MemberStateAssert, M
   }
 
   public MemberStateAssert hasPartitionWithState(
-      final int partitionId, final PartitionState state) {
+      final int partitionId, final PartitionState.State state) {
     final Map<Integer, PartitionState> partitions = actual.partitions();
-    Assertions.assertThat(partitions).containsEntry(partitionId, state);
+    Assertions.assertThat(partitions)
+        .hasEntrySatisfying(
+            partitionId,
+            partitionState -> {
+              Assertions.assertThat(partitionState.state()).isEqualTo(state);
+            });
     return this;
   }
 
   public MemberStateAssert doesNotContainPartition(final int partitionId) {
     final Map<Integer, PartitionState> partitions = actual.partitions();
     Assertions.assertThat(partitions).doesNotContainKey(partitionId);
+    return this;
+  }
+
+  public MemberStateAssert hasPartitionWithPriority(final int partitionId, final int priority) {
+    final Map<Integer, PartitionState> partitions = actual.partitions();
+    Assertions.assertThat(partitions)
+        .hasEntrySatisfying(
+            partitionId,
+            partitionState -> {
+              Assertions.assertThat(partitionState.priority()).isEqualTo(priority);
+            });
     return this;
   }
 }
