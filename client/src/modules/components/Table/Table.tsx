@@ -256,11 +256,11 @@ export default function Table<T extends object>({
                   ))}
                 </TableHead>
                 {!errorInPage && (
-                  <TableBody {...getTableBodyProps()} onScroll={onScroll}>
+                  <TableBody {...getTableBodyProps()} onScroll={onScroll} tabIndex={0}>
                     {page.map((row) => {
                       prepareRow(row);
                       return (
-                        <TableRow {...row.getRowProps((row.original as any).__props)}>
+                        <TableRow {...row.getRowProps((row.original as any).__props)} tabIndex={0}>
                           {row.cells.map((cell) => (
                             <TableCell key={cell.column.id} cell={cell} />
                           ))}
