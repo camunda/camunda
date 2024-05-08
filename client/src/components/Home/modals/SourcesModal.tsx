@@ -214,7 +214,7 @@ export default function SourcesModal({
             const body = [
               <TableSelectRow
                 checked={!!selectedDefinition}
-                id={key}
+                id={def.key}
                 name={key}
                 ariaLabel={key}
                 onSelect={({target}) => {
