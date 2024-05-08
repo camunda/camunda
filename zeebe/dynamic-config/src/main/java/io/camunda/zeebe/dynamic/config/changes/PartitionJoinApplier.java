@@ -130,8 +130,14 @@ final class PartitionJoinApplier implements MemberOperationApplier {
 
   private DynamicPartitionConfig getPartitionConfig(
       final ClusterConfiguration currentClusterConfiguration) {
-    // TODO: Init partitionConfig from other partitions
-    return DynamicPartitionConfig.init();
+    // Find configuration from any other member that has the same partition. We can assume that
+    // configuration is not being changed at the same time as scaling operations
+    return currentClusterConfiguration.members().values().stream()
+        .filter(m -> m.hasPartition(partitionId))
+        .map(m -> m.partitions().get(partitionId))
+        .findAny()
+        .orElseThrow() // We are certain that there is another member with the same partition
+        .config();
   }
 
   private HashMap<MemberId, Integer> collectPriorityByMembers(
