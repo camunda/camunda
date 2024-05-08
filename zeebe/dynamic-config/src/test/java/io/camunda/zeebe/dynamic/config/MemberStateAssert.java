@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 
@@ -25,13 +26,9 @@ public final class MemberStateAssert extends AbstractAssert<MemberStateAssert, M
 
   public MemberStateAssert hasPartitionWithState(
       final int partitionId, final PartitionState.State state) {
-    final Map<Integer, PartitionState> partitions = actual.partitions();
-    Assertions.assertThat(partitions)
-        .hasEntrySatisfying(
-            partitionId,
-            partitionState -> {
-              Assertions.assertThat(partitionState.state()).isEqualTo(state);
-            });
+    hasPartitionSatisfying(
+        partitionId,
+        partitionState -> Assertions.assertThat(partitionState.state()).isEqualTo(state));
     return this;
   }
 
@@ -42,13 +39,16 @@ public final class MemberStateAssert extends AbstractAssert<MemberStateAssert, M
   }
 
   public MemberStateAssert hasPartitionWithPriority(final int partitionId, final int priority) {
+    hasPartitionSatisfying(
+        partitionId,
+        partitionState -> Assertions.assertThat(partitionState.priority()).isEqualTo(priority));
+    return this;
+  }
+
+  public MemberStateAssert hasPartitionSatisfying(
+      final int partitionId, final Consumer<PartitionState> partitionStateCondition) {
     final Map<Integer, PartitionState> partitions = actual.partitions();
-    Assertions.assertThat(partitions)
-        .hasEntrySatisfying(
-            partitionId,
-            partitionState -> {
-              Assertions.assertThat(partitionState.priority()).isEqualTo(priority);
-            });
+    Assertions.assertThat(partitions).hasEntrySatisfying(partitionId, partitionStateCondition);
     return this;
   }
 }
