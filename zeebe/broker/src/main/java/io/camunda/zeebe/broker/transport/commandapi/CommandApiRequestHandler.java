@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -145,7 +146,7 @@ final class CommandApiRequestHandler
 
     if (logStreamWriter.canWriteEvents(1, appendEntry.getLength())) {
       return logStreamWriter
-          .tryWrite(appendEntry)
+          .tryWrite(WriteContext.userCommand(), appendEntry)
           .map(ignore -> true)
           .mapLeft(error -> errorWriter.mapWriteError(partitionId, error));
     } else {

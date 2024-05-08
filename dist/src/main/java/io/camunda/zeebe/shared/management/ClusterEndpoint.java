@@ -2,13 +2,37 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -21,30 +45,6 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
-import io.camunda.zeebe.topology.api.ErrorResponse;
-import io.camunda.zeebe.topology.api.TopologyChangeResponse;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.CancelChangeRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
-import io.camunda.zeebe.topology.state.ClusterChangePlan;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.CompletedChange;
-import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.PartitionState.State;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -74,10 +74,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ClusterEndpoint {
   private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
       OffsetDateTime.parse("0000-01-01T00:00:00Z");
-  private final TopologyManagementRequestSender requestSender;
+  private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
-  public ClusterEndpoint(final TopologyManagementRequestSender requestSender) {
+  public ClusterEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
     this.requestSender = requestSender;
   }
 
@@ -301,7 +301,7 @@ public class ClusterEndpoint {
   }
 
   private ResponseEntity<?> mapOperationResponse(
-      final Either<ErrorResponse, TopologyChangeResponse> response) {
+      final Either<ErrorResponse, ClusterConfigurationChangeResponse> response) {
     if (response.isRight()) {
       return ResponseEntity.status(202).body(mapResponseType(response.get()));
     } else {
@@ -310,7 +310,7 @@ public class ClusterEndpoint {
   }
 
   private ResponseEntity<?> mapClusterTopologyResponse(
-      final Either<ErrorResponse, ClusterTopology> response) {
+      final Either<ErrorResponse, ClusterConfiguration> response) {
     if (response.isRight()) {
       return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
     } else {
@@ -330,19 +330,21 @@ public class ClusterEndpoint {
     return ResponseEntity.status(errorCode).body(error);
   }
 
-  private static PlannedOperationsResponse mapResponseType(final TopologyChangeResponse response) {
+  private static PlannedOperationsResponse mapResponseType(
+      final ClusterConfigurationChangeResponse response) {
     return new PlannedOperationsResponse()
         .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.currentTopology()))
-        .expectedTopology(mapBrokerStates(response.expectedTopology()))
+        .currentTopology(mapBrokerStates(response.currentConfiguration()))
+        .expectedTopology(mapBrokerStates(response.expectedConfiguration()))
         .plannedChanges(mapOperations(response.plannedChanges()));
   }
 
-  private static List<Operation> mapOperations(final List<TopologyChangeOperation> operations) {
+  private static List<Operation> mapOperations(
+      final List<ClusterConfigurationChangeOperation> operations) {
     return operations.stream().map(ClusterEndpoint::mapOperation).toList();
   }
 
-  private static Operation mapOperation(final TopologyChangeOperation operation) {
+  private static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
     return switch (operation) {
       case final MemberJoinOperation join ->
           new Operation()
@@ -379,7 +381,7 @@ public class ClusterEndpoint {
                       .map(MemberId::id)
                       .map(Integer::parseInt)
                       .collect(Collectors.toList()));
-      case final TopologyChangeOperation.MemberRemoveOperation memberRemoveOperation ->
+      case final ClusterConfigurationChangeOperation.MemberRemoveOperation memberRemoveOperation ->
           new Operation()
               .operation(OperationEnum.BROKER_REMOVE)
               .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
@@ -420,7 +422,7 @@ public class ClusterEndpoint {
   }
 
   private static List<PartitionState> mapPartitionStates(
-      final Map<Integer, io.camunda.zeebe.topology.state.PartitionState> partitions) {
+      final Map<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
             entry ->
@@ -440,7 +442,7 @@ public class ClusterEndpoint {
     };
   }
 
-  private static GetTopologyResponse mapClusterTopology(final ClusterTopology topology) {
+  private static GetTopologyResponse mapClusterTopology(final ClusterConfiguration topology) {
     final var response = new GetTopologyResponse();
     final List<BrokerState> brokers = mapBrokerStates(topology.members());
 

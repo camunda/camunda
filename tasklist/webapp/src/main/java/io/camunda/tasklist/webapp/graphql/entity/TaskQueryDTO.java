@@ -1,54 +1,94 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.graphql.entity;
 
+import graphql.annotations.annotationTypes.GraphQLConstructor;
+import graphql.annotations.annotationTypes.GraphQLField;
+import graphql.annotations.annotationTypes.GraphQLName;
+import graphql.annotations.annotationTypes.GraphQLType;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.*;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
+@GraphQLType
+@GraphQLName("TaskQuery")
 public class TaskQueryDTO {
 
   public static final int DEFAULT_PAGE_SIZE = 50;
-
-  private TaskState state;
-  private Boolean assigned;
-  private String assignee;
+  @GraphQLField private TaskState state;
+  @GraphQLField private Boolean assigned;
+  @GraphQLField private String assignee;
   private String[] assignees;
-  private String taskDefinitionId;
-  private String candidateGroup;
+  @GraphQLField private String taskDefinitionId;
+  @GraphQLField private String candidateGroup;
   private String[] candidateGroups;
-  private String candidateUser;
+  @GraphQLField private String candidateUser;
   private String[] candidateUsers;
-  private String processDefinitionId;
-  private String processInstanceId;
+  @GraphQLField private String processDefinitionId;
+  @GraphQLField private String processInstanceId;
   private TaskByVariables[] taskVariables;
   private String[] tenantIds;
-  private int pageSize = DEFAULT_PAGE_SIZE;
-  private String[] searchAfter;
-  private String[] searchAfterOrEqual;
-  private String[] searchBefore;
-  private String[] searchBeforeOrEqual;
-  private DateFilter followUpDate;
-  private DateFilter dueDate;
-  private TaskOrderBy[] sort;
+  @GraphQLField private int pageSize = DEFAULT_PAGE_SIZE;
+  @GraphQLField private String[] searchAfter;
+  @GraphQLField private String[] searchAfterOrEqual;
+  @GraphQLField private String[] searchBefore;
+  @GraphQLField private String[] searchBeforeOrEqual;
+  @GraphQLField private DateFilter followUpDate;
+  @GraphQLField private DateFilter dueDate;
+  @GraphQLField private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
-  private TaskImplementation implementation;
+  @GraphQLField private TaskImplementation implementation;
+
+  // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
+  @GraphQLConstructor
+  public TaskQueryDTO(
+      final TaskState state,
+      final Boolean assigned,
+      final String assignee,
+      final String taskDefinitionId,
+      final String candidateGroup,
+      final String candidateUser,
+      final String processDefinitionId,
+      final String processInstanceId,
+      final Integer pageSize,
+      final List<String> searchAfter,
+      final List<String> searchAfterOrEqual,
+      final List<String> searchBefore,
+      final List<String> searchBeforeOrEqual,
+      final DateFilter followUpDate,
+      final DateFilter dueDate,
+      final TaskOrderBy[] sort,
+      final TaskImplementation implementation) {
+    this.state = state;
+    this.assigned = assigned;
+    this.assignee = assignee;
+    this.taskDefinitionId = taskDefinitionId;
+    this.candidateGroup = candidateGroup;
+    this.candidateUser = candidateUser;
+    this.processDefinitionId = processDefinitionId;
+    this.processInstanceId = processInstanceId;
+    this.pageSize = pageSize != null ? pageSize : DEFAULT_PAGE_SIZE;
+    this.searchAfter = searchAfter != null ? searchAfter.toArray(new String[0]) : null;
+    this.searchAfterOrEqual =
+        searchAfterOrEqual != null ? searchAfterOrEqual.toArray(new String[0]) : null;
+    this.searchBefore = searchBefore != null ? searchBefore.toArray(new String[0]) : null;
+    this.searchBeforeOrEqual =
+        searchBeforeOrEqual != null ? searchBeforeOrEqual.toArray(new String[0]) : null;
+    this.followUpDate = followUpDate;
+    this.dueDate = dueDate;
+    this.sort = sort;
+    this.implementation = implementation;
+  }
+
+  public TaskQueryDTO() {}
 
   public TaskState getState() {
     return state;

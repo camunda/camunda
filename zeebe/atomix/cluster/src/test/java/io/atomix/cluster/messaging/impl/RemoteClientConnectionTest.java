@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.atomix.cluster.messaging.impl;
 
@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.netty.channel.Channel;
@@ -19,6 +20,8 @@ import io.netty.channel.ChannelFuture;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -120,6 +123,25 @@ public class RemoteClientConnectionTest {
     assertThat(simpleMetrics.messageCount.size()).isZero();
   }
 
+  @Test
+  public void shouldReceiveConnectionClosedExceptionForResponseOnClientClose() {
+    // given
+    final var responseFuture =
+        remoteClientConnection.sendAndReceive(
+            new ProtocolRequest(1, new Address("", 12345), "subj", "payload".getBytes()));
+
+    // when
+    remoteClientConnection.close();
+
+    // then
+    assertThat(responseFuture)
+        .failsWithin(100, TimeUnit.MILLISECONDS)
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(MessagingException.ConnectionClosed.class)
+        .withMessageContaining("Connection")
+        .withMessageContaining("was closed");
+  }
+
   private static final class SimpleMessagingMetrics implements MessagingMetrics {
 
     private static final String LABEL_FORMAT = "%s-%s";
@@ -148,10 +170,6 @@ public class RemoteClientConnectionTest {
       final String key = computeKey(to, name);
       final Integer integer = messageCount.computeIfAbsent(key, s -> 0);
       messageCount.put(key, integer + 1);
-    }
-
-    String computeKey(final String to, final String name) {
-      return String.format(LABEL_FORMAT, to, name);
     }
 
     @Override
@@ -185,6 +203,10 @@ public class RemoteClientConnectionTest {
       final String key = computeKey(address, topic);
       final Integer integer = inFlightRequestCount.computeIfAbsent(key, k -> 0);
       inFlightRequestCount.put(key, integer - 1);
+    }
+
+    String computeKey(final String to, final String name) {
+      return String.format(LABEL_FORMAT, to, name);
     }
   }
 }

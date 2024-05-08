@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.util;
 
@@ -23,6 +23,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
@@ -398,7 +399,9 @@ public final class TestStreams {
           .pollInSameThread()
           .pollDelay(Duration.ZERO)
           .pollInterval(Duration.ofMillis(50))
-          .until(() -> writer.tryWrite(entry, sourceRecordPosition), Either::isRight)
+          .until(
+              () -> writer.tryWrite(WriteContext.internal(), entry, sourceRecordPosition),
+              Either::isRight)
           .get();
     }
   }

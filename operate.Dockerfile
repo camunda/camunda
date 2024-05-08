@@ -68,8 +68,6 @@ WORKDIR ${OPE_HOME}
 VOLUME /tmp
 VOLUME ${OPE_HOME}/logs
 
-COPY --from=prepare /tmp/operate ${OPE_HOME}
-
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${OPE_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
@@ -77,6 +75,8 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${OPE_HOME}/logs && \
     chown -R 1001:0 ${OPE_HOME} && \
     chmod -R 0775 ${OPE_HOME}
+
+COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
 
 USER 1001:1001
 

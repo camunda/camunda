@@ -39,7 +39,7 @@
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
     <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
-    <!-- Zeebe Community License v1.1 header -->
+    <!-- Camunda License v1.0 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <plugin.version.flatten>1.6.0</plugin.version.flatten>
@@ -200,7 +200,6 @@
               <exclude>zeebe/benchmarks/project/**/*</exclude>
               <exclude>operate/**/*</exclude>
               <exclude>tasklist/**/*</exclude>
-              <exclude>tasklist-distro/**/*</exclude>
             </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>

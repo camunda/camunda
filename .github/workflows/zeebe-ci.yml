@@ -9,6 +9,7 @@ on:
       - trying
       - staging
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
@@ -18,10 +19,10 @@ on:
       - 'dist/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'spring-boot-starter-camunda-sdk/**'
       - 'zeebe/**'
   pull_request:
     paths:
+      - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
@@ -31,7 +32,6 @@ on:
       - 'dist/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'spring-boot-starter-camunda-sdk/**'
       - 'zeebe/**'
   merge_group: { }
   workflow_dispatch: { }
@@ -385,7 +385,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v5
+        uses: golangci/golangci-lint-action@v6
         with:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
           version: v1.55.2

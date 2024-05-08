@@ -2,18 +2,20 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.network;
 
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
+import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -22,14 +24,22 @@ import java.net.SocketAddress;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
+@ZeebeIntegration
 final class SecureClusteredMessagingIT {
   private final SelfSignedCertificate certificate = newCertificate();
 
-  @RegisterExtension
-  private final ClusteringRuleExtension cluster =
-      new ClusteringRuleExtension(1, 2, 2, this::configureBroker, this::configureGateway);
+  @TestZeebe
+  private final TestCluster cluster =
+      TestCluster.builder()
+          .withPartitionsCount(1)
+          .withReplicationFactor(2)
+          .withBrokersCount(2)
+          .withGatewaysCount(1)
+          .withEmbeddedGateway(false)
+          .withBrokerConfig(broker -> broker.withBrokerConfig(this::configureBroker))
+          .withGatewayConfig(gateway -> gateway.withGatewayConfig(this::configureGateway))
+          .build();
 
   @Test
   void shouldFormAClusterWithTls() {
@@ -37,28 +47,28 @@ final class SecureClusteredMessagingIT {
 
     // when - note the client is using plaintext since we only care about inter-cluster TLS
     final Topology topology =
-        cluster.getClient().newTopologyRequest().send().join(15, TimeUnit.SECONDS);
+        cluster.newClientBuilder().build().newTopologyRequest().send().join(15, TimeUnit.SECONDS);
 
     // then - ensure the cluster is formed correctly and all inter-cluster communication endpoints
     // are secured using the expected certificate
     TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1, 2);
-    cluster.getBrokers().forEach(this::assertBrokerMessagingServicesAreSecured);
+    cluster.brokers().values().forEach(this::assertBrokerMessagingServicesAreSecured);
     assertAddressIsSecured("gateway", getGatewayAddress());
   }
 
   /** Verifies that both the command and internal APIs of the broker are correctly secured. */
-  private void assertBrokerMessagingServicesAreSecured(final Broker broker) {
+  private void assertBrokerMessagingServicesAreSecured(final TestStandaloneBroker broker) {
     final var commandApiAddress =
-        broker.getConfig().getNetwork().getCommandApi().getAdvertisedAddress();
+        broker.brokerConfig().getNetwork().getCommandApi().getAdvertisedAddress();
     final var internalApiAddress =
-        broker.getConfig().getNetwork().getInternalApi().getAdvertisedAddress();
+        broker.brokerConfig().getNetwork().getInternalApi().getAdvertisedAddress();
 
-    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), commandApiAddress);
-    assertAddressIsSecured(broker.getConfig().getCluster().getNodeId(), internalApiAddress);
+    assertAddressIsSecured(broker.brokerConfig().getCluster().getNodeId(), commandApiAddress);
+    assertAddressIsSecured(broker.brokerConfig().getCluster().getNodeId(), internalApiAddress);
   }
 
   private InetSocketAddress getGatewayAddress() {
-    final ClusterCfg clusterConfig = cluster.getGateway().getGatewayCfg().getCluster();
+    final ClusterCfg clusterConfig = cluster.availableGateway().gatewayConfig().getCluster();
     final var address =
         Address.from(clusterConfig.getAdvertisedHost(), clusterConfig.getAdvertisedPort());
     return address.socketAddress();

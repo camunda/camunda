@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.util;
 
@@ -31,7 +22,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
@@ -44,7 +34,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -60,6 +52,12 @@ public class TasklistTester {
 
   private static final String GRAPHQL_DEFAULT_VARIABLE_FRAGMENT =
       "graphql/variableIT/full-variable-fragment.graphql";
+  private static final String TASK_RESULT_PATTERN = "{id name assignee taskState completionTime}";
+  private static final String COMPLETE_TASK_MUTATION_PATTERN =
+      "mutation {completeTask(taskId: \"%s\", variables: %s)" + TASK_RESULT_PATTERN + "}";
+  private static final String CLAIM_TASK_MUTATION_PATTERN =
+      "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
+  private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
   private ZeebeClient zeebeClient;
   private DatabaseTestExtension databaseTestExtension;
@@ -120,8 +118,6 @@ public class TasklistTester {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private NoSqlHelper noSqlHelper;
-
-  @Autowired private TaskMutationResolver taskMutationResolver;
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
@@ -678,7 +674,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    taskMutationResolver.claimTask(taskId, null, null);
+    claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     taskIsAssigned(taskId);
 
@@ -697,7 +693,11 @@ public class TasklistTester {
       }
     }
 
-    taskMutationResolver.completeTask(taskId, createVariablesList(variables));
+    final String variablesAsString =
+        createVariablesList(variables).stream()
+            .map(this::variableAsGraphqlInput)
+            .collect(Collectors.joining(", ", "[", "]"));
+    getByQuery(String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, variablesAsString));
 
     return taskIsCompleted(flowNodeBpmnId);
   }
@@ -709,6 +709,13 @@ public class TasklistTester {
       result.add(new VariableInputDTO().setName(variables[i]).setValue(variables[i + 1]));
     }
     return result;
+  }
+
+  private String variableAsGraphqlInput(VariableInputDTO variable) {
+    return String.format(
+        VARIABLE_INPUT_PATTERN,
+        variable.getName(),
+        StringEscapeUtils.escapeJson(variable.getValue()));
   }
 
   public TasklistTester completeUserTaskInZeebe() {

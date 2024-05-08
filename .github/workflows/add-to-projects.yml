@@ -55,3 +55,11 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/24
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/operate
+      - id: add-to-hto
+        name: Add to HTO project
+        uses: actions/add-to-project@v1.0.1
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/41
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/tasklist

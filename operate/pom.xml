@@ -37,8 +37,6 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
-
     <skip.fe.build>false</skip.fe.build>
     <skipSurefire>false</skipSurefire>
     <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
@@ -111,31 +109,6 @@
               <nonFilteredFileExtension>pem</nonFilteredFileExtension>
             </nonFilteredFileExtensions>
           </configuration>
-        </plugin>
-
-        <!-- LICENSE PLUGIN -->
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${plugin.version.license}</version>
-          <configuration>
-            <header>${license.header}</header>
-            <includes>
-              <include>**/*.java</include>
-            </includes>
-            <mapping>
-              <java>SLASHSTAR_STYLE</java>
-            </mapping>
-          </configuration>
-          <executions>
-            <execution>
-              <id>add-license</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>compile</phase>
-            </execution>
-          </executions>
         </plugin>
 
         <plugin>
@@ -213,6 +186,16 @@
       <properties>
         <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
+        <failsafeForkCount>1</failsafeForkCount>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateItOpensearch</id>
+      <properties>
+        <includeITNames>**/schema/*IT.java</includeITNames>
+        <excludeITNames>**/SchemaManagerIT.java</excludeITNames>
         <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>

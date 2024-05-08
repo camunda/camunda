@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.store.elasticsearch;
 
@@ -26,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -65,6 +57,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
+import org.elasticsearch.client.indexlifecycle.RemoveIndexLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
@@ -221,6 +214,8 @@ public class RetryElasticsearchClient {
                       new TypeReference<HashMap<String, Object>>() {});
               final Map<String, Object> properties =
                   (Map<String, Object>) mappingMetadata.get("properties");
+              final Map<String, Object> metaProperties =
+                  (Map<String, Object>) mappingMetadata.get("_meta");
               final String dynamic = (String) mappingMetadata.get("dynamic");
               mappingsMap.put(
                   entry.getKey(),
@@ -230,7 +225,8 @@ public class RetryElasticsearchClient {
                       .setProperties(
                           properties.entrySet().stream()
                               .map(p -> createIndexMappingProperty(p))
-                              .collect(Collectors.toSet())));
+                              .collect(Collectors.toSet()))
+                      .setMetaProperties(metaProperties));
             }
             return mappingsMap;
           } catch (final ElasticsearchException e) {
@@ -492,6 +488,18 @@ public class RetryElasticsearchClient {
                 .putSettings(
                     new UpdateSettingsRequest(indexPattern).settings(settings), requestOptions)
                 .isAcknowledged());
+  }
+
+  public boolean deleteIndexPolicyFor(final String indexPattern) {
+    return !executeWithRetries(
+        "DeletePolicySettings " + indexPattern,
+        () ->
+            esClient
+                .indexLifecycle()
+                .removeIndexLifecyclePolicy(
+                    new RemoveIndexLifecyclePolicyRequest(List.of(indexPattern)),
+                    RequestOptions.DEFAULT)
+                .hasFailures());
   }
 
   public boolean addPipeline(final String name, final String definition) {
@@ -771,5 +779,28 @@ public class RetryElasticsearchClient {
         String.format("Put Mapping %s ", request.indices()),
         () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
+  }
+
+  public void updateMetaField(
+      final IndexDescriptor indexDescriptor, final String fieldName, final Object value) {
+    LOGGER.debug("Meta field will be updated. Index name: {}. ");
+    final PutMappingRequest request;
+    try {
+      request =
+          new PutMappingRequest(indexDescriptor.getFullQualifiedName())
+              .source(
+                  "{\"_meta\": {\""
+                      + fieldName
+                      + "\": "
+                      + objectMapper.writeValueAsString(value)
+                      + "}}",
+                  XContentType.JSON);
+    } catch (final JsonProcessingException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Exception occurred when serializing meta field value for update. Field name: %s. Field value: %s.",
+              fieldName, value));
+    }
+    putMapping(request);
   }
 }

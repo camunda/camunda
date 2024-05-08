@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
@@ -16,9 +16,9 @@ import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistribut
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
-import io.camunda.zeebe.topology.PartitionDistributor;
-import io.camunda.zeebe.topology.StaticConfiguration;
-import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
+import io.camunda.zeebe.dynamic.config.PartitionDistributor;
+import io.camunda.zeebe.dynamic.config.StaticConfiguration;
+import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;

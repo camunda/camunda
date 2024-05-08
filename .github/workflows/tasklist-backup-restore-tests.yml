@@ -17,13 +17,13 @@ env:
 
 jobs:
   elasticsearch:
-    name: run
+    name: elasticsearch-backup-restore
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit
     with:
       database: elasticsearch
   opensearch:
-    name: run
+    name: opensearch-backup-restore
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit
     with:

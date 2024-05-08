@@ -2,18 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
 import io.camunda.zeebe.broker.system.configuration.backpressure.FixedCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.GradientCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg.LimitAlgorithm;
 import io.camunda.zeebe.broker.system.configuration.backpressure.VegasCfg;
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public final class BackpressureCfgTest {
   public void shouldSetBackpressureConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
-    final BackpressureCfg backpressure = cfg.getBackpressure();
+    final LimitCfg backpressure = cfg.getBackpressure();
 
     // then
     assertThat(backpressure.isEnabled()).isTrue();
@@ -40,7 +40,7 @@ public final class BackpressureCfgTest {
   public void shouldSetAimdConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
-    final BackpressureCfg backpressure = cfg.getBackpressure();
+    final LimitCfg backpressure = cfg.getBackpressure();
     final var aimd = backpressure.getAimd();
 
     // then
@@ -102,7 +102,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldUseConfiguredBackpressureAlgorithms() {
 
-    final BackpressureCfg backpressure = new BackpressureCfg();
+    final LimitCfg backpressure = new LimitCfg();
 
     // when
     backpressure.setAlgorithm("gradient");

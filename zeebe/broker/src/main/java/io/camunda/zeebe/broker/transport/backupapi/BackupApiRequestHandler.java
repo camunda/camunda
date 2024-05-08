@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -115,7 +116,9 @@ public final class BackupApiRequestHandler
             .requestId(requestId)
             .requestStreamId(requestStreamId);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
-    final var written = logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
+    final var written =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
 
     if (written.isRight()) {
       // Response will be sent by the processor

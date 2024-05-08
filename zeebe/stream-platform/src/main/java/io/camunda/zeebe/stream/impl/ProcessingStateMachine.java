@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -595,7 +596,8 @@ public final class ProcessingStateMachine {
           writeRetryStrategy.runWithRetry(
               () -> {
                 final var writeResult =
-                    logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+                    logStreamWriter.tryWrite(
+                        WriteContext.processingResult(), pendingWrites, sourceRecordPosition);
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;
