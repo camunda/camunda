@@ -22,6 +22,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,9 @@ public final class FlowControl implements AppendListener {
   private final Limiter<Void> appendLimiter;
   private final Limiter<Intent> requestLimiter;
   private final LogStreamMetrics metrics;
-  private final ConcurrentSkipListMap<Long, InFlightEntry> inFlightEntries =
-      new ConcurrentSkipListMap<>();
-  private volatile long lastCommitted;
+  private final NavigableMap<Long, InFlightEntry> unwritten = new ConcurrentSkipListMap<>();
+  private final NavigableMap<Long, InFlightEntry> uncommitted = new ConcurrentSkipListMap<>();
+  private final NavigableMap<Long, InFlightEntry> unprocessed = new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
@@ -85,24 +86,30 @@ public final class FlowControl implements AppendListener {
   }
 
   public void onAppend(final InFlightEntry inFlightEntry, final long highestPosition) {
-    inFlightEntries.put(highestPosition, inFlightEntry);
+    unwritten.put(highestPosition, inFlightEntry);
+    uncommitted.put(highestPosition, inFlightEntry);
+    unprocessed.put(highestPosition, inFlightEntry);
     inFlightEntry.onAppend(highestPosition);
   }
 
   @Override
   public void onWrite(final long index, final long highestPosition) {
-    inFlightEntries.headMap(highestPosition, true).forEach((key, value) -> value.onWrite());
+    final var written = unwritten.headMap(highestPosition, true);
+    written.forEach((key, value) -> value.onWrite());
+    written.clear();
   }
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
-    lastCommitted = highestPosition;
-    inFlightEntries.headMap(highestPosition, true).forEach((key, value) -> value.onCommit());
+    final var committed = uncommitted.headMap(highestPosition, true);
+    committed.forEach((key, value) -> value.onCommit());
+    committed.clear();
   }
 
   public void onProcessed(final long position) {
-    inFlightEntries.headMap(position, true).forEach((key, value) -> value.onProcessed());
-    inFlightEntries.headMap(lastCommitted, true).clear();
+    final var processed = unprocessed.headMap(position, true);
+    processed.forEach((key, value) -> value.onProcessed());
+    processed.clear();
   }
 
   public sealed interface Rejection {
