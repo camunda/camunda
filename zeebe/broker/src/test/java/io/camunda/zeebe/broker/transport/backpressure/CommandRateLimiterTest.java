@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.CommandRateLimiter;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;

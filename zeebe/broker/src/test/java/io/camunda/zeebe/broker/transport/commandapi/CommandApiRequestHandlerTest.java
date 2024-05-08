@@ -15,9 +15,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.transport.backpressure.NoopRequestLimiter;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.NoopRequestLimiter;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.transport.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 public final class NoopRequestLimiter<ContextT> implements RequestLimiter<ContextT> {
 

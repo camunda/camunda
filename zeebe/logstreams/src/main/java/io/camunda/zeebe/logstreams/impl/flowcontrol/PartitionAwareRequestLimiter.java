@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.transport.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
-import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,16 +20,12 @@ public final class PartitionAwareRequestLimiter {
 
   private final Function<Integer, RequestLimiter<Intent>> limiterSupplier;
 
-  private PartitionAwareRequestLimiter(final Limit limit) {
+  public PartitionAwareRequestLimiter(final Limit limit) {
     if (limit == null) {
       limiterSupplier = i -> new NoopRequestLimiter<>();
     } else {
       limiterSupplier = i -> CommandRateLimiter.builder().limit(limit).build(i);
     }
-  }
-
-  public static PartitionAwareRequestLimiter newLimiter(final LimitCfg limitCfg) {
-    return new PartitionAwareRequestLimiter(limitCfg.buildLimit());
   }
 
   public boolean tryAcquire(

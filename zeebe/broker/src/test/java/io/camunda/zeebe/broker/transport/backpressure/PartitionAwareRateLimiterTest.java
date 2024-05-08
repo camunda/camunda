@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.stream.IntStream;
@@ -26,9 +27,7 @@ final class PartitionAwareRateLimiterTest {
     final var backpressureCfg = new LimitCfg();
     backpressureCfg.setAlgorithm("fixed");
     backpressureCfg.getFixed().setLimit(1);
-    partitionedLimiter =
-        io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter.newLimiter(
-            backpressureCfg);
+    partitionedLimiter = new PartitionAwareRequestLimiter(backpressureCfg.buildLimit());
     IntStream.range(0, PARTITIONS).forEach(partitionedLimiter::addPartition);
   }
 

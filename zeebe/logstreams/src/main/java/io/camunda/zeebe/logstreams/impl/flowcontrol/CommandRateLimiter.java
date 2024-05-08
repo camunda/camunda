@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.transport.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -41,7 +40,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();
 
-  protected CommandRateLimiter(final CommandRateLimiterBuilder builder, final int partitionId) {
+  private CommandRateLimiter(final CommandRateLimiterBuilder builder, final int partitionId) {
     super(builder);
     this.partitionId = partitionId;
     metrics.setInflight(partitionId, 0);
@@ -92,7 +91,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     } else {
       // Ignore this message, if it happens immediately after failover. It can happen when a request
       // committed by the old leader is processed by the new leader.
-      Loggers.TRANSPORT_LOGGER.trace(
+      LOG.trace(
           "Expected to have a rate limiter listener for request-{}-{}, but none found. (This can happen during fail over.)",
           streamId,
           requestId);
