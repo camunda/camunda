@@ -88,6 +88,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
 
   private ActorFuture<LogStream> buildLogstream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
+    final var flowControlCfg = context.getBrokerCfg().getFlowControl();
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(atomixLogStorage)
@@ -95,8 +96,11 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())
-        .withAppendLimit(context.getBrokerCfg().getFlowControl().getAppend().buildLimit())
-        .withRequestLimit(context.getBrokerCfg().getBackpressure().buildLimit())
+        .withAppendLimit(flowControlCfg.getAppend().buildLimit())
+        .withRequestLimit(
+            flowControlCfg.getRequest() != null
+                ? flowControlCfg.getRequest().buildLimit()
+                : context.getBrokerCfg().getBackpressure().buildLimit())
         .buildAsync();
   }
 
