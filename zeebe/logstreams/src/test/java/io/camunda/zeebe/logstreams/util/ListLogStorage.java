@@ -72,12 +72,12 @@ public class ListLogStorage implements LogStorage {
     final var index = currentIndex.getAndIncrement();
     entries.put(index, entry);
     positionIndexMapping.put(lowestPosition, index);
-    listener.onWrite(index);
+    listener.onWrite(index, highestPosition);
 
     if (positionListener != null) {
       positionListener.accept(highestPosition);
     }
-    listener.onCommit(index);
+    listener.onCommit(index, highestPosition);
     commitListeners.forEach(CommitListener::onCommit);
   }
 

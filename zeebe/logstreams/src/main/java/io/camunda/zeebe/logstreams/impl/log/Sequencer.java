@@ -7,24 +7,19 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata.copyMetadata;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer.calculateBatchLength;
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,7 +40,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final LogStorage logStorage;
   private final SequencerMetrics sequencerMetrics;
-  private final LogStreamMetrics logStreamMetrics;
   private final FlowControl flowControl;
 
   Sequencer(
@@ -53,7 +47,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final long initialPosition,
       final int maxFragmentSize,
       final SequencerMetrics sequencerMetrics,
-      final LogStreamMetrics logStreamMetrics,
       final FlowControl flowControl) {
     this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
@@ -61,8 +54,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
     this.maxFragmentSize = maxFragmentSize;
     this.sequencerMetrics =
         Objects.requireNonNull(sequencerMetrics, "must specify sequencer metrics");
-    this.logStreamMetrics =
-        Objects.requireNonNull(logStreamMetrics, "must specify appender metrics");
     this.flowControl = flowControl;
   }
 
@@ -95,20 +86,14 @@ final class Sequencer implements LogStreamWriter, Closeable {
         return Either.left(WriteFailure.INVALID_ARGUMENT);
       }
     }
-    final var permit = flowControl.tryAcquire(context);
+    final var permit = flowControl.tryAcquire(context, copyMetadata(appendEntries));
     if (permit.isLeft()) {
       return Either.left(WriteFailure.FULL);
     }
-    final var inflightAppend = permit.get();
 
     final int batchSize = appendEntries.size();
     final int batchLength = calculateBatchLength(appendEntries);
 
-    // extract only the required metadata for metrics from the batch to avoid capturing the whole
-    // batch and holding onto its memory longer than necessary.
-    final var metadata = copyMetricsMetadata(appendEntries);
-    final var appendListener =
-        new InstrumentedAppendListener(inflightAppend, metadata, logStreamMetrics);
     lock.lock();
     try {
       final var currentPosition = position;
@@ -116,8 +101,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final var sequencedBatch =
           new SequencedBatch(
               currentTimeMillis(), currentPosition, sourcePosition, appendEntries, batchLength);
-      inflightAppend.start(highestPosition);
-      logStorage.append(currentPosition, highestPosition, sequencedBatch, appendListener);
+      flowControl.onAppend(permit.get(), highestPosition);
+      logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;
       return Either.right(highestPosition);
     } finally {
@@ -142,45 +127,5 @@ final class Sequencer implements LogStreamWriter, Closeable {
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null
         && entry.recordMetadata().getLength() > 0;
-  }
-
-  private static List<LogAppendEntryMetadata> copyMetricsMetadata(
-      final List<LogAppendEntry> entries) {
-    final var metricsMetadata = new ArrayList<LogAppendEntryMetadata>(entries.size());
-    for (final LogAppendEntry entry : entries) {
-      metricsMetadata.add(new LogAppendEntryMetadata(entry));
-    }
-
-    return metricsMetadata;
-  }
-
-  private record InstrumentedAppendListener(
-      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, LogStreamMetrics metrics)
-      implements AppendListener {
-
-    @Override
-    public void onWrite(final long address) {
-      delegate.onWrite(address);
-      batchMetadata.forEach(this::recordAppendedEntry);
-    }
-
-    @Override
-    public void onCommit(final long address) {
-      delegate.onCommit(address);
-    }
-
-    private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {
-      metrics.recordAppendedEntry(
-          1, metadata.recordType(), metadata.valueType(), metadata.intent());
-    }
-  }
-
-  private record LogAppendEntryMetadata(RecordType recordType, ValueType valueType, Intent intent) {
-    private LogAppendEntryMetadata(final LogAppendEntry entry) {
-      this(
-          entry.recordMetadata().getRecordType(),
-          entry.recordMetadata().getValueType(),
-          entry.recordMetadata().getIntent());
-    }
   }
 }
