@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +41,11 @@ public class ExporterEnableDisableTest {
 
     createExporter(EXPORTER_ID_1, Collections.singletonMap("x", 1));
     createExporter(EXPORTER_ID_2, Collections.singletonMap("y", 2));
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    rule.closeExporterDirector();
   }
 
   private void createExporter(final String exporterId, final Map<String, Object> arguments) {
@@ -80,5 +86,20 @@ public class ExporterEnableDisableTest {
     assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords())
         .describedAs("Should not export to exporter-1 after disabling")
         .hasSizeLessThanOrEqualTo(1);
+  }
+
+  @Test
+  public void shouldCloseExporterDirectorWhenAllExportersAreDisabled() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
+    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+
+    // then
+    Awaitility.await("ExporterDirector is closed")
+        .untilAsserted(
+            () -> assertThat(rule.getDirector().getPhase().join()).isEqualTo(ExporterPhase.CLOSED));
   }
 }

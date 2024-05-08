@@ -216,6 +216,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           // miss to export the record to any of the exporters whose index has changed.
           recordExporter.resetExporterIndex();
           LOG.debug("Exporter '{}' is disabled.", exporterId);
+
+          if (containers.isEmpty()) {
+            LOG.info("No exporters are enabled. Closing the exporter director '{}'.", name);
+            actor.close();
+          }
         });
   }
 
