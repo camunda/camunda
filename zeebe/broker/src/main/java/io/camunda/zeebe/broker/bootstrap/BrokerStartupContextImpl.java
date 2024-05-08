@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
@@ -55,6 +56,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private AtomixServerTransport gatewayBrokerTransport;
+  private SnowflakeIdGenerator requestIdGenerator;
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
   private AdminApiRequestHandler adminApiService;
@@ -308,5 +310,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public Duration getShutdownTimeout() {
     return shutdownTimeout;
+  }
+
+  @Override
+  public SnowflakeIdGenerator getRequestIdGenerator() {
+    return requestIdGenerator;
+  }
+
+  @Override
+  public void setRequestIdGenerator(final SnowflakeIdGenerator requestIdGenerator) {
+    this.requestIdGenerator = requestIdGenerator;
   }
 }

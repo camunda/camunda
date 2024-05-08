@@ -26,6 +26,7 @@ import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdGenerator;
 
 public final class TransportFactory {
 
@@ -36,8 +37,10 @@ public final class TransportFactory {
   }
 
   public ServerTransport createServerTransport(
-      final int nodeId, final MessagingService messagingService) {
-    final var atomixServerTransport = new AtomixServerTransport(messagingService, nodeId);
+      final MessagingService messagingService, final IdGenerator requestIdGenerator) {
+
+    final var atomixServerTransport =
+        new AtomixServerTransport(messagingService, requestIdGenerator);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }

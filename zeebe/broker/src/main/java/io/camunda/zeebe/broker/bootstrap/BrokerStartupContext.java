@@ -31,6 +31,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.time.Duration;
 import java.util.List;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -112,4 +113,8 @@ public interface BrokerStartupContext {
   BrokerClient getBrokerClient();
 
   Duration getShutdownTimeout();
+
+  SnowflakeIdGenerator getRequestIdGenerator();
+
+  void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
 }

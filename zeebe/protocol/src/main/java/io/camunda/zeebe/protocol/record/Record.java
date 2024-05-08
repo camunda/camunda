@@ -130,6 +130,9 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   T getValue();
 
   /**
+   * The RequestId is a unique id generated at the gateway broker transport and is attached to every
+   * client request
+   *
    * @return the id of the request that produced this record
    */
   long getRequestId();
