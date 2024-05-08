@@ -48,6 +48,22 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Counter TOTAL_RECEIVED_REQUESTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("received_request_count_total")
+          .help("Number of requests received")
+          .labelNames("partition")
+          .register();
+
+  private static final Counter TOTAL_DROPPED_REQUESTS =
+      Counter.build()
+          .namespace("zeebe")
+          .name("dropped_request_count_total")
+          .help("Number of requests dropped due to backpressure")
+          .labelNames("partition")
+          .register();
+
   private static final Gauge INFLIGHT_REQUESTS =
       Gauge.build()
           .namespace("zeebe")
@@ -108,6 +124,8 @@ public final class LogStreamMetrics {
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
   private final Gauge.Child appendLimit;
+  private final Counter.Child receivedRequests;
+  private final Counter.Child droppedRequests;
   private final Gauge.Child inflightRequests;
   private final Gauge.Child requestLimit;
   private final Gauge.Child lastCommitted;
@@ -122,6 +140,8 @@ public final class LogStreamMetrics {
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
     inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
     appendLimit = APPEND_LIMIT.labels(partitionLabel);
+    receivedRequests = TOTAL_RECEIVED_REQUESTS.labels(partitionLabel);
+    droppedRequests = TOTAL_DROPPED_REQUESTS.labels(partitionLabel);
     inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
     requestLimit = REQUEST_LIMIT.labels(partitionLabel);
     lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
@@ -144,6 +164,14 @@ public final class LogStreamMetrics {
 
   public void increaseTriedAppends() {
     triedAppends.inc();
+  }
+
+  public void receivedRequest() {
+    receivedRequests.inc();
+  }
+
+  public void droppedRequest() {
+    droppedRequests.inc();
   }
 
   public void setInflightRequests(final int count) {

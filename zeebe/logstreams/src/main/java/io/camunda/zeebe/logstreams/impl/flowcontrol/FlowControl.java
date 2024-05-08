@@ -69,8 +69,10 @@ public final class FlowControl implements AppendListener {
 
     final Listener requestListener;
     if (context instanceof UserCommand(final var intent)) {
+      metrics.receivedRequest();
       requestListener = requestLimiter.acquire(intent).orElse(null);
       if (requestListener == null) {
+        metrics.droppedRequest();
         appendListener.onDropped();
         return Either.left(new RequestLimitExhausted());
       }
