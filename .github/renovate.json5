@@ -2,30 +2,22 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: [
     // Base configs for renovate
-    "config:recommended",
-    // Pins github actions digests
-    "helpers:pinGitHubActionDigests",
+    "config:best-practices",
     // Sets the automerge type to 'pr'
     ":automergePr",
-    // Enables automerging for patch version updates
-    ":automergePatch",
     // Automerge can only happen when all checks are green
     ":automergeRequireAllStatusChecks",
     // Create separate PRs for patch releases
     ":separatePatchReleases",
     // Default labels added to event renovate PR
     ":labels(dependencies)",
-    // add renovate/ prefix to every renovate branch
-    ":renovatePrefix",
-    // Enables semantic commits
-    ":semanticCommits",
-    // Sets the commit message to start with chore()
-    ":semanticCommitTypeAll(chore)",
     // Raise PR when vulnerability alerts are detected
-    ":enableVulnerabilityAlertsWithLabel(dependencies-security)",
+    ":enableVulnerabilityAlertsWithLabel(area/security)",
     // Groups together all Typescript deps
     "group:definitelyTyped",
   ],
+  // Commit message prefix
+  commitMessagePrefix: "deps:",
   // How many days have to pass from the new package version appearance before the PR is created
   minimumReleaseAge: "3 days",
   // Disable auto rebasing
@@ -34,13 +26,6 @@
   schedule: ["every weekday"],
   // How many PRs can exist at once
   prConcurrentLimit: 60,
-  // Additional notes added to PRs
-  prBodyNotes: [
-    // Add warning note to each major version PR
-    "{{#if isMajor}}:warning: THIS IS A MAJOR VERSION UPDATE :warning:{{/if}}",
-    // This is added to each PR body
-    "Before merging, *always* check with the release notes if any other changes need to be done.",
-  ],
   // Branches to be checked
   baseBranches: [
     "/^release\\/.*/",
@@ -138,9 +123,17 @@
       prPriority: 100,
     },
     // Settings for patch versions update
+    // BE
     {
       matchUpdateTypes: ["patch"],
-      groupName: "Patch dependencies",
+      matchCategories: ["java"],
+      groupName: "Patch dependencies - BE",
+    },
+    // FE
+    {
+      matchUpdateTypes: ["patch"],
+      matchCategories: ["js"],
+      groupName: "Patch dependencies - FE",
     },
     // Disable major and minor updates for maintenance branches
     {
@@ -148,7 +141,20 @@
       matchBaseBranches: ["/^maintenance\\/.*/", "/^release\\/.*/"],
       enabled: false,
     },
+    // Automerge
+    {
+      matchUpdateTypes: [
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+      ],
+      automerge: true,
+      addLabels: ["automerge"],
+    },
   ],
+  platformAutomerge: false,
   customManagers: [
     // These two regex managers are checking for alpine image versions in files other than Dockerfile
     {
@@ -175,14 +181,4 @@
       datasourceTemplate: "docker",
     },
   ],
-  patch: {
-    automerge: true,
-  },
-  pin: {
-    automerge: true,
-  },
-  digest: {
-    automerge: true,
-  },
-  platformAutomerge: true,
 }
