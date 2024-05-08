@@ -9,12 +9,15 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
+import com.netflix.concurrency.limits.Limiter.Listener;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.CommandRateLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.RequestLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
@@ -27,7 +30,7 @@ public final class FlowControl implements AppendListener {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
   private final Limiter<Void> appendLimiter;
-  private final RequestLimiter<Intent> requestLimiter;
+  private final Limiter<Intent> requestLimiter;
   private final LogStreamMetrics metrics;
   private final ConcurrentSkipListMap<Long, InFlightEntry> inFlightEntries =
       new ConcurrentSkipListMap<>();
@@ -42,11 +45,11 @@ public final class FlowControl implements AppendListener {
     appendLimiter =
         appendLimit != null
             ? AppendLimiter.builder().limit(appendLimit).metrics(metrics).build()
-            : new NoopLimiter();
+            : new NoopLimiter<>();
     requestLimiter =
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
-            : new NoopRequestLimiter<>();
+            : new NoopLimiter<>();
   }
 
   /**
@@ -64,7 +67,18 @@ public final class FlowControl implements AppendListener {
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightEntry(batchMetadata, appendListener, null, metrics));
+    final Listener requestListener;
+    if (context instanceof UserCommand(final var intent)) {
+      requestListener = requestLimiter.acquire(intent).orElse(null);
+      if (requestListener == null) {
+        appendListener.onDropped();
+        return Either.left(new RequestLimitExhausted());
+      }
+    } else {
+      requestListener = null;
+    }
+
+    return Either.right(new InFlightEntry(batchMetadata, appendListener, requestListener, metrics));
   }
 
   public void onAppend(final InFlightEntry inFlightEntry, final long highestPosition) {
@@ -88,5 +102,7 @@ public final class FlowControl implements AppendListener {
 
   public sealed interface Rejection {
     record AppendLimitExhausted() implements Rejection {}
+
+    record RequestLimitExhausted() implements Rejection {}
   }
 }
