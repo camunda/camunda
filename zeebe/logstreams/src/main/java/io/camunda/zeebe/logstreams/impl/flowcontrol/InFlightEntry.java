@@ -71,6 +71,7 @@ public final class InFlightEntry {
   }
 
   public void onProcessed() {
+
     if (requestListener != null) {
       requestListener.onSuccess();
       metrics.decreaseInflightRequests();

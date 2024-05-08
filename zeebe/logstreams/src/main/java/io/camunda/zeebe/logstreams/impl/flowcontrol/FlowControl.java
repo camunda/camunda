@@ -34,6 +34,7 @@ public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
   private final ConcurrentSkipListMap<Long, InFlightEntry> inFlightEntries =
       new ConcurrentSkipListMap<>();
+  private volatile long lastCommitted;
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
@@ -95,13 +96,13 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
+    lastCommitted = highestPosition;
     inFlightEntries.headMap(highestPosition, true).forEach((key, value) -> value.onCommit());
   }
 
   public void onProcessed(final long position) {
-    final var processed = inFlightEntries.headMap(position, true);
-    processed.forEach((key, value) -> value.onProcessed());
-    processed.clear();
+    inFlightEntries.headMap(position, true).forEach((key, value) -> value.onProcessed());
+    inFlightEntries.headMap(lastCommitted, true).clear();
   }
 
   public sealed interface Rejection {
