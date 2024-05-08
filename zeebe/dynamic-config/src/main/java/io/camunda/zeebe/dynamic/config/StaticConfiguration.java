@@ -21,12 +21,12 @@ public record StaticConfiguration(
     Set<MemberId> clusterMembers,
     MemberId localMemberId,
     List<PartitionId> partitionIds,
-    int replicationFactor) {
+    int replicationFactor,
+    DynamicPartitionConfig partitionConfig) {
 
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
-    return ConfigurationUtil.getClusterConfigFrom(
-        partitionDistribution, DynamicPartitionConfig.init());
+    return ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {
