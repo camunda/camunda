@@ -9,10 +9,9 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -25,45 +24,40 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Random;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class GatewayBrokerTransportStepTest {
+class RequestIdGeneratorStepTest {
   private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
-  private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
-
-  private final ActorScheduler mockActorSchedulingService = mock(ActorScheduler.class);
-
   private BrokerStartupContextImpl testBrokerStartupContext;
   private final BrokerInfo mockBrokerInfo = mock(BrokerInfo.class);
+  private final TestConcurrencyControl spyConcurrencyControl = spy(new TestConcurrencyControl());
 
-  private final GatewayBrokerTransportStep sut = new GatewayBrokerTransportStep();
+  private final RequestIdGeneratorStep sut = new RequestIdGeneratorStep();
 
   @BeforeEach
   void setUp() {
-    when(mockActorSchedulingService.submitActor(any()))
-        .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
     testBrokerStartupContext =
         new BrokerStartupContextImpl(
             mockBrokerInfo,
             TEST_BROKER_CONFIG,
             mock(SpringBrokerBridge.class),
-            mockActorSchedulingService,
+            mock(ActorScheduler.class),
             mock(BrokerHealthCheckService.class),
             mock(ExporterRepository.class),
             mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
             mock(BrokerClient.class),
             Collections.emptyList(),
             TEST_SHUTDOWN_TIMEOUT);
-    testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
+    testBrokerStartupContext.setConcurrencyControl(spyConcurrencyControl);
   }
 
   @Test
@@ -72,7 +66,7 @@ class GatewayBrokerTransportStepTest {
     final var actual = sut.getName();
 
     // then
-    assertThat(actual).isSameAs("Broker Transport");
+    assertThat(actual).isSameAs("Request Id Generator");
   }
 
   @Nested
@@ -82,13 +76,14 @@ class GatewayBrokerTransportStepTest {
 
     @BeforeEach
     void setUp() {
-      startupFuture = CONCURRENCY_CONTROL.createFuture();
+      startupFuture = spyConcurrencyControl.createFuture();
+      when(spyConcurrencyControl.<BrokerStartupContext>createFuture()).thenReturn(startupFuture);
     }
 
     @Test
     void shouldCompleteFuture() {
       // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      sut.startup(testBrokerStartupContext);
 
       // then
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
@@ -96,55 +91,49 @@ class GatewayBrokerTransportStepTest {
     }
 
     @Test
-    void shouldStartAndInstallTransport() {
+    void shouldStartAndInstallRequestIdGenerator() {
       // when
       final int randomNodeId = new Random().nextInt(10);
       when(mockBrokerInfo.getNodeId()).thenReturn(randomNodeId);
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      sut.startup(testBrokerStartupContext);
       await().until(startupFuture::isDone);
 
       // then
-      final var transport = testBrokerStartupContext.getGatewayBrokerTransport();
+      final var requestIdGenerator = testBrokerStartupContext.getRequestIdGenerator();
 
-      assertThat(transport).isNotNull();
-      verify(mockActorSchedulingService).submitActor(transport);
+      assertThat(requestIdGenerator).isNotNull();
+      assertThat(requestIdGenerator.nodeId()).isEqualTo(randomNodeId);
     }
   }
 
   @Nested
   class ShutdownBehavior {
 
-    private AtomixServerTransport mockTransport;
-
     private ActorFuture<BrokerStartupContext> shutdownFuture;
 
     @BeforeEach
     void setUp() {
-
-      mockTransport = mock(AtomixServerTransport.class);
-      when(mockTransport.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-      testBrokerStartupContext.setGatewayBrokerTransport(mockTransport);
-
-      shutdownFuture = CONCURRENCY_CONTROL.createFuture();
+      final var mockIdGenerator = mock(SnowflakeIdGenerator.class);
+      testBrokerStartupContext.setRequestIdGenerator(mockIdGenerator);
+      shutdownFuture = spyConcurrencyControl.createFuture();
+      when(spyConcurrencyControl.<BrokerStartupContext>createFuture()).thenReturn(shutdownFuture);
     }
 
     @Test
-    void shouldStopAndUninstallServerTransport() {
+    void shouldStopAndUninstallRequestIdGenerator() {
       // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+      sut.shutdown(testBrokerStartupContext);
       await().until(shutdownFuture::isDone);
 
       // then
-      verify(mockTransport).closeAsync();
-      final var serverTransport = testBrokerStartupContext.getGatewayBrokerTransport();
-      assertThat(serverTransport).isNull();
+      final var requestIdGenerator = testBrokerStartupContext.getRequestIdGenerator();
+      assertThat(requestIdGenerator).isNull();
     }
 
     @Test
     void shouldCompleteFuture() {
       // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
+      sut.shutdown(testBrokerStartupContext);
 
       // then
       assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
