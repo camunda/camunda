@@ -14,6 +14,7 @@ import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.RequestLimitExhausted;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightEntry.PendingAppend;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -33,9 +34,12 @@ public final class FlowControl implements AppendListener {
   private final Limiter<Void> appendLimiter;
   private final Limiter<Intent> requestLimiter;
   private final LogStreamMetrics metrics;
-  private final NavigableMap<Long, InFlightEntry> unwritten = new ConcurrentSkipListMap<>();
-  private final NavigableMap<Long, InFlightEntry> uncommitted = new ConcurrentSkipListMap<>();
-  private final NavigableMap<Long, InFlightEntry> unprocessed = new ConcurrentSkipListMap<>();
+  private final NavigableMap<Long, InFlightEntry.Unwritten> unwritten =
+      new ConcurrentSkipListMap<>();
+  private final NavigableMap<Long, InFlightEntry.Uncommitted> uncommitted =
+      new ConcurrentSkipListMap<>();
+  private final NavigableMap<Long, InFlightEntry.Unprocessed> unprocessed =
+      new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
@@ -60,8 +64,9 @@ public final class FlowControl implements AppendListener {
    * @return An Optional containing a {@link InFlightEntry} if append was accepted, an empty
    *     Optional otherwise.
    */
-  public Either<Rejection, InFlightEntry> tryAcquire(
+  public Either<Rejection, InFlightEntry.PendingAppend> tryAcquire(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
+    metrics.increaseTriedAppends();
     final var appendListener = appendLimiter.acquire(null).orElse(null);
     if (appendListener == null) {
       metrics.increaseDeferredAppends();
@@ -82,33 +87,32 @@ public final class FlowControl implements AppendListener {
       requestListener = null;
     }
 
-    return Either.right(new InFlightEntry(batchMetadata, appendListener, requestListener, metrics));
+    return Either.right(new PendingAppend(metrics, batchMetadata, appendListener, requestListener));
   }
 
-  public void onAppend(final InFlightEntry inFlightEntry, final long highestPosition) {
-    unwritten.put(highestPosition, inFlightEntry);
-    uncommitted.put(highestPosition, inFlightEntry);
-    unprocessed.put(highestPosition, inFlightEntry);
-    inFlightEntry.onAppend(highestPosition);
+  public void onAppend(final PendingAppend nowAppended, final long highestPosition) {
+    unwritten.put(highestPosition, nowAppended.unwritten());
+    uncommitted.put(highestPosition, nowAppended.uncommitted());
+    nowAppended.unprocessed().ifPresent(inFlight -> unprocessed.put(highestPosition, inFlight));
   }
 
   @Override
   public void onWrite(final long index, final long highestPosition) {
     final var written = unwritten.headMap(highestPosition, true);
-    written.forEach((key, value) -> value.onWrite());
+    written.forEach((key, value) -> value.finish(key));
     written.clear();
   }
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
     final var committed = uncommitted.headMap(highestPosition, true);
-    committed.forEach((key, value) -> value.onCommit());
+    committed.forEach((key, value) -> value.finish(key));
     committed.clear();
   }
 
   public void onProcessed(final long position) {
     final var processed = unprocessed.headMap(position, true);
-    processed.forEach((key, value) -> value.onProcessed());
+    processed.forEach((key, value) -> value.finish());
     processed.clear();
   }
 
