@@ -19,6 +19,49 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.h2>2.2.224</version.h2>
+    <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoreAllNonTestScoped>true</ignoreAllNonTestScoped>
+          <ignoreUnusedRuntime>true</ignoreUnusedRuntime>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
+            <dep>org.apache.maven.surefire:surefire-junit4</dep>
+            <dep>org.apache.maven.surefire:surefire-junit47</dep>
+            <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
+            <dep>org.codehaus.plexus:plexus-utils</dep>
+            <dep>jakarta.servlet:jakarta.servlet-api</dep>
+            <dep>org.springframework.boot:spring-boot-starter-test</dep>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+        <executions>
+          <execution>
+            <id>go-offline</id>
+            <goals>
+              <goal>resolve-plugins</goal>
+              <goal>go-offline</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <silent>true</silent>
+            </configuration>
+          </execution>
+          <execution>
+            <id>analyze-dependencies</id>
+            <goals>
+              <goal>analyze-only</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
