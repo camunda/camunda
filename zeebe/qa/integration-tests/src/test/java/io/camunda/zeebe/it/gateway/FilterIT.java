@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.gateway;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -36,10 +36,10 @@ final class FilterIT {
           .withBrokersCount(1)
           .withGatewayConfig(
               (memberId, testGateway) -> {
-                final var interceptorCfg = new InterceptorCfg();
-                interceptorCfg.setId("test");
-                interceptorCfg.setClassName(CustomFilter.class.getName());
-                testGateway.gatewayConfig().setInterceptors(List.of(interceptorCfg));
+                final var filterCfg = new FilterCfg();
+                filterCfg.setId("test");
+                filterCfg.setClassName(CustomFilter.class.getName());
+                testGateway.gatewayConfig().setFilters(List.of(filterCfg));
               })
           .build();
 

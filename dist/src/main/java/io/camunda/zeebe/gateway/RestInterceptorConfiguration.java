@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import jakarta.servlet.Filter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,9 +16,9 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
-@Component
+@Configuration
 public class RestInterceptorConfiguration implements ApplicationContextAware, InitializingBean {
 
   private static ApplicationContext context;
@@ -26,16 +26,16 @@ public class RestInterceptorConfiguration implements ApplicationContextAware, In
   @Override
   public void afterPropertiesSet() throws Exception {
 
-    final List<InterceptorCfg> interceptorCfgs =
+    final List<FilterCfg> filterCfgs =
         RestInterceptorConfiguration.context
             .getBean(GatewayConfiguration.class)
             .config()
-            .getInterceptors();
+            .getFilters();
 
     final AtomicInteger counter = new AtomicInteger(0);
     final FilterRepository filterRepository = new FilterRepository();
     filterRepository
-        .load(interceptorCfgs)
+        .load(filterCfgs)
         .instantiate()
         .forEach(
             customFilter -> {

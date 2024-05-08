@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorLoadException;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
@@ -58,7 +58,7 @@ public class FilterRepository {
         .map(entry -> instantiate(entry.getKey().id, entry.getValue()));
   }
 
-  public FilterRepository load(final List<? extends InterceptorCfg> configs) {
+  public FilterRepository load(final List<? extends FilterCfg> configs) {
     IntStream.range(0, configs.size())
         .forEach(
             i -> {
@@ -75,7 +75,7 @@ public class FilterRepository {
     return this;
   }
 
-  Class<? extends Filter> load(final int order, final InterceptorCfg config)
+  Class<? extends Filter> load(final int order, final FilterCfg config)
       throws ExternalJarLoadException {
     final ClassLoader classLoader;
     final Class<? extends Filter> filterClass;
