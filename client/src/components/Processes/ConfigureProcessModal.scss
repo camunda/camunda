@@ -1,15 +1,8 @@
+@use '@carbon/styles/scss/spacing';
+
 .ConfigureProcessModal {
-  .infoContainer .Icon {
-    opacity: 0.26;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  .digestSwitch {
-    border-radius: 10px;
-    margin: 20px 0;
-    font-size: 14px;
+  .infoContainer {
+    display: flex;
+    gap: spacing.$spacing-02;
   }
 }

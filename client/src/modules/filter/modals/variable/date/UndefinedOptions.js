@@ -5,9 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {FormGroup, Toggle} from '@carbon/react';
 
-import {Switch, Form} from 'components';
 import {t} from 'translation';
 
 export default function UndefinedOptions({
@@ -17,21 +16,23 @@ export default function UndefinedOptions({
   changeExcludeUndefined,
 }) {
   return (
-    <>
-      <Form.Group>
-        <Switch
-          checked={includeUndefined}
-          onChange={({target: {checked}}) => changeIncludeUndefined(checked)}
-          label={t('common.filter.variableModal.includeUndefined')}
-        />
-      </Form.Group>
-      <Form.Group noSpacing>
-        <Switch
-          checked={excludeUndefined}
-          onChange={({target: {checked}}) => changeExcludeUndefined(checked)}
-          label={t('common.filter.variableModal.excludeUndefined')}
-        />
-      </Form.Group>
-    </>
+    <FormGroup legendText={t('common.filter.variableModal.undefinedValuesLabel')}>
+      <Toggle
+        id="includeUndefined"
+        toggled={includeUndefined}
+        onToggle={(checked) => changeIncludeUndefined(checked)}
+        labelText={t('common.filter.variableModal.includeUndefined')}
+        hideLabel
+        size="sm"
+      />
+      <Toggle
+        id="excludeUndefined"
+        toggled={excludeUndefined}
+        onToggle={(checked) => changeExcludeUndefined(checked)}
+        labelText={t('common.filter.variableModal.excludeUndefined')}
+        hideLabel
+        size="sm"
+      />
+    </FormGroup>
   );
 }

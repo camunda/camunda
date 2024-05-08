@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {isEmailEnabled} from 'config';
@@ -58,7 +58,7 @@ it('should invoke the onConfirm with the updated config', async () => {
     .find(UserTypeahead)
     .simulate('change', [{id: 'USER:test', identity: {id: 'test', name: 'testName'}}]);
 
-  node.find('Switch').simulate('change', {target: {checked: true}});
+  node.find('Toggle').simulate('toggle', true);
   node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(
@@ -82,11 +82,11 @@ it('should disable the digest when removing the owner', () => {
     />
   );
 
-  node.find('Switch').simulate('change', {target: {checked: true}});
-  expect(node.find('Switch').prop('checked')).toBe(true);
+  node.find('Toggle').simulate('toggle', true);
+  expect(node.find('Toggle').prop('toggled')).toBe(true);
 
   node.find(UserTypeahead).simulate('change', []);
-  expect(node.find('Switch').prop('checked')).toBe(false);
+  expect(node.find('Toggle').prop('toggled')).toBe(false);
 });
 
 it('should disable the confirm button if no changes to the modal were applied', () => {

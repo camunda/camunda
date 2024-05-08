@@ -5,14 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {Form, DateRangeInput} from 'components';
+import {Component} from 'react';
+import {Form, Stack} from '@carbon/react';
+
+import {DateRangeInput} from 'components';
+
 import {convertFilterToState, convertStateToFilter, DateFilterPreview, isValid} from '../../date';
+
 import UndefinedOptions from './UndefinedOptions';
 
 import './DateInput.scss';
 
-export default class DateInput extends React.Component {
+export default class DateInput extends Component {
   static defaultFilter = {
     valid: false,
     type: '',
@@ -34,11 +38,13 @@ export default class DateInput extends React.Component {
 
     return (
       <Form className="DateInput">
-        <DateRangeInput
-          {...filter}
-          onChange={(change) => this.changeFilter({...filter, ...change, excludeUndefined: false})}
-        />
-        <Form.Group className="previewContainer">
+        <Stack gap={6}>
+          <DateRangeInput
+            {...filter}
+            onChange={(change) =>
+              this.changeFilter({...filter, ...change, excludeUndefined: false})
+            }
+          />
           {isValid(filter) && (
             <DateFilterPreview
               filterType="variable"
@@ -46,17 +52,17 @@ export default class DateInput extends React.Component {
               filter={convertStateToFilter(filter)}
             />
           )}
-        </Form.Group>
-        <UndefinedOptions
-          includeUndefined={includeUndefined}
-          excludeUndefined={excludeUndefined}
-          changeIncludeUndefined={(includeUndefined) =>
-            this.changeFilter({...filter, includeUndefined, excludeUndefined: false})
-          }
-          changeExcludeUndefined={(excludeUndefined) =>
-            this.changeFilter({...DateInput.defaultFilter, excludeUndefined})
-          }
-        />
+          <UndefinedOptions
+            includeUndefined={includeUndefined}
+            excludeUndefined={excludeUndefined}
+            changeIncludeUndefined={(includeUndefined) =>
+              this.changeFilter({...filter, includeUndefined, excludeUndefined: false})
+            }
+            changeExcludeUndefined={(excludeUndefined) =>
+              this.changeFilter({...DateInput.defaultFilter, excludeUndefined})
+            }
+          />
+        </Stack>
       </Form>
     );
   }

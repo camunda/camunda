@@ -9,7 +9,6 @@ export {Button} from './Button';
 export {Tabs} from './Tabs';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
-export {Switch} from './Switch';
 export {Form} from './Form';
 export {Input} from './Input';
 export {LabeledInput} from './LabeledInput';

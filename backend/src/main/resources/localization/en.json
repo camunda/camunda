@@ -1412,8 +1412,9 @@
           "search": "Search for values",
           "empty": "No values found"
         },
-        "includeUndefined": "Include instances where the selected variable is <b>null</b> or <b>undefined</b>",
-        "excludeUndefined": "Exclude instances where the selected variable is <b>null</b> or <b>undefined</b>",
+        "undefinedValuesLabel": "<b>Null</b> or <b>undefined</b> values",
+        "includeUndefined": "Include instances where the selected variable is null or undefined",
+        "excludeUndefined": "Exclude instances where the selected variable is null or undefined",
         "customValue": "Add custom variable value",
         "addToList": "Add to list",
         "addedToList": "Value added to list"

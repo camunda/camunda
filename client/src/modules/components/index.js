@@ -20,7 +20,6 @@ export {ErrorBoundary} from './ErrorBoundary';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {ShareEntity} from './ShareEntity';
-export {Switch} from './Switch';
 export {DashboardRenderer, DiagramScrollLock} from './DashboardRenderer';
 export {DefinitionSelection, VersionPopover, TenantPopover} from './DefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';

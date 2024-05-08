@@ -1412,8 +1412,9 @@
           "search": "Suche nach Werten",
           "empty": "Keine Werte gefunden"
         },
-        "includeUndefined": "Schließen Sie Instanzen ein, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist",
-        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
+        "undefinedValuesLabel": "<b>Null</b> oder <b>nicht definierte</b> Werte",
+        "includeUndefined": "Schließen Sie Instanzen ein, in denen die ausgewählte Variable entweder null oder nicht definiert ist",
+        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die ausgewählte Variable entweder null oder nicht definiert ist.",
         "customValue": "Benutzerdefinierten Wert hinzufügen",
         "addToList": "Zur Liste hinzufügen",
         "addedToList": "Wert der Liste hinzugefügt"

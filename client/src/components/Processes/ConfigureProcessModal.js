@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {ActionableNotification, Button, Stack} from '@carbon/react';
+import {useEffect, useState} from 'react';
+import {ActionableNotification, Button, Stack, Toggle, Tooltip} from '@carbon/react';
+import {Information} from '@carbon/icons-react';
 
-import {Icon, Labeled, Modal, Switch, Tooltip, UserTypeahead} from 'components';
+import {Modal, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
 import {useDocs} from 'hooks';
@@ -46,7 +47,7 @@ export function ConfigureProcessModal({
     <Modal open onClose={onClose} className="ConfigureProcessModal" isOverflowVisible>
       <Modal.Header title={t('processes.configureProcess')} />
       <Modal.Content>
-        <Stack gap={4}>
+        <Stack gap={6}>
           {!emailEnabled && (
             <ActionableNotification
               kind="warning"
@@ -58,50 +59,47 @@ export function ConfigureProcessModal({
               className="emailWarning"
             />
           )}
-          <Labeled
-            label={
-              <div className="infoContainer">
-                {t('processes.processOwner')}{' '}
-                <Tooltip align="center" content={t('processes.ownerInfo')}>
-                  <Icon type="info" />
+          <UserTypeahead
+            titleText={
+              <span className="infoContainer">
+                {t('processes.processOwner')}
+                <Tooltip label={t('processes.ownerInfo')}>
+                  <Information />
                 </Tooltip>
-              </div>
+              </span>
             }
-          >
-            <UserTypeahead
-              key={selectedUser?.id}
-              users={selectedUser ? [selectedUser] : []}
-              onChange={(users) => {
-                const newSelection = users[users.length - 1];
-                setSelectedUser(newSelection);
-                if (!newSelection) {
-                  setDigestEnabled(false);
-                }
-              }}
-              excludeGroups
-              optionsOnly={optimizeProfile === 'cloud'}
-            />
-          </Labeled>
-          <Switch
-            className="digestSwitch"
-            disabled={!selectedUser}
-            label={
-              <div className="infoContainer">
-                {t('processes.emailDigest')}{' '}
-                <Tooltip align="center" content={t('processes.digestInfo')}>
-                  <Icon type="info" />
-                </Tooltip>
-              </div>
-            }
-            checked={digestEnabled}
-            onChange={({target}) => {
-              if (target.checked && selectedUser) {
-                setDigestEnabled(true);
-              } else {
+            key={selectedUser?.id}
+            users={selectedUser ? [selectedUser] : []}
+            onChange={(users) => {
+              const newSelection = users[users.length - 1];
+              setSelectedUser(newSelection);
+              if (!newSelection) {
                 setDigestEnabled(false);
               }
             }}
+            excludeGroups
+            optionsOnly={optimizeProfile === 'cloud'}
           />
+          <div className="infoContainer">
+            <Toggle
+              id="digestSwitch"
+              disabled={!selectedUser}
+              labelText={t('processes.emailDigest')}
+              size="sm"
+              hideLabel
+              toggled={digestEnabled}
+              onToggle={(checked) => {
+                if (checked && selectedUser) {
+                  setDigestEnabled(true);
+                } else {
+                  setDigestEnabled(false);
+                }
+              }}
+            />
+            <Tooltip label={t('processes.digestInfo')}>
+              <Information />
+            </Tooltip>
+          </div>
         </Stack>
       </Modal.Content>
       <Modal.Footer>
