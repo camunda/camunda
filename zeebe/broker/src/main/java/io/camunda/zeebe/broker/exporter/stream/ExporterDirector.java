@@ -33,11 +33,13 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -55,7 +57,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  private final List<ExporterContainer> containers;
+
+  // Use concrete type because it must be modifiable
+  private final ArrayList<ExporterContainer> containers;
   private final LogStream logStream;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
@@ -90,7 +94,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     containers =
         context.getDescriptors().stream()
             .map(descriptor -> new ExporterContainer(descriptor, partitionId))
-            .collect(Collectors.toList());
+            .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
     recordExporter = new RecordExporter(metrics, containers, partitionId);
@@ -180,6 +184,38 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           if (exporterMode == ExporterMode.ACTIVE) {
             actor.submit(this::readNextEvent);
           }
+        });
+  }
+
+  /**
+   * Disables an already configured exporter. No records will be exported to this exporter anymore.
+   *
+   * @param exporterId id of the exporter to disabled
+   * @return future which will be completed after the exporter is disabled.
+   */
+  public ActorFuture<Void> disableExporter(final String exporterId) {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return actor.call(
+        () -> {
+          final Optional<ExporterContainer> optionalContainer =
+              containers.stream().filter(c -> c.getId().equals(exporterId)).findFirst();
+
+          if (optionalContainer.isEmpty()) {
+            LOG.debug("Exporter '{}' is not found. It may be already disabled.", exporterId);
+            return;
+          }
+
+          final var container = optionalContainer.get();
+          container.close();
+          containers.remove(container);
+          state.removeExporterState(exporterId);
+          // After removing this exporter, the exporter index has changed. Reset it so that we don't
+          // miss to export the record to any of the exporters whose index has changed.
+          recordExporter.resetExporterIndex();
+          LOG.debug("Exporter '{}' is disabled.", exporterId);
         });
   }
 
