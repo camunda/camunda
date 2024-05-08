@@ -1,0 +1,70 @@
+# This GitHub Actions (GHA) workflow is used to manually trigger a release for `operate` application.
+#
+# It takes several inputs:
+# - 'branch': the branch from which to build the release.
+# - 'releaseVersion': the version number to apply to the release (in pom.xml and the Git tag).
+# - 'nextDevelopmentVersion': the version to use after the release.
+# - 'dryRun': if true, the release is built but no changes are made or artifacts (Docker, Maven) are pushed. Defaults to `true`.
+# - 'githubUploadRelease': if true, the release will be uploaded to GitHub. Defaults to `false`.
+# - 'isLatest': if true, the Docker image will be tagged with the 'latest' tag. Defaults to `false`.
+#
+# The workflow leverages a reusable workflow (./.github/workflows/operate-release-reusable.yml)
+# to perform the actual release process.
+#
+# It allows you to manually dispatch the workflow with custom input parameters to control the release process.
+# This can be done through GitHub's UI by navigating to the "Actions" tab of the `operate` repository, then clicking on the
+# "Run workflow" dropdown, selecting the workflow, filling in the input fields and clicking "Run workflow".
+#
+# Link to Release manual workflow: https://github.com/camunda/zeebe/actions/workflows/release-manual.yml
+
+name: Operate Release manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch name to build release from."
+        type: string
+        required: true
+      releaseVersion:
+        description: "Version to release (applied to pom.xml and Git tag)."
+        type: string
+        required: true
+      nextDevelopmentVersion:
+        description: "Next development version."
+        type: string
+        required: true
+      dryRun:
+        description: "Whether to perform a dry release, where no changes or artifacts(Docker, Maven) are pushed, defaults to `true`."
+        type: boolean
+        required: false
+        default: true
+      githubUploadRelease:
+        description: "Should upload the release to GitHub."
+        type: boolean
+        required: false
+        default: false
+      isLatest:
+        description: "Should tag the docker image with 'latest' tag."
+        type: boolean
+        required: false
+        default: false
+      fromCommit:
+        description: "Commit id which the changelog should be generated from."
+        type: string
+        required: true
+        default: ""
+
+jobs:
+  release:
+    name: "release manually v${{ inputs.releaseVersion }}"
+    uses: camunda/zeebe/.github/workflows/operate-release-reusable.yml@main
+    secrets: inherit
+    with:
+      branch: ${{ inputs.branch }}
+      releaseVersion: ${{ inputs.releaseVersion }}
+      nextDevelopmentVersion: ${{ inputs.nextDevelopmentVersion }}
+      dryRun: ${{ inputs.dryRun }}
+      githubUploadRelease: ${{ inputs.githubUploadRelease }}
+      isLatest: ${{ inputs.isLatest }}
+      fromCommit: ${{ inputs.fromCommit }}
