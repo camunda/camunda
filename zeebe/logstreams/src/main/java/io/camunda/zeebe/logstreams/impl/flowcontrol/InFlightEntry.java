@@ -22,7 +22,8 @@ import java.util.List;
 public final class InFlightEntry {
 
   private final List<LogAppendEntryMetadata> entryMetadata;
-  private final Limiter.Listener limiter;
+  private final Limiter.Listener appendListener;
+  private final Limiter.Listener requestListener;
   private final LogStreamMetrics metrics;
   private Histogram.Timer writeTimer;
   private Histogram.Timer commitTimer;
@@ -30,10 +31,12 @@ public final class InFlightEntry {
 
   public InFlightEntry(
       final List<LogAppendEntryMetadata> entryMetadata,
-      final Limiter.Listener limiter,
+      final Limiter.Listener appendListener,
+      final Limiter.Listener requestListener,
       final LogStreamMetrics metrics) {
     this.entryMetadata = entryMetadata;
-    this.limiter = limiter;
+    this.appendListener = appendListener;
+    this.requestListener = requestListener;
     this.metrics = metrics;
   }
 
@@ -43,6 +46,9 @@ public final class InFlightEntry {
     commitTimer = metrics.startCommitTimer();
     metrics.increaseInflightAppends();
     metrics.increaseTriedAppends();
+    if (requestListener != null) {
+      metrics.increaseInflightRequests();
+    }
     return this;
   }
 
@@ -61,6 +67,13 @@ public final class InFlightEntry {
     if (commitTimer != null) {
       commitTimer.close();
     }
-    limiter.onSuccess();
+    appendListener.onSuccess();
+  }
+
+  public void onProcessed() {
+    if (requestListener != null) {
+      requestListener.onSuccess();
+      metrics.decreaseInflightRequests();
+    }
   }
 }

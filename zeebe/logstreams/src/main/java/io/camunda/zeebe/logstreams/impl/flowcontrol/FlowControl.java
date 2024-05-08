@@ -64,7 +64,7 @@ public final class FlowControl implements AppendListener {
       return Either.left(new AppendLimitExhausted());
     }
 
-    return Either.right(new InFlightEntry(batchMetadata, appendListener, metrics));
+    return Either.right(new InFlightEntry(batchMetadata, appendListener, null, metrics));
   }
 
   public void onAppend(final InFlightEntry inFlightEntry, final long highestPosition) {
@@ -79,7 +79,11 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onCommit(final long index, final long highestPosition) {
-    inFlightEntries.remove(highestPosition).onCommit();
+    inFlightEntries.get(highestPosition).onCommit();
+  }
+
+  public void onProcessed(final long position) {
+    inFlightEntries.remove(position).onProcessed();
   }
 
   public sealed interface Rejection {
