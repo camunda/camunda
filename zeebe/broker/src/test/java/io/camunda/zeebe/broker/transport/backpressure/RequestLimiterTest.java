@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.CommandRateLimiter;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -26,13 +26,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class CommandRateLimiterTest {
+class RequestLimiterTest {
 
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);
 
-  private final CommandRateLimiter rateLimiter =
-      CommandRateLimiter.builder().limit(limit).build(new LogStreamMetrics(0));
+  private final RequestLimiter rateLimiter =
+      RequestLimiter.builder().limit(limit).build(new LogStreamMetrics(0));
   private final Intent context = ProcessInstanceCreationIntent.CREATE;
 
   @Test

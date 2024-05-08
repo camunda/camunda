@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CommandRateLimiter extends AbstractLimiter<Intent> {
+public final class RequestLimiter extends AbstractLimiter<Intent> {
 
   private static final Logger LOG =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.transport.backpressure");
@@ -39,8 +39,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent> {
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
   private final LogStreamMetrics metrics;
 
-  private CommandRateLimiter(
-      final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
+  private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
     super(builder);
     this.metrics = metrics;
     metrics.setInflightRequests(0);
@@ -126,8 +125,8 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent> {
       return this;
     }
 
-    public CommandRateLimiter build(final LogStreamMetrics metrics) {
-      return new CommandRateLimiter(this, metrics);
+    public RequestLimiter build(final LogStreamMetrics metrics) {
+      return new RequestLimiter(this, metrics);
     }
   }
 
