@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /**
- * This behavior allows distributing a command to other partitions, and for those receiving
- * partitions to acknowledge the distributed commands back to the partition that started. This is
- * needed because the communication between partitions is unreliable.
+ * The network communication between the partitions is unreliable. To allow communication between
+ * partitions in a reliable way, we've built command distribution: a way for partitions to send,
+ * receive, and acknowledge (or retry sending) commands between partitions.
+ *
+ * <p>This behavior allows distributing a command to other partitions, and for those receiving
+ * partitions to acknowledge the distributed commands back to the partition that started.
  *
  * @see <a href="https://github.com/camunda/zeebe/blob/main/zeebe/docs/generalized_distribution.md">
  *     generalized_distribution.md</a>
