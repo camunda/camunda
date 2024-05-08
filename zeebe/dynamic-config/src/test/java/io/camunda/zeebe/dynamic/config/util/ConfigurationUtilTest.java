@@ -13,8 +13,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
+import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -25,7 +28,9 @@ import org.junit.jupiter.api.Test;
 class ConfigurationUtilTest {
 
   private static final String GROUP_NAME = "test";
-  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+  private final DynamicPartitionConfig partitionConfig =
+      new DynamicPartitionConfig(
+          new ExportersConfig(Map.of("expA", new ExporterState(ExporterState.State.ENABLED))));
 
   @Test
   void shouldGenerateTopologyFromPartitionDistribution() {
@@ -55,26 +60,58 @@ class ConfigurationUtilTest {
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(0, State.ACTIVE)
         .member(0)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 1)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 3);
+        .hasPartitionSatisfying(
+            1,
+            partition -> {
+              PartitionStateAssert.assertThat(partition)
+                  .hasPriority(1)
+                  .hasState(PartitionState.State.ACTIVE)
+                  .hasConfig(partitionConfig);
+            })
+        .hasPartitionSatisfying(
+            2,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(3)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig));
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 2)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 2);
+        .hasPartitionSatisfying(
+            1,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(2)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig))
+        .hasPartitionSatisfying(
+            2,
+            partition -> {
+              PartitionStateAssert.assertThat(partition)
+                  .hasPriority(2)
+                  .hasState(PartitionState.State.ACTIVE)
+                  .hasConfig(partitionConfig);
+            });
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 3)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 1);
+        .hasPartitionSatisfying(
+            1,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(3)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig))
+        .hasPartitionSatisfying(
+            2,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(1)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig));
   }
 
   @Test
