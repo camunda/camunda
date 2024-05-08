@@ -2,21 +2,21 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.topology.ClusterTopologyManager.InconsistentTopologyListener;
-import io.camunda.zeebe.topology.ClusterTopologyManagerService;
-import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
-import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
-import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -24,7 +24,7 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   private PartitionDistribution partitionDistribution;
 
-  private ClusterTopologyManagerService clusterTopologyManagerService;
+  private ClusterConfigurationManagerService clusterConfigurationManagerService;
 
   @Override
   public PartitionDistribution getPartitionDistribution() {
@@ -33,8 +33,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   @Override
   public void registerPartitionChangeExecutor(final PartitionChangeExecutor executor) {
-    if (clusterTopologyManagerService != null) {
-      clusterTopologyManagerService.registerPartitionChangeExecutor(executor);
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.registerPartitionChangeExecutor(executor);
     } else {
       throw new IllegalStateException(
           "Cannot register partition change executor before the topology manager is started");
@@ -43,8 +43,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   @Override
   public void removePartitionChangeExecutor() {
-    if (clusterTopologyManagerService != null) {
-      clusterTopologyManagerService.removePartitionChangeExecutor();
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.removePartitionChangeExecutor();
     }
   }
 
@@ -52,19 +52,19 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   public ActorFuture<Void> start(final BrokerStartupContext brokerStartupContext) {
     final CompletableActorFuture<Void> started = new CompletableActorFuture<>();
 
-    clusterTopologyManagerService = getClusterTopologyManagerService(brokerStartupContext);
+    clusterConfigurationManagerService = getClusterTopologyManagerService(brokerStartupContext);
 
     final var topologyManagerStartedFuture =
-        startClusterTopologyManager(brokerStartupContext, clusterTopologyManagerService);
+        startClusterTopologyManager(brokerStartupContext, clusterConfigurationManagerService);
 
     topologyManagerStartedFuture.onComplete(
         (ignore, topologyManagerFailed) -> {
           if (topologyManagerFailed != null) {
             started.completeExceptionally(topologyManagerFailed);
           } else {
-            clusterTopologyManagerService.addUpdateListener(
+            clusterConfigurationManagerService.addUpdateListener(
                 brokerStartupContext.getBrokerClient().getTopologyManager());
-            clusterTopologyManagerService
+            clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
                     (topology, error) -> {
@@ -88,9 +88,9 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   }
 
   @Override
-  public void registerTopologyChangeListener(final InconsistentTopologyListener listener) {
-    if (clusterTopologyManagerService != null) {
-      clusterTopologyManagerService.registerTopologyChangedListener(listener);
+  public void registerTopologyChangeListener(final InconsistentConfigurationListener listener) {
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.registerTopologyChangedListener(listener);
     } else {
       throw new IllegalStateException(
           "Cannot register topology change listener before the topology manager is started");
@@ -99,16 +99,16 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   @Override
   public void removeTopologyChangeListener() {
-    if (clusterTopologyManagerService != null) {
-      clusterTopologyManagerService.removeTopologyChangedListener();
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.removeTopologyChangedListener();
     }
   }
 
   @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
-    if (clusterTopologyManagerService != null) {
-      return clusterTopologyManagerService.closeAsync();
+    if (clusterConfigurationManagerService != null) {
+      return clusterConfigurationManagerService.closeAsync();
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -116,7 +116,7 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   private static ActorFuture<Void> startClusterTopologyManager(
       final BrokerStartupContext brokerStartupContext,
-      final ClusterTopologyManagerService clusterTopologyManagerService) {
+      final ClusterConfigurationManagerService clusterConfigurationManagerService) {
     final BrokerCfg brokerConfiguration = brokerStartupContext.getBrokerConfiguration();
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
@@ -127,15 +127,15 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
             brokerConfiguration.getExperimental().getPartitioning(),
             localMember);
 
-    return clusterTopologyManagerService.start(
+    return clusterConfigurationManagerService.start(
         brokerStartupContext.getActorSchedulingService(), staticConfiguration);
   }
 
-  private ClusterTopologyManagerService getClusterTopologyManagerService(
+  private ClusterConfigurationManagerService getClusterTopologyManagerService(
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
-    return new ClusterTopologyManagerService(
+    return new ClusterConfigurationManagerService(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
@@ -143,8 +143,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
         );
   }
 
-  private ClusterTopologyGossiperConfig getDefaultClusterTopologyGossipConfig() {
-    return new ClusterTopologyGossiperConfig(
+  private ClusterConfigurationGossiperConfig getDefaultClusterTopologyGossipConfig() {
+    return new ClusterConfigurationGossiperConfig(
         true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
   }
 }

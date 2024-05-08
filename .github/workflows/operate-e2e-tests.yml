@@ -39,7 +39,7 @@ jobs:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -50,7 +50,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.0
+        image: camunda/zeebe:8.5.1
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -117,7 +117,7 @@ jobs:
       - name: Build backend
         run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -pl operate/webapp -Dspring-boot.run.fork=true -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.operate.StandaloneOperate -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci

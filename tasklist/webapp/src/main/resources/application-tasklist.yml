@@ -1,11 +1,3 @@
-# overriding spring.autoconfigure.exclude to enable graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration
-spring.autoconfigure.exclude:
-  - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-  - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
-  - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
-  - org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration
-  - graphql.kickstart.autoconfigure.tools.GraphQLJavaToolsAutoConfiguration
----
 spring:
   config:
     activate:

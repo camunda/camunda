@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 type PolymorphicRef<C extends React.ElementType> =
@@ -341,6 +332,115 @@ declare module '@carbon/react' {
   export const Popover = React.FC<PopoverProps<'span'>>;
 
   export const PopoverContent = React.FC<React.HTMLAttributes<HTMLSpanElement>>;
+
+  export interface TabsProps {
+    /**
+     * Provide child elements to be rendered inside the `Tabs`.
+     * These elements should render either `TabsList` or `TabsPanels`
+     */
+    children?: ReactNode;
+
+    /**
+     * Specify which content tab should be initially selected when the component
+     * is first rendered
+     */
+    defaultSelectedIndex?: number;
+
+    /**
+     * Whether the rendered Tab children should be dismissable.
+     */
+    dismissable?: boolean;
+
+    /**
+     * Provide an optional function which is called
+     * whenever the state of the `Tabs` changes
+     */
+    onChange?(state: {selectedIndex: number}): void;
+
+    /**
+     * If specifying the `onTabCloseRequest` prop, provide a callback function
+     * responsible for removing the tab when close button is pressed on one of the Tab elements
+     */
+    onTabCloseRequest?(tabIndex: number): void;
+
+    /**
+     * Control which content panel is currently selected. This puts the component
+     * in a controlled mode and should be used along with `onChange`
+     */
+    selectedIndex?: number;
+  }
+
+  export const Tabs: React.FunctionComponent<TabsProps>;
+
+  export interface TabListProps extends DivAttributes {
+    /**
+     * Specify whether the content tab should be activated automatically or
+     * manually
+     */
+    activation?: 'automatic' | 'manual';
+
+    /**
+     * Provide an accessible label to be read when a user interacts with this
+     * component
+     */
+    'aria-label': string;
+
+    /**
+     * Provide child elements to be rendered inside `ContentTabs`.
+     * These elements should render a `ContentTab`
+     */
+    children?: ReactNode;
+
+    /**
+     * Specify an optional className to be added to the container node
+     */
+    className?: string;
+
+    /**
+     * Specify whether component is contained type
+     */
+    contained?: boolean;
+
+    /**
+     * Used for tabs within a grid, this makes it so tabs span the full container width and have the same width. Only available on contained tabs with <9 children
+     */
+    fullWidth?: boolean;
+
+    /**
+     * If using `IconTab`, specify the size of the icon being used.
+     */
+    iconSize?: 'default' | 'lg';
+
+    /**
+     * Provide the props that describe the left overflow button
+     */
+    leftOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+
+    /**
+     * Specify whether to use the light component variant
+     */
+    light?: boolean;
+
+    /**
+     * Provide the props that describe the right overflow button
+     */
+    rightOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
+
+    /**
+     * Optionally provide a delay (in milliseconds) passed to the lodash
+     * debounce of the onScroll handler. This will impact the responsiveness
+     * of scroll arrow buttons rendering when scrolling to the first or last tab.
+     */
+    scrollDebounceWait?: number;
+
+    /**
+     * Choose whether to automatically scroll to newly selected tabs
+     * on component rerender
+     */
+    scrollIntoView?: boolean;
+  }
+
+  export const TabList: React.FunctionComponent<TabListProps>;
 
   export * from 'carbon-components-react';
 }

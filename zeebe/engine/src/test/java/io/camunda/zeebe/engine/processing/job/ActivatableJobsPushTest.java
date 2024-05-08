@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
@@ -239,6 +239,7 @@ public class ActivatableJobsPushTest {
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when an incident is resolved
+    ENGINE.job().withKey(jobKey).withType(jobType).withRetries(1).updateRetries();
     ENGINE.incident().ofInstance(incident.getValue().getProcessInstanceKey()).resolve();
 
     // then
@@ -266,7 +267,9 @@ public class ActivatableJobsPushTest {
   }
 
   private void assertEventOrder(
-      String description, final Set<ValueType> targetValueTypes, final Intent... expectedIntents) {
+      final String description,
+      final Set<ValueType> targetValueTypes,
+      final Intent... expectedIntents) {
     assertThat(
             records()
                 .onlyEvents()

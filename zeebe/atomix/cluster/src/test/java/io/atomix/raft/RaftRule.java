@@ -672,7 +672,7 @@ public final class RaftRule extends ExternalResource {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       commitFuture.complete(index);
     }
 

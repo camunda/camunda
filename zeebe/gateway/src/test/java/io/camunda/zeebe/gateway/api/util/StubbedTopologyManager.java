@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.api.util;
 
@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
@@ -40,7 +40,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterTopology getClusterTopology() {
+  public ClusterConfiguration getClusterConfiguration() {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 
@@ -55,7 +55,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
-    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

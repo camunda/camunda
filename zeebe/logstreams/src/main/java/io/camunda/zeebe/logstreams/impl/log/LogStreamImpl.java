@@ -2,13 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -45,12 +47,16 @@ public final class LogStreamImpl extends Actor
   private Sequencer sequencer;
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
+  private final Limit appendLimit;
+  private final LogStreamMetrics logStreamMetrics;
 
   LogStreamImpl(
       final String logName,
       final int partitionId,
       final int maxFragmentSize,
-      final LogStorage logStorage) {
+      final LogStorage logStorage,
+      final Limit appendLimit,
+      final LogStreamMetrics logStreamMetrics) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -58,6 +64,8 @@ public final class LogStreamImpl extends Actor
 
     this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
+    this.appendLimit = appendLimit;
+    this.logStreamMetrics = logStreamMetrics;
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
   }
@@ -84,6 +92,7 @@ public final class LogStreamImpl extends Actor
     LOG.info("On closing logstream {} close {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
+    logStreamMetrics.remove();
   }
 
   @Override
@@ -203,7 +212,7 @@ public final class LogStreamImpl extends Actor
         getWriteBuffersInitialPosition(),
         maxFragmentSize,
         new SequencerMetrics(partitionId),
-        new LogStreamMetrics(partitionId));
+        new FlowControl(logStreamMetrics, appendLimit));
   }
 
   private long getLastCommittedPosition() {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -219,7 +219,7 @@ public class OpensearchClient implements AutoCloseable {
   Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
     try {
       final var request =
-          new Request("GET", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+          new Request("GET", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
       return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
     } catch (final IOException e) {
       return Optional.empty();
@@ -240,7 +240,7 @@ public class OpensearchClient implements AutoCloseable {
     try {
       final var request =
           new Request(
-              "DELETE", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+              "DELETE", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
 
       final var response = sendRequest(request, DeleteStateManagementPolicyResponse.class);
       return response.result().equals(DeleteStateManagementPolicyResponse.DELETED);
@@ -252,7 +252,7 @@ public class OpensearchClient implements AutoCloseable {
   private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
     try {
       final var request =
-          new Request("PUT", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+          new Request("PUT", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
 
       queryParameters.forEach(request::addParameter);
 
@@ -269,7 +269,7 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkAddISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "_plugins/_ism/add/" + configuration.index.prefix + "*");
+          new Request("POST", "/_plugins/_ism/add/" + configuration.index.prefix + "*");
       final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, IndexPolicyResponse.class);
@@ -282,7 +282,7 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "_plugins/_ism/remove/" + configuration.index.prefix + "*");
+          new Request("POST", "/_plugins/_ism/remove/" + configuration.index.prefix + "*");
       final var response = sendRequest(request, IndexPolicyResponse.class);
       return !response.failures();
     } catch (final IOException e) {

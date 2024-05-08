@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
@@ -318,6 +318,12 @@ public class ExecutionListenerTaskElementsTest {
         .hasErrorMessage("No more retries left.");
 
     // resolve incident & complete start EL jobs
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(START_EL_TYPE + "_1")
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_2").complete();
@@ -336,6 +342,7 @@ public class ExecutionListenerTaskElementsTest {
             JobIntent.CREATED,
             JobIntent.FAILED,
             IncidentIntent.CREATED,
+            JobIntent.RETRIES_UPDATED,
             IncidentIntent.RESOLVED,
             JobIntent.COMPLETED,
             JobIntent.CREATED,
@@ -390,6 +397,12 @@ public class ExecutionListenerTaskElementsTest {
         .hasErrorMessage("No more retries left.");
 
     // resolve incident & complete end EL jobs
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(END_EL_TYPE + "_1")
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_2").complete();
@@ -405,6 +418,7 @@ public class ExecutionListenerTaskElementsTest {
             JobIntent.CREATED,
             JobIntent.FAILED,
             IncidentIntent.CREATED,
+            JobIntent.RETRIES_UPDATED,
             IncidentIntent.RESOLVED,
             JobIntent.COMPLETED,
             JobIntent.CREATED,

@@ -19,6 +19,8 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.h2>2.2.224</version.h2>
+    <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
   </properties>
 
   <build>

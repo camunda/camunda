@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
@@ -47,11 +47,11 @@ public final class SequencedBatchSerializer {
     }
   }
 
-  public static int calculateBatchSize(final List<LogAppendEntry> entries) {
-    return entries.stream().mapToInt(SequencedBatchSerializer::calculateEntrySize).sum();
+  public static int calculateBatchLength(final List<LogAppendEntry> entries) {
+    return entries.stream().mapToInt(SequencedBatchSerializer::calculateEntryLength).sum();
   }
 
-  private static int calculateEntrySize(final LogAppendEntry entry) {
+  private static int calculateEntryLength(final LogAppendEntry entry) {
     return DataFrameDescriptor.alignedLength(LogAppendEntrySerializer.framedLength(entry));
   }
 

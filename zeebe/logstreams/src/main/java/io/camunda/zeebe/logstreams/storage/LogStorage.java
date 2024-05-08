@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.storage;
 
@@ -101,16 +101,16 @@ public interface LogStorage {
     /**
      * Called when the entry has been successfully written to the local storage.
      *
-     * @param address the address of the written entry
+     * @param index the index of the written entry
      */
-    default void onWrite(final long address) {}
+    default void onWrite(final long index, final long highestPosition) {}
 
     /**
      * Called when the entry has been successfully committed.
      *
-     * @param address the address of the committed entry
+     * @param index the index of the committed entry
      */
-    default void onCommit(final long address) {}
+    default void onCommit(final long index, final long highestPosition) {}
   }
 
   /**

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.util;
 
@@ -72,12 +72,12 @@ public class ListLogStorage implements LogStorage {
     final var index = currentIndex.getAndIncrement();
     entries.put(index, entry);
     positionIndexMapping.put(lowestPosition, index);
-    listener.onWrite(index);
+    listener.onWrite(index, highestPosition);
 
     if (positionListener != null) {
       positionListener.accept(highestPosition);
     }
-    listener.onCommit(index);
+    listener.onCommit(index, highestPosition);
     commitListeners.forEach(CommitListener::onCommit);
   }
 

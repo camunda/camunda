@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
@@ -22,6 +22,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -36,7 +37,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class InterPartitionCommandReceiverTest {
@@ -62,13 +62,14 @@ final class InterPartitionCommandReceiverTest {
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then - sent message can be written to log stream
-    verify(logStreamWriter).tryWrite(Mockito.<LogAppendEntry>any());
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   private static LogStreamWriter getLogStreamWriter() {
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    when(logStreamWriter.tryWrite(any(LogAppendEntry.class))).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
     return logStreamWriter;
   }
 
@@ -122,7 +123,7 @@ final class InterPartitionCommandReceiverTest {
 
     // then
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
-    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
     final var metadataWriter = entryCaptor.getValue().recordMetadata();
     final var metadataBuffer = new ExpandableArrayBuffer();
     final var metadata = new RecordMetadata();
@@ -159,7 +160,7 @@ final class InterPartitionCommandReceiverTest {
 
     // then
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
-    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
     final var valueWriter = entryCaptor.getValue().recordValue();
     assertThat(valueWriter).isEqualTo(recordValue);
   }
@@ -189,7 +190,7 @@ final class InterPartitionCommandReceiverTest {
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
     assertThat(entryCaptor.getValue().key()).isEqualTo(recordKey);
   }
 
@@ -215,7 +216,7 @@ final class InterPartitionCommandReceiverTest {
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    verify(logStreamWriter).tryWrite(any(WriteContext.class), entryCaptor.capture());
     assertThat(entryCaptor.getValue().key()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
