@@ -13,7 +13,7 @@
     "@loadable/component": "^5.15.3",
     "@monaco-editor/react": "4.6.0",
     "@types/loadable__component": "5.13.9",
-    "bpmn-js": "17.6.1",
+    "bpmn-js": "17.6.2",
     "bpmn-moddle": "9.0.1",
     "date-fns": "3.6.0",
     "dmn-js": "16.3.0",
@@ -32,7 +32,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.77.0",
     "serve": "14.2.3",
-    "styled-components": "6.1.9",
+    "styled-components": "6.1.10",
     "stylis": "4.3.2"
   },
   "scripts": {
