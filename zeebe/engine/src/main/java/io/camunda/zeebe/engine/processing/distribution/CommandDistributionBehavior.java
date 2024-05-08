@@ -45,6 +45,8 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionDistributing =
       new CommandDistributionRecord();
+  private final CommandDistributionRecord commandDistributionAcknowledge =
+      new CommandDistributionRecord();
 
   public CommandDistributionBehavior(
       final Writers writers,
@@ -151,7 +153,7 @@ public final class CommandDistributionBehavior {
   public <T extends UnifiedRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
     final long distributionKey = command.getKey();
     final var distributionRecord =
-        new CommandDistributionRecord()
+        commandDistributionAcknowledge
             .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setIntent(command.getIntent());
