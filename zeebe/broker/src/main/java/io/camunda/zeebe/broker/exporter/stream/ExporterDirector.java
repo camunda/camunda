@@ -198,30 +198,31 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(
-        () -> {
-          final Optional<ExporterContainer> optionalContainer =
-              containers.stream().filter(c -> c.getId().equals(exporterId)).findFirst();
+    return actor.call(() -> removeExporter(exporterId));
+  }
 
-          if (optionalContainer.isEmpty()) {
-            LOG.debug("Exporter '{}' is not found. It may be already disabled.", exporterId);
-            return;
-          }
+  private void removeExporter(final String exporterId) {
+    final Optional<ExporterContainer> optionalContainer =
+        containers.stream().filter(c -> c.getId().equals(exporterId)).findFirst();
 
-          final var container = optionalContainer.get();
-          container.close();
-          containers.remove(container);
-          state.removeExporterState(exporterId);
-          // After removing this exporter, the exporter index has changed. Reset it so that we don't
-          // miss to export the record to any of the exporters whose index has changed.
-          recordExporter.resetExporterIndex();
-          LOG.debug("Exporter '{}' is disabled.", exporterId);
+    if (optionalContainer.isEmpty()) {
+      LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId);
+      return;
+    }
 
-          if (containers.isEmpty()) {
-            LOG.info("No exporters are enabled. Closing the exporter director '{}'.", name);
-            actor.close();
-          }
-        });
+    final var container = optionalContainer.get();
+    container.close();
+    containers.remove(container);
+    state.removeExporterState(exporterId);
+    // After removing this exporter, the exporter index has changed. Reset it so that we don't
+    // miss to export the record to any of the exporters whose index has changed.
+    recordExporter.resetExporterIndex();
+    LOG.debug("Exporter '{}' is removed.", exporterId);
+
+    if (containers.isEmpty()) {
+      LOG.info("No exporters are configured. Closing the exporter director '{}'.", name);
+      actor.close();
+    }
   }
 
   public ActorFuture<ExporterPhase> getPhase() {
