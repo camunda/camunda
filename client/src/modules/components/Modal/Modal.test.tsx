@@ -54,3 +54,23 @@ it('should stop propagation of events', () => {
   });
   expect(spy).toHaveBeenCalled();
 });
+
+it('should set aria label from modal header title when no label', () => {
+  const node = shallow(
+    <Modal open>
+      <Modal.Header title="Title" />
+    </Modal>
+  );
+
+  expect(node.find(ComposedModal).prop('aria-label')).toEqual('Title');
+});
+
+it('should set aria label from modal header label', () => {
+  const node = shallow(
+    <Modal open>
+      <Modal.Header title="Title" label="Label" />
+    </Modal>
+  );
+
+  expect(node.find(ComposedModal).prop('aria-label')).toEqual('Label');
+});

@@ -5,7 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {ComponentProps, ComponentPropsWithoutRef, forwardRef} from 'react';
+import {
+  Children,
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactElement,
+  ReactNode,
+  createElement,
+  forwardRef,
+  isValidElement,
+} from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {ComposedModal, ModalBody, ModalHeader, ModalFooter} from '@carbon/react';
@@ -22,6 +31,7 @@ export default function Modal({children, className, isOverflowVisible, ...props}
     : ReactDOM.createPortal(
         <ComposedModal
           {...props}
+          aria-label={getAriaLabel(children)}
           className={classnames('Modal', {overflowVisible: isOverflowVisible}, className)}
         >
           {props.open && children}
@@ -54,3 +64,40 @@ Modal.Content = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<'div'>>((pro
     />
   );
 });
+
+// In @carbon/react implementation Modal's aria label comes from ModalHeader's label prop.
+// Because we are using our own Modal.Header component, and we only use title and not label, we have to prepare the aria label manually.
+// See ComposedModal.tsx from @carbon/react for reference:
+// https://github.com/carbon-design-system/carbon/blob/main/packages/react/src/components/ComposedModal/ComposedModal.tsx
+function getAriaLabel(children: ReactNode): string | undefined {
+  const headerElement = Children.toArray(children).find(
+    (child): child is ReactElement<ComponentProps<typeof Modal.Header>, typeof Modal.Header> =>
+      isValidElement(child) && child.type === createElement(Modal.Header).type
+  );
+
+  if (!headerElement) {
+    return undefined;
+  }
+
+  const {title, label} = headerElement.props;
+
+  return getReactNodeTextContent(label || title);
+}
+
+function getReactNodeTextContent(node: ReactNode): string {
+  if (!node) {
+    return '';
+  }
+
+  if (typeof node === 'string' || typeof node === 'number') {
+    return node.toString();
+  }
+  if (node instanceof Array) {
+    return node.map(getReactNodeTextContent).join('');
+  }
+  if (isValidElement(node)) {
+    return getReactNodeTextContent(node.props.children);
+  }
+
+  return '';
+}
