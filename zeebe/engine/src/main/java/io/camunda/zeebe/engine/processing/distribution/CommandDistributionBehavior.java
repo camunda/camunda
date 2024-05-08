@@ -98,6 +98,8 @@ public final class CommandDistributionBehavior {
       return;
     }
 
+    commandDistributionStarted.reset();
+
     final var distributionRecord =
         commandDistributionStarted
             .setPartitionId(currentPartitionId)
@@ -118,6 +120,8 @@ public final class CommandDistributionBehavior {
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
     final var intent = distributionRecord.getIntent();
+
+    commandDistributionDistributing.reset();
 
     // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
     // reaching the max message size we don't set the record value here.
@@ -152,6 +156,9 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
     final long distributionKey = command.getKey();
+
+    commandDistributionAcknowledge.reset();
+
     final var distributionRecord =
         commandDistributionAcknowledge
             .setPartitionId(currentPartitionId)
