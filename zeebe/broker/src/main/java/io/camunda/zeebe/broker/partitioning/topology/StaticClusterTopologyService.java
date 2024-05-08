@@ -41,10 +41,7 @@ public class StaticClusterTopologyService implements ClusterTopologyService {
           brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
 
       final var staticConfiguration =
-          PartitionDistributionResolver.getStaticConfiguration(
-              brokerConfiguration.getCluster(),
-              brokerConfiguration.getExperimental().getPartitioning(),
-              localMember);
+          StaticConfigurationGenerator.getStaticConfiguration(brokerConfiguration, localMember);
 
       partitionDistribution =
           new PartitionDistribution(staticConfiguration.generatePartitionDistribution());

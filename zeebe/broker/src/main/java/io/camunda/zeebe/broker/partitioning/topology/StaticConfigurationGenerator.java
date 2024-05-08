@@ -14,33 +14,52 @@ import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributor;
 import io.camunda.zeebe.broker.partitioning.distribution.FixedPartitionDistributorBuilder;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Utility class to determine partition distribution from the given cluster configuration. */
-public final class PartitionDistributionResolver {
+public final class StaticConfigurationGenerator {
 
-  private PartitionDistributionResolver() {}
+  private StaticConfigurationGenerator() {}
 
   public static StaticConfiguration getStaticConfiguration(
-      final ClusterCfg clusterCfg,
-      final PartitioningCfg partitioningCfg,
-      final MemberId localMemberId) {
-    final var allMembers = PartitionDistributionResolver.getRaftGroupMembers(clusterCfg);
+      final BrokerCfg brokerCfg, final MemberId localMemberId) {
+    final var clusterCfg = brokerCfg.getCluster();
+    final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
+    final var allMembers = StaticConfigurationGenerator.getRaftGroupMembers(clusterCfg);
+
+    final var commonConfig = generateConfig(brokerCfg);
 
     return new StaticConfiguration(
-        PartitionDistributionResolver.getPartitionDistributor(partitioningCfg),
+        StaticConfigurationGenerator.getPartitionDistributor(partitioningCfg),
         allMembers,
         localMemberId,
-        PartitionDistributionResolver.getSortedPartitionIds(clusterCfg.getPartitionsCount()),
-        clusterCfg.getReplicationFactor());
+        StaticConfigurationGenerator.getSortedPartitionIds(clusterCfg.getPartitionsCount()),
+        clusterCfg.getReplicationFactor(),
+        commonConfig);
+  }
+
+  private static DynamicPartitionConfig generateConfig(final BrokerCfg brokerCfg) {
+    final Map<String, ExporterState> exporters = new HashMap<>();
+    brokerCfg
+        .getExporters()
+        .forEach(
+            (exporterId, ignore) -> exporters.put(exporterId, new ExporterState(State.ENABLED)));
+    return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
   }
 
   static PartitionDistributor getPartitionDistributor(final PartitioningCfg partitionCfg) {
