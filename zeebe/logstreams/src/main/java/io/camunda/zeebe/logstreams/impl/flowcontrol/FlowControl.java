@@ -11,10 +11,12 @@ import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.CommandRateLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -25,20 +27,26 @@ public final class FlowControl implements AppendListener {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
   private final Limiter<Void> appendLimiter;
+  private final RequestLimiter<Intent> requestLimiter;
   private final LogStreamMetrics metrics;
   private final ConcurrentSkipListMap<Long, InFlightEntry> inFlightEntries =
       new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
-    this(metrics, VegasLimit.newDefault());
+    this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
   }
 
-  public FlowControl(final LogStreamMetrics metrics, final Limit appendLimit) {
+  public FlowControl(
+      final LogStreamMetrics metrics, final Limit appendLimit, final Limit requestLimit) {
     this.metrics = metrics;
     appendLimiter =
         appendLimit != null
             ? AppendLimiter.builder().limit(appendLimit).metrics(metrics).build()
             : new NoopLimiter();
+    requestLimiter =
+        requestLimit != null
+            ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
+            : new NoopRequestLimiter<>();
   }
 
   /**
