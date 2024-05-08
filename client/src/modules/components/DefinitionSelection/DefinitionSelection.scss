@@ -5,6 +5,10 @@
     max-width: max-content;
   }
 
+  .cds--list-box {
+    background-color: var(--cds-field-02);
+  }
+
   .container {
     display: flex;
     flex-grow: 1;

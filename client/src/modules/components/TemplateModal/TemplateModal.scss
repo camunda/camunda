@@ -18,7 +18,7 @@
 
     .noProcessHint {
       font-size: 14px;
-      color: var(--grey-lighten-56);
+      color: var(--cds-text-secondary);
     }
   }
 
@@ -41,8 +41,7 @@
       display: flex;
       flex-direction: column;
       flex-basis: 0;
-      border-radius: 3px;
-      border: solid 1px var(--silver-darken-87);
+      border: solid 1px var(--cds-border-subtle);
       overflow-y: auto;
       position: relative;
 
@@ -55,7 +54,7 @@
         min-height: 0;
 
         &:not(:last-child) {
-          border-bottom: 1px solid var(--silver-darken-87);
+          border-bottom: 1px solid var(--cds-border-subtle);
         }
 
         .title {
@@ -80,7 +79,7 @@
         top: 50%;
         transform: translateY(-50%);
         align-self: center;
-        color: var(--grey-lighten-56);
+        color: var(--cds-text-secondary);
         font-size: 14px;
 
         li {
@@ -92,7 +91,7 @@
 
   .configurationSelection {
     padding: 20px 0px 20px 20px;
-    border-left: 1px solid var(--silver-darken-87);
+    border-left: 1px solid var(--cds-border-subtle);
     overflow-y: auto;
 
     .templateContainer {
@@ -107,8 +106,9 @@
         width: 100%;
         padding: 1px;
         margin-bottom: 20px;
-        background-color: var(--white);
+        background-color: var(--cds-field);
         text-align: left;
+        border-radius: 0;
 
         &:disabled {
           opacity: 0.3;
@@ -116,11 +116,11 @@
 
         &.active {
           padding: 0;
-          border: 2px solid var(--blue-base-65);
+          border: 2px solid var(--cds-border-interactive);
 
           .name,
           .description {
-            background-color: var(--blue-lighten-93);
+            background-color: var(--cds-highlight);
           }
         }
 
@@ -132,7 +132,7 @@
           }
 
           .description {
-            color: var(--grey-base-40);
+            color: var(--cds-text-secondary);
             font-size: 12px;
             line-height: 1.5;
             padding: 0 10px;
@@ -150,7 +150,6 @@
         }
 
         .name {
-          color: var(--grey-darken-23);
           font-size: 14px;
           font-weight: 500;
           min-height: 40px;
