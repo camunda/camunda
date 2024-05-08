@@ -99,7 +99,7 @@ public class MigrateCallActivityTest {
   }
 
   @Test
-  public void shouldContinueFlowAfterMigratingParentProcessInstance() {
+  public void shouldAllowToContinueFlowAfterMigratingParentProcessInstance() {
     // given
     final String processId = helper.getBpmnProcessId() + "_source";
     final String childProcessId = helper.getBpmnProcessId() + "_child";
