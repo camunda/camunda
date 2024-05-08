@@ -38,14 +38,12 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -332,11 +330,6 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public CommandResponseWriter getCommandResponseWriter() {
-    return null;
-  }
-
-  @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener() {
     return null;
   }
 
