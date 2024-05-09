@@ -21,8 +21,8 @@ github.com/asaskevich/govalidator
 # github.com/cenkalti/backoff/v4 v4.2.1
 ## explicit; go 1.18
 github.com/cenkalti/backoff/v4
-# github.com/containerd/containerd v1.7.12
-## explicit; go 1.19
+# github.com/containerd/containerd v1.7.15
+## explicit; go 1.21
 github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/log
 github.com/containerd/containerd/pkg/userns
@@ -199,13 +199,14 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.30.0
+# github.com/testcontainers/testcontainers-go v0.31.0
 ## explicit; go 1.21
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/exec
 github.com/testcontainers/testcontainers-go/internal
 github.com/testcontainers/testcontainers-go/internal/config
 github.com/testcontainers/testcontainers-go/internal/core
+github.com/testcontainers/testcontainers-go/internal/core/network
 github.com/testcontainers/testcontainers-go/wait
 # github.com/tklauser/go-sysconf v0.3.12
 ## explicit; go 1.13
@@ -240,10 +241,18 @@ go.opentelemetry.io/otel/metric/embedded
 ## explicit; go 1.20
 go.opentelemetry.io/otel/trace
 go.opentelemetry.io/otel/trace/embedded
+# golang.org/x/crypto v0.23.0
+## explicit; go 1.18
+golang.org/x/crypto/blowfish
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/curve25519/internal/field
+golang.org/x/crypto/internal/alias
+golang.org/x/crypto/internal/poly1305
+golang.org/x/crypto/ssh
+golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 ## explicit; go 1.20
-golang.org/x/exp/constraints
-golang.org/x/exp/slices
 # golang.org/x/mod v0.16.0
 ## explicit; go 1.18
 golang.org/x/mod/semver
@@ -263,6 +272,7 @@ golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
 # golang.org/x/sys v0.20.0
 ## explicit; go 1.18
+golang.org/x/sys/cpu
 golang.org/x/sys/execabs
 golang.org/x/sys/unix
 golang.org/x/sys/windows
