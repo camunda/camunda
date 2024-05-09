@@ -1934,7 +1934,7 @@ __metadata:
     "@storybook/react": "npm:^8.0.4"
     "@storybook/react-webpack5": "npm:^8.0.4"
     "@storybook/test": "npm:^8.0.4"
-    "@types/carbon__icons-react": "npm:^11.26.1"
+    "@types/carbon__icons-react": "npm:11.26.2"
     classnames: "npm:^2.3.2"
     prop-types: "npm:^15.8.1"
     react: "npm:17.0.2"
@@ -3722,7 +3722,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/carbon__icons-react@npm:^11.26.1":
+"@types/carbon__icons-react@npm:11.26.2":
   version: 11.26.2
   resolution: "@types/carbon__icons-react@npm:11.26.2"
   checksum: 10c0/18e9e9ad1fd0dd32ec259d5f9e2b093e98ab382323c01fdbbfa450d99f69c4e482a2f9c762b139a8b01893ded9a89a0476603257c1502b4cc027300cdd67be8f
