@@ -17,6 +17,7 @@ type Events =
       eventName:
         | 'task-unassigned'
         | 'task-assigned'
+        | 'task-manual-save'
         | 'processes-consent-refused'
         | 'processes-consent-accepted'
         | 'processes-fetch-failed'

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {act, render, screen, waitFor, within} from 'modules/testing-library';
 import {Variables} from './index';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
@@ -1224,6 +1224,7 @@ describe('<Variables />', () => {
       previewValue: '"1112"',
       name: 'myVar1',
       isValueTruncated: false,
+      draft: null,
     };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
@@ -1295,7 +1296,7 @@ describe('<Variables />', () => {
     await user.click(screen.getByDisplayValue('"111'));
 
     expect(
-      await screen.findByDisplayValue(mockVariable.value),
+      await screen.findByDisplayValue(mockVariable.value!),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(mockNewValue)).toBeInTheDocument();
   });
@@ -1376,6 +1377,214 @@ describe('<Variables />', () => {
     );
 
     expect(await screen.findByText('"000...')).toBeInTheDocument();
+  });
+
+  it('should populate draft variables', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json(variableMocks.variablesWithDraft);
+          }
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {status: 400},
+          );
+        },
+      ),
+    );
+    const mockOnSubmit = vi.fn();
+    render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-form-table')).toBeInTheDocument();
+    });
+
+    const rows = within(
+      screen.getByTestId('variables-form-table'),
+    ).getAllByRole('row');
+
+    expect(rows).toHaveLength(4);
+    expect(within(rows[1]).getByTitle(/myVar value/i)).toHaveValue('"0001"');
+    expect(within(rows[2]).getByTitle(/isCool value/i)).toHaveValue('"yes"');
+    expect(within(rows[3]).getByText(/1st variable name/i)).toBeInTheDocument();
+    expect(within(rows[3]).getByTitle(/name/i)).toHaveValue('draft');
+    expect(within(rows[3]).getByTitle(/value/i)).toHaveValue('"draft string"');
+  });
+
+  it('should show a saved message for 5 seconds when save completes successfully', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json(variableMocks.variablesWithDraft);
+          }
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {status: 400},
+          );
+        },
+      ),
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables',
+        async () => {
+          return new HttpResponse(undefined, {status: 204});
+        },
+      ),
+    );
+    const mockOnSubmit = vi.fn();
+    const {user} = render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /save/i})).toBeVisible();
+    });
+
+    await user.clear(screen.getByLabelText('myVar'));
+    await user.type(screen.getByLabelText('myVar'), '"lorem ipsum"');
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /save/i})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('status')).getByText('Saved'),
+      ).toBeVisible();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('should show an error message when save completes unsuccessfully', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json(variableMocks.variablesWithDraft);
+          }
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {status: 400},
+          );
+        },
+      ),
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables',
+        async () => {
+          return new HttpResponse(undefined, {status: 500});
+        },
+      ),
+    );
+    const mockOnSubmit = vi.fn();
+    const {user} = render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /save/i})).toBeVisible();
+    });
+
+    await user.clear(screen.getByLabelText('myVar'));
+    await user.type(screen.getByLabelText('myVar'), '"lorem ipsum"');
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /save/i})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: /save/i}));
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('status')).getByText(
+          'Unable to save the task. Please try again.',
+        ),
+      ).toBeVisible();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('status')).getByText(
+          'Unable to save the task. Please try again.',
+        ),
+      ).toBeVisible();
+    });
   });
 
   describe('Duplicate variable validations', () => {

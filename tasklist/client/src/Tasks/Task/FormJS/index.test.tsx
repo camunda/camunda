@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {act, render, screen, waitFor, within} from 'modules/testing-library';
 import {
   assignedTaskWithForm,
   unassignedTaskWithForm,
@@ -85,6 +85,13 @@ describe('<FormJS />', () => {
         {once: true},
       ),
     );
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should render form for unassigned task', async () => {
@@ -517,13 +524,138 @@ describe('<FormJS />', () => {
     );
 
     expect(await screen.findByText('foo')).toBeInTheDocument();
+  });
+
+  it('should populate draft variables', async () => {
+    nodeMockServer.use(
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variablesWithDraft);
+        },
+        {once: true},
+      ),
+    );
+
+    render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
 
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /complete task/i,
-        }),
-      ).toBeEnabled(),
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
     );
+  });
+
+  it('should show a saved message for 5 seconds when save completes successfully', async () => {
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async () => {
+          return HttpResponse.json(variableMocks.variablesWithDraft);
+        },
+      ),
+      http.post<never, never>('/v1/tasks/:taskId/variables', async () => {
+        return new HttpResponse(undefined, {status: 204});
+      }),
+    );
+    const {user} = render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle(/save current progress/i)).not.toHaveAttribute(
+        'disabled',
+      );
+    });
+
+    await user.click(screen.getByTitle(/save current progress/i));
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('status')).getByText('Saved'),
+      ).toBeVisible();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
+  it('should show an error message when save completes unsuccessfully', async () => {
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async () => {
+          return HttpResponse.json(variableMocks.variablesWithDraft);
+        },
+      ),
+      http.post<never, never>('/v1/tasks/:taskId/variables', async () => {
+        return new HttpResponse(undefined, {status: 500});
+      }),
+    );
+    const {user} = render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTitle(/save current progress/i)).not.toHaveAttribute(
+        'disabled',
+      );
+    });
+
+    await user.click(screen.getByTitle(/save current progress/i));
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('status')).getByText(
+          'Unable to save the task. Please try again.',
+        ),
+      ).toBeVisible();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(
+      within(screen.getByRole('status')).getByText(
+        'Unable to save the task. Please try again.',
+      ),
+    ).toBeVisible();
   });
 });

@@ -6,22 +6,35 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-  width: 100%;
-  background-color: var(--cds-background);
-  padding-top: var(--cds-spacing-04);
-  padding-bottom: var(--cds-spacing-04);
+@use '@carbon/type';
+@use '@carbon/layout';
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.hidden {
+  display: none;
 }
 
-.row {
+@mixin message {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  text-align: right;
   flex-direction: row;
   flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+}
+
+.savedMessage {
+  @include message;
+
+  svg {
+    fill: var(--cds-support-success);
+  }
+}
+
+.saveErrorMessage {
+  @include message;
+
+  svg {
+    fill: var(--cds-support-error);
+  }
 }

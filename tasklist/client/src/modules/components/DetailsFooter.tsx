@@ -10,13 +10,18 @@ import {TaskDetailsRow} from './TaskDetailsLayout';
 import styles from './DetailsFooter.module.scss';
 
 type Props = {
+  className?: string;
+  status?: React.ReactNode;
   children: React.ReactNode;
 };
 
-const DetailsFooter: React.FC<Props> = ({children}) => {
+const DetailsFooter: React.FC<Props> = ({className, children, status}) => {
   return (
     <div className={styles.container}>
-      <TaskDetailsRow className={styles.row}>{children}</TaskDetailsRow>
+      <TaskDetailsRow className={styles.row}>
+        <div role="status">{status}</div>
+        <div className={className}>{children}</div>
+      </TaskDetailsRow>
     </div>
   );
 };

@@ -27,15 +27,23 @@ type CurrentUser = {
   groups: string[];
 };
 
-type FullVariable = {
-  id: string;
-  name: string;
+type DraftVariable = {
   value: string;
   previewValue: string;
   isValueTruncated: false;
 };
 
+type FullVariable = {
+  draft: DraftVariable | null;
+  id: string;
+  name: string;
+  value: string | null;
+  previewValue: string | null;
+  isValueTruncated: false;
+};
+
 type TruncatedVariable = {
+  draft: DraftVariable | null;
   id: string;
   name: string;
   value: null;

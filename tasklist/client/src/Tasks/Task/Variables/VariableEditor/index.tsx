@@ -79,6 +79,10 @@ const VariableEditor: React.FC<Props> = ({
 }) => {
   const {dirtyFields} = useFormState<FormValues, Partial<FormValues>>();
 
+  const nonDraftVariables = variables.filter(
+    (v) => v.value !== null || v.previewValue !== null,
+  );
+
   return (
     <StructuredListWrapper className={styles.list} isCondensed>
       <StructuredListHead>
@@ -94,7 +98,7 @@ const VariableEditor: React.FC<Props> = ({
       </StructuredListHead>
       <StructuredListBody>
         {readOnly ? (
-          variables.map((variable) => (
+          nonDraftVariables.map((variable) => (
             <StructuredListRow key={variable.name}>
               <StructuredListCell
                 className={cn(styles.listCell, styles.cellName)}
@@ -119,7 +123,7 @@ const VariableEditor: React.FC<Props> = ({
           ))
         ) : (
           <>
-            {variables.map((variable) => (
+            {nonDraftVariables.map((variable) => (
               <StructuredListRow key={variable.name}>
                 <StructuredListCell
                   className={cn(styles.listCell, styles.cellName)}

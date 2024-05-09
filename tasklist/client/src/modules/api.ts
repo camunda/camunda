@@ -212,6 +212,26 @@ const api = {
       },
     });
   },
+  saveVariables: ({
+    taskId,
+    variables,
+  }: {
+    taskId: Task['id'];
+    variables: Pick<Variable, 'name' | 'value'>[];
+  }) => {
+    const body = {
+      variables,
+    };
+
+    return new Request(getFullURL(`/v1/tasks/${taskId}/variables`), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
   searchTasks: (body: TasksSearchBody) => {
     return new Request(getFullURL('/v1/tasks/search'), {
       ...BASE_REQUEST_OPTIONS,
