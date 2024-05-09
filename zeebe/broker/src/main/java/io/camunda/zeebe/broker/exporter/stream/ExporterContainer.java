@@ -56,10 +56,16 @@ final class ExporterContainer implements Controller {
   }
 
   void initContainer(
-      final ActorControl actor, final ExporterMetrics metrics, final ExportersState state) {
+      final ActorControl actor,
+      final ExporterMetrics metrics,
+      final ExportersState state,
+      final ExporterPhase phase) {
     this.actor = actor;
     this.metrics = metrics;
     exportersState = state;
+    if (phase == ExporterPhase.SOFT_PAUSED) {
+      softPauseExporter();
+    }
   }
 
   void initPosition() {

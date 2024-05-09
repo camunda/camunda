@@ -318,7 +318,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void initContainers() throws Exception {
     for (final ExporterContainer container : containers) {
-      container.initContainer(actor, metrics, state);
+      container.initContainer(actor, metrics, state, exporterPhase);
       container.configureExporter();
     }
 
