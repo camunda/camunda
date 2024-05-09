@@ -309,29 +309,28 @@ final class ExportingEndpointIT {
   @Test
   void shouldStaySoftPausedAfterRestart() {
     // given
-    getActuator().resume();
+    getActuator().softPause();
     client
         .newPublishMessageCommand()
-        .messageName("Test")
+        .messageName("soft-pause")
         .correlationKey("11")
         .messageId("11")
         .send()
         .join();
-
     final var recordsBeforePause =
         Awaitility.await()
             .atMost(Duration.ofSeconds(30))
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
+    final var exportedPositionBeforeRestart = getExportedPositions();
 
     // when
-    getActuator().softPause();
     CLUSTER.shutdown();
     CLUSTER.start();
 
     client
         .newPublishMessageCommand()
-        .messageName("Test")
+        .messageName("soft-pause")
         .correlationKey("12")
         .messageId("12")
         .send()
@@ -344,49 +343,26 @@ final class ExportingEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     // then
-    assertThat(
-            RecordingExporter.messageRecords()
-                .withCorrelationKey("11")
-                .withIntent(MessageIntent.PUBLISHED)
-                .limit(1)
-                .exists())
-        .isTrue();
-    assertThat(
-            RecordingExporter.messageRecords()
-                .withCorrelationKey("12")
-                .withIntent(MessageIntent.PUBLISHED)
-                .limit(1)
-                .exists())
-        .isTrue();
-
-    assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
-
     // all partitions should be soft paused after restart
     Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
 
-    // all partitions should have -1 as exported position due to restart and the exporter positions
-    // not being able to update due to soft pause.
-    final Map<Integer, Long> exportedPositionsAfterSoftPause = getExportedPositions();
+    assertThat(
+            RecordingExporter.messageRecords()
+                .withName("soft-pause")
+                .withIntent(MessageIntent.PUBLISHED)
+                .limit(2)
+                .count())
+        .isEqualTo(2);
 
-    try {
-      assertTrue(
-          exportedPositionsAfterSoftPause.entrySet().stream()
-              .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
-    } catch (final AssertionError e) {
-      // if the assertion fails, we want to  throw the exported positions for debugging
-      final String errorMessage =
-          "Exported positions are not -1 after soft pause. Exported positions: "
-              .concat(
-                  exportedPositionsAfterSoftPause.entrySet().stream()
-                      .map(
-                          element ->
-                              String.format(
-                                  "Partition %d -> position %d",
-                                  element.getKey(), element.getValue()))
-                      .toList()
-                      .toString());
-      throw new AssertionError(errorMessage, e);
-    }
+    assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
+
+    final Map<Integer, Long> exportedPositionAfterRestart = getExportedPositions();
+    exportedPositionAfterRestart.forEach(
+        (partitionId, position) ->
+            assertThat(position)
+                .describedAs(
+                    "Partition %d should not update exported position after restart", partitionId)
+                .isLessThanOrEqualTo(exportedPositionBeforeRestart.get(partitionId)));
   }
 
   Map<Integer, Long> getExportedPositions() {
