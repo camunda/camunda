@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import java.time.Duration;
@@ -195,6 +196,11 @@ final class ExporterContainer implements Controller {
   void undoSoftPauseExporter() {
     exporterIsSoftPaused = false;
     updateExporterState(lastAcknowledgedPosition, lastExportedMetadata);
+  }
+
+  @VisibleForTesting
+  public boolean isExporterIsSoftPaused() {
+    return exporterIsSoftPaused;
   }
 
   private void export(final Record<?> record) {
