@@ -83,12 +83,18 @@ class FormJSDetailsPage {
     await this.page.getByText(value).click();
   }
 
-  async getLocatorsByLabel(label: string, index: number) {
-    const labelValues: string[] = [];
-    for (let i = 0; i < index; i++) {
-      labelValues.push(await this.page.getByLabel(label).nth(i).inputValue());
+  async maphDynamicListItems<MappedValue>(
+    locator: Locator,
+    fn: (value: Locator, index: number, array: Locator[]) => MappedValue,
+  ): Promise<Array<MappedValue>> {
+    const elements = await locator.all();
+    const mapped: Array<MappedValue> = [];
+
+    for (const element of elements) {
+      mapped.push(fn(element, elements.indexOf(element), elements));
     }
-    return labelValues;
+
+    return mapped;
   }
 }
 export {FormJSDetailsPage};
