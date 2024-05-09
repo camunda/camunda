@@ -48,10 +48,14 @@ class FormJSDetailsPage {
     await this.dateInput.press('Enter');
   }
 
-  async fillTextFields(label: string, value: string, index: number) {
-    for (let i = 0; i < index; i++) {
-      const locator: Locator = this.page.getByLabel(label).nth(i);
-      await locator.fill(value + (i + 1));
+  async forEachDynamicListItem(
+    locator: Locator,
+    fn: (value: Locator, index: number, array: Locator[]) => void,
+  ) {
+    const elements = await locator.all();
+
+    for (const element of elements) {
+      fn(element, elements.indexOf(element), elements);
     }
   }
   async fillDateField(label: string, value: string) {
