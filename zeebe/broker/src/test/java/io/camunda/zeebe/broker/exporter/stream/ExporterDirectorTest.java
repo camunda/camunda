@@ -664,6 +664,29 @@ public final class ExporterDirectorTest {
     assertThat(exporters.get(1).getExportedRecords()).isEmpty();
   }
 
+  @Test
+  public void shouldStartContainersSoftPaused() {
+    // All containers of an exporter should be initialized as soft paused if this is also
+    // the exporter director phase on initialization. This is to prevent that the
+    // that exporter containers can start to update the exported position before the exporter
+    // director is ready. When soft paused new events are exported the position should not update.
+
+    // when
+    rule.startExporterDirector(exporterDescriptors, ExporterPhase.SOFT_PAUSED);
+
+    writeEvent();
+    writeEvent();
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 2);
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 2);
+
+    // then the position will not be updated.
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1)).isEqualTo(-1);
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+
+    assertThat(rule.getDirector().areAllExporterContainersSoftPaused()).isTrue();
+  }
+
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);
