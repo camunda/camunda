@@ -98,6 +98,11 @@ public final class ExporterRule implements TestRule {
   }
 
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
+    startExporterDirector(exporterDescriptors, ExporterPhase.EXPORTING);
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors, final ExporterPhase phase) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
@@ -114,7 +119,7 @@ public final class ExporterRule implements TestRule {
             .descriptors(exporterDescriptors)
             .positionsToSkipFilter(positionsToSkipFilter);
 
-    director = new ExporterDirector(context, ExporterPhase.EXPORTING);
+    director = new ExporterDirector(context, phase);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
