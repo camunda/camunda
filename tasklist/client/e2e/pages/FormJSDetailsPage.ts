@@ -78,7 +78,7 @@ class FormJSDetailsPage {
     }
   }
 
-  async selectValueFromDropdown(label: string, value: string) {
+  async selectDropdownOption(label: string, value: string) {
     await this.page.getByText(label).click();
     await this.page.getByText(value).click();
   }
