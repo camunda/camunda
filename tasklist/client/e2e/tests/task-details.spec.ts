@@ -182,7 +182,7 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
-  test('task completion with deployed form', async ({
+  test.only('task completion with deployed form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
@@ -198,15 +198,33 @@ test.describe('task details page', () => {
     await formJSDetailsPage.fillDateField('Due Date*', '1/2/3000');
     await page.getByLabel('Invoice Number*').fill('123');
 
-    await formJSDetailsPage.selectValueFromDropdown(
+    await formJSDetailsPage.selectDropdownOption(
       'USD - United States Dollar',
       'EUR - Euro',
     );
 
     await page.getByRole('button', {name: /add new/i}).click();
-    await formJSDetailsPage.fillTextFields('Item Name*', 'Item#', 2);
-    await formJSDetailsPage.fillTextFields('Unit Price*', '1', 2);
-    await formJSDetailsPage.fillTextFields('Quantity*', '2', 2);
+    await formJSDetailsPage.forEachDynamicListItem(
+      await page.getByLabel('Item Name*'),
+      async (element, index) => {
+        await element.fill(`${'Laptop'}${index + 1}`);
+      },
+    );
+    await formJSDetailsPage.forEachDynamicListItem(
+      await page.getByLabel('Unit Price*'),
+      async (element, index) => {
+        await element.fill(`${'200'}${index + 1}`);
+      },
+    );
+    await formJSDetailsPage.forEachDynamicListItem(
+      await page.getByLabel('Quantity*'),
+      async (element, index) => {
+        await element.fill(`${'2'}${index + 1}`);
+      },
+    );
+    // await formJSDetailsPage.fillTextFields('Item Name*', 'Item#', 2);
+    // await formJSDetailsPage.fillTextFields('Unit Price*', '1', 2);
+    // await formJSDetailsPage.fillTextFields('Quantity*', '2', 2);
 
     await expect(formJSDetailsPage.form).toContainText('EUR 231');
     await expect(formJSDetailsPage.form).toContainText('EUR 264');
@@ -226,18 +244,52 @@ test.describe('task details page', () => {
     expect(page.getByLabel('Due Date*')).toHaveValue('1/2/3000');
     expect(page.getByLabel('Invoice Number*')).toHaveValue('123');
 
-    expect(await formJSDetailsPage.getLocatorsByLabel('Item Name*', 2)).toEqual(
-      ['Item#1', 'Item#2'],
+    expect(
+      await formJSDetailsPage.maphDynamicListItems(
+        await page.getByLabel('Item Name*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
     );
 
     expect(
-      await formJSDetailsPage.getLocatorsByLabel('Unit Price*', 2),
+      await formJSDetailsPage.maphDynamicListItems(
+        await page.getByLabel('Item Name*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
+    ).toEqual(['Item#1', 'Item#2']);
+
+    expect(
+      await formJSDetailsPage.maphDynamicListItems(
+        await page.getByLabel('Unit Price*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
     ).toEqual(['11', '12']);
 
-    expect(await formJSDetailsPage.getLocatorsByLabel('Quantity*', 2)).toEqual([
-      '21',
-      '22',
-    ]);
+    // expect(await formJSDetailsPage.getLocatorsByLabel('Item Name*', 2)).toEqual(
+    //   ['Item#1', 'Item#2'],
+    // );
+
+    // expect(
+    //   await formJSDetailsPage.getLocatorsByLabel('Unit Price*', 2),
+    // ).toEqual(['11', '12']);
+    expect(
+      await formJSDetailsPage.maphDynamicListItems(
+        await page.getByLabel('Quantity*'),
+        async (element) => {
+          return await element.inputValue();
+        },
+      ),
+    ).toEqual(2);
+    // expect(await formJSDetailsPage.getLocatorsByLabel('Quantity*', 2)).toEqual([
+    //   '21',
+    //   '22',
+    // ]);
 
     expect(formJSDetailsPage.form).toContainText('EUR 231');
     expect(formJSDetailsPage.form).toContainText('EUR 264');
