@@ -12,26 +12,32 @@ import jakarta.servlet.Filter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class RestInterceptorConfiguration implements ApplicationContextAware, InitializingBean {
+public class RestFilterConfiguration implements BeanDefinitionRegistryPostProcessor {
 
-  private static ApplicationContext context;
+  private final List<FilterCfg> filterCfgs;
+
+  public RestFilterConfiguration(final List<FilterCfg> filterCfgs) {
+    this.filterCfgs = filterCfgs;
+  }
 
   @Override
-  public void afterPropertiesSet() throws Exception {
+  public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry)
+      throws BeansException {
+    // do nothing
+  }
 
-    final List<FilterCfg> filterCfgs =
-        RestInterceptorConfiguration.context
-            .getBean(GatewayConfiguration.class)
-            .config()
-            .getFilters();
-
+  @Override
+  public void postProcessBeanFactory(final ConfigurableListableBeanFactory beanFactory)
+      throws BeansException {
+    // BeanDefinitionRegistryPostProcessor.super.postProcessBeanFactory(beanFactory);
+    // do nothing
     final AtomicInteger counter = new AtomicInteger(0);
     final FilterRepository filterRepository = new FilterRepository();
     filterRepository
@@ -41,15 +47,7 @@ public class RestInterceptorConfiguration implements ApplicationContextAware, In
             customFilter -> {
               final FilterRegistrationBean<Filter> bean =
                   new FilterRegistrationBean<>(customFilter);
-              RestInterceptorConfiguration.context
-                  .getAutowireCapableBeanFactory()
-                  .initializeBean(bean, String.valueOf(counter.getAndIncrement()));
+              beanFactory.initializeBean(bean, String.valueOf(counter.getAndIncrement()));
             });
-  }
-
-  @Override
-  public void setApplicationContext(final ApplicationContext applicationContext)
-      throws BeansException {
-    RestInterceptorConfiguration.context = applicationContext;
   }
 }

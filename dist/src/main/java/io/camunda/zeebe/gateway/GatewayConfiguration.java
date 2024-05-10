@@ -46,6 +46,11 @@ public final class GatewayConfiguration {
     return config.getMultiTenancy();
   }
 
+  @Bean
+  public RestFilterConfiguration restFilterConfiguration() {
+    return new RestFilterConfiguration(config.getFilters());
+  }
+
   @ConfigurationProperties("zeebe.gateway")
   public static final class GatewayProperties extends GatewayCfg {}
 }
