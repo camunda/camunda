@@ -4,13 +4,18 @@ spring:
     password: ${CAMUNDA_IDENTITY_DATABASE_PASSWORD:}
 
 ---
+
 spring:
-  profiles: h2
+  config:
+    activate:
+      on-profile: h2
   datasource:
     url: jdbc:h2:mem:${CAMUNDA_IDENTITY_DATABASE_NAME:identity-db}
 
 ---
 spring:
-  profiles: postgres
+  config:
+    activate:
+      on-profile: postgres
   datasource:
     url: jdbc:postgresql://${CAMUNDA_IDENTITY_DATABASE_HOST:}:${CAMUNDA_IDENTITY_DATABASE_PORT:}/${CAMUNDA_IDENTITY_DATABASE_NAME:}
