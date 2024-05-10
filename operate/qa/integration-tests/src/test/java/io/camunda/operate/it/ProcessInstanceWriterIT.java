@@ -43,11 +43,6 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Override
-  public void runAdditionalBeforeAllSetup() {
-    // operateTester.deployProcessAndWait("single-task.bpmn");
-  }
-
   @Test
   public void shouldDeleteFinishedInstanceById() throws IOException {
     final Long processInstanceKey = 4503599627370497L;
@@ -182,7 +177,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
     }
   }
 
-  private String getFullIndexNameForDependant(String indexName) {
+  private String getFullIndexNameForDependant(final String indexName) {
     final ProcessInstanceDependant dependant =
         processInstanceDependants.stream()
             .filter(template -> template.getFullQualifiedName().contains(indexName))
