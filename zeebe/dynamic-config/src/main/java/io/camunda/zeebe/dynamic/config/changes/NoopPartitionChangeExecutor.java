@@ -36,4 +36,9 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int partitionId, final Collection<MemberId> members) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
+    return CompletableActorFuture.completed(null);
+  }
 }

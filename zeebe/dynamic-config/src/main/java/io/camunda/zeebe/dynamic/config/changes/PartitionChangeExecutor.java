@@ -59,4 +59,13 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the partition is reconfigured
    */
   ActorFuture<Void> forceReconfigure(final int partitionId, final Collection<MemberId> members);
+
+  /**
+   * Disables the exporter for the given partition.
+   *
+   * @param partitionId id of the partition
+   * @param exporterId id of the exporter to disable
+   * @return a future that completes when the exporter is disabled
+   */
+  ActorFuture<Void> disableExporter(final int partitionId, final String exporterId);
 }
