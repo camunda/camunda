@@ -1,38 +1,24 @@
 # hadolint global ignore=DL3006
 ARG BASE_IMAGE="alpine:3.19.1"
-ARG BASE_DIGEST_AMD64="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
-ARG BASE_DIGEST_ARM64="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE} as prepare
+FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
 
 WORKDIR /tmp/operate
 
-# download operate
+# Download operate
 COPY distro/target/camunda-operate-*.tar.gz operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1 && \
     rm operate.tar.gz
 COPY docker-notice.txt notice.txt
 RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
-### AMD64 base image ###
-# BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
+### Base image ###
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
-ARG BASE_DIGEST_AMD64
-ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
+FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
 
-# Install Tini for amd64
-RUN apk update && apk add --no-cache tini
-
-### ARM64 base image ##
-# BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
-ARG BASE_DIGEST_ARM64
-ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
-
-# Install Tini for arm64
+# Install Tini
 RUN apk update && apk add --no-cache tini
 
 ### Application Image ###
@@ -40,7 +26,7 @@ RUN apk update && apk add --no-cache tini
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
 
-FROM base-${TARGETARCH} as app
+FROM base as app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -74,7 +60,7 @@ LABEL io.k8s.description="Tool for process observability and troubleshooting pro
 EXPOSE 8080
 
 RUN apk update && apk upgrade
-RUN apk add --no-cache bash openjdk17-jre tzdata
+RUN apk add --no-cache bash openjdk21-jre tzdata
 
 WORKDIR /usr/local/operate
 VOLUME /tmp
