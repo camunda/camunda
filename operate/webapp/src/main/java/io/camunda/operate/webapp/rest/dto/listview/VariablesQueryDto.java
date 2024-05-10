@@ -20,13 +20,13 @@ public class VariablesQueryDto {
 
   public VariablesQueryDto() {}
 
-  public VariablesQueryDto(String variableName, String variableValue) {
-    this.name = variableName;
-    this.value = variableValue;
+  public VariablesQueryDto(final String variableName, final String variableValue) {
+    name = variableName;
+    value = variableValue;
   }
 
-  public VariablesQueryDto(String variableName, String[] values) {
-    this.name = variableName;
+  public VariablesQueryDto(final String variableName, final String[] values) {
+    name = variableName;
     this.values = values;
   }
 
@@ -34,8 +34,9 @@ public class VariablesQueryDto {
     return name;
   }
 
-  public void setName(String name) {
+  public VariablesQueryDto setName(final String name) {
     this.name = name;
+    return this;
   }
 
   @Deprecated
@@ -43,15 +44,16 @@ public class VariablesQueryDto {
     return value;
   }
 
-  public void setValue(String value) {
+  public VariablesQueryDto setValue(final String value) {
     this.value = value;
+    return this;
   }
 
   public String[] getValues() {
     return values;
   }
 
-  public VariablesQueryDto setValues(String[] values) {
+  public VariablesQueryDto setValues(final String[] values) {
     this.values = values;
     return this;
   }
@@ -64,7 +66,7 @@ public class VariablesQueryDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
