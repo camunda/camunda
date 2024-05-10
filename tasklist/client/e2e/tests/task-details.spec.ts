@@ -222,9 +222,6 @@ test.describe('task details page', () => {
         await element.fill(`${'2'}${index + 1}`);
       },
     );
-    // await formJSDetailsPage.fillTextFields('Item Name*', 'Item#', 2);
-    // await formJSDetailsPage.fillTextFields('Unit Price*', '1', 2);
-    // await formJSDetailsPage.fillTextFields('Quantity*', '2', 2);
 
     await expect(formJSDetailsPage.form).toContainText('EUR 231');
     await expect(formJSDetailsPage.form).toContainText('EUR 264');
@@ -271,13 +268,6 @@ test.describe('task details page', () => {
       ),
     ).toEqual(['11', '12']);
 
-    // expect(await formJSDetailsPage.getLocatorsByLabel('Item Name*', 2)).toEqual(
-    //   ['Item#1', 'Item#2'],
-    // );
-
-    // expect(
-    //   await formJSDetailsPage.getLocatorsByLabel('Unit Price*', 2),
-    // ).toEqual(['11', '12']);
     expect(
       await formJSDetailsPage.maphDynamicListItems(
         await page.getByLabel('Quantity*'),
@@ -285,11 +275,7 @@ test.describe('task details page', () => {
           return await element.inputValue();
         },
       ),
-    ).toEqual(2);
-    // expect(await formJSDetailsPage.getLocatorsByLabel('Quantity*', 2)).toEqual([
-    //   '21',
-    //   '22',
-    // ]);
+    ).toEqual(['21', '22']);
 
     expect(formJSDetailsPage.form).toContainText('EUR 231');
     expect(formJSDetailsPage.form).toContainText('EUR 264');
