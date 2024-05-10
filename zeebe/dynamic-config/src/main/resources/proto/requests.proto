@@ -40,6 +40,11 @@ message ReassignAllPartitionsRequest {
   bool dryRun = 2;
 }
 
+message ExporterDisableRequest {
+  string exporterId = 1;
+  bool dryRun = 2;
+}
+
 message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }
