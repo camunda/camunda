@@ -47,8 +47,10 @@ public final class LogStreamImpl extends Actor
   private Sequencer sequencer;
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
+  private final Limit appendLimit;
+  private final Limit requestLimit;
   private final LogStreamMetrics logStreamMetrics;
-  private final FlowControl flowControl;
+  private FlowControl flowControl;
 
   LogStreamImpl(
       final String logName,
@@ -65,10 +67,11 @@ public final class LogStreamImpl extends Actor
 
     this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
+    this.appendLimit = appendLimit;
+    this.requestLimit = requestLimit;
     this.logStreamMetrics = logStreamMetrics;
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
-    flowControl = new FlowControl(logStreamMetrics, appendLimit, requestLimit);
   }
 
   @Override
@@ -161,7 +164,14 @@ public final class LogStreamImpl extends Actor
         () -> {
           try {
             if (sequencer == null) {
-              sequencer = createAndScheduleWriteBuffer();
+              flowControl = new FlowControl(logStreamMetrics, appendLimit, requestLimit);
+              sequencer =
+                  new Sequencer(
+                      logStorage,
+                      getWriteBuffersInitialPosition(),
+                      maxFragmentSize,
+                      new SequencerMetrics(partitionId),
+                      flowControl);
             }
             result.complete(sequencer);
           } catch (final Throwable e) {
@@ -210,15 +220,6 @@ public final class LogStreamImpl extends Actor
     }
 
     return initialPosition;
-  }
-
-  private Sequencer createAndScheduleWriteBuffer() {
-    return new Sequencer(
-        logStorage,
-        getWriteBuffersInitialPosition(),
-        maxFragmentSize,
-        new SequencerMetrics(partitionId),
-        flowControl);
   }
 
   private long getLastCommittedPosition() {
