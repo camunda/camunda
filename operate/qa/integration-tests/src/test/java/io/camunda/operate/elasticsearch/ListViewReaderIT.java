@@ -18,6 +18,7 @@ import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.rest.dto.SortingDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -381,6 +382,21 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
     validateResultAgainstProcess(response.getProcessInstances().getFirst(), activeProcess);
   }
 
+  @Test
+  public void testQueryProcessInstancesWithSorting() {
+    final ListViewRequestDto requestDto = createSimpleProcessInstanceQuery();
+    requestDto.setSorting(
+        new SortingDto()
+            .setSortBy(ListViewRequestDto.SORT_BY_PROCESS_NAME)
+            .setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE));
+
+    final var response = listViewReader.queryProcessInstances(requestDto);
+    assertThat(response.getTotalCount()).isEqualTo(2);
+    assertThat(response.getProcessInstances()).hasSize(2);
+    validateResultAgainstProcess(response.getProcessInstances().get(0), completedProcess);
+    validateResultAgainstProcess(response.getProcessInstances().get(1), activeProcess);
+  }
+
   private ListViewRequestDto createSimpleProcessInstanceQuery() {
     return new ListViewRequestDto()
         .setQuery(
@@ -397,5 +413,8 @@ public class ListViewReaderIT extends OperateSearchAbstractIT {
       final ListViewProcessInstanceDto actual, final ProcessInstanceForListViewEntity expected) {
     assertThat(actual.getProcessName()).isEqualTo(expected.getProcessName());
     assertThat(actual.getBpmnProcessId()).isEqualTo(expected.getBpmnProcessId());
+    assertThat(actual.getTenantId()).isEqualTo(expected.getTenantId());
+    assertThat(actual.getId()).isEqualTo(expected.getId());
+    assertThat(actual.getProcessId()).isEqualTo(String.valueOf(expected.getProcessDefinitionKey()));
   }
 }
