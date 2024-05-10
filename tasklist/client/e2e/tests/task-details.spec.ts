@@ -242,21 +242,19 @@ test.describe('task details page', () => {
     await expect(page.getByLabel('Invoice Date*')).toHaveValue('1/1/3000');
     expect(page.getByLabel('Due Date*')).toHaveValue('1/2/3000');
     expect(page.getByLabel('Invoice Number*')).toHaveValue('123');
-    var inputValues = [];
+
     expect(
-      await formJSDetailsPage.maphDynamicListItems(
+      await formJSDetailsPage.mapDynamicListItems(
         page.getByLabel('Item Name*'),
         async (element) => {
-          inputValues.push(await element.inputValue());
-          //console.log(await element.inputValue());
           return await element.inputValue();
         },
       ),
-    ).toContainEqual(['Laptop1', 'Laptop2']);
+    ).toEqual(['Laptop1', 'Laptop2']);
 
     expect(
-      await formJSDetailsPage.maphDynamicListItems(
-        await page.getByLabel('Unit Price*'),
+      await formJSDetailsPage.mapDynamicListItems(
+        page.getByLabel('Unit Price*'),
         async (element) => {
           return await element.inputValue();
         },
@@ -264,7 +262,7 @@ test.describe('task details page', () => {
     ).toEqual(['11', '12']);
 
     expect(
-      await formJSDetailsPage.maphDynamicListItems(
+      await formJSDetailsPage.mapDynamicListItems(
         page.getByLabel('Quantity*'),
         async (element) => {
           return await element.inputValue();

@@ -50,12 +50,12 @@ class FormJSDetailsPage {
 
   async forEachDynamicListItem(
     locator: Locator,
-    fn: (value: Locator, index: number, array: Locator[]) => void,
+    fn: (value: Locator, index: number, array: Locator[]) => Promise<void>,
   ) {
     const elements = await locator.all();
 
     for (const element of elements) {
-      fn(element, elements.indexOf(element), elements);
+      await fn(element, elements.indexOf(element), elements);
     }
   }
   async fillDateField(label: string, value: string) {
@@ -87,15 +87,19 @@ class FormJSDetailsPage {
     await this.page.getByText(value).click();
   }
 
-  async maphDynamicListItems<MappedValue>(
+  async mapDynamicListItems<MappedValue>(
     locator: Locator,
-    fn: (value: Locator, index: number, array: Locator[]) => MappedValue,
+    fn: (
+      value: Locator,
+      index: number,
+      array: Locator[],
+    ) => Promise<MappedValue>,
   ): Promise<Array<MappedValue>> {
     const elements = await locator.all();
     const mapped: Array<MappedValue> = [];
 
     for (const element of elements) {
-      mapped.push(fn(element, elements.indexOf(element), elements));
+      mapped.push(await fn(element, elements.indexOf(element), elements));
     }
 
     return mapped;
