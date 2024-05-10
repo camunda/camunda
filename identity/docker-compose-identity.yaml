@@ -1,0 +1,12 @@
+version: "3.6"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:15.6-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: "test-db-passowrd"
