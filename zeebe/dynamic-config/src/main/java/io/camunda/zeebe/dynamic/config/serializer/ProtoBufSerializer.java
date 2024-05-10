@@ -35,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -370,6 +371,12 @@ public class ProtoBufSerializer
               Topology.MemberRemoveOperation.newBuilder()
                   .setMemberToRemove(memberRemoveOperation.memberToRemove().id())
                   .build());
+      case final PartitionDisableExporterOperation disableExporterOperation ->
+          builder.setPartitionDisableExporter(
+              Topology.PartitionDisableExporterOperation.newBuilder()
+                  .setPartitionId(disableExporterOperation.partitionId())
+                  .setExporterId(disableExporterOperation.exporterId())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -455,6 +462,11 @@ public class ProtoBufSerializer
       return new MemberRemoveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));
+    } else if (topologyChangeOperation.hasPartitionDisableExporter()) {
+      return new PartitionDisableExporterOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionDisableExporter().getPartitionId(),
+          topologyChangeOperation.getPartitionDisableExporter().getExporterId());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
