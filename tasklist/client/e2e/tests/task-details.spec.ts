@@ -182,7 +182,7 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
-  test.only('task completion with deployed form', async ({
+  test('task completion with deployed form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
@@ -247,14 +247,14 @@ test.describe('task details page', () => {
       await formJSDetailsPage.mapDynamicListItems(
         page.getByLabel('Item Name*'),
         async (element) => {
-          return await element.inputValue();
+          return element.inputValue();
         },
       ),
     ).toEqual(['Laptop1', 'Laptop2']);
 
     expect(
       await formJSDetailsPage.mapDynamicListItems(
-        page.getByLabel('Unit Price*'),
+        await page.getByLabel('Unit Price*'),
         async (element) => {
           return await element.inputValue();
         },
