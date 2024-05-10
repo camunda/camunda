@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -55,6 +56,8 @@ final class ClusterConfigurationManagementApiTest {
   private final MemberId id3 = MemberId.from("3");
   private final ClusterConfiguration initialTopology =
       ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @BeforeEach
   void setup() {
@@ -188,7 +191,11 @@ final class ClusterConfigurationManagementApiTest {
             .addMember(
                 id1,
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, partitionConfig),
+                        2,
+                        PartitionState.active(1, partitionConfig))))
             .addMember(id2, MemberState.initializeAsActive(Map.of()));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -208,8 +215,8 @@ final class ClusterConfigurationManagementApiTest {
         new ClusterConfigurationManagementRequest.ScaleRequest(Set.of(id0, id1), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -232,8 +239,8 @@ final class ClusterConfigurationManagementApiTest {
             Set.of(id0, id1), Optional.of(2), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -257,8 +264,8 @@ final class ClusterConfigurationManagementApiTest {
             Set.of(id0, id1), Optional.of(0), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)));
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -281,11 +288,11 @@ final class ClusterConfigurationManagementApiTest {
             Set.of(id0, id1), Optional.of(1), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(2)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1)))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(1)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(2)));
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -312,10 +319,10 @@ final class ClusterConfigurationManagementApiTest {
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .addMember(id2, MemberState.initializeAsActive(Map.of()))
             .addMember(id3, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2)))
-            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1)))
-            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2)));
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when

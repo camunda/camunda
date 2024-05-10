@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
@@ -22,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-class StaticPartitionDistributionResolverTest {
+class StaticConfigurationGeneratorTest {
 
   @Test
   void shouldGenerateRoundRobinDistribution() {
@@ -48,11 +49,14 @@ class StaticPartitionDistributionResolverTest {
     clusterCfg.setClusterSize(6);
     clusterCfg.setPartitionsCount(6);
     clusterCfg.setReplicationFactor(3);
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+    brokerCfg.setExporters(Map.of());
 
     // when
     final var partitionDistribution =
-        PartitionDistributionResolver.getStaticConfiguration(
-                clusterCfg, partitioningCfg, MemberId.from("1"))
+        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("1"))
             .generatePartitionDistribution();
 
     // then
@@ -112,11 +116,13 @@ fixed:
     clusterCfg.setClusterSize(3);
     clusterCfg.setPartitionsCount(3);
     clusterCfg.setReplicationFactor(3);
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.setCluster(clusterCfg);
+    brokerCfg.getExperimental().setPartitioning(partitioningCfg);
 
     // when
     final var partitionDistribution =
-        PartitionDistributionResolver.getStaticConfiguration(
-                clusterCfg, partitioningCfg, MemberId.from("1"))
+        StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, MemberId.from("1"))
             .generatePartitionDistribution();
 
     // then

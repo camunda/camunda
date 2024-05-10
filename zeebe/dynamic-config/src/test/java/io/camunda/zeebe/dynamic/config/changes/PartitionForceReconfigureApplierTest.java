@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -31,12 +32,16 @@ final class PartitionForceReconfigureApplierTest {
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   private final MemberId otherMember = MemberId.from("2");
+
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
   private final ClusterConfiguration validTopology =
       ClusterConfiguration.init()
           .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
-          .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
+          .updateMember(
+              localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
           .addMember(otherMember, MemberState.initializeAsActive(Map.of()))
-          .updateMember(otherMember, m -> m.addPartition(1, PartitionState.active(1)));
+          .updateMember(
+              otherMember, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)));
 
   @Test
   void shouldRejectIfLocalMemberNotPartOfNewConfiguration() {

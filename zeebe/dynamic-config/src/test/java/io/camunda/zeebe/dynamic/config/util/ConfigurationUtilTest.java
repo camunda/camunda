@@ -13,7 +13,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
+import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -21,9 +25,12 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class TopologyUtilTest {
+class ConfigurationUtilTest {
 
   private static final String GROUP_NAME = "test";
+  private final DynamicPartitionConfig partitionConfig =
+      new DynamicPartitionConfig(
+          new ExportersConfig(Map.of("expA", new ExporterState(ExporterState.State.ENABLED))));
 
   @Test
   void shouldGenerateTopologyFromPartitionDistribution() {
@@ -46,32 +53,65 @@ class TopologyUtilTest {
     final var partitionDistribution = Set.of(partitionTwo, partitionOne);
 
     // when
-    final var topology = TopologyUtil.getClusterTopologyFrom(partitionDistribution);
+    final var topology =
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(0, State.ACTIVE)
         .member(0)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 1)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 3);
+        .hasPartitionSatisfying(
+            1,
+            partition -> {
+              PartitionStateAssert.assertThat(partition)
+                  .hasPriority(1)
+                  .hasState(PartitionState.State.ACTIVE)
+                  .hasConfig(partitionConfig);
+            })
+        .hasPartitionSatisfying(
+            2,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(3)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig));
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 2)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 2);
+        .hasPartitionSatisfying(
+            1,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(2)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig))
+        .hasPartitionSatisfying(
+            2,
+            partition -> {
+              PartitionStateAssert.assertThat(partition)
+                  .hasPriority(2)
+                  .hasState(PartitionState.State.ACTIVE)
+                  .hasConfig(partitionConfig);
+            });
 
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(1, 3)
-        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
-        .hasPartitionWithPriority(2, 1);
+        .hasPartitionSatisfying(
+            1,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(3)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig))
+        .hasPartitionSatisfying(
+            2,
+            partition ->
+                PartitionStateAssert.assertThat(partition)
+                    .hasPriority(1)
+                    .hasState(PartitionState.State.ACTIVE)
+                    .hasConfig(partitionConfig));
   }
 
   @Test
@@ -101,29 +141,33 @@ class TopologyUtilTest {
                 MemberState.initializeAsActive(
                     Map.of(
                         1,
-                        PartitionState.active(1),
+                        PartitionState.active(1, partitionConfig),
                         2,
-                        PartitionState.active(3),
+                        PartitionState.active(3, partitionConfig),
                         // A joining member should not be included in the partition distribution
                         3,
-                        PartitionState.joining(4))))
+                        PartitionState.joining(4, partitionConfig))))
             .addMember(
                 member(1),
                 MemberState.initializeAsActive(
                     Map.of(
                         1,
-                        PartitionState.active(2),
+                        PartitionState.active(2, partitionConfig),
                         // A leaving member should be included in the partition distribution
                         2,
-                        PartitionState.active(2).toLeaving())))
+                        PartitionState.active(2, partitionConfig).toLeaving())))
             .addMember(
                 member(2),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(3), 2, PartitionState.active(1))));
+                    Map.of(
+                        1,
+                        PartitionState.active(3, partitionConfig),
+                        2,
+                        PartitionState.active(1, partitionConfig))));
 
     // when
     final var partitionDistribution =
-        TopologyUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);
@@ -155,16 +199,24 @@ class TopologyUtilTest {
             .addMember(
                 member(0),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, partitionConfig),
+                        2,
+                        PartitionState.active(3, partitionConfig))))
             .addMember(
                 member(1),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(2, partitionConfig),
+                        2,
+                        PartitionState.active(2, partitionConfig))))
             .addMember(member(2), MemberState.initializeAsActive(Map.of()).toLeaving());
 
     // when
     final var partitionDistribution =
-        TopologyUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
 
     // then
     assertThat(partitionDistribution).containsExactlyInAnyOrderElementsOf(expected);

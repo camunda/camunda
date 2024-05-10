@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -21,12 +22,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class TopologyUtil {
+public final class ConfigurationUtil {
 
-  private TopologyUtil() {}
+  private ConfigurationUtil() {}
 
-  public static ClusterConfiguration getClusterTopologyFrom(
-      final Set<PartitionMetadata> partitionDistribution) {
+  public static ClusterConfiguration getClusterConfigFrom(
+      final Set<PartitionMetadata> partitionDistribution,
+      final DynamicPartitionConfig partitionConfig) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
     for (final var partitionMetadata : partitionDistribution) {
       final var partitionId = partitionMetadata.id().id();
@@ -34,7 +36,7 @@ public final class TopologyUtil {
         final var memberPriority = partitionMetadata.getPriority(member);
         partitionStatesByMember
             .computeIfAbsent(member, k -> new HashMap<>())
-            .put(partitionId, PartitionState.active(memberPriority));
+            .put(partitionId, PartitionState.active(memberPriority, partitionConfig));
       }
     }
     final var memberStates = new HashMap<MemberId, MemberState>();

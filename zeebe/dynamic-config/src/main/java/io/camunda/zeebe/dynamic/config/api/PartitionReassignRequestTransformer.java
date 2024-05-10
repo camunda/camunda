@@ -18,8 +18,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
-import io.camunda.zeebe.dynamic.config.util.TopologyUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +64,8 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
           final ClusterConfiguration currentTopology, final Set<MemberId> brokers) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
-    final var oldDistribution = TopologyUtil.getPartitionDistributionFrom(currentTopology, "temp");
+    final var oldDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(currentTopology, "temp");
     final int replicationFactor = getReplicationFactor(currentTopology);
 
     if (replicationFactor <= 0) {

@@ -10,12 +10,14 @@ package io.camunda.zeebe.dynamic.config.state;
 import java.util.function.UnaryOperator;
 
 public record PartitionState(State state, int priority, DynamicPartitionConfig config) {
-  public static PartitionState active(final int priority) {
-    return new PartitionState(State.ACTIVE, priority, DynamicPartitionConfig.init());
+  public static PartitionState active(
+      final int priority, final DynamicPartitionConfig partitionConfig) {
+    return new PartitionState(State.ACTIVE, priority, partitionConfig);
   }
 
-  public static PartitionState joining(final int priority) {
-    return new PartitionState(State.JOINING, priority, DynamicPartitionConfig.init());
+  public static PartitionState joining(
+      final int priority, final DynamicPartitionConfig partitionConfig) {
+    return new PartitionState(State.JOINING, priority, partitionConfig);
   }
 
   public PartitionState toActive() {
