@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -111,6 +112,17 @@ public final class ClusterConfigurationManagementRequestSender {
         serializer::encodeScaleRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getNextCoordinator(forceScaleDownRequest.members()),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      disableExporter(final ExporterDisableRequest exporterDisableRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.DISABLE_EXPORTER.topic(),
+        exporterDisableRequest,
+        serializer::encodeExporterDisableRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }
 
