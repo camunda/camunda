@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.api;
+package io.camunda.identity.controller;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.record.CamundaUser;
+import io.camunda.identity.record.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;

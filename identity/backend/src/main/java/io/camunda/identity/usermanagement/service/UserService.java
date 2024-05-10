@@ -7,8 +7,9 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.authentication.basic.CamundaUserDetailsManager;
+import io.camunda.identity.record.CamundaUser;
+import io.camunda.identity.record.CamundaUserWithPassword;
 import java.util.List;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
   private final CamundaUserDetailsManager userDetailsManager;
-
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
@@ -39,7 +39,10 @@ public class UserService {
               .roles("DEFAULT_USER")
               .build();
       userDetailsManager.createUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      return new CamundaUser(
+          userDetails.getUsername(),
+          userDetails.isEnabled(),
+          userDetails.getAuthorities().stream().map(Object::toString).toList());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
@@ -55,7 +58,10 @@ public class UserService {
   public CamundaUser findUserByUsername(final String username) {
     try {
       final UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      return new CamundaUser(
+          userDetails.getUsername(),
+          userDetails.isEnabled(),
+          userDetails.getAuthorities().stream().map(Object::toString).toList());
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
@@ -63,7 +69,12 @@ public class UserService {
 
   public List<CamundaUser> findAllUsers() {
     return userDetailsManager.loadUsers().stream()
-        .map(detail -> new CamundaUser(detail.getUsername(), detail.isEnabled()))
+        .map(
+            detail ->
+                new CamundaUser(
+                    detail.getUsername(),
+                    detail.isEnabled(),
+                    detail.getAuthorities().stream().map(Object::toString).toList()))
         .toList();
   }
 
@@ -83,7 +94,10 @@ public class UserService {
               .disabled(!user.user().enabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      return new CamundaUser(
+          userDetails.getUsername(),
+          userDetails.isEnabled(),
+          userDetails.getAuthorities().stream().map(Object::toString).toList());
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
