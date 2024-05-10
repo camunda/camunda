@@ -533,6 +533,11 @@
                 "id": 8,
                 "name": "memberRemove",
                 "type": "MemberRemoveOperation"
+              },
+              {
+                "id": 9,
+                "name": "partitionDisableExporter",
+                "type": "PartitionDisableExporterOperation"
               }
             ]
           },
@@ -604,6 +609,21 @@
                 "name": "members",
                 "type": "string",
                 "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "PartitionDisableExporterOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "exporterId",
+                "type": "string"
               }
             ]
           },

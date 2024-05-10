@@ -68,6 +68,7 @@ message TopologyChangeOperation {
     PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
     PartitionForceReconfigureOperation partitionForceReconfigure = 7;
     MemberRemoveOperation memberRemove = 8;
+    PartitionDisableExporterOperation partitionDisableExporter = 9;
   }
 }
 
@@ -93,6 +94,11 @@ message PartitionReconfigurePriorityOperation {
 message PartitionForceReconfigureOperation {
   int32 partitionId = 1;
   repeated string members = 2;
+}
+
+message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
 }
 
 message MemberJoinOperation {}
