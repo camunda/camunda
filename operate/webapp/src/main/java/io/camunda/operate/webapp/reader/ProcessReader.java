@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,10 +26,15 @@ public class ProcessReader {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(io.camunda.operate.webapp.reader.ProcessReader.class);
 
-  @Autowired private ProcessStore processStore;
+  private final ProcessStore processStore;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  private final PermissionsService permissionsService;
+
+  public ProcessReader(
+      final ProcessStore processStore, @Nullable final PermissionsService permissionsService) {
+    this.processStore = processStore;
+    this.permissionsService = permissionsService;
+  }
 
   /**
    * Gets the process diagram XML as a string.
@@ -37,7 +42,7 @@ public class ProcessReader {
    * @param processDefinitionKey
    * @return
    */
-  public String getDiagram(Long processDefinitionKey) {
+  public String getDiagram(final Long processDefinitionKey) {
     return processStore.getDiagramByKey(processDefinitionKey);
   }
 
@@ -47,7 +52,7 @@ public class ProcessReader {
    * @param processDefinitionKey
    * @return
    */
-  public ProcessEntity getProcess(Long processDefinitionKey) {
+  public ProcessEntity getProcess(final Long processDefinitionKey) {
     return processStore.getProcessByKey(processDefinitionKey);
   }
 
@@ -57,7 +62,7 @@ public class ProcessReader {
    * @return
    */
   public Map<ProcessStore.ProcessKey, List<ProcessEntity>> getProcessesGrouped(
-      ProcessRequestDto request) {
+      final ProcessRequestDto request) {
     return processStore.getProcessesGrouped(
         request.getTenantId(), getAllowedProcessIdsOrNullForAll());
   }
@@ -67,7 +72,8 @@ public class ProcessReader {
    *
    * @return Map of id -> ProcessEntity
    */
-  public Map<Long, ProcessEntity> getProcessesWithFields(int maxSize, String... fields) {
+  public Map<Long, ProcessEntity> getProcessesWithFields(
+      final int maxSize, final String... fields) {
     return processStore.getProcessesIdsToProcessesWithFields(
         getAllowedProcessIdsOrNullForAll(), maxSize, fields);
   }
@@ -77,7 +83,7 @@ public class ProcessReader {
    *
    * @return Map of id -> ProcessEntity
    */
-  public Map<Long, ProcessEntity> getProcessesWithFields(String... fields) {
+  public Map<Long, ProcessEntity> getProcessesWithFields(final String... fields) {
     return getProcessesWithFields(1000, fields);
   }
 
