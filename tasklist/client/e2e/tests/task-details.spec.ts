@@ -182,7 +182,7 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
-  test.only('task completion with deployed form', async ({
+  test('task completion with deployed form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
