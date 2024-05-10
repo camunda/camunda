@@ -32,6 +32,9 @@ public interface ClusterConfigurationRequestsSerializer {
   byte[] encodeCancelChangeRequest(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
 
+  byte[] encodeExporterDisableRequest(
+      ClusterConfigurationManagementRequest.ExporterDisableRequest exporterDisableRequest);
+
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
 
@@ -51,6 +54,9 @@ public interface ClusterConfigurationRequestsSerializer {
 
   ClusterConfigurationManagementRequest.CancelChangeRequest decodeCancelChangeRequest(
       byte[] encodedState);
+
+  ClusterConfigurationManagementRequest.ExporterDisableRequest decodeExporterDisableRequest(
+      byte[] encodedRequest);
 
   byte[] encodeResponse(ClusterConfigurationChangeResponse response);
 
