@@ -46,32 +46,36 @@ public class FlowNodeInstanceForListViewEntity
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(final Long processInstanceKey) {
+  public FlowNodeInstanceForListViewEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
   }
 
   public String getActivityId() {
     return activityId;
   }
 
-  public void setActivityId(final String activityId) {
+  public FlowNodeInstanceForListViewEntity setActivityId(final String activityId) {
     this.activityId = activityId;
+    return this;
   }
 
   public FlowNodeState getActivityState() {
     return activityState;
   }
 
-  public void setActivityState(final FlowNodeState activityState) {
+  public FlowNodeInstanceForListViewEntity setActivityState(final FlowNodeState activityState) {
     this.activityState = activityState;
+    return this;
   }
 
   public FlowNodeType getActivityType() {
     return activityType;
   }
 
-  public void setActivityType(final FlowNodeType activityType) {
+  public FlowNodeInstanceForListViewEntity setActivityType(final FlowNodeType activityType) {
     this.activityType = activityType;
+    return this;
   }
 
   public List<Long> getIncidentKeys() {
@@ -92,8 +96,9 @@ public class FlowNodeInstanceForListViewEntity
     return errorMessage;
   }
 
-  public void setErrorMessage(final String errorMessage) {
+  public FlowNodeInstanceForListViewEntity setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
   }
 
   public boolean isIncident() {
