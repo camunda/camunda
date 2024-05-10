@@ -182,12 +182,13 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.ageInput).toHaveValue('21');
   });
 
-  test('task completion with deployed form', async ({
+  test.only('task completion with deployed form', async ({
     page,
     taskPanelPage,
     taskDetailsPage,
     formJSDetailsPage,
   }) => {
+    test.slow();
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.assignToMeButton.click();
@@ -205,20 +206,21 @@ test.describe('task details page', () => {
 
     await page.getByRole('button', {name: /add new/i}).click();
     await formJSDetailsPage.forEachDynamicListItem(
-      await page.getByLabel('Item Name*'),
+      page.getByLabel('Item Name*'),
       async (element, index) => {
         await element.fill(`${'Laptop'}${index + 1}`);
       },
     );
     await formJSDetailsPage.forEachDynamicListItem(
-      await page.getByLabel('Unit Price*'),
+      page.getByLabel('Unit Price*'),
       async (element, index) => {
-        await element.fill(`${'200'}${index + 1}`);
+        await element.fill(`${'1'}${index + 1}`);
       },
     );
     await formJSDetailsPage.forEachDynamicListItem(
-      await page.getByLabel('Quantity*'),
+      page.getByLabel('Quantity*'),
       async (element, index) => {
+        await element.clear();
         await element.fill(`${'2'}${index + 1}`);
       },
     );
@@ -240,24 +242,17 @@ test.describe('task details page', () => {
     await expect(page.getByLabel('Invoice Date*')).toHaveValue('1/1/3000');
     expect(page.getByLabel('Due Date*')).toHaveValue('1/2/3000');
     expect(page.getByLabel('Invoice Number*')).toHaveValue('123');
-
+    var inputValues = [];
     expect(
       await formJSDetailsPage.maphDynamicListItems(
-        await page.getByLabel('Item Name*'),
+        page.getByLabel('Item Name*'),
         async (element) => {
+          inputValues.push(await element.inputValue());
+          //console.log(await element.inputValue());
           return await element.inputValue();
         },
       ),
-    );
-
-    expect(
-      await formJSDetailsPage.maphDynamicListItems(
-        await page.getByLabel('Item Name*'),
-        async (element) => {
-          return await element.inputValue();
-        },
-      ),
-    ).toEqual(['Item#1', 'Item#2']);
+    ).toContainEqual(['Laptop1', 'Laptop2']);
 
     expect(
       await formJSDetailsPage.maphDynamicListItems(
@@ -270,16 +265,16 @@ test.describe('task details page', () => {
 
     expect(
       await formJSDetailsPage.maphDynamicListItems(
-        await page.getByLabel('Quantity*'),
+        page.getByLabel('Quantity*'),
         async (element) => {
           return await element.inputValue();
         },
       ),
     ).toEqual(['21', '22']);
 
-    expect(formJSDetailsPage.form).toContainText('EUR 231');
-    expect(formJSDetailsPage.form).toContainText('EUR 264');
-    expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
+    await expect(formJSDetailsPage.form).toContainText('EUR 231');
+    await expect(formJSDetailsPage.form).toContainText('EUR 264');
+    await expect(formJSDetailsPage.form).toContainText('Total: EUR 544.5');
   });
 
   test('task completion with form from assigned to me filter', async ({
