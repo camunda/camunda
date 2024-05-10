@@ -45,6 +45,7 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
+  private int maxRetries;
 
   public ZeebeWorkerValue() {}
 
@@ -62,7 +63,8 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
       final List<String> tenantIds,
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
-      final Duration streamTimeout) {
+      final Duration streamTimeout,
+      final int maxRetries) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -77,6 +79,7 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.forceFetchAllVariables = forceFetchAllVariables;
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
+    this.maxRetries = maxRetries;
   }
 
   public String getType() {
@@ -191,6 +194,14 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     this.streamTimeout = streamTimeout;
   }
 
+  public int getMaxRetries() {
+    return maxRetries;
+  }
+
+  public void setMaxRetries(final int maxRetries) {
+    this.maxRetries = maxRetries;
+  }
+
   @Override
   public MethodInfo getBeanInfo() {
     return methodInfo;
@@ -212,7 +223,8 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
         tenantIds,
         forceFetchAllVariables,
         streamEnabled,
-        streamTimeout);
+        streamTimeout,
+        maxRetries);
   }
 
   @Override
@@ -237,7 +249,8 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
         && Objects.equals(tenantIds, that.tenantIds)
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
-        && Objects.equals(streamTimeout, that.streamTimeout);
+        && Objects.equals(streamTimeout, that.streamTimeout)
+        && Objects.equals(maxRetries, that.maxRetries);
   }
 
   @Override
@@ -273,6 +286,8 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
         + streamEnabled
         + ", streamTimeout="
         + streamTimeout
+        + ", maxRetries="
+        + maxRetries
         + '}';
   }
 }

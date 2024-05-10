@@ -37,7 +37,6 @@
   <properties>
     <version.java>17</version.java>
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
-    <zeebe-process-test.version>8.5.0</zeebe-process-test.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <identity.version>8.5.0</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
