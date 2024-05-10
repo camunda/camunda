@@ -17,6 +17,7 @@ import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -26,15 +27,17 @@ import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
+  private final String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
+  private final String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";
   @Autowired private DecisionInstanceDao dao;
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -45,7 +48,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setId("2251799813685262-1")
             .setKey(2251799813685262L)
             .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED)
-            .setEvaluationDate(OffsetDateTime.now())
+            .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(firstDecisionEvaluationDate))
             .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY)
             .setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY)
             .setDecisionId("invoiceClassification")
@@ -62,7 +65,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setId("2251799813685262-2")
             .setKey(2251799813685262L)
             .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED)
-            .setEvaluationDate(OffsetDateTime.now())
+            .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(secondDecisionEvaluationDate))
             .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY)
             .setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY)
             .setDecisionId("invoiceAssignApprover")
@@ -204,10 +207,52 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
     assertThat(decisionInstance).isNotNull();
     assertThat(decisionInstance.getDecisionId()).isEqualTo("invoiceAssignApprover");
     assertThat(decisionInstance.getId()).isEqualTo(decisionInstanceId);
+    assertThat(decisionInstance.getEvaluationDate()).isEqualTo(secondDecisionEvaluationDate);
   }
 
   @Test
   public void shouldThrowWhenIdNotExists() {
     assertThrows(ResourceNotFoundException.class, () -> dao.byId("test"));
+  }
+
+  @Test
+  public void shouldFilterByEvaluationDate() {
+    final Results<DecisionInstance> decisionInstanceResults =
+        dao.search(
+            new Query<DecisionInstance>()
+                .setFilter(new DecisionInstance().setEvaluationDate(firstDecisionEvaluationDate)));
+
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(1L);
+    assertThat(decisionInstanceResults.getItems().get(0).getEvaluationDate())
+        .isEqualTo(firstDecisionEvaluationDate);
+    assertThat(decisionInstanceResults.getItems().get(0).getId()).isEqualTo("2251799813685262-1");
+  }
+
+  @Test
+  public void shouldFilterByEvaluationDateWithDateMath() {
+    final Results<DecisionInstance> decisionInstanceResults =
+        dao.search(
+            new Query<DecisionInstance>()
+                .setFilter(
+                    new DecisionInstance()
+                        .setEvaluationDate(firstDecisionEvaluationDate + "||/d")));
+
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2L);
+
+    DecisionInstance checkDecision =
+        decisionInstanceResults.getItems().stream()
+            .filter(item -> "2251799813685262-1".equals(item.getId()))
+            .findFirst()
+            .orElse(null);
+    assertThat(checkDecision.getEvaluationDate()).isEqualTo(firstDecisionEvaluationDate);
+    assertThat(checkDecision.getId()).isEqualTo("2251799813685262-1");
+
+    checkDecision =
+        decisionInstanceResults.getItems().stream()
+            .filter(item -> "2251799813685262-2".equals(item.getId()))
+            .findFirst()
+            .orElse(null);
+    assertThat(checkDecision.getEvaluationDate()).isEqualTo(secondDecisionEvaluationDate);
+    assertThat(checkDecision.getId()).isEqualTo("2251799813685262-2");
   }
 }
