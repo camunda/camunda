@@ -141,7 +141,7 @@ services:
         condition: service_started
       elasticsearch:
         condition: service_started
-    image: camunda/operate:8.5.0
+    image: camunda/operate:8.5.1
     container_name: operate
     environment:
       - SERVER_PORT=8081
