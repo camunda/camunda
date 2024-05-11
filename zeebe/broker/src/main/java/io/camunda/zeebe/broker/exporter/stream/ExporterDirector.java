@@ -31,7 +31,6 @@ import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -522,11 +521,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
-  }
-
-  @VisibleForTesting
-  public boolean areAllExporterContainersSoftPaused() {
-    return containers.stream().allMatch(ExporterContainer::isExporterIsSoftPaused);
   }
 
   private static class RecordExporter {
