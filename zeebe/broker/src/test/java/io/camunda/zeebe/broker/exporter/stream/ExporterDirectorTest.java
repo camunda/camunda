@@ -677,6 +677,9 @@ public final class ExporterDirectorTest {
     writeEvent();
     writeEvent();
 
+    exporters.get(0).shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
     waitUntil(() -> exporters.get(0).getExportedRecords().size() == 2);
     waitUntil(() -> exporters.get(1).getExportedRecords().size() == 2);
 
