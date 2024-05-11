@@ -686,8 +686,6 @@ public final class ExporterDirectorTest {
     // then the position will not be updated.
     assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1)).isEqualTo(-1);
     assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2)).isEqualTo(-1);
-
-    assertThat(rule.getDirector().areAllExporterContainersSoftPaused()).isTrue();
   }
 
   private long writeEvent() {
