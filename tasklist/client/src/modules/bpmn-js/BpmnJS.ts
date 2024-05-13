@@ -73,7 +73,6 @@ class BpmnJS {
   };
 
   #createViewer = (container: HTMLElement) => {
-    // this.#destroy();
     this.#navigatedViewer = new NavigatedViewer({
       container,
       bpmnRenderer: bpmnRendererColors,
@@ -101,13 +100,8 @@ class BpmnJS {
     }
   };
 
-  // #destroy = () => {
-  //   this.#navigatedViewer?.destroy();
-  // };
-
   reset = () => {
     this.onViewboxChange = undefined;
-    // this.#destroy();
   };
 
   zoom = (step: number) => {
