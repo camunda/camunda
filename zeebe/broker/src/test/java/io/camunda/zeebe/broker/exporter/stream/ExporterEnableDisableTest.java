@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,6 +87,40 @@ public class ExporterEnableDisableTest {
     assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords())
         .describedAs("Should not export to exporter-1 after disabling")
         .hasSizeLessThanOrEqualTo(1);
+  }
+
+  @Test
+  public void shouldSucceedWhenDisablingAlreadyDisabledExporter() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
+
+    // when - then
+    assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
+        .succeedsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldSucceedWhenDisablingNonExistingExporter() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+
+    // when - then
+    assertThat(rule.getDirector().disableExporter("non-existing-exporter"))
+        .succeedsWithin(Duration.ofMillis(100));
+  }
+
+  @Test
+  public void shouldSucceedDisablingWhenActorIsAlreadyClosed() {
+    // give
+    rule.startExporterDirector(exporterDescriptors);
+
+    // when
+    rule.getDirector().close();
+
+    // then
+    assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
+        .succeedsWithin(Duration.ofMillis(100));
   }
 
   @Test
