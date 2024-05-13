@@ -188,9 +188,7 @@ test.describe('task details page', () => {
     taskDetailsPage,
     formJSDetailsPage,
   }) => {
-    test.slow();
     await taskPanelPage.openTask('processWithDeployedForm');
-
     await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await page.getByLabel('Client Name*').fill('Jon');
