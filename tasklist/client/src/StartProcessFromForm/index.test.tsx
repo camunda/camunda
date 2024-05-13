@@ -144,6 +144,9 @@ describe('<StartProcessFromForm />', () => {
   });
 
   it('should handle a submit error', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       http.get('/v1/external/process/:bpmnProcessId/form', () =>
         HttpResponse.json(formMocks.form),
@@ -169,12 +172,14 @@ describe('<StartProcessFromForm />', () => {
       screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: 'Submit',
@@ -190,6 +195,7 @@ describe('<StartProcessFromForm />', () => {
       screen.getByText('Please try again later and reload the page.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Reload'})).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('should show a request error message', async () => {
