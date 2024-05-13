@@ -179,7 +179,8 @@
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
+    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
+    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
     <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
@@ -1911,13 +1912,13 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
         <exclusions>
           <exclusion>
             <groupId>com.graphql-java-kickstart</groupId>
@@ -1945,19 +1946,19 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
