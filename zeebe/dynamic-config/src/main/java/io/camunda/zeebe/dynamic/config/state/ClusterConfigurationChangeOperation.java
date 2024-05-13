@@ -84,5 +84,15 @@ public sealed interface ClusterConfigurationChangeOperation {
     record PartitionForceReconfigureOperation(
         MemberId memberId, int partitionId, Collection<MemberId> members)
         implements PartitionChangeOperation {}
+
+    /**
+     * Operation to disable an exporter on a partition in the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition which disables the exporter
+     * @param exporterId id of the exporter to disable
+     */
+    record PartitionDisableExporterOperation(MemberId memberId, int partitionId, String exporterId)
+        implements PartitionChangeOperation {}
   }
 }

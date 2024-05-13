@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -307,35 +307,30 @@ final class ExportingEndpointIT {
   }
 
   @Test
-  @Disabled
   void shouldStaySoftPausedAfterRestart() {
     // given
-    getActuator().resume();
+    getActuator().softPause();
     client
         .newPublishMessageCommand()
-        .messageName("Test")
+        .messageName("soft-pause")
         .correlationKey("11")
         .messageId("11")
         .send()
         .join();
-
     final var recordsBeforePause =
         Awaitility.await()
             .atMost(Duration.ofSeconds(30))
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
+    final var exportedPositionBeforeRestart = getExportedPositions();
 
     // when
-    getActuator().softPause();
     CLUSTER.shutdown();
     CLUSTER.start();
 
-    // all partitions should be soft paused after restart
-    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
-
     client
         .newPublishMessageCommand()
-        .messageName("Test")
+        .messageName("soft-pause")
         .correlationKey("12")
         .messageId("12")
         .send()
@@ -347,33 +342,27 @@ final class ExportingEndpointIT {
             .during(Duration.ofSeconds(5))
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
-    final Map<Integer, Long> exportedPositionsAfterSoftPause = getExportedPositions();
-
     // then
+    // all partitions should be soft paused after restart
+    Awaitility.await().untilAsserted(this::allPartitionsSoftPausedExporting);
+
+    assertThat(
+            RecordingExporter.messageRecords()
+                .withName("soft-pause")
+                .withIntent(MessageIntent.PUBLISHED)
+                .limit(2)
+                .count())
+        .isEqualTo(2);
+
     assertThat(recordsAfterRestart).isGreaterThan(recordsBeforePause);
-    // all partitions should have -1 as exported position due to restart and the exporter positions
-    // not being able to update due to soft pause.
-    try {
-      // TODO: after reason for flakiness is found, remove the debug try-catch block.
-      //  https://github.com/camunda/zeebe/issues/17836
-      assertTrue(
-          exportedPositionsAfterSoftPause.entrySet().stream()
-              .allMatch(exportedPosition -> exportedPosition.getValue().equals(-1L)));
-    } catch (final AssertionError e) {
-      // if the assertion fails, we want to  throw the exported positions for debugging
-      final String errorMessage =
-          "Exported positions are not -1 after soft pause. Exported positions: "
-              .concat(
-                  exportedPositionsAfterSoftPause.entrySet().stream()
-                      .map(
-                          element ->
-                              String.format(
-                                  "Partition %d -> position %d",
-                                  element.getKey(), element.getValue()))
-                      .toList()
-                      .toString());
-      throw new AssertionError(errorMessage, e);
-    }
+
+    final Map<Integer, Long> exportedPositionAfterRestart = getExportedPositions();
+    exportedPositionAfterRestart.forEach(
+        (partitionId, position) ->
+            assertThat(position)
+                .describedAs(
+                    "Partition %d should not update exported position after restart", partitionId)
+                .isLessThanOrEqualTo(exportedPositionBeforeRestart.get(partitionId)));
   }
 
   Map<Integer, Long> getExportedPositions() {

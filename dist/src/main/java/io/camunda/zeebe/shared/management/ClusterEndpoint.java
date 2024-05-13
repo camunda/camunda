@@ -386,6 +386,7 @@ public class ClusterEndpoint {
               .operation(OperationEnum.BROKER_REMOVE)
               .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
               .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+      default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
 
@@ -533,12 +534,15 @@ public class ClusterEndpoint {
                       partitionForceReconfigureOperation.members().stream()
                           .map(MemberId::id)
                           .map(Integer::parseInt)
-                          .collect(Collectors.toList()));
+                          .toList());
           case final MemberRemoveOperation memberRemoveOperation ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
                   .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
                   .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+          default ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);
         };
 
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));

@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticIni
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -52,7 +53,8 @@ final class ClusterConfigurationInitializerTest {
       ClusterConfiguration.init()
           .addMember(
               MemberId.from("10"),
-              MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+              MemberState.initializeAsActive(
+                  Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
 
   private PersistedClusterConfiguration persistedClusterConfiguration;
   private Path topologyFile;
@@ -208,7 +210,8 @@ final class ClusterConfigurationInitializerTest {
             Set.of(member),
             member,
             List.of(partitionId),
-            1));
+            1,
+            DynamicPartitionConfig.init()));
   }
 
   private static final class TestClusterConfigurationNotifier

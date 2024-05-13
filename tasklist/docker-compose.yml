@@ -4,7 +4,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -49,7 +49,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.13.3
+    image: docker.elastic.co/kibana/kibana:8.13.4
     ports:
       - 5601:5601
     environment:
@@ -106,7 +106,7 @@ services:
 
   tasklist-opensearch:
     container_name: tasklist-opensearch
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     ports:
       - 8080:8080
     environment:
@@ -128,7 +128,7 @@ services:
 
   tasklist:
     container_name: tasklist
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     ports:
       - 8080:8080
     environment:
@@ -151,7 +151,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:8.5.0
+    image: camunda/operate:8.5.1
     ports:
       - 8088:8080
     environment:
@@ -188,7 +188,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     ports:
       - 8081:8080
     environment:
@@ -210,7 +210,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist-sso
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     ports:
       - 8080:8080
     environment:

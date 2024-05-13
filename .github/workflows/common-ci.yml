@@ -17,7 +17,6 @@ on:
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'spring-boot-starter-camunda-sdk/**'
       - 'tasklist.Dockerfile'
       - 'tasklist/**'
       - 'zeebe/**'

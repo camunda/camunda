@@ -50,8 +50,9 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
     return query;
   }
 
-  public void setQuery(final ListViewQueryDto query) {
+  public ListViewRequestDto setQuery(final ListViewQueryDto query) {
     this.query = query;
+    return this;
   }
 
   @Override
@@ -76,6 +77,11 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), query);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -88,10 +94,5 @@ public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
     }
     final ListViewRequestDto that = (ListViewRequestDto) o;
     return Objects.equals(query, that.query);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), query);
   }
 }

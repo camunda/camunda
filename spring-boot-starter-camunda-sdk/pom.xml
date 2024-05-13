@@ -39,7 +39,7 @@
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <zeebe-process-test.version>8.5.0</zeebe-process-test.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <identity.version>8.5.0</identity.version>
+    <identity.version>8.5.1</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
     <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
     <spring-boot-test.version>3.2.5</spring-boot-test.version>
@@ -223,18 +223,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-process-test-extension-testcontainer</artifactId>
-      <version>${zeebe-process-test.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>io.camunda</groupId>
-          <artifactId>zeebe-process-test-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -262,54 +251,9 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.checkerframework</groupId>
-      <artifactId>checker-qual</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-process-test-api</artifactId>
-      <version>${zeebe-process-test.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-process-test-engine</artifactId>
-      <version>${zeebe-process-test.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-process-test-filters</artifactId>
-      <version>${zeebe-process-test.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-process-test-assertions</artifactId>
-      <version>${zeebe-process-test.version}</version>
-      <scope>provided</scope>
-    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

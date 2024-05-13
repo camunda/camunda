@@ -11,7 +11,7 @@ import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import java.util.Objects;
 
-public class VariableForListViewEntity extends OperateZeebeEntity {
+public class VariableForListViewEntity extends OperateZeebeEntity<VariableForListViewEntity> {
 
   private Long processInstanceKey;
   private Long scopeKey;
@@ -23,7 +23,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(ListViewTemplate.VARIABLES_JOIN_RELATION);
 
-  public static String getIdBy(long scopeKey, String name) {
+  public static String getIdBy(final long scopeKey, final String name) {
     return String.format("%d-%s", scopeKey, name);
   }
 
@@ -31,39 +31,43 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(Long processInstanceKey) {
+  public VariableForListViewEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
   }
 
   public Long getScopeKey() {
     return scopeKey;
   }
 
-  public void setScopeKey(Long scopeKey) {
+  public VariableForListViewEntity setScopeKey(final Long scopeKey) {
     this.scopeKey = scopeKey;
+    return this;
   }
 
   public String getVarName() {
     return varName;
   }
 
-  public void setVarName(String varName) {
+  public VariableForListViewEntity setVarName(final String varName) {
     this.varName = varName;
+    return this;
   }
 
   public String getVarValue() {
     return varValue;
   }
 
-  public void setVarValue(String varValue) {
+  public VariableForListViewEntity setVarValue(final String varValue) {
     this.varValue = varValue;
+    return this;
   }
 
   public String getTenantId() {
     return tenantId;
   }
 
-  public VariableForListViewEntity setTenantId(String tenantId) {
+  public VariableForListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -72,8 +76,9 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
     return joinRelation;
   }
 
-  public void setJoinRelation(ListViewJoinRelation joinRelation) {
+  public VariableForListViewEntity setJoinRelation(final ListViewJoinRelation joinRelation) {
     this.joinRelation = joinRelation;
+    return this;
   }
 
   public Long getPosition() {
@@ -83,6 +88,19 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
   public VariableForListViewEntity setPosition(final Long position) {
     this.position = position;
     return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processInstanceKey,
+        scopeKey,
+        varName,
+        varValue,
+        tenantId,
+        position,
+        joinRelation);
   }
 
   @Override
@@ -104,18 +122,5 @@ public class VariableForListViewEntity extends OperateZeebeEntity {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
         && Objects.equals(joinRelation, that.joinRelation);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        processInstanceKey,
-        scopeKey,
-        varName,
-        varValue,
-        tenantId,
-        position,
-        joinRelation);
   }
 }
