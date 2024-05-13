@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.auth.saas;
+package io.camunda.zeebe.spring.common.auth.token;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
