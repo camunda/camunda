@@ -22,21 +22,30 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
-import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.camunda.zeebe.spring.client.configuration.AuthenticationConfiguration;
-import io.camunda.zeebe.spring.common.auth.Authentication;
-import io.camunda.zeebe.spring.common.auth.Product;
-import io.camunda.zeebe.spring.common.auth.saas.SaaSAuthentication;
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
+import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {AuthenticationConfiguration.class},
+    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
     properties = {
       "camunda.client.mode=saas",
       "camunda.client.cluster-id=12345",
@@ -45,31 +54,52 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
       "camunda.client.auth.client-secret=my-client-secret",
       "camunda.client.auth.issuer=http://localhost:14682/auth-server"
     })
+@EnableConfigurationProperties({
+  ZeebeClientConfigurationProperties.class,
+  CamundaClientProperties.class
+})
 @WireMockTest(httpPort = 14682)
-public class AuthenticationConfigurationSaasTest {
-  private static final String ACCESS_TOKEN = "access-token";
-  @Autowired Authentication authentication;
+public class CredentialsProviderSaasTest {
 
-  @Test
-  void shouldBeSaas() {
-    assertThat(authentication).isExactlyInstanceOf(SaaSAuthentication.class);
+  private static final String ACCESS_TOKEN = "access-token";
+  @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
+  @Autowired ZeebeClientConfigurationImpl configuration;
+
+  @BeforeEach
+  void setUp() {
+    // Clean up credentials cache to ensure every test gets fresh token
+    Paths.get(System.getProperty("user.home"), ".camunda", "credentials")
+        .toAbsolutePath()
+        .toFile()
+        .delete();
   }
 
   @Test
-  void shouldHaveZeebeAuth() {
+  void shouldBeSaas() {
+    final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
+    assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
+  }
+
+  @Test
+  void shouldHaveZeebeAuth() throws IOException {
+    final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
+    final Map<String, String> headers = new HashMap<>();
+
+    final String accessToken = ACCESS_TOKEN;
     stubFor(
         post("/auth-server")
             .willReturn(
                 ok().withJsonBody(
                         JsonNodeFactory.instance
                             .objectNode()
-                            .put("access_token", ACCESS_TOKEN)
+                            .put("access_token", accessToken)
+                            .put("token_type", "bearer")
                             .put("expires_in", 300))));
-    assertThat(authentication.getTokenHeader(Product.ZEEBE))
-        .isNotNull()
-        .isEqualTo(entry("Authorization", "Bearer " + ACCESS_TOKEN));
+
+    credentialsProvider.applyCredentials(headers::put);
+    assertThat(headers).isEqualTo(Map.of("Authorization", "Bearer " + accessToken));
     verify(
         postRequestedFor(urlEqualTo("/auth-server"))
-            .withHeader("Content-Type", equalTo("application/json")));
+            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded")));
   }
 }
