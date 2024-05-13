@@ -1,23 +1,22 @@
 @use '@carbon/styles/scss/spacing';
 
 .ZoomControls {
-  position: absolute;
-  right: spacing.$spacing-04;
-  bottom: spacing.$spacing-04;
-  z-index: var(--z-above);
   display: flex;
   flex-direction: column;
+  position: absolute;
+  right: spacing.$spacing-05;
+  bottom: spacing.$spacing-05;
+  z-index: var(--z-above);
 
   > span {
     background-color: var(--cds-background);
-    border: 1px solid var(--cds-border-subtle);
 
     &:first-of-type {
-      margin-bottom: spacing.$spacing-05;
+      margin-bottom: spacing.$spacing-02;
     }
 
-    &:nth-of-type(2) {
-      border-bottom: 0px;
+    &:last-of-type button {
+      border-top: none;
     }
   }
 }

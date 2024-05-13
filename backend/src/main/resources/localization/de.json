@@ -1625,9 +1625,9 @@
       }
     },
     "zoomControls": {
-      "zoomIn": "Vergrößern",
-      "zoomOut": "Verkleinern",
-      "resetZoom": "Zoom zurücksetzen"
+      "zoomIn": "Diagramm vergrößern",
+      "zoomOut": "Diagramm verkleinern",
+      "resetZoom": "Diagrammzoom zurücksetzen"
     }
   },
   "apiErrors": {

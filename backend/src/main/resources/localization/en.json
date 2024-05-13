@@ -1625,9 +1625,9 @@
       }
     },
     "zoomControls": {
-      "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out",
-      "resetZoom": "Reset zoom"
+      "zoomIn": "Zoom in diagram",
+      "zoomOut": "Zoom out diagram",
+      "resetZoom": "Reset diagram zoom"
     }
   },
   "apiErrors": {

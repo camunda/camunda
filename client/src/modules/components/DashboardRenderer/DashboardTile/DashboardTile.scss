@@ -5,13 +5,9 @@
   padding: 0.5rem;
   max-width: 100%;
 
-  .BPMNDiagram {
+  .BPMNDiagram:not(:hover) {
     .ZoomControls {
       display: none;
-    }
-
-    &:hover .ZoomControls {
-      display: block;
     }
   }
 }

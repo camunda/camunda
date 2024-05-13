@@ -4,59 +4,38 @@ exports[`should match snapshot 1`] = `
 <div
   className="ZoomControls"
 >
-  <Button
+  <ForwardRef(IconButton)
+    align="left"
     className="reset"
-    hasIconOnly={true}
-    iconDescription="Reset zoom"
-    kind="ghost"
+    key="reset"
+    kind="tertiary"
+    label="Reset diagram zoom"
     onClick={[MockFunction]}
-    renderIcon={
-      Object {
-        "$$typeof": Symbol(react.forward_ref),
-        "propTypes": Object {
-          "size": [Function],
-        },
-        "render": [Function],
-      }
-    }
     size="sm"
-    tooltipAlignment="end"
-  />
-  <Button
+  >
+    <ForwardRef(CenterCircle) />
+  </ForwardRef(IconButton)>
+  <ForwardRef(IconButton)
+    align="left"
     className="zoomIn"
-    hasIconOnly={true}
-    iconDescription="Zoom in"
-    kind="ghost"
+    key="zoomIn"
+    kind="tertiary"
+    label="Zoom in diagram"
     onClick={[Function]}
-    renderIcon={
-      Object {
-        "$$typeof": Symbol(react.forward_ref),
-        "propTypes": Object {
-          "size": [Function],
-        },
-        "render": [Function],
-      }
-    }
     size="sm"
-    tooltipAlignment="end"
-  />
-  <Button
+  >
+    <ForwardRef(Add) />
+  </ForwardRef(IconButton)>
+  <ForwardRef(IconButton)
+    align="left"
     className="zoomOut"
-    hasIconOnly={true}
-    iconDescription="Zoom out"
-    kind="ghost"
+    key="zoomOut"
+    kind="tertiary"
+    label="Zoom out diagram"
     onClick={[Function]}
-    renderIcon={
-      Object {
-        "$$typeof": Symbol(react.forward_ref),
-        "propTypes": Object {
-          "size": [Function],
-        },
-        "render": [Function],
-      }
-    }
     size="sm"
-    tooltipAlignment="end"
-  />
+  >
+    <ForwardRef(Subtract) />
+  </ForwardRef(IconButton)>
 </div>
 `;

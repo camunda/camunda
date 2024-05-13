@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Button} from '@carbon/react';
-import {ZoomIn, ZoomOut, ZoomReset} from '@carbon/icons-react';
+import {IconButton} from '@carbon/react';
+import {Add, Subtract, CenterCircle} from '@carbon/icons-react';
 
 import {t} from 'translation';
 
@@ -26,20 +26,23 @@ export default function ZoomControls({fit, zoom}: ZoomControlsProps) {
       {
         onClick: fit,
         className: 'reset',
-        icon: ZoomReset,
+        icon: CenterCircle,
         description: t('common.zoomControls.resetZoom').toString(),
+        key: 'reset',
       },
       {
         onClick: () => zoom(ZOOM_STEP_SIZE),
         className: 'zoomIn',
-        icon: ZoomIn,
+        icon: Add,
         description: t('common.zoomControls.zoomIn').toString(),
+        key: 'zoomIn',
       },
       {
         onClick: () => zoom(-ZOOM_STEP_SIZE),
         className: 'zoomOut',
-        icon: ZoomOut,
+        icon: Subtract,
         description: t('common.zoomControls.zoomOut').toString(),
+        key: 'zoomOut',
       },
     ],
     [fit, zoom]
@@ -47,17 +50,18 @@ export default function ZoomControls({fit, zoom}: ZoomControlsProps) {
 
   return (
     <div className="ZoomControls">
-      {buttons.map(({onClick, className, icon, description}) => (
-        <Button
+      {buttons.map(({onClick, className, icon: Icon, description, key}) => (
+        <IconButton
+          key={key}
           size="sm"
-          kind="ghost"
+          kind="tertiary"
           className={className}
           onClick={onClick}
-          hasIconOnly
-          iconDescription={description}
-          renderIcon={icon}
-          tooltipAlignment="end"
-        />
+          label={description}
+          align="left"
+        >
+          <Icon />
+        </IconButton>
       ))}
     </div>
   );

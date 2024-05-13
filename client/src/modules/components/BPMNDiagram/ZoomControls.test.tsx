@@ -6,7 +6,7 @@
  */
 
 import {shallow} from 'enzyme';
-import {Button} from '@carbon/react';
+import {IconButton} from '@carbon/react';
 
 import ZoomControls from './ZoomControls';
 
@@ -20,7 +20,7 @@ it('should invoke zoom function on zoom button click', async () => {
   const spy = jest.fn();
   const node = shallow(<ZoomControls zoom={spy} fit={jest.fn()} />);
 
-  node.find(Button).at(1).simulate('click');
+  node.find(IconButton).at(1).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -29,7 +29,7 @@ it('should invoke fit function when clicking reset button', async () => {
   const spy = jest.fn();
   const node = shallow(<ZoomControls zoom={jest.fn()} fit={spy} />);
 
-  node.find(Button).first().simulate('click');
+  node.find(IconButton).first().simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
