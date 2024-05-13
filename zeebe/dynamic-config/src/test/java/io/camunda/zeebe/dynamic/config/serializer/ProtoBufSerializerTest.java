@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -145,6 +146,20 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeLeavePartitionRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(leavePartitionRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExporterDisableRequest() {
+    // given
+    final var exporterDisableRequest = new ExporterDisableRequest("expId", false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterDisableRequest(exporterDisableRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterDisableRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterDisableRequest);
   }
 
   @Test

@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -554,6 +555,15 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeExporterDisableRequest(final ExporterDisableRequest exporterDisableRequest) {
+    return Requests.ExporterDisableRequest.newBuilder()
+        .setExporterId(exporterDisableRequest.exporterId())
+        .setDryRun(exporterDisableRequest.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -645,6 +655,17 @@ public class ProtoBufSerializer
     try {
       final var cancelChangeRequest = Requests.CancelTopologyChangeRequest.parseFrom(encodedState);
       return new CancelChangeRequest(cancelChangeRequest.getChangeId());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ExporterDisableRequest decodeExporterDisableRequest(final byte[] encodedRequest) {
+    try {
+      final var exporterDisableRequest = Requests.ExporterDisableRequest.parseFrom(encodedRequest);
+      return new ExporterDisableRequest(
+          exporterDisableRequest.getExporterId(), exporterDisableRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
