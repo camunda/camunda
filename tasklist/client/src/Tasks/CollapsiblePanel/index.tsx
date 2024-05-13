@@ -19,6 +19,7 @@ import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFi
 import {getStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {usePrevious} from '@uidotdev/usehooks';
 
 function getCustomFilterParams(userId: string) {
   const customFilters = getStateLocally('customFilters')?.custom;
@@ -80,6 +81,7 @@ function getNavLinkSearchParam(options: {
 
 const CollapsiblePanel: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const wasCollapsed = usePrevious(isCollapsed);
   const {filter} = useTaskFilters();
   const [searchParams] = useSearchParams();
   const customFilters = getStateLocally('customFilters')?.custom;
@@ -112,6 +114,7 @@ const CollapsiblePanel: React.FC = () => {
               kind="ghost"
               aria-controls="task-nav-bar"
               aria-expanded="false"
+              autoFocus={wasCollapsed !== null && !wasCollapsed}
             />
           </li>
           <li>
@@ -151,6 +154,7 @@ const CollapsiblePanel: React.FC = () => {
           kind="ghost"
           aria-controls="task-nav-bar"
           aria-expanded="true"
+          autoFocus
         />
       </span>
       <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
