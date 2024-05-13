@@ -153,9 +153,11 @@ jobs:
           name: "[IT] ${{ matrix.name }}"
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "integration-tests/${{ matrix.group }}"
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -209,8 +211,10 @@ jobs:
           name: "unit tests"
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -275,9 +279,11 @@ jobs:
           name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "smoke-tests/${{ matrix.os }}"
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -322,8 +328,10 @@ jobs:
           name: Property Tests
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -381,8 +389,10 @@ jobs:
           name: Performance Tests
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -412,8 +422,10 @@ jobs:
         run: go test -mod=vendor -v ./...
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -439,8 +451,10 @@ jobs:
           working-directory: clients/go
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -468,8 +482,10 @@ jobs:
           base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -488,8 +504,10 @@ jobs:
       - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -547,8 +565,10 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
       - name: Observe build status
         if: always()
+        continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
