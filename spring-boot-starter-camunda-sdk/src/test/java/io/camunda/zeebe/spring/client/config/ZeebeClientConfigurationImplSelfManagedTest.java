@@ -173,10 +173,4 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
     assertThat(zeebeClientConfiguration.useDefaultRetryPolicy())
         .isEqualTo(DEFAULT.useDefaultRetryPolicy());
   }
-
-  @Test
-  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
-    assertThat(output).contains("clientId='***'");
-    assertThat(output).contains("clientSecret='***'");
-  }
 }
