@@ -14,7 +14,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.util.List;
 
-class RecordExporter {
+final class RecordExporter {
 
   private final RecordValues recordValues = new RecordValues();
   private final RecordMetadata rawMetadata = new RecordMetadata();
