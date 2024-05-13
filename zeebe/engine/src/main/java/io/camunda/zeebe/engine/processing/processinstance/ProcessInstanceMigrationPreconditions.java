@@ -31,14 +31,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public final class ProcessInstanceMigrationPreconditionChecker {
+public final class ProcessInstanceMigrationPreconditions {
 
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.PROCESS,
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
-          BpmnElementType.SUB_PROCESS);
+          BpmnElementType.SUB_PROCESS,
+          BpmnElementType.CALL_ACTIVITY);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
 
