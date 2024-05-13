@@ -10,12 +10,12 @@ const bpmnRendererColors = {
   outline: {
     fill: 'var(--cds-highlight)',
   },
-  defaultFillColor: 'var(--cds-layer-01)',
+  defaultFillColor: 'var(--cds-layer)',
   defaultStrokeColor: 'var(--cds-icon-secondary)',
   element: {
     text: 'var(--cds-text-primary)',
     background: {
-      default: 'var(--cds-layer-01)',
+      default: 'var(--cds-layer)',
     },
   },
 };
