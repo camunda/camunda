@@ -12,11 +12,15 @@ on:
       - '.github/workflows/operate-*'
       - 'distro/**'
       - 'operate/**'
+      - '.github/workflows/spring-boot-starter-camunda-sdk-ci.yml'
+      - 'spring-boot-starter-camunda-sdk/**'
   pull_request:
     paths-ignore:
       - '.github/workflows/operate-*'
       - 'distro/**'
       - 'operate/**'
+      - '.github/workflows/spring-boot-starter-camunda-sdk-ci.yml'
+      - 'spring-boot-starter-camunda-sdk/**'
   merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
