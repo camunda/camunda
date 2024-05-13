@@ -159,7 +159,7 @@ export default function DateFilter({
           isTabTip
           trigger={
             <Popover.ListBox size="sm">
-              <Icon className={classnames('indicator', {active: filter})} />
+              <Icon />
               {getFixedDateFilterName(filter)}
             </Popover.ListBox>
           }
