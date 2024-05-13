@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@bpmn-io/element-template-icon-renderer": "0.5.2",
     "@bpmn-io/form-js-carbon-styles": "1.8.6",
     "@bpmn-io/form-js-viewer": "1.8.6",
     "@camunda/camunda-composite-components": "0.6.4",
@@ -12,6 +13,7 @@
     "@monaco-editor/react": "4.6.0",
     "@tanstack/eslint-plugin-query": "5.35.6",
     "@tanstack/react-query": "5.36.0",
+    "bpmn-js": "17.6.1",
     "classnames": "^2.5.1",
     "date-fns": "3.6.0",
     "event-source-polyfill": "1.0.31",
