@@ -31,7 +31,6 @@ export {LoadingIndicator} from './LoadingIndicator';
 export {ColorPicker} from './ColorPicker';
 export {EntityName} from './EntityName';
 export {EntityNameForm} from './EntityNameForm';
-export {Form} from './Form';
 export {SubNav, NavItem} from './navigation';
 export {HeatmapOverlay} from './HeatmapOverlay';
 export {EntityList} from './EntityList';

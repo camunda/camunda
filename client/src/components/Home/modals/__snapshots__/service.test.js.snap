@@ -1,20 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should correctly format definitions 1`] = `
-Array [
-  Object {
-    "checked": false,
-    "id": "beverages",
-    "label": "Beverages (Decision table)",
-  },
-  Object {
-    "checked": true,
-    "id": "process_id",
-    "label": "process_id (Process)",
-  },
-]
-`;
-
 exports[`should correctly format tenants 1`] = `
 Array [
   Object {

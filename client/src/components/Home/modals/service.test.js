@@ -7,7 +7,7 @@
 
 import {UNAUTHORIZED_TENANT_ID} from 'services';
 
-import {formatTenants, formatDefinitions} from './service';
+import {formatTenants} from './service';
 
 it('should correctly format tenants', () => {
   const tenants = [
@@ -19,15 +19,4 @@ it('should correctly format tenants', () => {
   const selectedTenants = [tenants[0]];
 
   expect(formatTenants(tenants, selectedTenants)).toMatchSnapshot();
-});
-
-it('should correctly format definitions', () => {
-  const definitions = [
-    {key: 'beverages', name: 'Beverages', type: 'decision'},
-    {key: 'process_id', name: null, type: 'process'},
-  ];
-
-  const selectedDefinitions = [definitions[1]];
-
-  expect(formatDefinitions(definitions, selectedDefinitions)).toMatchSnapshot();
 });
