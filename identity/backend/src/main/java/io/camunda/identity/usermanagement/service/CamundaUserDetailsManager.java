@@ -18,6 +18,10 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
 
   // @formatter:off
   public static final String DEF_USERS_QUERY = "select username from users ";
+  public static final String DEF_USERS_GROUPS_QUERY =
+      "select g.id, g.group_name"
+          + " from groups g, group_members gm"
+          + " where gm.username = ? and g.id = gm.group_id";
 
   // @formatter:on
 
@@ -31,5 +35,15 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     return getJdbcTemplate().queryForList(DEF_USERS_QUERY, String.class).stream()
         .map(this::loadUserByUsername)
         .toList();
+  }
+
+  public List<String> loadUserGroups(final String username) {
+    return getJdbcTemplate()
+        .query(DEF_USERS_GROUPS_QUERY, new String[] {username}, (rs, rowNum) -> rs.getString(2));
+  }
+
+  public Integer findGroupId(final String group) {
+    assert getJdbcTemplate() != null;
+    return getJdbcTemplate().queryForObject(DEF_FIND_GROUP_ID_SQL, Integer.class, group);
   }
 }
