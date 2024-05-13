@@ -274,13 +274,8 @@ export class AlertModal extends React.Component {
                       inline
                       kind="warning"
                       hideCloseButton
-                      subtitle={
-                        <>
-                          {t('alert.inactiveStatus')}
-                          <br />
-                          {t('alert.activateInfo')}
-                        </>
-                      }
+                      title={t('alert.inactiveStatus')}
+                      subtitle={t('alert.activateInfo')}
                     />
                   )}
                   <TextInput

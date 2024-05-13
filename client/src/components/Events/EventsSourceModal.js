@@ -279,10 +279,10 @@ export default function EventsSourceModal({
                   )}
                   {isEditing() && (
                     <ActionableNotification
-                      subtitle={t('events.sources.definitionChangeWarning')}
                       kind="warning"
                       className="editingWarning"
                       hideCloseButton
+                      subtitle={t('events.sources.definitionChangeWarning')}
                     >
                       <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
                         {t('events.sources.learnMore')}

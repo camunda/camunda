@@ -228,9 +228,11 @@ export class NodeDuration extends Component<
                 onChange={(values) => this.setState({values})}
               />
               {!this.areAllFieldsNumbers() && (
-                <InlineNotification kind="error" hideCloseButton>
-                  {t('report.heatTarget.invalidValue')}
-                </InlineNotification>
+                <InlineNotification
+                  kind="error"
+                  hideCloseButton
+                  subtitle={t('report.heatTarget.invalidValue').toString()}
+                />
               )}
             </Stack>
           )}
