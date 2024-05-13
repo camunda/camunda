@@ -31,7 +31,6 @@ import {track} from 'tracking';
 import {useDocs, useErrorHandling} from 'hooks';
 
 import {isEventBasedProcessEnabled, getUserToken} from './service';
-import {TelemetrySettings} from './TelemetrySettings';
 import useUserMenu from './useUserMenu';
 
 import './Header.scss';
@@ -42,7 +41,6 @@ export function Header({noActions}: {noActions?: boolean}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
   const [webappLinks, setwebappLinks] = useState<Record<string, string> | null>(null);
-  const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
   const [organizationId, setOrganizationId] = useState<string>();
   const [optimizeProfile, setOptimizeProfile] = useState<string>();
@@ -51,7 +49,7 @@ export function Header({noActions}: {noActions?: boolean}) {
   const {mightFail} = useErrorHandling();
   const [optimizeDatabase, setOptimizeDatabase] = useState<string>();
   const {getBaseDocsUrl} = useDocs();
-  const userSideBar = useUserMenu({setTelemetrySettingsOpen});
+  const userSideBar = useUserMenu();
 
   useEffect(() => {
     mightFail(
@@ -122,9 +120,6 @@ export function Header({noActions}: {noActions?: boolean}) {
       organizationId={organizationId}
     >
       <C3Navigation {...props} />
-      {telemetrySettingsOpen && (
-        <TelemetrySettings onClose={() => setTelemetrySettingsOpen(false)} />
-      )}
     </NavbarWrapper>
   );
 }

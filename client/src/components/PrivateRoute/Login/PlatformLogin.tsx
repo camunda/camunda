@@ -112,7 +112,6 @@ export function PlatformLogin({onLogin}: {onLogin: (token: string) => void}) {
             <Button type="submit" onClick={submit} disabled={waitingForServer}>
               {t('login.btn')}
             </Button>
-            <div className="privacyNotice">{t('login.telemetry')}</div>
           </Stack>
         </Column>
       </Grid>

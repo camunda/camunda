@@ -18,13 +18,3 @@ export default function useUiConfig(): UiConfig {
 
   return contextValue.config;
 }
-
-export function useLoadConfig() {
-  const contextValue = useContext(configContext);
-
-  if (!contextValue) {
-    throw new Error('useUiConfig has to be used within <ConfigProvider>');
-  }
-
-  return contextValue.loadConfig;
-}

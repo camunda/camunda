@@ -173,13 +173,12 @@ it('should display the notifications component in cloud mode', async () => {
   await runLastEffect();
   await node.update();
 
-  expect(node.find('NavbarWrapper').props()).toEqual({
+  expect(node.find('NavbarWrapper').props()).toMatchObject({
     isCloud: true,
     notificationsUrl: 'notificationsUrl',
     organizationId: 'orgId',
     userToken: 'userToken',
     getNewUserToken: expect.any(Function),
-    children: expect.any(Array),
   });
   expect(node.find(C3Navigation).prop('notificationSideBar')).toEqual({
     ariaLabel: 'Notifications',

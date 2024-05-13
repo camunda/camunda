@@ -43,8 +43,6 @@ interface Onboarding {
 export type UiConfig = {
   emailEnabled: boolean;
   sharingEnabled: boolean;
-  metadataTelemetryEnabled: boolean;
-  settingsManuallyConfirmed: boolean;
   tenantsAvailable: boolean;
   optimizeVersion: string;
   optimizeDocsVersion: string;
@@ -115,12 +113,6 @@ export function createAccessorFunction<T>(property: keyof UiConfig): () => Promi
 
 export const isEmailEnabled = createAccessorFunction<boolean>('emailEnabled');
 export const isSharingEnabled = createAccessorFunction<boolean>('sharingEnabled');
-export const isMetadataTelemetryEnabled = createAccessorFunction<boolean>(
-  'metadataTelemetryEnabled'
-);
-export const areSettingsManuallyConfirmed = createAccessorFunction<boolean>(
-  'settingsManuallyConfirmed'
-);
 export const areTenantsAvailable = createAccessorFunction<boolean>('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersion');
 export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
