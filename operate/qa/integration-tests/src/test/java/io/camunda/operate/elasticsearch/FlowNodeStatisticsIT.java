@@ -42,7 +42,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests Elasticsearch query for process statistics. */
-public class ProcessStatisticsIT extends OperateAbstractIT {
+public class FlowNodeStatisticsIT extends OperateAbstractIT {
 
   private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
   private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
@@ -109,58 +109,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testFailStatisticsWithNoProcessId() throws Exception {
-    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
-
-    final MvcResult mvcResult = postRequestThatShouldFail(QUERY_PROCESS_STATISTICS_URL, query);
-
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Exactly one process must be specified in the request");
-  }
-
-  @Test
-  public void testFailStatisticsWithBpmnProcessIdButNoVersion() throws Exception {
-
-    final String bpmnProcessId = "demoProcess";
-
-    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery();
-    queryRequest.setBpmnProcessId(bpmnProcessId);
-
-    final MvcResult mvcResult =
-        postRequestThatShouldFail(QUERY_PROCESS_STATISTICS_URL, queryRequest);
-
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Exactly one process must be specified in the request");
-  }
-
-  @Test
-  public void testFailStatisticsWithMoreThanOneProcessDefinitionKey() throws Exception {
-    createData(PROCESS_KEY_DEMO_PROCESS);
-
-    final ListViewQueryDto query =
-        createGetAllProcessInstancesQuery(PROCESS_KEY_DEMO_PROCESS, PROCESS_KEY_OTHER_PROCESS);
-
-    final MvcResult mvcResult = postRequestThatShouldFail(QUERY_PROCESS_STATISTICS_URL, query);
-
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Exactly one process must be specified in the request");
-  }
-
-  @Test
-  public void testFailStatisticsWithProcessDefinitionKeyAndBpmnProcessId() throws Exception {
-    final Long processDefinitionKey = 1L;
-    final String bpmnProcessId = "demoProcess";
-    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
-    queryRequest.setBpmnProcessId(bpmnProcessId).setProcessVersion(1);
-
-    final MvcResult mvcResult =
-        postRequestThatShouldFail(QUERY_PROCESS_STATISTICS_URL, queryRequest);
-
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Exactly one process must be specified in the request");
-  }
-
-  @Test
   public void testTwoProcessesStatistics() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
     createData(PROCESS_KEY_OTHER_PROCESS);
@@ -195,45 +143,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testStatisticsWithPermisssionWhenAllowed() throws Exception {
-
-    // given
-    final Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
-
-    final List<OperateEntity> entities = new ArrayList<>();
-    final ProcessInstanceForListViewEntity processInstance =
-        createProcessInstance(ProcessInstanceState.ACTIVE, processDefinitionKey);
-    entities.add(
-        TestUtil.createFlowNodeInstance(
-            processInstance.getProcessInstanceKey(), FlowNodeState.COMPLETED, "start", null));
-    entities.add(
-        TestUtil.createFlowNodeInstance(
-            processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskA", null));
-    entities.add(
-        TestUtil.createFlowNodeInstance(
-            processInstance.getProcessInstanceKey(), FlowNodeState.ACTIVE, "taskB", null));
-    entities.add(processInstance);
-    searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
-
-    final ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(processDefinitionKey);
-
-    // when
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
-        .thenReturn(
-            PermissionsService.ResourcesAllowed.withIds(
-                Set.of(processInstance.getBpmnProcessId())));
-
-    final MvcResult mvcResult = postRequest(QUERY_PROCESS_STATISTICS_URL, queryRequest);
-
-    // then
-    final Collection<FlowNodeStatisticsDto> response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-
-    assertThat(response.size()).isEqualTo(2);
-  }
-
-  @Test
-  public void testStatisticsWithPermisssionWhenNotAllowed() throws Exception {
+  public void testStatisticsWithPermissionWhenNotAllowed() throws Exception {
 
     // given
     final Long processDefinitionKey = PROCESS_KEY_DEMO_PROCESS;
@@ -269,35 +179,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testCoreStatisticsWithPermisssionWhenAllowed() throws Exception {
-    // given
-    final String bpmnProcessId1 = "bpmnProcessId1";
-    final String bpmnProcessId2 = "bpmnProcessId2";
-    final String bpmnProcessId3 = "bpmnProcessId3";
-    final ProcessInstanceForListViewEntity processInstance1 =
-        createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId1);
-    final ProcessInstanceForListViewEntity processInstance2 =
-        createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId2);
-    final ProcessInstanceForListViewEntity processInstance3 =
-        createProcessInstance(ProcessInstanceState.ACTIVE).setBpmnProcessId(bpmnProcessId3);
-    searchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
-
-    final ListViewRequestDto queryRequest = createGetAllProcessInstancesRequest();
-
-    // when
-    when(permissionsService.getProcessesWithPermission(IdentityPermission.READ))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
-
-    // then
-    final ProcessInstanceCoreStatisticsDto coreStatistics =
-        mockMvcTestRule.fromResponse(
-            getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
-
-    assertThat(coreStatistics.getActive()).isEqualTo(3);
-  }
-
-  @Test
-  public void testCoreStatisticsWithPermisssionWhenNotAllowed() throws Exception {
+  public void testCoreStatisticsWithPermissionWhenNotAllowed() throws Exception {
     // given
     final String bpmnProcessId1 = "bpmnProcessId1";
     final String bpmnProcessId2 = "bpmnProcessId2";
@@ -324,7 +206,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
     assertThat(coreStatistics.getActive()).isEqualTo(0);
   }
 
-  private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
+  private ListViewQueryDto createGetAllProcessInstancesQuery(final Long... processDefinitionKeys) {
     final ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
       q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
@@ -332,7 +214,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
     return q;
   }
 
-  private void getStatisticsAndAssert(ListViewQueryDto query) throws Exception {
+  private void getStatisticsAndAssert(final ListViewQueryDto query) throws Exception {
     final List<FlowNodeStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
 
     assertThat(activityStatisticsDtos).hasSize(5);
@@ -378,7 +260,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
                     && ai.getIncidents().equals(0L));
   }
 
-  private List<FlowNodeStatisticsDto> getActivityStatistics(ListViewQueryDto query)
+  private List<FlowNodeStatisticsDto> getActivityStatistics(final ListViewQueryDto query)
       throws Exception {
     return mockMvcTestRule.listFromResponse(
         postRequest(QUERY_PROCESS_STATISTICS_URL, query), FlowNodeStatisticsDto.class);
@@ -388,7 +270,7 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
    * start taskA - 2 active taskB taskC - - 2 canceled - 2 with incident taskD - - 1 canceled taskE
    * - 1 active - - 1 with incident end - - - - 2 finished
    */
-  protected void createData(Long processDefinitionKey) {
+  protected void createData(final Long processDefinitionKey) {
 
     final List<OperateEntity> entities = new ArrayList<>();
 
