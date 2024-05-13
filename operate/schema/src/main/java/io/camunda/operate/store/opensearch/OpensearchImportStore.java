@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.store.opensearch;
 
+import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -16,15 +17,19 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.Either;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +51,7 @@ public class OpensearchImportStore implements ImportStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(final String alias, final int partitionId)
       throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(importPositionType.getAlias())
@@ -75,7 +80,7 @@ public class OpensearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
+      final List<ImportPositionEntity> positions, final List<ImportPositionEntity> postImportPositions) {
     if (positions.isEmpty() && postImportPositions.isEmpty()) {
       return Either.right(true);
     } else {
@@ -101,25 +106,15 @@ public class OpensearchImportStore implements ImportStore {
     }
   }
 
-  @Override
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
-  @Override
-  public boolean getConcurrencyMode() {
-    throw new UnsupportedOperationException("Not yet implemented");
-  }
-
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
   }
 
-  private <R> void addPositions(
+private <R> void addPositions(
       final BulkRequest.Builder bulkRequestBuilder,
       final List<ImportPositionEntity> positions,
-      Function<ImportPositionEntity, R> entityProducer) {
-    for (ImportPositionEntity position : positions) {
+      final Function<ImportPositionEntity, R> entityProducer) {
+    for (final ImportPositionEntity position : positions) {
       bulkRequestBuilder.operations(
           op ->
               op.update(
@@ -130,8 +125,7 @@ public class OpensearchImportStore implements ImportStore {
                           .document(entityProducer.apply(position))));
     }
   }
-
-  record ImportPositionUpdate(
+    record ImportPositionUpdate(
       String id,
       String aliasName,
       String indexName,
@@ -150,12 +144,37 @@ public class OpensearchImportStore implements ImportStore {
           position.getPostImporterPosition(),
           position.getSequence());
     }
+  }@Override
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    final String indexName = importPositionType.getFullQualifiedName();
+    LOGGER.debug("Meta field will be updated. Index name: {}. ");
+    final PutMappingRequest request =
+        new PutMappingRequest.Builder()
+            .index(indexName)
+            .meta(META_CONCURRENCY_MODE, JsonData.of(concurrencyMode))
+            .build();
+    richOpenSearchClient.index().putMapping(request);
   }
 
   record PostImportPositionUpdate(Long postImporterPosition) {
     public static PostImportPositionUpdate fromImportPositionEntity(
         final ImportPositionEntity position) {
       return new PostImportPositionUpdate(position.getPostImporterPosition());
+    }
+  }
+
+
+  @Override
+  public boolean getConcurrencyMode() {
+    final String indexName = importPositionType.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings = richOpenSearchClient.index()
+        .getIndexMappings(indexName);
+    if (indexMappings.get(indexName).getMetaProperties() == null) {
+      return false;
+    } else {
+      final Object concurrencyMode =
+          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
+      return concurrencyMode == null ? false : (boolean) concurrencyMode;
     }
   }
 }
