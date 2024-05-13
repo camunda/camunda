@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -33,10 +34,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.web.WebAppConfiguration;
 
 @SpringBootTest(
     classes = {TestApplication.class},
-    properties = {"spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
+    properties = {
+      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+    })
+@WebAppConfiguration
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
   protected static final String USER = "calculon";
