@@ -54,7 +54,7 @@ public class DecisionIT extends OperateAbstractIT {
   @MockBean private PermissionsService permissionsService;
 
   @Test
-  public void testDecisionsGroupedWithPermisssionWhenNotAllowed() throws Exception {
+  public void testDecisionsGroupedWithPermissionWhenNotAllowed() throws Exception {
     // given
     final String id1 = "111";
     final String id2 = "222";
@@ -84,7 +84,7 @@ public class DecisionIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testDecisionsGroupedWithPermisssionWhenAllowed() throws Exception {
+  public void testDecisionsGroupedWithPermissionWhenAllowed() throws Exception {
     // given
     final String id1 = "111";
     final String id2 = "222";
@@ -116,7 +116,7 @@ public class DecisionIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testDecisionsGroupedWithPermisssionWhenSomeAllowed() throws Exception {
+  public void testDecisionsGroupedWithPermissionWhenSomeAllowed() throws Exception {
     // given
     final String id1 = "111";
     final String id2 = "222";
