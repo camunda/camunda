@@ -25,7 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
     properties = "camunda.client.mode=oidc")
-public class CamundaClientPropertiesOidcTest {
+public class CamundaClientPropertiesSelfManagedTest {
   @Autowired CamundaClientProperties properties;
 
   @Test
