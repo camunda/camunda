@@ -27,9 +27,8 @@ import {
 import {evaluateReport, createEntity, deleteEntity, addSources, loadEntities} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 import {showError} from 'notifications';
-import {useErrorHandling, useUser} from 'hooks';
+import {useErrorHandling, useUiConfig, useUser} from 'hooks';
 
 import {
   getSharedDashboard,
@@ -71,8 +70,8 @@ export function DashboardView(props) {
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
   const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
-  const [optimizeProfile, setOptimizeProfile] = useState();
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const {userSearchAvailable} = useUiConfig();
 
   const optimizeReports = tiles?.filter(({id, report}) => !!id || !!report);
   const {definitions} = useReportDefinitions(optimizeReports?.[0]);
@@ -96,12 +95,6 @@ export function DashboardView(props) {
     },
     [toggleTheme]
   );
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
 
   function changeFullScreen() {
     if (theme === 'dark') {
@@ -262,10 +255,9 @@ export function DashboardView(props) {
                   renderIcon={Filter}
                 />
               )}
-              {!fullScreenHandle.active &&
-                (optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
-                  <AlertsDropdown dashboardTiles={tiles} />
-                )}
+              {!fullScreenHandle.active && userSearchAvailable && (
+                <AlertsDropdown dashboardTiles={tiles} />
+              )}
               <Button
                 kind="ghost"
                 hasIconOnly

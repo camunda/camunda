@@ -10,8 +10,8 @@ import {shallow} from 'enzyme';
 import {useFullScreenHandle} from 'react-full-screen';
 
 import {AlertsDropdown} from 'components';
-import {getOptimizeProfile} from 'config';
 import {createEntity, deleteEntity, addSources} from 'services';
+import {useUiConfig} from 'hooks';
 
 import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
@@ -30,6 +30,7 @@ jest.mock('services', () => ({
 }));
 
 jest.mock('hooks', () => ({
+  useUiConfig: jest.fn().mockReturnValue({userSearchAvailable: true}),
   useErrorHandling: jest.fn().mockImplementation(() => ({
     mightFail: jest.fn().mockImplementation(async (data, cb, err) => {
       try {
@@ -88,11 +89,9 @@ it('should render a sharing popover', async () => {
   expect(node.find('.share-button')).toExist();
 });
 
-it('should hide alert dropdown in ccsm environment', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
+it('should hide alert dropdown if usersearch is not available', async () => {
+  useUiConfig.mockReturnValueOnce({userSearchAvailable: false});
   const node = shallow(<DashboardView />);
-
-  await runAllEffects();
 
   expect(node.find(AlertsDropdown)).not.toExist();
 });
