@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_PROCESS_INSTANCES_ENABLED = false;
-const IS_NEW_FILTERS_UI_ENABLED = false;
-
-export {IS_PROCESS_INSTANCES_ENABLED, IS_NEW_FILTERS_UI_ENABLED};
+.panelHeader {
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}

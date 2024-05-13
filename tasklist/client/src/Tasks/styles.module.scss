@@ -10,11 +10,20 @@
 
 .container {
   display: grid;
-  grid-template-columns: layout.to-rem(312px) 1fr;
+  grid-template-columns:
+    auto layout.to-rem(312px)
+    1fr;
   grid-template-rows: 100%;
   height: 100%;
   padding-top: layout.to-rem(48px);
   box-sizing: border-box;
+
+  //should be removed when the feature IS_NEW_FILTERS_UI_ENABLED is removed
+  &.twoColumns {
+    grid-template-columns:
+      layout.to-rem(312px)
+      1fr !important;
+  }
 }
 
 .tasksPanel {
