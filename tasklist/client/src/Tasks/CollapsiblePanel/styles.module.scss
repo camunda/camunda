@@ -8,6 +8,7 @@
 
 @use '@carbon/layout';
 @use '@carbon/type';
+@use '@carbon/grid';
 
 .base {
   height: 100%;
@@ -20,6 +21,22 @@
 .collapsedContainer {
   width: layout.to-rem(40px);
   padding-top: var(--cds-spacing-04);
+}
+
+.floatingContainer {
+  width: fit-content;
+}
+
+@include grid.breakpoint-down('xlg') {
+  .floatingContainer {
+    width: layout.to-rem(40px);
+    position: relative;
+
+    .expandedContainer {
+      position: absolute;
+      z-index: 1;
+    }
+  }
 }
 
 .expandedContainer {

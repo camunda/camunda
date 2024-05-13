@@ -134,104 +134,106 @@ const CollapsiblePanel: React.FC = () => {
   }
 
   return (
-    <nav
-      aria-labelledby="filters-title"
-      className={cn(styles.base, styles.expandedContainer)}
-      id="task-nav-bar"
-      aria-owns="filters-menu"
-    >
-      <span className={cn(styles.header, sharedStyles.panelHeader)}>
-        <h1 id="filters-title">Filters</h1>
-        <Button
-          hasIconOnly
-          iconDescription="Collapse "
-          tooltipPosition="right"
-          onClick={() => {
-            setIsCollapsed(true);
-          }}
-          renderIcon={SidePanelClose}
-          size="md"
-          kind="ghost"
-          aria-controls="task-nav-bar"
-          aria-expanded="true"
-          autoFocus
-        />
-      </span>
-      <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'all-open',
-                userId,
-              }),
+    <div className={styles.floatingContainer}>
+      <nav
+        aria-labelledby="filters-title"
+        className={cn(styles.base, styles.expandedContainer)}
+        id="task-nav-bar"
+        aria-owns="filters-menu"
+      >
+        <span className={cn(styles.header, sharedStyles.panelHeader)}>
+          <h1 id="filters-title">Filters</h1>
+          <Button
+            hasIconOnly
+            iconDescription="Collapse "
+            tooltipPosition="right"
+            onClick={() => {
+              setIsCollapsed(true);
             }}
-            isActive={filter === 'all-open'}
-          >
-            All open tasks
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'assigned-to-me',
-                userId,
-              }),
-            }}
-            isActive={filter === 'assigned-to-me'}
-          >
-            Assigned to me
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'unassigned',
-                userId,
-              }),
-            }}
-            isActive={filter === 'unassigned'}
-          >
-            Unassigned
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'completed',
-                userId,
-              }),
-            }}
-            isActive={filter === 'completed'}
-          >
-            Completed
-          </ControlledNavLink>
-        </li>
-        {customFilters === undefined ? null : (
+            renderIcon={SidePanelClose}
+            size="md"
+            kind="ghost"
+            aria-controls="task-nav-bar"
+            aria-expanded="true"
+            autoFocus
+          />
+        </span>
+        <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
           <li>
             <ControlledNavLink
               to={{
                 search: getNavLinkSearchParam({
                   currentParams: searchParams,
-                  filter: 'custom',
+                  filter: 'all-open',
                   userId,
                 }),
               }}
-              isActive={filter === 'custom'}
+              isActive={filter === 'all-open'}
             >
-              Custom
+              All open tasks
             </ControlledNavLink>
           </li>
-        )}
-      </ul>
-    </nav>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'assigned-to-me',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'assigned-to-me'}
+            >
+              Assigned to me
+            </ControlledNavLink>
+          </li>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'unassigned',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'unassigned'}
+            >
+              Unassigned
+            </ControlledNavLink>
+          </li>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'completed',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'completed'}
+            >
+              Completed
+            </ControlledNavLink>
+          </li>
+          {customFilters === undefined ? null : (
+            <li>
+              <ControlledNavLink
+                to={{
+                  search: getNavLinkSearchParam({
+                    currentParams: searchParams,
+                    filter: 'custom',
+                    userId,
+                  }),
+                }}
+                isActive={filter === 'custom'}
+              >
+                Custom
+              </ControlledNavLink>
+            </li>
+          )}
+        </ul>
+      </nav>
+    </div>
   );
 };
 
