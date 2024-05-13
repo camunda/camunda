@@ -245,7 +245,7 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
-"@bpmn-io/element-template-icon-renderer@^0.5.2":
+"@bpmn-io/element-template-icon-renderer@0.5.2":
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/@bpmn-io/element-template-icon-renderer/-/element-template-icon-renderer-0.5.2.tgz#59eb1af097a51857147cc27a09993b22247f79ef"
   integrity sha512-cKu79k1vIizRMPV5kHDxqRs/INlxBc7kgBl8xYmAVqVx29dGNltcg6yk+UN6hWzTWfaJ/VLpMhs1Zn//RlSHkQ==
@@ -2019,7 +2019,7 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@^17.6.1:
+bpmn-js@17.6.1:
   version "17.6.1"
   resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.6.1.tgz#07eb2c61e2eb02a85d0d910c59253001f8e69970"
   integrity sha512-3RM8caHEtf4CB6vF37AtVPsdT6mKSHiFI2YC8TZPCdlI97oXlAMvHi+vJGLKGx50X/VwCBMQPrRE9UETqRY7uQ==
@@ -4806,12 +4806,7 @@ postcss@8.4.38, postcss@^8.0.0, postcss@^8.4.35, postcss@^8.4.38:
     picocolors "^1.0.0"
     source-map-js "^1.2.0"
 
-preact@^10.11.2:
-  version "10.21.0"
-  resolved "https://registry.yarnpkg.com/preact/-/preact-10.21.0.tgz#5b0335c873a1724deb66e517830db4fd310c24f6"
-  integrity sha512-aQAIxtzWEwH8ou+OovWVSVNlFImL7xUCwJX3YMqA3U8iKCNC34999fFOnWjYNsylgfPgMexpbk7WYOLtKr/mxg==
-
-preact@^10.5.14:
+preact@^10.11.2, preact@^10.5.14:
   version "10.21.0"
   resolved "https://registry.yarnpkg.com/preact/-/preact-10.21.0.tgz#5b0335c873a1724deb66e517830db4fd310c24f6"
   integrity sha512-aQAIxtzWEwH8ou+OovWVSVNlFImL7xUCwJX3YMqA3U8iKCNC34999fFOnWjYNsylgfPgMexpbk7WYOLtKr/mxg==
