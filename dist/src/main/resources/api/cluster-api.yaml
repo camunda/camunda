@@ -345,6 +345,7 @@ components:
             - PARTITION_RECONFIGURE_PRIORITY
             - PARTITION_FORCE_RECONFIGURE
             - BROKER_FORCE_REMOVE
+            - UNKNOWN
         brokerId:
           $ref: "#/components/schemas/BrokerId"
         partitionId:

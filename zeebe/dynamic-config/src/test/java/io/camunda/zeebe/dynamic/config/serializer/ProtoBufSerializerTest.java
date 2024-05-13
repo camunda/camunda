@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -185,7 +186,8 @@ final class ProtoBufSerializerTest {
         topologyWithClusterChangePlan(),
         topologyWithCompletedClusterChangePlan(),
         topologyWithClusterChangePlanWithMemberOperations(),
-        topologyWithExporterState());
+        topologyWithExporterState(),
+        topologyWithExporterDisableOperation());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -306,5 +308,11 @@ final class ProtoBufSerializerTest {
             m ->
                 m.addPartition(
                     1, new PartitionState(PartitionState.State.ACTIVE, 1, dynamicConfig)));
+  }
+
+  private static ClusterConfiguration topologyWithExporterDisableOperation() {
+    return topologyWithExporterState()
+        .startConfigurationChange(
+            List.of(new PartitionDisableExporterOperation(MemberId.from("1"), 1, "expA")));
   }
 }
