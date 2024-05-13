@@ -3,12 +3,11 @@
 .InstanceStateFilter {
   .Popover .ListBoxTrigger {
     .indicator {
-      display: inline-block;
       width: 10px;
       height: 10px;
       background-color: colors.$gray-40;
       border-radius: 50%;
-      margin-right: 0.7em;
+
       &.active {
         background-color: colors.$green-50;
       }

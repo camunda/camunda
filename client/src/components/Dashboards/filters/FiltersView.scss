@@ -41,6 +41,11 @@
     }
   }
 
+  .indicator {
+    display: inline-block;
+    margin-right: 0.5rem;
+  }
+
   .indicator.active {
     color: colors.$blue-60;
   }
