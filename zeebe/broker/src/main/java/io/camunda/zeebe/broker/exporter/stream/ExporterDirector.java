@@ -39,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -189,6 +188,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   /**
    * Disables an already configured exporter. No records will be exported to this exporter anymore.
+   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
    *
    * @param exporterId id of the exporter to disabled
    * @return future which will be completed after the exporter is disabled.
@@ -202,15 +202,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void removeExporter(final String exporterId) {
-    final Optional<ExporterContainer> optionalContainer =
-        containers.stream().filter(c -> c.getId().equals(exporterId)).findFirst();
+    containers.stream()
+        .filter(c -> c.getId().equals(exporterId))
+        .findFirst()
+        .ifPresentOrElse(
+            container -> removeExporter(exporterId, container),
+            () -> LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId));
+  }
 
-    if (optionalContainer.isEmpty()) {
-      LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId);
-      return;
-    }
-
-    final var container = optionalContainer.get();
+  private void removeExporter(final String exporterId, final ExporterContainer container) {
     container.close();
     containers.remove(container);
     state.removeExporterState(exporterId);
