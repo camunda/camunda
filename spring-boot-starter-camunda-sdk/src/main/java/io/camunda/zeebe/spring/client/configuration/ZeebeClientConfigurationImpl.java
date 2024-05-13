@@ -101,7 +101,7 @@ public class ZeebeClientConfigurationImpl
         "GrpcAddress",
         () -> camundaClientProperties.getZeebe().getGrpcAddress(),
         () -> properties.getBroker().getGrpcAddress(),
-        DEFAULT.getRestAddress(),
+        DEFAULT.getGrpcAddress(),
         configCache);
   }
 
