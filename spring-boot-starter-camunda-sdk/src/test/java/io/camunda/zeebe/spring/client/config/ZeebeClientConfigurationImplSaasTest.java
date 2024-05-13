@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.IdentityCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class ZeebeClientConfigurationImplSaasTest {
   @Test
   void shouldNotHaveCredentialsProvider() {
     assertThat(zeebeClientConfiguration.getCredentialsProvider())
-        .isInstanceOf(IdentityCredentialsProvider.class);
+        .isInstanceOf(OAuthCredentialsProvider.class);
   }
 
   @Test
