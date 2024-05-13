@@ -19,6 +19,7 @@ import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styles from './styles.module.scss';
 import headerStyles from './Header.module.scss';
 import asideStyles from './Aside.module.scss';
+import tabStyles from './TabListNav.module.scss';
 
 type Props = {
   'data-testid'?: string;
@@ -38,7 +39,7 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
             <ButtonSkeleton size="sm" />
           </div>
         </header>
-        <TabsSkeleton className={styles.tabs} />
+        <TabsSkeleton className={tabStyles.tabs} />
         <TaskDetailsRow>
           <SkeletonText width="150px" heading />
         </TaskDetailsRow>

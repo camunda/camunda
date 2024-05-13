@@ -63,6 +63,18 @@ const api = {
       },
     });
   },
+  getProcess: (params: {processDefinitionId: string}) => {
+    const url = getFullURL(
+      `/v1/internal/processes/${params.processDefinitionId}`,
+    );
+    return new Request(url, {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
   getProcesses: (params: {
     query?: string;
     tenantId?: Task['tenantId'];

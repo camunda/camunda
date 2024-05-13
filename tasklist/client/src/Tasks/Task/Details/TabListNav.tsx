@@ -19,6 +19,7 @@ type Props = {
     label: string;
     selected: boolean;
     href: string;
+    visible?: boolean;
   }>;
 };
 
@@ -27,7 +28,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <nav className={cn(className, styles.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, href}) => (
+        {items.map(({key, title, label, selected, href, visible}) => (
           <button
             key={key}
             type="button"
@@ -36,8 +37,11 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
             aria-current={selected ? 'page' : undefined}
             className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
               ['cds--tabs__nav-item--selected']: selected,
+              [styles.hidden]: visible === false,
             })}
             tabIndex={selected ? 0 : -1}
+            hidden={visible === false}
+            aria-hidden={visible === false}
             onClick={() => navigate(href)}
           >
             <div className="cds--tabs__nav-item-label-wrapper">

@@ -40,6 +40,7 @@ class TaskDetailsPage {
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
+  readonly bpmnDiagram: Locator;
   readonly taskCompletionNotification: Locator;
 
   constructor(page: Page) {
@@ -65,13 +66,13 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
+    this.bpmnDiagram = page.getByTestId('diagram');
     this.taskCompletionNotification = page.getByText('Task completed');
   }
 
-  async goto(id: string) {
-    await this.page.goto(`/${id}`, {
-      waitUntil: 'networkidle',
-    });
+  async goto(id: string, subpath?: string) {
+    const path = subpath ? `/${id}/${subpath}` : `/${id}`;
+    await this.page.goto(path, {waitUntil: 'networkidle'});
   }
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {

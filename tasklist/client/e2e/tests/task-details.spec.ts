@@ -542,4 +542,13 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.form).toContainText('Hello Jane');
     await expect(formJSDetailsPage.form).toContainText('You are 50 years old');
   });
+
+  test('show process model', async ({taskPanelPage, taskDetailsPage}) => {
+    await taskPanelPage.openTask('User registration');
+
+    await expect(taskDetailsPage.detailsHeader).toBeVisible();
+    await taskDetailsPage.detailsHeader.getByText(/process/i).click();
+
+    await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
+  });
 });
