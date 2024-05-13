@@ -254,7 +254,7 @@ test.describe('task details page', () => {
 
     expect(
       await formJSDetailsPage.mapDynamicListItems(
-        await page.getByLabel('Unit Price*'),
+        page.getByLabel('Unit Price*'),
         async (element) => {
           return await element.inputValue();
         },
