@@ -106,11 +106,6 @@ public class MetricsExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (record.getRecordType() != RecordType.EVENT) {
-      controller.updateLastExportedRecordPosition(record.getPosition());
-      return;
-    }
-
     final var partitionId = record.getPartitionId();
     final var recordKey = record.getKey();
 
