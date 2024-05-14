@@ -22,11 +22,15 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -335,6 +339,28 @@ final class ClusterConfigurationManagementApiTest {
             new PartitionForceReconfigureOperation(id2, 2, List.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
+  }
+
+  @Test
+  void shouldDisableExporter() {
+    // given
+    final String exporterId = "exporterId";
+    final var request =
+        new ClusterConfigurationManagementRequest.ExporterDisableRequest(exporterId, false);
+    final var partitionConfigWithExporter =
+        new DynamicPartitionConfig(
+            new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
+    final var configurationWithExporter =
+        initialTopology.updateMember(
+            id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+    recordingCoordinator.setCurrentTopology(configurationWithExporter);
+
+    // when
+    final var changeStatus = clientApi.disableExporter(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(new PartitionDisableExporterOperation(id0, 1, exporterId));
   }
 
   @Test

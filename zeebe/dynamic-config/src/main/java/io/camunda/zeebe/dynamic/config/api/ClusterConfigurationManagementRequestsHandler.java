@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -124,6 +125,14 @@ public final class ClusterConfigurationManagementRequestsHandler
     return handleRequest(
         forceScaleDownRequest.dryRun(),
         new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
+  }
+
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
+      final ExporterDisableRequest exporterDisableRequest) {
+    return handleRequest(
+        exporterDisableRequest.dryRun(),
+        new ExporterDisableRequestTransformer(exporterDisableRequest.exporterId()));
   }
 
   @Override

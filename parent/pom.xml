@@ -78,7 +78,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
     <version.protobuf-common>2.39.0</version.protobuf-common>
-    <version.micrometer>1.12.6</version.micrometer>
+    <version.micrometer>1.13.0</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.14</version.scala>
@@ -122,7 +122,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.39.0</version.google-sdk>
     <version.azure-sdk>1.2.23</version.azure-sdk>
-    <version.awssdk>2.25.50</version.awssdk>
+    <version.awssdk>2.25.51</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.720</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.721</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
@@ -179,7 +179,8 @@
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
+    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
+    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
     <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
@@ -1911,13 +1912,13 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
         <exclusions>
           <exclusion>
             <groupId>com.graphql-java-kickstart</groupId>
@@ -1945,19 +1946,19 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>

@@ -17,7 +17,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
@@ -29,13 +28,12 @@ import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.impl.records.RecordValues;
-import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +56,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  private final List<ExporterContainer> containers;
+
+  // Use concrete type because it must be modifiable
+  private final ArrayList<ExporterContainer> containers;
   private final LogStream logStream;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
@@ -93,7 +93,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     containers =
         context.getDescriptors().stream()
             .map(descriptor -> new ExporterContainer(descriptor, partitionId))
-            .collect(Collectors.toList());
+            .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
     recordExporter = new RecordExporter(metrics, containers, partitionId);
@@ -184,6 +184,45 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             actor.submit(this::readNextEvent);
           }
         });
+  }
+
+  /**
+   * Disables an already configured exporter. No records will be exported to this exporter anymore.
+   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
+   *
+   * @param exporterId id of the exporter to disabled
+   * @return future which will be completed after the exporter is disabled.
+   */
+  public ActorFuture<Void> disableExporter(final String exporterId) {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return actor.call(() -> removeExporter(exporterId));
+  }
+
+  private void removeExporter(final String exporterId) {
+    containers.stream()
+        .filter(c -> c.getId().equals(exporterId))
+        .findFirst()
+        .ifPresentOrElse(
+            container -> removeExporter(exporterId, container),
+            () -> LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId));
+  }
+
+  private void removeExporter(final String exporterId, final ExporterContainer container) {
+    container.close();
+    containers.remove(container);
+    state.removeExporterState(exporterId);
+    // After removing this exporter, the exporter index has changed. Reset it so that we don't
+    // miss to export the record to any of the exporters whose index has changed.
+    recordExporter.resetExporterIndex();
+    LOG.debug("Exporter '{}' is removed.", exporterId);
+
+    if (containers.isEmpty()) {
+      LOG.info("No exporters are configured. Closing the exporter director '{}'.", name);
+      actor.close();
+    }
   }
 
   public ActorFuture<ExporterPhase> getPhase() {
@@ -521,67 +560,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
     }
     return actor.call(() -> state.getLowestPosition());
-  }
-
-  private static class RecordExporter {
-
-    private final RecordValues recordValues = new RecordValues();
-    private final RecordMetadata rawMetadata = new RecordMetadata();
-    private final List<ExporterContainer> containers;
-    private final TypedRecordImpl typedEvent;
-    private final ExporterMetrics exporterMetrics;
-
-    private boolean shouldExport;
-    private int exporterIndex;
-
-    RecordExporter(
-        final ExporterMetrics exporterMetrics,
-        final List<ExporterContainer> containers,
-        final int partitionId) {
-      this.containers = containers;
-      typedEvent = new TypedRecordImpl(partitionId);
-      this.exporterMetrics = exporterMetrics;
-    }
-
-    void wrap(final LoggedEvent rawEvent) {
-      rawEvent.readMetadata(rawMetadata);
-
-      final UnifiedRecordValue recordValue =
-          recordValues.readRecordValue(rawEvent, rawMetadata.getValueType());
-
-      shouldExport = recordValue != null;
-      if (shouldExport) {
-        typedEvent.wrap(rawEvent, rawMetadata, recordValue);
-        exporterIndex = 0;
-      }
-    }
-
-    public boolean export() {
-      if (!shouldExport) {
-        return true;
-      }
-
-      final int exportersCount = containers.size();
-
-      // current error handling strategy is simply to repeat forever until the record can be
-      // successfully exported.
-      while (exporterIndex < exportersCount) {
-        final ExporterContainer container = containers.get(exporterIndex);
-
-        if (container.exportRecord(rawMetadata, typedEvent)) {
-          exporterIndex++;
-          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
-        } else {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    TypedRecordImpl getTypedEvent() {
-      return typedEvent;
-    }
   }
 
   private static class ExporterEventFilter implements EventFilter {
