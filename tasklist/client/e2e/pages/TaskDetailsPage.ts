@@ -35,6 +35,7 @@ class TaskDetailsPage {
   readonly addVariableButton: Locator;
   readonly detailsPanel: Locator;
   readonly detailsHeader: Locator;
+  readonly detailsNav: Locator;
   readonly pickATaskHeader: Locator;
   readonly emptyTaskMessage: Locator;
   readonly variablesTable: Locator;
@@ -53,6 +54,7 @@ class TaskDetailsPage {
       name: 'Task details right panel',
     });
     this.detailsHeader = page.getByTitle('Task details header');
+    this.detailsNav = page.getByLabel('Task Details Navigation');
     this.pickATaskHeader = page.getByRole('heading', {
       name: 'Pick a task to work on',
     });

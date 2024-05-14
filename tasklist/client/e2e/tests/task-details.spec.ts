@@ -546,8 +546,8 @@ test.describe('task details page', () => {
   test('show process model', async ({taskPanelPage, taskDetailsPage}) => {
     await taskPanelPage.openTask('User registration');
 
-    await expect(taskDetailsPage.detailsHeader).toBeVisible();
-    await taskDetailsPage.detailsHeader.getByText(/process/i).click();
+    await expect(taskDetailsPage.detailsNav).toBeVisible();
+    await taskDetailsPage.detailsNav.getByText(/process/i).click();
 
     await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
   });
