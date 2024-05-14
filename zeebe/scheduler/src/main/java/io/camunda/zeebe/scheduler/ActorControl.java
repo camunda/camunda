@@ -101,7 +101,7 @@ public class ActorControl implements ConcurrencyControl {
     job.onJobAddedToTask(task);
 
     final TimerSubscription timerSubscription =
-        new TimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, isRecurring);
+        new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, isRecurring);
     job.setSubscription(timerSubscription);
 
     timerSubscription.submit();
