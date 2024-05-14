@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public final class TimedActionsTest {
   @RegisterExtension
-  public final ControlledActorSchedulerExtension schedulerRule =
+  public final ControlledActorSchedulerExtension actorScheduler =
       new ControlledActorSchedulerExtension();
 
   @Test
@@ -40,9 +40,9 @@ public final class TimedActionsTest {
         };
 
     // when
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
 
     // then
     verify(action, never()).run();
@@ -61,11 +61,11 @@ public final class TimedActionsTest {
         };
 
     // when
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
 
     // then
     verify(action, times(1)).run();
@@ -84,20 +84,20 @@ public final class TimedActionsTest {
         };
 
     // when then
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
 
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
     verify(action, times(1)).run();
 
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
     verify(action, times(2)).run();
 
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
     verify(action, times(3)).run();
   }
 
@@ -109,13 +109,13 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
     actor.cancelTimer();
-    schedulerRule.workUntilDone();
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
 
     // then
     verify(action, times(0)).run();
@@ -129,17 +129,17 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
 
     // make timer run
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
 
     // when
     actor.cancelTimer();
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
 
     // then
     // no exception has been thrown
@@ -153,13 +153,13 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runAtFixedRate(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.setClockTime(100);
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
+    actorScheduler.setClockTime(100);
+    actorScheduler.submitActor(actor);
+    actorScheduler.workUntilDone();
     actor.cancelTimer();
-    schedulerRule.workUntilDone();
-    schedulerRule.updateClock(Duration.ofMillis(10));
-    schedulerRule.workUntilDone();
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMillis(10));
+    actorScheduler.workUntilDone();
 
     // then
     verify(action, times(0)).run();
