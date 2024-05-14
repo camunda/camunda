@@ -429,6 +429,22 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
+    public ScheduledTask runAt(final long timestamp, final Task task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runAt(timestamp, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
+    }
+
+    @Override
     public void runAtFixedRate(final Duration delay, final Task task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
