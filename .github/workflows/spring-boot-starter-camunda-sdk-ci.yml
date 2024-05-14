@@ -106,7 +106,7 @@ jobs:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
     needs: [ sdk-test-summary ]
-    if: failure() && github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     steps:
       - id: slack-notify
         name: Send slack notification
@@ -164,11 +164,11 @@ jobs:
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
-    name: Auto-merge backport, release, and renovate PRs
+    name: Auto-merge backport and release PRs
     runs-on: ubuntu-latest
     needs: [ sdk-test-summary ]
     if: |
-      github.repository == 'camunda/zeebe' &&
+      github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
       (github.actor == 'backport-action' || github.actor == 'camundait')
     permissions:
@@ -197,7 +197,7 @@ jobs:
     if: |
       failure() &&
       fromJSON(github.run_attempt) < 3 &&
-      github.repository == 'camunda/zeebe' &&
+      github.repository == 'camunda/camunda' &&
       (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait')
     runs-on: ubuntu-latest
     env:

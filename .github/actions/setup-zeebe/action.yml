@@ -48,7 +48,7 @@ runs:
     - name: Secrets check
       if: |
         github.event.name == 'pull_request'
-        && github.event.pull_request.head.repo.full_name == 'camunda/zeebe'
+        && github.event.pull_request.head.repo.full_name == 'camunda/camunda'
         && (inputs.secret_vault_address == ''
         || inputs.secret_vault_roleId == ''
         || inputs.secret_vault_secretId == '')
