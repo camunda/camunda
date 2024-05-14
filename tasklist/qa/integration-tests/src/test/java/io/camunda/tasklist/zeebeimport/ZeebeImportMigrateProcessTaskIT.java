@@ -23,7 +23,6 @@ import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -98,7 +97,6 @@ public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTes
   }
 
   @Test
-  @Disabled // FIXME : investigate why this sometimes fails in GHA CI
   public void shouldMigrateProcessInstanceAndTasksDefinitionForZeebeUserTask() {
     // given
     final String bpmnProcessId = "processMigration";
