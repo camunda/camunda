@@ -10,7 +10,7 @@ package io.camunda.operate.util.apps.retry_after_failure;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
+import io.camunda.operate.zeebeimport.processors.ImportBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class RetryAfterFailureTestConfig {
 
-  @Bean("io.camunda.operate.zeebeimport.v8_5.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.operate.zeebeimport.processors.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();
@@ -32,10 +32,10 @@ public class RetryAfterFailureTestConfig {
 
   public static class CustomElasticsearchBulkProcessor extends ImportBulkProcessor {
 
-    private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
+    private final Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void performImport(ImportBatch importBatch) throws PersistenceException {
+    public void performImport(final ImportBatch importBatch) throws PersistenceException {
       final ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);

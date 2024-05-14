@@ -674,7 +674,7 @@ public final class ControllableRaftContexts {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       if (committedIndexToChecksumMap.containsKey(index)
           && pendingWriteToBeCommitted.containsKey(index)
           && !pendingWriteToBeCommitted.get(index).equals(committedIndexToChecksumMap.get(index))) {
@@ -688,7 +688,7 @@ public final class ControllableRaftContexts {
         dataloss = true;
       }
       committedIndexToChecksumMap.put(index, pendingWriteToBeCommitted.remove(index));
-      delegate.onCommit(index);
+      delegate.onCommit(index, highestPosition);
     }
 
     @Override

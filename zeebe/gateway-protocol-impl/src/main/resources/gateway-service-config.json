@@ -9,7 +9,6 @@
         {"service": "gateway_protocol.Gateway", "method": "EvaluateDecision"},
         {"service": "gateway_protocol.Gateway", "method": "FailJob"},
         {"service": "gateway_protocol.Gateway", "method": "ResolveIncident"},
-        {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
         {"service": "gateway_protocol.Gateway", "method": "StreamActivatedJobs"},
         {"service": "gateway_protocol.Gateway", "method": "Topology"},
         {"service": "gateway_protocol.Gateway", "method": "MigrateProcessInstance"}
@@ -32,6 +31,7 @@
         {"service": "gateway_protocol.Gateway", "method": "DeployResource"},
         {"service": "gateway_protocol.Gateway", "method": "ModifyProcessInstance"},
         {"service": "gateway_protocol.Gateway", "method": "PublishMessage"},
+        {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
         {"service": "gateway_protocol.Gateway", "method": "ThrowError"},
         {"service": "gateway_protocol.Gateway", "method": "UpdateJobRetries"},
         {"service": "gateway_protocol.Gateway", "method": "UpdateJobTimeout"}

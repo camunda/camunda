@@ -7,49 +7,105 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertThrows;
 
-import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.listview.ListViewJoinRelation;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.operate.schema.templates.SequenceFlowTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.util.List;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-// The delete operation interacts with multiple systems and data objects so for simplicity, just
-// utilize
-// zeebe to setup all the data
-public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
+public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
+  private final String firstInstanceStartDate = "2024-02-15T22:40:10.834+0000";
+  private final String secondInstanceStartDate = "2024-02-15T22:41:10.834+0000";
+  private final String endDate = "2024-02-15T22:42:10.834+0000";
+
   @Autowired private ProcessInstanceDao dao;
-  private Long callActivityProcessInstanceKey;
-  private Long singleTaskProcessInstanceKey;
+  @Autowired private ListViewTemplate processInstanceIndex;
+
+  @Autowired private OperateDateTimeFormatter dateTimeFormatter;
+  @Autowired private List<ProcessInstanceDependant> processInstanceDependants;
 
   @Override
-  public void runAdditionalBeforeAllSetup() {
-    operateTester.deployProcessAndWait("callActivityProcess.bpmn");
-    operateTester.deployProcessAndWait("calledProcess.bpmn");
-    operateTester.deployProcessAndWait("single-task.bpmn");
+  public void runAdditionalBeforeAllSetup() throws Exception {
+    ProcessInstanceForListViewEntity processInstance =
+        new ProcessInstanceForListViewEntity()
+            .setId("2251799813685251")
+            .setKey(2251799813685251L)
+            .setPartitionId(1)
+            .setProcessDefinitionKey(2251799813685249L)
+            .setProcessName("Demo process")
+            .setProcessVersion(1)
+            .setBpmnProcessId("demoProcess-1")
+            .setStartDate(dateTimeFormatter.parseGeneralDateTime(firstInstanceStartDate))
+            .setEndDate(dateTimeFormatter.parseGeneralDateTime(endDate))
+            .setState(ProcessInstanceState.ACTIVE)
+            .setTreePath("PI_2251799813685251")
+            .setIncident(true)
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setProcessInstanceKey(2251799813685251L)
+            .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
-    // This starts two process instances: CallActivityProcess and CalledProcess since they are
-    // linked
-    // by parent-child relationship in the process definitions deployed
-    callActivityProcessInstanceKey = operateTester.startProcessAndWait("CallActivityProcess");
-    singleTaskProcessInstanceKey = operateTester.startProcessAndWait("process");
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processInstanceIndex.getFullQualifiedName(), processInstance.getId(), processInstance);
+
+    processInstance =
+        new ProcessInstanceForListViewEntity()
+            .setId("2251799813685252")
+            .setKey(2251799813685252L)
+            .setPartitionId(1)
+            .setProcessDefinitionKey(2251799813685249L)
+            .setProcessName("Demo process")
+            .setProcessVersion(1)
+            .setBpmnProcessId("demoProcess-2")
+            .setStartDate(dateTimeFormatter.parseGeneralDateTime(secondInstanceStartDate))
+            .setEndDate(null)
+            .setState(ProcessInstanceState.ACTIVE)
+            .setTreePath("PI_2251799813685252")
+            .setIncident(false)
+            .setParentProcessInstanceKey(2251799813685251L)
+            .setParentFlowNodeInstanceKey(3251799813685251L)
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setProcessInstanceKey(2251799813685252L)
+            .setJoinRelation(new ListViewJoinRelation("processInstance"));
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processInstanceIndex.getFullQualifiedName(), processInstance.getId(), processInstance);
+
+    searchContainerManager.refreshIndices("*operate-list*");
   }
 
   @Test
   public void shouldReturnProcessInstancesOnSearch() {
     final Results<ProcessInstance> processInstanceResults = dao.search(new Query<>());
 
-    assertThat(processInstanceResults.getTotal()).isEqualTo(3);
+    assertThat(processInstanceResults.getTotal()).isEqualTo(2);
     assertThat(processInstanceResults.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactlyInAnyOrder("CalledProcess", "CallActivityProcess", "process");
+        .containsExactlyInAnyOrder("demoProcess-1", "demoProcess-2");
   }
 
   @Test
@@ -58,35 +114,12 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
     final Results<ProcessInstance> processInstanceResults =
         dao.search(
             new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
+                .setFilter(new ProcessInstance().setBpmnProcessId("demoProcess-2")));
     assertThat(processInstanceResults.getItems().size()).isEqualTo(1);
     final ProcessInstance instance = processInstanceResults.getItems().get(0);
 
-    assertThat(instance.getParentKey()).isEqualTo(callActivityProcessInstanceKey);
-    assertThat(instance.getParentFlowNodeInstanceKey()).isNotNull();
-  }
-
-  @Test
-  public void shouldDeleteByKey() {
-    // Complete the task so the process instance can be deleted
-    operateTester.completeTaskAndWaitForProcessFinish(
-        singleTaskProcessInstanceKey, "task", "task", null);
-
-    // Delete the process instance
-    final ChangeStatus changeStatus = dao.delete(singleTaskProcessInstanceKey);
-    assertThat(changeStatus.getDeleted()).isEqualTo(1);
-
-    // Ensure the indices are updated and then check that the deleted instance no longer appears in
-    // search queries
-    operateTester.refreshSearchIndices();
-    final Results<ProcessInstance> results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setBpmnProcessId("process")));
-    assertThat(results.getTotal()).isEqualTo(0);
-
-    // Restart the instance for future tests
-    singleTaskProcessInstanceKey = operateTester.startProcessAndWait("process");
+    assertThat(instance.getParentKey()).isEqualTo(2251799813685251L);
+    assertThat(instance.getParentFlowNodeInstanceKey()).isEqualTo(3251799813685251L);
   }
 
   @Test
@@ -96,14 +129,15 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
 
   @Test
   public void shouldReturnProcessInstanceByKey() {
-    final ProcessInstance result = dao.byKey(singleTaskProcessInstanceKey);
-    assertThat(result.getKey()).isEqualTo(singleTaskProcessInstanceKey);
-    assertThat(result.getBpmnProcessId()).isEqualTo("process");
-    assertThat(result.getIncident()).isEqualTo(false);
+    final ProcessInstance result = dao.byKey(2251799813685251L);
+    assertThat(result.getKey()).isEqualTo(2251799813685251L);
+    assertThat(result.getBpmnProcessId()).isEqualTo("demoProcess-1");
+    assertThat(result.getStartDate()).isEqualTo(firstInstanceStartDate);
+    assertThat(result.getEndDate()).isEqualTo(endDate);
   }
 
   @Test
-  public void shouldThrowWhenKeyNotExists() {
+  public void shouldThrowWhenByKeyNotExists() {
     assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
   }
 
@@ -114,10 +148,10 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
             new Query<ProcessInstance>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
 
-    assertThat(results.getItems()).hasSize(3);
+    assertThat(results.getItems()).hasSize(2);
     assertThat(results.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactly("CallActivityProcess", "CalledProcess", "process");
+        .containsExactly("demoProcess-1", "demoProcess-2");
   }
 
   @Test
@@ -127,10 +161,10 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
             new Query<ProcessInstance>()
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.DESC)));
 
-    assertThat(results.getItems()).hasSize(3);
+    assertThat(results.getItems()).hasSize(2);
     assertThat(results.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactly("process", "CalledProcess", "CallActivityProcess");
+        .containsExactly("demoProcess-2", "demoProcess-1");
   }
 
   @Test
@@ -139,94 +173,36 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
     Results<ProcessInstance> results =
         dao.search(
             new Query<ProcessInstance>()
-                .setSize(2)
+                .setSize(1)
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC)));
 
-    assertThat(results.getTotal()).isEqualTo(3);
-    assertThat(results.getItems().size()).isEqualTo(2);
-    assertThat(results.getItems())
-        .extracting(BPMN_PROCESS_ID)
-        .containsExactly("CallActivityProcess", "CalledProcess");
+    assertThat(results.getTotal()).isEqualTo(2);
+    assertThat(results.getItems().size()).isEqualTo(1);
+    assertThat(results.getItems().get(0).getBpmnProcessId()).isEqualTo("demoProcess-1");
 
     // Second page
     results =
         dao.search(
             new Query<ProcessInstance>()
-                .setSize(2)
+                .setSize(1)
                 .setSort(Query.Sort.listOf(BPMN_PROCESS_ID, Query.Sort.Order.ASC))
                 .setSearchAfter(results.getSortValues()));
 
-    assertThat(results.getTotal()).isEqualTo(3);
+    assertThat(results.getTotal()).isEqualTo(2);
     assertThat(results.getItems().size()).isEqualTo(1);
-    assertThat(results.getItems().get(0).getBpmnProcessId()).isEqualTo("process");
+    assertThat(results.getItems().get(0).getBpmnProcessId()).isEqualTo("demoProcess-2");
   }
 
   @Test
   public void shouldFilterByParentFlowNodeInstanceKey() {
-    // Find the child process
-    Results<ProcessInstance> results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
-    assertThat(results.getItems().size()).isEqualTo(1);
-    final ProcessInstance childInstance = results.getItems().get(0);
-
     // Should return the same process when searching by the parent flow node instance key
-    results =
+    final var results =
         dao.search(
             new Query<ProcessInstance>()
-                .setFilter(
-                    new ProcessInstance()
-                        .setParentFlowNodeInstanceKey(
-                            childInstance.getParentFlowNodeInstanceKey())));
+                .setFilter(new ProcessInstance().setParentFlowNodeInstanceKey(3251799813685251L)));
 
     assertThat(results.getItems().size()).isEqualTo(1);
-    assertThat(results.getItems().get(0).getBpmnProcessId()).isEqualTo("CalledProcess");
-  }
-
-  @Test
-  public void shouldFilterByDate() {
-    // Get the start date of the child process
-    Results<ProcessInstance> results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
-    assertThat(results.getItems().size()).isEqualTo(1);
-    final String filterDateTime = results.getItems().get(0).getEndDate();
-
-    // Parent and child process instances should have the same start time
-    results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setEndDate(filterDateTime)));
-
-    assertThat(results.getItems().size()).isEqualTo(2);
-    assertThat(results.getItems())
-        .extracting(BPMN_PROCESS_ID)
-        .containsExactlyInAnyOrder("CallActivityProcess", "CalledProcess");
-  }
-
-  @Test
-  public void shouldFilterByDateWithDateMath() {
-
-    // Get the start date of the child process
-    Results<ProcessInstance> results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setBpmnProcessId("CalledProcess")));
-    assertThat(results.getItems().size()).isEqualTo(1);
-    final String filterDateTime = results.getItems().get(0).getEndDate() + "||/d";
-
-    // Parent and child process instances should have the same start time
-    results =
-        dao.search(
-            new Query<ProcessInstance>()
-                .setFilter(new ProcessInstance().setEndDate(filterDateTime)));
-
-    assertThat(results.getItems().size()).isEqualTo(2);
-    assertThat(results.getItems())
-        .extracting(BPMN_PROCESS_ID)
-        .containsExactlyInAnyOrder("CallActivityProcess", "CalledProcess");
+    assertThat(results.getItems().get(0).getBpmnProcessId()).isEqualTo("demoProcess-2");
   }
 
   @Test
@@ -239,7 +215,120 @@ public class ProcessInstanceDaoIT extends OperateZeebeSearchAbstractIT {
         dao.search(
             new Query<ProcessInstance>().setFilter(new ProcessInstance().setIncident(false)));
 
-    assertTrue(resultsWithIncident.getItems().isEmpty());
-    assertThat(resultsWithoutIncident.getItems().size()).isEqualTo(3);
+    assertThat(resultsWithIncident.getItems()).hasSize(1);
+    assertThat(resultsWithIncident.getItems().get(0).getBpmnProcessId()).isEqualTo("demoProcess-1");
+    assertThat(resultsWithoutIncident.getItems()).hasSize(1);
+    assertThat(resultsWithoutIncident.getItems().get(0).getBpmnProcessId())
+        .isEqualTo("demoProcess-2");
+  }
+
+  @Test
+  public void shouldFilterByStartDate() {
+    final Results<ProcessInstance> processInstanceResults =
+        dao.search(
+            new Query<ProcessInstance>()
+                .setFilter(new ProcessInstance().setStartDate(firstInstanceStartDate)));
+
+    assertThat(processInstanceResults.getTotal()).isEqualTo(1L);
+    assertThat(processInstanceResults.getItems().get(0).getStartDate())
+        .isEqualTo(firstInstanceStartDate);
+    assertThat(processInstanceResults.getItems().get(0).getEndDate()).isEqualTo(endDate);
+    assertThat(processInstanceResults.getItems().get(0).getBpmnProcessId())
+        .isEqualTo("demoProcess-1");
+  }
+
+  @Test
+  public void shouldFilterByStartDateWithDateMath() {
+    final Results<ProcessInstance> processInstanceResults =
+        dao.search(
+            new Query<ProcessInstance>()
+                .setFilter(new ProcessInstance().setStartDate(firstInstanceStartDate + "||/d")));
+
+    assertThat(processInstanceResults.getTotal()).isEqualTo(2L);
+
+    ProcessInstance checkInstance =
+        processInstanceResults.getItems().stream()
+            .filter(item -> "demoProcess-1".equals(item.getBpmnProcessId()))
+            .findFirst()
+            .orElse(null);
+
+    assertThat(checkInstance.getBpmnProcessId()).isEqualTo("demoProcess-1");
+    assertThat(checkInstance.getStartDate()).isEqualTo(firstInstanceStartDate);
+    assertThat(checkInstance.getEndDate()).isEqualTo(endDate);
+
+    checkInstance =
+        processInstanceResults.getItems().stream()
+            .filter(item -> "demoProcess-2".equals(item.getBpmnProcessId()))
+            .findFirst()
+            .orElse(null);
+
+    assertThat(checkInstance.getBpmnProcessId()).isEqualTo("demoProcess-2");
+    assertThat(checkInstance.getStartDate()).isEqualTo(secondInstanceStartDate);
+    assertThat(checkInstance.getEndDate()).isNull();
+  }
+
+  @Test
+  public void shouldDeleteByKey() throws Exception {
+    final Long processInstanceKey = 4503599627370497L;
+    final ProcessInstanceForListViewEntity processInstance =
+        new ProcessInstanceForListViewEntity()
+            .setId(String.valueOf(processInstanceKey))
+            .setKey(processInstanceKey)
+            .setProcessDefinitionKey(2251799813685248L)
+            .setProcessInstanceKey(4503599627370497L)
+            .setProcessName("Demo process")
+            .setBpmnProcessId("demoProcess")
+            .setState(ProcessInstanceState.COMPLETED)
+            .setStartDate(OffsetDateTime.now())
+            .setEndDate(OffsetDateTime.now())
+            .setTreePath("PI_4503599627370497")
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setJoinRelation(new ListViewJoinRelation("processInstance"));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        processInstanceIndex.getFullQualifiedName(), processInstance.getId(), processInstance);
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        getFullIndexNameForDependant(FlowNodeInstanceTemplate.INDEX_NAME),
+        new FlowNodeInstanceEntity().setProcessInstanceKey(processInstanceKey));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        getFullIndexNameForDependant(SequenceFlowTemplate.INDEX_NAME),
+        new SequenceFlowEntity().setProcessInstanceKey(processInstanceKey));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
+        new VariableEntity().setProcessInstanceKey(processInstanceKey));
+
+    searchContainerManager.refreshIndices("*");
+
+    dao.delete(processInstance.getProcessInstanceKey());
+
+    searchContainerManager.refreshIndices("*");
+
+    Assertions.assertThrows(
+        ResourceNotFoundException.class, () -> dao.byKey(processInstance.getProcessInstanceKey()));
+    assertThatDependantsAreAlsoDeleted(processInstanceKey);
+  }
+
+  private String getFullIndexNameForDependant(final String indexName) {
+    final ProcessInstanceDependant dependant =
+        processInstanceDependants.stream()
+            .filter(template -> template.getFullQualifiedName().contains(indexName))
+            .findAny()
+            .orElse(null);
+
+    return dependant.getFullQualifiedName();
+  }
+
+  private void assertThatDependantsAreAlsoDeleted(final long finishedProcessInstanceKey)
+      throws IOException {
+    for (final ProcessInstanceDependant t : processInstanceDependants) {
+      if (!(t instanceof OperationTemplate)) {
+        final var index = t.getFullQualifiedName() + "*";
+        final var field = ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
+        final var response =
+            testSearchRepository.searchTerm(
+                index, field, finishedProcessInstanceKey, Object.class, 100);
+        AssertionsForClassTypes.assertThat(response.size()).isZero();
+      }
+    }
   }
 }

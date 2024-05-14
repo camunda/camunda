@@ -38,7 +38,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-topology</artifactId>
+      <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
     <dependency>

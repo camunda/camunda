@@ -19,6 +19,7 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestEntry;
@@ -62,7 +63,6 @@ final class LogStorageAppenderTest {
             INITIAL_POSITION,
             4 * 1024 * 1024,
             new SequencerMetrics(PARTITION_ID),
-            logStreamMetrics,
             new FlowControl(logStreamMetrics));
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
@@ -79,7 +79,7 @@ final class LogStorageAppenderTest {
     final var entry = TestEntry.ofDefaults();
     // when
     logStorage.setPositionListener(i -> latch.countDown());
-    final var position = sequencer.tryWrite(entry).get();
+    final var position = sequencer.tryWrite(WriteContext.internal(), entry).get();
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).as("value was written within 5 seconds").isTrue();
@@ -97,7 +97,7 @@ final class LogStorageAppenderTest {
 
     // when
     logStorage.setPositionListener(i -> latch.countDown());
-    final var highestPosition = sequencer.tryWrite(entries).get();
+    final var highestPosition = sequencer.tryWrite(WriteContext.internal(), entries).get();
     final var lowestPosition = highestPosition - 1;
 
     // then

@@ -20,11 +20,13 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
 
   @Override
   public void onWrite(final IndexedRaftLogEntry indexed) {
-    delegate.onWrite(indexed.index());
+    delegate.onWrite(
+        indexed.index(),
+        indexed.isApplicationEntry() ? indexed.getApplicationEntry().highestPosition() : -1);
   }
 
   @Override
-  public void onCommit(final long index) {
-    delegate.onCommit(index);
+  public void onCommit(final long index, final long highestPosition) {
+    delegate.onCommit(index, highestPosition);
   }
 }

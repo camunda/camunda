@@ -47,11 +47,11 @@ public final class SequencedBatchSerializer {
     }
   }
 
-  public static int calculateBatchSize(final List<LogAppendEntry> entries) {
-    return entries.stream().mapToInt(SequencedBatchSerializer::calculateEntrySize).sum();
+  public static int calculateBatchLength(final List<LogAppendEntry> entries) {
+    return entries.stream().mapToInt(SequencedBatchSerializer::calculateEntryLength).sum();
   }
 
-  private static int calculateEntrySize(final LogAppendEntry entry) {
+  private static int calculateEntryLength(final LogAppendEntry entry) {
     return DataFrameDescriptor.alignedLength(LogAppendEntrySerializer.framedLength(entry));
   }
 

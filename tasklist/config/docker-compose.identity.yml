@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:16.2-alpine
+    image: postgres:16.3-alpine
     ports:
       - "5432:5432"
     environment:
@@ -12,7 +12,7 @@ services:
       - identity-network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -60,7 +60,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:24.0.3
+    image: bitnami/keycloak:24.0.4
     ports:
       - "18080:8080"
     environment:
@@ -86,7 +86,7 @@ services:
         condition: service_healthy
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.5.0
+    image: camunda/identity:8.5.1
     ports:
       - "8084:8084"
     environment:
@@ -158,7 +158,7 @@ services:
         condition: service_started
       elasticsearch:
         condition: service_started
-    image: camunda/operate:8.5.0
+    image: camunda/operate:8.5.1
     container_name: operate
     environment:
       - SERVER_PORT=8081
@@ -186,7 +186,7 @@ services:
       elasticsearch:
         condition: service_started
     restart: on-failure
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     container_name: tasklist
     environment:
       - SERVER_PORT=8082
@@ -219,7 +219,7 @@ services:
       opensearch:
         condition: service_started
     restart: on-failure
-    image: camunda/tasklist:8.5.0
+    image: camunda/tasklist:8.5.1
     container_name: tasklist-opensearch
     environment:
       - SERVER_PORT=8082

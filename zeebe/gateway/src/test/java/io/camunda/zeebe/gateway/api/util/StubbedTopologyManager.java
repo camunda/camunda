@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
@@ -40,7 +40,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterTopology getClusterTopology() {
+  public ClusterConfiguration getClusterConfiguration() {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 
@@ -55,7 +55,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
-    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

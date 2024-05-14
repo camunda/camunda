@@ -7,35 +7,60 @@
  */
 
 import {Section} from '@carbon/react';
-import {Task, CurrentUser} from 'modules/types';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
+import {Outlet, useMatch} from 'react-router-dom';
+import {CurrentUser, Task} from 'modules/types';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useTask} from 'modules/queries/useTask';
+import {useTaskDetailsParams, pages} from 'modules/routing';
+import {DetailsSkeleton} from './DetailsSkeleton';
+import {TabListNav} from './TabListNav';
 
-type Props = {
-  children?: React.ReactNode;
-  task: Task;
-  onAssignmentError: () => void;
-  user: CurrentUser;
-};
+type OutletContext = [Task, CurrentUser, () => void];
 
-const Details: React.FC<Props> = ({
-  children,
-  onAssignmentError,
-  task,
-  user,
-}) => {
+const Details: React.FC = () => {
+  const {id} = useTaskDetailsParams();
+  const {data: task, refetch} = useTask(id, {
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+  const {data: currentUser} = useCurrentUser();
+  const onAssignmentError = () => refetch();
+  const tabs = [
+    {
+      key: 'task',
+      title: 'Task',
+      label: 'Show task',
+      selected: useMatch(pages.taskDetails()) !== null,
+      href: pages.taskDetails(id),
+    },
+  ];
+
+  if (task === undefined || currentUser === undefined) {
+    return <DetailsSkeleton data-testid="details-skeleton" />;
+  }
+
   return (
     <div className={styles.container} data-testid="details-info">
       <Section className={styles.content} level={4}>
         <TurnOnNotificationPermission />
-        <Header task={task} user={user} onAssignmentError={onAssignmentError} />
-        {children}
+        <Header
+          task={task}
+          user={currentUser}
+          onAssignmentError={onAssignmentError}
+        />
+        <TabListNav label="Task Details Navigation" items={tabs} />
+        <Outlet
+          context={[task, currentUser, refetch] satisfies OutletContext}
+        />
       </Section>
-      <Aside task={task} user={user} />
+      <Aside task={task} user={currentUser} />
     </div>
   );
 };
 
-export {Details};
+export {Details as Component};
+export type {OutletContext};

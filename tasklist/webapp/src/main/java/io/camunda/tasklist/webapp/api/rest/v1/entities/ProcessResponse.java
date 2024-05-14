@@ -37,11 +37,14 @@ public class ProcessResponse {
   @Schema(description = "The tenant ID associated with the process")
   private String tenantId;
 
+  @Schema(description = "The xml that represents the BPMN for the process")
+  private String bpmnXml;
+
   public String getId() {
     return id;
   }
 
-  public ProcessResponse setId(String id) {
+  public ProcessResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -50,7 +53,7 @@ public class ProcessResponse {
     return name;
   }
 
-  public ProcessResponse setName(String name) {
+  public ProcessResponse setName(final String name) {
     this.name = name;
     return this;
   }
@@ -59,7 +62,7 @@ public class ProcessResponse {
     return bpmnProcessId;
   }
 
-  public ProcessResponse setBpmnProcessId(String bpmnProcessId) {
+  public ProcessResponse setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -68,7 +71,7 @@ public class ProcessResponse {
     return startEventFormId;
   }
 
-  public ProcessResponse setStartEventFormId(String startEventFormId) {
+  public ProcessResponse setStartEventFormId(final String startEventFormId) {
     this.startEventFormId = startEventFormId;
     return this;
   }
@@ -77,7 +80,7 @@ public class ProcessResponse {
     return sortValues;
   }
 
-  public ProcessResponse setSortValues(String[] sortValues) {
+  public ProcessResponse setSortValues(final String[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -86,7 +89,7 @@ public class ProcessResponse {
     return version;
   }
 
-  public ProcessResponse setVersion(Integer version) {
+  public ProcessResponse setVersion(final Integer version) {
     this.version = version;
     return this;
   }
@@ -95,13 +98,56 @@ public class ProcessResponse {
     return tenantId;
   }
 
-  public ProcessResponse setTenantId(String tenantId) {
+  public ProcessResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
+  public String getBpmnXml() {
+    return bpmnXml;
+  }
+
+  public ProcessResponse setBpmnXml(final String bpmnXml) {
+    this.bpmnXml = bpmnXml;
+    return this;
+  }
+
+  public static ProcessResponse fromProcessEntity(
+      final ProcessEntity process, final String startEventFormId) {
+    return createWithoutBpmnXml(process, startEventFormId).setBpmnXml(process.getBpmnXml());
+  }
+
+  public static ProcessResponse fromProcessEntityWithoutBpmnXml(
+      final ProcessEntity process, final String startEventFormId) {
+    return createWithoutBpmnXml(process, startEventFormId);
+  }
+
+  private static ProcessResponse createWithoutBpmnXml(
+      final ProcessEntity process, final String startEventFormId) {
+    return new ProcessResponse()
+        .setId(process.getId())
+        .setName(process.getName())
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setStartEventFormId(startEventFormId)
+        .setTenantId(process.getTenantId());
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        bpmnProcessId,
+        Arrays.hashCode(sortValues),
+        version,
+        startEventFormId,
+        tenantId,
+        bpmnXml);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -112,17 +158,11 @@ public class ProcessResponse {
     return Objects.equals(id, that.id)
         && Objects.equals(name, that.name)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.deepEquals(sortValues, that.sortValues)
         && Objects.equals(version, that.version)
         && Objects.equals(startEventFormId, that.startEventFormId)
-        && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = Objects.hash(id, name, bpmnProcessId, version, startEventFormId, tenantId);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(bpmnXml, that.bpmnXml);
   }
 
   @Override
@@ -147,16 +187,9 @@ public class ProcessResponse {
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", bpmnXml='"
+        + bpmnXml
+        + '\''
         + '}';
-  }
-
-  public static ProcessResponse fromProcessEntity(ProcessEntity process, String startEventFormId) {
-    return new ProcessResponse()
-        .setId(process.getId())
-        .setName(process.getName())
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setStartEventFormId(startEventFormId)
-        .setTenantId(process.getTenantId());
   }
 }

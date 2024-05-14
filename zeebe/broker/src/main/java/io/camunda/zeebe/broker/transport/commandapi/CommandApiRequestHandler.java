@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -145,7 +146,7 @@ final class CommandApiRequestHandler
 
     if (logStreamWriter.canWriteEvents(1, appendEntry.getLength())) {
       return logStreamWriter
-          .tryWrite(appendEntry)
+          .tryWrite(WriteContext.userCommand(metadata.getIntent()), appendEntry)
           .map(ignore -> true)
           .mapLeft(error -> errorWriter.mapWriteError(partitionId, error));
     } else {

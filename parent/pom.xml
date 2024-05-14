@@ -61,24 +61,24 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.0</version.identity>
-    <version.jackson>2.17.0</version.jackson>
+    <version.identity>8.5.1</version.identity>
+    <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.10.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.23.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.11.0</version.mockito>
+    <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.109.Final</version.netty>
-    <version.objenesis>3.3</version.objenesis>
+    <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
     <version.protobuf-common>2.39.0</version.protobuf-common>
-    <version.micrometer>1.12.5</version.micrometer>
+    <version.micrometer>1.13.0</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.14</version.scala>
@@ -88,7 +88,7 @@
     <version.wiremock>3.5.4</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.19.7</version.testcontainers>
+    <version.testcontainers>1.19.8</version.testcontainers>
     <version.netflix.concurrency>0.5.0</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
     <version.feel-scala>1.17.7</version.feel-scala>
@@ -104,7 +104,7 @@
     <version.jqwik>1.8.4</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.14.14</version.byte-buddy>
+    <version.byte-buddy>1.14.15</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -118,16 +118,16 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
-    <version.zpt>8.5.0</version.zpt>
+    <version.zpt>8.5.1</version.zpt>
     <version.feign>13.2.1</version.feign>
-    <version.google-sdk>26.38.0</version.google-sdk>
+    <version.google-sdk>26.39.0</version.google-sdk>
     <version.azure-sdk>1.2.23</version.azure-sdk>
-    <version.awssdk>2.25.45</version.awssdk>
+    <version.awssdk>2.25.51</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.jackson-annotations>2.17.0</version.jackson-annotations>
+    <version.jackson-annotations>2.17.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.21</version.swagger-annotations>
     <version.checker-qual>3.43.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
@@ -153,13 +153,13 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.715</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.19.7</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.19.7</version.postgres-test-container>
+    <version.aws-java-sdk>1.12.721</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
-    <version.hdr-histogram>2.1.12</version.hdr-histogram>
+    <version.hdr-histogram>2.2.1</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.jetty>11.0.20</version.jetty>
@@ -173,13 +173,14 @@
     <version.okio-jvm>3.9.0</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>9.39</version.nimbus-jose-jwt>
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
     <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.1.0</version.graphql-kickstart>
+    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
+    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
     <version.graphql-java>21.5</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
@@ -213,7 +214,7 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.5.3</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.4.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.8.5.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.2.5</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
@@ -504,7 +505,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-cluster-topology</artifactId>
+        <artifactId>zeebe-cluster-config</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1911,13 +1912,13 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
         <exclusions>
           <exclusion>
             <groupId>com.graphql-java-kickstart</groupId>
@@ -1945,19 +1946,19 @@
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
         <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart}</version>
+        <version>${version.graphql-kickstart-spring-boot}</version>
       </dependency>
 
       <dependency>

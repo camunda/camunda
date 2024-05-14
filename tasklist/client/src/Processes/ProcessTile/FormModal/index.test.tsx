@@ -215,6 +215,9 @@ describe('<FormModal />', () => {
   });
 
   it('should handle submission failure', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       http.get('/v1/forms/:formId', () => {
         return HttpResponse.json(formMocks.form);
@@ -246,12 +249,14 @@ describe('<FormModal />', () => {
       screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: /start process/i,
@@ -266,9 +271,13 @@ describe('<FormModal />', () => {
         'Form could not be submitted. Please try again later.',
       ),
     ).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('should handle missing tenant', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       http.get('/v1/forms/:formId', () => {
         return HttpResponse.json(formMocks.form);
@@ -302,12 +311,14 @@ describe('<FormModal />', () => {
       screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: /start process/i,
@@ -338,12 +349,14 @@ describe('<FormModal />', () => {
       screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: /start process/i,
@@ -361,9 +374,13 @@ describe('<FormModal />', () => {
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('loading-spinner'),
     );
+    vi.useRealTimers();
   });
 
   it('should hide submission when reopening modal', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       http.get('/v1/forms/:formId', () => {
         return HttpResponse.json(formMocks.form);
@@ -395,12 +412,14 @@ describe('<FormModal />', () => {
       screen.getByRole('textbox', {name: /my variable/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: /start process/i,
@@ -448,6 +467,7 @@ describe('<FormModal />', () => {
     );
 
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('should copy the form link when clicking on share', async () => {

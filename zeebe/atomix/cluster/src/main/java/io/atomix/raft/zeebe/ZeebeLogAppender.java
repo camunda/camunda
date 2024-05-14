@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 /**
  * A log appender provides a central entry point to append to the local Raft log such that it is
  * automatically replicated and eventually committed, and the ability for callers to be notified of
- * various events, e.g. {@link AppendListener#onCommit(long)}.
+ * various events, e.g. {@link AppendListener#onCommit(long, long)}.
  */
 @FunctionalInterface
 public interface ZeebeLogAppender {
@@ -89,7 +89,7 @@ public interface ZeebeLogAppender {
      *
      * @param index the index of the entry that was committed
      */
-    default void onCommit(final long index) {}
+    default void onCommit(final long index, final long highestPosition) {}
 
     /**
      * Called when an error occurred while replicating or committing an entry, typically when if an

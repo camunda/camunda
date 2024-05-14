@@ -42,6 +42,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String tenantId = DEFAULT_TENANT_ID;
 
+  private Long position;
+
   @Deprecated @JsonIgnore private boolean pending = true;
 
   public ErrorType getErrorType() {
@@ -171,8 +173,17 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  public Long getPosition() {
+    return position;
+  }
+
+  public IncidentEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -196,7 +207,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
         && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
         && Objects.equals(bpmnProcessId, incident.bpmnProcessId)
         && Objects.equals(treePath, incident.treePath)
-        && Objects.equals(tenantId, incident.tenantId);
+        && Objects.equals(tenantId, incident.tenantId)
+        && Objects.equals(position, incident.position);
   }
 
   @Override
@@ -216,7 +228,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
         bpmnProcessId,
         treePath,
         tenantId,
-        pending);
+        position);
   }
 
   @Override
