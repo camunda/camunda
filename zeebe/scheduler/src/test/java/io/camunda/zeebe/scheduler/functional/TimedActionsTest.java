@@ -189,4 +189,93 @@ public final class TimedActionsTest {
       verify(action, times(0)).run();
     }
   }
+
+  @Nested
+  class StampedTimerTests {
+    @Test
+    public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.runAt(1000, action);
+            }
+          };
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, never()).run();
+    }
+
+    @Test
+    public void shouldRunActionWhenDeadlineReached() throws InterruptedException {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.runAt(1000, action);
+            }
+          };
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(900));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(1)).run();
+    }
+
+    @Test
+    public void shouldCancelRunAt() {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final TimerActor actor = new TimerActor(actorControl -> actorControl.runAt(1000, action));
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+      actor.cancelTimer();
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(900));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(0)).run();
+    }
+
+    @Test
+    public void shouldCancelRunDelayedAfterExecution() {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final var actor = new TimerActor(actorControl -> actorControl.runAt(1000, action));
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      // make timer run
+      actorScheduler.updateClock(Duration.ofMillis(900));
+      actorScheduler.workUntilDone();
+
+      // when
+      actor.cancelTimer();
+      actorScheduler.workUntilDone();
+
+      // then
+      // no exception has been thrown
+    }
+  }
 }
