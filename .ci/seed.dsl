@@ -3,13 +3,10 @@ def gitRepository = 'camunda-optimize'
 def gitBranch = 'master'
 
 def dslScriptsToExecute = '''\
-.ci/jobs/*.dsl
 .ci/views/*.dsl
 '''
 
 def dslScriptPathToMonitor = '''\
-.ci/jobs/.*\\.dsl
-.ci/pipelines/.*
 .ci/views/.*\\.dsl
 '''
 
