@@ -59,7 +59,7 @@ describe('Task Details', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/processes/process',
+        '/v1/internal/processes/:process',
         () => HttpResponse.json(processMocks.processWithBpmnModel),
         {once: true},
       ),
@@ -90,7 +90,7 @@ describe('Task Details', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/processes/process',
+        '/v1/internal/processes/:process',
         () => HttpResponse.json(processMocks.process),
         {once: true},
       ),
@@ -121,7 +121,7 @@ describe('Task Details', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/processes/process',
+        '/v1/internal/processes/:process',
         () => new HttpResponse(null, {status: 404}),
         {once: true},
       ),
@@ -152,7 +152,7 @@ describe('Task Details', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/processes/process',
+        '/v1/internal/processes/:process',
         () => new HttpResponse(null, {status: 403}),
         {once: true},
       ),

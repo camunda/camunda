@@ -33,7 +33,7 @@ function useProcessDefinition(
           status === HTTP_STATUS_FORBIDDEN ||
           status === HTTP_STATUS_NOT_FOUND
         ) {
-          return null;
+          return undefined;
         }
       }
 

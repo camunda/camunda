@@ -60,7 +60,8 @@ const Details: React.FC = () => {
       href: pages.taskDetailsProcess(id),
       visible:
         !taskCompleted &&
-        process?.bpmnXml !== undefined &&
+        process !== undefined &&
+        process.bpmnXml !== null &&
         processError === null,
     },
   ];
