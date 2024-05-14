@@ -89,7 +89,7 @@ type Process = {
   version: number;
   startEventFormId: string | null;
   sortValues: [string];
-  bpmnXml: string | undefined;
+  bpmnXml: string | null;
 };
 
 type ProcessInstance = {
