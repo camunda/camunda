@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
 
 public interface TimerSubscription extends ActorSubscription, ScheduledTimer, Runnable {
@@ -32,7 +33,7 @@ public interface TimerSubscription extends ActorSubscription, ScheduledTimer, Ru
 
   void submit();
 
-  long getDeadline();
+  long getDeadline(ActorClock now);
 
   void onTimerExpired(TimeUnit timeUnit, long now);
 

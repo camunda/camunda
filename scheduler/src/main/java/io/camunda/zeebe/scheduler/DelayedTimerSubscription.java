@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -90,6 +91,11 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   }
 
   @Override
+  public long getDeadline(final ActorClock now) {
+    return now.getTimeMillis() + timeUnit.convert(delay, timeUnit);
+  }
+
+  @Override
   public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
@@ -106,11 +112,6 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   @Override
   public long getTimerExpiredAt() {
     return timerExpiredAt;
-  }
-
-  @Override
-  public long getDeadline() {
-    return delay;
   }
 
   public TimeUnit getTimeUnit() {
