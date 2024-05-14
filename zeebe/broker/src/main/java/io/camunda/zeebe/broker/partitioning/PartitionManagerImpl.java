@@ -270,7 +270,9 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public ActorFuture<Void> join(
-      final int partitionId, final Map<MemberId, Integer> membersWithPriority) {
+      final int partitionId,
+      final Map<MemberId, Integer> membersWithPriority,
+      final DynamicPartitionConfig partitionConfig) {
     final int targetPriority = Collections.max(membersWithPriority.values());
 
     final var members = membersWithPriority.keySet();
@@ -293,7 +295,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             targetPriority,
             primary);
 
-    return joinPartition(partitionMetadata, null); // TODO
+    return joinPartition(partitionMetadata, partitionConfig); // TODO
   }
 
   @Override
