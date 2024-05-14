@@ -51,8 +51,8 @@ public class OpensearchImportStore implements ImportStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(final String alias, final int partitionId)
-      throws IOException {
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(
+      final String alias, final int partitionId) throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(importPositionType.getAlias())
             .size(10)
@@ -80,7 +80,8 @@ public class OpensearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      final List<ImportPositionEntity> positions, final List<ImportPositionEntity> postImportPositions) {
+      final List<ImportPositionEntity> positions,
+      final List<ImportPositionEntity> postImportPositions) {
     if (positions.isEmpty() && postImportPositions.isEmpty()) {
       return Either.right(true);
     } else {
@@ -110,7 +111,7 @@ public class OpensearchImportStore implements ImportStore {
     metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
   }
 
-private <R> void addPositions(
+  private <R> void addPositions(
       final BulkRequest.Builder bulkRequestBuilder,
       final List<ImportPositionEntity> positions,
       final Function<ImportPositionEntity, R> entityProducer) {
@@ -125,7 +126,34 @@ private <R> void addPositions(
                           .document(entityProducer.apply(position))));
     }
   }
-    record ImportPositionUpdate(
+
+  @Override
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    final String indexName = importPositionType.getFullQualifiedName();
+    LOGGER.debug("Meta field will be updated. Index name: {}. ");
+    final PutMappingRequest request =
+        new PutMappingRequest.Builder()
+            .index(indexName)
+            .meta(META_CONCURRENCY_MODE, JsonData.of(concurrencyMode))
+            .build();
+    richOpenSearchClient.index().putMapping(request);
+  }
+
+  @Override
+  public boolean getConcurrencyMode() {
+    final String indexName = importPositionType.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings =
+        richOpenSearchClient.index().getIndexMappings(indexName);
+    if (indexMappings.get(indexName).getMetaProperties() == null) {
+      return false;
+    } else {
+      final Object concurrencyMode =
+          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
+      return concurrencyMode != null && (boolean) concurrencyMode;
+    }
+  }
+
+  record ImportPositionUpdate(
       String id,
       String aliasName,
       String indexName,
@@ -144,37 +172,12 @@ private <R> void addPositions(
           position.getPostImporterPosition(),
           position.getSequence());
     }
-  }@Override
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    final String indexName = importPositionType.getFullQualifiedName();
-    LOGGER.debug("Meta field will be updated. Index name: {}. ");
-    final PutMappingRequest request =
-        new PutMappingRequest.Builder()
-            .index(indexName)
-            .meta(META_CONCURRENCY_MODE, JsonData.of(concurrencyMode))
-            .build();
-    richOpenSearchClient.index().putMapping(request);
   }
 
   record PostImportPositionUpdate(Long postImporterPosition) {
     public static PostImportPositionUpdate fromImportPositionEntity(
         final ImportPositionEntity position) {
       return new PostImportPositionUpdate(position.getPostImporterPosition());
-    }
-  }
-
-
-  @Override
-  public boolean getConcurrencyMode() {
-    final String indexName = importPositionType.getFullQualifiedName();
-    final Map<String, IndexMapping> indexMappings = richOpenSearchClient.index()
-        .getIndexMappings(indexName);
-    if (indexMappings.get(indexName).getMetaProperties() == null) {
-      return false;
-    } else {
-      final Object concurrencyMode =
-          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
-      return concurrencyMode == null ? false : (boolean) concurrencyMode;
     }
   }
 }
