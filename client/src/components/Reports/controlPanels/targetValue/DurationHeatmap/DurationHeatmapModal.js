@@ -257,7 +257,7 @@ export default class DurationHeatmapModal extends React.Component {
           {this.state.loading ? (
             <Loading />
           ) : (
-            <div className="diagram-container">
+            <>
               <BPMNDiagram xml={report.data.configuration.xml}>
                 <ClickBehavior
                   onClick={({id}) => this.updateFocus(id)}
@@ -266,18 +266,18 @@ export default class DurationHeatmapModal extends React.Component {
                 />
                 <TargetValueBadge values={this.state.values} />
               </BPMNDiagram>
-            </div>
+              <Table
+                loading={this.state.loading}
+                head={[
+                  t('report.heatTarget.table.activity'),
+                  t('report.heatTarget.table.value'),
+                  t('report.heatTarget.table.target'),
+                ]}
+                body={this.constructTableBody()}
+                disablePagination
+              />
+            </>
           )}
-          <Table
-            loading={this.state.loading}
-            head={[
-              t('report.heatTarget.table.activity'),
-              t('report.heatTarget.table.value'),
-              t('report.heatTarget.table.target'),
-            ]}
-            body={this.constructTableBody()}
-            disablePagination
-          />
           {!this.areAllFieldsNumbers() && !this.state.loading && (
             <InlineNotification
               className="errorMessage"

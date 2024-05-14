@@ -1,26 +1,14 @@
-.DurationHeatmapModal {
-  .cds--modal-container {
-    height: 100%;
-  }
+@use '@carbon/styles/scss/spacing';
 
+.DurationHeatmapModal {
   .content-container {
     display: flex;
     flex-direction: column;
-    position: relative;
-  }
-
-  .diagram-container {
-    flex-grow: 1;
-    display: flex;
+    gap: spacing.$spacing-05;
   }
 
   .Table {
     max-height: 30%;
-    height: auto;
-
-    table {
-      height: 100%;
-    }
 
     .selection {
       display: flex;
