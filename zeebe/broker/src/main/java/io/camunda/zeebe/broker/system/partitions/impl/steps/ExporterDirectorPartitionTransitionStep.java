@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -20,13 +21,29 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
+
+  private final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
+      exporterDirectorBuilder;
+
+  public ExporterDirectorPartitionTransitionStep() {
+    this(ExporterDirector::new);
+  }
+
+  @VisibleForTesting
+  ExporterDirectorPartitionTransitionStep(
+      final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
+          exporterDirectorBuilder) {
+    this.exporterDirectorBuilder = exporterDirectorBuilder;
+  }
 
   @Override
   public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
@@ -105,7 +122,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter);
 
-    final ExporterDirector director = new ExporterDirector(exporterCtx, context.getExporterPhase());
+    final ExporterDirector director =
+        exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
 
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 

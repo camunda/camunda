@@ -44,7 +44,6 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -207,7 +206,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
-    return Set.of();
+    return exporterRepository.getExporters().values();
   }
 
   @Override
