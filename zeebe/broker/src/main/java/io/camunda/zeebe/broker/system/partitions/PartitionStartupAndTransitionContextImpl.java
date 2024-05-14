@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -75,6 +76,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final PartitionProcessingState partitionProcessingState;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final StateController stateController;
+  private DynamicPartitionConfig dynamicPartitionConfig;
   private StreamProcessor streamProcessor;
   private LogStream logStream;
   private AsyncSnapshotDirector snapshotDirector;
@@ -379,6 +381,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {
     this.adminAccess = adminAccess;
+  }
+
+  @Override
+  public DynamicPartitionConfig getDynamicPartitionConfig() {
+    return dynamicPartitionConfig;
+  }
+
+  @Override
+  public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
+    dynamicPartitionConfig = partitionConfig;
   }
 
   @Override

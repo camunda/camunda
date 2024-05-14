@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -23,6 +24,8 @@ import java.time.Duration;
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
   private PartitionDistribution partitionDistribution;
+
+  private ClusterConfiguration initialClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
 
@@ -67,7 +70,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
             clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
-                    (topology, error) -> {
+                    (configuration, error) -> {
                       if (error != null) {
                         started.completeExceptionally(error);
                       } else {
@@ -75,7 +78,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
                           partitionDistribution =
                               new PartitionDistribution(
                                   ConfigurationUtil.getPartitionDistributionFrom(
-                                      topology, PartitionManagerImpl.GROUP_NAME));
+                                      configuration, PartitionManagerImpl.GROUP_NAME));
+                          initialClusterConfiguration = configuration;
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
                           started.completeExceptionally(topologyConversionFailed);
@@ -103,6 +107,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
     }
+  }
+
+  @Override
+  public ClusterConfiguration getInitialClusterConfiguration() {
+    return initialClusterConfiguration;
   }
 
   @Override
