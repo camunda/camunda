@@ -14,11 +14,14 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
@@ -82,7 +85,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
   private ActorFuture<Void> openExporter(
       final PartitionTransitionContext context, final Role targetRole) {
-    final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
+    final Collection<ExporterDescriptor> exporterDescriptors =
+        getEnabledExporterDescriptors(context);
     final var exporterFilter =
         SkipPositionsFilter.of(
             context.getBrokerCfg() != null
@@ -125,5 +129,21 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  private static Collection<ExporterDescriptor> getEnabledExporterDescriptors(
+      final PartitionTransitionContext context) {
+    final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
+    final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
+    return exporterDescriptors.stream()
+        .filter(exporterDescriptor -> isEnabled(exporterConfig, exporterDescriptor))
+        .toList();
+  }
+
+  private static boolean isEnabled(
+      final Map<String, ExporterState> exporterConfig,
+      final ExporterDescriptor exporterDescriptor) {
+    return exporterConfig.containsKey(exporterDescriptor.getId())
+        && exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
   }
 }
