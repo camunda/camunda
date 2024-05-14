@@ -91,7 +91,9 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
-    return scheduleTimer(delay, true, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, true));
   }
 
   /**
@@ -110,19 +112,6 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAt(final long timestamp, final Runnable runnable) {
     ensureCalledFromWithinActor("runAt(...)");
-    return scheduleTimer(timestamp, runnable);
-  }
-
-  private TimerSubscription scheduleTimer(
-      final Duration delay, final boolean isRecurring, final Runnable runnable) {
-    return scheduleTimerSubscription(
-        runnable,
-        job ->
-            new DelayedTimerSubscription(
-                job, delay.toMillis(), TimeUnit.MILLISECONDS, isRecurring));
-  }
-
-  private TimerSubscription scheduleTimer(final long timestamp, final Runnable runnable) {
     return scheduleTimerSubscription(runnable, job -> new StampedTimerSubscription(job, timestamp));
   }
 
@@ -216,7 +205,9 @@ public class ActorControl implements ConcurrencyControl {
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
-    return scheduleTimer(delay, false, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, false));
   }
 
   /**
