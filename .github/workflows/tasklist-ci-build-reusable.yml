@@ -158,4 +158,3 @@ jobs:
         with:
           build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
           gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
-          big_query_table_name: "ci-30-162810:prod_ci_analytics.build_status_v2"
