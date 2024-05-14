@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {useNavigate, useOutletContext} from 'react-router-dom';
-import {Tag} from '@carbon/react';
+import {Layer, Tag} from '@carbon/react';
 import {pages} from 'modules/routing';
 import {BPMNDiagram} from 'modules/components/BPMNDiagram';
 import {OutletContext} from '../Details';
@@ -37,12 +37,11 @@ const ProcessView: React.FC = () => {
         <span className={styles.processName}>{name}</span>
         <Tag className={styles.version}>Version: {version}</Tag>
       </div>
-      <div className={styles.diagramFrame}>
-        <BPMNDiagram
-          xml={bpmnXml ?? ''}
-          highlightActivity={[taskDefinitionId]}
-        />
-      </div>
+      {bpmnXml !== null ? (
+        <Layer level={1} className={styles.diagramFrame}>
+          <BPMNDiagram xml={bpmnXml} highlightActivity={[taskDefinitionId]} />
+        </Layer>
+      ) : null}
     </div>
   );
 };
