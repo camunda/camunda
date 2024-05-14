@@ -192,27 +192,27 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sdk-core</artifactId>
-      <version>${version.awssdk}</version>
+      <version>2.25.45</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
-      <version>${version.awssdk}</version>
+      <version>2.25.45</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>netty-nio-client</artifactId>
-      <version>${version.awssdk}</version>
+      <version>2.25.45</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>regions</artifactId>
-      <version>${version.awssdk}</version>
+      <version>2.25.45</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
-      <version>${version.awssdk}</version>
+      <version>2.25.45</version>
     </dependency>
 
   </dependencies>
