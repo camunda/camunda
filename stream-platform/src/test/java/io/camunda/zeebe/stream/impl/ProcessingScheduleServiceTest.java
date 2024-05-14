@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -514,6 +515,146 @@ class ProcessingScheduleServiceTest {
 
       entries.addAll(appendEntries);
       return Either.right((long) entries.size());
+    }
+  }
+
+  @Nested
+  class RunAtTests {
+
+    @BeforeEach
+    void before() {
+      actorScheduler.setClockTime(100);
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskBeforeTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(90, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskAtTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskInOrderOfTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+      final var mockedTask2 = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAt(90, mockedTask2);
+      actorScheduler.workUntilDone();
+
+      // then
+      final var inOrder = inOrder(mockedTask2, mockedTask);
+      inOrder.verify(mockedTask).execute(any());
+      inOrder.verify(mockedTask2).execute(any());
+      inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.INITIAL;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      // The task will be resubmitted infinitely. So workUntilDone will never return.
+      actorScheduler.resume();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskIfAborted() {
+      // given
+      lifecycleSupplier.isAborted = true;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskInProcessing() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.PAUSED;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      // The task will be resubmitted infinitely. So workUntilDone will never return.
+      actorScheduler.resume();
+      verify(mockedTask, never()).execute(any());
+      lifecycleSupplier.currentPhase = Phase.PROCESSING;
+
+      // then
+      verify(mockedTask, timeout(2_000)).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.PAUSED;
+      final var notOpenScheduleService =
+          new ProcessingScheduleServiceImpl(
+              lifecycleSupplier,
+              lifecycleSupplier,
+              writerAsyncSupplier,
+              new NoopScheduledCommandCache());
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      notOpenScheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldWriteRecordAfterTaskWasExecuted() {
+      // given
+
+      // when
+      scheduleService.runAt(
+          100,
+          (builder) -> {
+            builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+            return builder.build();
+          });
+      actorScheduler.workUntilDone();
+
+      // then
+
+      assertThat(writerAsyncSupplier.writer.entries)
+          .describedAs("Record is written to the log stream")
+          .map(LogAppendEntry::key)
+          .containsExactly(1L);
     }
   }
 }
