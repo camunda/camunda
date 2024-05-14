@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import static io.camunda.zeebe.snapshots.SnapshotVersion.CHECKSUM_FROM_DB;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.SnapshotVersion;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -20,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -46,7 +49,11 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private static final String FORMAT_SNAPSHOT_DIRECTORY_LINE = "; snapshot directory = %s\n";
   private static final String FORMAT_FILE_CRC_LINE = "%s   %s\n";
   private static final String FORMAT_COMBINED_VALUE_LINE = "; combinedValue = %s\n";
+  private static final String FORMAT_CHECKSUM_VERSION_LINE = "; checksumVersion = %s\n";
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
+  private static final Pattern FILE_VERSION_PATTERN =
+      Pattern.compile(
+          "; checksumVersion = (" + SnapshotVersion.MANUAL_CHECKSUM + "|" + CHECKSUM_FROM_DB + ")");
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
   private static final Pattern COMBINED_VALUE_PATTERN =
@@ -54,6 +61,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private Checksum combinedChecksum;
   private final SortedMap<String, Long> checksums = new TreeMap<>();
   private String snapshotDirectoryComment;
+  private SnapshotVersion version;
 
   /**
    * creates an immutable and pre-defined checksum
@@ -74,6 +82,15 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
+  public SnapshotVersion getVersion() {
+    return version;
+  }
+
+  public void setVersion(final SnapshotVersion version) {
+    this.version = version;
+  }
+
+  @Override
   public void write(final OutputStream stream) throws IOException {
     final var writer = new PrintWriter(stream);
     writer.print(SFV_HEADER);
@@ -86,6 +103,8 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
+    final String versionStr = Optional.ofNullable(version).orElse(CHECKSUM_FROM_DB).toString();
+    writer.printf(FORMAT_CHECKSUM_VERSION_LINE, versionStr);
     writer.flush();
 
     if (writer.checkError()) {
@@ -105,6 +124,8 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         + combinedChecksum.getValue()
         + ", checksums="
         + checksums
+        + ", version="
+        + version
         + '}';
   }
 
@@ -153,6 +174,13 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
           final long crc = Long.parseLong(hexString, 16);
           combinedChecksum = new PreDefinedImmutableChecksum(crc);
         }
+
+        final Matcher versionMatcher = FILE_VERSION_PATTERN.matcher(line);
+        if (versionMatcher.find()) {
+          final String version = versionMatcher.group(1);
+          setVersion(SnapshotVersion.valueOf(version));
+        }
+
       } else {
         final Matcher matcher = FILE_CRC_PATTERN.matcher(line);
         if (matcher.find()) {

@@ -23,6 +23,11 @@ public interface ImmutableChecksumsSFV {
   long getCombinedValue();
 
   /**
+   * @return an Enum representing how the checksums were generated
+   */
+  SnapshotVersion getVersion();
+
+  /**
    * Write the checksum collection in SFV format to the given output stream.
    *
    * @param stream in which the data will be written to
