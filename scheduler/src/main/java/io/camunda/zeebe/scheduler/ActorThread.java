@@ -124,7 +124,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   /** Must be called from this thread, schedules a job to be run later. */
-  public void scheduleTimer(final TimerSubscription timer) {
+  public void scheduleTimer(final DelayedTimerSubscription timer) {
     timerJobQueue.schedule(timer, clock);
   }
 
