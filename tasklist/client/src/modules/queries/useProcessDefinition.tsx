@@ -17,7 +17,7 @@ const HTTP_STATUS_NOT_FOUND = 404;
 type Data = Process;
 
 function useProcessDefinition(
-  processDefinitionId: string | undefined | null,
+  processDefinitionId: string,
   options?: {enabled?: boolean},
 ) {
   return useQuery<Data, RequestError>({
@@ -43,10 +43,7 @@ function useProcessDefinition(
 
       throw error ?? new Error('Failed to fetch process instances');
     },
-    enabled:
-      (options?.enabled ?? true) &&
-      processDefinitionId !== undefined &&
-      processDefinitionId !== null,
+    enabled: options?.enabled ?? true,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
   });

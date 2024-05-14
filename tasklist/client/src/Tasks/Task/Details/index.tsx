@@ -38,8 +38,8 @@ const Details: React.FC = () => {
     data: process,
     error: processError,
     isLoading: processLoading,
-  } = useProcessDefinition(task?.processDefinitionKey, {
-    enabled: !taskCompleted,
+  } = useProcessDefinition(task?.processDefinitionKey ?? '', {
+    enabled: task !== undefined && !taskCompleted,
   });
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
