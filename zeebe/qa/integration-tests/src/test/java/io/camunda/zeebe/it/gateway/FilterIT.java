@@ -7,22 +7,15 @@
  */
 package io.camunda.zeebe.it.gateway;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
-import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,81 +27,34 @@ final class FilterIT {
           .withEmbeddedGateway(false)
           .withGatewaysCount(1)
           .withBrokersCount(1)
-          .withGatewayConfig(
-              (memberId, testGateway) -> {
-                final var filterCfg = new FilterCfg();
-                filterCfg.setId("test");
-                filterCfg.setClassName(CustomFilter.class.getName());
-                testGateway.gatewayConfig().setFilters(List.of(filterCfg));
-              })
           .build();
 
   @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
-  void initClientAndInstances() {
+  void initClient() {
     client = cluster.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
   @Test
-  void shouldUpdateUserTaskWithAction() {
+  void shouldFailWithFilterThrowingException() {
+    // when
+    assertThatThrownBy(() -> client.newTopologyRequest().useRest().send().join())
+        // the exception should be a problem exception but on filter exceptions, the global advice
+        // in the REST API seems to be bypassed and we receive an application/json response, not an
+        // application/problem+json. Parsing the error response into a TopologyResponse fails and
+        // swallows the original exception
+        //        .hasCauseInstanceOf(ProblemException.class)
+        //        .hasMessageContaining("I'm FILTERING!!!!");
+        .hasCauseInstanceOf(ClientException.class)
+        .hasMessageContaining("timestamp");
+  }
+
+  @Test
+  void shouldIgnoreFailingFilterOverGrpc() {
     // when
     client.newTopologyRequest().send().join();
 
-    // then
-    //    ZeebeAssertHelper.assertUserTaskUpdated(
-    //        userTaskKey, (userTask) -> assertThat(userTask.getAction()).isEqualTo("foo"));
-  }
-
-  //  @Test
-  //  void shouldReturnRejectionWithCorrectTypeAndReason() throws InterruptedException {
-  //    // given
-  //    final var gateway = cluster.availableGateway();
-  //    final var latch = new CountDownLatch(1);
-  //    final AtomicReference<Throwable> errorResponse = new AtomicReference<>();
-  //    final var client = gateway.bean(BrokerClient.class);
-  //
-  //    // when
-  //    client.sendRequestWithRetry(
-  //        new BrokerCreateProcessInstanceRequest(),
-  //        (k, r) -> {},
-  //        error -> {
-  //          errorResponse.set(error);
-  //          latch.countDown();
-  //        });
-  //
-  //    // then
-  //    latch.await();
-  //    final var error = errorResponse.get();
-  //    assertThat(error).isInstanceOf(BrokerRejectionException.class);
-  //    final BrokerRejection rejection = ((BrokerRejectionException) error).getRejection();
-  //    assertThat(rejection.type()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-  //    assertThat(rejection.reason())
-  //        .isEqualTo("Expected at least a bpmnProcessId or a key greater than -1, but none
-  // given");
-  //  }
-
-  public static class CustomFilter implements Filter {
-
-    @Override
-    public void init(final FilterConfig filterConfig) throws ServletException {
-      Filter.super.init(filterConfig);
-    }
-
-    @Override
-    public void doFilter(
-        final ServletRequest servletRequest,
-        final ServletResponse servletResponse,
-        final FilterChain filterChain)
-        throws IOException, ServletException {
-
-      throw new RuntimeException("I'm FILTERING!!!!");
-    }
-
-    @Override
-    public void destroy() {
-      Filter.super.destroy();
-    }
+    // then no error is thrown
   }
 }

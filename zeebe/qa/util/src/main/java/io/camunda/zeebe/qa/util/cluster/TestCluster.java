@@ -258,7 +258,8 @@ public final class TestCluster implements CloseableSilently {
   public ZeebeClientBuilder newClientBuilder() {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
-        .grpcAddress(availableGateway().grpcAddress());
+        .grpcAddress(availableGateway().grpcAddress())
+        .restAddress(availableGateway().restAddress());
   }
 
   /**
