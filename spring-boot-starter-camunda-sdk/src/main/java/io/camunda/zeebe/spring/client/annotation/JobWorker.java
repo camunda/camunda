@@ -107,5 +107,5 @@ public @interface JobWorker {
   long streamTimeout() default -1L;
 
   /** Set the max number of retries for a job */
-  int maxRetries() default 5;
+  int maxRetries() default -1;
 }
