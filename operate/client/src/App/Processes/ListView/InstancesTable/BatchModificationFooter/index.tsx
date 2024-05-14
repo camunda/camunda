@@ -40,7 +40,11 @@ const BatchModificationFooter: React.FC = observer(() => {
         </Button>
         <ModalStateManager
           renderLauncher={({setOpen}) => (
-            <Button size="sm" disabled={isButtonDisabled} onClick={setOpen}>
+            <Button
+              size="sm"
+              disabled={isButtonDisabled}
+              onClick={() => setOpen(true)}
+            >
               Apply Modification
             </Button>
           )}
