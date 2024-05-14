@@ -56,12 +56,6 @@ final class ScaleDownBrokersTest {
                       // default values.
                       .setSyncInterval(Duration.ofSeconds(1))
                       .setFailureTimeout(Duration.ofSeconds(2)))
-          .withBrokerConfig(
-              b ->
-                  b.brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .build();
 
   @BeforeEach

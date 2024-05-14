@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyService;
 import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterTopologyService;
-import io.camunda.zeebe.broker.partitioning.topology.StaticClusterTopologyService;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public class ClusterTopologyManagerStep
@@ -27,8 +25,7 @@ public class ClusterTopologyManagerStep
     final ActorFuture<BrokerStartupContext> started =
         brokerStartupContext.getConcurrencyControl().createFuture();
 
-    final ClusterTopologyService clusterTopologyService =
-        getClusterTopologyService(brokerStartupContext.getBrokerConfiguration());
+    final ClusterTopologyService clusterTopologyService = new DynamicClusterTopologyService();
     clusterTopologyService
         .start(brokerStartupContext)
         .onComplete(
@@ -66,12 +63,5 @@ public class ClusterTopologyManagerStep
       stopFuture.complete(brokerStartupContext);
     }
     return stopFuture;
-  }
-
-  private static ClusterTopologyService getClusterTopologyService(
-      final BrokerCfg brokerConfiguration) {
-    return brokerConfiguration.getExperimental().getFeatures().isEnableDynamicClusterTopology()
-        ? new DynamicClusterTopologyService()
-        : new StaticClusterTopologyService();
   }
 }

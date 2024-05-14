@@ -53,12 +53,6 @@ final class ScaleUpBrokersTest {
           .withBrokersCount(1)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
-          .withBrokerConfig(
-              b ->
-                  b.brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .build();
 
   @BeforeEach
@@ -241,7 +235,6 @@ final class ScaleUpBrokersTest {
         new TestStandaloneBroker()
             .withBrokerConfig(
                 b -> {
-                  b.getExperimental().getFeatures().setEnableDynamicClusterTopology(true);
                   b.getCluster().setClusterSize(newClusterSize);
                   b.getCluster().setNodeId(newBrokerId);
                   b.getCluster()

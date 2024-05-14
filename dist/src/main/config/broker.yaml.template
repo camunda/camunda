@@ -1138,9 +1138,3 @@
         # We recommend testing this feature in a non-production environment before enabling it in production.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLETIMERDUEDATECHECKERASYNC
         # enableTimerDueDateCheckerAsync: false
-
-        # When enabled, the broker relies on the new cluster topology management to determine partition distribution.
-        # When disabled, the broker generates partition distribution on every restart from the provided cluster configuration.
-        # This feature should be enabled to use dynamic scaling feature.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEDYNAMICCLUSTERTOPOLOGY
-        # enableDynamicClusterTopology: true
