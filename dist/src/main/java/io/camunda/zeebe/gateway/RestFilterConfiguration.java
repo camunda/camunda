@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.beans.BeansException;
@@ -15,20 +16,29 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
-public class RestFilterConfiguration implements BeanDefinitionRegistryPostProcessor {
+@Component
+public class RestFilterConfiguration
+    implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
 
-  private final List<FilterCfg> filterCfgs;
-
-  public RestFilterConfiguration(final List<FilterCfg> filterCfgs) {
-    this.filterCfgs = filterCfgs;
-  }
+  private List<FilterCfg> filterCfgs;
+  private Environment environment;
 
   @Override
   public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry)
       throws BeansException {
-    final AtomicInteger counter = new AtomicInteger(0);
+    final Binder binder = Binder.get(environment);
+    filterCfgs =
+        binder
+            .bind("zeebe.gateway.filters", Bindable.listOf(FilterCfg.class))
+            .orElse(Collections.emptyList());
+    final AtomicInteger counter = new AtomicInteger(1);
     final FilterRepository filterRepository = new FilterRepository();
     filterRepository
         .load(filterCfgs)
@@ -37,7 +47,10 @@ public class RestFilterConfiguration implements BeanDefinitionRegistryPostProces
             customFilter -> {
               final GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
               beanDefinition.setBeanClass(FilterRegistrationBean.class);
-              beanDefinition.getPropertyValues().add("filter", customFilter);
+              beanDefinition
+                  .getPropertyValues()
+                  .add("filter", customFilter)
+                  .add("order", counter.getAndIncrement());
               registry.registerBeanDefinition(
                   String.valueOf(counter.getAndIncrement()), beanDefinition);
             });
@@ -47,5 +60,10 @@ public class RestFilterConfiguration implements BeanDefinitionRegistryPostProces
   public void postProcessBeanFactory(final ConfigurableListableBeanFactory beanFactory)
       throws BeansException {
     // do nothing
+  }
+
+  @Override
+  public void setEnvironment(final Environment environment) {
+    this.environment = environment;
   }
 }

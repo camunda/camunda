@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(GatewayProperties.class)
-public final class GatewayConfiguration {
+public class GatewayConfiguration {
 
   private final GatewayProperties config;
   private final LifecycleProperties lifecycleProperties;
@@ -44,11 +44,6 @@ public final class GatewayConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return config.getMultiTenancy();
-  }
-
-  @Bean
-  public RestFilterConfiguration restFilterConfiguration() {
-    return new RestFilterConfiguration(config.getFilters());
   }
 
   @ConfigurationProperties("zeebe.gateway")
