@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -39,15 +39,9 @@ final class FilterIT {
   @Test
   void shouldFailWithFilterThrowingException() {
     // when
-    assertThatThrownBy(() -> client.newTopologyRequest().useRest().send().join())
-        // the exception should be a problem exception but on filter exceptions, the global advice
-        // in the REST API seems to be bypassed and we receive an application/json response, not an
-        // application/problem+json. Parsing the error response into a TopologyResponse fails and
-        // swallows the original exception
-        //        .hasCauseInstanceOf(ProblemException.class)
-        //        .hasMessageContaining("I'm FILTERING!!!!");
-        .hasCauseInstanceOf(ClientException.class)
-        .hasMessageContaining("timestamp");
+    assertThatThrownBy(() -> client.newUserTaskUnassignCommand(987654321L).send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("I'm FILTERING!!!!");
   }
 
   @Test

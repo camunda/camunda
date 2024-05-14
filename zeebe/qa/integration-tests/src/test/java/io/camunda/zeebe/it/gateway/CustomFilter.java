@@ -7,31 +7,36 @@
  */
 package io.camunda.zeebe.it.gateway;
 
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
-public class CustomFilter implements Filter {
-
-  @Override
-  public void init(final FilterConfig filterConfig) throws ServletException {
-    Filter.super.init(filterConfig);
-  }
+public class CustomFilter extends HttpFilter {
 
   @Override
-  public void doFilter(
-      final ServletRequest servletRequest,
-      final ServletResponse servletResponse,
-      final FilterChain filterChain) {
+  protected void doFilter(
+      final HttpServletRequest servletRequest,
+      final HttpServletResponse servletResponse,
+      final FilterChain filterChain)
+      throws ServletException, IOException {
 
-    throw new ArrayStoreException("I'm FILTERING!!!!");
-  }
+    // make this fail for a specific test scenario: REST call
+    // "DELETE /.../user-tasks/987654321/assignee"
+    if (servletRequest.getRequestURI().contains("/user-tasks/987654321/assignee")
+        && "DELETE".equals(servletRequest.getMethod())) {
+      final var response =
+          "{ \"type\": \"about:blank\", \"status\": 500, \"title\": \"Filter issue\", \"detail\": \"I'm FILTERING!!!!\", \"instance\": \" "
+              + servletRequest.getRequestURI()
+              + "\" }";
 
-  @Override
-  public void destroy() {
-    Filter.super.destroy();
+      servletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      servletResponse.setContentType("application/problem+json");
+      servletResponse.getWriter().write(response);
+      return;
+    }
+    filterChain.doFilter(servletRequest, servletResponse);
   }
 }
