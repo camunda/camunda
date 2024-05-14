@@ -17,7 +17,7 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   private final ActorJob job;
   private final ActorTask task;
   private final TimeUnit timeUnit;
-  private final long deadline;
+  private final long delay;
   private final boolean isRecurring;
   private volatile boolean isDone = false;
   private volatile boolean isCanceled = false;
@@ -26,11 +26,11 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   private long timerExpiredAt;
 
   public DelayedTimerSubscription(
-      final ActorJob job, final long deadline, final TimeUnit timeUnit, final boolean isRecurring) {
+      final ActorJob job, final long delay, final TimeUnit timeUnit, final boolean isRecurring) {
     this.job = job;
     task = job.getTask();
     this.timeUnit = timeUnit;
-    this.deadline = deadline;
+    this.delay = delay;
     this.isRecurring = isRecurring;
   }
 
@@ -90,11 +90,6 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   }
 
   @Override
-  public long getDeadline() {
-    return deadline;
-  }
-
-  @Override
   public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
@@ -113,6 +108,11 @@ public final class DelayedTimerSubscription implements TimerSubscription {
     return timerExpiredAt;
   }
 
+  @Override
+  public long getDeadline() {
+    return delay;
+  }
+
   public TimeUnit getTimeUnit() {
     return timeUnit;
   }
@@ -122,8 +122,8 @@ public final class DelayedTimerSubscription implements TimerSubscription {
     return "TimerSubscription{"
         + "timerId="
         + timerId
-        + ", deadline="
-        + deadline
+        + ", delay="
+        + delay
         + ", timeUnit="
         + timeUnit
         + ", isRecurring="
