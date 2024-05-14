@@ -126,9 +126,25 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
                 director.resumeExporting();
                 break;
             }
+
+            // The config might have changed after ExporterDirector has created
+            disableExportersIfConfigChanged(exporterDescriptors, context);
           }
         });
     return startFuture;
+  }
+
+  private void disableExportersIfConfigChanged(
+      final Collection<ExporterDescriptor> startedExporters,
+      final PartitionTransitionContext context) {
+    final var currentEnabledExporters = getEnabledExporterDescriptors(context);
+
+    for (final var exporter : startedExporters) {
+      if (!currentEnabledExporters.contains(exporter)) {
+        context.getExporterDirector().disableExporter(exporter.getId());
+      }
+    }
+    // TODO: Enable newly enabled exporters when the functionality is added
   }
 
   private static Collection<ExporterDescriptor> getEnabledExporterDescriptors(
