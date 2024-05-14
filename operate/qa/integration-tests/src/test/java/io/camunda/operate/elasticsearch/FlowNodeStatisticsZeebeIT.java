@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
-public class FlowNodeInstanceReaderZeebeIT extends OperateZeebeAbstractIT {
+public class FlowNodeStatisticsZeebeIT extends OperateZeebeAbstractIT {
 
   @Test
   public void testFlowNodeStatisticsForASimpleProcessInstance() throws Exception {
