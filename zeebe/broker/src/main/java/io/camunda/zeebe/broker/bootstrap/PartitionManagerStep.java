@@ -45,12 +45,12 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getGatewayBrokerTransport(),
             brokerStartupContext.getJobStreamService().jobStreamer(),
-            brokerStartupContext.getClusterTopology().getPartitionDistribution());
+            brokerStartupContext.getClusterConfigurationService().getPartitionDistribution());
     concurrencyControl.run(
         () -> {
           try {
             brokerStartupContext
-                .getClusterTopology()
+                .getClusterConfigurationService()
                 .registerTopologyChangeListener(
                     (newTopology, oldTopology) ->
                         shutdownOnInconsistentTopology(
@@ -61,7 +61,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             partitionManager.start();
             brokerStartupContext.setPartitionManager(partitionManager);
             brokerStartupContext
-                .getClusterTopology()
+                .getClusterConfigurationService()
                 .registerPartitionChangeExecutor(partitionManager);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
@@ -81,7 +81,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    brokerShutdownContext.getClusterTopology().removePartitionChangeExecutor();
+    brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
 
     concurrencyControl.runOnCompletion(
         partitionManager.stop(),
@@ -94,7 +94,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           }
         });
 
-    brokerShutdownContext.getClusterTopology().removeTopologyChangeListener();
+    brokerShutdownContext.getClusterConfigurationService().removeTopologyChangeListener();
   }
 
   private void shutdownOnInconsistentTopology(

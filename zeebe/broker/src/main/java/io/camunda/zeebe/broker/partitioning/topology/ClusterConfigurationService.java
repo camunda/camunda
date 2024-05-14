@@ -13,7 +13,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
-public interface ClusterTopologyService extends AsyncClosable {
+public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
   void registerPartitionChangeExecutor(PartitionChangeExecutor executor);

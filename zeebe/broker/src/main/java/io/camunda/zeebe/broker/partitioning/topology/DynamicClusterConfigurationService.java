@@ -20,7 +20,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.time.Duration;
 
-public class DynamicClusterTopologyService implements ClusterTopologyService {
+public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
   private PartitionDistribution partitionDistribution;
 

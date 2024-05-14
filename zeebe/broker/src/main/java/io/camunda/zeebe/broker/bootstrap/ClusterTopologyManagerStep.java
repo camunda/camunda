@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyService;
-import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterTopologyService;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterConfigurationService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public class ClusterTopologyManagerStep
@@ -25,13 +25,14 @@ public class ClusterTopologyManagerStep
     final ActorFuture<BrokerStartupContext> started =
         brokerStartupContext.getConcurrencyControl().createFuture();
 
-    final ClusterTopologyService clusterTopologyService = new DynamicClusterTopologyService();
-    clusterTopologyService
+    final ClusterConfigurationService clusterConfigurationService =
+        new DynamicClusterConfigurationService();
+    clusterConfigurationService
         .start(brokerStartupContext)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
-                brokerStartupContext.setClusterTopology(clusterTopologyService);
+                brokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
                 started.complete(brokerStartupContext);
               } else {
                 started.completeExceptionally(error);
@@ -46,14 +47,14 @@ public class ClusterTopologyManagerStep
       final BrokerStartupContext brokerStartupContext) {
     final ActorFuture<BrokerStartupContext> stopFuture =
         brokerStartupContext.getConcurrencyControl().createFuture();
-    final var clusterTopologyService = brokerStartupContext.getClusterTopology();
+    final var clusterTopologyService = brokerStartupContext.getClusterConfigurationService();
     if (clusterTopologyService != null) {
       clusterTopologyService
           .closeAsync()
           .onComplete(
               (ignore, error) -> {
                 if (error == null) {
-                  brokerStartupContext.setClusterTopology(null);
+                  brokerStartupContext.setClusterConfigurationService(null);
                   stopFuture.complete(brokerStartupContext);
                 } else {
                   stopFuture.completeExceptionally(error);
