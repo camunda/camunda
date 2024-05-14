@@ -205,6 +205,7 @@ public abstract class ZeebeRecordTestUtil {
         .withName(var.getName())
         .withValue(var.getFullValue())
         .withProcessInstanceKey(var.getProcessInstanceKey())
+        .withBpmnProcessId(var.getBpmnProcessId())
         .withScopeKey(var.getScopeKey())
         .withTenantId(var.getTenantId());
     if (recordValueBuilderFunction != null) {
