@@ -80,6 +80,7 @@ public class ManagementDashboardService {
                   new PositionDto(4, 0), new DimensionDto(14, 4)),
               createProcessesEndedInLastSixMonthsReport(
                   new PositionDto(0, 2), new DimensionDto(4, 2))));
+      log.info("Finished creating Management entities");
     }
   }
 
