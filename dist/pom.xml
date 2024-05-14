@@ -615,4 +615,105 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>buildDistFrontend</id>
+      <build>
+        <resources>
+          <resource>
+            <targetPath>${project.build.outputDirectory}/META-INF/resources/operate</targetPath>
+            <directory>${maven.multiModuleProjectDirectory}/operate/client/build</directory>
+          </resource>
+          <resource>
+            <targetPath>${project.build.outputDirectory}/META-INF/resources/tasklist</targetPath>
+            <directory>${maven.multiModuleProjectDirectory}/tasklist/client/build</directory>
+          </resource>
+        </resources>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <configuration>
+              <installDirectory>target</installDirectory>
+            </configuration>
+            <executions>
+              <execution>
+                <id>install node and yarn</id>
+                <goals>
+                  <goal>install-node-and-yarn</goal>
+                </goals>
+                <configuration>
+                  <nodeVersion>${version.node}</nodeVersion>
+                  <yarnVersion>${version.yarn}</yarnVersion>
+                </configuration>
+              </execution>
+              <execution>
+                <id>operate update package.json version</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>operate yarn install</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <failOnError>false</failOnError>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>operate yarn build</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <failOnError>false</failOnError>
+                  <arguments>build</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/operate/client</workingDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>tasklist update package.json version</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>tasklist yarn install</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <failOnError>false</failOnError>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>tasklist yarn build</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <failOnError>false</failOnError>
+                  <arguments>build</arguments>
+                  <workingDirectory>${maven.multiModuleProjectDirectory}/tasklist/client</workingDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
