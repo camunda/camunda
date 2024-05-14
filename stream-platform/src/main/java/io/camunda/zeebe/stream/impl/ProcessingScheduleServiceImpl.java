@@ -53,7 +53,7 @@ public class ProcessingScheduleServiceImpl
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable followUpTask) {
     if (actorControl == null) {
-      LOG.debug("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
+      LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
     final var scheduledTimer = actorControl.schedule(delay, followUpTask);
