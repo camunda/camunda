@@ -57,7 +57,7 @@ const process: Process = {
   version: 1,
   startEventFormId: '123456789',
   sortValues: ['value'],
-  bpmnXml: undefined,
+  bpmnXml: null,
 };
 
 const processWithBpmnModel: Process = {
