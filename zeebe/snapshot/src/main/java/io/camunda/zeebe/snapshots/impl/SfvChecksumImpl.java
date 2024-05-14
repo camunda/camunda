@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import static io.camunda.zeebe.snapshots.SnapshotVersion.CHECKSUM_FROM_DB;
+import static io.camunda.zeebe.snapshots.SnapshotVersion.MANUAL_CHECKSUM;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
@@ -101,7 +102,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
-    final String versionStr = Optional.ofNullable(version).orElse(CHECKSUM_FROM_DB).toString();
+    final String versionStr = Optional.ofNullable(version).orElse(MANUAL_CHECKSUM).toString();
     writer.printf(FORMAT_CHECKSUM_VERSION_LINE, versionStr);
     writer.flush();
 
