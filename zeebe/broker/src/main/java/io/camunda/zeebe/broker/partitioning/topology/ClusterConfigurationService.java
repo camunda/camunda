@@ -22,7 +22,7 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 
-  void registerTopologyChangeListener(InconsistentConfigurationListener listener);
+  void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
-  void removeTopologyChangeListener();
+  void removeInconsistentConfigurationListener();
 }

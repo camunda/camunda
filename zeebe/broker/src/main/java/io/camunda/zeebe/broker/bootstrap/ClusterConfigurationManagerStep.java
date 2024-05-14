@@ -11,7 +11,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterConfigurationService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
-public class ClusterTopologyManagerStep
+public class ClusterConfigurationManagerStep
     implements io.camunda.zeebe.scheduler.startup.StartupStep<BrokerStartupContext> {
 
   @Override

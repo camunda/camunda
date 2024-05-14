@@ -51,7 +51,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           try {
             brokerStartupContext
                 .getClusterConfigurationService()
-                .registerTopologyChangeListener(
+                .registerInconsistentConfigurationListener(
                     (newTopology, oldTopology) ->
                         shutdownOnInconsistentTopology(
                             brokerStartupContext.getBrokerInfo().getNodeId(),
@@ -94,7 +94,9 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           }
         });
 
-    brokerShutdownContext.getClusterConfigurationService().removeTopologyChangeListener();
+    brokerShutdownContext
+        .getClusterConfigurationService()
+        .removeInconsistentConfigurationListener();
   }
 
   private void shutdownOnInconsistentTopology(

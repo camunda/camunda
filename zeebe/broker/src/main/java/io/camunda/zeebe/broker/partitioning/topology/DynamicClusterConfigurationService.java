@@ -88,7 +88,8 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void registerTopologyChangeListener(final InconsistentConfigurationListener listener) {
+  public void registerInconsistentConfigurationListener(
+      final InconsistentConfigurationListener listener) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerTopologyChangedListener(listener);
     } else {
@@ -98,7 +99,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void removeTopologyChangeListener() {
+  public void removeInconsistentConfigurationListener() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
     }
@@ -136,11 +137,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
-        getDefaultClusterTopologyGossipConfig() // TODO: allow user specified config
+        getDefaultClusterConfigurationGossiperConfig() // TODO: allow user specified config
         );
   }
 
-  private ClusterConfigurationGossiperConfig getDefaultClusterTopologyGossipConfig() {
+  private ClusterConfigurationGossiperConfig getDefaultClusterConfigurationGossiperConfig() {
     return new ClusterConfigurationGossiperConfig(
         true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
   }
