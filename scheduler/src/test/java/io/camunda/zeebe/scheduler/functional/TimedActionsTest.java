@@ -16,15 +16,16 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
 import java.util.function.Function;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public final class TimedActionsTest {
-  @Rule
-  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @RegisterExtension
+  public final ControlledActorSchedulerExtension schedulerRule =
+      new ControlledActorSchedulerExtension();
 
   @Test
   public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException {
@@ -39,7 +40,7 @@ public final class TimedActionsTest {
         };
 
     // when
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
@@ -60,10 +61,10 @@ public final class TimedActionsTest {
         };
 
     // when
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
     // then
@@ -83,19 +84,19 @@ public final class TimedActionsTest {
         };
 
     // when then
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
     verify(action, times(1)).run();
 
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
     verify(action, times(2)).run();
 
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
     verify(action, times(3)).run();
   }
@@ -108,12 +109,12 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
     actor.cancelTimer();
     schedulerRule.workUntilDone();
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
     // then
@@ -128,12 +129,12 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
     // make timer run
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
     // when
@@ -152,12 +153,12 @@ public final class TimedActionsTest {
         new TimerActor(actorControl -> actorControl.runAtFixedRate(Duration.ofMillis(10), action));
 
     // when
-    schedulerRule.getClock().setCurrentTime(100);
+    schedulerRule.setClockTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
     actor.cancelTimer();
     schedulerRule.workUntilDone();
-    schedulerRule.getClock().addTime(Duration.ofMillis(10));
+    schedulerRule.updateClock(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
     // then
