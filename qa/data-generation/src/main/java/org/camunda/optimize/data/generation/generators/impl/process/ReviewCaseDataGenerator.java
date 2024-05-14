@@ -23,13 +23,14 @@ public class ReviewCaseDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected Map<String, Object> createVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("objectionPlausible", ThreadLocalRandom.current().nextDouble());
     variables.put("moneyReceived", ThreadLocalRandom.current().nextDouble());
     variables.put("recoursePossible", ThreadLocalRandom.current().nextDouble());

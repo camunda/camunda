@@ -7,9 +7,10 @@
 
 import {Component} from 'react';
 import {Button} from '@carbon/react';
+import {Edit, Group, TrashCan, User} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {EntityList, Deleter, BulkDeleter} from 'components';
+import {Deleter, BulkDeleter, CarbonEntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {getOptimizeProfile} from 'config';
@@ -70,8 +71,6 @@ export default withErrorHandling(
     render() {
       const {users, deleting, editing, addingUser, optimizeProfile} = this.state;
       const {readOnly, collection} = this.props;
-      const title =
-        optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle');
 
       const columns = [t('common.name'), t('home.roles.role')];
       if (optimizeProfile === 'platform') {
@@ -80,32 +79,30 @@ export default withErrorHandling(
 
       return (
         <div className="UserList">
-          <EntityList
-            name={title}
-            action={(bulkActive) =>
+          <CarbonEntityList
+            action={
               !readOnly && (
-                <Button
-                  kind={bulkActive ? 'tertiary' : 'primary'}
-                  onClick={this.openAddUserModal}
-                  size="md"
-                >
+                <Button kind="primary" onClick={this.openAddUserModal}>
                   {t('common.add')}
                 </Button>
               )
             }
-            bulkActions={[
-              <BulkDeleter
-                type="remove"
-                deleteEntities={async (selectedUsers) =>
-                  await removeUsers(collection, selectedUsers)
-                }
-              />,
-            ]}
+            bulkActions={
+              !readOnly && [
+                <BulkDeleter
+                  type="remove"
+                  deleteEntities={async (selectedUsers) =>
+                    await removeUsers(collection, selectedUsers)
+                  }
+                  useCarbonAction
+                />,
+              ]
+            }
             onChange={this.updateList}
-            empty={t('common.notFound')}
+            emptyStateComponent={<EmptyState icon={<User />} title={t('common.notFound')} />}
             isLoading={!users}
-            columns={columns}
-            data={
+            headers={columns}
+            rows={
               users &&
               users.map((user) => {
                 const {identity, role} = user;
@@ -127,19 +124,19 @@ export default withErrorHandling(
                   id: user.id,
                   entityType: 'user',
                   className: identity.type,
-                  icon: identity.type === 'group' ? 'user-group' : 'user',
+                  icon: identity.type === 'group' ? <Group /> : <User />,
                   type: formatType(identity.type),
                   name: identity.name || identity.id,
                   meta,
                   actions: !readOnly &&
                     !isLastManager && [
                       {
-                        icon: 'edit',
+                        icon: <Edit />,
                         text: t('common.edit'),
                         action: () => this.openEditUserModal(user),
                       },
                       {
-                        icon: 'delete',
+                        icon: <TrashCan />,
                         text: t('common.remove'),
                         action: () => this.setState({deleting: user}),
                       },

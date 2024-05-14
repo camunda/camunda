@@ -9,9 +9,15 @@ import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {numberParser} from 'services';
-import {FilterState, Filter, BetweenFilterState, BeforeFilterState, AfterFilterState} from 'types';
+import {
+  FilterState,
+  DateFilterType,
+  BetweenFilterState,
+  BeforeFilterState,
+  AfterFilterState,
+} from 'types';
 
-export function convertFilterToState(filter: Partial<Filter>): FilterState {
+export function convertFilterToState(filter: Partial<DateFilterType>): FilterState {
   const {type, start, end, ...commonProps} = filter;
   let state: FilterState = {
     type: '',
@@ -60,8 +66,8 @@ export function convertStateToFilter({
   endDate,
   valid,
   ...commonProps
-}: Partial<FilterState>): Filter {
-  let filter: Filter = {type: 'relative', end: null, start: null};
+}: Partial<FilterState>): DateFilterType {
+  let filter: DateFilterType = {type: 'relative', end: null, start: null};
   switch (type) {
     case 'today':
       filter.start = {value: 0, unit: 'days'};

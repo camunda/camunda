@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
@@ -16,17 +17,16 @@ import java.util.UUID;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Tag(OPENSEARCH_PASSING)
 public class CustomIndexPrefixIT extends AbstractPlatformIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
 
@@ -45,9 +45,15 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void optimizeCustomPrefixIndexExistsAfterSchemaInitialization() {
     // given
+    // Setting both configurations so that this is set properly regardless of which database is
+    // active
     embeddedOptimizeExtension
         .getConfigurationService()
         .getElasticSearchConfiguration()
+        .setIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOpenSearchConfiguration()
         .setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
@@ -67,9 +73,15 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void allTypesWithPrefixExistAfterSchemaInitialization() throws IOException {
     // given
+    // Setting both configurations so that this is set properly regardless of which database is
+    // active
     embeddedOptimizeExtension
         .getConfigurationService()
         .getElasticSearchConfiguration()
+        .setIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOpenSearchConfiguration()
         .setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
@@ -79,8 +91,8 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     // then
     final List<IndexMappingCreator<?>> mappings =
         embeddedOptimizeExtension.getDatabaseSchemaManager().getMappings();
-    assertThat(mappings).hasSize(29);
-    for (IndexMappingCreator mapping : mappings) {
+    assertThat(mappings).hasSize(28);
+    for (final IndexMappingCreator mapping : mappings) {
       final String expectedAliasName =
           getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
       final String expectedIndexName =
@@ -88,19 +100,15 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
                   expectedAliasName, String.valueOf(mapping.getVersion()))
               + mapping.getIndexNameInitialSuffix();
 
-      final OptimizeElasticsearchClient esClient =
-          customPrefixDatabaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-      final RestHighLevelClient highLevelClient = esClient.getHighLevelClient();
-
       assertThat(
-              highLevelClient
-                  .indices()
-                  .exists(new GetIndexRequest(expectedAliasName), esClient.requestOptions()))
+              embeddedOptimizeExtension
+                  .getDatabaseSchemaManager()
+                  .indexExists(prefixAwareDatabaseClient, expectedAliasName))
           .isTrue();
       assertThat(
-              highLevelClient
-                  .indices()
-                  .exists(new GetIndexRequest(expectedIndexName), esClient.requestOptions()))
+              embeddedOptimizeExtension
+                  .getDatabaseSchemaManager()
+                  .indexExists(prefixAwareDatabaseClient, expectedIndexName))
           .isTrue();
     }
   }
@@ -111,7 +119,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     deploySimpleProcess();
     importAllEngineEntitiesFromScratch();
 
-    String indexPrefix =
+    final String indexPrefix =
         customPrefixDatabaseIntegrationTestExtension.getIndexNameService().getIndexPrefix();
 
     // when

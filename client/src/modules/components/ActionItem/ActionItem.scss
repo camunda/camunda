@@ -27,10 +27,24 @@
       margin-left: auto;
     }
   }
+  .content,
+  .warning {
+    font-size: 0.75em;
+  }
 
   .content {
-    font-size: 0.75em;
     max-width: 100%;
+  }
+
+  .warning {
+    display: flex;
+    align-items: baseline;
+
+    svg {
+      margin-left: 0.25rem;
+      width: 0.75rem;
+      height: 0.75rem;
+    }
   }
 
   &:not(:hover) {

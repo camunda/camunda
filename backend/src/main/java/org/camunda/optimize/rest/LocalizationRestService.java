@@ -31,12 +31,4 @@ public class LocalizationRestService {
   public byte[] getLocalizationFile(@QueryParam("localeCode") final String localeCode) {
     return localizationService.getLocalizationFileBytes(localeCode);
   }
-
-  @GET
-  @Produces("text/markdown")
-  @Path("/whatsnew")
-  @CacheRequest
-  public byte[] getWhatsNewMarkdown(@QueryParam("localeCode") final String localeCode) {
-    return localizationService.getLocalizedWhatsNewMarkdown(localeCode);
-  }
 }

@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {ActionableNotification, Button, Checkbox, Form, FormGroup, Stack} from '@carbon/react';
 
-import {Form, LabeledInput, Modal, MessageBox, DocsLink} from 'components';
+import {Modal, DocsLink} from 'components';
 import {t} from 'translation';
 
 interface VisibleEventsModalProps {
@@ -34,36 +34,42 @@ export default function VisibleEventsModal({
   const updateSource = () => scope.length > 0 && onConfirm(scope);
 
   return (
-    <Modal open onClose={onClose}>
-      <Modal.Header>{t('events.sources.editScope')}</Modal.Header>
+    <Modal open onClose={onClose} className="VisibleEventsModal">
+      <Modal.Header title={t('events.sources.editScope')} />
       <Modal.Content>
-        <Form description={t('events.sources.eventListTip')}>
-          <Form.Group>
-            <LabeledInput
-              label={t('events.sources.startAndEnd')}
-              checked={scope.includes('process_instance')}
-              onChange={() => toggleScopeItem('process_instance')}
-              type="checkbox"
-            />
-            <LabeledInput
-              checked={scope.includes('start_end')}
-              onChange={() => toggleScopeItem('start_end')}
-              label={t('events.sources.flownodeEvents')}
-              type="checkbox"
-            />
-            <LabeledInput
-              label={t('events.sources.allEvents')}
-              checked={scope.includes('all')}
-              onChange={() => toggleScopeItem('all')}
-              type="checkbox"
-            />
-          </Form.Group>
-          <MessageBox type="warning">
-            {t('events.sources.eventListChangeWarning')}{' '}
-            <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
-              {t('events.sources.learnMore')}
-            </DocsLink>
-          </MessageBox>
+        <Form>
+          <Stack gap={4} orientation="vertical">
+            <FormGroup legendText={t('events.sources.eventListTip')}>
+              <Checkbox
+                id="processInstanceScopeToggle"
+                labelText={t('events.sources.startAndEnd')}
+                checked={scope.includes('process_instance')}
+                onChange={() => toggleScopeItem('process_instance')}
+              />
+              <Checkbox
+                id="flowNodeScopeToggle"
+                labelText={t('events.sources.flownodeEvents')}
+                checked={scope.includes('start_end')}
+                onChange={() => toggleScopeItem('start_end')}
+              />
+              <Checkbox
+                id="allEventsScopeToggle"
+                labelText={t('events.sources.allEvents')}
+                checked={scope.includes('all')}
+                onChange={() => toggleScopeItem('all')}
+              />
+            </FormGroup>
+            <ActionableNotification
+              kind="warning"
+              hideCloseButton
+              className="eventListChangeWarning"
+            >
+              {t('events.sources.eventListChangeWarning')}{' '}
+              <DocsLink location="components/userguide/additional-features/event-based-processes/#camunda-events">
+                {t('events.sources.learnMore')}
+              </DocsLink>
+            </ActionableNotification>
+          </Stack>
         </Form>
       </Modal.Content>
       <Modal.Footer>

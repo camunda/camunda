@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 @Provider
 @Component
 public class OptimizeObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
+
   private final ObjectMapper optimizeObjectMapper;
 
+  @Override
   public ObjectMapper getContext(Class<?> type) {
     return optimizeObjectMapper;
   }

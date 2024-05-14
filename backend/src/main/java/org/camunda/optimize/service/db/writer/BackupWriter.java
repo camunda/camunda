@@ -5,9 +5,45 @@
  */
 package org.camunda.optimize.service.db.writer;
 
-public interface BackupWriter {
+import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
+import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForNonImportIndices;
 
-  void triggerSnapshotCreation(final Long backupId);
+import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.repository.MappingMetadataRepository;
+import org.camunda.optimize.service.db.repository.SnapshotRepository;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.springframework.stereotype.Component;
 
-  void deleteOptimizeSnapshots(final Long backupId);
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class BackupWriter {
+  private final MappingMetadataRepository mappingMetadataRepository;
+  private final SnapshotRepository snapshotRepository;
+  private final OptimizeIndexNameService indexNameService;
+
+  public void triggerSnapshotCreation(final Long backupId) {
+    final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
+    final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
+    CompletableFuture.runAsync(
+        () -> {
+          snapshotRepository.triggerSnapshot(
+              snapshot1Name, getIndexAliasesWithImportIndexFlag(true));
+          snapshotRepository.triggerSnapshot(
+              snapshot2Name, getIndexAliasesWithImportIndexFlag(false));
+        });
+  }
+
+  public void deleteOptimizeSnapshots(final Long backupId) {
+    snapshotRepository.deleteOptimizeSnapshots(backupId);
+  }
+
+  private String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
+    return mappingMetadataRepository.getAllMappings().stream()
+        .filter(mapping -> isImportIndex == mapping.isImportIndex())
+        .map(indexNameService::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
+  }
 }

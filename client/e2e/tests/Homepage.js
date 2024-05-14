@@ -35,15 +35,15 @@ test('navigate to report view and edit pages', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(Common.reportItem);
+  await t.click(Common.listItemLink('report'));
 
   await t.expect(e.noDataNotice.textContent).contains('Report configuration is incomplete');
 
   await t.click(e.homepageLink);
 
-  await t.hover(Common.reportItem);
-  await t.click(Common.contextMenu(Common.reportItem));
-  await t.click(Common.edit(Common.reportItem));
+  await t.hover(Common.listItem('report'));
+  await t.click(Common.contextMenu(Common.listItem('report')));
+  await t.click(Common.edit);
 
   await t.expect(Common.controlPanel.visible).ok();
 });
@@ -54,15 +54,15 @@ test('navigate to dashboard view and edit pages', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard'));
 
   await t.expect(Common.editButton.visible).ok();
 
   await t.click(e.homepageLink);
 
-  await t.hover(Common.dashboardItem);
-  await t.click(Common.contextMenu(Common.dashboardItem));
-  await t.click(Common.edit(Common.dashboardItem));
+  await t.hover(Common.listItem('dashboard'));
+  await t.click(Common.contextMenu(Common.listItem('dashboard')));
+  await t.click(Common.edit);
 
   await t.expect(Common.addButton.visible).ok();
 });
@@ -96,8 +96,8 @@ test('complex Homepage actions', async (t) => {
   await save(t);
   await t.click(e.homepageLink);
 
-  await t.expect(Common.reportItem.visible).ok();
-  await t.expect(Common.reportItem.textContent).contains('Monthly Sales From Marketing');
+  await t.expect(Common.listItem('report').visible).ok();
+  await t.expect(Common.listItem('report').textContent).contains('Monthly Sales From Marketing');
 
   await createNewDashboard(t);
 
@@ -110,12 +110,12 @@ test('complex Homepage actions', async (t) => {
   await save(t);
   await t.click(e.homepageLink);
 
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.dashboardItem.textContent).contains('Sales Dashboard');
-  await t.expect(Common.dashboardItem.textContent).contains('3 Reports');
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard');
+  await t.expect(Common.listItem('dashboard').textContent).contains('3 Reports');
 
   // breadcrumb navigation
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard'));
   await t.click(e.dashboardReportLink);
   await t.click(e.breadcrumb('Sales Dashboard'));
 
@@ -173,39 +173,38 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.expect(Common.collectionItem.visible).ok();
-  await t.expect(Common.collectionItem.textContent).contains('Sales');
-  await t.expect(Common.collectionItem.textContent).contains('1 Dashboard, 2 Reports');
+  await t.expect(Common.listItem('collection').visible).ok();
+  await t.expect(Common.listItem('collection').textContent).contains('Sales');
+  await t.expect(Common.listItem('collection').textContent).contains('1 Dashboard, 2 Reports');
 
   await t.takeElementScreenshot(Common.entityList, 'img/home.png');
 
   // search
-  await t.click(e.searchButton);
   await t.typeText(e.searchField, 'sales', {replace: true});
-  await t.expect(Common.collectionItem.visible).ok();
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.reportItem.visible).ok();
+  await t.expect(Common.listItem('collection').visible).ok();
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('report').visible).ok();
 
   await t.typeText(e.searchField, 'sales d', {replace: true});
-  await t.expect(Common.collectionItem.exists).notOk();
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.reportItem.exists).notOk();
+  await t.expect(Common.listItem('collection').exists).notOk();
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('report').exists).notOk();
 
   await t.typeText(e.searchField, 'marketing', {replace: true});
-  await t.expect(Common.collectionItem.visible).ok();
-  await t.expect(Common.dashboardItem.exists).notOk();
-  await t.expect(Common.reportItem.visible).ok();
+  await t.expect(Common.listItem('collection').visible).ok();
+  await t.expect(Common.listItem('dashboard').exists).notOk();
+  await t.expect(Common.listItem('report').visible).ok();
 
   await t.typeText(e.searchField, 'Collection b', {replace: true});
-  await t.expect(Common.collectionItem.exists).notOk();
-  await t.expect(Common.dashboardItem.exists).notOk();
-  await t.expect(Common.reportItem.exists).notOk();
+  await t.expect(Common.listItem('collection').exists).notOk();
+  await t.expect(Common.listItem('dashboard').exists).notOk();
+  await t.expect(Common.listItem('report').exists).notOk();
 
   await t.click(e.searchField).pressKey('ctrl+a delete');
   // copy to new location
-  await t.hover(Common.dashboardItem);
-  await t.click(Common.contextMenu(Common.dashboardItem));
-  await t.click(Common.copy(Common.dashboardItem));
+  await t.hover(Common.listItem('dashboard'));
+  await t.click(Common.contextMenu(Common.listItem('dashboard')));
+  await t.click(Common.copy);
 
   await t.click(e.moveCopySwitch);
   await t.click(e.copyTargetsInput);
@@ -215,11 +214,11 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(Common.confirmButton);
 
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.dashboardItem.textContent).contains('Sales Dashboard (copy)');
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard (copy)');
 
-  await t.expect(Common.reportItem.visible).ok();
-  await t.expect(Common.reportItem.textContent).contains('Invoice Evaluation count – Copy');
+  await t.expect(Common.listItem('report').visible).ok();
+  await t.expect(Common.listItem('report').textContent).contains('Invoice Evaluation count – Copy');
 
   // bulk deleting home entities
   await bulkDeleteAllItems(t);
@@ -278,14 +277,14 @@ test('create new KPI report', async (t) => {
     .maximizeWindow();
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(0));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
   await t.click(Report.flowNode('prepareBankTransfer'));
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(1));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.menuOption('This...'));

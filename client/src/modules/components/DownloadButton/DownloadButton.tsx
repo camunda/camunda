@@ -7,12 +7,14 @@
 
 import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
 import {Button} from '@carbon/react';
+import {Download} from '@carbon/icons-react';
 
-import {Modal, Button as LegacyButton} from 'components';
+import {Modal} from 'components';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
-import {useErrorHandling, useUser, useDocs} from 'hooks';
+import {useErrorHandling, useDocs} from 'hooks';
+import {User} from 'HOC';
 
 import {t} from 'translation';
 
@@ -25,6 +27,8 @@ type RetrieverProps = {
 
 interface CommonProps extends ComponentPropsWithoutRef<typeof Button> {
   totalCount: number;
+  // We take user as a prop instead of using the hook because user context is not accesigble in HeatmapOverlay
+  user: User | undefined;
 }
 
 export type DownloadButtonProps = CommonProps & (LinkProps | RetrieverProps);
@@ -34,11 +38,11 @@ export function DownloadButton({
   fileName,
   retriever,
   totalCount,
+  user,
   ...props
 }: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
-  const {user} = useUser();
   const {mightFail} = useErrorHandling();
   const {generateDocsLink} = useDocs();
 
@@ -81,16 +85,15 @@ export function DownloadButton({
     return null;
   }
 
-  const Trigger = 'kind' in props ? Button : LegacyButton;
-
   return (
     <>
-      <Trigger
+      <Button
+        renderIcon={Download}
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
       <Modal open={modalOpen} onClose={closeModal} className="DownloadButtonConfirmationModal">
-        <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
+        <Modal.Header title={t('report.downloadCSV')} />
         <Modal.Content>
           <p>
             <b>{t('common.csvLimit.Warning')}</b>

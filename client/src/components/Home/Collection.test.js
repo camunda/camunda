@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter, ReportTemplateModal, KpiCreationModal} from 'components';
+import {Deleter, ReportTemplateModal, KpiCreationModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {isUserSearchAvailable} from 'config';
@@ -109,7 +109,7 @@ beforeEach(() => {
 it('should pass Entity to Deleter', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[2].action();
+  node.find('EntityList').prop('rows')[0].actions[2].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('aDashboardId');
 });
@@ -135,7 +135,7 @@ it('should modify the collections name with the edit modal', async () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action')().props.create('report');
+  node.find('EntityList').prop('action').props.create('report');
 
   expect(node.find(ReportTemplateModal)).toExist();
 });
@@ -143,7 +143,7 @@ it('should show a ReportTemplateModal', () => {
 it('should show kpiCreationModal', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('action')().props.create('kpi');
+  node.find('EntityList').prop('action').props.create('kpi');
 
   expect(node.find(KpiCreationModal)).toExist();
 });
@@ -195,7 +195,7 @@ it('should hide create new button if the user role is viewer', () => {
   });
   const node = shallow(<Collection {...props} />);
 
-  expect(node.find('EntityList').prop('action')()).toBe(false);
+  expect(node.find('EntityList').prop('action')).toBe(false);
 });
 
 it('should load collection entities with sort parameters', () => {
@@ -236,7 +236,7 @@ it('should include an option to export reports for entity editors', () => {
   expect(
     node
       .find('EntityList')
-      .prop('data')[1]
+      .prop('rows')[1]
       .actions.find(({text}) => text === 'Export')
   ).not.toBe(undefined);
 });
@@ -255,7 +255,7 @@ it('should hide the export option for entity viewers', () => {
   expect(
     node
       .find('EntityList')
-      .prop('data')[0]
+      .prop('rows')[0]
       .actions.find(({text}) => text === 'Export')
   ).toBe(undefined);
 });
@@ -300,6 +300,30 @@ it('should show entity name and description', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].name).toBe('aDashboard');
-  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('a description');
+  expect(node.find('EntityList').prop('rows')[0].name).toBe('aDashboard');
+  expect(node.find('EntityList').prop('rows')[0].meta[0]).toBe('a description');
+});
+
+it('should not show actions in empty state if user is not an editor', async () => {
+  loadEntity.mockReturnValueOnce({
+    id: 'aCollectionId',
+    name: 'aCollectionName',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
+    created: '2017-11-11T11:11:11.1111+0200',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    currentUserRole: 'viewer',
+    data: {},
+  });
+
+  const node = shallow(<Collection {...props} />);
+
+  runAllEffects();
+
+  await flushPromises();
+
+  const emptyState = node.find('EntityList').prop('emptyStateComponent');
+
+  expect(emptyState.props.title).toBe('There are no items created yet');
+  expect(emptyState.props.actions).toBeUndefined();
 });

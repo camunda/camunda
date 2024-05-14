@@ -708,7 +708,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getProcessDefinitionKeys_camundaImportedEventProcessesOnly() {
     // given
     toggleCamundaEventImportsConfiguration(true);

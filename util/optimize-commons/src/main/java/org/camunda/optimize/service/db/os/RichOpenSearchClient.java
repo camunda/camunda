@@ -8,6 +8,7 @@ package org.camunda.optimize.service.db.os;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncDocumentOperations;
+import org.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchClusterOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchIndexOperations;
@@ -22,15 +23,22 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 public class RichOpenSearchClient {
   public static class AsyncOperations {
     final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
+    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
 
     public AsyncOperations(
         OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService) {
       this.openSearchAsyncDocumentOperations =
           new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
+      this.openSearchAsyncSnapshotOperations =
+          new OpenSearchAsyncSnapshotOperations(indexNameService, openSearchAsyncClient);
     }
 
     public OpenSearchAsyncDocumentOperations doc() {
       return openSearchAsyncDocumentOperations;
+    }
+
+    public OpenSearchAsyncSnapshotOperations snapshot() {
+      return openSearchAsyncSnapshotOperations;
     }
   }
 

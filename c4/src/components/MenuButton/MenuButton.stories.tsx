@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { MenuItemSelectable } from "@carbon/react"
-import { within } from "@storybook/testing-library"
-import { expect } from "@storybook/jest"
+import { within, expect } from "@storybook/test"
 
 import MenuButton from "./MenuButton"
 import { Calendar } from "@carbon/icons-react"
@@ -30,6 +29,7 @@ export const mainStory: Story = {
 		children: [
 			<MenuItemSelectable key="item1" label="item1" />,
 			<MenuItemSelectable key="item2" label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable key="item3" label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 			</MenuItemSelectable>,

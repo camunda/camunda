@@ -1,0 +1,62 @@
+name: Optimize Create Release Branch
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release version"
+        required: true
+      release_type:
+        description: "Release type"
+        required: true
+
+jobs:
+  create_release_branch:
+    name: Create release branch
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Get next development version
+        id: next_development_version
+        run: ./.github/scripts/get-next-development-version.sh
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release_type}}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version}}
+
+      - name: Create release branch
+        run: ./.github/scripts/create-release-branch.sh
+        env:
+          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
+          GITHUB_ACTOR_ID: ${{ github.actor_id }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          RELEASE_TYPE: ${{ github.event.inputs.release_type}}
+          RELEASE_VERSION: ${{ github.event.inputs.release_version}}
+          NEXT_DEVELOPMENT_VERSION: ${{ steps.next_development_version.outputs.next_development_version }}

@@ -341,7 +341,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @ParameterizedTest
   @MethodSource(ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateAccessGrantedToCollectionReportByCollectionRole(
       final IdentityRoleAndReportScenario identityAndReport) {
     // given
@@ -628,7 +627,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private String createCollectionAndAddRolesWithKermitRoleType(RoleType kermitRoleType) {
+  private String createCollectionAndAddRolesWithKermitRoleType(final RoleType kermitRoleType) {
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto collectionScope1 =
         new CollectionScopeEntryDto(DefinitionType.PROCESS, "key1");
@@ -779,7 +778,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     }
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(int resourceType) {
+  private ReportDefinitionDto constructReportWithDefinition(final int resourceType) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:

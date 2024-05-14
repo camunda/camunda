@@ -6,10 +6,12 @@
 package org.camunda.optimize.upgrade.main;
 
 import static org.camunda.optimize.upgrade.steps.UpgradeStepType.REINDEX;
+import static org.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_INDEX;
 
 import com.vdurmont.semver4j.Semver;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -20,6 +22,7 @@ import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.ReindexStep;
 
 @Slf4j
@@ -75,6 +78,9 @@ public class UpgradeProcedure {
   private void executeUpgradePlan(final UpgradePlan upgradePlan) {
     int currentStepCount = 1;
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
+    Map<String, UpgradeStepLogEntryDto> appliedStepsById =
+        upgradeStepLogService.getAllAppliedStepsForUpdateToById(
+            schemaUpgradeClient, upgradePlan.getToVersion().toString());
     for (UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto =
           UpgradeStepLogEntryDto.builder()
@@ -84,7 +90,8 @@ public class UpgradeProcedure {
               .stepNumber(currentStepCount)
               .build();
       final Optional<Instant> stepAppliedDate =
-          upgradeStepLogService.getStepAppliedDate(schemaUpgradeClient, logEntryDto);
+          Optional.ofNullable(appliedStepsById.get(logEntryDto.getId()))
+              .map(UpgradeStepLogEntryDto::getAppliedDate);
       if (stepAppliedDate.isEmpty()) {
         log.info(
             "Starting step {}/{}: {} on index: {}",
@@ -138,6 +145,8 @@ public class UpgradeProcedure {
           esClient
               .getIndexNameService()
               .getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex()));
+    } else if (SCHEMA_DELETE_INDEX.equals(step.getType())) {
+      return ((DeleteIndexIfExistsStep) step).getVersionedIndexName();
     } else {
       return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
     }

@@ -1,0 +1,42 @@
+name: Check if C4 builds
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "c4/**"
+  pull_request:
+    paths:
+      - "c4/**"
+
+jobs:
+  build:
+    name: Build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Setup yarn cache
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          cache: "yarn"
+          cache-dependency-path: c4/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ./c4
+        run: yarn
+
+      - name: Build storybook
+        working-directory: ./c4
+        run: yarn build-storybook
+
+      - name: Build C4 package
+        working-directory: ./c4
+        run: yarn build

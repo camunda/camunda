@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class FlowNodeEndDateQueryFilter implements QueryFilter<FlowNodeDateFilterDataDto<?>> {
+
   @Override
   public void addFilters(
       final BoolQueryBuilder query,

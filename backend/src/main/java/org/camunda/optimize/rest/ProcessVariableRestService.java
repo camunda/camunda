@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
+import org.camunda.optimize.rest.util.TimeZoneUtil;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableLabelService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
@@ -42,8 +43,9 @@ public class ProcessVariableRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNames(
       @Context final ContainerRequestContext requestContext,
-      @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
-    return processVariableService.getVariableNames(variableRequestDtos);
+      @Valid final ProcessVariableNameRequestDto variableRequestDto) {
+    variableRequestDto.setTimezone(TimeZoneUtil.extractTimezone(requestContext));
+    return processVariableService.getVariableNames(variableRequestDto);
   }
 
   @POST

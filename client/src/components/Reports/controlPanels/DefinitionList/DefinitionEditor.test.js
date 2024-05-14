@@ -121,7 +121,7 @@ it('should allow opening the diagram in a bigger modal', () => {
   expect(node.find(DiagramModal).prop('xml')).toBe(loadProcessDefinitionXml());
 });
 
-it('should pass all tenants ids to the renameVariableModal', () => {
+it('should pass all tenants ids to the RenameVariablesModal', () => {
   const tenantInfo = [
     {id: 'a', name: 'A'},
     {id: 'b', name: 'B'},
@@ -142,4 +142,14 @@ it('should invoke onChange when confirming the renamed variable modal', () => {
   node.find(RenameVariablesModal).prop('onChange')();
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should pass filters to RenameVariablesModal', () => {
+  const filters = [{appliedTo: ['all'], filterLevel: 'instance', type: 'assignee', data: []}];
+  const node = shallow(<DefinitionEditor {...props} filters={filters} />);
+  runAllEffects();
+
+  node.find(Button).last().simulate('click');
+
+  expect(node.find(RenameVariablesModal).prop('filters')).toEqual(filters);
 });

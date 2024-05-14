@@ -9,7 +9,7 @@
     "logoutFailed": "Logout failed.",
     "logoutSuccess": "You logged out successfully.",
     "configLoadingError": "An error occurred while loading the UI configurations",
-    "userGuide": "User guide",
+    "documentation": "Documentation",
     "help": "Help",
     "profile": "Profile",
     "appSwitcher": "App switcher",
@@ -70,10 +70,6 @@
     "text": "The {label} has unsaved changes. Save before continuing?",
     "yes": "Save changes",
     "no": "Don't save"
-  },
-  "whatsNew": {
-    "buttonTitle": "What’s new",
-    "modalHeader": "What's new in Optimize"
   },
   "telemetry": {
     "updated": "Telemetry settings updated.",
@@ -167,6 +163,7 @@
       "decision": "Decision table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
+      "addSources": "You can add one or more sources to the collection",
       "contactManager": "Please contact the collection manager to add new sources",
       "add": "Add source",
       "definitionName": "Definition name",
@@ -245,7 +242,8 @@
     "addedSources": "Added sources",
     "modelProcess": "Model a process",
     "upload": "Upload .bpmn",
-    "empty": "There are no event-based processes created yet",
+    "createProcess": "Start by creating a process",
+    "createTip": "Click New Process to create your first event-based process",
     "label": "Event-based process",
     "parseError": "Could not parse file. Please make sure to upload a valid BPMN file.",
     "list": "Events list",
@@ -293,6 +291,7 @@
     },
     "sources": {
       "add": "Add event source",
+      "eventSource": "Event Source",
       "externalEvents": "External events",
       "editSource": "Edit event source",
       "addEvents": "Add process events",
@@ -390,21 +389,22 @@
       "create": "Create process KPI",
       "step": "Step {count}",
       "selectKpi": "Select process KPI",
+      "preview": "Preview",
+      "setTargetAndFilters": "Set target and filters",
+      "mandatoryFields": "Mandatory Fields",
+      "filtersLabel": "Filters",
+      "filters": {
+        "nodeSelection": "Select end event",
+        "endDate": "Select timeframe"
+      },
       "automationRate": "Automation rate",
       "automationRate-description": "The automation rate measures which percentage of the process is executed without human interaction.",
       "automationRate-filter1": "Select the end events that indicate a fully automated process",
       "automationRate-filter2": "Select the timeframe for which to evaluate automation rate",
-      "preview": "Preview",
-      "setTargetAndFilters": "Set target and filters",
       "throughput": "Throughput time",
       "throughput-description": "The throughput time indicates how long a process on the happy path needs in average to end",
       "throughput-filter1": "Select the end events that indicate a fully automated process",
-      "throughput-filter2": "Select the timeframe for which to evaluate throughput",
-      "mandatoryFilters": "Mandatory Filters",
-      "filters": {
-        "nodeSelection": "Select end event",
-        "endDate": "Select timeframe"
-      }
+      "throughput-filter2": "Select the timeframe for which to evaluate throughput"
     },
     "instanceCount": {
       "appliedFilters": "Applied filters",
@@ -973,6 +973,7 @@
     "create": "Create alert",
     "notCreated": "There are no alerts created yet",
     "contactManager": "Please contact the collection manager to create new alerts",
+    "emptyStateDecription": "Use the button below to create new alert and receive notifications on important events",
     "inactiveStatus": "Alert inactive",
     "activateInfo": "To active add email or target system",
     "updated": "\"{name}\" updated.",
@@ -1104,7 +1105,6 @@
     "dataSource": "Data source",
     "selected": "Selected",
     "documentation": "documentation",
-    "here": "here",
     "open": "Open",
     "for": "for",
     "download": "Download",
@@ -1123,6 +1123,7 @@
     "details": "Details",
     "nextStep": "Next step",
     "previousStep": "Previous step",
+    "sort": "Sort",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

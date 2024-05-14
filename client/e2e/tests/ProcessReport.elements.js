@@ -78,7 +78,7 @@ export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector('.cds--form-item').withText(label).find('input');
-export const warningMessage = Selector('.Report .MessageBox--warning');
+export const warningMessage = Selector('.Report .cds--inline-notification');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
@@ -122,3 +122,7 @@ export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('input');
 export const numberReportInfo = reportRenderer.find('.Number .label');
 export const variableSubmenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
+export const collapsibleContainer = Selector('.CollapsibleContainer');
+export const collapsibleContainerTable = collapsibleContainer.find('.Table');
+export const collapsibleContainerExpandButton = collapsibleContainer.find('.expandButton');
+export const collapsibleContainerCollapseButton = collapsibleContainer.find('.collapseButton');

@@ -8,10 +8,7 @@ exports[`should contain a change warning and not contain event scope selection 1
     gap={6}
   >
     <FormGroup
-      invalid={false}
       legendText="Trace ID location"
-      message={false}
-      messageText=""
     >
       <ForwardRef(Stack)
         gap={6}
@@ -34,31 +31,21 @@ exports[`should contain a change warning and not contain event scope selection 1
           />
         </RadioButtonGroup>
         <ComboBox
-          aria-label="Choose an item"
           className="variablesSelector"
-          direction="bottom"
           disabled={false}
           id="variable-selector"
-          itemToElement={null}
           itemToString={[Function]}
           items={Array []}
           onChange={[Function]}
           placeholder="Select or search for a variable here"
           selectedItem={null}
-          shouldFilterItem={[Function]}
-          type="default"
         />
       </ForwardRef(Stack)>
     </FormGroup>
     <ActionableNotification
       className="editingWarning"
-      closeOnEscape={true}
-      hasFocus={true}
       hideCloseButton={true}
-      inline={false}
       kind="warning"
-      onCloseButtonClick={[Function]}
-      role="alertdialog"
     >
       Changing the process definition may add or remove events. Existing event mappings may be removed.
        

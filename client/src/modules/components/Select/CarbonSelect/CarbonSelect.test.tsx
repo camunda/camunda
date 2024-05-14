@@ -8,6 +8,7 @@
 import {UIEvent} from 'react';
 import {shallow} from 'enzyme';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
+import {MenuItem} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
 
@@ -74,7 +75,7 @@ it('should select option onClick and add checked property', () => {
     </CarbonSelect>
   );
 
-  node.find(CarbonSelect.Option).prop('onChange')?.({
+  node.find(CarbonSelect.Option).simulate('change', {
     target: {closest: () => ({getAttribute: () => '1'})},
   } as unknown as UIEvent<HTMLElement>);
   expect(spy).toHaveBeenCalledWith('1');
@@ -95,7 +96,7 @@ it('should select submenu option onClick and set checked property on the submenu
     </CarbonSelect>
   );
 
-  node.find(CarbonSelect.Option).prop('onChange')?.({
+  node.find(CarbonSelect.Option).simulate('change', {
     target: {closest: () => ({getAttribute: () => '1'})},
   } as unknown as UIEvent<HTMLElement>);
   expect(spy).toHaveBeenCalledWith('1');
@@ -155,6 +156,17 @@ describe('CarbonSelect.Option', () => {
 
     expect(node.find('.Option').prop('label')).toBe('label');
   });
+
+  it('should handle disabled state', () => {
+    const node = shallow(
+      <CarbonSelect.Option label="label" disabled>
+        <b>Option</b>
+      </CarbonSelect.Option>
+    );
+
+    expect(node.dive().find(MenuItem).prop('disabled')).toBeTruthy();
+    expect(node.find('b')).not.toExist();
+  });
 });
 
 describe('CarbonSelect.Submenu', () => {
@@ -162,5 +174,16 @@ describe('CarbonSelect.Submenu', () => {
     const node = shallow(<CarbonSelect.Submenu label="label" />);
 
     expect(node.find('.Submenu').prop('label')).toBe('label');
+  });
+
+  it('should handle disabled state', () => {
+    const node = shallow(
+      <CarbonSelect.Submenu label="label" disabled>
+        <b>Option</b>
+      </CarbonSelect.Submenu>
+    );
+
+    expect(node.dive().find(MenuItem).prop('disabled')).toBeTruthy();
+    expect(node.find('b')).not.toExist();
   });
 });

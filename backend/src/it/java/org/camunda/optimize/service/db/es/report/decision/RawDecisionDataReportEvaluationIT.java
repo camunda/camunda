@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.report.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
 import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
@@ -52,10 +53,12 @@ import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitionIT {
 
   @Test
@@ -424,6 +427,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void addVariablesToEntriesEvenIfNoValueExistsForVariable() {
     // given a decision instance with non null variable value and one instance with null variable
     // value

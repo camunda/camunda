@@ -2,7 +2,7 @@
 set -x
 
 git config user.name "${GITHUB_ACTOR}"
-git config user.email "${GITHUB_APP_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
+git config user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
 git remote set-url origin https://$GITHUB_APP_ID:$GITHUB_APP_PRIVATE_KEY@github.com/camunda/camunda-optimize-examples.git
 git fetch
 git checkout $BRANCH

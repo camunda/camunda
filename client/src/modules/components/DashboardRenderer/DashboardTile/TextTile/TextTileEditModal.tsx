@@ -14,9 +14,9 @@ import {isTextTileValid} from 'services';
 import {t} from 'translation';
 
 interface TextTileEditModalProps {
-  initialValue: SerializedEditorState;
+  initialValue: SerializedEditorState | null;
   onClose: () => void;
-  onConfirm: (value: SerializedEditorState) => void;
+  onConfirm: (value: SerializedEditorState | null) => void;
 }
 
 export default function TextTileEditModal({
@@ -33,11 +33,18 @@ export default function TextTileEditModal({
     onClose();
   };
 
+  const title = t('common.editName', {name: t('report.textTile').toString().toLowerCase()});
+
   return (
     <Modal open onClose={onClose}>
-      <Modal.Header>{t('common.editName', {name: t('report.textTile')})}</Modal.Header>
+      <Modal.Header title={title} />
       <Modal.Content>
-        <TextEditor initialValue={initialValue} onChange={setText} />
+        <TextEditor
+          label={title.toString()}
+          hideLabel
+          initialValue={initialValue}
+          onChange={setText}
+        />
         <TextEditor.CharCount editorState={text} />
       </Modal.Content>
       <Modal.Footer>

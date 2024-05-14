@@ -10,9 +10,9 @@ import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 
 import jakarta.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
 import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
@@ -25,15 +25,18 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getVariableNamesWithoutAuthentication() {
     // given
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey("zhoka");
-    variableRequestDto.setProcessDefinitionVersion("boka");
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey("zhoka");
+    processToQuery.setProcessDefinitionVersion("1");
+
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(List.of(processToQuery));
 
     // when
     Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
-            .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto), false)
+            .buildProcessVariableNamesRequest(variableRequestDto, false)
             .withoutAuthentication()
             .execute();
 
@@ -54,8 +57,11 @@ public class ProcessVariableRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getVariableNamesWithoutDefinitionVersionDoesNotFail() {
     // given
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey("akey");
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey("akey");
+
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(List.of(processToQuery));
 
     // when
     List<ProcessVariableNameResponseDto> responseList =

@@ -7,10 +7,8 @@ exports[`should match snapshot 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
-    Destructive changes
-  </ForwardRef(ModalHeader)>
+    title="Destructive changes"
+  />
   <ForwardRef>
     <div
       key="alert"
@@ -36,11 +34,7 @@ exports[`should match snapshot 1`] = `
       </p>
     </div>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}

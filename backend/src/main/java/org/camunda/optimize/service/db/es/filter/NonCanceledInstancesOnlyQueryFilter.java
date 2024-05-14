@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NonCanceledInstancesOnlyQueryFilter
     implements QueryFilter<NonCanceledInstancesOnlyFilterDataDto> {
+
   @Override
   public void addFilters(
       final BoolQueryBuilder query,

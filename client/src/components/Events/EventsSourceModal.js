@@ -24,7 +24,7 @@ import {loadVariables as loadVariablesService} from 'services';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
 
-import ExternalSource from './ExternalSource';
+import ExternalSourceSelection from './ExternalSourceSelection';
 import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
@@ -122,13 +122,16 @@ export default function EventsSourceModal({
     (processDefinitionKey, processDefinitionVersions, tenantIds) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         mightFail(
-          loadVariablesService([
-            {
-              processDefinitionKey,
-              processDefinitionVersions,
-              tenantIds,
-            },
-          ]),
+          loadVariablesService({
+            processesToQuery: [
+              {
+                processDefinitionKey,
+                processDefinitionVersions,
+                tenantIds,
+              },
+            ],
+            filter: [],
+          }),
           setVariables,
           showError
         );
@@ -156,9 +159,9 @@ export default function EventsSourceModal({
 
   return (
     <Modal open onClose={onClose} className="EventsSourceModal" isOverflowVisible>
-      <Modal.Header>
-        {isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
-      </Modal.Header>
+      <Modal.Header
+        title={isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
+      />
       <Modal.Content>
         <Tabs value={type} onChange={setType} showButtons={!isEditing()}>
           <Tabs.Tab value="camunda" title={t('events.sources.camundaEvents')}>
@@ -291,7 +294,7 @@ export default function EventsSourceModal({
           </Tabs.Tab>
           <Tabs.Tab value="external" title={t('events.sources.externalEvents')}>
             {!autoGenerate && (
-              <ExternalSource
+              <ExternalSourceSelection
                 empty={!externalExist}
                 existingExternalSources={existingSources.filter((src) => src.type === 'external')}
                 externalSources={externalSources}

@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-optimize-camunda-cambpm-cloud
+  namespace: ${NAMESPACE}
+  labels:
+    app: cambpm
+    team: optimize
+spec:
+  progressDeadlineSeconds: 1800
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: cambpm
+  template:
+    metadata:
+      labels:
+        app: cambpm
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
+      tolerations:
+        - key: "agents-n1-standard-8-netssd-stable"
+          operator: "Exists"
+          effect: "NoSchedule"
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      volumes:
+        - name: camunda-invoice-removal
+          emptyDir: {}
+      containers:
+        - name: cambpm
+          image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION}
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
+            - name: WAIT_FOR
+              value: postgres:5432
+            - name: DB_DRIVER
+              value: "org.postgresql.Driver"
+            - name: DB_USERNAME
+              value: "camunda"
+            - name: DB_PASSWORD
+              value: "camunda"
+            - name: DB_CONN_MAXACTIVE
+              value: "200"
+            - name: DB_CONN_MAXIDLE
+              value: "100"
+            - name: DB_CONN_MINIDLE
+              value: "50"
+            - name: DB_URL
+              value: "jdbc:postgresql://postgres:5432/engine"
+          ports:
+            - containerPort: 8080
+              name: cambpm-http
+          tty: true
+          volumeMounts:
+            - name: camunda-invoice-removal
+              mountPath: /camunda/webapps/camunda-invoice
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            httpGet:
+              path: /engine-rest/engine
+              port: cambpm-http
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            httpGet:
+              path: /engine-rest/engine
+              port: cambpm-http
+          resources:
+            limits:
+              cpu: 7
+              memory: 6Gi
+            requests:
+              cpu: 7
+              memory: 6Gi

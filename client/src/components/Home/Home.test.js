@@ -8,11 +8,10 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {ReportTemplateModal, KpiCreationModal} from 'components';
+import {ReportTemplateModal, KpiCreationModal, CarbonEntityList} from 'components';
+import {loadEntities} from 'services';
 
 import {Home} from './Home';
-import {loadEntities} from 'services';
-import CreateNewButton from './CreateNewButton';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -59,7 +58,7 @@ it('should show a ReportTemplateModal', () => {
 
   runAllEffects();
 
-  node.find('EntityList').prop('action')().props.create('report');
+  node.find('EntityList').prop('action').props.create('report');
 
   expect(node.find(ReportTemplateModal)).toExist();
 });
@@ -69,7 +68,7 @@ it('should show kpiCreationModal', () => {
 
   runAllEffects();
 
-  node.find('EntityList').prop('action')().props.create('kpi');
+  node.find('EntityList').prop('action').props.create('kpi');
 
   expect(node.find(KpiCreationModal)).toExist();
 });
@@ -84,7 +83,7 @@ it('should load collection entities with sort parameters', () => {
   expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
 });
 
-it('should show the loading indicator', async () => {
+it('should pass loading state to entitylist', async () => {
   const node = shallow(
     <Home
       {...props}
@@ -98,33 +97,12 @@ it('should show the loading indicator', async () => {
 
   runAllEffects();
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
-  expect(node.find('LoadingIndicator')).not.toExist();
-
-  expect(node.find('EntityList')).toExist();
+  expect(node.find('EntityList').prop('isLoading')).toBe(false);
 });
 
-it('should show empty state component', async () => {
-  loadEntities.mockReturnValueOnce([]);
-  const node = shallow(<Home {...props} />);
-
-  runAllEffects();
-
-  await flushPromises();
-
-  const emptyState = node.find('EmptyState');
-
-  expect(emptyState.prop('title')).toBe('Start by creating a dashboard');
-  expect(emptyState.prop('description')).toBe(
-    'Click Create New Dashboard to get insights into business processes'
-  );
-  expect(emptyState.prop('icon')).toBe('dashboard-optimize-accent');
-
-  expect(node.find('EntityList')).not.toExist();
-});
-
-it('should show entity list component when user is not editor and there no entities', async () => {
+it('should not pass empty state component if user is not an editor', async () => {
   loadEntities.mockReturnValueOnce([]);
   const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
 
@@ -132,8 +110,7 @@ it('should show entity list component when user is not editor and there no entit
 
   await flushPromises();
 
-  expect(node.find('EntityList')).toExist();
-  expect(node.find('EmptyState')).not.toExist();
+  expect(node.find(CarbonEntityList).prop('emptyStateComponent')).toBe(false);
 });
 
 it('should hide edit options for read only users', () => {
@@ -151,7 +128,7 @@ it('should hide edit options for read only users', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+  expect(node.find('EntityList').prop('rows')[0].actions.length).toBe(0);
 });
 
 it('should hide edit options for collection editors', () => {
@@ -169,7 +146,7 @@ it('should hide edit options for collection editors', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
+  expect(node.find('EntityList').prop('rows')[0].actions.length).toBe(0);
 });
 
 it('should hide bulk actions for read only users', () => {
@@ -185,13 +162,12 @@ it('should hide entity creation button for read only users', () => {
 
   runAllEffects();
 
-  const actionButton = node.find('EntityList').renderProp('action')();
-  expect(actionButton.find(CreateNewButton)).toExist();
+  const actionButton = shallow(node.find('EntityList').prop('action'));
+  expect(actionButton.find('.CreateNewButton')).toExist();
 
   node.setProps({user: {name: 'John Doe', authorizations: []}});
 
-  const updatedActionButton = node.find('EntityList').renderProp('action')();
-  expect(updatedActionButton.find(CreateNewButton)).not.toExist();
+  expect(node.find('EntityList').prop('action')).toBe(false);
 });
 
 describe('export authorizations', () => {
@@ -212,7 +188,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).not.toBe(undefined);
   });
@@ -234,7 +210,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
@@ -256,7 +232,7 @@ describe('export authorizations', () => {
     expect(
       node
         .find('EntityList')
-        .prop('data')[0]
+        .prop('rows')[0]
         .actions.find(({text}) => text === 'Export')
     ).toBe(undefined);
   });
@@ -267,6 +243,6 @@ it('should show entity name and description', () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('data')[0].name).toBe('Test Report');
-  expect(node.find('EntityList').prop('data')[0].meta[0]).toBe('This is a description');
+  expect(node.find('EntityList').prop('rows')[0].name).toBe('Test Report');
+  expect(node.find('EntityList').prop('rows')[0].meta[0]).toBe('This is a description');
 });

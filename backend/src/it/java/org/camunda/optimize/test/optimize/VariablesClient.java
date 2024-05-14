@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
@@ -46,21 +47,21 @@ public class VariablesClient {
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      final ProcessDefinitionEngineDto processDefinition) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
-    variableRequestDto.setProcessDefinitionVersions(
+      ProcessDefinitionEngineDto processDefinition) {
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(processDefinition.getKey());
+    processToQuery.setProcessDefinitionVersions(
         ImmutableList.of(processDefinition.getVersionAsString()));
+
+    List<ProcessToQueryDto> processesToQuery = List.of(processToQuery);
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(processesToQuery);
+
     return getProcessVariableNames(variableRequestDto);
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      final ProcessVariableNameRequestDto variableRequestDto) {
-    return getProcessVariableNames(Collections.singletonList(variableRequestDto));
-  }
-
-  public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      final List<ProcessVariableNameRequestDto> variableRequestDtos) {
+      ProcessVariableNameRequestDto variableRequestDtos) {
     return getRequestExecutor()
         .buildProcessVariableNamesRequest(variableRequestDtos)
         .executeAndReturnList(
@@ -83,10 +84,15 @@ public class VariablesClient {
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      final String key, final List<String> versions) {
-    ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(key);
-    variableRequestDto.setProcessDefinitionVersions(versions);
+      String key, List<String> versions) {
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(key);
+    processToQuery.setProcessDefinitionVersions(versions);
+
+    List<ProcessToQueryDto> processesToQuery = List.of(processToQuery);
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(processesToQuery);
+
     return getProcessVariableNames(variableRequestDto);
   }
 

@@ -15,9 +15,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.util.DateCreationFreezer;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -26,6 +26,7 @@ import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.matchers.Times;
@@ -54,7 +55,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     // then
     final Optional<UpgradeStepLogEntryDto> updateLogEntries =
         getDocumentOfIndexByIdAs(
-            UpdateLogEntryIndex.INDEX_NAME,
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME,
             TO_VERSION
                 + "_"
                 + SCHEMA_CREATE_INDEX
@@ -91,7 +92,8 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
 
     // then
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .containsExactlyInAnyOrder(
             UpgradeStepLogEntryDto.builder()
@@ -139,7 +141,8 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
             + getIndexNameWithVersion(TEST_INDEX_V1));
     logs.assertContains("The upgrade will be aborted. Please investigate the cause and retry it..");
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .containsExactlyInAnyOrder(
             UpgradeStepLogEntryDto.builder()
@@ -172,6 +175,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
         .isInstanceOf(UpgradeRuntimeException.class);
     dbMockServer.verify(indexDeleteRequest, exactly(1));
+    prefixAwareClient.refresh(new RefreshRequest("*"));
 
     // when it is retried
     final OffsetDateTime frozenDate2 =
@@ -184,14 +188,15 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     logs.assertContains(
         String.format(
             "Skipping Step 1/2: CreateIndexStep on index: %s as it was found to be previously completed already at: %s.",
-            getIndexNameWithVersion(TEST_INDEX_V1), frozenDate.toInstant().toString()));
+            getIndexNameWithVersion(TEST_INDEX_V1), frozenDate.toInstant()));
     logs.assertContains(
         "Starting step 2/2: UpdateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V2));
     logs.assertContains(
         "Successfully finished step 2/2: UpdateIndexStep on index: "
             + getIndexNameWithVersion(TEST_INDEX_V2));
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .containsExactlyInAnyOrder(
             UpgradeStepLogEntryDto.builder()
@@ -252,7 +257,8 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         "Successfully finished step 2/2: UpdateIndexStep on index: "
             + getIndexNameWithVersion(TEST_INDEX_V2));
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .containsExactlyInAnyOrder(
             UpgradeStepLogEntryDto.builder()

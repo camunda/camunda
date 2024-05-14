@@ -24,6 +24,7 @@ public class ProcessInstanceDurationGroupByNoneByProcessCmd
     super(builder);
   }
 
+  @Override
   protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder) {
     return builder

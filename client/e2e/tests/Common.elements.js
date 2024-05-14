@@ -13,7 +13,7 @@ export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal.is-visible')
   .nth(-1)
-  .find('.cds--modal-footer .cds--btn:last-child');
+  .find('.cds--modal-footer .cds--btn:last-child:not([disabled])');
 export const descriptionField = Selector('.EntityDescription');
 export const descriptionParagraph = descriptionField.find('p');
 export const addDescriptionButton = descriptionField.find('button');
@@ -28,29 +28,29 @@ export const submenuOption = (text) =>
   Selector('.cds--menu-item[aria-expanded=true] > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
-export const entityList = Selector('.EntityList');
-export const edit = (element) => element.find('.DropdownOption').withText('Edit');
-export const copy = (element) => element.find('.DropdownOption').withText('Copy');
-export const del = (element) => element.find('.DropdownOption').withText('Delete');
-export const contextMenu = (entity) => entity.find('.Dropdown');
-export const selectAllCheckbox = Selector('.columnHeaders > input[type="checkbox"]');
+export const entityList = Selector('.CarbonEntityList');
+export const edit = Selector('.CarbonListItemSingleAction').withText('Edit');
+export const copy = Selector('.CarbonListItemSingleAction').withText('Copy');
+export const del = Selector('.CarbonListItemSingleAction').withText('Delete');
+export const contextMenu = (entity) => entity.find('button.cds--overflow-menu');
+export const listItemTrigger = (entity, trigger) =>
+  entity
+    .find('td .cds--tooltip-content')
+    .withText(trigger)
+    .parent('.cds--popover-container')
+    .find('button.CarbonListItemAction');
+export const selectAllCheckbox = Selector('thead .cds--checkbox--inline');
 export const bulkMenu = Selector('.bulkMenu');
-export const listItem = Selector('.ListItem');
-export const dashboardItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Dashboard') !== -1
-);
-export const reportItem = listItem.filter(
-  (node) =>
-    node.querySelector('.name .type').textContent.toLocaleLowerCase().indexOf('report') !== -1
-);
-export const collectionItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Collection') !== -1
-);
-export const processItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Process') !== -1
-);
-export const reportLabel = reportItem.find('.name .type');
-export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
+export const bulkDelete = Selector('.cds--action-list button').withText('Delete');
+export const listItem = (type, viewerMode = false) =>
+  Selector(`.CarbonEntityList tbody tr td:nth-child(${viewerMode ? 1 : 2}) span`)
+    .withText(new RegExp(type, 'i'))
+    .parent('tr');
+export const listItemWithText = (text) =>
+  Selector('.CarbonEntityList tbody tr td:nth-child(2)').withText(text).parent('tr');
+export const listItemLink = (type, viewerMode = false) =>
+  listItem(type, viewerMode).find(`td:nth-child(${viewerMode ? 1 : 2}) a`);
+export const listItemCheckbox = (item) => item.find('.cds--checkbox-label');
 export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
@@ -77,5 +77,7 @@ export const overflowMenuOption = (text) => overflowMenuOptions.find('button').w
 export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);
 export const radioButton = (text) => Selector('.cds--radio-button-wrapper').withText(text);
 export const checkbox = (text) => Selector('.cds--checkbox-label').withText(text);
-export const kpiFilterButton = Selector('.filterTile button');
+export const kpiFilterButton = Selector('.filterTile .actions > button');
 export const kpiTemplateSelection = Selector('input#KpiSelectionComboBox');
+export const emptyStateAdd = Selector('.EmptyState .cds--btn--primary');
+export const processItem = listItemLink('process', true);

@@ -9,9 +9,17 @@ import React from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, InlineNotification, Loading, TextInput} from '@carbon/react';
+import {Button, InlineNotification, TextInput} from '@carbon/react';
 
-import {Modal, BPMNDiagram, Table, CarbonSelect, TargetValueBadge, ClickBehavior} from 'components';
+import {
+  Modal,
+  BPMNDiagram,
+  Table,
+  Loading,
+  CarbonSelect,
+  TargetValueBadge,
+  ClickBehavior,
+} from 'components';
 import {formatters, numberParser, getReportResult} from 'services';
 
 import './DurationHeatmapModal.scss';
@@ -244,19 +252,22 @@ export default class DurationHeatmapModal extends React.Component {
         onClose={onClose}
         className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
       >
-        <Modal.Header>{t('report.heatTarget.title')}</Modal.Header>
+        <Modal.Header title={t('report.heatTarget.title')} />
         <Modal.Content className="content-container">
-          {this.state.loading && <Loading className="loading" withOverlay={false} />}
-          <div className="diagram-container">
-            <BPMNDiagram xml={report.data.configuration.xml}>
-              <ClickBehavior
-                onClick={({id}) => this.updateFocus(id)}
-                selectedNodes={this.state.focus ? [this.state.focus] : []}
-                nodeTypes={[nodeType]}
-              />
-              <TargetValueBadge values={this.state.values} />
-            </BPMNDiagram>
-          </div>
+          {this.state.loading ? (
+            <Loading />
+          ) : (
+            <div className="diagram-container">
+              <BPMNDiagram xml={report.data.configuration.xml}>
+                <ClickBehavior
+                  onClick={({id}) => this.updateFocus(id)}
+                  selectedNodes={this.state.focus ? [this.state.focus] : []}
+                  nodeTypes={[nodeType]}
+                />
+                <TargetValueBadge values={this.state.values} />
+              </BPMNDiagram>
+            </div>
+          )}
           <Table
             loading={this.state.loading}
             head={[

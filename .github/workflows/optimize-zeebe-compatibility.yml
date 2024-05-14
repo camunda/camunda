@@ -15,9 +15,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        zeebe-version: [8.1.0, 8.2.0, 8.3.0, 8.4.0, latest, snapshot]
+        zeebe-version: [8.2.0, 8.3.0, 8.4.0, 8.5.0, latest, snapshot]
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       # Parses the pom within less than second and exposes every value as an output of the step
       # That's why we need the id `pom-info`, so we can reference it in follow-up steps
       - name: "Read Java Info"
@@ -59,3 +59,22 @@ jobs:
         if: always() # always dump the docker logs in case of success and failure
         with:
           archive_name: zeebe-integration-test-${{ matrix.zeebe-version }} # the archive name has to be unique since we're uploading x archives and they would otherwise overwrite each other
+
+  # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
+  rerun-failed-jobs:
+    needs:
+      - zeebe-integration-test
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrigger job
+        uses: camunda/infra-global-github-actions/rerun-failed-run@main
+        with:
+          error-messages: |
+            lost communication with the server
+            The runner has received a shutdown signal
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

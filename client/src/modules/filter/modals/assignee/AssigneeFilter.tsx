@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode, useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Button, Form, FormGroup, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
@@ -19,19 +19,7 @@ import {FilterProps} from '../types';
 
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
-interface AssigneeFilterProps
-  extends FilterProps<{
-    values?: (string | null)[];
-    operator?: string;
-  }> {
-  filterType: 'assignee' | 'candidateGroup';
-  filterLevel: 'view';
-  forceEnabled?: () => boolean;
-  getPretext?: () => ReactNode;
-  getPosttext?: () => ReactNode;
-}
-
-export default function AssigneeFilter(props: AssigneeFilterProps) {
+export default function AssigneeFilter(props: FilterProps<'assignee' | 'candidateGroup'>) {
   const {
     filterData,
     close,
@@ -152,11 +140,11 @@ export default function AssigneeFilter(props: AssigneeFilterProps) {
       className={classnames('AssigneeFilter', className)}
       isOverflowVisible
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         <Stack gap={6}>
           {!reportIds && (

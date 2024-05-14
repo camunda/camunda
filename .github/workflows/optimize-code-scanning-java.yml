@@ -23,11 +23,11 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -40,7 +40,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1b1aada464948af03b950897e5eb522f92603cc2 # v3
+        uses: github/codeql-action/init@d39d31e687223d841ef683f52467bd88e9b21c14 # v3
         with:
           languages: java
           queries: security-and-quality
@@ -51,4 +51,4 @@ jobs:
           parameters: compile -DskipTests -Dskip.docker
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@1b1aada464948af03b950897e5eb522f92603cc2 # v3
+        uses: github/codeql-action/analyze@d39d31e687223d841ef683f52467bd88e9b21c14 # v3

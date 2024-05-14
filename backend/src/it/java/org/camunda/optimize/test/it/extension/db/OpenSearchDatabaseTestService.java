@@ -5,11 +5,19 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import static org.camunda.optimize.ApplicationContextProvider.getBean;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
@@ -23,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,19 +41,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto.Fields;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder;
+import org.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
 import org.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -55,6 +69,7 @@ import org.camunda.optimize.service.db.os.schema.index.report.SingleProcessRepor
 import org.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -67,10 +82,17 @@ import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.core.TimeValue;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
+import org.opensearch.client.opensearch._types.aggregations.ValueCountAggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutClusterSettingsRequest;
@@ -78,16 +100,21 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
+import org.opensearch.client.opensearch.indices.Alias;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
 import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
 @Slf4j
@@ -125,12 +152,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public DatabaseClient getDatabaseClient() {
     return prefixAwareOptimizeOpenSearchClient;
-  }
-
-  @Override
-  public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
-    // TODO get rid of this method with OPT-7455
-    throw new NotSupportedException("No ElasticSearch client here");
   }
 
   @Override
@@ -258,36 +279,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     // TODO implement with #11121
     throw new NotImplementedException(
         "Not yet implemented for OpenSearch, will be implemented with issue #11121");
-    //    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-    //      .query(QueryDSL.matchAll())
-    //      .fetchSource(false)
-    //      .size(0)
-    //      .aggregation(
-    //        nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
-    //          .subAggregation(
-    //            count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
-    //              .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
-    //          )
-    //      );
-    //
-    //    SearchRequest searchRequest = new SearchRequest()
-    //      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
-    //      .source(searchSourceBuilder);
-    //
-    //    SearchResponse searchResponse;
-    //    try {
-    //      searchResponse = getOptimizeOpenClient().search(searchRequest);
-    //    } catch (IOException | OpensearchStatusException e) {
-    //      throw new OptimizeIntegrationTestException("Could not evaluate activity count in process
-    // instance indices.", e);
-    //    }
-    //
-    //    Nested nested = searchResponse.getAggregations()
-    //      .get(FLOW_NODE_INSTANCES);
-    //    ValueCount countAggregator =
-    //      nested.getAggregations()
-    //        .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
-    //    return Long.valueOf(countAggregator.getValue()).intValue();
   }
 
   @Override
@@ -303,10 +294,12 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void deleteAllOptimizeData() {
-    getOptimizeOpenSearchClient()
-        .getRichOpenSearchClient()
-        .doc()
-        .deleteByQuery(QueryDSL.matchAll(), true, getIndexNameService().getIndexPrefix() + "*");
+    try {
+      getOptimizeOpenSearchClient()
+          .deleteByQuery(QueryDSL.matchAll(), true, getIndexNameService().getIndexPrefix() + "*");
+    } catch (final Exception e) {
+      // Not a problem if the deletion fails
+    }
   }
 
   @SneakyThrows
@@ -537,22 +530,52 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void updateEventProcessRoles(
-      final String eventProcessId, final List<IdentityDto> identityDtos) {
-    // TODO #10087
-    throw new NotImplementedException("Not yet implemented for OpenSearch");
+      final String eventProcessId,
+      final List<IdentityDto> identityDtos,
+      final ScriptData scriptData) {
+    getOptimizeOpenSearchClient()
+        .update(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId, scriptData);
   }
 
   @Override
   public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
-    // TODO #10087
-    throw new NotImplementedException("Not yet implemented for OpenSearch");
+    // TODO implement with #11121
+    throw new NotImplementedException(
+        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
   }
 
   @Override
+  @SneakyThrows
   public Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(
       final String processMappingId) {
-    // TODO #10087
-    throw new NotImplementedException("Not yet implemented for OpenSearch");
+    final SearchRequest.Builder searchRequest =
+        new Builder()
+            .index(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
+            .query(
+                QueryDSL.and(
+                    QueryDSL.term(
+                        EventProcessPublishStateIndexES.PROCESS_MAPPING_ID, processMappingId),
+                    QueryDSL.term(EventProcessPublishStateIndexES.DELETED, false)))
+            .sort(
+                new SortOptions.Builder()
+                    .field(
+                        new FieldSort.Builder()
+                            .field(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME)
+                            .order(org.opensearch.client.opensearch._types.SortOrder.Desc)
+                            .build())
+                    .build());
+    final SearchResponse<EsEventProcessPublishStateDto> searchResponse =
+        getOptimizeOpenSearchClient()
+            .getRichOpenSearchClient()
+            .doc()
+            .unsafeSearch(searchRequest.build(), EsEventProcessPublishStateDto.class);
+    EventProcessPublishStateDto result = null;
+    if (!searchResponse.hits().hits().isEmpty()) {
+      result =
+          Objects.requireNonNull(searchResponse.hits().hits().get(0).source())
+              .toEventProcessPublishStateDto();
+    }
+    return Optional.ofNullable(result);
   }
 
   @Override
@@ -650,6 +673,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                 .build());
   }
 
+  @Override
+  public Optional<MetadataDto> readMetadata() {
+    return getBean(OpenSearchMetadataService.class).readMetadata(getOptimizeOpenSearchClient());
+  }
+
   @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
@@ -673,6 +701,152 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
               getOptimizeOpenSearchClient().getOpenSearchClient());
     }
     return opensearchDatabaseVersion;
+  }
+
+  @Override
+  public void createIndex(
+      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
+      throws IOException {
+    final HashMap<String, Alias> aliasData = new HashMap<>();
+    aliasData.put(optimizeIndexAliasForIndex, new Alias.Builder().isWriteIndex(true).build());
+    final CreateIndexRequest request =
+        new CreateIndexRequest.Builder()
+            .index(optimizeIndexNameWithVersion)
+            .aliases(aliasData)
+            .build();
+    final boolean created =
+        getOptimizeOpenSearchClient().getRichOpenSearchClient().index().createIndex(request);
+    if (!created) {
+      throw new IOException("Could not create index " + optimizeIndexNameWithVersion);
+    }
+  }
+
+  @Override
+  public void setActivityStartDatesToNull(
+      final String processDefinitionKey, final ScriptData script) {
+    getOptimizeOpenSearchClient()
+        .getRichOpenSearchClient()
+        .doc()
+        .updateByQuery(
+            getProcessInstanceIndexAliasName(processDefinitionKey),
+            QueryDSL.matchAll(),
+            QueryDSL.script(script.scriptString(), script.params()));
+  }
+
+  @Override
+  public void setUserTaskDurationToNull(
+      final String processInstanceId, final String durationFieldName, final ScriptData script) {
+    getOptimizeOpenSearchClient()
+        .getRichOpenSearchClient()
+        .doc()
+        .updateByQuery(
+            PROCESS_INSTANCE_MULTI_ALIAS,
+            QueryDSL.term(PROCESS_INSTANCE_ID, processInstanceId),
+            QueryDSL.script(script.scriptString(), script.params()));
+  }
+
+  @Override
+  @SneakyThrows
+  public Long getImportedActivityCount() {
+    final Aggregation subAggregation =
+        AggregationDSL.valueCountAggregation(
+                String.join(".", FLOW_NODE_INSTANCES, ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID))
+            ._toAggregation();
+    final NestedAggregation termsAgg =
+        new NestedAggregation.Builder().path(FLOW_NODE_INSTANCES).build();
+    final Aggregation agg =
+        AggregationDSL.withSubaggregations(
+            termsAgg, Map.of(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION, subAggregation));
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(PROCESS_INSTANCE_MULTI_ALIAS)
+            .query(QueryDSL.matchAll())
+            .size(0)
+            .aggregations(Map.of(FLOW_NODE_INSTANCES, agg));
+    final SearchResponse<Aggregate> searchResponse =
+        getOptimizeOpenSearchClient()
+            .search(
+                searchRequest,
+                Aggregate.class,
+                "Could not retrieve activity count from process instance indices.");
+    final Aggregate nested = searchResponse.aggregations().get(FLOW_NODE_INSTANCES);
+    final ValueCountAggregate countAggregator =
+        nested
+            .nested()
+            .aggregations()
+            .get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
+            .valueCount();
+    return (long) countAggregator.value();
+  }
+
+  @Override
+  public void removeStoredOrderCountersForDefinitionKey(
+      final String definitionKey, final ScriptData script) {
+    getOptimizeOpenSearchClient()
+        .getRichOpenSearchClient()
+        .doc()
+        .updateByQuery(
+            CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + definitionKey,
+            QueryDSL.matchAll(),
+            QueryDSL.script(script.scriptString(), script.params()));
+  }
+
+  @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithWriteAlias(final String aliasNameWithPrefix) {
+    final GetAliasResponse aliasResponse =
+        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
+    return indexNameToAliasMap.entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().aliases().values().stream()
+                    .anyMatch(alias -> alias.isWriteIndex() != null && alias.isWriteIndex()))
+        .map(Map.Entry::getKey)
+        .toList();
+  }
+
+  @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
+    final GetAliasResponse aliasResponse =
+        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
+    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
+    return indexNameToAliasMap.entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().aliases().values().stream()
+                    .anyMatch(alias -> alias.isWriteIndex() != null && !alias.isWriteIndex()))
+        .map(Map.Entry::getKey)
+        .toList();
+  }
+
+  @Override
+  @SneakyThrows
+  public void deleteTraceStateImportIndexForDefinitionKey(final String definitionKey) {
+    getOptimizeOpenSearchClient()
+        .getRichOpenSearchClient()
+        .doc()
+        .delete(
+            TIMESTAMP_BASED_IMPORT_INDEX_NAME,
+            Fields.esTypeIndexRefersTo,
+            EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase());
+  }
+
+  @Override
+  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+      final String entityIndex,
+      final String processInstanceField,
+      final TimeValue scrollKeepAlive) {
+    throw new NotSupportedException("This operation is not supported for OpenSearch yet");
+  }
+
+  @Override
+  public Integer getVariableInstanceCount(final String variableName) {
+    // TODO implement with #11121
+    throw new NotImplementedException(
+        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

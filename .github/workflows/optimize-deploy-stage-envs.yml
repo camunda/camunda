@@ -1,0 +1,224 @@
+---
+# A workflow to deploy/update the c7 and c8 stage environments
+name: Optimize Deploy stage environments
+
+on:
+  schedule:
+  - cron: 50 22 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-stage:
+    name: Deploy ${{ matrix.env }} environment for ${{ github.head_ref || github.ref_name }} branch
+    runs-on: gcp-core-2-default
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [C7, C8]
+    timeout-minutes: 20
+    steps:
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
+          secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT;
+          secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CI_PERFORMANCE_DB_USER;
+          secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CI_PERFORMANCE_DB_PASSWORD;
+    - name: Checkout
+      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+    - name: Read pom.xml
+      id: pom-info
+      uses: YunaBraska/java-info-action@main
+    - name: Dependency versions
+      id: versions
+      env:
+        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+        ELASTICSEARCH_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+        ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+      run: |
+        {
+          echo "cambpm=$CAMBPM_VERSION"
+          echo "elasticsearch=$ELASTICSEARCH_VERSION"
+          echo "identity=$IDENTITY_VERSION"
+          echo "zeebe=$ZEEBE_VERSION"
+        } | tee -a $GITHUB_OUTPUT
+      shell: bash
+    - name: Branch name sanitization
+      id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ github.head_ref || github.ref_name }}
+        max_length: '50'
+    - name: Parameters
+      id: params
+      env:
+        APP_NAME: |
+          ${{
+            steps.sanitize.outputs.branch_name == 'master'
+              && 'stage'
+              || steps.sanitize.outputs.branch_name
+          }}
+        ARGOCD_APP_CONFIG_FILE: >-
+          ${{
+            fromJson(
+              format(
+                '{{ "C7": "{0}", "C8": "{1}" }}',
+                '.ci/deployments-resources/argo/c7-optimize-application.yml',
+                '.ci/deployments-resources/argo/c8-optimize-application.yml'
+              )
+            )[matrix.env]
+          }}
+        ARGOCD_APP_NAME_PREFIX: >-
+          ${{
+            fromJson(
+              format(
+                '{{ "C7": "{0}", "C8": "{1}" }}',
+                'optimize-',
+                'c8-optimize-'
+              )
+            )[matrix.env]
+          }}
+        GIT_REF: ${{ github.head_ref || github.ref_name }}
+        GIT_COMMIT_SHA: ${{ github.sha }}
+      run: |
+        {
+          echo "app-name=${APP_NAME}"
+          echo "argocd-app-config-file=${ARGOCD_APP_CONFIG_FILE}"
+          echo "argocd-app-name=${ARGOCD_APP_NAME_PREFIX}${APP_NAME}"
+          echo "commit-sha=${GIT_COMMIT_SHA}"
+          echo "git-ref=${GIT_REF}"
+        } >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Get ArgoCD arguments for ${{ matrix.env }}
+      id: argocd
+      env:
+        C7: >-
+          --helm-set optimize.image.tag=${{ steps.params.outputs.commit-sha }}
+          --helm-set cambpm.image.tag=${{ steps.versions.outputs.cambpm }}
+          --helm-set elasticsearch.image.tag=${{ steps.versions.outputs.elasticsearch }}
+        C8: >-
+          --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud/auth/realms/camunda-platform
+          --helm-set global.identity.auth.optimize.redirectUrl=https://${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud
+          --helm-set camunda-platform.optimize.image.tag=${{ steps.params.outputs.commit-sha }}
+          --helm-set camunda-platform.identity.image.tag=${{ steps.versions.outputs.identity }}
+          --helm-set camunda-platform.zeebe.image.tag=${{ steps.versions.outputs.zeebe }}
+          --helm-set camunda-platform.zeebe-gateway.image.tag=${{ steps.versions.outputs.zeebe }}
+        COMMON_ARGS: >-
+          --dest-namespace optimize-${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}
+          --file ${{ steps.params.outputs.argocd-app-config-file }}
+          --helm-set git.branch=${{ steps.params.outputs.git-ref }}
+          --helm-set global.labels.app=${{ steps.params.outputs.argocd-app-name }}
+          --name ${{ steps.params.outputs.argocd-app-name }}
+          --project optimize-previews
+          --revision ${{ steps.params.outputs.git-ref }}
+          --upsert
+      run: |
+        {
+          echo "args=${{ env[matrix.env] }} ${{ env.COMMON_ARGS }}"
+        } >> $GITHUB_OUTPUT
+      shell: bash
+    - uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2
+      if: matrix.env == 'C7'
+      with:
+        credentials_json: ${{ steps.secrets.outputs.CI_SERVICE_ACCOUNT }}
+    - uses: 'google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200' # v2
+      if: matrix.env == 'C7'
+    - name: Check if a new database backup for C7 is available to restore
+      if: matrix.env == 'C7'
+      id: db_backup
+      env:
+        SQL_BACKUP_FILE: gs://optimize-data/optimize_data-stage.sqlc
+        SQL_BACKUP_CHECKSUM_FILE: gs://optimize-data/optimize_large_data-stage.etag
+      run: |
+        etag_backup=$(gsutil stat gs://optimize-data/optimize_data-stage.sqlc | grep ETag | awk '{print $2}')
+        etag_last_restored_backup=$(gsutil cat gs://optimize-data/optimize_large_data-stage.etag)
+        
+        restore=true
+        if [ "$etag_backup" == "$etag_last_restored_backup" ]; then
+          restore=false
+        fi
+
+        {
+          echo "etag=$etag_backup"
+          echo "restore=$restore"
+        } | tee -a $GITHUB_OUTPUT
+      shell: bash
+    - name: Setup PostgreSQL client
+      if: matrix.env == 'C7' && steps.db_backup.outputs.restore == 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes --no-install-recommends postgresql-client
+      shell: bash
+    - name: Restore new database backup
+      if: matrix.env == 'C7' && steps.db_backup.outputs.restore == 'true'
+      env:
+        PGUSER: ${{ steps.secrets.outputs.OPTIMIZE_CI_PERFORMANCE_DB_USER }}
+        PGPASSWORD: ${{ steps.secrets.outputs.OPTIMIZE_CI_PERFORMANCE_DB_PASSWORD }}
+        PGHOST: stage-postgres.optimize
+        PGDATABASE: optimize-ci-performance
+      run: |
+        gsutil cp gs://optimize-data/optimize_data-stage.sqlc ./optimize_data-stage.sqlc
+
+        # Check database connection and readiness
+        pg_isready -d $PGDATABASE
+
+        # Restore the database backup
+        set -x
+        pg_restore \
+          --if-exists --clean --no-owner \
+          --jobs=24 \
+          -d $PGDATABASE \
+          ./optimize_data-stage.sqlc
+      shell: bash
+    - name: Save ETag of restored backup
+      if: matrix.env == 'C7' && steps.db_backup.outputs.restore == 'true'
+      env:
+        ETAG_RESTORED_BACKUP: ${{ steps.db_backup.outputs.etag }}
+      run: |
+        echo "$ETAG_RESTORED_BACKUP" | gsutil cp - gs://optimize-data/optimize_large_data-stage.etag
+      shell: bash
+    - name: Preset linux permission for ArgoCD CLI binary
+      run: |
+        # This is a workaround for getting the gha camunda/infra-global-github-actions/preview-env/create
+        # action to work on a self-hosted runner.
+        # The latter downloads the argocd binary and needs sufficient permissions to make it executable.
+        sudo touch /usr/local/bin/argocd
+        sudo chown runner:runner /usr/local/bin/argocd
+      shell: bash
+    - name: Synchronize ${{ steps.params.outputs.argocd-app-name }} ArgoCD application
+      uses: camunda/infra-global-github-actions/preview-env/create@main
+      with:
+        revision: ${{ steps.params.outputs.git-ref }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        app_name: ${{ steps.params.outputs.argocd-app-name }}
+        app_url: https://${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}.optimize.camunda.cloud
+        argocd_arguments: ${{ steps.argocd.outputs.args }}
+    - name: Ingest event data for C7
+      if: matrix.env == 'C7'
+      env:
+        OPTIMIZE_ENDPOINT: http://optimize.optimize-${{ steps.params.outputs.app-name }}:8090
+        OPTIMIZE_DEMO_DATA_FILE: ./client/demo-data/eventIngestionBatch.json
+      run: |
+        # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
+        curl \
+          -X POST \
+          -H 'Expect:' \
+          -H 'Content-Type: application/cloudevents-batch+json' \
+          -H 'Authorization: Bearer secret' \
+          --connect-timeout 5 --max-time 10 \
+          --fail \
+          --retry 60 --retry-delay 0 --retry-max-time 600 --retry-all-errors \
+          --data "@${OPTIMIZE_DEMO_DATA_FILE}" \
+          "${OPTIMIZE_ENDPOINT}/api/ingestion/event/batch" \
+          -vv
+      shell: bash

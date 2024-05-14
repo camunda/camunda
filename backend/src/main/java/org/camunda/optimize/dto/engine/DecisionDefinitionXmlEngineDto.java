@@ -14,6 +14,7 @@ public class DecisionDefinitionXmlEngineDto implements TenantSpecificEngineDto {
   private String dmnXml;
   private String tenantId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

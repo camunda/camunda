@@ -12,7 +12,7 @@ See [setup-java](https://github.com/actions/setup-java) for possible distributio
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| java-version | Allows setting a version version to overwrite the default | false | 17      |
+| java-version | Allows setting a version version to overwrite the default | false | 21      |
 | distribution | Allows changing the java distribution | false | temurin |
 | maven-version | Allows overwriting the maven version installed by default | false | 3.8.6   |
 | secrets | JSON wrapped secrets for easier secret passing | true |         |
@@ -26,6 +26,6 @@ steps:
     uses: ./.github/actions/setup-maven
     with:
         secrets: ${{ toJSON(secrets) }}
-        java-version: 17
+        java-version: 21
         distribution: zulu
 ```

@@ -26,6 +26,7 @@ import {getNodeType} from './service';
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
+  const [activeEditor, setActiveEditor] = useState(editor);
   const [blockType, setBlockType] = useState('paragraph');
   const [isEditable, setIsEditable] = useState(() => editor.isEditable());
   const [modal, showModal] = useModal();
@@ -52,23 +53,29 @@ export default function ToolbarPlugin() {
   }, []);
 
   useEffect(() => {
+    return editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      (_payload, newEditor) => {
+        updateToolbar();
+        setActiveEditor(newEditor);
+        return false;
+      },
+      COMMAND_PRIORITY_CRITICAL
+    );
+  }, [editor, updateToolbar]);
+
+  useEffect(() => {
     return mergeRegister(
-      editor.registerCommand(
-        SELECTION_CHANGE_COMMAND,
-        () => {
-          updateToolbar();
-          return false;
-        },
-        COMMAND_PRIORITY_CRITICAL
-      ),
       editor.registerEditableListener((editable) => {
         setIsEditable(editable);
       }),
-      editor.registerUpdateListener(({editorState}) => {
-        editorState.read(updateToolbar);
+      activeEditor.registerUpdateListener(({editorState}) => {
+        editorState.read(() => {
+          updateToolbar();
+        });
       })
     );
-  }, [editor, updateToolbar]);
+  }, [updateToolbar, activeEditor, editor]);
 
   return (
     <div className="toolbar">

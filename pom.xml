@@ -12,11 +12,11 @@
     <project.previousVersion>3.13.0</project.previousVersion>
 
     <camunda.engine.version>7.19.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.19.0-ee</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.19.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.5.0</zeebe.version>
-    <identity.version>8.5.0</identity.version>
+    <zeebe.version>8.6.0-alpha1</zeebe.version>
+    <identity.version>8.6.0-alpha1</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -24,8 +24,9 @@
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.version>7.17.18</elasticsearch.version>
-    <opensearch.version>2.9.1</opensearch.version>
+    <elasticsearch.version>7.17.20</elasticsearch.version>
+    <opensearch.version>2.10.1</opensearch.version>
+    <version.awssdk>2.25.39</version.awssdk>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -42,16 +43,16 @@
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.1.0-jre</guava.version>
-    <spring.boot.version>3.1.10</spring.boot.version>
-    <spring.version>6.1.5</spring.version>
+    <spring.boot.version>3.2.5</spring.boot.version>
+    <spring.version>6.1.6</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.108.Final</netty.version>
     <lombok.version>1.18.32</lombok.version>
-    <logback.version>1.5.3</logback.version>
-    <slf4j.version>2.0.12</slf4j.version>
-    <commons.io.version>2.15.1</commons.io.version>
+    <logback.version>1.5.6</logback.version>
+    <slf4j.version>2.0.13</slf4j.version>
+    <commons.io.version>2.16.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
@@ -65,7 +66,7 @@
     <junit.platform.version>1.10.2</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.25.3</assertj.version>
-    <google-java-format.plugin.version>1.21.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.22.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -74,8 +75,8 @@
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
 
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
   </properties>
 
   <name>Camunda Optimize</name>
@@ -166,7 +167,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.3.0</version>
+            <version>3.3.1</version>
             <executions>
               <execution>
                 <id>attach-sources</id>
@@ -419,7 +420,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -464,7 +465,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.5.3</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>

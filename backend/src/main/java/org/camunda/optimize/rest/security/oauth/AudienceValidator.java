@@ -15,7 +15,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
   private final String expectedAudience;
 
-  public OAuth2TokenValidatorResult validate(Jwt jwt) {
+  @Override
+  public OAuth2TokenValidatorResult validate(final Jwt jwt) {
     if (audienceIsValid()) {
       if (jwt.getAudience().contains(expectedAudience)) {
         return OAuth2TokenValidatorResult.success();

@@ -21,12 +21,6 @@ public class LocalizationClient {
         .execute(JsonNode.class, Response.Status.OK.getStatusCode());
   }
 
-  public String getLocalizedWhatsNewMarkdown(String localeCode) {
-    return getRequestExecutor()
-        .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-        .execute(String.class, Response.Status.OK.getStatusCode());
-  }
-
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }

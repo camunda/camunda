@@ -96,6 +96,7 @@ it('should show FiltersEdit section if there are filters defined', () => {
 
 it('should save the dashboard when going to the report edit mode', async () => {
   const report = {
+    type: 'optimize_report',
     position: {x: 0, y: 0},
     dimensions: {height: 2, width: 2},
     report: {id: 'new'},
@@ -112,7 +113,7 @@ it('should save the dashboard when going to the report edit mode', async () => {
     />
   );
 
-  node.find('DashboardRenderer').prop('addons')[1].props.onClick(report);
+  node.find('DashboardRenderer').prop('onTileUpdate')(report);
 
   await flushPromises();
 
@@ -135,6 +136,7 @@ it('should save the dashboard when going to the report edit mode', async () => {
 
 it('should not prompt to save the dashboard when going to the edit mode when there are no changes', () => {
   const report = {
+    type: 'optimize_report',
     position: {x: 0, y: 0},
     dimensions: {height: 2, width: 2},
     id: '1',
@@ -150,7 +152,7 @@ it('should not prompt to save the dashboard when going to the edit mode when the
   );
 
   isDirty.mockReturnValueOnce(false);
-  node.find('DashboardRenderer').prop('addons')[1].props.onClick(report);
+  node.find('DashboardRenderer').prop('onTileUpdate')(report);
 
   expect(showPrompt).not.toHaveBeenCalled();
   expect(historySpy).toHaveBeenCalledWith('report/1/edit?returnTo=dashboard/1/edit');
@@ -231,9 +233,7 @@ it('should delete tile', () => {
   };
   const node = shallow(<DashboardEdit initialTiles={[textTile]} />);
 
-  const deleteButton = shallow(node.find('DashboardRenderer').prop('addons')[3]);
-  deleteButton.setProps({tile: textTile});
-  deleteButton.find('Button').simulate('click', textTile);
+  node.find('DashboardRenderer').prop('onTileDelete')(textTile);
 
   expect(node.state('tiles')).toEqual([]);
   expect(track).toHaveBeenCalledWith('deleteTextTile', {entityId: ''});

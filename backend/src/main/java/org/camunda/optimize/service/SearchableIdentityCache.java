@@ -540,12 +540,18 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   private static GroupDto mapDocumentToGroupDto(final Document document) {
-    return new GroupDto(
-        document.get(IdentityDto.Fields.id),
-        document.get(IdentityWithMetadataResponseDto.Fields.name),
-        Optional.ofNullable(document.get(GroupDto.Fields.memberCount))
-            .map(Long::valueOf)
-            .orElse(null));
+    try {
+      return new GroupDto(
+          document.get(IdentityDto.Fields.id),
+          document.get(IdentityWithMetadataResponseDto.Fields.name),
+          Optional.ofNullable(document.get(GroupDto.Fields.memberCount))
+              .map(Long::valueOf)
+              .orElse(null));
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Error mapping member count field to number: "
+              + document.get(GroupDto.Fields.memberCount));
+    }
   }
 
   private static UserDto mapDocumentToUserDto(final Document document) {

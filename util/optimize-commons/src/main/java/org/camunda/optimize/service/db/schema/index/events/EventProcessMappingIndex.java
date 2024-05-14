@@ -11,8 +11,8 @@ import java.io.IOException;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
@@ -23,13 +23,13 @@ public abstract class EventProcessMappingIndex<TBuilder>
 
   public static final int VERSION = 4;
 
-  public static final String ID = EsEventProcessMappingDto.Fields.id;
-  public static final String NAME = EsEventProcessMappingDto.Fields.name;
-  public static final String XML = EsEventProcessMappingDto.Fields.xml;
-  public static final String LAST_MODIFIED = EsEventProcessMappingDto.Fields.lastModified;
-  public static final String LAST_MODIFIER = EsEventProcessMappingDto.Fields.lastModifier;
-  public static final String MAPPINGS = EsEventProcessMappingDto.Fields.mappings;
-  public static final String EVENT_SOURCES = EsEventProcessMappingDto.Fields.eventSources;
+  public static final String ID = DbEventProcessMappingDto.Fields.id;
+  public static final String NAME = DbEventProcessMappingDto.Fields.name;
+  public static final String XML = DbEventProcessMappingDto.Fields.xml;
+  public static final String LAST_MODIFIED = DbEventProcessMappingDto.Fields.lastModified;
+  public static final String LAST_MODIFIER = DbEventProcessMappingDto.Fields.lastModifier;
+  public static final String MAPPINGS = DbEventProcessMappingDto.Fields.mappings;
+  public static final String EVENT_SOURCES = DbEventProcessMappingDto.Fields.eventSources;
 
   public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
   public static final String START = EsEventMappingDto.Fields.start;
@@ -44,7 +44,7 @@ public abstract class EventProcessMappingIndex<TBuilder>
   public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.TYPE;
   public static final String EVENT_SOURCE_CONFIG = EventSourceEntryDto.Fields.configuration;
 
-  public static final String ROLES = EsEventProcessMappingDto.Fields.roles;
+  public static final String ROLES = DbEventProcessMappingDto.Fields.roles;
   public static final String ROLE_ID = EventProcessRoleRequestDto.Fields.id;
   public static final String ROLE_IDENTITY = EventProcessRoleRequestDto.Fields.identity;
   public static final String ROLE_IDENTITY_ID = IdentityDto.Fields.id;

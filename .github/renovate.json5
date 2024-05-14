@@ -44,6 +44,7 @@
   // Branches to be checked
   baseBranches: [
     "/^release\\/.*/",
+    "maintenance/3.13",
     "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
@@ -103,6 +104,13 @@
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib",
         "old-bpmn-js",
+        "react",
+        "react-dom",
+        "react-router",
+        "react-router-dom",
+        "@types/react",
+        "@types/react-dom",
+        "@types/react-router-dom",
       ],
       enabled: false,
     },
@@ -137,7 +145,7 @@
     // Disable major and minor updates for maintenance branches
     {
       matchUpdateTypes: ["major", "minor"],
-      matchBaseBranches: ["/^maintenance/.*/"],
+      matchBaseBranches: ["/^maintenance\\/.*/", "/^release\\/.*/"],
       enabled: false,
     },
   ],

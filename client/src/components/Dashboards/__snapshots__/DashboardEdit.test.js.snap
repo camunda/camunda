@@ -3,15 +3,9 @@
 exports[`should contain editing tile addons 1`] = `
 Array [
   <DragOverlay />,
-  <EditButton
-    onClick={[Function]}
-  />,
-  <CopyButton
-    addTile={[Function]}
-  />,
-  <DeleteButton
-    deleteTile={[Function]}
-  />,
+  <EditButton />,
+  <CopyButton />,
+  <DeleteButton />,
 ]
 `;
 

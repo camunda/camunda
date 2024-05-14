@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
@@ -40,7 +41,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.indices.UserTestIndex;
 import org.camunda.optimize.upgrade.indices.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.indices.UserTestWithTemplateIndex;
@@ -53,6 +53,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
@@ -215,6 +216,14 @@ public abstract class AbstractUpgradeIT {
     return indexNameService.getOptimizeIndexNameWithVersion(testIndexV1);
   }
 
+  protected String getIndexNameWithVersion(final UpgradeStep upgradeStep) {
+    if (upgradeStep instanceof DeleteIndexIfExistsStep) {
+      return ((DeleteIndexIfExistsStep) upgradeStep).getVersionedIndexName();
+    } else {
+      return indexNameService.getOptimizeIndexNameWithVersion(upgradeStep.getIndex());
+    }
+  }
+
   protected String getVersionedIndexName(final String indexName, final int version) {
     return OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
         indexNameService.getOptimizeIndexAliasForIndex(indexName), String.valueOf(version));
@@ -268,8 +277,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected HttpRequest createUpdateLogUpsertRequest(final UpgradeStep upgradeStep) {
-    final String indexNameWithVersion =
-        indexNameService.getOptimizeIndexNameWithVersion(upgradeStep.getIndex());
+    final String indexNameWithVersion = getIndexNameWithVersion(upgradeStep);
     return request()
         .withPath(
             "/"
@@ -296,7 +304,8 @@ public abstract class AbstractUpgradeIT {
   }
 
   private String getLogIndexAlias() {
-    return indexNameService.getOptimizeIndexAliasForIndex(UpdateLogEntryIndex.INDEX_NAME);
+    return indexNameService.getOptimizeIndexAliasForIndex(
+        DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME);
   }
 
   private Settings createIndexSettings(final IndexMappingCreator indexMappingCreator) {

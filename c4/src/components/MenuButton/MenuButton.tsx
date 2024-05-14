@@ -27,11 +27,13 @@ interface MenuButtonProps
 	menuLabel: string
 	iconDescription?: string
 	hasIconOnly?: boolean
-	menuTarget?: Element | null
+	menuTarget?: HTMLElement | null
+	ariaLabel?: string
 }
 
 export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 	{
+		ariaLabel,
 		label,
 		menuLabel,
 		size = "lg",
@@ -45,7 +47,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 	},
 	forwardedRef,
 ) {
-	const menuRef = useRef<HTMLDivElement>(null)
+	const menuRef = useRef<HTMLUListElement>(null)
 	const triggerRef = useRef<HTMLDivElement>(null)
 	const ref = useMergedRefs<HTMLDivElement>([triggerRef, forwardedRef])
 	const [width, setWidth] = useState(0)
@@ -74,6 +76,18 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 		}
 	}
 
+	function getButtonAriaLabel() {
+		let buttonAriaLabel = ariaLabel
+		if (typeof label === "string") {
+			buttonAriaLabel = label
+		} else if (hasIconOnly) {
+			buttonAriaLabel = iconDescription
+		} else if (!buttonAriaLabel) {
+			buttonAriaLabel = menuLabel
+		}
+		return buttonAriaLabel
+	}
+
 	return (
 		<Tooltip
 			label={hasIconOnly ? iconDescription : undefined}
@@ -91,6 +105,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 					kind={kind}
 					renderIcon={ChevronDown}
 					iconDescription={hasIconOnly ? iconDescription : undefined}
+					aria-label={getButtonAriaLabel()}
 					disabled={disabled}
 					aria-haspopup
 					aria-expanded={open}

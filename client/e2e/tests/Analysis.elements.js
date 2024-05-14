@@ -23,6 +23,6 @@ export const outliersTableRow = (text) => outliersTable.find('tr').withText(text
 export const outliersTableDetailsButton = (text) =>
   outliersTableRow(text).find('button').withText('View details');
 export const filtersDropdown = Selector('.filterHeader .MenuDropdown');
-export const warningMessage = Selector('.MessageBox--warning').withText(
+export const warningMessage = Selector('.cds--inline-notification').withText(
   'No data shown due to incompatible filters'
 );

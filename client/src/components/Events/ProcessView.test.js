@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 
 import {Deleter} from 'components';
 
-import {removeProcess, loadProcess, cancelPublish} from './service';
+import {deleteProcesses, loadProcess, cancelPublish} from './service';
 import PublishModal from './PublishModal';
 
 import ProcessViewWithErrorHandling from './ProcessView';
@@ -18,7 +18,7 @@ import ProcessViewWithErrorHandling from './ProcessView';
 const ProcessView = ProcessViewWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
-  removeProcess: jest.fn(),
+  deleteProcesses: jest.fn(),
   loadProcess: jest.fn().mockReturnValue({
     id: 'processId',
     name: 'Process Name',
@@ -70,7 +70,7 @@ it('should allow deletion of a process', () => {
 
   node.find(Deleter).prop('deleteEntity')({id: '1'});
 
-  expect(removeProcess).toHaveBeenCalledWith('1');
+  expect(deleteProcesses).toHaveBeenCalledWith([{id: '1'}]);
 });
 
 it('should pass a process id to the PublishModal', () => {

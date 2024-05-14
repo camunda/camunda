@@ -3,17 +3,17 @@
     position: relative;
     padding-right: 4rem;
 
-    .deleteButton,
-    .editButton {
+    .DeleteButton,
+    .EditButton {
       position: absolute;
       top: -12px;
     }
 
-    .deleteButton {
+    .DeleteButton {
       right: 0;
     }
 
-    .editButton {
+    .EditButton {
       right: 2rem;
     }
   }

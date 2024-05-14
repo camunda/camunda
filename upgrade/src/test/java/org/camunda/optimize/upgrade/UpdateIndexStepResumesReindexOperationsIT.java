@@ -19,10 +19,10 @@ import io.github.netmikey.logunit.api.LogCapturer;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -326,7 +326,8 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   private void assertUpdateLogIsComplete(
       final UpdateIndexStep upgradeStep, final OffsetDateTime frozenDate) {
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .contains(
             UpgradeStepLogEntryDto.builder()

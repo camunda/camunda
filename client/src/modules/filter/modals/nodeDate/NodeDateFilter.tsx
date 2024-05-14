@@ -6,36 +6,28 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form} from '@carbon/react';
 import classnames from 'classnames';
 
 import {
   Modal,
-  Form,
   DateRangeInput,
+  Loading,
   BPMNDiagram,
   ClickBehavior,
-  LoadingIndicator,
   ModdleElement,
 } from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
-import {Filter, FilterState} from 'types';
+import {FilterState} from 'types';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {convertFilterToState, convertStateToFilter, isValid} from '../date/service';
 import {FilterProps} from '../types';
 
 import './NodeDateFilter.scss';
-
-interface NodeDateFilterProps
-  extends WithErrorHandlingProps,
-    FilterProps<Partial<Filter & {flowNodeIds: string[] | null}>> {
-  filterType: 'flowNodeStartDate' | 'flowNodeEndDate';
-  filterLevel: 'instance';
-}
 
 export function NodeDateFilter({
   filterData,
@@ -46,7 +38,7 @@ export function NodeDateFilter({
   filterType,
   addFilter,
   filterLevel,
-}: NodeDateFilterProps) {
+}: FilterProps<'flowNodeStartDate' | 'flowNodeEndDate'> & WithErrorHandlingProps) {
   const [selectedNodes, setSelectedNodes] = useState<(string | ModdleElement)[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(
@@ -120,19 +112,18 @@ export function NodeDateFilter({
       size={isInstanceFilter ? 'lg' : 'sm'}
       isOverflowVisible={!isInstanceFilter}
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <LoadingIndicator />}
-        {xml && (
+        {xml ? (
           <>
             <Form>
               <p className="info">
@@ -159,6 +150,8 @@ export function NodeDateFilter({
               </div>
             )}
           </>
+        ) : (
+          <Loading />
         )}
       </Modal.Content>
       <Modal.Footer>

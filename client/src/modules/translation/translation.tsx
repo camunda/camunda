@@ -22,6 +22,7 @@ export function setTranslation(initialTranslationObject: TranslationObject) {
 
 export async function initTranslation(): Promise<void> {
   const localeCode = getLanguage();
+  document.documentElement.lang = localeCode;
   await loadDateTranslation(localeCode);
   translationObject = await loadTranslation(await getOptimizeVersion(), localeCode);
 }

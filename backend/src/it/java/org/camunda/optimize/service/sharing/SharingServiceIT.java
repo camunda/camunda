@@ -667,7 +667,6 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updateDashboard_addReportAndEvaluateShare() {
     // given
     final String dashboardId = addEmptyDashboardToOptimize();
@@ -692,7 +691,6 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void updateDashboard_removeReportAndEvaluateDashboardShare() {
     // given
     final String reportIdToStayInDashboard =

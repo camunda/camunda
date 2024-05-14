@@ -9,7 +9,6 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
@@ -21,7 +20,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +43,7 @@ public class ZeebeUserTaskImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeUserTaskRecordDto> {
 
   public static final Set<UserTaskIntent> INTENTS_TO_IMPORT =
-      Set.of(CREATING, ASSIGNED, UPDATED, COMPLETED, CANCELED);
+      Set.of(CREATING, ASSIGNED, COMPLETED, CANCELED);
 
   public ZeebeUserTaskImportService(
       final ConfigurationService configurationService,
@@ -121,8 +119,6 @@ public class ZeebeUserTaskImportService
             updateUserTaskAssigneeOperations(zeebeUserTaskInstanceRecord, userTaskForKey);
           }
           userTaskForKey.setAssignee(parseAssignee(zeebeUserTaskInstanceRecord.getValue()));
-          userTaskForKey.setCandidateGroups(
-              parseCandidateGroupsList(zeebeUserTaskInstanceRecord.getValue()));
           userTaskForKey.setDueDate(zeebeUserTaskInstanceRecord.getValue().getDateForDueDate());
           userTaskInstancesByKey.put(recordKey, userTaskForKey);
         });
@@ -267,10 +263,5 @@ public class ZeebeUserTaskImportService
     return StringUtil.isNullOrEmpty(zeebeUserTaskData.getAssignee())
         ? null
         : zeebeUserTaskData.getAssignee();
-  }
-
-  private List<String> parseCandidateGroupsList(final ZeebeUserTaskDataDto zeebeUserTaskData) {
-    return Optional.ofNullable(zeebeUserTaskData.getCandidateGroupsList())
-        .orElseGet(Collections::emptyList);
   }
 }

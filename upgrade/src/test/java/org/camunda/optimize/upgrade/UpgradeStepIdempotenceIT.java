@@ -19,9 +19,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.util.DateCreationFreezer;
-import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -211,11 +211,12 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
     upgradeProcedureLogs.assertContains("Starting step 1/1");
     upgradeProcedureLogs.assertContains("Successfully finished step 1/1");
     final List<UpgradeStepLogEntryDto> updateLogEntries =
-        getAllDocumentsOfIndexAs(UpdateLogEntryIndex.INDEX_NAME, UpgradeStepLogEntryDto.class);
+        getAllDocumentsOfIndexAs(
+            DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME, UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .contains(
             UpgradeStepLogEntryDto.builder()
-                .indexName(getIndexNameWithVersion(upgradeStep.getIndex()))
+                .indexName(getIndexNameWithVersion(upgradeStep))
                 .optimizeVersion(TO_VERSION)
                 .stepNumber(1)
                 .stepType(stepType)
@@ -233,7 +234,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
         Arguments.of(
             UpgradeStepType.SCHEMA_DELETE_INDEX,
             ImmutableList.of(new CreateIndexStep(indexVersion1)),
-            new DeleteIndexIfExistsStep(indexVersion1)),
+            new DeleteIndexIfExistsStep(indexVersion1.getIndexName(), indexVersion1.getVersion())),
         Arguments.of(
             UpgradeStepType.SCHEMA_UPDATE_MAPPING,
             ImmutableList.of(new CreateIndexStep(indexVersion1)),

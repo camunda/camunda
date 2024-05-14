@@ -27,6 +27,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
@@ -94,9 +95,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
             .getRequestExecutor()
             .withoutAuthentication()
             .buildProcessVariableNamesRequest(
-                Collections.singletonList(
-                    createVariableNameRequest("someKey", "1", Collections.emptyList())),
-                false)
+                createVariableNameRequest("someKey", "1", Collections.emptyList()), false)
             .execute();
 
     Response variableValueResponse =
@@ -282,7 +281,7 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
   }
 
   private Response executeVariableRequestsAsKermit(
-      final ProcessDefinitionEngineDto processDefinition, List<String> tenantIds) {
+      ProcessDefinitionEngineDto processDefinition, List<String> tenantIds) {
 
     Response variableValueResponse =
         embeddedOptimizeExtension
@@ -311,11 +310,12 @@ public class ProcessVariableAuthorizationIT extends AbstractPlatformIT {
       final String processDefinitionKey,
       final String processDefinitionVersion,
       final List<String> tenantIds) {
-    ProcessVariableNameRequestDto dto = new ProcessVariableNameRequestDto();
-    dto.setProcessDefinitionKey(processDefinitionKey);
-    dto.setProcessDefinitionVersion(processDefinitionVersion);
-    dto.setTenantIds(tenantIds);
-    return dto;
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(processDefinitionKey);
+    processToQuery.setProcessDefinitionVersion(processDefinitionVersion);
+    processToQuery.setTenantIds(tenantIds);
+
+    return new ProcessVariableNameRequestDto(List.of(processToQuery));
   }
 
   private ProcessVariableValueRequestDto createVariableValueRequest(

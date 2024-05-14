@@ -130,7 +130,6 @@ import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
-import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
@@ -990,19 +989,14 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(
       ProcessVariableNameRequestDto variableRequestDto) {
-    return buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto));
+    return buildProcessVariableNamesRequest(variableRequestDto, true);
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(
-      List<ProcessVariableNameRequestDto> variableRequestDtos) {
-    return buildProcessVariableNamesRequest(variableRequestDtos, true);
-  }
-
-  public OptimizeRequestExecutor buildProcessVariableNamesRequest(
-      List<ProcessVariableNameRequestDto> variableRequestDtos, boolean authenticationEnabled) {
+      ProcessVariableNameRequestDto variableRequestDto, boolean authenticationEnabled) {
     this.path = addExternalPrefixIfNeeded(authenticationEnabled) + "variables";
     this.method = POST;
-    this.body = getBody(variableRequestDtos);
+    this.body = getBody(variableRequestDto);
     return this;
   }
 
@@ -1427,13 +1421,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetLocalizedWhatsNewMarkdownRequest(final String localeCode) {
-    this.path = "localization/whatsnew";
-    this.method = GET;
-    this.addSingleQueryParam("localeCode", localeCode);
-    return this;
-  }
-
   public OptimizeRequestExecutor buildFlowNodeOutliersRequest(
       final String key, final List<String> version, final List<String> tenantIds) {
     return buildFlowNodeOutliersRequest(key, version, tenantIds, 0, false);
@@ -1821,20 +1808,6 @@ public class OptimizeRequestExecutor {
     addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + secret);
     this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
     this.body = Entity.json(bodyJson);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetOnboardingStateForKey(final String key) {
-    this.path = "onboarding/" + key;
-    this.method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildSetOnboardingStateForKey(
-      final String key, final boolean seen) {
-    this.path = "onboarding/" + key;
-    this.method = PUT;
-    this.body = getBody(new OnboardingStateRestDto(seen));
     return this;
   }
 

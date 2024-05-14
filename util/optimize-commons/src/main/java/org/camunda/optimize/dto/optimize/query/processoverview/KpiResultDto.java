@@ -17,6 +17,7 @@ import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 @Data
 @FieldNameConstants
@@ -41,8 +42,15 @@ public class KpiResultDto {
     if (StringUtils.isBlank(value) || StringUtils.isBlank(target)) {
       return false;
     }
-    final double doubleValue = Double.parseDouble(value);
-    final double doubleTarget = Double.parseDouble(target);
+    final double doubleValue;
+    final double doubleTarget;
+    try {
+      doubleValue = Double.parseDouble(value);
+      doubleTarget = Double.parseDouble(target);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          String.format("Error parsing KPI value %s and target %s", value, target));
+    }
     if (isBelow) {
       return DURATION.equals(measure)
           ? Duration.ofMillis((long) doubleValue)

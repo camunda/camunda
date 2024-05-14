@@ -6,6 +6,8 @@
  */
 
 import React, {useState} from 'react';
+import {TableBatchAction} from '@carbon/react';
+import {TrashCan} from '@carbon/icons-react';
 
 import {Dropdown, Deleter} from 'components';
 import {t} from 'translation';
@@ -20,6 +22,7 @@ export function BulkDeleter({
   selectedEntries,
   type = 'delete',
   mightFail,
+  useCarbonAction,
 }) {
   const [deleting, setDeleting] = useState(false);
   const [conflict, setConflict] = useState(false);
@@ -31,7 +34,13 @@ export function BulkDeleter({
 
   return (
     <>
-      <Dropdown.Option onClick={() => setDeleting(true)}>{t('common.' + type)}</Dropdown.Option>
+      {useCarbonAction ? (
+        <TableBatchAction onClick={() => setDeleting(true)} renderIcon={TrashCan}>
+          {t('common.' + type)}
+        </TableBatchAction>
+      ) : (
+        <Dropdown.Option onClick={() => setDeleting(true)}>{t('common.' + type)}</Dropdown.Option>
+      )}
       <Deleter
         type="items"
         entity={deleting && selectedEntries}

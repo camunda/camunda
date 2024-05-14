@@ -1,4 +1,5 @@
 <configuration>
+  <conversionRule conversionWord="sanitize" converterClass="org.camunda.optimize.util.LogUtil" />
   <if condition='property("JSON_LOGGING").contains("true")'>
     <then>
       <appender name="UPGRADE_JSON" class="ch.qos.logback.core.ConsoleAppender">
@@ -22,12 +23,12 @@
     <else>
       <appender name="UPGRADE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-          <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
+          <pattern>%d{HH:mm:ss.SSS} - %sanitize(%msg) %n</pattern>
         </encoder>
       </appender>
       <appender name="RUNTIME" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %sanitize(%msg) %n</pattern>
         </encoder>
       </appender>
       <!-- Change the log level for the upgrade here. If provided, the environment variable will take precedence -->

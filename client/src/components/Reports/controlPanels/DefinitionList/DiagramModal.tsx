@@ -22,7 +22,7 @@ interface DiagramModalProps {
 export default function DiagramModal({open, onClose, xml, definitionName}: DiagramModalProps) {
   return (
     <Modal className="DiagramModal" open={open} size="lg" onClose={onClose}>
-      <Modal.Header>{definitionName}</Modal.Header>
+      <Modal.Header title={definitionName} />
       <Modal.Content>
         <BPMNDiagram xml={xml} />
       </Modal.Content>

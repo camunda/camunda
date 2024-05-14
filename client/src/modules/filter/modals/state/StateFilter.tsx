@@ -10,18 +10,24 @@ import {Button, Form, FormGroup, RadioButton, RadioButtonGroup} from '@carbon/re
 
 import {Modal} from 'components';
 import {t} from 'translation';
-import {Definition, FilterData} from 'types';
+import {
+  Definition,
+  FlowNodeStateFilterType,
+  IncidentFilterType,
+  InstanceStateFilterType,
+} from 'types';
 
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
 import {FilterProps} from '../types';
 
 import getMapping from './options';
 
-interface StateFilterProps extends Omit<FilterProps<FilterData | undefined>, 'filterType'> {
-  filterType: 'instanceState' | 'incident' | 'incidentInstances' | 'flowNodeStatus';
-}
-
-export default function StateFilter({addFilter, close, filterType, definitions}: StateFilterProps) {
+export default function StateFilter({
+  addFilter,
+  close,
+  filterType,
+  definitions,
+}: FilterProps<InstanceStateFilterType | FlowNodeStateFilterType | IncidentFilterType>) {
   const [selectedOption, setSelectedOption] = useState<number>(0);
   const [applyTo, setApplyTo] = useState<Definition[]>([
     {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
@@ -39,7 +45,7 @@ export default function StateFilter({addFilter, close, filterType, definitions}:
 
   return (
     <Modal size="sm" open onClose={close} className="StateFilter">
-      <Modal.Header>{options?.modalTitle}</Modal.Header>
+      <Modal.Header title={options?.modalTitle} />
       <Modal.Content>
         <FilterDefinitionSelection
           availableDefinitions={definitions}

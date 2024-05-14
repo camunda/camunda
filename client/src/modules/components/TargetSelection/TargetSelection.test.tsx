@@ -8,7 +8,7 @@
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {SingleProcessReport} from 'types';
+import {Report} from 'types';
 
 import TargetSelection from './TargetSelection';
 
@@ -38,7 +38,7 @@ const props = {
       },
     },
     result: {measures: [{}]},
-  } as unknown as SingleProcessReport,
+  } as unknown as Report,
   onChange: jest.fn(),
 };
 

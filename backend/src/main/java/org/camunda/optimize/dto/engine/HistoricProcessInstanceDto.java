@@ -35,6 +35,7 @@ public class HistoricProcessInstanceDto implements TenantSpecificEngineDto {
     return processDefinitionVersion != null ? processDefinitionVersion.toString() : null;
   }
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

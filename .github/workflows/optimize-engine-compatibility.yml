@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cambpm: ["7.19", "7.20"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
+        cambpm: ["7.19", "7.20", "7.21"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
         includedGroups:
           ["import,eventBasedProcess", "reportEvaluation", ""]
         include:
@@ -30,7 +30,7 @@ jobs:
             excludedGroups: "ccsm-test,import,eventBasedProcess,reportEvaluation"
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
           name: engine-compatibility-${{ matrix.cambpm }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-junit
           path: |
@@ -124,8 +124,27 @@ jobs:
           archive_name: engine-compatibility-${{ matrix.cambpm }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-docker
 
       - name: Post results on slack
-        if: failure()
+        if: failure() && github.event_name != 'schedule'
         uses: ./.github/actions/notify-on-slack
         with:
           slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
           status: ${{ job.status }}
+
+  # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
+  rerun-failed-jobs:
+    needs:
+      - engine-compatibility
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrigger job
+        uses: camunda/infra-global-github-actions/rerun-failed-run@main
+        with:
+          error-messages: |
+            lost communication with the server
+            The runner has received a shutdown signal
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

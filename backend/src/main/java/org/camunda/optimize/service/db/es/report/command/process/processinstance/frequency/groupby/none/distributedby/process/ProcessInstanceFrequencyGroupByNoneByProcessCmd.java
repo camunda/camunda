@@ -24,6 +24,7 @@ public class ProcessInstanceFrequencyGroupByNoneByProcessCmd
     super(builder);
   }
 
+  @Override
   protected ProcessReportCmdExecutionPlan<List<HyperMapResultEntryDto>> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder) {
     return builder

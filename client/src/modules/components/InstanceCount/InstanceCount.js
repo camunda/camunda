@@ -36,13 +36,16 @@ export default function InstanceCount({report, noInfo, additionalFilter, showHea
     }
 
     if (reportType === 'process') {
-      const payload = [
-        {
-          processDefinitionKey: key,
-          processDefinitionVersions: versions,
-          tenantIds: tenantIds,
-        },
-      ];
+      const payload = {
+        processesToQuery: [
+          {
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds: tenantIds,
+          },
+        ],
+        filter: data.filter,
+      };
       mightFail(loadVariables(payload), setVariables, showError);
     } else if (reportType === 'decision') {
       const payload = [

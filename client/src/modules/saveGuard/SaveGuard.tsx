@@ -97,7 +97,7 @@ export default class SaveGuard extends Component<{}, State> {
       <>
         <Prompt message="" when={dirty} />
         <Modal open={!!(dirty && confirm)} onClose={this.abortNavigation}>
-          <Modal.Header>{t('saveGuard.header')}</Modal.Header>
+          <Modal.Header title={t('saveGuard.header')} />
           <Modal.Content>{t('saveGuard.text', {label})}</Modal.Content>
           <Modal.Footer>
             <Button kind="secondary" onClick={this.proceed}>

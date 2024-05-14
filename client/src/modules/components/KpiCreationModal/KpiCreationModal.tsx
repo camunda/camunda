@@ -7,22 +7,21 @@
 
 import {useEffect, useState} from 'react';
 import {ComboBox, Stack, Tile, Button, Layer, FormLabel, TextAreaSkeleton} from '@carbon/react';
-import {CheckmarkFilled, CircleDash} from '@carbon/icons-react';
+import {CheckmarkFilled, CircleDash, Close, Edit} from '@carbon/icons-react';
 import {useHistory, useLocation} from 'react-router-dom';
 import update from 'immutability-helper';
-import classnames from 'classnames';
 
 import {DefinitionSelection, TargetSelection, ReportRenderer} from 'components';
 import {t} from 'translation';
-import {getCollection, createEntity, evaluateReport, ReportPayload} from 'services';
+import {getCollection, createEntity, evaluateReport, ReportEvaluationPayload} from 'services';
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {newReport} from 'config';
-import {ProcessFilter, SingleProcessReport} from 'types';
+import {ProcessFilter, Report, FilterType} from 'types';
 import {DateFilter, NodeSelection, FilterProps} from 'filter';
 import {track} from 'tracking';
 
-import {KpiTemplate, defaultProcessFilter} from './templates/types';
+import {KpiTemplate, DefaultProcessFilter} from './templates/types';
 import {automationRate, throughput} from './templates';
 import {MultiStepModal} from './MultiStepModal';
 
@@ -45,9 +44,9 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     versions: [],
     tenantIds: [],
   });
-  const [evaluatedReport, setEvaluatedReport] = useState<SingleProcessReport>();
+  const [evaluatedReport, setEvaluatedReport] = useState<Report>();
   const [loading, setLoading] = useState(false);
-  const [openedFilter, setOpenedFilter] = useState<defaultProcessFilter | null>(null);
+  const [openedFilter, setOpenedFilter] = useState<DefaultProcessFilter | null>(null);
   const history = useHistory();
   const {pathname} = useLocation();
   const kpiTemplates = [automationRate(), throughput()];
@@ -57,14 +56,14 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     track('openKpiWizzard');
   }, []);
 
-  const loadReport = async (reportPayload: ReportPayload<'process'> | SingleProcessReport) => {
+  const loadReport = async (reportPayload: ReportEvaluationPayload<'process'>) => {
     setLoading(true);
-    await mightFail(evaluateReport(reportPayload, []), setEvaluatedReport, showError, () =>
+    await mightFail(evaluateReport(reportPayload), setEvaluatedReport, showError, () =>
       setLoading(false)
     );
   };
 
-  const getFilterModal = (type?: defaultProcessFilter['type']): React.FC<FilterProps<any>> => {
+  const getFilterModal = (type?: DefaultProcessFilter['type']): React.FC<FilterProps<any>> => {
     switch (type) {
       case 'instanceStartDate':
       case 'instanceEndDate':
@@ -76,9 +75,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     }
   };
 
-  function getFilter(
-    filter: defaultProcessFilter | null = openedFilter
-  ): ProcessFilter | undefined {
+  function getFilter(filter = openedFilter): ProcessFilter<FilterType> | undefined {
     if (!evaluatedReport || !filter) {
       return undefined;
     }
@@ -107,7 +104,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
               <ComboBox
                 selectedItem={selectedKpi}
                 onChange={({selectedItem}) => {
-                  if (selectedItem) {
+                  if (typeof selectedItem !== 'undefined') {
                     setSelectedKpi(selectedItem);
                   }
                 }}
@@ -116,9 +113,11 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                 itemToString={(item) => (item ? item.name : '')}
                 titleText={t('report.kpiTemplates.selectKpi')}
               />
-              <div className="preview">
-                {selectedKpi?.img && <img src={selectedKpi.img} alt={selectedKpi.name} />}
-              </div>
+              {selectedKpi?.img && (
+                <div className="preview">
+                  <img src={selectedKpi.img} alt={selectedKpi.name} />
+                </div>
+              )}
               <DefinitionSelection
                 definitionKey={definition.key}
                 versions={definition.versions}
@@ -154,7 +153,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                   return;
                 }
 
-                const newReportPayload = newReport.new as unknown as ReportPayload<'process'>;
+                const newReportPayload = newReport.new as ReportEvaluationPayload<'process'>;
                 await loadReport({
                   ...newReportPayload,
                   collectionId: getCollection(pathname),
@@ -177,7 +176,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                         ...definition,
                       },
                     ],
-                    filter: [],
+                    filter: newReportPayload.data?.filter,
                   },
                 });
               },
@@ -203,43 +202,74 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                     hideBaseLine
                   />
                   <Layer>
-                    <FormLabel className={classnames({'text-mandatory': !allFiltersDefined})}>
-                      {t('report.kpiTemplates.mandatoryFilters')}
-                    </FormLabel>
+                    <FormLabel>{t('report.kpiTemplates.filtersLabel')}</FormLabel>
                     <Stack gap={4}>
                       {selectedKpi?.uiConfig.filters.map((filter, idx) => {
                         const existingFilter = getFilter(filter);
                         return (
-                          <Tile
-                            className="filterTile"
-                            key={`kpi-filter-${idx}`}
-                            id={`kpi-filter-${idx}`}
-                          >
+                          <Tile className="filterTile" key={`kpi-filter-${idx}`}>
                             {existingFilter ? (
                               <CheckmarkFilled size="20" />
                             ) : (
-                              <CircleDash size="20" />
+                              <CircleDash size="20" color="var(--cds-text-error)" />
                             )}
-                            <span className={classnames({'text-mandatory': !existingFilter})}>
-                              {filter.label}
-                            </span>
-                            <Button
-                              size="sm"
-                              kind="tertiary"
-                              onClick={() => {
-                                if (existingFilter) {
-                                  setOpenedFilter({...filter, data: existingFilter?.data});
-                                } else {
-                                  setOpenedFilter(filter);
-                                }
-                              }}
-                            >
-                              {existingFilter ? t('common.edit') : t('common.select')}
-                            </Button>
+                            <span>{filter.label}</span>
+                            <div className="actions">
+                              {existingFilter ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    kind="ghost"
+                                    onClick={() =>
+                                      setOpenedFilter({...filter, data: existingFilter?.data})
+                                    }
+                                    hasIconOnly
+                                    renderIcon={Edit}
+                                    iconDescription={t('common.edit').toString()}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    kind="ghost"
+                                    onClick={() => {
+                                      setEvaluatedReport((evaluatedReport) => {
+                                        if (!evaluatedReport) {
+                                          return;
+                                        }
+
+                                        const filterIndex =
+                                          evaluatedReport.data.filter.indexOf(existingFilter);
+                                        const newReport = update(evaluatedReport, {
+                                          data: {filter: {$splice: [[filterIndex, 1]]}},
+                                        });
+
+                                        loadReport(newReport!);
+                                        return newReport;
+                                      });
+                                    }}
+                                    hasIconOnly
+                                    renderIcon={Close}
+                                    iconDescription={t('common.delete').toString()}
+                                  />
+                                </>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  kind="tertiary"
+                                  onClick={() => setOpenedFilter(filter)}
+                                >
+                                  {t('common.select')}
+                                </Button>
+                              )}
+                            </div>
                           </Tile>
                         );
                       })}
                     </Stack>
+                    {!allFiltersDefined && (
+                      <FormLabel className="text-mandatory">
+                        {t('report.kpiTemplates.mandatoryFields')}
+                      </FormLabel>
+                    )}
                   </Layer>
                   {loading ? (
                     <TextAreaSkeleton />
@@ -310,7 +340,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
   );
 }
 
-function getReportWithFilters(newFilter: ProcessFilter, report: SingleProcessReport) {
+function getReportWithFilters(newFilter: ProcessFilter<FilterType>, report: Report) {
   const existingFilter = report.data.filter.find(
     (filter) => filter.type === newFilter.type && filter.filterLevel === newFilter.filterLevel
   );

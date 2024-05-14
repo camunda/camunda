@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.ApplicationContextProvider.getBean;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -19,9 +23,11 @@ import static org.camunda.optimize.service.db.es.OptimizeElasticsearchClient.IND
 import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
@@ -30,8 +36,10 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
@@ -55,9 +63,12 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
+import org.apache.tika.utils.StringUtils;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
@@ -69,6 +80,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -77,8 +89,10 @@ import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -92,6 +106,8 @@ import org.camunda.optimize.test.repository.TestIndexRepositoryES;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -101,16 +117,19 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -159,11 +178,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public DatabaseClient getDatabaseClient() {
     return prefixAwareRestHighLevelClient;
-  }
-
-  @Override
-  public OptimizeElasticsearchClient getOptimizeElasticsearchClient() {
-    return getOptimizeElasticClient();
   }
 
   @Override
@@ -656,7 +670,9 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void updateEventProcessRoles(
-      final String eventProcessId, final List<IdentityDto> identityDtos) {
+      final String eventProcessId,
+      final List<IdentityDto> identityDtos,
+      final ScriptData scriptData) {
     try {
       final UpdateRequest request =
           new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
@@ -664,13 +680,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                   new Script(
                       ScriptType.INLINE,
                       Script.DEFAULT_SCRIPT_LANG,
-                      "ctx._source.roles = params.updatedRoles;",
-                      Collections.singletonMap(
-                          "updatedRoles",
-                          getObjectMapper()
-                              .convertValue(
-                                  mapIdentityDtosToEventProcessRoleRequestDto(identityDtos),
-                                  Object.class))))
+                      scriptData.scriptString(),
+                      scriptData.params()))
               .setRefreshPolicy(IMMEDIATE);
       final UpdateResponse updateResponse = getOptimizeElasticClient().update(request);
       if (updateResponse.getShardInfo().getFailed() > 0) {
@@ -867,7 +878,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final int nestedDocLimit,
       final ConfigurationService configurationService) {
     setNestedDocumentsLimit(configurationService, nestedDocLimit);
-    final OptimizeElasticsearchClient esClient = getOptimizeElasticsearchClient();
+    final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
     final String indexName =
         esClient
             .getIndexNameService()
@@ -882,6 +893,20 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             esClient.requestOptions());
   }
 
+  @Override
+  public void createIndex(
+      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
+      throws IOException {
+    final CreateIndexRequest request = new CreateIndexRequest(optimizeIndexNameWithVersion);
+    if (!StringUtils.isBlank(optimizeIndexAliasForIndex)) {
+      request.alias(new Alias(optimizeIndexAliasForIndex).writeIndex(true));
+    }
+    getOptimizeElasticClient()
+        .getHighLevelClient()
+        .indices()
+        .create(request, getOptimizeElasticClient().requestOptions());
+  }
+
   @SneakyThrows
   @Override
   public void deleteIndicesStartingWithPrefix(final String term) {
@@ -894,6 +919,182 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     if (indicesToDelete.length > 0) {
       getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
     }
+  }
+
+  @Override
+  public Optional<MetadataDto> readMetadata() {
+    return getBean(ElasticSearchMetadataService.class).readMetadata(getOptimizeElasticClient());
+  }
+
+  @Override
+  public void setActivityStartDatesToNull(
+      final String processDefinitionKey, final ScriptData scriptData) {
+    final Script setActivityStartDatesToNull =
+        new Script(
+            ScriptType.INLINE, DEFAULT_SCRIPT_LANG, scriptData.scriptString(), scriptData.params());
+    final UpdateByQueryRequest request =
+        new UpdateByQueryRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
+            .setAbortOnVersionConflict(false)
+            .setQuery(matchAllQuery())
+            .setScript(setActivityStartDatesToNull)
+            .setRefresh(true);
+
+    try {
+      getOptimizeElasticClient().updateByQuery(request);
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException("Could not set activity start dates to null.", e);
+    }
+  }
+
+  @Override
+  public void setUserTaskDurationToNull(
+      final String processInstanceId, final String durationFieldName, final ScriptData script) {
+
+    final Script updateScript =
+        new Script(
+            ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script.scriptString(), script.params());
+
+    final UpdateByQueryRequest request =
+        new UpdateByQueryRequest(PROCESS_INSTANCE_MULTI_ALIAS)
+            .setQuery(boolQuery().must(termQuery(PROCESS_INSTANCE_ID, processInstanceId)))
+            .setAbortOnVersionConflict(false)
+            .setScript(updateScript)
+            .setRefresh(true);
+    getOptimizeElasticClient().applyIndexPrefixes(request);
+
+    try {
+      getOptimizeElasticClient().updateByQuery(request);
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException(
+          String.format("Could not set userTask duration field [%s] to null.", durationFieldName),
+          e);
+    }
+  }
+
+  @Override
+  @SneakyThrows
+  public Long getImportedActivityCount() {
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(QueryBuilders.matchAllQuery())
+            .size(0)
+            .fetchSource(false)
+            .aggregation(
+                nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
+                    .subAggregation(
+                        count(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION)
+                            .field(
+                                FLOW_NODE_INSTANCES
+                                    + "."
+                                    + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)));
+
+    final SearchRequest searchRequest =
+        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+
+    final SearchResponse response = getOptimizeElasticClient().search(searchRequest);
+
+    final Nested nested = response.getAggregations().get(FLOW_NODE_INSTANCES);
+    final ValueCount countAggregator =
+        nested.getAggregations().get(FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION);
+    return countAggregator.getValue();
+  }
+
+  @Override
+  public void removeStoredOrderCountersForDefinitionKey(
+      final String definitionKey, final ScriptData script) {
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+        getOptimizeElasticClient(),
+        String.format("Camunda activity events with definitionKey [%s]", definitionKey),
+        new Script(script.scriptString()),
+        matchAllQuery(),
+        CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + definitionKey);
+  }
+
+  @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithWriteAlias(final String aliasNameWithPrefix) {
+    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
+    final Map<String, Set<AliasMetadata>> indexNameToAliasMap =
+        getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
+    return indexNameToAliasMap.keySet().stream()
+        .filter(
+            index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
+        .toList();
+  }
+
+  @Override
+  @SneakyThrows
+  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
+    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
+    final Map<String, Set<AliasMetadata>> indexNameToAliasMap =
+        getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
+    return indexNameToAliasMap.keySet().stream()
+        .filter(
+            index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
+        .toList();
+  }
+
+  @Override
+  @SneakyThrows
+  public void deleteTraceStateImportIndexForDefinitionKey(final String definitionKey) {
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
+    request.setRefresh(true);
+    request.setQuery(
+        boolQuery()
+            .must(
+                termQuery(
+                    TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
+                    EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase())));
+    getOptimizeElasticClient().deleteByQuery(request);
+  }
+
+  @Override
+  @SneakyThrows
+  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+      final String entityIndex,
+      final String processInstanceField,
+      final TimeValue scrollKeepAlive) {
+    final SearchRequest variableUpdateSearchRequest =
+        new SearchRequest()
+            .indices(entityIndex)
+            .source(
+                new SearchSourceBuilder()
+                    .query(matchAllQuery())
+                    .fetchSource(processInstanceField, null)
+                    .size(10_000));
+
+    SearchResponse camundaActivityEventsResponse =
+        getOptimizeElasticClient().search(variableUpdateSearchRequest.scroll(scrollKeepAlive));
+
+    while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
+      final Set<Object> processInstanceIds =
+          Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
+              .map(SearchHit::getSourceAsMap)
+              .map(hit -> hit.get(processInstanceField))
+              .collect(Collectors.toSet());
+
+      // all of these instances should be running
+      final Integer finishedProcessInstanceCount =
+          getCountOfCompletedInstancesWithIdsIn(processInstanceIds);
+      assertThat(finishedProcessInstanceCount).isZero();
+
+      camundaActivityEventsResponse =
+          getOptimizeElasticClient()
+              .scroll(
+                  new SearchScrollRequest(camundaActivityEventsResponse.getScrollId())
+                      .scroll(scrollKeepAlive));
+    }
+  }
+
+  @Override
+  public Integer getVariableInstanceCount(final String variableName) {
+    final QueryBuilder query =
+        nestedQuery(
+            VARIABLES,
+            boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
+            ScoreMode.None);
+    return getVariableInstanceCountForAllProcessInstances(query);
   }
 
   private void initEsClient() {

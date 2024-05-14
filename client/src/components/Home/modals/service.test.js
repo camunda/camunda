@@ -5,13 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
+import {UNAUTHORIZED_TENANT_ID} from 'services';
+
 import {formatTenants, formatDefinitions} from './service';
 
 it('should correctly format tenants', () => {
   const tenants = [
     {id: null, name: 'Not defined'},
     {id: 'tenant_id', name: null},
-    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
+    {id: UNAUTHORIZED_TENANT_ID, name: 'Unauthorized Tenant'},
   ];
 
   const selectedTenants = [tenants[0]];

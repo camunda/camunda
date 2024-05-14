@@ -26,14 +26,19 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 public class ProcessVariableNameIT extends AbstractVariableIT {
@@ -63,6 +68,185 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   }
 
   @Test
+  public void getVariableNames_withQueryAgainstSubsetOfProcesses() {
+    // given
+    String key1 = "key1";
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
+
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("p1-var1", "value1");
+    variables1.put("p1-var2", "value2");
+    variables1.put("commonVar", "someValue");
+
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
+
+    String key2 = "key2";
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition(key2, null);
+
+    Map<String, Object> variables2 = new HashMap<>();
+    variables2.put("p2-var1", "value3");
+    variables2.put("p2-var2", "value4");
+    variables2.put("commonVar", "otherValue");
+
+    engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables2);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> response =
+        variablesClient.getProcessVariableNames(
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    // we only query for process definition 2..
+                    new ProcessToQueryDto(
+                        key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)),
+                ProcessFilterBuilder.filter()
+                    .variable()
+                    .name("commonVar")
+                    .stringType()
+                    .operator(FilterOperator.NOT_IN)
+                    .values(List.of("otherValue")) // ..then we exclude it from the result
+                    .add()
+                    .buildList()));
+
+    // then
+    assertThat(response).extracting(ProcessVariableNameResponseDto::getName).isEmpty();
+  }
+
+  @Test
+  public void getVariableNames_withMultipleDefinitionsAndVariableExclusionFilter() {
+    // given
+    String key1 = "key1";
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
+
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("var1", "value1");
+    variables1.put("var2", "value2");
+    variables1.put("var3", "value3");
+
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
+
+    String key2 = "key2";
+    ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition(key2, null);
+
+    Map<String, Object> variables2 = new HashMap<>();
+    variables2.put("var4", "value4");
+    variables2.put("var5", "value5");
+    variables2.put("var1", "value6");
+
+    engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables2);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> response =
+        variablesClient.getProcessVariableNames(
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    new ProcessToQueryDto(
+                        key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+                    new ProcessToQueryDto(
+                        key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)),
+                ProcessFilterBuilder.filter()
+                    .variable()
+                    .name("var3")
+                    .stringType()
+                    .operator(FilterOperator.NOT_IN)
+                    .values(List.of("value3"))
+                    .add()
+                    .buildList()));
+
+    // then
+    assertThat(response)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactlyInAnyOrderElementsOf(variables2.keySet());
+  }
+
+  @Test
+  public void getVariableNames_withMultipleDefinitionsAndNotApplicableAppliedTo() {
+    // given
+    String key1 = "key1";
+    ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", "value1");
+    variables.put("var2", "value2");
+    variables.put("var3", "value3");
+
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> response =
+        variablesClient.getProcessVariableNames(
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    new ProcessToQueryDto(
+                        key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)),
+                ProcessFilterBuilder.filter()
+                    .variable()
+                    .name("var3")
+                    .stringType()
+                    .operator(FilterOperator.NOT_IN) // this should exclude the process..
+                    .values(List.of("value3"))
+                    // ..but only filters applied to "all" are considered,
+                    // so this does not get applied
+                    .appliedTo("definition")
+                    .add()
+                    .buildList()));
+
+    // then
+    assertThat(response)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactlyInAnyOrderElementsOf(variables.keySet());
+  }
+
+  @Test
+  public void getVariableNames_withMultipleDefinitionsAndCompletionFilter() {
+    // given
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("var1", "value1");
+    variables1.put("var2", "value2");
+    variables1.put("var3", "value3");
+
+    ProcessInstanceEngineDto completedProcessInstance =
+        engineIntegrationExtension.deployAndStartProcessWithVariables(
+            BpmnModels.getSimpleBpmnDiagram(), variables1);
+
+    Map<String, Object> variables2 = new HashMap<>();
+    variables2.put("var4", "value4");
+    variables2.put("var5", "value5");
+    variables2.put("var1", "value6");
+
+    ProcessInstanceEngineDto runningProcessInstance =
+        engineIntegrationExtension.deployAndStartProcessWithVariables(
+            BpmnModels.getSingleUserTaskDiagram(), variables2);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> response =
+        variablesClient.getProcessVariableNames(
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    new ProcessToQueryDto(
+                        completedProcessInstance.getProcessDefinitionKey(),
+                        Collections.singletonList(ALL_VERSIONS),
+                        DEFAULT_TENANT_IDS),
+                    new ProcessToQueryDto(
+                        runningProcessInstance.getProcessDefinitionKey(),
+                        Collections.singletonList(ALL_VERSIONS),
+                        DEFAULT_TENANT_IDS)),
+                ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList()));
+
+    // then
+    assertThat(response)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactlyInAnyOrderElementsOf(variables1.keySet());
+  }
+
+  @Test
   public void getVariableNames_multipleDefinitions() {
     // given
     final String key1 = "key1";
@@ -85,11 +269,12 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     // when
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(
-            Arrays.asList(
-                new ProcessVariableNameRequestDto(
-                    key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
-                new ProcessVariableNameRequestDto(
-                    key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)));
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    new ProcessToQueryDto(
+                        key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+                    new ProcessToQueryDto(
+                        key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS))));
 
     // then
     assertThat(variableResponse)
@@ -109,10 +294,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessVariableNameRequestDto variableNameRequestDto = new ProcessVariableNameRequestDto();
-    variableNameRequestDto.setProcessDefinitionKey(processDefinition);
-    variableNameRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
-    variableNameRequestDto.setTenantIds(selectedTenants);
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(processDefinition);
+    processToQuery.setProcessDefinitionVersion(ALL_VERSIONS);
+    processToQuery.setTenantIds(selectedTenants);
+
+    ProcessVariableNameRequestDto variableNameRequestDto =
+        new ProcessVariableNameRequestDto(List.of(processToQuery));
+
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(variableNameRequestDto);
 
@@ -261,8 +450,12 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     startInstanceAndImportEngineEntities(processDefinition, variables);
 
     // when
-    final ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
-    variableRequestDto.setProcessDefinitionKey(processDefinition.getKey());
+    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+    processToQuery.setProcessDefinitionKey(processDefinition.getKey());
+
+    ProcessVariableNameRequestDto variableRequestDto =
+        new ProcessVariableNameRequestDto(List.of(processToQuery));
+
     List<ProcessVariableNameResponseDto> variableResponse =
         variablesClient.getProcessVariableNames(variableRequestDto);
 

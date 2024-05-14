@@ -91,6 +91,7 @@ public class ManagementDashboardService {
             .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
             .groupBy(new NoneGroupByDto())
             .visualization(ProcessVisualization.NUMBER)
+            .filter(ProcessFilterBuilder.filter().runningInstancesOnly().add().buildList())
             .managementReport(true)
             .build();
     final String reportId =

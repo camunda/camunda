@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, TextInput} from '@carbon/react';
 
-import {Modal, Form, LabeledInput} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 interface CopyAlertModalProps {
@@ -26,19 +26,17 @@ export default function CopyAlertModal({
 
   return (
     <Modal open onClose={onClose}>
-      <Modal.Header>{t('common.copyName', {name: initialAlertName})}</Modal.Header>
+      <Modal.Header title={t('common.copyName', {name: initialAlertName})} />
       <Modal.Content>
         <Form>
-          <Form.Group>
-            <LabeledInput
-              type="text"
-              label={t('home.copy.inputLabel')}
-              value={name}
-              autoComplete="off"
-              onChange={({target: {value}}) => setName(value)}
-              data-modal-primary-focus
-            />
-          </Form.Group>
+          <TextInput
+            id="copyAlertNameInput"
+            labelText={t('home.copy.inputLabel')}
+            value={name}
+            autoComplete="off"
+            onChange={({target: {value}}) => setName(value)}
+            data-modal-primary-focus
+          />
         </Form>
       </Modal.Content>
       <Modal.Footer>

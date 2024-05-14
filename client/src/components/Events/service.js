@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {get, post, put, del} from 'request';
+import {get, post, put} from 'request';
 
-export {getUsers, updateUsers, publish, loadExternalGroups} from './service.ts';
+export {getUsers, updateUsers, publish, createProcess, loadExternalGroups} from './service.ts';
 
 export async function loadProcesses() {
   const response = await get('api/eventBasedProcess');
@@ -19,19 +19,8 @@ export async function loadProcess(id) {
   return await response.json();
 }
 
-export async function removeProcess(id) {
-  return await del(`api/eventBasedProcess/${id}`);
-}
-
 export async function cancelPublish(id) {
   return await post(`api/eventBasedProcess/${id}/_cancelPublish`);
-}
-
-export async function createProcess(payload) {
-  const response = await post('api/eventBasedProcess', payload);
-  const json = await response.json();
-
-  return json.id;
 }
 
 export async function updateProcess(id, name, xml, mappings, eventSources) {
@@ -85,4 +74,13 @@ export async function deleteProcesses(processes) {
     'api/eventBasedProcess/delete',
     processes.map(({id}) => id)
   );
+}
+
+export async function checkDeleteConflicts(processes) {
+  const response = await post(
+    'api/eventBasedProcess/delete-conflicts',
+    processes.map(({id}) => id)
+  );
+
+  return response.json();
 }

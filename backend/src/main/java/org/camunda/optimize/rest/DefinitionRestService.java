@@ -45,6 +45,7 @@ import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsR
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -155,11 +156,17 @@ public class DefinitionRestService {
       throw new NotFoundException(reason);
     }
 
-    definitionVersions.sort(
-        Comparator.comparing(
-                (DefinitionVersionResponseDto definitionVersionDto) ->
-                    Integer.valueOf(definitionVersionDto.getVersion()))
-            .reversed());
+    try {
+      definitionVersions.sort(
+          Comparator.comparing(
+                  (DefinitionVersionResponseDto definitionVersionDto) ->
+                      Integer.valueOf(definitionVersionDto.getVersion()))
+              .reversed());
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Error while parsing versions for sorting definitions: "
+              + definitionVersions.stream().map(DefinitionVersionResponseDto::getVersion).toList());
+    }
     return definitionVersions;
   }
 

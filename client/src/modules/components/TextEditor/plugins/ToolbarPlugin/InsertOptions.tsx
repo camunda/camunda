@@ -30,6 +30,7 @@ export default function InsertOptions({
       disabled={disabled}
       label={t('textEditor.toolbar.insert.label').toString()}
       className="InsertOptions"
+      menuAlignment="bottom-start"
     >
       <MenuItem
         onClick={() => {

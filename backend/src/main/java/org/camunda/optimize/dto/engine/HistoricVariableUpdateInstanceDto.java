@@ -28,6 +28,7 @@ public class HistoricVariableUpdateInstanceDto implements TenantSpecificEngineDt
 
   private String tenantId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

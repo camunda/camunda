@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {getVariableNames} from './service';
 
 import FiltersEdit from './FiltersEdit';
-import {Checkbox} from '@carbon/react';
 
 const props = {
   availableFilters: [],
@@ -40,7 +38,7 @@ it('should show added filters', () => {
 it('should allow removing existing filters', () => {
   const node = shallow(<FiltersEdit {...props} availableFilters={[{type: 'state'}]} />);
 
-  node.find('InstanceStateFilter .DeleteButton').simulate('click');
+  node.find('InstanceStateFilter .DeleteButton Button').simulate('click');
 
   expect(props.setAvailableFilters).toHaveBeenCalledWith([]);
 });
@@ -50,7 +48,7 @@ it('should allow editing variable filters', () => {
     <FiltersEdit {...props} availableFilters={[{type: 'variable', data: {name: 'varName'}}]} />
   );
 
-  node.find('.EditButton').simulate('click');
+  node.find('.EditButton Button').simulate('click');
 
   expect(node.find('.dashboardVariableFilter')).toExist();
   expect(node.find('.dashboardVariableFilter').prop('filterData')).toEqual({
@@ -67,7 +65,7 @@ it('should include a checkbox to allow custom values', () => {
     />
   );
 
-  node.find('.EditButton').simulate('click');
+  node.find('.EditButton Button').simulate('click');
 
   const postText = node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'});
   expect(postText.props.className).toBe('customValueCheckbox');
@@ -91,5 +89,5 @@ it('should disable edit button when there are no reports', () => {
     />
   );
 
-  expect(node.find('.EditButton')).toBeDisabled();
+  expect(node.find('.EditButton Button')).toBeDisabled();
 });

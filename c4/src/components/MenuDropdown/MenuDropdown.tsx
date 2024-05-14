@@ -29,10 +29,10 @@ export interface MenuDropdownProps extends ComponentPropsWithoutRef<"div"> {
 	children: ReactNode
 	className?: string
 	disabled?: boolean
-	label: ReactNode
+	label: string
 	invalid?: boolean
 	invalidText?: string
-	menuTarget?: Element | null
+	menuTarget?: HTMLElement | null
 }
 
 export default forwardRef(function MenuDropdown(
@@ -51,7 +51,7 @@ export default forwardRef(function MenuDropdown(
 ) {
 	const prefix = usePrefix()
 	const triggerRef = useRef<HTMLDivElement>(null)
-	const menuRef = useRef<HTMLElement>(null)
+	const menuRef = useRef<HTMLUListElement>(null)
 	const buttonRef = useRef<HTMLButtonElement>(null)
 	const [width, setWidth] = useState(0)
 	const id = useId()

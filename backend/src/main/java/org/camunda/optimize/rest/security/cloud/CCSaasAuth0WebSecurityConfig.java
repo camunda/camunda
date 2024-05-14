@@ -30,9 +30,9 @@ public class CCSaasAuth0WebSecurityConfig {
   public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
   public static final String URL_TEMPLATE = "https://%s%s";
   public static final String AUTH_0_CLIENT_REGISTRATION_ID = "auth0";
-  private static final String AUTH0_AUTH_ENDPOINT = "/authorize";
-  private static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
-  private static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
+  public static final String AUTH0_AUTH_ENDPOINT = "/authorize";
+  public static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
+  public static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
   private final ConfigurationService configurationService;
 
   @Bean

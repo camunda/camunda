@@ -29,6 +29,7 @@ public class HistoricIdentityLinkLogDto implements TenantSpecificEngineDto {
   private OffsetDateTime removalTime;
   private String rootProcessInstanceId;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

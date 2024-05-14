@@ -137,7 +137,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateReportById(final ReportType reportType) {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
@@ -669,6 +668,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Passes generally, but flaky on pipeline
   public void evaluateInvalidReportById() {
     // given
     final ProcessReportDataDto reportData =
@@ -704,7 +705,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport(final ReportType reportType) {
     // given
     final SingleReportDataDto reportDataDto = createSingleReportDataForType(reportType);
@@ -722,7 +722,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReport_reflectOwnerAndModifierNames_ownerHasNoAuthSideEffects(
       final ReportType reportType) {
     // given
@@ -761,7 +760,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(
       final ReportType reportType) {
     // given
@@ -859,6 +857,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Passes generally, but flaky on pipeline
   public void evaluateReportWithoutViewById(final ReportType reportType) {
     // given
     final String id;

@@ -6,14 +6,8 @@
 package org.camunda.optimize.service.importing.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.google.common.collect.ImmutableMap;
 import java.time.OffsetDateTime;
@@ -21,20 +15,15 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.script.Script;
 import org.junit.jupiter.api.Test;
 
 public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImportIT {
@@ -58,15 +47,12 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
 
     // then
     assertThat(
-            databaseIntegrationTestExtension
-                .getOptimizeElasticsearchClient()
-                .exists(new GetIndexRequest(getTraceStateIndexNameForDefinitionKey(definitionKey))))
+            databaseIntegrationTestExtension.indexExists(
+                getTraceStateIndexNameForDefinitionKey(definitionKey)))
         .isFalse();
     assertThat(
-            databaseIntegrationTestExtension
-                .getOptimizeElasticsearchClient()
-                .exists(
-                    new GetIndexRequest(getSequenceCountIndexNameForDefinitionKey(definitionKey))))
+            databaseIntegrationTestExtension.indexExists(
+                getSequenceCountIndexNameForDefinitionKey(definitionKey)))
         .isFalse();
   }
 
@@ -99,7 +85,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
+    final OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
     engineDatabaseExtension.changeProcessInstanceStartDates(
         ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
     engineDatabaseExtension.changeProcessInstanceEndDates(
@@ -131,7 +117,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
+    final OffsetDateTime eventTimestamp = OffsetDateTime.now().withNano(0);
     engineDatabaseExtension.changeProcessInstanceStartDates(
         ImmutableMap.of(processInstanceEngineDto.getId(), eventTimestamp));
     engineDatabaseExtension.changeProcessInstanceEndDates(
@@ -191,24 +177,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
 
   @SneakyThrows
   private void deleteTraceStateImportIndexForDefinitionKey(final String definitionKey) {
-    DeleteByQueryRequest request = new DeleteByQueryRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
-    request.setRefresh(true);
-    request.setQuery(
-        boolQuery()
-            .must(
-                termQuery(
-                    TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
-                    EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase())));
-    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().deleteByQuery(request);
+    databaseIntegrationTestExtension.deleteTraceStateImportIndexForDefinitionKey(definitionKey);
   }
 
   private void removeStoredOrderCountersForDefinitionKey(final String definitionKey) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
-        String.format("Camunda activity events with definitionKey [%s]", definitionKey),
-        new Script("ctx._source.orderCounter = null"),
-        matchAllQuery(),
-        CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + definitionKey);
+    databaseIntegrationTestExtension.removeStoredOrderCountersForDefinitionKey(definitionKey);
   }
 
   private void assertTracesAndCountsArePresentForDefinitionKey(
@@ -257,7 +230,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
         .isEqualTo(findMostRecentEventTimestamp(definitionKey));
   }
 
-  private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
+  private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(final String processName) {
     return engineIntegrationExtension.deployAndStartProcess(
         BpmnModels.getSingleUserTaskDiagram(processName, START_EVENT, END_EVENT, USER_TASK));
   }
@@ -271,7 +244,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
         .getAsLong();
   }
 
-  private boolean isStateTraceable(CamundaActivityEventDto camundaActivityEventDto) {
+  private boolean isStateTraceable(final CamundaActivityEventDto camundaActivityEventDto) {
     return !camundaActivityEventDto
             .getActivityType()
             .equalsIgnoreCase(CamundaEventService.PROCESS_START_TYPE)

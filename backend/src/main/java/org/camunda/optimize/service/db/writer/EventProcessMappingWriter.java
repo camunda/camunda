@@ -5,19 +5,55 @@
  */
 package org.camunda.optimize.service.db.writer;
 
+import com.google.common.collect.Sets;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.service.db.repository.MappingRepository;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.IdGenerator;
+import org.springframework.stereotype.Component;
 
-public interface EventProcessMappingWriter {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class EventProcessMappingWriter {
+  private final MappingRepository mappingRepository;
 
-  IdResponseDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto);
+  public IdResponseDto createEventProcessMapping(
+      final EventProcessMappingDto eventProcessMappingDto) {
+    String id = IdGenerator.getNextId();
+    eventProcessMappingDto.setId(id);
+    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    log.debug("Writing event-based process [{}] to Database", id);
+    return mappingRepository.createEventProcessMapping(eventProcessMappingDto);
+  }
 
-  void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto);
+  public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+    mappingRepository.updateEventProcessMappingWithScript(
+        eventProcessMappingDto,
+        Sets.newHashSet(
+            EventProcessMappingIndex.NAME,
+            EventProcessMappingIndex.XML,
+            EventProcessMappingIndex.MAPPINGS,
+            EventProcessMappingIndex.LAST_MODIFIED,
+            EventProcessMappingIndex.LAST_MODIFIER,
+            EventProcessMappingIndex.EVENT_SOURCES));
+  }
 
-  void updateRoles(final EventProcessMappingDto eventProcessMappingDto);
+  public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
+    mappingRepository.updateEventProcessMappingWithScript(
+        eventProcessMappingDto, Sets.newHashSet(EventProcessMappingIndex.ROLES));
+  }
 
-  boolean deleteEventProcessMapping(final String eventProcessMappingId);
+  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
+    return mappingRepository.deleteEventProcessMapping(eventProcessMappingId);
+  }
 
-  void deleteEventProcessMappings(final List<String> eventProcessMappingIds);
+  public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
+    mappingRepository.deleteEventProcessMappings(eventProcessMappingIds);
+  }
 }

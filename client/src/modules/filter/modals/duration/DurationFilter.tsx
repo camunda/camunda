@@ -16,17 +16,15 @@ import {t} from 'translation';
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
 import {FilterProps} from '../types';
 
-interface DurationFilterProps extends FilterProps {
-  filterType: 'processInstanceDuration';
-  filterLevel: 'instance';
-}
-
 interface DurationFilterState extends FilterData {
   applyTo: Definition[];
 }
 
-export default class DurationFilter extends Component<DurationFilterProps, DurationFilterState> {
-  constructor(props: DurationFilterProps) {
+export default class DurationFilter extends Component<
+  FilterProps<'processInstanceDuration'>,
+  DurationFilterState
+> {
+  constructor(props: FilterProps<'processInstanceDuration'>) {
     super(props);
 
     let applyTo: Definition[] = [
@@ -73,11 +71,11 @@ export default class DurationFilter extends Component<DurationFilterProps, Durat
 
     return (
       <Modal size="sm" open onClose={this.props.close} className="DurationFilter" isOverflowVisible>
-        <Modal.Header>
-          {t('common.filter.modalHeader', {
+        <Modal.Header
+          title={t('common.filter.modalHeader', {
             type: t('common.filter.types.processInstanceDuration'),
           })}
-        </Modal.Header>
+        />
         <Modal.Content>
           <FilterDefinitionSelection
             availableDefinitions={definitions}

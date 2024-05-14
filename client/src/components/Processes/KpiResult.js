@@ -8,10 +8,11 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 import classnames from 'classnames';
+import {Launch} from '@carbon/icons-react';
 
 import {t} from 'translation';
 import {formatters} from 'services';
-import {Icon, NoDataNotice} from 'components';
+import {NoDataNotice} from 'components';
 
 import {isSuccessful} from './service';
 
@@ -45,7 +46,7 @@ export default function KpiResult({kpis, displayTip}) {
                 {t('report.label')}: {reportName}
               </b>{' '}
               <Link to={link} target="_blank">
-                <Icon type="jump" />
+                <Launch />
               </Link>
               <div className="reportValues">
                 <span

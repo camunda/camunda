@@ -98,7 +98,7 @@ test('save the report', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.reportLabel.textContent).contains('Decision');
+  await t.expect(Common.listItem('decision report').visible).ok();
 });
 
 test('create a single number report', async (t) => {
@@ -212,9 +212,9 @@ test('show raw data and decision table', async (t) => {
 });
 
 async function checkVisualizations(t) {
-  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Number').getAttribute('aria-disabled')).eql('true');
+  await t.expect(Common.menuOption('Table').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Bar chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Line chart').getAttribute('aria-disabled')).eql('false');
+  await t.expect(Common.menuOption('Pie chart').getAttribute('aria-disabled')).eql('false');
 }

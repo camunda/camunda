@@ -9,12 +9,18 @@ import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
-import {Button, Loading, Toggle} from '@carbon/react';
+import {Button, Toggle} from '@carbon/react';
 import classnames from 'classnames';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, EntityNameForm, InstanceCount, InstanceViewTable} from 'components';
+import {
+  ReportRenderer,
+  EntityNameForm,
+  InstanceCount,
+  InstanceViewTable,
+  Loading,
+} from 'components';
 import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -392,7 +398,7 @@ export class ReportEdit extends React.Component {
                 {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
 
                 {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
-                  <Loading withOverlay={false} className="loading" />
+                  <Loading />
                 ) : (
                   showReportRenderer && (
                     <ReportRenderer

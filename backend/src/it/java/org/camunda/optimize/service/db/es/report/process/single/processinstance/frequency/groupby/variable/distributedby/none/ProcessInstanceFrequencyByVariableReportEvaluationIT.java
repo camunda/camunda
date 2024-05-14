@@ -14,22 +14,10 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -42,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -63,7 +50,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefinitionIT;
@@ -71,13 +57,6 @@ import org.camunda.optimize.service.db.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.ValueCount;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -88,23 +67,25 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void simpleReportEvaluation() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "foo",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto =
+        evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey())
         .isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions())
@@ -114,7 +95,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
         .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
-    VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
+    final VariableGroupByDto variableGroupByDto =
+        (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
 
@@ -129,11 +111,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void simpleReportEvaluationById() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstance =
+        deployAndStartSimpleServiceTaskProcess(variables);
     importAllEngineEntitiesFromScratch();
-    String reportId =
+    final String reportId =
         createAndStoreDefaultReportDefinition(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
@@ -141,11 +124,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.STRING);
 
     // when
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto =
+        evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey())
         .isEqualTo(processInstance.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions())
@@ -155,7 +139,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
         .isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
-    VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
+    final VariableGroupByDto variableGroupByDto =
+        (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName()).isEqualTo("foo");
     assertThat(variableGroupByDto.getValue().getType()).isEqualTo(VariableType.STRING);
 
@@ -170,21 +155,22 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void otherProcessDefinitionsDoNotAffectResult() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "foo",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -207,10 +193,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(processKey, ALL_VERSIONS, DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_TYPE);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<MapResultEntryDto>> result =
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
         reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -220,9 +206,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void multipleProcessInstances() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(), variables);
@@ -231,13 +218,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "foo",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -258,19 +245,20 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     // given
     final VariableDto listVar =
         variablesClient.createListJsonObjectVariableDto(List.of("value1", "value2"));
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("listVar", listVar);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "listVar",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -292,9 +280,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void numberVariable_customBuckets() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 100.0);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, 200.0);
     engineIntegrationExtension.startProcessInstance(
@@ -307,7 +296,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -315,7 +304,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.DOUBLE,
             10.0,
             100.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -334,17 +323,17 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void combinedNumberVariableReport_distinctRanges() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
 
     variables.put(varName, 10.0);
-    ProcessInstanceEngineDto processInstanceDto1 =
+    final ProcessInstanceEngineDto processInstanceDto1 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 20.0);
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto1.getDefinitionId(), variables);
 
     variables.put(varName, 50.0);
-    ProcessInstanceEngineDto processInstanceDto2 =
+    final ProcessInstanceEngineDto processInstanceDto2 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 100.0);
     engineIntegrationExtension.startProcessInstance(
@@ -352,7 +341,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
 
     importAllEngineEntitiesFromScratch();
 
-    ProcessReportDataDto reportData1 =
+    final ProcessReportDataDto reportData1 =
         createReport(
             processInstanceDto1.getProcessDefinitionKey(),
             processInstanceDto1.getProcessDefinitionVersion(),
@@ -361,7 +350,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             10.0,
             10.0);
 
-    ProcessReportDataDto reportData2 =
+    final ProcessReportDataDto reportData2 =
         createReport(
             processInstanceDto2.getProcessDefinitionKey(),
             processInstanceDto2.getProcessDefinitionVersion(),
@@ -370,9 +359,9 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             5.0,
             10.0);
 
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
-    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    final List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
         new CombinedReportItemDto(
             reportClient.createSingleProcessReport(
@@ -383,7 +372,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
                 new SingleProcessReportDefinitionRequestDto(reportData2))));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReport =
+        new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
@@ -404,17 +394,17 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void combinedNumberVariableReport_intersectingRanges() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
 
     variables.put(varName, 10.0);
-    ProcessInstanceEngineDto processInstanceDto1 =
+    final ProcessInstanceEngineDto processInstanceDto1 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 20.0);
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto1.getDefinitionId(), variables);
 
     variables.put(varName, 15.0);
-    ProcessInstanceEngineDto processInstanceDto2 =
+    final ProcessInstanceEngineDto processInstanceDto2 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 25.0);
     engineIntegrationExtension.startProcessInstance(
@@ -422,7 +412,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
 
     importAllEngineEntitiesFromScratch();
 
-    ProcessReportDataDto reportData1 =
+    final ProcessReportDataDto reportData1 =
         createReport(
             processInstanceDto1.getProcessDefinitionKey(),
             processInstanceDto1.getProcessDefinitionVersion(),
@@ -431,7 +421,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             10.0,
             5.0);
 
-    ProcessReportDataDto reportData2 =
+    final ProcessReportDataDto reportData2 =
         createReport(
             processInstanceDto2.getProcessDefinitionKey(),
             processInstanceDto2.getProcessDefinitionVersion(),
@@ -440,9 +430,9 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             5.0,
             5.0);
 
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
-    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    final List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
         new CombinedReportItemDto(
             reportClient.createSingleProcessReport(
@@ -453,7 +443,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
                 new SingleProcessReportDefinitionRequestDto(reportData2))));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReport =
+        new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
@@ -474,17 +465,17 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void combinedNumberVariableReport_inclusiveRanges() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
 
     variables.put(varName, 10.0);
-    ProcessInstanceEngineDto processInstanceDto1 =
+    final ProcessInstanceEngineDto processInstanceDto1 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 30.0);
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto1.getDefinitionId(), variables);
 
     variables.put(varName, 15.0);
-    ProcessInstanceEngineDto processInstanceDto2 =
+    final ProcessInstanceEngineDto processInstanceDto2 =
         deployAndStartSimpleServiceTaskProcess(variables);
     variables.put(varName, 25.0);
     engineIntegrationExtension.startProcessInstance(
@@ -492,7 +483,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
 
     importAllEngineEntitiesFromScratch();
 
-    ProcessReportDataDto reportData1 =
+    final ProcessReportDataDto reportData1 =
         createReport(
             processInstanceDto1.getProcessDefinitionKey(),
             processInstanceDto1.getProcessDefinitionVersion(),
@@ -501,7 +492,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             10.0,
             5.0);
 
-    ProcessReportDataDto reportData2 =
+    final ProcessReportDataDto reportData2 =
         createReport(
             processInstanceDto2.getProcessDefinitionKey(),
             processInstanceDto2.getProcessDefinitionVersion(),
@@ -510,9 +501,9 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             5.0,
             5.0);
 
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
-    List<CombinedReportItemDto> reportIds = new ArrayList<>();
+    final List<CombinedReportItemDto> reportIds = new ArrayList<>();
     reportIds.add(
         new CombinedReportItemDto(
             reportClient.createSingleProcessReport(
@@ -523,7 +514,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
                 new SingleProcessReportDefinitionRequestDto(reportData2))));
 
     combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionRequestDto combinedReport = new CombinedReportDefinitionRequestDto();
+    final CombinedReportDefinitionRequestDto combinedReport =
+        new CombinedReportDefinitionRequestDto();
     combinedReport.setData(combinedReportData);
 
     // when
@@ -543,9 +535,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 10.0);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, 20.0);
     engineIntegrationExtension.startProcessInstance(
@@ -554,7 +547,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when the baseline is larger than the max. variable value
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -562,7 +555,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.DOUBLE,
             30.0,
             5.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then the report returns an empty result
@@ -575,9 +568,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void numberVariable_negativeValues_defaultBaselineWorks() {
     // given
     final String varName = "intVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, -1);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, -5);
     engineIntegrationExtension.startProcessInstance(
@@ -586,13 +580,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is no baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             varName,
             VariableType.INTEGER);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then the result includes all instances
@@ -605,9 +599,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void shortVariable_valuesSmallerThanBaseline() {
     // given
     final String varName = "shortVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, (short) -10);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, (short) 8);
     engineIntegrationExtension.startProcessInstance(
@@ -620,7 +615,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is a baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -628,7 +623,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.SHORT,
             -1.0,
             10.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then buckets start from the baseline and values below it are not included
@@ -646,9 +641,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void intVariable_valuesSmallerThanBaseline() {
     // given
     final String varName = "intVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, -10);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, 8);
     engineIntegrationExtension.startProcessInstance(
@@ -661,7 +657,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is a baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -669,7 +665,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.INTEGER,
             -1.0,
             10.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then buckets start from the baseline and values below it are not included
@@ -687,9 +683,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void doubleVariable_valuesSmallerThanBaseline() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, -10.0);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, 8.0);
     engineIntegrationExtension.startProcessInstance(
@@ -702,7 +699,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is a baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -710,7 +707,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.DOUBLE,
             -1.0,
             10.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then buckets start from the baseline and values below it are not included
@@ -728,9 +725,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void longVariable_valuesSmallerThanBaseline() {
     // given
     final String varName = "longVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, (long) -10);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, (long) 8);
     engineIntegrationExtension.startProcessInstance(
@@ -743,7 +741,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is a baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -751,7 +749,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.LONG,
             -1.0,
             10.0);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then buckets start from the baseline and values below it are not included
@@ -769,9 +767,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void numberVariable_negativeValues_negativeBaseline() {
     // given
     final String varName = "intVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, -1);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, -5);
     engineIntegrationExtension.startProcessInstance(
@@ -780,7 +779,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when there is no baseline set
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
@@ -788,7 +787,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
             VariableType.INTEGER,
             -10.0,
             null);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then the baseline is correct and the result includes all instances
@@ -807,9 +806,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
     // given
     final String varName = "doubleVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 1.0);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, 5.0);
     engineIntegrationExtension.startProcessInstance(
@@ -818,13 +818,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             varName,
             VariableType.DOUBLE);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -842,9 +842,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void numberVariable_largeValues_notTooManyAutomaticBuckets() {
     // given
     final String varName = "longVar";
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(varName, 9_100_000_000_000_000_000L);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put(varName, -920_000_000_000_000_000L);
     engineIntegrationExtension.startProcessInstance(
@@ -874,9 +875,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(), variables);
@@ -914,9 +916,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(), variables);
@@ -954,22 +957,23 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void variableTypeIsImportant() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", 1);
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "foo",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -988,22 +992,23 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void otherVariablesDoNotDistortTheResult() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo1", "bar1");
     variables.put("foo2", "bar1");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     engineIntegrationExtension.startProcessInstance(
         processInstanceDto.getDefinitionId(), variables);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "foo1",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -1017,7 +1022,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void worksWithAllVariableTypes() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now());
     variables.put("boolVar", true);
     variables.put("shortVar", (short) 2);
@@ -1025,27 +1030,28 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     variables.put("longVar", 4L);
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     importAllEngineEntitiesFromScratch();
 
-    for (Map.Entry<String, Object> entry : variables.entrySet()) {
+    for (final Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
-      VariableType variableType = varNameToTypeMap.get(entry.getKey());
-      ProcessReportDataDto reportData =
+      final VariableType variableType = varNameToTypeMap.get(entry.getKey());
+      final ProcessReportDataDto reportData =
           createReport(
               processInstanceDto.getProcessDefinitionKey(),
               processInstanceDto.getProcessDefinitionVersion(),
               entry.getKey(),
               variableType);
-      List<MapResultEntryDto> resultData =
+      final List<MapResultEntryDto> resultData =
           reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
       // then
 
       assertThat(resultData).isNotNull();
-      String expectedKey;
+      final String expectedKey;
       if (VariableType.DATE.equals(variableType)) {
-        OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
+        final OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         expectedKey =
             embeddedOptimizeExtension.formatToHistogramBucketKey(
                 temporal.atZoneSimilarLocal(ZoneId.systemDefault()).toOffsetDateTime(),
@@ -1070,12 +1076,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   }
 
   @Test
-  public void multipleVariablesWithSameNameInOneProcessInstanceAreCountedOnlyOnce()
-      throws SQLException {
+  public void multipleVariablesWithSameNameInOneProcessInstanceAreCountedOnlyOnce() {
     // given
-    Map<String, Object> variables =
+    final Map<String, Object> variables =
         ImmutableMap.of("testVar", "withValue", "testVarTemp", "withValue");
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
     engineDatabaseExtension.changeVariableName(
         processInstanceDto.getId(), "testVarTemp", "testVar");
 
@@ -1084,13 +1090,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     assertThat(getVariableInstanceCount("testVar")).isEqualTo(2);
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "testVar",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -1108,7 +1114,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
     // given
     // 1 process instance with 'testVar'
-    ProcessInstanceEngineDto processInstanceDto =
+    final ProcessInstanceEngineDto processInstanceDto =
         deployAndStartSimpleServiceTaskProcess(of("testVar", "withValue"));
 
     // 4 process instances without 'testVar'
@@ -1124,13 +1130,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "testVar",
             VariableType.STRING);
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -1154,7 +1160,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     // with null value
     final String varName = "doubleVar";
     final Double varValue = 1.0;
-    ProcessInstanceEngineDto processInstanceDto =
+    final ProcessInstanceEngineDto processInstanceDto =
         deployAndStartSimpleServiceTaskProcess(of(varName, varValue));
 
     engineIntegrationExtension.startProcessInstance(
@@ -1190,7 +1196,8 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now());
 
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+    final ProcessInstanceEngineDto processInstanceDto =
+        deployAndStartSimpleServiceTaskProcess(variables);
 
     variables = Collections.singletonMap("dateVar", OffsetDateTime.now().minusDays(2));
     engineIntegrationExtension.startProcessInstance(
@@ -1203,14 +1210,14 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstanceDto.getProcessDefinitionKey(),
             processInstanceDto.getProcessDefinitionVersion(),
             "dateVar",
             VariableType.DATE);
 
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> response =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> response =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -1223,17 +1230,18 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void dateFilterInReport() {
     // given
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
-    OffsetDateTime past =
+    final ProcessInstanceEngineDto processInstance =
+        deployAndStartSimpleServiceTaskProcess(variables);
+    final OffsetDateTime past =
         engineIntegrationExtension
             .getHistoricProcessInstance(processInstance.getId())
             .getStartTime();
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
@@ -1273,11 +1281,11 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
+    final ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getView().setEntity(null);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -1286,11 +1294,11 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
+    final ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getView().setProperties((ViewProperty) null);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -1299,11 +1307,11 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
+    final ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
     dataDto.getGroupBy().setType(null);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -1312,12 +1320,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void optimizeExceptionOnGroupByValueNameIsNull() {
     // given
-    ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
-    VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
+    final ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
+    final VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus())
@@ -1327,12 +1335,12 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   @Test
   public void optimizeExceptionOnGroupByValueTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
-    VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
+    final ProcessReportDataDto dataDto = createReport("123", "1", "foo", VariableType.STRING);
+    final VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);
 
     // when
-    Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
+    final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
     assertThat(response.getStatus())
@@ -1348,7 +1356,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     final int numberOfInstances = 3;
     final String dateVarName = "dateVar";
     final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
 
     for (int i = 0; i < numberOfInstances; i++) {
@@ -1360,10 +1368,10 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(def.getKey(), def.getVersionAsString(), dateVarName, VariableType.DATE);
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    List<MapResultEntryDto> resultData =
+    final List<MapResultEntryDto> resultData =
         reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
 
     // then
@@ -1390,7 +1398,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     final String dateVarName = "dateVar";
     final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
     OffsetDateTime dateVariableValue = OffsetDateTime.now();
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
 
     for (int i = 0; i < numberOfInstances; i++) {
       dateVariableValue = dateVariableValue.plusMinutes(i);
@@ -1401,17 +1409,17 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(def.getKey(), def.getVersionAsString(), dateVarName, VariableType.DATE);
     final ReportResultResponseDto<List<MapResultEntryDto>> result =
         reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // the bucket span covers the earliest and the latest date variable value
-    DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
+    final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
     final OffsetDateTime startOfFirstBucket =
         OffsetDateTime.from(formatter.parse(resultData.get(0).getKey()));
     final OffsetDateTime startOfLastBucket =
@@ -1439,32 +1447,32 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
 
     // when
-    ProcessReportDataDto reportData =
+    final ProcessReportDataDto reportData =
         createReport(def.getKey(), def.getVersionAsString(), dateVarName, VariableType.DATE);
     final ReportResultResponseDto<List<MapResultEntryDto>> result =
         reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
+    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
 
   private String createAndStoreDefaultReportDefinition(
-      String processDefinitionKey,
-      String processDefinitionVersion,
-      String variableName,
-      VariableType variableType) {
-    ProcessReportDataDto reportData =
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final String variableName,
+      final VariableType variableType) {
+    final ProcessReportDataDto reportData =
         createReport(processDefinitionKey, processDefinitionVersion, variableName, variableType);
     return createNewReport(reportData);
   }
 
   private ProcessReportDataDto createReport(
-      String processDefinitionKey,
-      String processDefinitionVersion,
-      String variableName,
-      VariableType variableType) {
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final String variableName,
+      final VariableType variableType) {
     return TemplatedProcessReportDataBuilder.createReportData()
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessDefinitionVersion(processDefinitionVersion)
@@ -1475,13 +1483,13 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
   }
 
   private ProcessReportDataDto createReport(
-      String processDefinitionKey,
-      String processDefinitionVersion,
-      String variableName,
-      VariableType variableType,
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final String variableName,
+      final VariableType variableType,
       final Double baseline,
       final Double groupByNumberVariableBucketSize) {
-    ProcessReportDataDto reportDataDto =
+    final ProcessReportDataDto reportDataDto =
         TemplatedProcessReportDataBuilder.createReportData()
             .setProcessDefinitionKey(processDefinitionKey)
             .setProcessDefinitionVersion(processDefinitionVersion)
@@ -1498,35 +1506,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT
     return reportDataDto;
   }
 
-  private Integer getVariableInstanceCount(String variableName) {
-    final QueryBuilder query =
-        nestedQuery(
-            VARIABLES,
-            boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
-            ScoreMode.None);
-    SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder().query(query).fetchSource(false).size(0);
-
-    SearchRequest searchRequest =
-        new SearchRequest().indices(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
-
-    String VARIABLE_COUNT_AGGREGATION = VARIABLES + FREQUENCY_AGGREGATION;
-    String NESTED_VARIABLE_AGGREGATION = "nestedAggregation";
-    searchSourceBuilder.aggregation(
-        nested(NESTED_VARIABLE_AGGREGATION, VARIABLES)
-            .subAggregation(count(VARIABLE_COUNT_AGGREGATION).field(getNestedVariableIdField())));
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse =
-          databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
-    } catch (IOException | ElasticsearchStatusException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate variable instance count in process instance indices.", e);
-    }
-
-    Nested nestedAgg = searchResponse.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-    ValueCount countAggregator = nestedAgg.getAggregations().get(VARIABLE_COUNT_AGGREGATION);
-    return Long.valueOf(countAggregator.getValue()).intValue();
+  private Integer getVariableInstanceCount(final String variableName) {
+    return databaseIntegrationTestExtension.getVariableInstanceCount(variableName);
   }
 }

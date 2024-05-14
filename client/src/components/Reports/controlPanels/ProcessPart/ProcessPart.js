@@ -91,7 +91,7 @@ export default class ProcessPart extends React.Component {
     const selection = [start, end].filter((v) => v);
     return (
       <Modal open={modalOpen} onClose={this.closeModal} size="lg" className="ProcessPartModal">
-        <Modal.Header>{t('report.processPart.title')}</Modal.Header>
+        <Modal.Header title={t('report.processPart.title')} />
         <Modal.Content>
           {start && end && !hasPath && (
             <InlineNotification

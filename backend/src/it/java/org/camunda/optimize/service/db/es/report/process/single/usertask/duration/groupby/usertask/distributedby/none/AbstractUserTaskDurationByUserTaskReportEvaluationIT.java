@@ -14,20 +14,14 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +33,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
-import org.apache.commons.text.StringSubstitutor;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -60,16 +53,12 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.db.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.db.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -85,8 +74,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   @Test
   public void reportEvaluationForOneProcessInstance() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto =
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto =
         engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishAllUserTasks(processInstanceDto);
 
@@ -224,7 +213,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition1);
     reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
-    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
         reportClient.evaluateMapReport(reportData);
 
     // then
@@ -282,8 +271,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   @Test
   public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
     // given
-    double duration1 = 10.;
-    double duration2 = 20.;
+    final double duration1 = 10.;
+    final double duration2 = 20.;
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 =
@@ -656,9 +645,9 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
+    final ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<MapResultEntryDto>> result =
+    final ReportResultResponseDto<List<MapResultEntryDto>> result =
         reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -1023,22 +1012,22 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   }
 
   private static Map<String, Double> getExpectedResultsMap(
-      Double userTask1Results, Double userTask2Results) {
-    Map<String, Double> result = new HashMap<>();
+      final Double userTask1Results, final Double userTask2Results) {
+    final Map<String, Double> result = new HashMap<>();
     result.put(USER_TASK_1, userTask1Results);
     result.put(USER_TASK_2, userTask2Results);
     return result;
   }
 
   protected static Stream<FlowNodeStatusTestValues> getFlowNodeStatusExpectedValues() {
-    FlowNodeStatusTestValues runningStateValues = new FlowNodeStatusTestValues();
+    final FlowNodeStatusTestValues runningStateValues = new FlowNodeStatusTestValues();
     runningStateValues.processFilter =
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList();
     runningStateValues.expectedIdleDurationValues = getExpectedResultsMap(200., 500.);
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., null);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 500.);
 
-    FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
+    final FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
     completedOrCanceled.processFilter =
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList();
     completedOrCanceled.expectedIdleDurationValues = getExpectedResultsMap(100., null);
@@ -1051,9 +1040,9 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   @ParameterizedTest
   @MethodSource("getFlowNodeStatusExpectedValues")
   public void evaluateReportWithFlowNodeStatusFilter(
-      FlowNodeStatusTestValues flowNodeStatusTestValues) {
+      final FlowNodeStatusTestValues flowNodeStatusTestValues) {
     // given
-    OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -1090,7 +1079,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   @Test
   public void processDefinitionContainsMultiInstanceBody() {
     // given
-    BpmnModelInstance processWithMultiInstanceUserTask =
+    final BpmnModelInstance processWithMultiInstanceUserTask =
         Bpmn
             // @formatter:off
             .createExecutableProcess("processWithMultiInstanceUserTask")
@@ -1201,7 +1190,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   }
 
   private List<ProcessFilterDto<?>> createStartDateFilter(
-      OffsetDateTime startDate, OffsetDateTime endDate) {
+      final OffsetDateTime startDate, final OffsetDateTime endDate) {
     return ProcessFilterBuilder.filter()
         .fixedInstanceStartDate()
         .start(startDate)
@@ -1283,43 +1272,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
 
   protected void setUserTaskDurationToNull(
       final String processInstanceId, final String durationFieldName) {
-    final StringSubstitutor substitutor =
-        new StringSubstitutor(
-            ImmutableMap.<String, String>builder()
-                .put("flowNodesField", FLOW_NODE_INSTANCES)
-                .put("durationFieldName", durationFieldName)
-                .build());
-
-    // @formatter:off
-    final String setDurationToNull =
-        substitutor.replace(
-            "for(flowNode in ctx._source.${flowNodesField}) {"
-                + "flowNode.${durationFieldName} = null;"
-                + "}");
-    // @formatter:on
-
-    final Script updateScript =
-        new Script(
-            ScriptType.INLINE,
-            Script.DEFAULT_SCRIPT_LANG,
-            setDurationToNull,
-            Collections.emptyMap());
-
-    final UpdateByQueryRequest request =
-        new UpdateByQueryRequest(PROCESS_INSTANCE_MULTI_ALIAS)
-            .setQuery(boolQuery().must(termQuery(PROCESS_INSTANCE_ID, processInstanceId)))
-            .setAbortOnVersionConflict(false)
-            .setScript(updateScript)
-            .setRefresh(true);
-    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().applyIndexPrefixes(request);
-
-    try {
-      databaseIntegrationTestExtension.getOptimizeElasticsearchClient().updateByQuery(request);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException(
-          String.format("Could not set userTask duration field [%s] to null.", durationFieldName),
-          e);
-    }
+    databaseIntegrationTestExtension.setUserTaskDurationToNull(
+        processInstanceId, durationFieldName);
   }
 
   private ProcessReportDataDto createReport(
@@ -1357,7 +1311,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
     return deployOneUserTasksDefinition("aProcess", null);
   }
 
-  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
+  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(
+      final String key, final String tenantId) {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
         getSingleUserTaskDiagram(key), tenantId);
   }
@@ -1383,8 +1338,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT
   }
 
   private void assertDurationMapReportResults(
-      ReportResultResponseDto<List<MapResultEntryDto>> result,
-      Map<String, Double[]> expectedUserTaskValues) {
+      final ReportResultResponseDto<List<MapResultEntryDto>> result,
+      final Map<String, Double[]> expectedUserTaskValues) {
     assertThat(result.getMeasures())
         .extracting(MeasureResponseDto::getAggregationType)
         .containsExactly(getSupportedAggregationTypes());

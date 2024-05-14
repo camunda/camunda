@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
-import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
@@ -34,7 +33,6 @@ import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeReco
 import org.camunda.optimize.service.importing.zeebe.fetcher.os.AbstractZeebeRecordFetcherOS;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.event.LoggingEvent;
 
@@ -99,7 +97,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     assertThat(getLastImportedEntityTimestamps()).isEqualTo(lastImportedEntityTimestamps);
   }
 
-  @DisabledIf("isZeebeVersionPreSequenceField")
   @Test
   @SneakyThrows
   public void latestSequenceImportIndexesAreRestoredAfterRestartOfOptimize() {
@@ -151,7 +148,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
         .allSatisfy(handler -> assertThat(handler.isHasSeenSequenceField()).isFalse());
   }
 
-  @DisabledIf("isZeebeVersionPreSequenceField")
   @Test
   public void recordsAreFetchedWithSequenceOrPosition() {
     // given
@@ -231,7 +227,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
             });
   }
 
-  @DisabledIf("isZeebeVersionPreSequenceField")
   @Test
   public void dynamicRecordQueryingIsUsedToFetchNewUnreachableData() {
     // covers the scenario of a "gap" in zeebe record sequences that is bigger than the configured
@@ -348,7 +343,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
             });
   }
 
-  @DisabledIf("isZeebeVersionPreSequenceField")
   @Test
   public void dynamicRecordQueryingIsUsedToFetchNewUnreachableData_noUnreachableData() {
     // given
@@ -474,11 +468,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     return embeddedOptimizeExtension.getAllPositionBasedImportHandlers().stream()
         .map(PositionBasedImportIndexHandler::getTimestampOfLastPersistedEntity)
         .collect(Collectors.toList());
-  }
-
-  @SuppressWarnings(UNUSED)
-  private static boolean isZeebeVersionPreSequenceField() {
-    return isZeebeVersionPre82();
   }
 
   @SneakyThrows

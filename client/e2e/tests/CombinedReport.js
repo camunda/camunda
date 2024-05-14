@@ -88,7 +88,7 @@ test('combine two single number reports', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.reportLabel.textContent).contains('Combined');
+  await t.expect(Common.listItem('combined report').visible).ok();
 });
 
 test('combine two single table reports and reorder them', async (t) => {

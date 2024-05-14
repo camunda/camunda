@@ -12,7 +12,6 @@ import {InitialConfigType, LexicalComposer} from '@lexical/react/LexicalComposer
 import {TextArea} from '@carbon/react';
 
 import {isTextTileTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
-import {t} from 'translation';
 
 import editorNodes from './nodes';
 import Editor from './Editor';
@@ -22,22 +21,6 @@ import './TextEditor.scss';
 function onError(error: Error) {
   console.error(error);
 }
-
-const emptyState: SerializedEditorState = {
-  root: {
-    children: [
-      {
-        type: 'paragraph',
-        version: 1,
-      },
-    ],
-    direction: null,
-    format: '',
-    indent: 0,
-    type: 'root',
-    version: 1,
-  },
-};
 
 const theme = {
   paragraph: 'p',
@@ -59,26 +42,32 @@ type SimpleEditorProps = {
   simpleEditor: true;
   onChange: (text: string) => void;
   initialValue?: string | null;
-  limit?: number;
 };
 
 type RichEditorProps = {
   simpleEditor?: never;
   onChange?: (value: SerializedEditorState) => void;
-  initialValue?: SerializedEditorState;
+  initialValue?: SerializedEditorState | null;
+};
+
+type CommonProps = {
+  label: string;
+  hideLabel?: boolean;
   limit?: number;
 };
 
-type TextEditorProps = SimpleEditorProps | RichEditorProps;
+type TextEditorProps = CommonProps & (SimpleEditorProps | RichEditorProps);
 
 export default function TextEditor({
+  label,
+  hideLabel,
   onChange,
   simpleEditor,
   initialValue,
   limit = TEXT_REPORT_MAX_CHARACTERS,
 }: TextEditorProps) {
   const initialConfig: InitialConfigType = {
-    editorState: JSON.stringify(initialValue || emptyState),
+    editorState: initialValue ? JSON.stringify(initialValue) : undefined,
     editable: !!onChange,
     namespace: 'Editor',
     nodes: editorNodes,
@@ -86,7 +75,7 @@ export default function TextEditor({
     onError,
   };
   const [isError, setIsError] = useState(
-    !simpleEditor && isTextTileTooLong(TextEditor.getEditorStateLength(initialValue || emptyState))
+    !simpleEditor && isTextTileTooLong(TextEditor.getEditorStateLength(initialValue))
   );
 
   return (
@@ -96,9 +85,11 @@ export default function TextEditor({
       }}
       className="TextEditor"
     >
+      {!hideLabel && <label className="cds--label">{label}</label>}
       {simpleEditor ? (
         <TextArea
-          labelText={t('common.description')}
+          aria-label={label}
+          labelText={label}
           hideLabel
           value={initialValue || undefined}
           className="SimpleEditor"
@@ -109,6 +100,7 @@ export default function TextEditor({
       ) : (
         <LexicalComposer initialConfig={initialConfig}>
           <Editor
+            label={label}
             onChange={(sanitizedEditorState) => {
               setIsError(
                 isTextTileTooLong(TextEditor.getEditorStateLength(sanitizedEditorState), limit)

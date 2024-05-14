@@ -9,8 +9,8 @@ export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
 
-export {loadReports, loadEntities, copyEntity, createEntity} from './entityService';
-
+export {loadReports, loadEntities, copyEntity, createEntity, getEntityIcon} from './entityService';
+export {UNAUTHORIZED_TENANT_ID} from './tenantService';
 export * as formatters from './formatters';
 export {
   loadProcessDefinitionXml,
@@ -20,7 +20,6 @@ export {
   loadVariables,
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
-
 export {
   TEXT_REPORT_MAX_CHARACTERS,
   isTextTileTooLong,
@@ -28,9 +27,7 @@ export {
   loadRawData,
   evaluateReport,
 } from './reportService';
-
 export {addSources, getCollection} from './collectionService';
-
 export {default as getScreenBounds} from './getScreenBounds';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
@@ -38,4 +35,4 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {loadDefinitions} from './loadDefinitions';
 
 export type {Definition} from './loadDefinitions';
-export type {ReportPayload} from './reportService';
+export type {ReportEvaluationPayload} from './reportService';

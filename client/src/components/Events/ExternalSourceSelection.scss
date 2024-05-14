@@ -1,0 +1,10 @@
+.ExternalSourceSelection {
+  position: relative;
+
+  &.empty {
+    text-align: center;
+    color: var(--grey-lighten-56);
+    padding-top: 10px;
+    padding-bottom: 20px;
+  }
+}

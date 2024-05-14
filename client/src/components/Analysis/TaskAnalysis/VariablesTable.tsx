@@ -7,7 +7,7 @@
 
 import {useEffect, useState} from 'react';
 
-import {Table, LoadingIndicator, NoDataNotice} from 'components';
+import {Table, NoDataNotice} from 'components';
 import {t} from 'translation';
 
 import {
@@ -49,28 +49,17 @@ export default function VariablesTable({selectedOutlierNode, config}: VariablesT
     ]);
   };
 
-  let tableData;
-  if (outlierVariables?.length) {
-    tableData = {
-      head: [
-        t('report.variables.default').toString(),
-        t('analysis.task.detailsModal.table.outliersNumber').toString(),
-        t('analysis.task.detailsModal.table.ofTotalPercentage').toString(),
-        t('analysis.task.detailsModal.table.ofOutliersPercentage').toString(),
-      ],
-      body: constructTableBody(outlierVariables),
-    };
-  } else {
-    tableData = {
-      head: [],
-      body: [],
-      noData: outlierVariables ? (
-        <NoDataNotice>{t('analysis.task.detailsModal.table.emptyTableMessage')}</NoDataNotice>
-      ) : (
-        <LoadingIndicator />
-      ),
-    };
-  }
+  const tableProps = {
+    head: [
+      t('report.variables.default').toString(),
+      t('analysis.task.detailsModal.table.outliersNumber').toString(),
+      t('analysis.task.detailsModal.table.ofTotalPercentage').toString(),
+      t('analysis.task.detailsModal.table.ofOutliersPercentage').toString(),
+    ],
+    body: outlierVariables ? constructTableBody(outlierVariables) : [],
+    noData: <NoDataNotice>{t('analysis.task.detailsModal.table.emptyTableMessage')}</NoDataNotice>,
+    loading: !outlierVariables,
+  };
 
-  return <Table {...tableData} disablePagination className="VariablesTable" />;
+  return <Table {...tableProps} disablePagination className="VariablesTable" />;
 }

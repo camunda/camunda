@@ -87,6 +87,17 @@
       .strikethrough {
         text-decoration: line-through;
       }
+
+      // These styles are globally disabled, so we need to re-enable them here
+      ul,
+      ol {
+        margin: 1em 0;
+        padding-left: 2rem;
+      }
+
+      ul {
+        list-style-type: disc;
+      }
     }
   }
 

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { MenuItemSelectable } from "@carbon/react"
-import { within, userEvent } from "@storybook/testing-library"
-import { expect } from "@storybook/jest"
+import { within, expect, userEvent } from "@storybook/test"
 
 import MenuDropdown from "./MenuDropdown"
 
@@ -26,6 +25,7 @@ export const mainStory: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 			</MenuItemSelectable>,
@@ -47,6 +47,7 @@ export const invalidInput: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 				{Array.from(Array(30).keys()).map((id) => (
@@ -77,6 +78,7 @@ export const tooManyOptions: Story = {
 		children: [
 			<MenuItemSelectable label="item1" />,
 			<MenuItemSelectable label="item2" />,
+			// @ts-ignore
 			<MenuItemSelectable label="item3" selected>
 				<MenuItemSelectable label="sub item" selected />
 				{Array.from(Array(30).keys()).map((id) => (

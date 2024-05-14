@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {DecisionTree, Settings} from '@carbon/icons-react';
 
 import {addNotification} from 'notifications';
-import {EntityList} from 'components';
+import {CarbonEntityList} from 'components';
 import {isUserSearchAvailable, getOptimizeDatabase} from 'config';
 import {track} from 'tracking';
 
@@ -59,11 +60,11 @@ it('should load processes', async () => {
   await runAllEffects();
 
   expect(loadProcesses).toHaveBeenCalled();
-  const entityData = node.find(EntityList).prop('data');
+  const entityData = node.find(CarbonEntityList).prop('rows');
   expect(entityData.id);
-  expect(node.find(EntityList).prop('data')).toEqual([
+  expect(node.find(CarbonEntityList).prop('rows')).toEqual([
     {
-      icon: 'dashboard-optimize',
+      icon: <DecisionTree />,
       id: 'defKey',
       meta: expect.any(Array),
       name: 'defName',
@@ -71,6 +72,7 @@ it('should load processes', async () => {
       link: 'dashboard/instant/defKey/',
       actions: [
         {
+          icon: <Settings />,
           action: expect.any(Function),
           text: 'Configure',
         },
@@ -94,13 +96,13 @@ it('should hide owner column and process config button if user search is not ava
 
   await runAllEffects();
 
-  const columns = node.find(EntityList).prop('columns');
-  const data = node.find(EntityList).prop('data');
+  const headers = node.find(CarbonEntityList).prop('headers');
+  const rows = node.find(CarbonEntityList).prop('rows');
 
-  expect(columns[1]).not.toBe('owner');
-  expect(columns.length).toBe(3);
-  expect(data[0].meta.length).toBe(2);
-  expect(data[0].actions.length).toBe(0);
+  expect(headers[1]).not.toBe('owner');
+  expect(headers.length).toBe(3);
+  expect(rows[0].meta.length).toBe(2);
+  expect(rows[0].actions.length).toBe(0);
 });
 
 it('should edit a process config', async () => {
@@ -112,7 +114,7 @@ it('should edit a process config', async () => {
   const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const configureProcessBtn = node.find(EntityList).prop('data')[0].actions[0];
+  const configureProcessBtn = node.find(CarbonEntityList).prop('rows')[0].actions[0];
   configureProcessBtn.action();
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig);
@@ -128,7 +130,7 @@ it('should show process update notification if digest & email are enabled', asyn
   const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const configureProcessBtn = node.find(EntityList).prop('data')[0].actions[0];
+  const configureProcessBtn = node.find(CarbonEntityList).prop('rows')[0].actions[0];
   configureProcessBtn.action();
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig, true, 'testName');
@@ -178,8 +180,8 @@ it('should filter out invalid kpis', async () => {
 
   await runAllEffects();
 
-  const entityData = node.find(EntityList).prop('data');
-  expect(entityData[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
+  const rows = node.find(CarbonEntityList).prop('rows');
+  expect(rows[0].meta[2].props.content.props.kpis).toEqual([validKpi]);
 });
 
 it('should hide the link to view the dashboard if the user has no edit rights', async () => {
@@ -187,7 +189,7 @@ it('should hide the link to view the dashboard if the user has no edit rights', 
 
   await runAllEffects();
 
-  expect(node.find(EntityList).prop('data')[0].onClick).not.toBeDefined();
+  expect(node.find(CarbonEntityList).prop('rows')[0].onClick).not.toBeDefined();
 });
 
 it('display the search info correctly', async () => {
@@ -195,10 +197,10 @@ it('display the search info correctly', async () => {
 
   await runAllEffects();
 
-  const text = node.find(EntityList).prop('displaySearchInfo')('', 1).props.children;
+  const text = node.find(CarbonEntityList).prop('description')('', 1);
   expect(text).toBe('1 process listed.');
 
-  const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
+  const textWithQuery = node.find(CarbonEntityList).prop('description')('def', 1);
   expect(textWithQuery).toBe('1 of 1 process listed.');
 });
 

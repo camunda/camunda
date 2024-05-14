@@ -8,6 +8,7 @@
 import {cleanEntities} from '../setup';
 import config from '../config';
 import {login, save, getUser, createNewDashboard, addEditEntityDescription} from '../utils';
+import {Selector} from 'testcafe';
 
 import * as Common from './Common.elements.js';
 import * as e from './Collection.elements.js';
@@ -55,9 +56,9 @@ test('create a collection and entities inside it', async (t) => {
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
-  await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.dashboardItem.textContent).contains('Blank dashboard');
-  await t.expect(Common.dashboardItem.textContent).contains(description);
+  await t.expect(Common.listItem('dashboard').visible).ok();
+  await t.expect(Common.listItem('dashboard').textContent).contains('Blank dashboard');
+  await t.expect(Common.listItem('dashboard').textContent).contains(description);
 });
 
 test('renaming a collection', async (t) => {
@@ -90,9 +91,9 @@ test('user permissions', async (t) => {
 
   await t.click(e.sourcesTab);
 
-  await t.click(e.addButton);
+  await t.click(e.emptyStateAdd);
   const definitionName = 'Invoice Receipt with alternative correlation variable';
-  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);
 
@@ -103,17 +104,18 @@ test('user permissions', async (t) => {
   await t.click(e.collectionBreadcrumb);
 
   await t.click(e.userTab);
+  const managerName = await e.userName(await Common.listItem('user')).textContent;
 
   await t.click(e.addButton);
   await t.click(Common.usersTypeahead);
   await t.typeText(Common.usersTypeahead, 'sales', {replace: true});
-  await t.click(Common.carbonOption('sales'));
+  await t.click(Common.carbonOption('Sales'));
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(e.groupItem.visible).ok();
-  await t.expect(e.groupItem.textContent).contains('User group');
-  await t.expect(e.groupItem.textContent).contains('Sales');
-  await t.expect(e.groupItem.textContent).contains('Viewer');
+  await t.expect(Common.listItem('user group').visible).ok();
+  await t.expect(Common.listItem('user group').textContent).contains('User group');
+  await t.expect(Common.listItem('user group').textContent).contains('Sales');
+  await t.expect(Common.listItem('user group').textContent).contains('Viewer');
 
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, 'mary', {replace: true});
@@ -130,34 +132,32 @@ test('user permissions', async (t) => {
     .maximizeWindow();
 
   // change permissions
-  const managerName = await e.managerName.textContent;
-  await t.hover(e.userItem(managerName));
-  await t.expect(Common.contextMenu(e.userItem(managerName)).exists).notOk();
-
-  await t.hover(e.groupItem);
-  await t.expect(Common.contextMenu(e.groupItem).visible).ok();
+  await t.hover(Common.listItemWithText(managerName));
+  await t
+    .expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').exists)
+    .notOk();
+  await t.expect(Common.listItemTrigger(Common.listItem('user group'), 'Edit').visible).ok();
 
   const {username} = getUser(t, 'user2');
 
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, username, {replace: true});
-  await t.click(Common.carbonOption(username));
+  // We have no way of knowing the exact name of the user on the list, so we just wait and select the first option
+  await t.wait(1500);
+  await t.click(Selector(`[id="USER:${username}"]`));
   await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 
-  await t.hover(e.userItem(managerName));
-  await t.expect(Common.contextMenu(e.userItem(managerName)).visible).ok();
+  await t.expect(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit').visible).ok();
 
-  await t.click(Common.contextMenu(e.userItem(managerName)));
-  await t.click(Common.edit(e.userItem(managerName)));
-
+  await t.click(Common.listItemTrigger(Common.listItemWithText(managerName), 'Edit'));
   await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.addButton.exists).notOk();
 
   await t.click(e.entityTab);
-  await t.click(Common.dashboardItem);
+  await t.click(Common.listItemLink('dashboard', true));
 
   await t.expect(Common.editButton.exists).notOk();
 
@@ -168,20 +168,20 @@ test('user permissions', async (t) => {
   await login(t, 'user2');
   await t.click(e.navItem);
 
-  await t.click(Common.collectionItem);
+  await t.click(Common.listItemLink('collection'));
   await t.click(e.userTab);
+  await t.expect(Common.listItem('user').count).eql(5);
   await t.click(Common.selectAllCheckbox.filterVisible());
-  await t.click(Common.bulkMenu.filterVisible());
-  await t.click(e.remove(Common.bulkMenu.filterVisible()));
+  await t.click(e.bulkRemove.filterVisible());
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.filterVisible().count).eql(1);
+  await t.expect(Common.listItem('user').count).eql(1);
 
   // delete collection
   await t.click(e.collectionContextMenu);
   await t.click(e.deleteCollectionButton);
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.collectionItem.exists).notOk();
+  await t.expect(Common.listItem('collection').exists).notOk();
 });
 
 test('add, edit and delete sources', async (t) => {
@@ -190,9 +190,9 @@ test('add, edit and delete sources', async (t) => {
   await t.click(e.sourcesTab);
 
   // add source by definition
-  await t.click(e.addButton);
+  await t.click(e.emptyStateAdd);
   const definitionName = 'Hiring Demo 5 Tenants';
-  await t.typeText(e.searchField, definitionName, {replace: true});
+  await t.typeText(e.sourceModalSearchField, definitionName, {replace: true});
   await t.click(e.selectAllCheckbox);
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.visible).ok();
@@ -215,28 +215,23 @@ test('add, edit and delete sources', async (t) => {
   await t.expect(e.decisionItem.textContent).contains('Beverages');
 
   // edit source
-  await t.hover(e.processItem.nth(1));
-  await t.expect(Common.contextMenu(e.processItem.nth(1)).visible).ok();
-  await t.click(Common.contextMenu(e.processItem.nth(1)));
-  await t.click(Common.edit(e.processItem.nth(1)));
+  await t.click(Common.listItemTrigger(e.processItem.nth(1), 'Edit'));
   await t.click(e.checkbox('engineering'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
 
   // delete source
-  await t.hover(e.decisionItem);
-  await t.click(Common.contextMenu(e.decisionItem));
-  await t.click(e.remove(e.decisionItem));
+  await t.click(Common.listItemTrigger(e.decisionItem, 'Remove'));
   await t.click(Common.modalConfirmButton);
   await t.expect(e.decisionItem.exists).notOk();
 
   // bulk deleting sources
   await t.click(Common.listItemCheckbox(e.processItem.nth(0)));
   await t.click(Common.listItemCheckbox(e.processItem.nth(1)));
-  await t.click(Common.bulkMenu.filterVisible());
-  await t.click(e.remove(Common.bulkMenu.filterVisible()));
+  await t.click(e.bulkRemove.filterVisible());
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.filterVisible().exists).notOk();
+  await t.expect(e.processItem.filterVisible().exists).notOk();
+  await t.expect(e.decisionItem.filterVisible().exists).notOk();
 });
 
 test('create new KPI report', async (t) => {
@@ -256,14 +251,14 @@ test('create new KPI report', async (t) => {
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(0));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
   await t.click(Report.flowNode('prepareBankTransfer'));
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.kpiFilterButton.nth(1));
+  await t.click(Common.kpiFilterButton);
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.menuOption('This...'));

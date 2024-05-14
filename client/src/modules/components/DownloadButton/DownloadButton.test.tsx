@@ -8,9 +8,8 @@
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
 import {get} from 'request';
-import {useUser} from 'hooks';
+import {User} from 'HOC';
 
 import {DownloadButton, DownloadButtonProps} from './DownloadButton';
 
@@ -26,7 +25,6 @@ jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn((data, cb) => cb(data)),
   })),
-  useUser: jest.fn().mockReturnValue({user: {authorizations: ['csv_export']}}),
   useDocs: jest.fn(() => ({
     generateDocsLink: () => '',
   })),
@@ -35,6 +33,7 @@ jest.mock('hooks', () => ({
 const props: DownloadButtonProps = {
   href: '',
   totalCount: 0,
+  user: {authorizations: ['csv_export']} as unknown as User,
 };
 
 beforeAll(() => {
@@ -45,12 +44,10 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it('invoke get with the provided href', async () => {
+it('invoke get with the provided href', () => {
   const node = shallow(<DownloadButton {...props} href="testUrl" />);
 
-  node.find(Button).first().simulate('click');
-
-  await flushPromises();
+  node.find('Button').first().simulate('click');
 
   expect(get).toHaveBeenCalledWith('testUrl');
 });
@@ -63,7 +60,7 @@ it('invoke the retriever function when provided', () => {
     <DownloadButton retriever={retriever} {...restOfProps} fileName="testName" mightFail={spy} />
   );
 
-  node.find(Button).first().simulate('click');
+  node.find('Button').first().simulate('click');
 
   expect(retriever).toHaveBeenCalled();
 });
@@ -73,16 +70,17 @@ it('should display a modal if total download count is more than csv limit', asyn
 
   await runAllEffects();
 
-  node.find(Button).first().simulate('click');
+  node.find('Button').first().simulate('click');
 
   expect(node.find('Modal').prop('open')).toBe(true);
 });
 
-it('should not display the button if the user is not authorized to export csv data', async () => {
-  (useUser as jest.Mock).mockReturnValue({user: {authorizations: []}});
-  const node = shallow(<DownloadButton fileName="testName" {...props} />);
+it('should not display the button if the user is not authorized to export csv data', () => {
+  const node = shallow(
+    <DownloadButton fileName="testName" {...props} user={{authorizations: []} as unknown as User} />
+  );
 
-  await runAllEffects();
+  runAllEffects();
 
-  expect(node.find(Button)).not.toExist();
+  expect(node.find('Button')).not.toExist();
 });

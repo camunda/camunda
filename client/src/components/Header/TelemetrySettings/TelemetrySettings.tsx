@@ -51,7 +51,7 @@ export function TelemetrySettings({onClose, mightFail}: TelemetrySettingsProps):
 
   return (
     <Modal className="TelemetrySettings" open onClose={onClose}>
-      <Modal.Header>{t('telemetry.header')}</Modal.Header>
+      <Modal.Header title={t('telemetry.header')} />
       <Modal.Content>
         <Stack gap={4} orientation="vertical">
           <p>{t('telemetry.text')}</p>

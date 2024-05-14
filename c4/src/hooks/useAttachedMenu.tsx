@@ -1,14 +1,27 @@
-import { MouseEvent, RefObject, useState } from "react"
+import { MouseEvent, MouseEventHandler, RefObject, useState } from "react"
 
-export function useAttachedMenu(anchor: RefObject<Element>) {
+type TwoCoordinates = [number, number]
+
+export interface UseAttachedMenuReturn {
+	open: boolean
+	x: TwoCoordinates
+	y: TwoCoordinates
+	handleClick: () => void
+	handleMousedown: MouseEventHandler
+	handleClose: () => void
+}
+
+export function useAttachedMenu(
+	anchor: RefObject<HTMLElement> | HTMLElement,
+): UseAttachedMenuReturn {
 	const [open, setOpen] = useState(false)
-	const [position, setPosition] = useState([
+	const [position, setPosition] = useState<TwoCoordinates[]>([
 		[-1, -1],
 		[-1, -1],
 	])
 
 	function openMenu() {
-		const anchorEl = anchor?.current
+		const anchorEl = "current" in anchor ? anchor?.current : anchor
 
 		if (anchorEl) {
 			const { left, top, right, bottom } = anchorEl.getBoundingClientRect()
@@ -34,7 +47,7 @@ export function useAttachedMenu(anchor: RefObject<Element>) {
 		}
 	}
 
-	function handleMousedown(e: MouseEvent<HTMLButtonElement>) {
+	function handleMousedown(e: MouseEvent) {
 		e.preventDefault()
 	}
 

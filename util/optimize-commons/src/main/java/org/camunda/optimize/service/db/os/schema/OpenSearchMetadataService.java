@@ -45,11 +45,15 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       log.info("Optimize Metadata index wasn't found, thus no metadata available.");
       return Optional.empty();
     }
-
-    return osClient
-        .getRichOpenSearchClient()
-        .doc()
-        .getWithRetries(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
+    try {
+      return osClient
+          .getRichOpenSearchClient()
+          .doc()
+          .getWithRetries(METADATA_INDEX_NAME, MetadataIndex.ID, MetadataDto.class);
+    } catch (final OptimizeRuntimeException e) {
+      log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+    }
   }
 
   @Override
@@ -73,7 +77,7 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
                 final UpdateResponse<Void> response =
                     osClient.update(updateRequestBuilder, errorMessage);
                 if (!response.result().equals(Result.Updated)) {
-                  String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
+                  final String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
                   log.error(errorMsg);
                   throw new OptimizeRuntimeException(errorMsg);
                 }
@@ -96,7 +100,7 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
               final UpdateResponse<Void> response = osClient.update(requestBuilder, errorMessage);
 
               if (!response.result().equals(Result.Created)) {
-                String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
+                final String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
                 log.error(errorMsg);
                 throw new OptimizeRuntimeException(errorMsg);
               }

@@ -7,7 +7,7 @@
 
 import {post} from 'request';
 
-import {GenericReport, SingleDecisionReport, SingleProcessReport} from 'types';
+import {Report, ReportType} from 'types';
 
 interface ConfigParams {
   processDefinitionKey: string;
@@ -36,26 +36,19 @@ export async function loadRawData(config: ConfigParams): Promise<Blob> {
   return await response.blob();
 }
 
-type DeepPartial<T> = {
-  [P in keyof T]?: DeepPartial<T[P]>;
-};
+type DeepPartial<T> = T extends object
+  ? {
+      [P in keyof T]?: DeepPartial<T[P]>;
+    }
+  : T;
 
-export interface ReportPayload<T>
-  extends Omit<DeepPartial<SingleProcessReport | SingleDecisionReport>, 'reportType'> {
-  reportType: T;
-}
+export type ReportEvaluationPayload<T extends ReportType> = DeepPartial<Report<T>>;
 
-type ObjectType<T> = T extends 'process'
-  ? SingleProcessReport
-  : T extends 'decision'
-    ? SingleDecisionReport
-    : never;
-
-export async function evaluateReport<T extends 'process' | 'decision'>(
-  payload: ReportPayload<T> | GenericReport,
+export async function evaluateReport<T extends ReportType>(
+  payload: ReportEvaluationPayload<T>,
   filter = [],
   query = {}
-): Promise<ObjectType<T>> {
+): Promise<Report<T>> {
   let response;
 
   if (typeof payload !== 'object') {

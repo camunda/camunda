@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionVersionHandlingUtil {
@@ -36,12 +37,16 @@ public class DefinitionVersionHandlingUtil {
     if (isDefinitionVersionSetToAllOrLatest) {
       return latestVersionSupplier.get();
     } else {
-      return definitionVersions.stream()
-          .filter(StringUtils::isNumeric)
-          .map(Integer::parseInt)
-          .max(Integer::compareTo)
-          .map(Object::toString)
-          .orElse(getLastEntryInList(definitionVersions));
+      try {
+        return definitionVersions.stream()
+            .filter(StringUtils::isNumeric)
+            .map(Integer::parseInt)
+            .max(Integer::compareTo)
+            .map(Object::toString)
+            .orElse(getLastEntryInList(definitionVersions));
+      } catch (final NumberFormatException exception) {
+        throw new OptimizeRuntimeException("Cannot determine latest version for definition");
+      }
     }
   }
 

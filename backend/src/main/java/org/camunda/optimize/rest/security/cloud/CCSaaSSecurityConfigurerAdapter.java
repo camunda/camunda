@@ -35,6 +35,7 @@ import org.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import org.camunda.optimize.rest.security.oauth.AudienceValidator;
+import org.camunda.optimize.rest.security.oauth.CustomClaimValidator;
 import org.camunda.optimize.rest.security.oauth.ScopeValidator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -74,6 +75,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
+  public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
@@ -218,7 +220,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAuth0Configuration().getAudience());
     OAuth2TokenValidator<Jwt> clusterIdValidator =
-        new ScopeValidator(getAuth0Configuration().getClusterId());
+        new CustomClaimValidator(
+            CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
     OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
         new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
     jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);

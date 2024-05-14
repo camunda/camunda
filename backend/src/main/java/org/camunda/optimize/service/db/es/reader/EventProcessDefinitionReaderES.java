@@ -20,7 +20,7 @@ import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.EventProcessDefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -93,7 +93,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
   @Override
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
     log.debug("Fetching all available event-based processes definitions.");
-    String[] fieldsToExclude = new String[] {EsEventProcessMappingDto.Fields.xml};
+    String[] fieldsToExclude = new String[] {DbEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().size(LIST_FETCH_LIMIT).fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =

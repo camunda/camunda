@@ -25,10 +25,8 @@ public interface ProcessVariableReader {
   String PROCESS_INSTANCE_INDEX_NAME_SUBSECTION =
       "-" + DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
-  List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto requestDto);
-
   List<ProcessVariableNameResponseDto> getVariableNames(
-      final List<ProcessVariableNameRequestDto> variableNameRequests);
+      final ProcessVariableNameRequestDto variableNameRequest);
 
   List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
       final BoolQueryBuilder baseQuery,

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import static org.camunda.optimize.ApplicationContextProvider.getBean;
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
@@ -27,8 +28,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,14 +45,17 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.repository.IndexRepository;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
@@ -60,6 +66,7 @@ import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.repository.TestIndexRepository;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.core.TimeValue;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -110,6 +117,19 @@ public abstract class DatabaseTestService {
     return OBJECT_MAPPER;
   }
 
+  public void updateEventProcessRoles(
+      final String eventProcessId, final List<IdentityDto> identityDtos) {
+    final Map<String, Object> params =
+        Collections.singletonMap(
+            "updatedRoles",
+            getObjectMapper()
+                .convertValue(
+                    mapIdentityDtosToEventProcessRoleRequestDto(identityDtos), Object.class));
+    final ScriptData scriptData =
+        new ScriptData(params, "ctx._source.roles = params.updatedRoles;");
+    updateEventProcessRoles(eventProcessId, identityDtos, scriptData);
+  }
+
   public abstract void beforeEach();
 
   public abstract void afterEach();
@@ -125,9 +145,6 @@ public abstract class DatabaseTestService {
   public abstract <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type);
 
   public abstract DatabaseClient getDatabaseClient();
-
-  // TODO OPT-7455 - remove this coupling to the ES client from the abstract test service
-  public abstract OptimizeElasticsearchClient getOptimizeElasticsearchClient();
 
   public abstract Integer getDocumentCountOf(final String indexName);
 
@@ -201,7 +218,9 @@ public abstract class DatabaseTestService {
       final Class<T> zeebeRecordClass);
 
   public abstract void updateEventProcessRoles(
-      final String eventProcessId, final List<IdentityDto> identityDtos);
+      final String eventProcessId,
+      final List<IdentityDto> identityDtos,
+      final ScriptData scriptData);
 
   public abstract Map<String, List<AliasMetadata>>
       getEventProcessInstanceIndicesWithAliasesFromDatabase();
@@ -241,6 +260,11 @@ public abstract class DatabaseTestService {
       String processDefinitionKey,
       int nestedDocLimit,
       final ConfigurationService configurationService);
+
+  public abstract void createIndex(
+      String optimizeIndexNameWithVersion, String optimizeIndexAliasForIndex) throws IOException;
+
+  public abstract Optional<MetadataDto> readMetadata();
 
   public void disableCleanup() {
     haveToClean = false;
@@ -332,4 +356,32 @@ public abstract class DatabaseTestService {
         .map(EventProcessRoleRequestDto::new)
         .collect(Collectors.toList());
   }
+
+  public void createMissingIndices(
+      final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
+      final Set<String> aliases,
+      final Set<String> aKey) {
+    getBean(IndexRepository.class).createMissingIndices(indexMappingCreatorBuilder, aliases, aKey);
+  }
+
+  public abstract void setActivityStartDatesToNull(String processDefinitionKey, ScriptData script);
+
+  public abstract void setUserTaskDurationToNull(
+      String processInstanceId, String durationFieldName, ScriptData script);
+
+  public abstract Long getImportedActivityCount();
+
+  public abstract void removeStoredOrderCountersForDefinitionKey(
+      String definitionKey, ScriptData script);
+
+  public abstract List<String> getAllIndicesWithWriteAlias(String aliasNameWithPrefix);
+
+  public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
+
+  public abstract void deleteTraceStateImportIndexForDefinitionKey(String definitionKey);
+
+  public abstract void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+      String entityIndex, String processInstanceField, TimeValue scrollKeepAlive);
+
+  public abstract Integer getVariableInstanceCount(String variableName);
 }

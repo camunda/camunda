@@ -7,12 +7,13 @@
 
 import {Component} from 'react';
 import {Button} from '@carbon/react';
+import {Db2Database, DecisionTree, Edit, TableSplit, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {EntityList, Deleter, BulkDeleter, Modal} from 'components';
+import {Deleter, BulkDeleter, Modal, CarbonEntityList, EmptyState} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
-import {formatters, addSources} from 'services';
+import {formatters, addSources, UNAUTHORIZED_TENANT_ID} from 'services';
 import {areTenantsAvailable} from 'config';
 
 import {
@@ -108,15 +109,10 @@ export default withErrorHandling(
 
       return (
         <div className="SourcesList">
-          <EntityList
-            name={t('home.sources.title')}
-            action={(bulkActive) =>
+          <CarbonEntityList
+            action={
               !readOnly && (
-                <Button
-                  kind={bulkActive ? 'tertiary' : 'primary'}
-                  onClick={() => this.setState({addingSource: true})}
-                  size="md"
-                >
+                <Button kind="primary" onClick={() => this.setState({addingSource: true})}>
                   {t('common.add')}
                 </Button>
               )
@@ -132,6 +128,7 @@ export default withErrorHandling(
                     await checkSourcesConflicts(collection, selectedSources)
                   }
                   conflictMessage={t('common.deleter.affectedMessage.bulk.process')}
+                  useCarbonAction
                 />,
               ]
             }
@@ -139,20 +136,29 @@ export default withErrorHandling(
               this.getSources();
               this.props.onChange();
             }}
-            empty={
-              <>
-                {t('home.sources.notCreated')}
-                {readOnly && (
-                  <>
-                    <br />
-                    {t('home.sources.contactManager')}
-                  </>
-                )}
-              </>
+            emptyStateComponent={
+              <EmptyState
+                title={t('home.sources.notCreated')}
+                description={
+                  !readOnly ? t('home.sources.addSources') : t('home.sources.contactManager')
+                }
+                icon={<Db2Database />}
+                actions={
+                  !readOnly && (
+                    <Button
+                      size="md"
+                      kind="primary"
+                      onClick={() => this.setState({addingSource: true})}
+                    >
+                      {t('common.add')}
+                    </Button>
+                  )
+                }
+              />
             }
             isLoading={!sources}
-            columns={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
-            data={
+            headers={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
+            rows={
               sources &&
               sources.map((source) => {
                 const {id, definitionKey, definitionName, definitionType, tenants} = source;
@@ -160,7 +166,7 @@ export default withErrorHandling(
                 if (!readOnly) {
                   if (!hasUnauthorized(tenants)) {
                     actions.push({
-                      icon: 'delete',
+                      icon: <TrashCan />,
                       text: t('common.remove'),
                       action: () => this.setState({deleting: source}),
                     });
@@ -168,7 +174,7 @@ export default withErrorHandling(
 
                   if (tenantsAvailable) {
                     actions.unshift({
-                      icon: 'edit',
+                      icon: <Edit />,
                       text: t('common.edit'),
                       action: () => this.openEditSourceModal(source),
                     });
@@ -179,7 +185,7 @@ export default withErrorHandling(
                   id,
                   entityType: 'process',
                   className: definitionType,
-                  icon: 'data-source',
+                  icon: definitionType === 'decision' ? <TableSplit /> : <DecisionTree />,
                   type: formatType(definitionType),
                   name: definitionName || definitionKey,
                   meta: [tenantsAvailable && formatTenants(tenants)],
@@ -205,7 +211,7 @@ export default withErrorHandling(
             deleteEntity={() => removeSource(collection, deleting.id)}
           />
           <Modal open={conflict} onClose={this.closeEditSourceModal} className="saveModal">
-            <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
+            <Modal.Header title={t('report.saveConflict.header')} />
             <Modal.Content>
               {conflict && conflict.length > 0 && (
                 <>
@@ -260,7 +266,7 @@ export default withErrorHandling(
 );
 
 function hasUnauthorized(tenants) {
-  return tenants.some(({id}) => id === '__unauthorizedTenantId__');
+  return tenants.some(({id}) => id === UNAUTHORIZED_TENANT_ID);
 }
 
 function formatType(type) {

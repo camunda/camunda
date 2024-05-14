@@ -6,15 +6,13 @@
  */
 
 import React from 'react';
-import {Button, Loading} from '@carbon/react';
+import {Button} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
-import {Modal} from 'components';
+import {Modal, Loading} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';
-
-import './Deleter.scss';
 
 const sectionOrder = ['report', 'combined_report', 'dashboard', 'alert', 'collection'];
 
@@ -105,12 +103,10 @@ export default withErrorHandling(
 
       return (
         <Modal open onClose={this.close} className="Deleter">
-          <Modal.Header>
-            {deleteText || t('common.deleteEntity', {entity: translatedType})}
-          </Modal.Header>
+          <Modal.Header title={deleteText || t('common.deleteEntity', {entity: translatedType})} />
           <Modal.Content>
             {loading ? (
-              <Loading className="deleter-loading" withOverlay={false} />
+              <Loading />
             ) : (
               <>
                 <p>

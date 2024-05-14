@@ -82,7 +82,7 @@ export function InsertLinkModal({editor, onClose}: {editor: LexicalEditor; onClo
 
   return (
     <Modal open onClose={onClose} className="InsertModal">
-      <Modal.Header>{t('textEditor.plugins.link.title')}</Modal.Header>
+      <Modal.Header title={t('textEditor.plugins.link.title')} />
       <Modal.Content>
         <Form>
           <Stack gap={6}>

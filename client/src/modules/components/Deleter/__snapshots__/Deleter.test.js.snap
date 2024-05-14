@@ -22,10 +22,8 @@ exports[`should show the confirmation modal when entity is set 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
-    Delete Report
-  </ForwardRef(ModalHeader)>
+    title="Delete Report"
+  />
   <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
@@ -36,11 +34,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
       </b>
     </p>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}
@@ -68,10 +62,8 @@ exports[`should use provided delete text for title and button 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
-    Remove entity
-  </ForwardRef(ModalHeader)>
+    title="Remove entity"
+  />
   <ForwardRef>
     <p>
       The 'Doomed Report' Report will be permanently deleted.
@@ -82,11 +74,7 @@ exports[`should use provided delete text for title and button 1`] = `
       </b>
     </p>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}

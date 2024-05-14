@@ -6,9 +6,8 @@
     align-items: center;
     gap: 10px;
 
-    button {
+    .actions {
       margin-left: auto;
-      width: 170px;
     }
   }
 
@@ -24,6 +23,19 @@
 
   .text-mandatory {
     color: var(--cds-text-error, #da1e28);
+  }
+
+  .preview {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    img {
+      max-width: 400px;
+      height: 100%;
+      width: auto;
+      object-fit: contain;
+    }
   }
 }
 

@@ -126,11 +126,11 @@ it('should show a warning if definitions limit is reached', async () => {
   const node = shallow(<AddDefinition {...props} definitions={Array(10).fill({})} />);
   await runAllEffects();
 
-  expect(node.find('MessageBox')).not.toExist();
+  expect(node.find('InlineNotification')).not.toExist();
 
   node.find('Checklist').simulate('change', [{}]);
 
-  expect(node.find('MessageBox')).toExist();
+  expect(node.find('InlineNotification')).toExist();
 });
 
 it('should disable the "Add" button when definitions limit is reached', async () => {

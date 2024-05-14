@@ -7,8 +7,6 @@
 
 export {Button} from './Button';
 export {Tabs} from './Tabs';
-export {Message} from './Message';
-export {MessageBox} from './MessageBox';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {Switch} from './Switch';
@@ -50,6 +48,9 @@ export {TargetSelection} from './TargetSelection';
 export {DefinitionSelection} from './DefinitionSelection';
 // @ts-ignore
 export {ReportRenderer} from './ReportRenderer';
+export {Loading} from './Loading';
+export {CarbonEntityList} from './CarbonEntityList';
+export {EmptyState} from './EmptyState';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

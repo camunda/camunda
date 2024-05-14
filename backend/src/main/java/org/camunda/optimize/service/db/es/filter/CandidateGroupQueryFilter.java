@@ -20,13 +20,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class CandidateGroupQueryFilter implements QueryFilter<IdentityLinkFilterDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<IdentityLinkFilterDataDto> candidateGroupFilters,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(candidateGroupFilters)) {
       final List<QueryBuilder> filters = query.filter();
-      for (IdentityLinkFilterDataDto candidateGroupFilter : candidateGroupFilters) {
+      for (final IdentityLinkFilterDataDto candidateGroupFilter : candidateGroupFilters) {
         filters.add(
             nestedQuery(
                 FLOW_NODE_INSTANCES,

@@ -1,12 +1,13 @@
+@use '@carbon/styles/scss/spacing';
+
 .Processes {
-  height: 100%;
+  padding-block: spacing.$spacing-06;
 
   .processOverview {
     font-size: 24px;
     line-height: 32px;
     font-weight: normal;
     color: var(--grey-darken-23);
-    margin: 30px 0 0 65px;
     flex-grow: 1;
     min-height: 50px;
 
@@ -19,8 +20,7 @@
 
   .fullscreen {
     height: auto;
-    padding: 0 65px 32px 65px;
-    border-bottom: 1px solid var(--silver-darken-80);
+    margin-bottom: spacing.$spacing-06;
 
     .DashboardView .head .info > .EntityName {
       display: none;
@@ -47,49 +47,9 @@
     }
   }
 
-  .EntityList {
-    .ListItem .meta,
-    .columnHeaders .meta {
-      flex-basis: 130px;
-    }
-
-    .columnHeaders {
-      .meta .Icon {
-        opacity: 0.5;
-
-        &:hover {
-          opacity: 1;
-        }
-      }
-
-      .meta span > .hidden {
-        visibility: hidden;
-      }
-    }
-
-    .setGoalBtn {
-      margin: 4px;
-    }
-
+  .CarbonEntityList {
     .summaryContainer {
       display: inline-block;
-    }
-
-    .ListItem:not(:hover) {
-      .setGoalBtn,
-      .processHoverBtn {
-        opacity: 0;
-        width: 0px;
-
-        &.active,
-        &.focus-visible {
-          opacity: 1;
-        }
-      }
-    }
-
-    .header .headerText {
-      font-size: 14px;
     }
   }
 }

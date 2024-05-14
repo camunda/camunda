@@ -117,17 +117,12 @@ exports[`should match snapshot 1`] = `
     }
     title="Ingested external events"
     toolbar={
-      <TableToolbar
-        aria-label="data table toolbar"
-      >
+      <TableToolbar>
         <TableToolbarContent>
           <TableToolbarSearch
             onChange={[Function]}
             onClear={[Function]}
-            persistent={false}
             placeholder="Search for values"
-            tabIndex="0"
-            translateWithId={[Function]}
             value=""
           />
           <TableBatchActions
@@ -138,7 +133,6 @@ exports[`should match snapshot 1`] = `
           >
             <TableBatchAction
               disabled={false}
-              iconDescription="Add"
               onClick={[Function]}
               renderIcon={
                 Object {

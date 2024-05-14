@@ -17,7 +17,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -26,7 +28,7 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import org.junit.jupiter.api.Test;
 
 public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
@@ -47,7 +49,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
   @Test
   public void getCorrelationWithoutAuthentication() {
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessDefinitionCorrelation(new BranchAnalysisRequestDto())
@@ -64,13 +66,13 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
     setupFullInstanceFlow();
 
     // when
-    BranchAnalysisRequestDto branchAnalysisRequestDto = new BranchAnalysisRequestDto();
+    final BranchAnalysisRequestDto branchAnalysisRequestDto = new BranchAnalysisRequestDto();
     branchAnalysisRequestDto.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
     branchAnalysisRequestDto.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1);
     branchAnalysisRequestDto.setGateway(GATEWAY_ACTIVITY);
     branchAnalysisRequestDto.setEnd(END_ACTIVITY);
 
-    BranchAnalysisResponseDto response =
+    final BranchAnalysisResponseDto response =
         analysisClient.getProcessDefinitionCorrelation(branchAnalysisRequestDto);
 
     // then
@@ -104,11 +106,10 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
             .endDate(OffsetDateTime.now())
             .flowNodeInstances(createEventList(new String[] {GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
             .build();
-    embeddedOptimizeExtension
-        .getDatabaseSchemaManager()
-        .createIndexIfMissing(
-            databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
-            new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY));
+    databaseIntegrationTestExtension.createMissingIndices(
+        IndexMappingCreatorBuilder.PROCESS_INSTANCE_INDEX,
+        Collections.emptySet(),
+        Set.of(PROCESS_DEFINITION_KEY));
     databaseIntegrationTestExtension.addEntryToDatabase(
         getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
@@ -118,10 +119,10 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
         getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
   }
 
-  private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {
+  private List<FlowNodeInstanceDto> createEventList(final String[] activityIds) {
     final List<FlowNodeInstanceDto> events = new ArrayList<>(activityIds.length);
-    for (String activityId : activityIds) {
-      FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
+    for (final String activityId : activityIds) {
+      final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
       flowNodeInstance.setFlowNodeId(activityId);
       events.add(flowNodeInstance);
     }
@@ -135,8 +136,8 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
             .getResourceAsStream(BranchAnalysisRestServiceIT.DIAGRAM));
   }
 
-  private static String read(InputStream input) throws IOException {
-    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+  private static String read(final InputStream input) throws IOException {
+    try (final BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
       return buffer.lines().collect(Collectors.joining("\n"));
     }
   }

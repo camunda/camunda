@@ -88,7 +88,7 @@ it('should load updated frequency data when the filter changed', async () => {
     tenantIds: [null],
   });
   loadFrequencyData.mockClear();
-  await node.instance().updateConfig({filter: ['someFilter']});
+  await node.instance().updateConfig({filters: ['someFilter']});
 
   expect(loadFrequencyData.mock.calls[0][4]).toEqual(['someFilter']);
 });
@@ -97,7 +97,7 @@ it('should not try to load frequency data if no process definition is selected',
   const node = shallow(<BranchAnalysis {...props} />);
 
   loadFrequencyData.mockClear();
-  node.instance().updateConfig({filter: ['someFilter']});
+  node.instance().updateConfig({filters: ['someFilter']});
 
   expect(loadFrequencyData).not.toHaveBeenCalled();
 });
@@ -125,7 +125,7 @@ it('should clear the selection when another process definition is selected', asy
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);
-  expect(node.state().config.filter).toEqual([]);
+  expect(node.state().config.filters).toEqual([]);
 });
 
 it('should not clear the selection when the xml stays the same', async () => {
@@ -153,7 +153,7 @@ it('should show a warning message when there are incompatible filters', async ()
   incompatibleFilters.mockReturnValue(true);
   const node = await shallow(<BranchAnalysis {...props} />);
   await node.update();
-  expect(node.find('MessageBox')).toExist();
+  expect(node.find('InlineNotification')).toExist();
 });
 
 it('should not reset the xml when adding a filter', async () => {
@@ -165,7 +165,7 @@ it('should not reset the xml when adding a filter', async () => {
     tenantIds: ['a', 'b'],
   });
   await node.instance().updateConfig({
-    filter: [{type: 'completedInstancesOnly', data: null}],
+    filters: [{type: 'completedInstancesOnly', data: null}],
   });
 
   expect(node.state().xml).not.toBe(null);

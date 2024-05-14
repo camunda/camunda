@@ -27,7 +27,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
   const [selectedReportId, setSelectedReportId] = useState<string>('');
   const [externalUrl, setExternalUrl] = useState<string>('');
   const [tabOpen, setTabOpen] = useState<TabOpen>('optimize_report');
-  const [text, setText] = useState<SerializedEditorState>();
+  const [text, setText] = useState<SerializedEditorState | null>(null);
   const {pathname} = useLocation();
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
   const getTileConfig = (
     tabOpen: TabOpen,
     externalUrl: string,
-    text: SerializedEditorState | undefined,
+    text: SerializedEditorState | null,
     selectedReportId: string
   ): Partial<DashboardTile> => {
     if (tabOpen === 'external_url') {
@@ -86,7 +86,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
 
   return (
     <Modal className="CreateTileModal" open onClose={close} isOverflowVisible>
-      <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
+      <Modal.Header title={t('dashboard.addButton.addTile')} />
       <Modal.Content>
         <Form>
           <Tabs<TabOpen> value={tabOpen} onChange={setTabOpen}>
@@ -117,8 +117,11 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
               />
             </Tabs.Tab>
             <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
-              <span className="cds--label">{t('dashboard.addButton.text')}</span>
-              <TextEditor initialValue={text} onChange={setText} />
+              <TextEditor
+                label={t('dashboard.addButton.text').toString()}
+                initialValue={text}
+                onChange={setText}
+              />
               <TextEditor.CharCount editorState={text} />
             </Tabs.Tab>
           </Tabs>

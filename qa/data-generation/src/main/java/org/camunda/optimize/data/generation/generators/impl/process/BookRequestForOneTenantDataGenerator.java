@@ -23,13 +23,14 @@ public class BookRequestForOneTenantDataGenerator extends ProcessDataGenerator {
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
+  @Override
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
   }
 
   @Override
   protected void generateTenants() {
-    this.tenants = Lists.newArrayList("library");
+    tenants = Lists.newArrayList("library");
   }
 
   @Override

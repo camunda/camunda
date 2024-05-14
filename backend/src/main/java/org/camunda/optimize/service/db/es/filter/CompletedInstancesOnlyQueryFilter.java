@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class CompletedInstancesOnlyQueryFilter
     implements QueryFilter<CompletedInstancesOnlyFilterDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<CompletedInstancesOnlyFilterDataDto> completedInstancesData,

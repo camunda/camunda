@@ -85,77 +85,11 @@ public class LocalizationRestServiceIT extends AbstractPlatformIT {
         .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
-  @ParameterizedTest
-  @MethodSource("defaultLocales")
-  public void getLocalizedWhatsNewMarkdown(final String localeCode) {
-    // given
-    final String expectedLocalizedMarkdown =
-        getExpectedWhatsNewMarkdownContentForLocale(localeCode);
-
-    // when
-    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
-
-    // then
-    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
-  }
-
-  @Test
-  public void getFallbackWhatsNewMarkdownForInvalidCode() {
-    // given
-    final String localeCode = "xyz";
-    final String expectedLocalizedMarkdown =
-        getExpectedWhatsNewMarkdownContentForLocale(
-            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
-
-    // when
-    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(localeCode);
-
-    // then
-    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
-  }
-
-  @Test
-  public void getFallbackWhatsNewMarkdownForMissingCode() {
-    final String expectedLocalizedMarkdown =
-        getExpectedWhatsNewMarkdownContentForLocale(
-            embeddedOptimizeExtension.getConfigurationService().getFallbackLocale());
-
-    // when
-    final String localeMarkdown = localizationClient.getLocalizedWhatsNewMarkdown(null);
-
-    // then
-    assertThat(localeMarkdown).isEqualTo(expectedLocalizedMarkdown);
-  }
-
-  @Test
-  public void getErrorOnMarkdownFileGone() {
-    // given
-    final String localeCode = "xyz";
-    embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
-
-    // when
-    final Response response =
-        embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-            .execute();
-
-    // then
-    assertThat(response.getStatus())
-        .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-  }
-
   @SneakyThrows
   private JsonNode getExpectedLocalizationFile(final String locale) {
     return OBJECT_MAPPER.readValue(
         FileReaderUtil.readFile("/" + LocalizationService.LOCALIZATION_PATH + locale + ".json"),
         JsonNode.class);
-  }
-
-  @SneakyThrows
-  private String getExpectedWhatsNewMarkdownContentForLocale(final String localeCode) {
-    return FileReaderUtil.readFile(
-        "/" + LocalizationService.LOCALIZATION_PATH + "whatsnew_" + localeCode + ".md");
   }
 
   private static String[] defaultLocales() {

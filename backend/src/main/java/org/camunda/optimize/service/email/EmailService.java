@@ -137,6 +137,9 @@ public class EmailService {
           emailAuthenticationConfiguration.getSecurityProtocol();
       if (securityProtocol.equals(EmailSecurityProtocol.STARTTLS)) {
         properties.put("mail.smtp.starttls.enable", "true");
+        properties.setProperty(
+            "mail.smtp.ssl.checkserveridentity",
+            configurationService.getNotificationEmailCheckServerIdentity().toString());
       } else if (securityProtocol.equals(EmailSecurityProtocol.SSL_TLS)) {
         properties.setProperty(
             "mail.smtp.port", configurationService.getNotificationEmailPort().toString());

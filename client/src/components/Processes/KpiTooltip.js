@@ -5,26 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Information} from '@carbon/icons-react';
+import {Toggletip, ToggletipActions, ToggletipButton, ToggletipContent} from '@carbon/react';
 
-import {DocsLink, Icon, Tooltip} from 'components';
+import {DocsLink} from 'components';
 import {t} from 'translation';
 
 export default function KpiTooltip() {
   return (
-    <Tooltip
-      align="right"
-      content={
-        <>
-          {t('processes.configureKpis')}{' '}
+    <Toggletip className="KpiTooltip" align="bottom">
+      <ToggletipButton>
+        <Information />
+      </ToggletipButton>
+      <ToggletipContent>
+        <span>{t('processes.configureKpis')}</span>
+        <ToggletipActions>
           <DocsLink location="components/userguide/processes/#set-time-and-quality-kpis">
-            {t('common.here')}
+            {t('common.seeDocs')}
           </DocsLink>
-          .
-        </>
-      }
-    >
-      <Icon type="info" />
-    </Tooltip>
+        </ToggletipActions>
+      </ToggletipContent>
+    </Toggletip>
   );
 }

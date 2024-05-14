@@ -56,9 +56,9 @@ it('should enable loading while loading data', async () => {
 it('should format user list information correctly', async () => {
   (searchIdentities as jest.Mock).mockReturnValueOnce({
     result: [
-      {id: 'testUser', type: 'user'},
-      {id: 'user2', email: 'testUser@test.com', type: 'user'},
       {id: 'groupId', name: 'groupName', email: 'group@test.com', type: 'group'},
+      {id: 'testUser', type: 'user', email: 'testUser@test.com'},
+      {id: 'user2', email: 'user2@test.com', type: 'user', name: 'user2'},
     ],
     total: 50,
   });
@@ -71,6 +71,14 @@ it('should format user list information correctly', async () => {
           id: 'GROUP:groupId',
           identity: {id: 'groupId', name: 'groupName', type: 'group', email: ''},
         },
+        {
+          id: 'user2',
+          identity: {id: 'user2', email: 'user2@test.com', type: 'user', name: 'user2'},
+        },
+        {
+          id: 'testUser',
+          identity: {id: 'testUser', type: 'user', email: 'testUser@test.com', name: ''},
+        },
       ]}
     />
   );
@@ -80,16 +88,23 @@ it('should format user list information correctly', async () => {
 
   const items = node.find(FilterableMultiSelect).prop('items');
 
-  const content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[0]);
-  expect(content).toIncludeText('groupName (User group)');
-  expect(content.find('.subText')).toIncludeText('groupId');
+  const item1Content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[0]);
+  // The label should be the name of the group and the type
+  // When there is name, but no email, the subText should not be rendered
+  expect(item1Content).toIncludeText('groupName (User group)');
+  expect(item1Content.find('.subText')).not.toExist();
 
   const item2Content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[1]);
-  expect(item2Content.text()).toBe('testUser');
+  // The label should be the name of the user
+  // When there is an email and a name, the subText should be an email
+  expect(item2Content).toIncludeText('user2');
+  expect(item2Content.find('.subText')).toIncludeText('user2@test.com');
 
+  // The label should be the email of the user is no name is present
+  // When there is an email, but no name, the subText should not be rendered
   const item3Content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[2]);
   expect(item3Content).toIncludeText('testUser@test.com');
-  expect(item3Content.find('.subText')).toIncludeText('user2');
+  expect(item3Content.find('.subText')).not.toExist();
 });
 
 it('should invoke onAdd & onRemove when selecting/deselecting an identity', async () => {

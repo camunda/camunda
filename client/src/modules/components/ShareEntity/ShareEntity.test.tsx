@@ -93,7 +93,9 @@ it('should include filters', async () => {
     <ShareEntity
       {...props}
       type="dashboard"
-      filter={[{data: null, type: 'runningInstancesOnly', filterLevel: 'instance', appliedTo: []}]}
+      filter={[
+        {data: undefined, type: 'runningInstancesOnly', filterLevel: 'instance', appliedTo: []},
+      ]}
     />
   );
   await runLastEffect();

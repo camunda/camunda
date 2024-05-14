@@ -1,19 +1,7 @@
-.MultiUserInput {
-  .cds--list-box__menu .cds--list-box__menu-item .subTexts {
-    display: block;
-    font-size: 14px;
-    color: var(--grey-lighten-50);
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    .subText {
-      &:after {
-        content: ' - ';
-      }
-
-      &:last-of-type:after {
-        content: '';
-      }
-    }
-  }
+.MultiUserInput .cds--list-box__menu .cds--list-box__menu-item .subText {
+  display: block;
+  font-size: 14px;
+  color: var(--grey-lighten-50);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

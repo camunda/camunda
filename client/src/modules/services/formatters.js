@@ -11,7 +11,9 @@ import {format} from 'dates';
 import {t} from 'translation';
 
 import {formatTenantName} from './formatters.tsx';
+
 export {createDurationFormattingOptions, formatFileName, formatTenantName} from './formatters.tsx';
+export {UNAUTHORIZED_TENANT_ID} from './tenantService.ts';
 
 const scaleUnits = [
   {exponent: 18, label: 'quintillion'},

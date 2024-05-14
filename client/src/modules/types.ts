@@ -7,75 +7,87 @@
 
 import {SerializedEditorState} from 'lexical';
 
-export type GenericEntity<D extends Record<string, unknown> = Record<string, unknown>> = {
+export type GenericEntity<D extends object = Record<string, unknown>> = {
   id: string | null;
   name: string;
   lastModified: string;
   created: string;
   owner: string;
-  entityType: string;
   lastModifier: string;
   currentUserRole: string;
   data: D;
 };
 
-type ReportType = 'process' | 'decision';
-
-interface Report<Data> {
-  name: string;
-  id: string;
-  owner: string;
-  lastModified: string;
-  collectionId?: string | null;
-  created: string;
-  lastModifier: string;
-  data: Data;
-  combined: boolean;
-  reportType: ReportType;
-  description: string | null;
-  result?: unknown;
-}
+export type EntityListEntity<D extends object = Record<string, unknown>> = GenericEntity<D> & {
+  entityType: string;
+};
 
 type FilterFilterApplicationLevel = 'instance' | 'view';
 
-export interface ProcessFilter<DATA = unknown> {
-  type:
-    | 'assignee'
-    | 'canceledFlowNodes'
-    | 'canceledFlowNodesOnly'
-    | 'canceledInstancesOnly'
-    | 'candidateGroup'
-    | 'completedFlowNodesOnly'
-    | 'completedInstancesOnly'
-    | 'completedOrCanceledFlowNodesOnly'
-    | 'includesClosedIncident'
-    | 'processInstanceDuration'
-    | 'executedFlowNodes'
-    | 'executingFlowNodes'
-    | 'flowNodeDuration'
-    | 'flowNodeEndDate'
-    | 'flowNodeStartDate'
-    | 'instanceEndDate'
-    | 'instanceStartDate'
-    | 'multipleVariable'
-    | 'doesNotIncludeIncident'
-    | 'nonCanceledInstancesOnly'
-    | 'nonSuspendedInstancesOnly'
-    | 'includesOpenIncident'
-    | 'includesResolvedIncident'
-    | 'runningFlowNodesOnly'
-    | 'runningInstancesOnly'
-    | 'suspendedInstancesOnly'
-    | 'UserTaskFlowNodesOnlyFilterDto'
-    | 'variable';
-  data: DATA;
+export type InstanceStateFilterType =
+  | 'runningInstancesOnly'
+  | 'completedInstancesOnly'
+  | 'canceledInstancesOnly'
+  | 'nonCanceledInstancesOnly'
+  | 'suspendedInstancesOnly'
+  | 'nonSuspendedInstancesOnly';
+
+export type FlowNodeStateFilterType =
+  | 'runningFlowNodesOnly'
+  | 'completedFlowNodesOnly'
+  | 'canceledFlowNodesOnly'
+  | 'completedOrCanceledFlowNodesOnly';
+
+export type IncidentFilterType =
+  | 'includesOpenIncident'
+  | 'includesResolvedIncident'
+  | 'includesClosedIncident'
+  | 'doesNotIncludeIncident';
+
+export type FilterDataProps = {
+  flowNodeDuration: Record<string, FilterData>;
+  runningInstancesOnly: boolean | null;
+  processInstanceDuration: FilterData;
+} & {
+  [key in 'instanceStartDate' | 'instanceEndDate']: Partial<DateFilterType>;
+} & {
+  [key in 'flowNodeStartDate' | 'flowNodeEndDate']: Partial<
+    DateFilterType & {flowNodeIds: string[] | null}
+  >;
+} & {
+  [key in 'assignee' | 'candidateGroup']: {
+    values?: (string | null)[];
+    operator?: string;
+  };
+} & {
+  [key in InstanceStateFilterType | FlowNodeStateFilterType | IncidentFilterType]:
+    | FilterData
+    | undefined;
+} & {
+  [key in 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes']: {
+    values?: string[];
+    operator?: string;
+  };
+};
+
+export type FilterType = keyof FilterDataProps;
+
+export interface ProcessFilter<T extends FilterType = FilterType> {
+  type: T;
+  data: FilterDataProps[T];
   filterLevel: FilterFilterApplicationLevel;
   appliedTo: string[];
 }
 
-interface DecisionFilter<DATA> {
+export interface FilterData {
+  value: string | number;
+  unit: string;
+  operator?: string;
+}
+
+interface DecisionFilter<Data = FilterData> {
   type: 'evaluationDateTime' | 'inputVariable' | 'outputVariable';
-  data: DATA;
+  data: Data;
   appliedTo: string[];
 }
 
@@ -92,21 +104,21 @@ type VariableType =
 
 type ViewProcessViewEntity = 'flowNode' | 'userTask' | 'processInstance' | 'variable' | 'incident';
 
-interface SingleViewProperty {
+interface ProcessViewProperty {
   name: string;
   type: VariableType;
 }
 
 interface ProcessView {
   entity: ViewProcessViewEntity;
-  properties: (SingleViewProperty | string)[];
+  properties: (ProcessViewProperty | string)[];
 }
 
 interface DecisionView {
-  properties: (SingleViewProperty | string)[];
+  properties: (ProcessViewProperty | string)[];
 }
 
-interface GroupProcessGroupByDto<VALUE> {
+interface ProcessGroupBy<Value = unknown> {
   type:
     | 'assignee'
     | 'candidateGroup'
@@ -118,38 +130,42 @@ interface GroupProcessGroupByDto<VALUE> {
     | 'startDate'
     | 'userTasks'
     | 'variable';
-  value: VALUE;
+  value: Value;
 }
 
-interface GroupDecisionGroupByDto<VALUE> {
+interface DecisionGroupBy<Value = unknown> {
   type: 'evaluationDateTime' | 'inputVariable' | 'matchedRule' | 'none' | 'outputVariable';
-  value: VALUE;
+  value: Value;
 }
 
-interface DistributedBy<VALUE> {
-  type:
-    | 'assignee'
-    | 'candidateGroup'
-    | 'endDate'
-    | 'flowNode'
-    | 'none'
-    | 'process'
-    | 'startDate'
-    | 'userTask'
-    | 'variable';
-  value: VALUE;
+type DistributedByType =
+  | 'assignee'
+  | 'candidateGroup'
+  | 'endDate'
+  | 'flowNode'
+  | 'none'
+  | 'process'
+  | 'startDate'
+  | 'userTask'
+  | 'variable';
+
+interface DistributedBy<Value = unknown> {
+  type: DistributedByType;
+  value: Value;
 }
 
-type ProcessVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
+type ProcessReportVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
 
-type DecisionVisualization = 'number' | 'table' | 'bar' | 'line' | 'pie' | 'heat';
+type DecisionReportVisualization = 'number' | 'table' | 'bar' | 'line' | 'pie' | 'heat';
 
-interface ConfigurationAggregation {
-  type: 'avg' | 'min' | 'max' | 'sum' | 'percentile';
-  value: number;
+type AggregationTypeType = 'avg' | 'min' | 'max' | 'sum' | 'percentile';
+
+interface AggregationType<Type extends AggregationTypeType = AggregationTypeType> {
+  type: Type;
+  value: number | null;
 }
 
-type Target_valueTargetValueUnit =
+type TargetValueUnit =
   | 'millis'
   | 'seconds'
   | 'minutes'
@@ -161,66 +177,54 @@ type Target_valueTargetValueUnit =
 
 type GroupAggregateByDateUnit = 'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'automatic';
 
-interface ConfigurationTableColumn {
+interface TableColumns {
   includeNewVariables: boolean;
   excludedColumns: string[];
   includedColumns: string[];
   columnOrder: string[];
 }
 
-interface Target_valueSingleReportCountChartDto {
-  isBelow: boolean;
+interface BaseLine {
+  unit: TargetValueUnit;
   value: string;
 }
 
-interface Target_valueBaseLineDto {
-  unit: Target_valueTargetValueUnit;
-  value: string;
-}
-
-interface Target_valueTargetDto {
-  unit: Target_valueTargetValueUnit;
+interface TargetValue {
+  unit: TargetValueUnit;
   value: string;
   isBelow: boolean;
 }
 
-interface Target_valueDurationProgressDto {
-  baseline: Target_valueBaseLineDto;
-  target: Target_valueTargetDto;
+interface DurationProgressTargetValue extends TargetValue {
+  baseline: BaseLine;
+  target: TargetValue;
 }
 
-interface Target_valueCountProgressDto {
+interface CountProgressTargetValue extends TargetValue {
   baseline: string;
   target: string;
-  isBelow: boolean;
 }
 
-interface Target_valueSingleReportDurationChartDto {
-  unit: Target_valueTargetValueUnit;
-  isBelow: boolean;
-  value: string;
-}
-
-interface Target_valueSingleReportTargetValueDto {
-  countChart: Target_valueSingleReportCountChartDto;
-  durationProgress: Target_valueDurationProgressDto;
+interface SingleReportTargetValue {
+  countChart: TargetValue;
+  durationProgress: DurationProgressTargetValue;
   active: boolean;
-  countProgress: Target_valueCountProgressDto;
-  durationChart: Target_valueSingleReportDurationChartDto;
+  countProgress: CountProgressTargetValue;
+  durationChart: TargetValue;
   isKpi: boolean;
 }
 
-interface Heatmap_target_valueHeatmapTargetValueEntryDto {
-  unit: Target_valueTargetValueUnit;
+interface HeatmapTargetValueValue {
+  unit: TargetValueUnit;
   value: string;
 }
 
-interface Heatmap_target_valueHeatmapTargetValueDto {
+interface HeatmapTargetValue {
   active: boolean;
-  values: Record<string, Heatmap_target_valueHeatmapTargetValueEntryDto>;
+  values: Record<string, HeatmapTargetValueValue>;
 }
 
-type Custom_bucketsBucketUnit =
+type CustomBucketUnit =
   | 'year'
   | 'month'
   | 'week'
@@ -232,52 +236,54 @@ type Custom_bucketsBucketUnit =
 
 interface CustomBucket {
   active: boolean;
-  bucketSize: number;
-  bucketSizeUnit: Custom_bucketsBucketUnit;
-  baseline: number;
-  baselineUnit: Custom_bucketsBucketUnit;
+  bucketSize: string;
+  bucketSizeUnit: CustomBucketUnit;
+  baseline: string;
+  baselineUnit: CustomBucketUnit;
 }
 
-type SortingSortOrder = 'asc' | 'desc';
+type SortingOrder = 'asc' | 'desc';
 
-interface SortingReportSortingDto {
+interface ReportSorting {
   by?: string | null;
-  order?: SortingSortOrder | null;
+  order?: SortingOrder | null;
 }
 
-interface Process_partProcessPartDto {
+interface ProcessPart {
   start: string;
   end: string;
 }
 
-interface ConfigurationMeasureVisualizationsDto {
+interface MeasureVisualizations {
   frequency: string;
   duration: string;
 }
 
+type UserTaskDurationTimes = 'idle' | 'work' | 'total';
+
 export interface SingleReportConfiguration {
   color: string;
-  aggregationTypes: ConfigurationAggregation[];
-  userTaskDurationTimes: 'idle' | 'work' | 'total';
+  aggregationTypes: AggregationType[];
+  userTaskDurationTimes: UserTaskDurationTimes[];
   showInstanceCount: boolean;
   pointMarkers: boolean;
-  precision: number;
+  precision: number | null;
   hideRelativeValue: boolean;
   hideAbsoluteValue: boolean;
   alwaysShowRelative: boolean;
   alwaysShowAbsolute: boolean;
   showGradientBars: boolean;
-  xml: string;
-  tableColumns: ConfigurationTableColumn;
-  targetValue: Target_valueSingleReportTargetValueDto;
-  heatmapTargetValue: Heatmap_target_valueHeatmapTargetValueDto;
+  xml: string | null;
+  tableColumns: TableColumns;
+  targetValue: SingleReportTargetValue;
+  heatmapTargetValue: HeatmapTargetValue;
   groupByDateVariableUnit: GroupAggregateByDateUnit;
   distributeByDateVariableUnit: GroupAggregateByDateUnit;
   customBucket: CustomBucket;
   distributeByCustomBucket: CustomBucket;
-  sorting?: SortingReportSortingDto | null;
-  processPart?: Process_partProcessPartDto | null;
-  measureVisualizations: ConfigurationMeasureVisualizationsDto;
+  sorting?: ReportSorting | null;
+  processPart?: ProcessPart | null;
+  measureVisualizations: MeasureVisualizations;
   stackedBar: boolean;
   horizontalBar: boolean;
   logScale: boolean;
@@ -285,50 +291,36 @@ export interface SingleReportConfiguration {
   xLabel: string;
 }
 
-interface SingleReportDataDefinition {
-  identifier: string;
-  key: string;
-  name: string;
-  displayName: string;
-  versions: string[];
-  tenantIds: string[];
-}
-
 interface SingleReportData {
   configuration: SingleReportConfiguration;
-  definitions: SingleReportDataDefinition[];
+  definitions: Definition[];
 }
 
-export interface SingleProcessReportData extends SingleReportData {
-  filter: ProcessFilter<any>[];
-  view: ProcessView;
-  groupBy: GroupProcessGroupByDto<any>;
-  distributedBy: DistributedBy<any>;
-  visualization: ProcessVisualization;
+export interface SingleProcessReportData<GroupByValue = unknown, DistributedByValue = unknown>
+  extends SingleReportData {
+  filter: ProcessFilter[];
+  view: ProcessView | null;
+  groupBy: ProcessGroupBy<GroupByValue> | null;
+  distributedBy: DistributedBy<DistributedByValue>;
+  visualization: ProcessReportVisualization | null;
   managementReport: boolean;
   instantPreviewReport: boolean;
   userTaskReport: boolean;
 }
 
-interface SingleDecisionReportData extends SingleReportData {
-  filter: DecisionFilter<any>[];
-  view: DecisionView;
-  groupBy: GroupDecisionGroupByDto<any>;
-  distributedBy: DistributedBy<any>;
-  visualization: DecisionVisualization;
+interface SingleDecisionReportData<GroupByValue = unknown, DistributedByValue = unknown>
+  extends SingleReportData {
+  filter: DecisionFilter[];
+  view: DecisionView | null;
+  groupBy: DecisionGroupBy<GroupByValue> | null;
+  distributedBy: DistributedBy<DistributedByValue>;
+  visualization: DecisionReportVisualization | null;
 }
 
 interface CombinedReportTargetValue {
-  countChart: {
-    isBelow: boolean;
-    value: string;
-  };
+  countChart: TargetValue;
   active: boolean;
-  durationChart: {
-    unit: Target_valueTargetValueUnit;
-    isBelow: boolean;
-    value: string;
-  };
+  durationChart: TargetValue;
 }
 
 interface CombinedReportConfiguration {
@@ -344,46 +336,64 @@ interface CombinedReportConfiguration {
 
 interface CombinedReportData {
   configuration: CombinedReportConfiguration;
-  visualization: ProcessVisualization;
+  visualization: ProcessReportVisualization;
   reports: {
     id: string;
     color: string;
   }[];
-  result: {
-    data: Record<
-      string,
-      {
-        data: {
-          view: {
-            properties: string[];
-          };
-        };
-      }
-    >;
-  };
 }
 
-type CombinedReport = Report<CombinedReportData> & {
-  combined: true;
-  result: {
-    data: Record<
-      string,
-      {
-        data: {
-          view: {
-            properties: string[];
-          };
+type CombinedReportResult = {
+  data: Record<
+    string,
+    {
+      data: {
+        view: {
+          properties: string[];
         };
-      }
-    >;
-  };
+      };
+    }
+  >;
 };
-export type SingleProcessReport = Report<SingleProcessReportData> & {combined: false};
-export type SingleDecisionReport = Report<SingleDecisionReportData> & {combined: false};
 
-export type GenericReport = CombinedReport | SingleDecisionReport | SingleProcessReport;
+export type ReportType = 'process' | 'decision';
 
-export interface DashboardTile {
+export interface Report<
+  Type extends ReportType = 'process',
+  Combined extends boolean = false,
+  Data extends object = Combined extends true
+    ? CombinedReportData
+    : Type extends 'process'
+      ? SingleProcessReportData
+      : SingleDecisionReportData,
+  Result = unknown | undefined,
+> extends GenericEntity<Data> {
+  id: string;
+  collectionId?: string | null;
+  combined: Combined;
+  reportType: Type;
+  description: string | null;
+  result: Result;
+}
+
+export type CombinedReport = Report<'process', true, CombinedReportData, CombinedReportResult>;
+export type SingleProcessReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
+  'process',
+  false,
+  SingleProcessReportData<GroupByValue, DistributedByValue>
+>;
+export type SingleDecisionReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
+  'decision',
+  false,
+  SingleDecisionReportData<GroupByValue, DistributedByValue>
+>;
+
+export type GenericReport<GroupByValue = unknown, DistributedByValue = unknown> =
+  | CombinedReport
+  | SingleProcessReport<GroupByValue, DistributedByValue>
+  | SingleDecisionReport<GroupByValue, DistributedByValue>;
+
+type DashboardTileCommonProps = {
   id: string;
   position: {
     x: number;
@@ -393,9 +403,24 @@ export interface DashboardTile {
     width: number;
     height: number;
   };
-  type: 'optimize_report' | 'external_url' | 'text';
-  configuration: {external?: string; text?: SerializedEditorState};
+};
+
+export interface OptimizeReportTile extends DashboardTileCommonProps {
+  type: 'optimize_report';
+  configuration: GenericReport['data']['configuration'];
 }
+
+export interface ExternalTile extends DashboardTileCommonProps {
+  type: 'external_url';
+  configuration: {external: string};
+}
+
+export interface TextTile extends DashboardTileCommonProps {
+  type: 'text';
+  configuration: {text: SerializedEditorState | null};
+}
+
+export type DashboardTile = OptimizeReportTile | ExternalTile | TextTile;
 
 export interface Definition {
   identifier: string;
@@ -418,12 +443,6 @@ export type Source = {
 
 export type Variable = {id?: string; name: string; type: string; label?: string | null};
 
-export interface FilterData {
-  value: string | number;
-  unit: string;
-  operator?: string;
-}
-
 type CommonFilter = {includeUndefined?: boolean; excludeUndefined?: boolean; name?: string};
 
 type FixedFilter = {
@@ -445,7 +464,7 @@ type OtherFilter = {
   end: string | null;
 };
 
-export type Filter = CommonFilter & (FixedFilter | RollingFilter | OtherFilter);
+export type DateFilterType = CommonFilter & (FixedFilter | RollingFilter | OtherFilter);
 
 interface CommonFilterState {
   type: string;

@@ -7,9 +7,16 @@
 
 import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, InlineNotification, Loading} from '@carbon/react';
+import {Button, InlineNotification, Stack} from '@carbon/react';
 
-import {Modal, BPMNDiagram, TargetValueBadge, ClickBehavior, RegistryElement} from 'components';
+import {
+  Modal,
+  BPMNDiagram,
+  TargetValueBadge,
+  Loading,
+  ClickBehavior,
+  RegistryElement,
+} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -24,13 +31,6 @@ import NodesTable from './NodesTable';
 
 import './NodeDuration.scss';
 
-interface NodeDurationProps
-  extends WithErrorHandlingProps,
-    FilterProps<Record<string, FilterData>> {
-  filterLevel: 'instance';
-  filterType: 'flowNodeDuration';
-}
-
 interface NodeDurationState {
   focus: string | null;
   values: Record<string, FilterData>;
@@ -40,7 +40,10 @@ interface NodeDurationState {
   xml: string | null;
 }
 
-export class NodeDuration extends Component<NodeDurationProps, NodeDurationState> {
+export class NodeDuration extends Component<
+  FilterProps<'flowNodeDuration'> & WithErrorHandlingProps,
+  NodeDurationState
+> {
   state: NodeDurationState = {
     focus: null,
     values: {},
@@ -76,7 +79,10 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
     });
   }
 
-  async componentDidUpdate(prevProps: NodeDurationProps, prevState: NodeDurationState) {
+  async componentDidUpdate(
+    prevProps: FilterProps<'flowNodeDuration'>,
+    prevState: NodeDurationState
+  ) {
     if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
       this.setState({loading: true});
 
@@ -194,16 +200,17 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
 
     return (
       <Modal isOverflowVisible size="lg" open onClose={close} className="NodeDuration">
-        <Modal.Header>{t('common.filter.types.flowNodeDuration')} </Modal.Header>
+        <Modal.Header title={t('common.filter.types.flowNodeDuration')} />
         <Modal.Content className="contentContainer">
           <FilterSingleDefinitionSelection
             availableDefinitions={definitions}
             applyTo={applyTo}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
-          {loading && <Loading withOverlay={false} />}
-          {!loading && (
-            <>
+          {loading ? (
+            <Loading />
+          ) : (
+            <Stack gap={4}>
               <div className="diagramContainer">
                 <BPMNDiagram xml={xml}>
                   <ClickBehavior
@@ -220,12 +227,12 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
                 values={values}
                 onChange={(values) => this.setState({values})}
               />
-            </>
-          )}
-          {!this.areAllFieldsNumbers() && !loading && (
-            <InlineNotification kind="error" hideCloseButton>
-              {t('report.heatTarget.invalidValue')}
-            </InlineNotification>
+              {!this.areAllFieldsNumbers() && (
+                <InlineNotification kind="error" hideCloseButton>
+                  {t('report.heatTarget.invalidValue')}
+                </InlineNotification>
+              )}
+            </Stack>
           )}
         </Modal.Content>
         <Modal.Footer>

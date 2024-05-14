@@ -1,39 +1,46 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should match snapshot 1`] = `
-<Form
-  description="Configure which events are displayed in the table."
->
-  <FormGroup>
-    <ForwardRef(LabeledInput)
-      checked={true}
-      label="Process start and end"
-      onChange={[Function]}
-      type="checkbox"
-    />
-    <ForwardRef(LabeledInput)
-      checked={false}
-      label="Start and end flow node events"
-      onChange={[Function]}
-      type="checkbox"
-    />
-    <ForwardRef(LabeledInput)
-      checked={false}
-      label="All flow node events"
-      onChange={[Function]}
-      type="checkbox"
-    />
-  </FormGroup>
-  <MessageBox
-    type="warning"
+<Form>
+  <ForwardRef(Stack)
+    gap={4}
+    orientation="vertical"
   >
-    Changing the event list may add or remove events. Existing event mappings may be removed.
-     
-    <DocsLink
-      location="components/userguide/additional-features/event-based-processes/#camunda-events"
+    <FormGroup
+      legendText="Configure which events are displayed in the table."
     >
-      Learn more
-    </DocsLink>
-  </MessageBox>
+      <Checkbox
+        checked={true}
+        id="processInstanceScopeToggle"
+        labelText="Process start and end"
+        onChange={[Function]}
+      />
+      <Checkbox
+        checked={false}
+        id="flowNodeScopeToggle"
+        labelText="Start and end flow node events"
+        onChange={[Function]}
+      />
+      <Checkbox
+        checked={false}
+        id="allEventsScopeToggle"
+        labelText="All flow node events"
+        onChange={[Function]}
+      />
+    </FormGroup>
+    <ActionableNotification
+      className="eventListChangeWarning"
+      hideCloseButton={true}
+      kind="warning"
+    >
+      Changing the event list may add or remove events. Existing event mappings may be removed.
+       
+      <DocsLink
+        location="components/userguide/additional-features/event-based-processes/#camunda-events"
+      >
+        Learn more
+      </DocsLink>
+    </ActionableNotification>
+  </ForwardRef(Stack)>
 </Form>
 `;

@@ -1,34 +1,36 @@
+@import 'shared-styles/shared-styles.scss';
+
 .KpiResult {
   min-width: max-content;
-  padding: 20px 20px 20px 20px;
-  height: 100%;
+  padding: 0.5rem;
 
   .kpi {
+    vertical-align: middle;
     > .title {
       color: var(--grey-darken-23);
-      display: inline-block;
-      vertical-align: middle;
       max-width: 200px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      @include overflow-ellipsis;
+      display: inline-block;
+    }
+    a svg {
+      display: inline-block;
     }
 
     &:not(:first-child) {
-      border-top: 1px solid var(--silver-darken-87);
-      margin-top: 10px;
-      padding-top: 10px;
+      border-top: 1px solid var(--cds-border-subtle);
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
     }
 
     .reportValues {
-      margin-top: 5px;
+      margin-top: 0.5rem;
 
       .reportValue {
-        margin-right: 20px;
-        color: var(--red-darken-38);
+        margin-right: 1rem;
+        color: var(--cds-support-error);
 
         &.success {
-          color: var(--green-base-44);
+          color: var(--cds-support-success);
         }
       }
     }

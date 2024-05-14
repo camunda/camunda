@@ -7,10 +7,20 @@ package org.camunda.optimize.service.db.reader;
 
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.service.db.repository.VariableRepository;
+import org.springframework.stereotype.Component;
 
-public interface VariableLabelReader {
+@RequiredArgsConstructor
+@Component
+@Slf4j
+public class VariableLabelReader {
+  private final VariableRepository variableRepository;
 
-  Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
-      final List<String> processDefinitionKeys);
+  public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
+      final List<String> processDefinitionKeys) {
+    return variableRepository.getVariableLabelsByKey(processDefinitionKeys);
+  }
 }

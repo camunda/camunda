@@ -14,3 +14,5 @@ storybook-static
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+
+*storybook.log

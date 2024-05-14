@@ -309,10 +309,7 @@ export function DashboardView(props) {
             filter={filter}
             disableNameLink={disableNameLink}
             customizeTileLink={customizeReportLink}
-            addons={[
-              <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
-              <DiagramScrollLock key="diagramScrollLock" />,
-            ]}
+            addons={[<AutoRefreshBehavior interval={autoRefreshInterval} />, <DiagramScrollLock />]}
           />
         </div>
       </div>

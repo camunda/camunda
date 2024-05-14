@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import static org.camunda.optimize.AbstractCCSMIT.isZeebeVersionPre85;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_ELASTICSEARCH_EXPORTER;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_OPENSEARCH_EXPORTER;
 
@@ -20,6 +21,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -72,6 +74,12 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
             .withCopyFileToContainer(
                 MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
                 "/usr/local/zeebe/config/application.yml");
+    if (!isZeebeVersionPre85()) {
+      zeebeContainer =
+          zeebeContainer
+              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+              .withAdditionalExposedPort(8080);
+    }
   }
 
   @Override
@@ -88,13 +96,27 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     destroyClient();
   }
 
+  @SneakyThrows
   public void createClient() {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
-            .defaultRequestTimeout(Duration.ofMillis(15000))
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .usePlaintext()
-            .build();
+    if (isZeebeVersionPre85()) {
+      zeebeClient =
+          ZeebeClient.newClientBuilder()
+              .defaultRequestTimeout(Duration.ofMillis(15000))
+              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+              .usePlaintext()
+              .build();
+    } else {
+      zeebeClient =
+          ZeebeClient.newClientBuilder()
+              .defaultRequestTimeout(Duration.ofMillis(15000))
+              .grpcAddress(
+                  URI.create(
+                      String.format("http://%s", zeebeContainer.getExternalGatewayAddress())))
+              .restAddress(
+                  URI.create(String.format("http://%s", zeebeContainer.getExternalAddress(8080))))
+              .usePlaintext()
+              .build();
+    }
   }
 
   public Process deployProcess(final BpmnModelInstance bpmnModelInstance) {
@@ -181,6 +203,22 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
           Optional.ofNullable(variables).ifPresent(completeJobCommandStep1::variables);
           completeJobCommandStep1.send().join();
         });
+  }
+
+  public void completeZeebeUserTask(final long userTaskKey) {
+    zeebeClient.newUserTaskCompleteCommand(userTaskKey).send().join();
+  }
+
+  public void assignUserTask(final long userTaskKey, final String assigneeId) {
+    zeebeClient.newUserTaskAssignCommand(userTaskKey).assignee(assigneeId).send().join();
+  }
+
+  public void unassignUserTask(final long userTaskKey) {
+    zeebeClient.newUserTaskUnassignCommand(userTaskKey).send().join();
+  }
+
+  public void updateCandidateGroupForUserTask(final long userTaskKey, final String candidateGroup) {
+    zeebeClient.newUserTaskUpdateCommand(userTaskKey).candidateGroups(candidateGroup).send().join();
   }
 
   public void throwErrorIncident(final String jobType) {

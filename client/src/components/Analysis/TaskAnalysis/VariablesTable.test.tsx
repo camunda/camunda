@@ -8,8 +8,6 @@
 import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator} from 'components';
-
 import VariablesTable from './VariablesTable';
 import {OutlierNode, loadCommonOutliersVariables} from './service';
 
@@ -67,5 +65,5 @@ it('should render a table with correct data', async () => {
 it('should render a loading indicator while loading the data', async () => {
   const node = shallow(<VariablesTable {...props} />);
 
-  expect(node.find('Table').prop('noData')).toEqual(<LoadingIndicator />);
+  expect(node.find('Table').prop('loading')).toEqual(true);
 });

@@ -131,11 +131,11 @@ export default function VariableFilter({
       onClose={close}
       className={classnames('VariableFilter__modal', className)}
     >
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t(`common.filter.types.${filterType}`),
         })}
-      </Modal.Header>
+      />
       <Modal.Content>
         <Stack gap={6}>
           {definitions && (

@@ -23,12 +23,13 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.github.netmikey.logunit.api.LogCapturer;
 import java.nio.CharBuffer;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -50,6 +51,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
@@ -58,6 +60,7 @@ import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -70,6 +73,10 @@ import org.mockserver.verify.VerificationTimes;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class VariableImportIT extends AbstractImportIT {
+
+  @RegisterExtension
+  protected final LogCapturer objectVariableServiceLogs =
+      LogCapturer.create().captureForType(ObjectVariableService.class);
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -93,7 +100,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportWorks() throws JsonProcessingException {
+  public void variableImportWorks() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
@@ -114,7 +121,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportUsesDefaultTenant() throws JsonProcessingException {
+  public void variableImportUsesDefaultTenant() {
     // given
     final String defaultTenant = "crab";
     embeddedOptimizeExtension
@@ -133,7 +140,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportWorksWithMultipleTenants() throws JsonProcessingException {
+  public void variableImportWorksWithMultipleTenants() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     String normalTenant = "potato";
@@ -155,7 +162,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportExcludesTenantsCorrectly() throws JsonProcessingException {
+  public void variableImportExcludesTenantsCorrectly() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     String normalTenant = "potato";
@@ -181,7 +188,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() throws JsonProcessingException {
+  public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() {
     // given
     importAllEngineEntitiesFromScratch();
 
@@ -228,8 +235,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled()
-      throws JsonProcessingException {
+  public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
@@ -443,7 +449,7 @@ public class VariableImportIT extends AbstractImportIT {
       final VariableType type,
       final VariableDto objectVariableDto,
       final List<String> expectedVariableValues) {
-    // // given a variable that contains a list of primitives
+    // given a variable that contains a list of primitives
     final Map<String, Object> variables = new HashMap<>();
     variables.put("primitiveListVar", objectVariableDto);
     final ProcessInstanceEngineDto instanceDto =
@@ -464,6 +470,61 @@ public class VariableImportIT extends AbstractImportIT {
         .containsExactlyInAnyOrder(
             Tuple.tuple("primitiveListVar", type.getId(), expectedVariableValues),
             Tuple.tuple("primitiveListVar._listSize", LONG.getId(), singletonList("2")));
+  }
+
+  @SneakyThrows
+  @Test
+  public void primitiveListVariablesWithFirstItemNullCanBeImported() {
+    // given
+    final Map<String, Object> variables = new HashMap<>();
+    final String listVarName = "listVar";
+    final List<Object> listWithNull = new ArrayList<>();
+    listWithNull.add(null);
+    listWithNull.add("aString");
+    listWithNull.add(null);
+    variables.put(listVarName, variablesClient.createObjectVariableDto(true, listWithNull));
+    final ProcessInstanceEngineDto instanceDto =
+        deployAndStartSimpleServiceProcessTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables =
+        getVariablesForProcessInstance(instanceDto);
+
+    // then no error occurred and variable could be flattened successfully
+    objectVariableServiceLogs.assertDoesNotContain("Error");
+    assertThat(instanceVariables)
+        .hasSize(2)
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(listVarName, "String", List.of("null", "aString", "null")),
+            Tuple.tuple(listVarName + "._listSize", LONG.getId(), singletonList("3")));
+  }
+
+  @SneakyThrows
+  @Test
+  public void listVariableWithAllNullEntriesIsNotImported() {
+    // given
+    final Map<String, Object> variables = new HashMap<>();
+    final String listVarName = "listVar";
+    final List<Object> listWithNull = new ArrayList<>();
+    listWithNull.add(null);
+    listWithNull.add(null);
+    variables.put(listVarName, variablesClient.createObjectVariableDto(true, listWithNull));
+    final ProcessInstanceEngineDto instanceDto =
+        deployAndStartSimpleServiceProcessTaskWithVariables(variables);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<SimpleProcessVariableDto> instanceVariables =
+        getVariablesForProcessInstance(instanceDto);
+
+    // then no errors occurred and empty list is skipped
+    objectVariableServiceLogs.assertDoesNotContain("Error");
+    assertThat(instanceVariables).isEmpty();
   }
 
   @SneakyThrows
@@ -608,7 +669,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableUpdateImport() throws JsonProcessingException {
+  public void variableUpdateImport() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
 
@@ -629,7 +690,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void primitiveVariablesCanHaveNullValue() throws JsonProcessingException {
+  public void primitiveVariablesCanHaveNullValue() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
 

@@ -9,12 +9,12 @@ import {Tag} from '@carbon/react';
 
 import {format} from 'dates';
 import {t} from 'translation';
-import {Filter} from 'types';
+import {DateFilterType} from 'types';
 
 import {convertFilterToState} from './service';
 
 type VariableDateFilterPreviewProps = {
-  filter: Filter;
+  filter: DateFilterType;
   filterType: 'variable';
   variableName: string;
 };
@@ -22,7 +22,7 @@ type VariableDateFilterPreviewProps = {
 type DateFilterPreviewProps =
   | VariableDateFilterPreviewProps
   | {
-      filter: Filter;
+      filter: DateFilterType;
       filterType: 'variable' | 'instanceStartDate' | 'instanceEndDate' | string;
       variableName?: string;
     };

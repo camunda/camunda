@@ -19,7 +19,8 @@ public class ScopeValidator implements OAuth2TokenValidator<Jwt> {
   private final String expectedScope;
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
 
-  public OAuth2TokenValidatorResult validate(Jwt jwt) {
+  @Override
+  public OAuth2TokenValidatorResult validate(final Jwt jwt) {
     final JwtAuthenticationToken auth = (JwtAuthenticationToken) delegate.convert(jwt);
     final Map<String, Object> payload = auth.getTokenAttributes();
     return isScopeValid(payload);

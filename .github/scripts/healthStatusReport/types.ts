@@ -39,18 +39,6 @@ export type Config = {
     url: string;
     projects: string[];
   };
-  snyk: {
-    title?: string;
-    organizationId: string;
-    organizationName: string;
-    apiVersion?: string;
-    vulnLevels?: VulnLevel[];
-    projects: {
-      project: string;
-      origin: string;
-      versions: string[];
-    }[];
-  };
   githubPrs: {
     title?: string;
     organization: string;

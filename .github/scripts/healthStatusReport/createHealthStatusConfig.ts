@@ -9,17 +9,10 @@ import path from 'path';
 
 import {createJsonFile, isRegExp, readJsonFIle} from './services';
 import {Config} from './types';
-import {SnykService} from './SnykService';
 import {GitHubService} from './GitHubService';
 
 const ARGOCD_PROJECTS = ['optimize-previews'];
 const ARGOCD_URL = 'https://argocd.int.camunda.com';
-
-const SNYK_TOKEN = process.env.SNYK_TOKEN;
-const SNYK_EXCLUDED_PROJECT_VERSIONS = ['3.8'];
-const SNYK_ORG_ID = process.env.SNYK_ORG_ID;
-const SNYK_ORG_NAME = 'team-optimize';
-const SNYK_API_VERSION = '2023-05-29';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = 'camunda';
@@ -31,12 +24,6 @@ const CONFIG_FILE_NAME = 'config.json';
 
 async function createHealthStatusConfig() {
   const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
-  const snykService = new SnykService(
-    SNYK_TOKEN,
-    SNYK_ORG_ID,
-    SNYK_API_VERSION,
-    SNYK_EXCLUDED_PROJECT_VERSIONS,
-  );
 
   const renovateStringBranches = getRenovateStringBranches();
   const releaseBranches = await githubService.getBranchesWithPrefix('release');
@@ -44,9 +31,6 @@ async function createHealthStatusConfig() {
     githubService.sortBranches,
   );
   const maintenanceBranches = ciBranches.filter((branch) => branch.includes('maintenance'));
-
-  const snykProjects = await snykService.fetchSnykProjects();
-  const snykProjectVersions = snykService.getHighestDockerVersions(snykProjects);
 
   const config: Partial<Config> = {
     argoCd: {
@@ -66,35 +50,21 @@ async function createHealthStatusConfig() {
           name: 'ci',
           branches: maintenanceBranches,
         },
-        'optimize-connect-to-secured-es',
         'optimize-zeebe-compatibility',
-        'optimize-upgrade-data-performance',
-        'optimize-cluster-test',
         'optimize-java-compatibility',
+        'optimize-engine-compatibility',
+        'optimize-es-compatibility',
+        'optimize-os-compatibility',
+        'optimize-upgrade-data-performance',
         'optimize-import-dynamic-data-performance',
+        'optimize-import-static-data-performance',
+        'optimize-import-mediator-permutation',
+        'optimize-history-cleanup-performance',
+        'optimize-connect-to-secured-es',
+        'optimize-cluster-test',
         'optimize-e2e-tests',
         'optimize-release-optimize',
-        'optimize-engine-compatibility',
-        'optimize-es-compatibility-test',
-        'optimize-os-compatibility-test',
-      ],
-    },
-    snyk: {
-      organizationId: SNYK_ORG_ID,
-      organizationName: SNYK_ORG_NAME,
-      apiVersion: SNYK_API_VERSION,
-      vulnLevels: ['critical', 'high', 'medium', 'low'],
-      projects: [
-        {
-          project: 'camunda/camunda-optimize',
-          versions: ['master'],
-          origin: 'github',
-        },
-        {
-          project: 'camunda/optimize',
-          versions: snykProjectVersions,
-          origin: 'docker-hub',
-        },
+        'optimize-trivy-check',
       ],
     },
     githubPrs: {

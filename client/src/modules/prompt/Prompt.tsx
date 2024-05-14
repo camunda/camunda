@@ -32,7 +32,7 @@ export default function Prompt(): JSX.Element {
   return (
     <>
       <Modal className="Prompt" open={!!text.title} onClose={() => setText({})}>
-        <Modal.Header>{text.title}</Modal.Header>
+        <Modal.Header title={text.title} />
         <Modal.Content>{text.body}</Modal.Content>
         <Modal.Footer>
           <Button kind="secondary" disabled={loading} onClick={() => setText({})}>

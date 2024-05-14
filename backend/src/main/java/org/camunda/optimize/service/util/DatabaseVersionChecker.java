@@ -21,6 +21,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -88,10 +89,17 @@ public abstract class DatabaseVersionChecker {
 
   public static boolean doesVersionNeedWarning(
       final String currentVersion, final String latestSupportedVersion) {
-    return (Integer.parseInt(getMajorVersionFrom(currentVersion))
-            == Integer.parseInt(getMajorVersionFrom(latestSupportedVersion)))
-        && (Integer.parseInt(getMinorVersionFrom(currentVersion))
-            > Integer.parseInt(getMinorVersionFrom(latestSupportedVersion)));
+    try {
+      return (Integer.parseInt(getMajorVersionFrom(currentVersion))
+              == Integer.parseInt(getMajorVersionFrom(latestSupportedVersion)))
+          && (Integer.parseInt(getMinorVersionFrom(currentVersion))
+              > Integer.parseInt(getMinorVersionFrom(latestSupportedVersion)));
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeConfigurationException(
+          String.format(
+              "Error parsing current (%s) and latest supported (%s) versions for Database version checking",
+              currentVersion, latestSupportedVersion));
+    }
   }
 
   public static boolean isCurrentElasticsearchVersionSupported(final String currentVersion) {
@@ -107,16 +115,20 @@ public abstract class DatabaseVersionChecker {
   private static boolean isCurrentVersionSupported(
       final String currentVersion, final List<String> supportedVersions) {
     final String currentMajorAndMinor = getMajorAndMinor(currentVersion);
-    return supportedVersions.stream()
-        .anyMatch(
-            v -> {
-              final String neededVersion = stripToPlainVersion(v);
-              final String neededMajorAndMinor = getMajorAndMinor(neededVersion);
+    try {
+      return supportedVersions.stream()
+          .anyMatch(
+              v -> {
+                final String neededVersion = stripToPlainVersion(v);
+                final String neededMajorAndMinor = getMajorAndMinor(neededVersion);
 
-              return currentMajorAndMinor.equals(neededMajorAndMinor)
-                  && Integer.parseInt(getPatchVersionFrom(currentVersion))
-                      >= Integer.parseInt(getPatchVersionFrom(neededVersion));
-            });
+                return currentMajorAndMinor.equals(neededMajorAndMinor)
+                    && Integer.parseInt(getPatchVersionFrom(currentVersion))
+                        >= Integer.parseInt(getPatchVersionFrom(neededVersion));
+              });
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeConfigurationException("Was not able to determine Database version");
+    }
   }
 
   public static String getLatestSupportedESVersion() {

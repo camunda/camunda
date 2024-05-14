@@ -42,7 +42,7 @@ it('should call the onClick handler', () => {
 it('should show an error warning if specified', () => {
   const node = shallow(<ActionItem warning="There is an error" />);
 
-  expect(node.find('Message')).toExist();
+  expect(node.find('.warning')).toExist();
 });
 
 it('should prevent editing the action item if warning prop is specified', () => {

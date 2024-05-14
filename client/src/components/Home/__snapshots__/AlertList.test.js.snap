@@ -5,7 +5,6 @@ exports[`should show create Alert button 1`] = `
   className="createAlert"
   kind="primary"
   onClick={[Function]}
-  size="md"
 >
   Create new alert
 </Button>

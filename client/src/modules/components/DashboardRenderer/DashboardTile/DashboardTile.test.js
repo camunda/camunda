@@ -13,21 +13,25 @@ import DashboardTile from './DashboardTile';
 jest.mock('./ExternalUrlTile', () => {
   const actual = jest.requireActual('./ExternalUrlTile');
   const ExternalUrlTile = ({children}) => <span>ExternalUrlTile: {children()}</span>;
-  ExternalUrlTile.isExternalUrlTile = actual.ExternalUrlTile.isExternalUrlTile;
+  ExternalUrlTile.isTileOfType = actual.ExternalUrlTile.isTileOfType;
   return {ExternalUrlTile};
 });
 jest.mock('./TextTile', () => {
   const actual = jest.requireActual('./TextTile');
   const TextTile = ({children}) => <span>TextTile: {children()}</span>;
-  TextTile.isTextTile = actual.TextTile.isTextTile;
+  TextTile.isTileOfType = actual.TextTile.isTileOfType;
   return {TextTile};
 });
-jest.mock('./OptimizeReportTile', () => ({
-  OptimizeReportTile: ({children}) => <span>OptimizeReportTile: {children()}</span>,
-}));
+jest.mock('./OptimizeReportTile', () => {
+  const actual = jest.requireActual('./OptimizeReportTile');
+  const OptimizeReportTile = ({children}) => <span>OptimizeReportTile: {children()}</span>;
+  OptimizeReportTile.isTileOfType = actual.OptimizeReportTile.isTileOfType;
+  return {OptimizeReportTile};
+});
 
 const props = {
   tile: {
+    type: 'optimize_report',
     id: 'a',
   },
 };
@@ -36,10 +40,7 @@ it('should render optional addons', () => {
   const TextRenderer = ({children}) => <p>{children}</p>;
 
   const node = mount(
-    <DashboardTile
-      {...props}
-      addons={[<TextRenderer key="textAddon">I am an addon!</TextRenderer>]}
-    />
+    <DashboardTile {...props} addons={[<TextRenderer>I am an addon!</TextRenderer>]} />
   );
 
   expect(node).toIncludeText('I am an addon!');
@@ -51,5 +52,4 @@ it('should pass properties to tile addons', () => {
   const node = mount(<DashboardTile {...props} addons={[<PropsRenderer key="propsRenderer" />]} />);
 
   expect(node).toIncludeText('tile');
-  expect(node).toIncludeText('tileDimensions');
 });

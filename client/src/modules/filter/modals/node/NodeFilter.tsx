@@ -8,7 +8,7 @@
 import {useEffect, useState} from 'react';
 import {Button, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {Modal, BPMNDiagram, ClickBehavior, LoadingIndicator, ModdleElement} from 'components';
+import {Modal, BPMNDiagram, Loading, ClickBehavior, ModdleElement} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -21,23 +21,14 @@ import NodeListPreview from './NodeListPreview';
 
 import './NodeFilter.scss';
 
-interface NodeFilterProps
-  extends WithErrorHandlingProps,
-    FilterProps<{
-      values?: string[];
-      operator?: string;
-    }> {
-  filterLevel: 'instance';
-  filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
-}
-
 export function NodeFilter({
   filterData,
   definitions,
   mightFail,
   close,
   addFilter,
-}: NodeFilterProps) {
+}: FilterProps<'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes'> &
+  WithErrorHandlingProps) {
   const [selectedNodes, setSelectedNodes] = useState<(string | ModdleElement)[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
     const validDefinitions = definitions.filter(
@@ -108,19 +99,18 @@ export function NodeFilter({
 
   return (
     <Modal open onClose={close} className="NodeFilter" size="lg">
-      <Modal.Header>
-        {t('common.filter.modalHeader', {
+      <Modal.Header
+        title={t('common.filter.modalHeader', {
           type: t('common.filter.types.flowNode'),
         })}
-      </Modal.Header>
+      />
       <Modal.Content className="modalContent">
         <FilterSingleDefinitionSelection
           availableDefinitions={definitions}
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <LoadingIndicator />}
-        {xml && (
+        {xml ? (
           <>
             <Stack gap={6}>
               <div className="preview">
@@ -168,7 +158,7 @@ export function NodeFilter({
               <p>{t('common.filter.nodeModal.selectFlowNode')}</p>
             </Stack>
             <div className="diagramContainer">
-              <BPMNDiagram xml={xml}>
+              <BPMNDiagram xml={xml} loading={!xml}>
                 <ClickBehavior
                   setSelectedNodes={setSelectedNodes}
                   onClick={toggleNode}
@@ -177,6 +167,8 @@ export function NodeFilter({
               </BPMNDiagram>
             </div>
           </>
+        ) : (
+          <Loading />
         )}
       </Modal.Content>
       <Modal.Footer>

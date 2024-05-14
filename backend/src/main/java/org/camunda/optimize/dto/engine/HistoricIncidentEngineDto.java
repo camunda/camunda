@@ -33,6 +33,7 @@ public class HistoricIncidentEngineDto implements TenantSpecificEngineDto {
   protected boolean deleted;
   protected boolean resolved;
 
+  @Override
   public Optional<String> getTenantId() {
     return Optional.ofNullable(tenantId);
   }

@@ -11,7 +11,7 @@ import classnames from 'classnames';
 
 import {t} from 'translation';
 import {Modal, DateRangeInput} from 'components';
-import {Definition, Filter, FilterState} from 'types';
+import {Definition, FilterState} from 'types';
 
 import {FilterProps} from '../types';
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
@@ -35,7 +35,7 @@ export default function DateFilter({
   modalTitle = t('common.filter.modalHeader', {
     type: t(`common.filter.types.${filterType}`),
   }),
-}: FilterProps<Partial<Filter>>) {
+}: FilterProps<'instanceStartDate' | 'instanceEndDate'>) {
   const [filterState, setFilterState] = useState<DateFilterState>(() => {
     let initialData = {};
     const defaultState = {
@@ -87,7 +87,7 @@ export default function DateFilter({
       isOverflowVisible
       className={classnames('DateFilter', className)}
     >
-      <Modal.Header>{modalTitle}</Modal.Header>
+      <Modal.Header title={modalTitle} />
       <Modal.Content>
         <Stack gap={6}>
           <FilterDefinitionSelection

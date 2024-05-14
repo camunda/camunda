@@ -7,12 +7,12 @@
 
 import {shallow} from 'enzyme';
 
-import {Filter} from 'types';
+import {DateFilterType} from 'types';
 
 import DateFilterPreview from './DateFilterPreview';
 
 it('should create Today/Yesterday preview', () => {
-  const filter: Filter = {
+  const filter: DateFilterType = {
     type: 'relative',
     start: {
       value: 0,
@@ -27,7 +27,7 @@ it('should create Today/Yesterday preview', () => {
 });
 
 it('should create correct last... with custom preview', () => {
-  const filter: Filter = {
+  const filter: DateFilterType = {
     type: 'rolling',
     start: {
       value: 5,
@@ -42,7 +42,7 @@ it('should create correct last... with custom preview', () => {
 });
 
 it('should create correct fixed date preview', () => {
-  const filter: Filter = {
+  const filter: DateFilterType = {
     type: 'fixed',
     start: '2015-01-20T00:00:00',
     end: '2019-05-11T23:59:59',
@@ -54,7 +54,7 @@ it('should create correct fixed date preview', () => {
 });
 
 it('should include time information if fixed date filter contains time info', () => {
-  const filter: Filter = {
+  const filter: DateFilterType = {
     type: 'fixed',
     start: '2015-01-20T14:12:23',
     end: '2019-05-11T19:24:07',
@@ -66,7 +66,7 @@ it('should include time information if fixed date filter contains time info', ()
 });
 
 it('should create variable preview', () => {
-  const filter: Filter = {
+  const filter: DateFilterType = {
     type: 'rolling',
     start: {
       value: 2,

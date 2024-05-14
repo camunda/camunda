@@ -67,13 +67,14 @@ export default withErrorHandling(
     loadVariables = (definitions) => {
       return new Promise((resolve, reject) => {
         this.props.mightFail(
-          loadVariables(
-            definitions.map(({key, versions, tenantIds}) => ({
+          loadVariables({
+            processesToQuery: definitions.map(({key, versions, tenantIds}) => ({
               processDefinitionKey: key,
               processDefinitionVersions: versions,
               tenantIds,
-            }))
-          ),
+            })),
+            filter: this.props.report.data.filter,
+          }),
           (variables) => {
             this.setState({variables}, resolve);
             setVariables(variables);
@@ -355,6 +356,7 @@ export default withErrorHandling(
                   onAdd={this.addDefinition}
                 />
                 <DefinitionList
+                  filters={data.filter}
                   type="process"
                   definitions={data.definitions}
                   onCopy={this.copyDefinition}

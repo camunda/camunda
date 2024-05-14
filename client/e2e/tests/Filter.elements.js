@@ -24,7 +24,9 @@ export const dateFilterTypeSelect = Selector('.DateRangeInput .CarbonSelect').nt
 export const dateFilterStartInput = Selector('.DateFields .PickerDateInput:first-child input');
 export const dateFilterEndInput = Selector('.DateFields .PickerDateInput:last-child input');
 export const pickerDate = (number) =>
-  Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay').withText(number);
+  Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay:not(.rdrDayPassive)').withText(
+    number
+  );
 export const infoText = Selector('.Modal .tip');
 export const dateTypeSelect = Selector('.selectGroup > .CarbonSelect');
 export const unitSelect = Selector('.unitSelection .CarbonSelect');

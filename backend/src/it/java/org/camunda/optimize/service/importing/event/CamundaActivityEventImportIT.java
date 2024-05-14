@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
@@ -33,18 +34,16 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEventIndexES;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.importing.AbstractImportIT;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   private static final String START_EVENT = ActivityTypes.START_EVENT;
@@ -60,7 +59,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   @Test
   public void expectedEventsAreCreatedOnImportOfCompletedProcess() throws IOException {
     // given
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("eventsDef");
 
     // when
@@ -68,7 +67,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
 
     assertThat(storedEvents)
@@ -114,14 +113,14 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   @Test
   public void expectedEventsCreatedOnImportOfRunningProcess() throws IOException {
     // given
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("runningActivities");
 
     // when
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
 
     assertThat(storedEvents)
@@ -162,7 +161,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(storedEvents)
         .extracting(
@@ -194,7 +193,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(storedEvents)
         .extracting(
@@ -219,7 +218,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   public void noEventsAreCreatedOnImportOfProcessInstanceForDeletedDefinition() throws IOException {
     // given
     final String processKey = "eventsDef";
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName(processKey);
     createCamundaActivityEventsIndexForKey(processKey);
 
@@ -231,7 +230,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
 
     assertThat(storedEvents).isEmpty();
@@ -241,7 +240,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   public void expectedEventsAreCreatedOnImportOfProcessInstanceForDeletedDefinitionAlreadyImported()
       throws IOException {
     // given
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("eventsDef");
     importAllEngineEntitiesFromScratch();
 
@@ -293,7 +292,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(firstInstance.getProcessDefinitionKey());
 
     assertThat(storedEvents)
@@ -348,7 +347,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstance.getProcessDefinitionKey());
 
     assertThat(storedEvents)
@@ -404,10 +403,10 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     // given the index has been created, the process start, the start Event, and start of user task
     // has been saved
     // already
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("noEventsDef");
     importAllEngineEntitiesFromScratch();
-    List<CamundaActivityEventDto> initialStoredEvents =
+    final List<CamundaActivityEventDto> initialStoredEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(initialStoredEvents)
         .hasSize(3)
@@ -426,7 +425,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then no additional events are stored
-    List<CamundaActivityEventDto> storedEvents =
+    final List<CamundaActivityEventDto> storedEvents =
         getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(storedEvents)
         .usingRecursiveFieldByFieldElementComparator()
@@ -437,9 +436,9 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   public void expectedIndicesCreatedWithMultipleDefinitionsImportedInSameBatch()
       throws IOException {
     // given
-    ProcessInstanceEngineDto firstProcessInstanceEngineDto =
+    final ProcessInstanceEngineDto firstProcessInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("firstProcessSameBatch");
-    ProcessInstanceEngineDto secondProcessInstanceEngineDto =
+    final ProcessInstanceEngineDto secondProcessInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("secondProcessSameBatch");
 
     // when
@@ -447,15 +446,16 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    OptimizeElasticsearchClient esClient =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    GetIndexRequest request =
-        new GetIndexRequest(
-            createExpectedIndexNameForProcessDefinition(
-                firstProcessInstanceEngineDto.getProcessDefinitionKey()),
-            createExpectedIndexNameForProcessDefinition(
-                secondProcessInstanceEngineDto.getProcessDefinitionKey()));
-    assertThat(esClient.exists(request)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                createExpectedIndexNameForProcessDefinition(
+                    firstProcessInstanceEngineDto.getProcessDefinitionKey())))
+        .isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                createExpectedIndexNameForProcessDefinition(
+                    secondProcessInstanceEngineDto.getProcessDefinitionKey())))
+        .isTrue();
 
     // then events have been saved in each index
     assertThat(
@@ -472,12 +472,12 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   public void expectedIndicesCreatedWithMultipleDefinitionsImportedInMultipleBatches()
       throws IOException {
     // given
-    ProcessInstanceEngineDto firstProcessInstanceEngineDto =
+    final ProcessInstanceEngineDto firstProcessInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("aProcessFirstBatch");
     engineIntegrationExtension.finishAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 
-    ProcessInstanceEngineDto secondProcessInstanceEngineDto =
+    final ProcessInstanceEngineDto secondProcessInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("aProcessSecondBatch");
 
     // when
@@ -485,20 +485,21 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    OptimizeElasticsearchClient esClient =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    GetIndexRequest request =
-        new GetIndexRequest(
-            createExpectedIndexNameForProcessDefinition(
-                firstProcessInstanceEngineDto.getProcessDefinitionKey()),
-            createExpectedIndexNameForProcessDefinition(
-                secondProcessInstanceEngineDto.getProcessDefinitionKey()));
-    assertThat(esClient.exists(request)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                createExpectedIndexNameForProcessDefinition(
+                    firstProcessInstanceEngineDto.getProcessDefinitionKey())))
+        .isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                createExpectedIndexNameForProcessDefinition(
+                    secondProcessInstanceEngineDto.getProcessDefinitionKey())))
+        .isTrue();
 
     // then events have been saved in each index. The conversion to set is to remove duplicate
     // entries due to
     // multiple import batches
-    Set<String> idsInFirstIndex =
+    final Set<String> idsInFirstIndex =
         getSavedEventsForProcessDefinitionKey(
                 firstProcessInstanceEngineDto.getProcessDefinitionKey())
             .stream()
@@ -515,7 +516,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   public void noIndexCreatedOnImportWithFeatureDisabled() throws IOException {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
-    ProcessInstanceEngineDto processInstanceEngineDto =
+    final ProcessInstanceEngineDto processInstanceEngineDto =
         deployAndStartUserTaskProcessWithName("shouldNotBeCreated");
 
     // when
@@ -523,19 +524,17 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    OptimizeElasticsearchClient esClient =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    GetIndexRequest request =
-        new GetIndexRequest(
-            createExpectedIndexNameForProcessDefinition(
-                processInstanceEngineDto.getProcessDefinitionKey()));
-    assertThat(esClient.exists(request)).isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                createExpectedIndexNameForProcessDefinition(
+                    processInstanceEngineDto.getProcessDefinitionKey())))
+        .isFalse();
   }
 
   @Test
   public void processDefinitionIsResolvedAsDeletedWhenImportingInstanceData() {
     // given
-    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final BpmnModelInstance processModel = getSingleServiceTaskProcess();
     final ProcessDefinitionEngineDto deletedDefinition =
         engineIntegrationExtension.deployProcessAndGetProcessDefinition(
             processModel, DEFAULT_TENANT);
@@ -588,12 +587,12 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.class);
   }
 
-  private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
+  private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(final String processName) {
     return engineIntegrationExtension.deployAndStartProcess(
         BpmnModels.getSingleUserTaskDiagram(processName, START_EVENT, END_EVENT, USER_TASK));
   }
 
-  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
+  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(final String processName) {
     return engineIntegrationExtension.deployAndStartProcess(
         getDoubleUserTaskDiagram(processName, START_EVENT, END_EVENT, USER_TASK, USER_TASK_2));
   }
@@ -613,16 +612,12 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void createCamundaActivityEventsIndexForKey(final String key) {
-    final OptimizeElasticsearchClient esClient =
-        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
-    final OptimizeIndexNameService indexNameService = esClient.getIndexNameService();
+    final OptimizeIndexNameService indexNameService =
+        databaseIntegrationTestExtension.getIndexNameService();
     final CamundaActivityEventIndexES newIndex = new CamundaActivityEventIndexES(key);
-    CreateIndexRequest request =
-        new CreateIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(newIndex));
-    request.alias(
-        new Alias(indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName()))
-            .writeIndex(true));
-    esClient.getHighLevelClient().indices().create(request, esClient.requestOptions());
+    databaseIntegrationTestExtension.createIndex(
+        indexNameService.getOptimizeIndexNameWithVersion(newIndex),
+        indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName()));
   }
 
   private void saveDeletedDefinitionToElasticsearch(

@@ -6,14 +6,17 @@
 package org.camunda.optimize.rest.pub;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.rest.AbstractVariableLabelIT;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class PublicApiProcessVariableLabelIT extends AbstractVariableLabelIT {
 
   private final String ACCESS_TOKEN = "aToken";
@@ -29,11 +32,11 @@ public class PublicApiProcessVariableLabelIT extends AbstractVariableLabelIT {
   @Test
   public void updateVariableLabelsWithoutAccessToken() {
     // given
-    DefinitionVariableLabelsDto definitionVariableLabelsDto =
+    final DefinitionVariableLabelsDto definitionVariableLabelsDto =
         new DefinitionVariableLabelsDto(PROCESS_DEFINITION_KEY, Collections.emptyList());
 
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableLabelRequest(definitionVariableLabelsDto, null)

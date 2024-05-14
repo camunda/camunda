@@ -15,7 +15,7 @@ import './RawDataModal.scss';
 export default function RawDataModal({name, report, open, onClose}) {
   return (
     <Modal className="RawDataModal" open={open} size="lg" onClose={onClose}>
-      <Modal.Header>{name}</Modal.Header>
+      <Modal.Header title={name} />
       <Modal.Content>
         <InstanceViewTable report={report} />
       </Modal.Content>

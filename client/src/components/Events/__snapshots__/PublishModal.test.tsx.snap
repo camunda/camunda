@@ -22,10 +22,8 @@ exports[`should show different text depending on the republish prop 1`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
-    Publishing process
-  </ForwardRef(ModalHeader)>
+    title="Publishing process"
+  />
   <ForwardRef>
     <p>
       Published event-based processes will be available to use in reports by selected users.
@@ -50,11 +48,7 @@ exports[`should show different text depending on the republish prop 1`] = `
       </div>
     </div>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}
@@ -81,10 +75,8 @@ exports[`should show different text depending on the republish prop 2`] = `
   open={true}
 >
   <ForwardRef(ModalHeader)
-    iconDescription="Close"
-  >
-    Re-publishing process
-  </ForwardRef(ModalHeader)>
+    title="Re-publishing process"
+  />
   <ForwardRef>
     <p>
       Re-publishing will update data in all associated reports.
@@ -109,11 +101,7 @@ exports[`should show different text depending on the republish prop 2`] = `
       </div>
     </div>
   </ForwardRef>
-  <ForwardRef(ModalFooter)
-    closeModal={[Function]}
-    onRequestClose={[Function]}
-    onRequestSubmit={[Function]}
-  >
+  <ForwardRef(ModalFooter)>
     <Button
       className="close"
       disabled={false}

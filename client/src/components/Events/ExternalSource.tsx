@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useEffect, useMemo} from 'react';
+import {useState, useEffect, useMemo, MouseEvent} from 'react';
 import {TableSelectRow} from '@carbon/react';
 import debounce from 'debounce';
 import classnames from 'classnames';
@@ -13,23 +13,15 @@ import classnames from 'classnames';
 import {Button, Checklist, DocsLink} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
-import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
 
-import {loadExternalGroups} from './service';
+import {ExternalSource, loadExternalGroups} from './service';
 
-import './ExternalSource.scss';
-
-type Source = {
-  type: string;
-  configuration: {
-    includeAllGroups?: boolean;
-    group: string | null;
-  };
-};
+import './ExternalSourceSelection.scss';
 
 const debounceRequest = debouncePromise();
-const externalSource: Source = {
+const externalSource: ExternalSource = {
   type: 'external',
   configuration: {includeAllGroups: true, group: null},
 };
@@ -37,12 +29,12 @@ const pageSize = 10;
 
 interface ExternalSourceProps {
   empty: boolean;
-  externalSources: Source[];
-  existingExternalSources: Source[];
-  onChange: (sources: (Source | null)[]) => void;
+  externalSources: ExternalSource[];
+  existingExternalSources: ExternalSource[];
+  onChange: (sources: (ExternalSource | null)[]) => void;
 }
 
-export default function ExternalSource({
+export default function ExternalSourceSelection({
   empty,
   onChange,
   externalSources,
@@ -83,7 +75,7 @@ export default function ExternalSource({
 
   if (empty) {
     return (
-      <div className="ExternalSource empty">
+      <div className="ExternalSourceSelection empty">
         {t('events.table.seeDocs')}
         <DocsLink location="apis-clients/optimize-api/event-ingestion/">
           {t('events.table.documentation')}
@@ -93,10 +85,11 @@ export default function ExternalSource({
     );
   }
 
-  const toggleAllEventsGroup = <T extends {target: EventTarget}>({target}: T) => {
-    const {checked} = target as HTMLInputElement;
-    onChange(checked ? [externalSource] : []);
+  const toggleAllEventsGroup = (event: MouseEvent<HTMLInputElement>) => {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    onChange(isChecked ? [externalSource] : []);
   };
+
   const selectAllExists = existingExternalSources.some((src) => src.configuration.includeAllGroups);
   const selectAll =
     externalSources.some((src) => src.configuration.includeAllGroups) || selectAllExists;
@@ -105,40 +98,41 @@ export default function ExternalSource({
     .map((src) => src.configuration.group);
 
   return (
-    <div className="ExternalSource">
-      <Checklist<string | null>
+    <div className="ExternalSourceSelection">
+      <Checklist
         customHeader={t('events.sources.eventGroups')}
         preItems={
-          !loading && !query
-            ? {
-                content: [
-                  <TableSelectRow
-                    id="selectAll"
-                    name="selectAll"
-                    ariaLabel={t('events.sources.allInOne').toString()}
-                    className={classnames({highlight: selectAll && !selectAllExists})}
-                    checked={selectAll}
-                    disabled={selectAllExists}
-                    onSelect={toggleAllEventsGroup}
-                  />,
-                  t('events.sources.allInOne'),
-                ],
-                props: {
-                  onClick: () =>
-                    toggleAllEventsGroup({target: {checked: !selectAll} as HTMLInputElement}),
-                },
-              }
-            : undefined
+          !loading &&
+          !query && {
+            content: [
+              <TableSelectRow
+                id="selectAll"
+                name="selectAll"
+                ariaLabel={t('events.sources.allInOne').toString()}
+                className={classnames({highlight: selectAll && !selectAllExists})}
+                checked={selectAll}
+                disabled={selectAllExists}
+                onSelect={toggleAllEventsGroup}
+              />,
+              t('events.sources.allInOne'),
+            ],
+            props: {
+              // @ts-ignore
+              onClick: () => toggleAllEventsGroup({target: {checked: !selectAll}}),
+            },
+          }
         }
         selectedItems={selectedGroups}
         allItems={availableValues}
         onSearch={setQuery}
         onChange={(selected) =>
           onChange(
-            selected.map((group) => ({
-              type: 'external',
-              configuration: {includeAllGroups: false, group: group || null},
-            }))
+            selected
+              .filter((group): group is string | null => typeof group !== 'undefined')
+              .map((group) => ({
+                type: 'external',
+                configuration: {includeAllGroups: false, group},
+              }))
           )
         }
         loading={loading}

@@ -20,13 +20,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class AssigneeQueryFilter implements QueryFilter<IdentityLinkFilterDataDto> {
 
+  @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<IdentityLinkFilterDataDto> assigneeFilters,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(assigneeFilters)) {
       final List<QueryBuilder> filters = query.filter();
-      for (IdentityLinkFilterDataDto assigneeFilter : assigneeFilters) {
+      for (final IdentityLinkFilterDataDto assigneeFilter : assigneeFilters) {
         filters.add(
             nestedQuery(
                 FLOW_NODE_INSTANCES, createAssigneeFilterQuery(assigneeFilter), ScoreMode.None));

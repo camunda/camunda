@@ -7,8 +7,9 @@
 
 import React from 'react';
 import equal from 'fast-deep-equal';
+import {InlineNotification} from '@carbon/react';
 
-import {BPMNDiagram, MessageBox, PageTitle} from 'components';
+import {BPMNDiagram, PageTitle} from 'components';
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withDocs, withErrorHandling} from 'HOC';
@@ -32,7 +33,7 @@ export class BranchAnalysis extends React.Component {
         processDefinitionVersions: [],
         identifier: 'definition',
         tenantIds: [],
-        filter: [],
+        filters: [],
       },
       data: null,
       hoveredControl: null,
@@ -61,8 +62,13 @@ export class BranchAnalysis extends React.Component {
           updateSelection={this.updateSelection}
           xml={xml}
         />
-        {config.filter && incompatibleFilters(config.filter) && (
-          <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+        {config.filters && incompatibleFilters(config.filters) && (
+          <InlineNotification
+            kind="warning"
+            hideCloseButton
+            subtitle={t('common.filter.incompatibleFilters')}
+            className="incompatibleFiltersWarning"
+          />
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">
@@ -95,7 +101,7 @@ export class BranchAnalysis extends React.Component {
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
       !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
     const tenantsChanged = !equal(prevConfig.tenantIds, config.tenantIds);
-    const filterChanged = !equal(prevConfig.filter, config.filter);
+    const filterChanged = !equal(prevConfig.filters, config.filters);
 
     if (procDefConfigured && (procDefChanged || tenantsChanged || filterChanged)) {
       this.setState({
@@ -104,7 +110,7 @@ export class BranchAnalysis extends React.Component {
           config.processDefinitionVersions,
           config.tenantIds,
           config.identifier,
-          config.filter
+          config.filters
         ),
       });
     }

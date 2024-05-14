@@ -57,8 +57,6 @@ import org.springframework.stereotype.Component;
 public class DigestService implements ConfigurationReloadable {
 
   private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
-  private static final String HTTP_PREFIX = "http://";
-  private static final String HTTPS_PREFIX = "https://";
   private static final String UTM_SOURCE = "digest";
   private static final String UTM_MEDIUM = "email";
   private static final String DEFAULT_LOCALE = "en";
@@ -369,8 +367,12 @@ public class DigestService implements ConfigurationReloadable {
         return "NA";
       }
       if (ViewProperty.DURATION.equals(kpiMeasure)) {
-        return DurationFormatterUtil.formatMilliSecondsToReadableDurationString(
-            (long) Double.parseDouble(value));
+        try {
+          return DurationFormatterUtil.formatMilliSecondsToReadableDurationString(
+              (long) Double.parseDouble(value));
+        } catch (final NumberFormatException exception) {
+          throw new OptimizeRuntimeException("Value could not be parsed to number: " + value);
+        }
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
         return String.format("%.2f %%", Double.parseDouble(value));
       } else {
@@ -384,9 +386,7 @@ public class DigestService implements ConfigurationReloadable {
           previousValue == null ? Double.NaN : Double.parseDouble(previousValue);
       return previousValue == null || previousValueAsDouble == 0.
           ? 0.
-          : 100
-              * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
-                  / previousValueAsDouble);
+          : calculatePercentageChange(kpiResult, previousValueAsDouble);
     }
 
     private KpiChangeType evaluateChangeType(
@@ -399,6 +399,18 @@ public class DigestService implements ConfigurationReloadable {
       } else {
         return changeInPercent > 0. ? KpiChangeType.GOOD : KpiChangeType.BAD;
       }
+    }
+  }
+
+  private static double calculatePercentageChange(
+      KpiResultDto kpiResult, double previousValueAsDouble) {
+    try {
+      return 100
+          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
+              / previousValueAsDouble);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Value could not be parsed to number: " + kpiResult.getValue());
     }
   }
 }

@@ -24,6 +24,7 @@ jobs:
         branch:
           [
             "master",
+            "maintenance/3.13",
             "maintenance/3.12",
             "maintenance/3.11",
             "maintenance/3.10",
@@ -31,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
           ref: ${{ matrix.branch }}
 
@@ -45,7 +46,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Checkout code 2 # we do it cause setup maven step does the checkout to current branch
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
         with:
           ref: ${{ matrix.branch}}
 
@@ -70,7 +71,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -146,7 +147,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
           name: trivy-test-results-${{ steps.pom-info.outputs.project_version }}
           path: |
@@ -157,16 +158,16 @@ jobs:
 
   post-results-on-slack:
     name: Post results on slack
-    if: failure()
+    if: failure() && github.event_name != 'schedule'
     needs:
       - trivy-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@a727ce205a9e187cf179d30796762854cac9c231
+        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

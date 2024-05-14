@@ -8,6 +8,7 @@ package org.camunda.optimize;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
+import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -64,20 +65,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected final Supplier<OptimizeIntegrationTestException> eventNotFoundExceptionSupplier =
       () -> new OptimizeIntegrationTestException("Cannot find exported event");
 
-  protected static boolean isZeebeVersionPre81() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*");
-    return zeebeVersionPreSequenceField
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
-  protected static boolean isZeebeVersionPre82() {
-    final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*|8.1.*");
-    return zeebeVersionPreSequenceField
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
   protected static boolean isZeebeVersionPre83() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
     return zeebeVersionPattern
@@ -92,7 +79,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
-  protected static boolean isZeebeVersionPre85() {
+  public static boolean isZeebeVersionPre85() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*|8.4.*");
     return zeebeVersionPattern
         .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
@@ -207,14 +194,19 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     waitUntilRecordMatchingQueryExported(DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME, query);
   }
 
-  protected void waitUntilUserTaskRecordWithElementIdAndIntentExported(
-      final String instanceElementId, final String intent) {
+  protected void waitUntilUserTaskRecordWithIntentExported(final UserTaskIntent intent) {
+    waitUntilUserTaskRecordWithIntentExported(1, intent);
+  }
+
+  protected void waitUntilUserTaskRecordWithIntentExported(
+      final long minRecordCount, final UserTaskIntent intent) {
     final TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(
         ZeebeUserTaskRecordDto.Fields.value + "." + ZeebeUserTaskDataDto.Fields.elementId,
-        instanceElementId);
-    query.addTermQuery(ZeebeRecordDto.Fields.intent, intent);
-    waitUntilRecordMatchingQueryExported(DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME, query);
+        USER_TASK);
+    query.addTermQuery(ZeebeRecordDto.Fields.intent, intent.name());
+    waitUntilRecordMatchingQueryExported(
+        minRecordCount, DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME, query);
   }
 
   protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
@@ -311,7 +303,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 
-  protected OffsetDateTime getTimestampForZeebeEventsWithIntent(
+  protected OffsetDateTime getTimestampForFirstZeebeEventsWithIntent(
       final List<? extends ZeebeRecordDto> eventsForElement, final Intent intent) {
     final ZeebeRecordDto startOfElement =
         eventsForElement.stream()
@@ -337,6 +329,11 @@ public abstract class AbstractCCSMIT extends AbstractIT {
             .orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(
         Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
+  protected OffsetDateTime getTimestampForZeebeUnassignEvent(
+      final List<? extends ZeebeRecordDto> eventsForElement) {
+    return getTimestampForZeebeAssignEvents(eventsForElement, "");
   }
 
   @SneakyThrows

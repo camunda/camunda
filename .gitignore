@@ -22,6 +22,7 @@ client/.node/
 
 qa/engine-rest-secure/overlays
 qa/engine-rest-custom/overlays
+qa/engine-it-plugin/overlays
 
 # visual studio code workspace files
 *.code-workspace

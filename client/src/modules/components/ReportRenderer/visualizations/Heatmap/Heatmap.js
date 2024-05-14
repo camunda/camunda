@@ -8,7 +8,6 @@
 import React, {useState} from 'react';
 
 import {
-  Icon,
   BPMNDiagram,
   TargetValueBadge,
   LoadingIndicator,
@@ -16,17 +15,17 @@ import {
   Select,
   DownloadButton,
 } from 'components';
-import {withUser} from 'HOC';
 import {loadRawData, formatters, getTooltipText, processResult} from 'services';
 import {t} from 'translation';
+import {useUser} from 'hooks';
 
 import {getConfig, calculateTargetValueHeat} from './service';
 
 import './Heatmap.scss';
 
-export function Heatmap({report, context, user}) {
+export default function Heatmap({report, context}) {
   const [selectedMeasure, setSelectedMeasure] = useState(0);
-
+  const {user} = useUser();
   const {
     name,
     result,
@@ -106,6 +105,8 @@ export function Heatmap({report, context, user}) {
               <span className="text">{tooltipHTML}</span>
               {context !== 'shared' && (
                 <DownloadButton
+                  kind="secondary"
+                  size="sm"
                   retriever={() => loadRawData(getConfig(report.data, id))}
                   fileName={
                     t('report.heatTarget.exceededInstances', {
@@ -115,7 +116,6 @@ export function Heatmap({report, context, user}) {
                   totalCount={result.instanceCount}
                   user={user}
                 >
-                  <Icon type="save" />
                   {t('common.instanceIds')}
                 </DownloadButton>
               )}
@@ -188,8 +188,6 @@ export function Heatmap({report, context, user}) {
     </div>
   );
 }
-
-export default withUser(Heatmap);
 
 function getMeasureString(measure, shortNotation) {
   let property = measure.property;

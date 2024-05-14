@@ -5,12 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
-import {loadVariables} from 'services';
-
-import {BranchControlPanel} from './BranchControlPanel';
+import BranchControlPanel from './BranchControlPanel';
 
 jest.mock('services', () => {
   return {
@@ -94,22 +91,10 @@ it('should disable gateway and EndEvent elements if no ProcDef selected', async 
   );
 });
 
-it('should load the variable names and hand them to the filter if process definition changes', async () => {
-  const node = shallow(<BranchControlPanel {...data} />);
-  node.setProps({
-    processDefinitionKey: 'fooKey',
-    processDefinitionVersions: ['fooVersion'],
-  });
-
-  await flushPromises();
-  node.update();
-
-  expect(loadVariables).toHaveBeenCalled();
-  expect(node.find('Filter').prop('variables')).toEqual(loadVariables());
-});
-
 it('should display a sentence to describe what the user can do on this page', () => {
   const node = shallow(<BranchControlPanel {...emptyData} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('ControlPanel').dive().text()).toMatch(
+    /For(.*?)analyze how the branches of(.*?)affect the probability that an instance reached/
+  );
 });

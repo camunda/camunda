@@ -119,9 +119,7 @@ exports[`should match snapshot 1`] = `
       }
     }
     toolbar={
-      <TableToolbar
-        aria-label="data table toolbar"
-      >
+      <TableToolbar>
         <TableToolbarContent>
           <b>
             Events list
@@ -153,12 +151,20 @@ exports[`should match snapshot 1`] = `
         <Button
           className="collapseButton"
           hasIconOnly={true}
+          iconDescription="Collapse"
           kind="ghost"
-          label="Collapse"
           onClick={[Function]}
-        >
-          <ForwardRef(ChevronDown) />
-        </Button>
+          renderIcon={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "propTypes": Object {
+                "size": [Function],
+              },
+              "render": [Function],
+            }
+          }
+          tooltipPosition="left"
+        />
       </TableToolbar>
     }
     updateSorting={[Function]}

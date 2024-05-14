@@ -8,23 +8,31 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
-import {Button} from '@carbon/react';
+import {Button, Grid, Column} from '@carbon/react';
+import {CopyFile, Edit, Save, TrashCan} from '@carbon/icons-react';
 
 import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {
-  EntityList,
   Deleter,
   BulkDeleter,
   ReportTemplateModal,
   DashboardTemplateModal,
   EmptyState,
-  LoadingIndicator,
   KpiCreationModal,
+  CarbonEntityList,
+  Icon,
 } from 'components';
-import {formatters, createEntity, updateEntity, checkDeleteConflict, loadEntities} from 'services';
+import {
+  formatters,
+  createEntity,
+  updateEntity,
+  checkDeleteConflict,
+  loadEntities,
+  getEntityIcon,
+} from 'services';
 
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -102,192 +110,191 @@ export function Home({mightFail, user}) {
 
   const isEditor = user?.authorizations.includes('entity_editor');
 
-  const showEmptyStateComponent = !entities?.length && isEditor;
-
   return (
-    <div className="Home">
-      <div className="content">
-        {isLoading && <LoadingIndicator />}
-        {!isLoading && showEmptyStateComponent && (
-          <EmptyState
-            title={t('home.emptyState.title')}
-            description={t('home.emptyState.description')}
-            icon="dashboard-optimize-accent"
-            actions={
-              <>
-                <Button size="md" onClick={() => setCreating('dashboard')}>
-                  {t('dashboard.createNew')}
-                </Button>
-                <CreateNewButton
-                  create={setCreating}
-                  importEntity={() => fileInput.current.click()}
-                />
-              </>
-            }
-          />
-        )}
-        {!isLoading && !showEmptyStateComponent && (
-          <EntityList
-            name={t('home.title')}
-            action={(bulkActive) =>
-              isEditor && (
-                <CreateNewButton
-                  kind={bulkActive ? 'tertiary' : 'primary'}
-                  importEntity={() => fileInput.current.click()}
-                  create={setCreating}
-                />
-              )
-            }
-            bulkActions={
-              isEditor && [
-                <BulkDeleter
-                  type="delete"
-                  deleteEntities={removeEntities}
-                  checkConflicts={checkConflicts}
-                  conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
-                />,
-              ]
-            }
-            empty={t('home.empty')}
-            sorting={sorting}
-            onChange={loadList}
-            columns={[
-              {name: t('common.entity.type'), key: 'entityType', defaultOrder: 'asc', hidden: true},
-              {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
-              {name: t('common.description')},
-              t('home.contents'),
-              {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
-              {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
-            ]}
-            data={
-              entities &&
-              entities.map((entity) => {
-                const {
-                  id,
-                  entityType,
-                  currentUserRole,
-                  lastModified,
-                  lastModifier,
-                  name,
+    <Grid condensed className="Home" fullWidth>
+      <Column sm={4} md={8} lg={16}>
+        <CarbonEntityList
+          isLoading={isLoading}
+          emptyStateComponent={
+            isEditor && (
+              <EmptyState
+                title={t('home.emptyState.title')}
+                description={t('home.emptyState.description')}
+                icon={<Icon type="dashboard-optimize" />}
+                actions={
+                  <>
+                    <Button size="md" onClick={() => setCreating('dashboard')}>
+                      {t('dashboard.createNew')}
+                    </Button>
+                    <CreateNewButton
+                      create={setCreating}
+                      importEntity={() => fileInput.current.click()}
+                    />
+                  </>
+                }
+              />
+            )
+          }
+          title={t('home.title')}
+          action={
+            isEditor && (
+              <CreateNewButton
+                size="lg"
+                kind="primary"
+                create={setCreating}
+                importEntity={() => fileInput.current.click()}
+              />
+            )
+          }
+          bulkActions={
+            isEditor && [
+              <BulkDeleter
+                type="delete"
+                deleteEntities={removeEntities}
+                checkConflicts={checkConflicts}
+                conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+                useCarbonAction
+              />,
+            ]
+          }
+          headers={[
+            {name: t('common.entity.type'), key: 'entityType', defaultOrder: 'asc', hidden: true},
+            {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+            t('common.description'),
+            t('home.contents'),
+            {name: t('common.entity.modifiedBy'), key: 'lastModifier', defaultOrder: 'asc'},
+            {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
+          ]}
+          rows={
+            entities &&
+            entities.map((entity) => {
+              const {
+                id,
+                entityType,
+                currentUserRole,
+                lastModified,
+                lastModifier,
+                name,
+                description,
+                data,
+                reportType,
+                combined,
+              } = entity;
+
+              const actions = [];
+              if (
+                currentUserRole === 'manager' ||
+                (currentUserRole === 'editor' && entityType !== 'collection')
+              ) {
+                actions.push(
+                  {
+                    icon: <Edit />,
+                    text: t('common.edit'),
+                    action: () => edit(entity),
+                  },
+                  {
+                    icon: <CopyFile />,
+                    text: t('common.copy'),
+                    action: () => setCopying(entity),
+                  },
+                  {
+                    icon: <TrashCan />,
+                    text: t('common.delete'),
+                    action: () => setDeleting(entity),
+                  }
+                );
+              }
+
+              if (currentUserRole === 'editor' && entityType !== 'collection') {
+                actions.push({
+                  icon: <Save />,
+                  text: t('common.export'),
+                  action: () => {
+                    window.location.href = `api/export/${entityType}/json/${
+                      entity.id
+                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                  },
+                });
+              }
+
+              return {
+                id,
+                entityType,
+                link: formatLink(id, entityType),
+                icon: getEntityIcon(entityType),
+                type: formatType(entityType, reportType, combined),
+                name,
+                meta: [
                   description,
-                  data,
-                  reportType,
-                  combined,
-                } = entity;
-
-                const actions = [];
-                if (
-                  currentUserRole === 'manager' ||
-                  (currentUserRole === 'editor' && entityType !== 'collection')
-                ) {
-                  actions.push(
-                    {
-                      icon: 'edit',
-                      text: t('common.edit'),
-                      action: () => edit(entity),
-                    },
-                    {
-                      icon: 'copy-document',
-                      text: t('common.copy'),
-                      action: () => setCopying(entity),
-                    },
-                    {
-                      icon: 'delete',
-                      text: t('common.delete'),
-                      action: () => setDeleting(entity),
-                    }
-                  );
-                }
-
-                if (currentUserRole === 'editor' && entityType !== 'collection') {
-                  actions.push({
-                    icon: 'save',
-                    text: t('common.export'),
-                    action: () => {
-                      window.location.href = `api/export/${entityType}/json/${
-                        entity.id
-                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
-                    },
-                  });
-                }
-
-                return {
-                  id,
-                  entityType,
-                  link: formatLink(id, entityType),
-                  icon: entityType,
-                  type: formatType(entityType, reportType, combined),
-                  name,
-                  meta: [
-                    description,
-                    formatSubEntities(data.subEntityCounts),
-                    lastModifier,
-                    format(parseISO(lastModified), 'PP'),
-                  ],
-                  actions,
-                };
-              })
+                  formatSubEntities(data.subEntityCounts),
+                  lastModifier,
+                  format(parseISO(lastModified), 'PP'),
+                ],
+                actions,
+              };
+            })
+          }
+          sorting={sorting}
+          onChange={loadList}
+        />
+        <Deleter
+          entity={deleting}
+          type={deleting && deleting.entityType}
+          onDelete={loadList}
+          checkConflicts={async () => {
+            const {entityType, id} = deleting;
+            if (entityType === 'report') {
+              return checkDeleteConflict(id, entityType);
             }
+            return {conflictedItems: []};
+          }}
+          onClose={() => setDeleting(null)}
+        />
+        <Copier
+          entity={copying}
+          onCopy={(name, redirect) => {
+            setCopying(null);
+            if (!redirect) {
+              loadList();
+            }
+          }}
+          onCancel={() => setCopying(null)}
+        />
+        {creating === 'collection' && (
+          <CollectionModal
+            title={t('common.collection.modal.title.new')}
+            initialName={t('common.collection.modal.defaultName')}
+            confirmText={t('common.collection.modal.createBtn')}
+            onClose={() => setCreating(null)}
+            onConfirm={(name) => createEntity('collection', {name})}
+            showSourcesModal
           />
         )}
-      </div>
-      <Deleter
-        entity={deleting}
-        type={deleting && deleting.entityType}
-        onDelete={loadList}
-        checkConflicts={async () => {
-          const {entityType, id} = deleting;
-          if (entityType === 'report') {
-            return checkDeleteConflict(id, entityType);
-          }
-          return {conflictedItems: []};
-        }}
-        onClose={() => setDeleting(null)}
-      />
-      <Copier
-        entity={copying}
-        onCopy={(name, redirect) => {
-          setCopying(null);
-          if (!redirect) {
-            loadList();
-          }
-        }}
-        onCancel={() => setCopying(null)}
-      />
-      {creating === 'collection' && (
-        <CollectionModal
-          title={t('common.collection.modal.title.new')}
-          initialName={t('common.collection.modal.defaultName')}
-          confirmText={t('common.collection.modal.createBtn')}
-          onClose={() => setCreating(null)}
-          onConfirm={(name) => createEntity('collection', {name})}
-          showSourcesModal
+        {editingCollection && (
+          <CollectionModal
+            title={t('common.collection.modal.title.edit')}
+            initialName={editingCollection.name}
+            confirmText={t('common.collection.modal.editBtn')}
+            onClose={stopEditingCollection}
+            onConfirm={async (name) => {
+              await updateEntity('collection', editingCollection.id, {name});
+              stopEditingCollection();
+              loadList();
+            }}
+          />
+        )}
+        {creating === 'report' && <ReportTemplateModal onClose={() => setCreating(null)} />}
+        {creating === 'kpi' && <KpiCreationModal onClose={() => setCreating(null)} />}
+        {creating === 'dashboard' && <DashboardTemplateModal onClose={() => setCreating(null)} />}
+        <input
+          className="hiddenFilterInput"
+          onChange={createUploadedEntity}
+          type="file"
+          accept=".json"
+          ref={fileInput}
         />
-      )}
-      {editingCollection && (
-        <CollectionModal
-          title={t('common.collection.modal.title.edit')}
-          initialName={editingCollection.name}
-          confirmText={t('common.collection.modal.editBtn')}
-          onClose={stopEditingCollection}
-          onConfirm={async (name) => {
-            await updateEntity('collection', editingCollection.id, {name});
-            stopEditingCollection();
-            loadList();
-          }}
-        />
-      )}
-      {creating === 'report' && <ReportTemplateModal onClose={() => setCreating(null)} />}
-      {creating === 'kpi' && <KpiCreationModal onClose={() => setCreating(null)} />}
-      {creating === 'dashboard' && <DashboardTemplateModal onClose={() => setCreating(null)} />}
-      <input
-        className="hiddenFilterInput"
-        onChange={createUploadedEntity}
-        type="file"
-        accept=".json"
-        ref={fileInput}
-      />
-    </div>
+      </Column>
+    </Grid>
   );
 }
 

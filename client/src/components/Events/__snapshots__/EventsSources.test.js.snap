@@ -52,10 +52,7 @@ exports[`should match snapshot 1`] = `
     expanded={true}
     onChange={[Function]}
     onClear={[Function]}
-    persistent={false}
     placeholder="Search for name..."
-    tabIndex="0"
-    translateWithId={[Function]}
     value=""
   />
   <Button

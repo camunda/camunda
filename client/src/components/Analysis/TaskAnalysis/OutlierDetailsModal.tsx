@@ -36,7 +36,7 @@ export default function OutlierDetailsModal({
 
   return (
     <Modal open onClose={onClose} className="OutlierDetailsModal" size="lg">
-      <Modal.Header>{t('analysis.task.detailsModal.title', {name})}</Modal.Header>
+      <Modal.Header title={t('analysis.task.detailsModal.title', {name})} />
       <Modal.Content>
         <p className="description">
           {t('analysis.task.totalFlowNodeInstances', {count: totalCount})}

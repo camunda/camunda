@@ -509,7 +509,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                     .hasSizeGreaterThan(1));
   }
 
-  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processStartedDuringProcess() {
     // given
@@ -538,7 +537,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             });
   }
 
-  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
     // given
@@ -561,7 +559,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                         BpmnElementType.END_EVENT.getElementTypeName().get()));
   }
 
-  @DisabledIf("isZeebeVersionPre81")
   @Test
   public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
     // given
@@ -627,9 +624,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                             SEND_TASK, getBpmnElementTypeNameForType(BpmnElementType.SEND_TASK))));
   }
 
-  // Elements such as data stores, date objects, link events, escalation events and undefined tasks
-  // were introduced with 8.2
-  @DisabledIf("isZeebeVersionPre82")
   @Test
   public void importZeebeProcessInstanceData_processContainsNewBpmnElementsIntroducedWith820() {
     // given a process that contains the following:
@@ -711,7 +705,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // when
     waitUntilInstanceRecordWithElementTypeAndIntentExported(
         BpmnElementType.BOUNDARY_EVENT, ELEMENT_COMPLETED);
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(12);
     importAllZeebeEntitiesFromScratch();
 
     // then

@@ -17,9 +17,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.codehaus.groovy</groupId>
+      <groupId>org.apache.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.21</version>
+      <version>4.0.21</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>

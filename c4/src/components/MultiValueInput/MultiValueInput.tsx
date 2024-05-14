@@ -3,6 +3,8 @@ import { usePrefix } from "@carbon/react"
 import classnames from "classnames"
 import { Close } from "@carbon/icons-react"
 
+import { useId } from "../../hooks"
+
 import "./MultiValueInput.scss"
 
 type Value = {
@@ -32,10 +34,19 @@ export default function MultiValueInput({
 	...props
 }: MultiValueInputProps) {
 	const prefix = usePrefix()
+	const id = useId()
+
+	if(!titleText && !props.placeholder && !props["aria-label"]) {
+		console.error("MultiValueInput: Must provide either a titleText, placeholder, or aria-label.")
+	}
 
 	return (
 		<div className="MultiValueInput">
-			{titleText && <label className={`${prefix}--label`}>{titleText}</label>}
+			{titleText && (
+				<label id={id} className={`${prefix}--label`}>
+					{titleText}
+				</label>
+			)}
 			<div
 				className={classnames(
 					"textInput",
@@ -58,9 +69,15 @@ export default function MultiValueInput({
 						/>
 					)
 				})}
-				<input {...props} className="textInput" />
+				<input
+					{...props}
+					aria-labelledby={titleText ? id : undefined}
+					className="textInput"
+				/>
 			</div>
-			{helperText && !invalid  && <div className={`${prefix}--form__helper-text`}>{helperText}</div>}
+			{helperText && !invalid && (
+				<div className={`${prefix}--form__helper-text`}>{helperText}</div>
+			)}
 			{invalid && invalidText && (
 				<div className={`${prefix}--form-requirement`}>{invalidText}</div>
 			)}

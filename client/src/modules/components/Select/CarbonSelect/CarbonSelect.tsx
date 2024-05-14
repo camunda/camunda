@@ -94,8 +94,8 @@ export default function CarbonSelect<T extends object | string | number>(
       <MenuDropdown
         {...rest}
         onChange={(e: any) => onChange(e)}
-        label={props.placeholder || getLabel() || t('common.select')}
-        menuTarget={document.querySelector('.fullscreen')}
+        label={props.placeholder || getLabel() || t('common.select').toString()}
+        menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
       >
         {renderChildrenWithProps(children)}
       </MenuDropdown>
@@ -106,12 +106,16 @@ export default function CarbonSelect<T extends object | string | number>(
 
 type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
   label?: string | JSX.Element[];
+  children?: ReactNode;
+  disabled?: boolean;
 };
 
 CarbonSelect.Submenu = function Submenu(props: SubmenuProps) {
   return (
+    // @ts-ignore
+    // To make disabled state work, we can't pass children to it
     <MenuItemSelectable className="Submenu" {...props} label={props.label?.toString() || ''}>
-      {props.children}
+      {!props.disabled && props.children}
     </MenuItemSelectable>
   );
 };
@@ -124,8 +128,10 @@ CarbonSelect.Option = function Option<T extends object | string | number = strin
   props: OptionProps<T>
 ) {
   return (
+    // @ts-ignore
+    // To make disabled state work, we can't pass children to it
     <MenuItemSelectable className="Option" {...props} label={props.label?.toString() || ''}>
-      {props.children}
+      {!props.disabled && props.children}
     </MenuItemSelectable>
   );
 };

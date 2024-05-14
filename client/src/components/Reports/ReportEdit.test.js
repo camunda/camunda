@@ -131,7 +131,7 @@ it('should evaluate the report on mount if the config is complete, but the resul
   const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
   node.setState({shouldAutoReloadPreview: true});
 
-  expect(node.find('.loading')).toExist();
+  expect(node.find('Loading')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
 });
 
@@ -340,11 +340,11 @@ it('should show loading indicator if specified by children components', () => {
 
   node.find(ReportControlPanel).prop('setLoading')(true);
 
-  expect(node.find('.loading')).toExist();
+  expect(node.find('Loading')).toExist();
 
   node.find(ReportControlPanel).prop('setLoading')(false);
 
-  expect(node.find('.loading')).not.toExist();
+  expect(node.find('Loading')).not.toExist();
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {

@@ -44,7 +44,7 @@ jest.mock('services', () => {
 
 const initialProps = {
   config: {
-    filter: [],
+    filters: [],
     processDefinitionKey: null,
     tenantIds: [],
     processDefinitionVersions: null,
@@ -55,7 +55,7 @@ const initialProps = {
 
 const props = {
   config: {
-    filter: [],
+    filters: [],
     processDefinitionKey: 'a',
     tenantIds: [null],
     processDefinitionVersions: ['1'],
@@ -91,7 +91,7 @@ it('should load updated correlation when selection or configuration changes', as
   expect(loadCorrelationData.mock.calls[0][4]).toBe('g2');
 
   loadCorrelationData.mockClear();
-  node.setProps({config: {...props.config, filter: ['aFilter']}});
+  node.setProps({config: {...props.config, filters: ['aFilter']}});
 
   await flushPromises();
 

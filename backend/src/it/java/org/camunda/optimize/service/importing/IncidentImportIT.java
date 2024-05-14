@@ -20,6 +20,7 @@ import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer;
-import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
@@ -261,7 +262,7 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void importOpenIncidentFirstAndThenResolveIt() {
     // given  one open incident is created
-    BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
+    final BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
         engineIntegrationExtension.deployAndStartProcess(incidentProcess);
     incidentClient.createOpenIncidentForInstancesWithBusinessKey(
@@ -291,14 +292,13 @@ public class IncidentImportIT extends AbstractImportIT {
             });
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   @SneakyThrows
   public void openIncidentsDontOverwriteResolvedOnes() {
     // given
     final ProcessInstanceEngineDto processInstanceWithIncident =
         incidentClient.deployAndStartProcessInstanceWithOpenIncident();
-    manuallyAddAResolvedIncidentToElasticsearch(processInstanceWithIncident);
+    manuallyAddAResolvedIncidentToDatabase(processInstanceWithIncident);
 
     // when we import the open incident
     importAllEngineEntitiesFromScratch();
@@ -353,7 +353,7 @@ public class IncidentImportIT extends AbstractImportIT {
   public void adjustPageSize() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportIncidentMaxPageSize(1);
-    BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
+    final BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final String definitionId = engineIntegrationExtension.deployProcessAndGetId(incidentProcess);
     incidentClient.startProcessInstanceAndCreateOpenIncident(definitionId);
     incidentClient.startProcessInstanceAndCreateOpenIncident(definitionId);
@@ -520,7 +520,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void importOpenIncidents() {
-    for (EngineImportScheduler scheduler :
+    for (final EngineImportScheduler scheduler :
         embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()) {
       final ImportMediator mediator =
           scheduler.getImportMediators().stream()
@@ -540,7 +540,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void importResolvedIncidents() {
-    for (EngineImportScheduler scheduler :
+    for (final EngineImportScheduler scheduler :
         embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()) {
       final ImportMediator mediator =
           scheduler.getImportMediators().stream()
@@ -558,8 +558,8 @@ public class IncidentImportIT extends AbstractImportIT {
     }
   }
 
-  private void manuallyAddAResolvedIncidentToElasticsearch(
-      final ProcessInstanceEngineDto processInstanceWithIncident) {
+  private void manuallyAddAResolvedIncidentToDatabase(
+      final ProcessInstanceEngineDto processInstanceWithIncident) throws IOException {
     final HistoricIncidentEngineDto incidentEngineDto =
         engineIntegrationExtension.getHistoricIncidents().stream()
             .findFirst()
@@ -593,12 +593,10 @@ public class IncidentImportIT extends AbstractImportIT {
                         "Foo bar",
                         IncidentStatus.RESOLVED)))
             .build();
-    embeddedOptimizeExtension
-        .getDatabaseSchemaManager()
-        .createIndexIfMissing(
-            databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
-            new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),
-            Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS));
+    databaseIntegrationTestExtension.createIndex(
+        ProcessInstanceIndex.constructIndexName(
+            processInstanceWithIncident.getProcessDefinitionKey()),
+        PROCESS_INSTANCE_MULTI_ALIAS);
     databaseIntegrationTestExtension.addEntryToDatabase(
         getProcessInstanceIndexAliasName(processInstanceWithIncident.getProcessDefinitionKey()),
         processInstanceWithIncident.getId(),

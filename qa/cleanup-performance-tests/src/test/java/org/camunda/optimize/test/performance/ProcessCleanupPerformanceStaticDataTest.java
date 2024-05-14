@@ -10,25 +10,16 @@ import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_IND
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import java.time.Period;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -124,44 +115,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   @SneakyThrows
   private void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
       final String entityIndex, final String processInstanceField) {
-    final SearchRequest variableUpdateSearchRequest =
-        new SearchRequest()
-            .indices(entityIndex)
-            .source(
-                new SearchSourceBuilder()
-                    .query(matchAllQuery())
-                    .fetchSource(processInstanceField, null)
-                    .size(10_000));
-
-    SearchResponse camundaActivityEventsResponse =
-        databaseIntegrationTestExtension
-            .getOptimizeElasticsearchClient()
-            .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
-
-    while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
-      final Set<Object> processInstanceIds =
-          Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
-              .map(SearchHit::getSourceAsMap)
-              .map(hit -> hit.get(processInstanceField))
-              .collect(Collectors.toSet());
-
-      // all of these instances should be running
-      final Integer finishedProcessInstanceCount =
-          countFinishedProcessInstancedById(processInstanceIds);
-      assertThat(finishedProcessInstanceCount).isZero();
-
-      camundaActivityEventsResponse =
-          databaseIntegrationTestExtension
-              .getOptimizeElasticsearchClient()
-              .scroll(
-                  new SearchScrollRequest(camundaActivityEventsResponse.getScrollId())
-                      .scroll(SCROLL_KEEP_ALIVE));
-    }
-  }
-
-  private Integer countFinishedProcessInstancedById(final Set<Object> processInstanceIds) {
-    return databaseIntegrationTestExtension.getCountOfCompletedInstancesWithIdsIn(
-        processInstanceIds);
+    databaseIntegrationTestExtension.verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
+        entityIndex, processInstanceField, SCROLL_KEEP_ALIVE);
   }
 
   private Integer getCamundaProcessInstanceCount() {

@@ -60,10 +60,6 @@
       padding-bottom: 10px;
     }
 
-    .MessageBox {
-      margin-bottom: 10px;
-    }
-
     .FormGroup {
       &:not(.noSpacing) {
         padding: 17px 0;
@@ -92,12 +88,6 @@
       .formTitle,
       .formDescription {
         margin-left: 30%;
-      }
-
-      .Message,
-      .Message {
-        margin-left: 30%;
-        margin-top: 3px;
       }
 
       input[type='checkbox'],
@@ -152,10 +142,6 @@
           display: block;
           padding: 10px 0px;
         }
-      }
-
-      .MessageBox {
-        width: 110%;
       }
     }
   }

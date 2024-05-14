@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { within } from "@storybook/testing-library"
-import { expect, jest } from "@storybook/jest"
+import { within, expect } from "@storybook/test"
+
+import * as test from "@storybook/test"
 
 import MultiValueInput from "./MultiValueInput"
 
@@ -14,7 +15,7 @@ type Story = StoryObj<typeof MultiValueInput>
 
 export const mainStory: Story = {
 	args: {
-		onRemove: jest.fn(),
+		onRemove: test.fn(),
 		values: [
 			{ value: "first", label: "Tag label" },
 			{ value: "second", label: "Tag label" },
@@ -22,7 +23,8 @@ export const mainStory: Story = {
 		],
 		tagButtonTitle: "testButton",
 		titleText: "Multi value input title",
-		helperText:"Some additional helper text"
+		placeholder: "Placeholder text",
+		helperText: "Some additional helper text",
 	},
 	play: async ({ args, canvasElement }) => {
 		const canvas = within(canvasElement)
@@ -36,7 +38,7 @@ export const mainStory: Story = {
 
 export const invalidInput: Story = {
 	args: {
-		onRemove: jest.fn(),
+		onRemove: test.fn(),
 		values: [
 			{ value: "first", label: "Tag label" },
 			{ value: "second", label: "Tag label" },
@@ -44,6 +46,8 @@ export const invalidInput: Story = {
 			{ value: "fourth", label: "Tag label" },
 		],
 		tagButtonTitle: "testButton",
+		titleText: "Multi value input title",
+		placeholder: "Placeholder text",
 		invalid: true,
 		invalidText: "Third value is invalid",
 	},

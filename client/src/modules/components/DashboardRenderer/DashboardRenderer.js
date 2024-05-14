@@ -28,7 +28,9 @@ export default function DashboardRenderer({
   loadTile,
   addons,
   onLayoutChange,
+  onTileAdd,
   onTileUpdate,
+  onTileDelete,
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -79,7 +81,9 @@ export default function DashboardRenderer({
               tile={tile}
               filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
               addons={addons}
+              onTileAdd={onTileAdd}
               onTileUpdate={onTileUpdate}
+              onTileDelete={onTileDelete}
             />
           </div>
         );

@@ -31,7 +31,7 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.db.repository.IndexRepository;
-import org.camunda.optimize.service.db.repository.ProcessVariableRepository;
+import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessVariableScriptFactory;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
@@ -45,11 +45,11 @@ public class ProcessVariableUpdateWriter {
 
   private final ObjectMapper objectMapper;
   private final IndexRepository indexRepository;
-  private final ProcessVariableRepository processVariableRepository;
+  private final VariableRepository variableRepository;
 
   public List<ImportRequestDto> generateVariableUpdateImports(
       final List<ProcessVariableDto> variables) {
-    String importItemName = "variables";
+    final String importItemName = "variables";
     log.debug("Creating imports for {} [{}].", variables.size(), importItemName);
 
     final Set<String> keys =
@@ -60,7 +60,7 @@ public class ProcessVariableUpdateWriter {
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX, Set.of(PROCESS_INSTANCE_MULTI_ALIAS), keys);
 
-    Map<String, List<ProcessVariableDto>> processInstanceIdToVariables =
+    final Map<String, List<ProcessVariableDto>> processInstanceIdToVariables =
         groupVariablesByProcessInstanceIds(variables);
 
     return processInstanceIdToVariables.entrySet().stream()
@@ -73,7 +73,7 @@ public class ProcessVariableUpdateWriter {
     log.debug(
         "Deleting variable data on [{}] process instance documents with bulk request.",
         processInstanceIds.size());
-    processVariableRepository.deleteVariableDataByProcessInstanceIds(
+    variableRepository.deleteVariableDataByProcessInstanceIds(
         processDefinitionKey, processInstanceIds);
   }
 
@@ -86,8 +86,9 @@ public class ProcessVariableUpdateWriter {
     final String processDefinitionKey =
         variablesWithAllInformation.get(0).getProcessDefinitionKey();
 
-    List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
-    Map<String, Object> params = buildParameters(variables);
+    final List<SimpleProcessVariableDto> variables =
+        mapToSimpleVariables(variablesWithAllInformation);
+    final Map<String, Object> params = buildParameters(variables);
 
     final ScriptData updateScriptData =
         DatabaseWriterUtil.createScriptData(createInlineUpdateScript(), params, objectMapper);
@@ -97,7 +98,7 @@ public class ProcessVariableUpdateWriter {
       return null;
     }
     final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
-    ProcessInstanceDto processInstanceDto =
+    final ProcessInstanceDto processInstanceDto =
         getNewProcessInstanceRecord(
             processInstanceId,
             firstVariable.getEngineAlias(),
@@ -117,8 +118,8 @@ public class ProcessVariableUpdateWriter {
 
   private Map<String, List<ProcessVariableDto>> groupVariablesByProcessInstanceIds(
       final List<ProcessVariableDto> variableUpdates) {
-    Map<String, List<ProcessVariableDto>> processInstanceIdToVariables = new HashMap<>();
-    for (ProcessVariableDto variable : variableUpdates) {
+    final Map<String, List<ProcessVariableDto>> processInstanceIdToVariables = new HashMap<>();
+    for (final ProcessVariableDto variable : variableUpdates) {
       if (isVariableFromCaseDefinition(variable)
           || !isProcessVariableTypeSupported(variable.getType())) {
         log.warn(
@@ -151,19 +152,19 @@ public class ProcessVariableUpdateWriter {
   }
 
   private Map<String, Object> buildParameters(final List<SimpleProcessVariableDto> variables) {
-    Map<String, Object> params = new HashMap<>();
+    final Map<String, Object> params = new HashMap<>();
     params.put(VARIABLE_UPDATES_FROM_ENGINE, variables);
     return params;
   }
 
   private String createInlineUpdateScript() {
-    StringBuilder builder = new StringBuilder();
-    Map<String, String> substitutions = new HashMap<>();
+    final StringBuilder builder = new StringBuilder();
+    final Map<String, String> substitutions = new HashMap<>();
     substitutions.put("variables", VARIABLES);
     substitutions.put("variableUpdatesFromEngine", VARIABLE_UPDATES_FROM_ENGINE);
     final StringSubstitutor sub = new StringSubstitutor(substitutions);
-    String variableScript = ProcessVariableScriptFactory.createInlineUpdateScript();
-    String resolvedVariableScript = sub.replace(variableScript);
+    final String variableScript = ProcessVariableScriptFactory.createInlineUpdateScript();
+    final String resolvedVariableScript = sub.replace(variableScript);
     builder.append(resolvedVariableScript);
     return builder.toString();
   }

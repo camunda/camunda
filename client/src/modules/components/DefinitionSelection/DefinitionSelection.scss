@@ -38,8 +38,9 @@
         margin-top: 10px;
         margin-bottom: -25px;
         width: 400px;
-        .Message {
-          font-size: 12px;
+
+        .error {
+          color: var(--cds-text-error);
         }
       }
 

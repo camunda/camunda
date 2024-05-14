@@ -141,7 +141,7 @@ public class SharingPublicReaderRestService {
   @Path(PROCESS_VARIABLES_PATH)
   public List<ProcessVariableNameResponseDto> getVariableNames(
       @Context final ContainerRequestContext requestContext,
-      @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
+      @Valid final ProcessVariableNameRequestDto variableRequestDtos) {
     return executeIfSharingEnabled(
         () -> processVariableRestService.getVariableNames(requestContext, variableRequestDtos));
   }

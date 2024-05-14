@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.permutations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
@@ -21,9 +22,11 @@ import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskE
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class CompletedProcessInstanceMediatorPermutationsImportIT
     extends AbstractImportMediatorPermutationsIT {
 

@@ -7,7 +7,6 @@
 
 import {shallow} from 'enzyme';
 
-import {User} from 'HOC';
 import {loadRawData} from 'services';
 import {DownloadButton} from 'components';
 
@@ -37,7 +36,6 @@ const props = {
       },
     ],
   },
-  user: {} as User,
   totalCount: 0,
 };
 

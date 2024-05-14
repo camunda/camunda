@@ -5,10 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import classNames from 'classnames';
-
-import {Icon} from 'components';
+import {CheckmarkFilled, Misuse} from '@carbon/icons-react';
 
 import {isSuccessful} from './service';
 
@@ -22,27 +19,20 @@ export default function KpiSummary({kpis}) {
   const succeededKpis = kpis.filter(isSuccessful);
   const failedKpis = kpis.filter((args) => !isSuccessful(args));
 
-  const allSucceeded = succeededKpis.length === kpis.length;
-  const allFailed = failedKpis.length === kpis.length;
-
-  if (allSucceeded || allFailed) {
-    return (
-      <div className="KpiSummary">
-        <Icon
-          className={classNames({success: allSucceeded, error: allFailed})}
-          type={allSucceeded ? 'check-circle' : 'clear'}
-        />
-        <span className="center">{kpis.length}</span>
-      </div>
-    );
-  }
-
   return (
     <div className="KpiSummary">
-      <Icon className="success" type="check-circle" />
-      <span className="height-center">{succeededKpis.length}</span>
-      <Icon type="clear" className="error" />
-      <span className="height-center">{failedKpis.length}</span>
+      {succeededKpis.length > 0 && (
+        <div>
+          <CheckmarkFilled className="success" />
+          <span>{succeededKpis.length}</span>
+        </div>
+      )}
+      {failedKpis.length > 0 && (
+        <div>
+          <Misuse className="error" />
+          <span>{failedKpis.length}</span>
+        </div>
+      )}
     </div>
   );
 }

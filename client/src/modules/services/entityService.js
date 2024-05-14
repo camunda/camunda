@@ -8,7 +8,7 @@
 import {del, get, post, put} from 'request';
 import {track} from 'tracking';
 
-import {createEventName} from './entityService.ts';
+import {createEventName} from './entityService.tsx';
 
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);

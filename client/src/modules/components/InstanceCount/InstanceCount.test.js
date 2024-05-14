@@ -145,13 +145,16 @@ it('should load variable names for process reports', async () => {
 
   await flushPromises();
 
-  const payload = [
-    {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersions: ['1'],
-      tenantIds: ['tenantId'],
-    },
-  ];
+  const payload = {
+    processesToQuery: [
+      {
+        processDefinitionKey: 'aKey',
+        processDefinitionVersions: ['1'],
+        tenantIds: ['tenantId'],
+      },
+    ],
+    filter: [{type: 'runningInstancesOnly'}],
+  };
 
   expect(loadVariables).toHaveBeenCalledWith(payload);
   expect(node.find('FilterList').prop('variables')).toEqual([{name: 'variable1', type: 'String'}]);
