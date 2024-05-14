@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
 import java.util.function.Function;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,144 +27,6 @@ public final class TimedActionsTest {
   @RegisterExtension
   public final ControlledActorSchedulerExtension actorScheduler =
       new ControlledActorSchedulerExtension();
-
-  @Test
-  public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            actor.schedule(Duration.ofMillis(10), action);
-          }
-        };
-
-    // when
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-
-    // then
-    verify(action, never()).run();
-  }
-
-  @Test
-  public void shouldRunActionWhenDeadlineReached() throws InterruptedException {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            actor.schedule(Duration.ofMillis(10), action);
-          }
-        };
-
-    // when
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-
-    // then
-    verify(action, times(1)).run();
-  }
-
-  @Test
-  public void shouldRunAtFixedRate() throws InterruptedException {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            actor.runAtFixedRate(Duration.ofMillis(10), action);
-          }
-        };
-
-    // when then
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-    verify(action, times(1)).run();
-
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-    verify(action, times(2)).run();
-
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-    verify(action, times(3)).run();
-  }
-
-  @Test
-  public void shouldCancelRunDelayed() {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final TimerActor actor =
-        new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
-
-    // when
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-    actor.cancelTimer();
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-
-    // then
-    verify(action, times(0)).run();
-  }
-
-  @Test
-  public void shouldCancelRunDelayedAfterExecution() {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final var actor =
-        new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
-
-    // when
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-
-    // make timer run
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-
-    // when
-    actor.cancelTimer();
-    actorScheduler.workUntilDone();
-
-    // then
-    // no exception has been thrown
-  }
-
-  @Test
-  public void shouldCancelRunAtFixedRate() {
-    // given
-    final Runnable action = mock(Runnable.class);
-    final TimerActor actor =
-        new TimerActor(actorControl -> actorControl.runAtFixedRate(Duration.ofMillis(10), action));
-
-    // when
-    actorScheduler.setClockTime(100);
-    actorScheduler.submitActor(actor);
-    actorScheduler.workUntilDone();
-    actor.cancelTimer();
-    actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofMillis(10));
-    actorScheduler.workUntilDone();
-
-    // then
-    verify(action, times(0)).run();
-  }
 
   private static final class TimerActor extends Actor {
 
@@ -182,6 +45,148 @@ public final class TimedActionsTest {
 
     public ActorFuture<Void> cancelTimer() {
       return actor.call(() -> scheduledTimer.cancel());
+    }
+  }
+
+  @Nested
+  class DelayedTimerTests {
+    @Test
+    public void shouldNotRunActionIfDeadlineNotReached() throws InterruptedException {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.schedule(Duration.ofMillis(10), action);
+            }
+          };
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, never()).run();
+    }
+
+    @Test
+    public void shouldRunActionWhenDeadlineReached() throws InterruptedException {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.schedule(Duration.ofMillis(10), action);
+            }
+          };
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(1)).run();
+    }
+
+    @Test
+    public void shouldRunAtFixedRate() throws InterruptedException {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final Actor actor =
+          new Actor() {
+            @Override
+            protected void onActorStarted() {
+              actor.runAtFixedRate(Duration.ofMillis(10), action);
+            }
+          };
+
+      // when then
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+      verify(action, times(1)).run();
+
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+      verify(action, times(2)).run();
+
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+      verify(action, times(3)).run();
+    }
+
+    @Test
+    public void shouldCancelRunDelayed() {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final TimerActor actor =
+          new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+      actor.cancelTimer();
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(0)).run();
+    }
+
+    @Test
+    public void shouldCancelRunDelayedAfterExecution() {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final var actor =
+          new TimerActor(actorControl -> actorControl.schedule(Duration.ofMillis(10), action));
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+
+      // make timer run
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+
+      // when
+      actor.cancelTimer();
+      actorScheduler.workUntilDone();
+
+      // then
+      // no exception has been thrown
+    }
+
+    @Test
+    public void shouldCancelRunAtFixedRate() {
+      // given
+      final Runnable action = mock(Runnable.class);
+      final TimerActor actor =
+          new TimerActor(
+              actorControl -> actorControl.runAtFixedRate(Duration.ofMillis(10), action));
+
+      // when
+      actorScheduler.setClockTime(100);
+      actorScheduler.submitActor(actor);
+      actorScheduler.workUntilDone();
+      actor.cancelTimer();
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofMillis(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(action, times(0)).run();
     }
   }
 }
