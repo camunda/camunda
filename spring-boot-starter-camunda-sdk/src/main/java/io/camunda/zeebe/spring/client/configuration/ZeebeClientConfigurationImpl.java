@@ -319,19 +319,10 @@ public class ZeebeClientConfigurationImpl
           .clientId(camundaClientProperties.getAuth().getClientId())
           .clientSecret(camundaClientProperties.getAuth().getClientSecret())
           .audience(camundaClientProperties.getZeebe().getAudience())
-          // scope is used for SM (keycloak)
-          .scope(getScope(clientMode))
           .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
           .build();
     }
     return new NoopCredentialsProvider();
-  }
-
-  private String getScope(final ClientMode clientMode) {
-    if (ClientMode.oidc.equals(clientMode)) {
-      return camundaClientProperties.getAuth().getOidcType().name();
-    }
-    return null;
   }
 
   private String composeGatewayAddress() {
