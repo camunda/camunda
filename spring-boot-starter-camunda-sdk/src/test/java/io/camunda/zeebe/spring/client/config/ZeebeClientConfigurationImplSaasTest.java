@@ -24,6 +24,8 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,9 +60,9 @@ public class ZeebeClientConfigurationImplSaasTest {
   }
 
   @Test
-  void shouldHaveGatewayAddress() {
-    assertThat(zeebeClientConfiguration.getGatewayAddress())
-        .isEqualTo("12345.bru-2.zeebe.camunda.io:443");
+  void shouldHaveGatewayAddress() throws URISyntaxException {
+    assertThat(zeebeClientConfiguration.getGrpcAddress())
+        .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io"));
   }
 
   @Test
