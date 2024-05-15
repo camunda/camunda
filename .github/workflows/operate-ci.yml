@@ -37,14 +37,23 @@ concurrency:
 
 jobs:
   run-build:
-    name: run-build
+    name: Operate Build
     uses: ./.github/workflows/operate-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
-  run-tests:
-    name: run-tests
+  run-unit-tests:
+    name: Operate Backend Unit Tests
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate verify -B -DskipITs -DskipDockerProfile
+      test-type: Unit Tests
+
+  run-integration-tests:
+    name: Operate Backend Integration Tests
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
