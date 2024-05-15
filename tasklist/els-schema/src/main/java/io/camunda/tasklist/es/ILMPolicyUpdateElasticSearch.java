@@ -45,16 +45,11 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
             + tasklistProperties.getElasticsearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
-    try{
-      final GetLifecyclePolicyResponse policyExists =
-          retryElasticsearchClient.getLifeCyclePolicy(
-              new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
-      if (policyExists == null) {
-        LOGGER.info("ILM policy does not exist, creating it");
-        schemaManager.createIndexLifeCycles();
-      }
-    } catch (final Exception e) {
-      LOGGER.error("Error to retrieve the ILM policy {} - Creating a new one", e);
+    final GetLifecyclePolicyResponse policyExists =
+        retryElasticsearchClient.getLifeCyclePolicy(
+            new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
+    if (policyExists == null) {
+      LOGGER.info("ILM policy does not exist, creating it");
       schemaManager.createIndexLifeCycles();
     }
 
