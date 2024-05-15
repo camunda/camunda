@@ -4,7 +4,6 @@ spring:
     password: ${CAMUNDA_IDENTITY_DATABASE_PASSWORD:}
 
 ---
-
 spring:
   config:
     activate:
