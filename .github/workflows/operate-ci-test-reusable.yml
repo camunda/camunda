@@ -33,8 +33,12 @@ on:
         required: true
         type: string
       test-type:
-        description: "Name of the test type"
+        description: "Test type, used in the stage name and report artifact name"
         required: true
+        type: string
+      runner-type:
+        description: "Type of CI runner for the tests"
+        default: gcp-core-32-default
         type: string
 
 defaults:
@@ -49,7 +53,7 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: gcp-core-32-default
+    runs-on: ${{ inputs.runner-type }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
 
     steps:
