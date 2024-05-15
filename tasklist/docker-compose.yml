@@ -27,7 +27,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.9.0
+    image: opensearchproject/opensearch:2.14.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
