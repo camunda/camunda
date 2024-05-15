@@ -199,7 +199,7 @@ async function mockProcessSearch(page: Page, processSpecs: ProcessSpec[]) {
       bpmnXml: null,
     }),
   );
-  await page.route(/^.*\/v1\/internal\/processes$/i, (route, req) => {
+  await page.route(/^.*\/v1\/internal\/processes$/i, (route) => {
     return route.fulfill({
       status: 200,
       body: JSON.stringify(processes),
