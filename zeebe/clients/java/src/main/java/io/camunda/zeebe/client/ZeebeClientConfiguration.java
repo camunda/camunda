@@ -22,6 +22,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public interface ZeebeClientConfiguration {
 
@@ -109,6 +110,8 @@ public interface ZeebeClientConfiguration {
   Duration getKeepAlive();
 
   List<ClientInterceptor> getInterceptors();
+
+  List<AsyncExecChainHandler> getChainHandlers();
 
   /**
    * @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)

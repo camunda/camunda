@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
@@ -226,6 +227,12 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientCloudBuilderStep4 withInterceptors(final ClientInterceptor... interceptor) {
     innerBuilder.withInterceptors(interceptor);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep4 withChainHandlers(final AsyncExecChainHandler... handler) {
+    innerBuilder.withChainHandlers(handler);
     return this;
   }
 

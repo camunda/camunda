@@ -35,6 +35,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
@@ -73,8 +74,14 @@ public class HttpClientFactory {
 
   public HttpClient createClient() {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
-    final CloseableHttpAsyncClient client =
-        defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig).build();
+    final HttpAsyncClientBuilder clientBuilder =
+        defaultClientBuilder().setDefaultRequestConfig(defaultRequestConfig);
+    IntStream.range(0, config.getChainHandlers().size())
+        .forEach(
+            i ->
+                clientBuilder.addExecInterceptorFirst(
+                    "custom-" + i, config.getChainHandlers().get(i)));
+    final CloseableHttpAsyncClient client = clientBuilder.build();
     final URI gatewayAddress = buildGatewayAddress();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null

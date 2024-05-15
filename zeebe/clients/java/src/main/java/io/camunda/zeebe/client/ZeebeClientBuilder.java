@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public interface ZeebeClientBuilder {
 
@@ -160,6 +161,8 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
+
+  ZeebeClientBuilder withChainHandlers(AsyncExecChainHandler... handler);
 
   ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 

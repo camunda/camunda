@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
@@ -75,6 +76,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private boolean applyEnvironmentVariableOverrides = true;
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
+  private final List<AsyncExecChainHandler> chainHandlers = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
@@ -185,6 +187,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public List<ClientInterceptor> getInterceptors() {
     return interceptors;
+  }
+
+  @Override
+  public List<AsyncExecChainHandler> getChainHandlers() {
+    return chainHandlers;
   }
 
   @Override
@@ -443,6 +450,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder withInterceptors(final ClientInterceptor... interceptors) {
     this.interceptors.addAll(Arrays.asList(interceptors));
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder withChainHandlers(final AsyncExecChainHandler... handlers) {
+    chainHandlers.addAll(Arrays.asList(handlers));
     return this;
   }
 
