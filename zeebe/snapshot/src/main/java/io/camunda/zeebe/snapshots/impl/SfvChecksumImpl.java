@@ -91,6 +91,11 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     }
   }
 
+  @Override
+  public SortedMap<String, Long> getChecksums() {
+    return checksums;
+  }
+
   public void setSnapshotDirectoryComment(final String headerComment) {
     snapshotDirectoryComment = headerComment;
   }
