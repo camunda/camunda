@@ -24,7 +24,7 @@ on:
         required: true
         type: string
       forkCount:
-        description: "The number of VMs to fork in parallel in order to execute the tests"
+        description: "The number of VMs to fork in parallel in order to execute the unit tests"
         required: false
         default: 4
         type: number
@@ -33,11 +33,11 @@ on:
         required: true
         type: string
       test-type:
-        description: "Test type, used in the stage name and report artifact name"
+        description: "Type of test, sed in the job name, stage name, and report artifact name"
         required: true
         type: string
       runner-type:
-        description: "Type of CI runner for the tests"
+        description: "CI runner type for the tests"
         default: gcp-core-32-default
         type: string
 
@@ -52,7 +52,7 @@ env:
 
 jobs:
   integration-tests:
-    name: Test
+    name: ${{ inputs.test-type }}
     timeout-minutes: 20
     runs-on: ${{ inputs.runner-type }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
