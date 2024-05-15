@@ -29,38 +29,6 @@ services:
     links:
       - elasticsearch
 
-  opensearch:
-    image: opensearchproject/opensearch:2.5.0
-    depends_on:
-      - opensearch-init
-    container_name: opensearch
-    environment:
-      - node.name=opensearch
-      - discovery.seed_hosts=opensearch
-      - plugins.security.disabled=true
-      - cluster.initial_cluster_manager_nodes=opensearch
-      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
-      - "OPENSEARCH_JAVA_OPTS=-Xms1G -Xmx1G" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
-      - path.repo=/usr/local/os-snapshots
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
-        hard: 65536
-    ports:
-      - "9200:9200"
-      - "9600:9600" # required for Performance Analyzer
-    volumes:
-      - ./os-snapshots:/usr/local/os-snapshots
-
-  opensearch-init:
-    image: bash
-    privileged: true
-    user: root
-    command: ["sysctl", "-w", "vm.max_map_count=262144"]
-
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:8.5.1
@@ -76,22 +44,6 @@ services:
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
-
-  zeebe-opensearch:
-    container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.1
-    environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_DEPLOYMENT=false
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
-    ports:
-      - 26500:26500
-      - 8000:8000
-    restart: always
-    volumes:
-      - ./config/zeebe-opensearch.cfg.yaml:/usr/local/zeebe/config/application.yaml
 
   zeebe-e2e:
     container_name: zeebe-e2e
