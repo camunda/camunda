@@ -11,7 +11,7 @@
   border-bottom: 1px solid var(--cds-border-subtle);
 }
 
-.hidden {
-  display: none !important;
+:global(.cds--tabs__nav-link).hidden {
+  display: none;
   visibility: hidden;
 }

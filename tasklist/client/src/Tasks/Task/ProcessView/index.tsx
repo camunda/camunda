@@ -6,26 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
-import {useNavigate, useOutletContext} from 'react-router-dom';
+import {useOutletContext} from 'react-router-dom';
 import {Layer, Tag} from '@carbon/react';
-import {pages} from 'modules/routing';
 import {BPMNDiagram} from 'modules/components/BPMNDiagram';
+import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
 import {OutletContext} from '../Details';
 import styles from './index.module.scss';
 
 const ProcessView: React.FC = () => {
-  const navigate = useNavigate();
   const {task, process} = useOutletContext<OutletContext>();
 
-  useEffect(() => {
-    if (process === undefined || process.bpmnProcessId === undefined) {
-      navigate(pages.taskDetails(task.id));
-    }
-  }, [navigate, process, task.id]);
-
-  if (process === undefined || process.bpmnProcessId === undefined) {
-    return null;
+  if (!process) {
+    console.log({className: styles.somethingWentWrong});
+    return <SomethingWentWrong className={styles.somethingWentWrong} />;
   }
 
   const {name, version, bpmnXml} = process;

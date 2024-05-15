@@ -25,6 +25,7 @@ type Props = {
 
 const TabListNav: React.FC<Props> = ({className, label, items}) => {
   const navigate = useNavigate();
+  console.log(JSON.stringify(styles));
   return (
     <nav className={cn(className, styles.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
@@ -35,10 +36,14 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
             role="link"
             aria-label={label}
             aria-current={selected ? 'page' : undefined}
-            className={cn('cds--tabs__nav-item', 'cds--tabs__nav-link', {
-              ['cds--tabs__nav-item--selected']: selected,
-              [styles.hidden]: visible === false,
-            })}
+            className={cn(
+              {[styles.hidden]: visible === false},
+              'cds--tabs__nav-item',
+              'cds--tabs__nav-link',
+              {
+                ['cds--tabs__nav-item--selected']: selected,
+              },
+            )}
             tabIndex={selected ? 0 : -1}
             hidden={visible === false}
             aria-hidden={visible === false}

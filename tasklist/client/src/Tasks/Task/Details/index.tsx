@@ -34,13 +34,12 @@ const Details: React.FC = () => {
     refetchOnReconnect: false,
   });
   const taskCompleted = task?.taskState === 'COMPLETED';
-  const {
-    data: process,
-    error: processError,
-    isLoading: processLoading,
-  } = useProcessDefinition(task?.processDefinitionKey ?? '', {
-    enabled: task !== undefined && !taskCompleted,
-  });
+  const {data: process, isLoading: processLoading} = useProcessDefinition(
+    task?.processDefinitionKey ?? '',
+    {
+      enabled: task !== undefined && !taskCompleted,
+    },
+  );
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
 
@@ -58,11 +57,7 @@ const Details: React.FC = () => {
       label: 'Show associated BPMN process',
       selected: useMatch(pages.taskDetailsProcess()) !== null,
       href: pages.taskDetailsProcess(id),
-      visible:
-        !taskCompleted &&
-        process !== undefined &&
-        process.bpmnXml !== null &&
-        processError === null,
+      visible: !taskCompleted && process && process.bpmnXml !== null,
     },
   ];
 

@@ -27,21 +27,23 @@ function useProcessDefinition(
         api.getProcess({processDefinitionId: processDefinitionId!}),
       );
 
-      if (error !== null && error.variant === 'failed-response') {
-        const {status} = error.response;
-        if (
-          status === HTTP_STATUS_FORBIDDEN ||
-          status === HTTP_STATUS_NOT_FOUND
-        ) {
-          return undefined;
-        }
-      }
-
       if (response !== null) {
         return response.json();
       }
 
-      throw error ?? new Error('Failed to fetch process instances');
+      throw error;
+    },
+    retry: (failureCount, error) => {
+      if (failureCount >= 3) {
+        return false;
+      }
+      if (error.variant === 'failed-response') {
+        const {status} = error.response;
+        return (
+          status !== HTTP_STATUS_FORBIDDEN && status !== HTTP_STATUS_NOT_FOUND
+        );
+      }
+      return true;
     },
     enabled: options?.enabled ?? true,
     refetchOnReconnect: false,
