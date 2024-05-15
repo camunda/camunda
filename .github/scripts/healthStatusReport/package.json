@@ -8,7 +8,7 @@
     "node-fetch": "2.7.0"
   },
   "devDependencies": {
-    "@types/node": "20.12.8",
+    "@types/node": "20.12.10",
     "@types/node-fetch": "2.6.11",
     "prettier": "^3.0.0",
     "ts-node": "^10.9.1",
