@@ -16,18 +16,23 @@ import org.rocksdb.RocksDBException;
 
 public class ChecksumProvider {
 
-  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
+  private ChecksumProvider() {
+    throw new IllegalStateException("Utility class");
+  }
+
+  public static Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
     try (final var db = RocksDB.openReadOnly(snapshotPath.toString())) {
       return db.getLiveFilesMetaData().stream()
-          .collect(Collectors.toMap(this::getMetadataName, LiveFileMetaData::fileChecksum));
+          .collect(
+              Collectors.toMap(ChecksumProvider::getMetadataName, LiveFileMetaData::fileChecksum));
     } catch (final RocksDBException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private String getMetadataName(final LiveFileMetaData fileMetaData) {
+  private static String getMetadataName(final LiveFileMetaData fileMetaData) {
     return fileMetaData.fileName().substring(1);
-    //    there is a leading '/' which breaks interactions with the Java Path.getFileName which
-    // returns the file name without a leading '/'
+    //        there is a leading '/' which breaks interactions with the Java Path.getFileName which
+    //     returns the file name without a leading '/'
   }
 }
