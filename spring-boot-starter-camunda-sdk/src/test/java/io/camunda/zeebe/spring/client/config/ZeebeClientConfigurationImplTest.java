@@ -29,6 +29,7 @@ import io.camunda.zeebe.spring.common.auth.Product;
 import io.grpc.ClientInterceptor;
 import java.util.List;
 import java.util.Map.Entry;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -39,9 +40,16 @@ public class ZeebeClientConfigurationImplTest {
       final Authentication authentication,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService executorService) {
     return new ZeebeClientConfigurationImpl(
-        legacyProperties, properties, authentication, jsonMapper, interceptors, executorService);
+        legacyProperties,
+        properties,
+        authentication,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        executorService);
   }
 
   private static ZeebeClientConfigurationProperties legacyProperties() {
@@ -80,6 +88,7 @@ public class ZeebeClientConfigurationImplTest {
             properties(),
             authentication(),
             jsonMapper(),
+            List.of(),
             List.of(),
             executorService());
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
