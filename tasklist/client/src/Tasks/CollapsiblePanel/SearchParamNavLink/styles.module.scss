@@ -7,7 +7,6 @@
  */
 
 @use '@carbon/layout';
-@use '@carbon/type';
 
 .link {
   --border-width: #{layout.to-rem(2px)};
