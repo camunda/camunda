@@ -177,7 +177,11 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   private static boolean isEnabled(
       final Map<String, ExporterState> exporterConfig,
       final ExporterDescriptor exporterDescriptor) {
-    return exporterConfig.containsKey(exporterDescriptor.getId())
-        && exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
+    // TODO: If the exporter is not found in exporterConfig, it should be considered as disabled.
+    // But we can do that only after https://github.com/camunda/zeebe/issues/18296 is implemented.
+    // Until then, we assume if the exporter is not found in the config, it is considered as
+    // enabled. Note that this is a temporary workaround.
+    return !exporterConfig.containsKey(exporterDescriptor.getId())
+        || exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
   }
 }
