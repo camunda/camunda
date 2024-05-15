@@ -80,9 +80,9 @@ jobs:
           mvn clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Run integration tests in parallel
-      - name: Backend - Integration Tests
+      - name: Backend - ${{ inputs.test-type }}
         run: |
-          mvn -f operate verify -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+          ${{ inputs.command }}
 
       # Reports: publish test metrics results
       - name: Publish Test Results

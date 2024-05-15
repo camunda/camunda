@@ -49,6 +49,8 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate verify -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Integration Tests
 
   test-summary:
     # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
