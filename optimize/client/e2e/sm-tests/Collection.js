@@ -109,6 +109,8 @@ test('user permissions', async (t) => {
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, 'Abse1978', {replace: true});
   await t.click(Common.carbonOption('Abse1978').nth(1));
+  // test the selection removal from the options
+  await t.click(Common.carbonOption('Abse1978').nth(1));
   await t.typeText(Common.usersTypeahead, 'demo', {replace: true});
   await t.click(Common.carbonOption('demo').nth(1)).pressKey('tab');
   await t.click(e.carbonRoleOption('Editor'));
@@ -159,7 +161,7 @@ test('user permissions', async (t) => {
 
   await t.click(Common.listItemLink('collection'));
   await t.click(e.userTab);
-  await t.expect(Common.listItem('user').count).eql(4);
+  await t.expect(Common.listItem('user').count).eql(3);
   await t.click(Common.selectAllCheckbox.filterVisible());
   await t.click(e.bulkRemove.filterVisible());
   await t.click(Common.modalConfirmButton);
