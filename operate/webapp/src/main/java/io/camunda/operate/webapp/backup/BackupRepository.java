@@ -7,10 +7,18 @@
  */
 package io.camunda.operate.webapp.backup;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface BackupRepository {
+
+  Logger LOGGER = LoggerFactory.getLogger(BackupRepository.class);
+
   void deleteSnapshot(String repositoryName, String snapshotName);
 
   void validateRepositoryExists(String repositoryName);
@@ -23,4 +31,20 @@ public interface BackupRepository {
 
   void executeSnapshotting(
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
+
+  default boolean isIncompleteCheckTimedOut(
+      final OperateProperties operateProperties, final long startTimeInMilliseconds) {
+    try {
+      final long timeOutInSeconds =
+          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
+      return Instant.now()
+          .isAfter(
+              Instant.ofEpochMilli(startTimeInMilliseconds)
+                  .plus(timeOutInSeconds, ChronoUnit.SECONDS));
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
+      return true;
+    }
+  }
 }

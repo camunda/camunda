@@ -11,12 +11,22 @@ public class BackupProperties {
 
   private String repositoryName;
 
+  private Long incompleteCheckTimeoutInSeconds = 5 /* minutes */ * 60L;
+
   public String getRepositoryName() {
     return repositoryName;
   }
 
-  public BackupProperties setRepositoryName(String repositoryName) {
+  public BackupProperties setRepositoryName(final String repositoryName) {
     this.repositoryName = repositoryName;
     return this;
+  }
+
+  public Long getIncompleteCheckTimeoutInSeconds() {
+    return incompleteCheckTimeoutInSeconds;
+  }
+
+  public void setIncompleteCheckTimeoutInSeconds(final Long incompleteCheckTimeoutInSeconds) {
+    this.incompleteCheckTimeoutInSeconds = incompleteCheckTimeoutInSeconds;
   }
 }
