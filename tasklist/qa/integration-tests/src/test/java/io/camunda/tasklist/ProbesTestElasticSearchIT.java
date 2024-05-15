@@ -62,6 +62,7 @@ public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
     assumeTrue(TestUtil.isElasticSearch());
   }
 
+  @Override
   @BeforeEach
   public void before() {
     mockPartitionHolder(partitionHolder);

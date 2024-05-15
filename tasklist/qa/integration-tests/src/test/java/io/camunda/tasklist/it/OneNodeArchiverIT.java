@@ -67,6 +67,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

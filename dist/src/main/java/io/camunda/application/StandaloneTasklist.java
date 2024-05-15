@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist;
+package io.camunda.application;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILES;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
@@ -49,13 +49,13 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-public class Application {
+public class StandaloneTasklist {
 
   public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
       "classpath:/META-INF/resources/tasklist/";
   public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
   public static final String SPRING_THYMELEAF_PREFIX_VALUE = TASKLIST_STATIC_RESOURCES_LOCATION;
-  private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneTasklist.class);
 
   public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -72,7 +72,7 @@ public class Application {
     // We need to disable this property in Tasklist (enabled in dist/application.properties),
     // otherwise ForwardErrorController does not get invoked
     System.setProperty("spring.mvc.problemdetails.enabled", "false");
-    final SpringApplication springApplication = new SpringApplication(Application.class);
+    final SpringApplication springApplication = new SpringApplication(StandaloneTasklist.class);
     // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
     springApplication.setAdditionalProfiles("tasklist");

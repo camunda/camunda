@@ -62,6 +62,7 @@ public class ProbesTestOpenSearchIT extends TasklistIntegrationTest {
     assumeTrue(TestUtil.isOpenSearch());
   }
 
+  @Override
   @BeforeEach
   public void before() {
     mockPartitionHolder(partitionHolder);
