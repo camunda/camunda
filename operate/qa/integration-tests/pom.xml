@@ -411,7 +411,7 @@
           <excludes>
             <exclude>${excludeITNames}</exclude>
           </excludes>
-          <forkCount>${failsafeForkCount}</forkCount>
+          <forkCount>1</forkCount>
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>

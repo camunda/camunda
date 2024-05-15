@@ -39,7 +39,7 @@
 
     <skip.fe.build>false</skip.fe.build>
     <skipSurefire>false</skipSurefire>
-    <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
+    <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <itDatabase>elasticsearch</itDatabase>
@@ -62,7 +62,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <skip>${skipSurefire}</skip>
-            <forkCount>${failsafeForkCount}</forkCount>
+            <forkCount>${testForkCount}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
@@ -139,7 +139,6 @@
       <properties>
         <includeITNames>**/*IT.java</includeITNames>
         <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
       </properties>
     </profile>
 
@@ -148,7 +147,6 @@
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
@@ -158,7 +156,6 @@
       <properties>
         <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
@@ -168,7 +165,6 @@
       <properties>
         <includeITNames>**/schema/*IT.java</includeITNames>
         <excludeITNames>**/SchemaManagerIT.java, **/ImportStoreIT.java</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
