@@ -30,7 +30,7 @@ services:
       - elasticsearch
 
   opensearch:
-    image: my-opensearch-s3
+    image: opensearchproject/opensearch:2.5.0
     depends_on:
       - opensearch-init
     container_name: opensearch
