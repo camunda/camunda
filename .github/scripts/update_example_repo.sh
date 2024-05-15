@@ -45,7 +45,7 @@ sed -i "s/optimize.version>.*</optimize.version>$RELEASE_VERSION</g" pom.xml
 mvn versions:set versions:commit -DnewVersion=$RELEASE_VERSION
 
 git add -u
-git commit -m "chore(release): $RELEASE_VERSION"
+git commit -m "chore: $RELEASE_VERSION"
 
 # create tag for the new Optimize version
 git tag -a $RELEASE_VERSION -m "Tag for version Optimize $RELEASE_VERSION"
@@ -58,5 +58,5 @@ mvn versions:set versions:commit -DnewVersion=$DEVELOPMENT_VERSION
 
 # push the changes
 git add -u
-git commit -m "chore(release): update pom to snapshot for next development version"
+git commit -m "chore: update pom to snapshot for next development version"
 git push origin $BRANCH
