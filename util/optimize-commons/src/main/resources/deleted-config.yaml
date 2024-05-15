@@ -24,3 +24,4 @@ externalVariable.variableIngestion.accessToken: '/technical-guide/setup/configur
 ui.header.textColor: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'
 ui.header.pathToLogoIcon: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'
 ui.header.backgroundColor: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'
+telemetry.telemetryEndpoint: '/technical-guide/setup/configuration/'

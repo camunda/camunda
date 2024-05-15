@@ -29,7 +29,7 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -201,14 +201,14 @@ public class PublicApiRestService {
   @POST
   @Path(SHARE_PATH + "/enable")
   public void enableShare() {
-    SettingsResponseDto settings = SettingsResponseDto.builder().sharingEnabled(true).build();
+    SettingsDto settings = SettingsDto.builder().sharingEnabled(true).build();
     settingsService.setSettings(settings);
   }
 
   @POST
   @Path(SHARE_PATH + "/disable")
   public void disableShare() {
-    SettingsResponseDto settings = SettingsResponseDto.builder().sharingEnabled(false).build();
+    SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
     settingsService.setSettings(settings);
   }
 }

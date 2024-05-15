@@ -55,7 +55,3 @@ eventBasedProcess:
 plugin:
   # as default just use an existing directory
   directory: '.'
-
-telemetry:
-  # Telemetry endpoint to send data to (development environment)
-  telemetryEndpoint: 'https://api.dev.telemetry.camunda.cloud/pings'

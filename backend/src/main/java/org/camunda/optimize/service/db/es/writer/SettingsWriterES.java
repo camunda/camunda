@@ -8,8 +8,6 @@ package org.camunda.optimize.service.db.es.writer;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -21,7 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
@@ -43,7 +41,7 @@ public class SettingsWriterES implements SettingsWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void upsertSettings(final SettingsResponseDto settingsDto) {
+  public void upsertSettings(final SettingsDto settingsDto) {
     log.debug("Writing settings to ES");
 
     try {
@@ -56,13 +54,9 @@ public class SettingsWriterES implements SettingsWriter {
     }
   }
 
-  private UpdateRequest createSettingsUpsert(final SettingsResponseDto settingsDto)
+  private UpdateRequest createSettingsUpsert(final SettingsDto settingsDto)
       throws JsonProcessingException {
     Set<String> fieldsToUpdate = new HashSet<>();
-
-    if (settingsDto.getMetadataTelemetryEnabled().isPresent()) {
-      fieldsToUpdate.addAll(Set.of(LAST_MODIFIER, METADATA_TELEMETRY_ENABLED));
-    }
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }

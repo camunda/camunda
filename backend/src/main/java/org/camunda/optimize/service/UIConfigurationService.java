@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
@@ -69,11 +68,6 @@ public class UIConfigurationService {
     uiConfigurationDto.setMaxNumDataSourcesForReport(
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
-
-    final SettingsResponseDto settings = settingService.getSettings();
-    uiConfigurationDto.setMetadataTelemetryEnabled(
-        settings.getMetadataTelemetryEnabled().orElse(true));
-    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isTelemetryManuallyConfirmed());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());

@@ -3,11 +3,11 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.writer;
+package org.camunda.optimize.service.mixpanel;
 
-import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.service.mixpanel.client.EventReportingEvent;
 
-public interface SettingsWriter {
+public interface EventReportingService {
 
-  void upsertSettings(final SettingsDto settingsDto);
+  void sendEntityEvent(EventReportingEvent event, String entityId);
 }

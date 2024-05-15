@@ -14,7 +14,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class SettingsRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public SettingsResponseDto getSettings() {
+  public SettingsDto getSettings() {
     return settingsService.getSettings();
   }
 
@@ -37,7 +37,7 @@ public class SettingsRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void setSettings(
       @Context final ContainerRequestContext requestContext,
-      @NotNull final SettingsResponseDto settingsDto) {
+      @NotNull final SettingsDto settingsDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     settingsService.setSettings(userId, settingsDto);
   }

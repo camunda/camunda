@@ -44,8 +44,7 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
   }
 
   private static void initializeAuthorizations(final ConfigurationService configurationService) {
-    final List<AuthorizationType> initializedSuperUserAuthorizations =
-        new ArrayList<>(List.of(AuthorizationType.TELEMETRY));
+    final List<AuthorizationType> initializedSuperUserAuthorizations = new ArrayList<>();
     final List<AuthorizationType> initializedDefaultUserAuthorizations = new ArrayList<>();
 
     initializeUserAuthorizationsForAuthorizationType(

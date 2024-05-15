@@ -197,27 +197,6 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  public void getTelemetryFlags() {
-    // when
-    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
-
-    // then
-    assertThat(response.isMetadataTelemetryEnabled())
-        .isEqualTo(
-            embeddedOptimizeExtension
-                .getSettingsService()
-                .getSettings()
-                .getMetadataTelemetryEnabled()
-                .get());
-    assertThat(response.isSettingsManuallyConfirmed())
-        .isEqualTo(
-            embeddedOptimizeExtension
-                .getSettingsService()
-                .getSettings()
-                .isTelemetryManuallyConfirmed());
-  }
-
-  @Test
   public void getDefaultOptimizeProfile() {
     // when
     final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();

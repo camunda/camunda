@@ -8,8 +8,6 @@ package org.camunda.optimize.service.db.os.writer;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
-import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
@@ -39,22 +37,18 @@ public class SettingWriterOS implements SettingsWriter {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void upsertSettings(final SettingsResponseDto settingsDto) {
+  public void upsertSettings(final SettingsDto settingsDto) {
     log.debug("Writing settings to OpenSearch");
-    final UpdateRequest.Builder<SettingsResponseDto, Void> request =
-        createSettingsUpsert(settingsDto);
+    final UpdateRequest.Builder<SettingsDto, Void> request = createSettingsUpsert(settingsDto);
 
     final String errorMessage = "There were errors while writing settings to OpenSearch.";
-    osClient.upsert(request, SettingsResponseDto.class, e -> errorMessage);
+    osClient.upsert(request, SettingsDto.class, e -> errorMessage);
+    log.debug("Finished updating Optimize Settings");
   }
 
-  private UpdateRequest.Builder<SettingsResponseDto, Void> createSettingsUpsert(
-      final SettingsResponseDto settingsDto) {
+  private UpdateRequest.Builder<SettingsDto, Void> createSettingsUpsert(
+      final SettingsDto settingsDto) {
     Set<String> fieldsToUpdate = new HashSet<>();
-
-    if (settingsDto.getMetadataTelemetryEnabled().isPresent()) {
-      fieldsToUpdate.addAll(Set.of(LAST_MODIFIER, METADATA_TELEMETRY_ENABLED));
-    }
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }
@@ -68,7 +62,7 @@ public class SettingWriterOS implements SettingsWriter {
     final Script updateScript =
         OpenSearchWriterUtil.createFieldUpdateScript(fieldsToUpdate, settingsDto, objectMapper);
 
-    return new UpdateRequest.Builder<SettingsResponseDto, Void>()
+    return new UpdateRequest.Builder<SettingsDto, Void>()
         .index(SETTINGS_INDEX_NAME)
         .id(SettingsIndex.ID)
         .upsert(settingsDto)

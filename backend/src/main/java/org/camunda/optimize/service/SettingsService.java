@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.db.reader.SettingsReader;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
@@ -26,25 +26,20 @@ public class SettingsService {
   private final AbstractIdentityService identityService;
   private final ConfigurationService configurationService;
 
-  public SettingsResponseDto getSettings() {
+  public SettingsDto getSettings() {
     return settingsReader
         .getSettings()
         .orElse(
-            SettingsResponseDto.builder()
-                .metadataTelemetryEnabled(
-                    configurationService.getTelemetryConfiguration().isInitializeTelemetry())
-                .sharingEnabled(configurationService.getSharingEnabled())
-                .build());
+            SettingsDto.builder().sharingEnabled(configurationService.getSharingEnabled()).build());
   }
 
-  public void setSettings(final String userId, final SettingsResponseDto settingsDto) {
+  public void setSettings(final String userId, final SettingsDto settingsDto) {
     validateUserAuthorizedToConfigureSettingsOrFail(userId);
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    settingsDto.setLastModifier(userId);
     settingsWriter.upsertSettings(settingsDto);
   }
 
-  public void setSettings(final SettingsResponseDto settingsDto) {
+  public void setSettings(final SettingsDto settingsDto) {
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     // Make sure that the configuration service is in sync with the settings service
     settingsDto.getSharingEnabled().ifPresent(configurationService::setSharingEnabled);

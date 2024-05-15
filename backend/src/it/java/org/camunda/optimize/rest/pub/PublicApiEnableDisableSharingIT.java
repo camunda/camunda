@@ -11,7 +11,7 @@ import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -24,7 +24,7 @@ public class PublicApiEnableDisableSharingIT extends AbstractPlatformIT {
   public void toggleSharingState(boolean enableSharing) {
     // given
     // initialise sharing setting to assert toggled state later
-    SettingsResponseDto settings = embeddedOptimizeExtension.getSettingsService().getSettings();
+    SettingsDto settings = embeddedOptimizeExtension.getSettingsService().getSettings();
     settings.setSharingEnabled(!enableSharing);
     embeddedOptimizeExtension.getSettingsService().setSettings(settings);
 

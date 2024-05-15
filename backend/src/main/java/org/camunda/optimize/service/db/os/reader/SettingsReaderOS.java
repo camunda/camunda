@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.reader.SettingsReader;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
@@ -32,27 +32,26 @@ public class SettingsReaderOS implements SettingsReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<SettingsResponseDto> getSettings() {
+  public Optional<SettingsDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
     final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
 
     final String errorMessage = "There was an error while reading settings for OpenSearch";
-    final GetResponse<SettingsResponseDto> getResponse =
-        osClient.get(getReqBuilder, SettingsResponseDto.class, errorMessage);
+    final GetResponse<SettingsDto> getResponse =
+        osClient.get(getReqBuilder, SettingsDto.class, errorMessage);
     if (getResponse.found()) {
-      SettingsResponseDto result = getResponse.source();
+      SettingsDto result = getResponse.source();
       if (Objects.nonNull(result)) {
         if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
-        if (result.getMetadataTelemetryEnabled().isEmpty()) {
-          result.setMetadataTelemetryEnabled(
-              configurationService.getTelemetryConfiguration().isInitializeTelemetry());
-        }
+        log.debug("Finished Fetching Optimize Settings");
         return Optional.of(result);
       }
+    } else {
+      log.debug("No Settings found");
     }
     return Optional.empty();
   }

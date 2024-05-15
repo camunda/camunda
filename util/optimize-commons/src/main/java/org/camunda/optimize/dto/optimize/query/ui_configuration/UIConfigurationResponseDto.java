@@ -36,13 +36,6 @@ public class UIConfigurationResponseDto {
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
 
-  // mirrors SettingsDto
-  private boolean metadataTelemetryEnabled;
-
-  // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config
-  // flags only
-  private boolean settingsManuallyConfirmed;
-
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
   private OnboardingResponseDto onboarding = new OnboardingResponseDto();

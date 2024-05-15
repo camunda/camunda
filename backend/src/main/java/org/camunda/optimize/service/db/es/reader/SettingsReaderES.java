@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.SettingsReader;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
@@ -35,22 +35,18 @@ public class SettingsReaderES implements SettingsReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<SettingsResponseDto> getSettings() {
+  public Optional<SettingsDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
     final GetRequest getRequest = new GetRequest(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
 
-    SettingsResponseDto result = null;
+    SettingsDto result = null;
     try {
       final GetResponse getResponse = esClient.get(getRequest);
       if (getResponse.isExists()) {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsResponseDto.class);
+        result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsDto.class);
         if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());
-        }
-        if (result.getMetadataTelemetryEnabled().isEmpty()) {
-          result.setMetadataTelemetryEnabled(
-              configurationService.getTelemetryConfiguration().isInitializeTelemetry());
         }
       }
     } catch (IOException e) {

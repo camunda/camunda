@@ -79,7 +79,7 @@ import javax.net.ssl.X509TrustManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.SettingsResponseDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
@@ -1869,7 +1869,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildSetSettingsRequest(final SettingsResponseDto settingsDto) {
+  public OptimizeRequestExecutor buildSetSettingsRequest(final SettingsDto settingsDto) {
     this.path = "settings/";
     this.method = PUT;
     this.body = getBody(settingsDto);

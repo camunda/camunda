@@ -91,7 +91,6 @@ import org.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImp
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.tenant.CamundaPlatformTenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -651,10 +650,6 @@ public class EmbeddedOptimizeExtension
 
   public KpiEvaluationSchedulerService getKpiSchedulerService() {
     return getBean(KpiEvaluationSchedulerService.class);
-  }
-
-  public TelemetryScheduler getTelemetryScheduler() {
-    return getBean(TelemetryScheduler.class);
   }
 
   public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
