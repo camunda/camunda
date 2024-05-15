@@ -33,7 +33,7 @@ on:
         required: true
         type: string
       test-type:
-        description: "Title of the test run step"
+        description: "Name of the test type"
         required: true
         type: string
 
@@ -105,7 +105,7 @@ jobs:
         if: ${{ (success() || failure()) }}
         uses: ./.github/actions/collect-operate-test-artifacts
         with:
-          name: "ci tests"
+          name: "Operate ${{ inputs.test-type }}"
       - name: Send Slack notification on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.26.0
