@@ -53,6 +53,7 @@ env:
 jobs:
   integration-tests:
     name: Test
+    timeout-minutes: 20
     runs-on: ${{ inputs.runner-type }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
 
