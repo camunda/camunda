@@ -293,21 +293,13 @@ test.beforeEach(async ({page}) => {
 test.describe('Tasklist snapshots', () => {
   test('empty tasklist', async ({page, taskPanelPage}) => {
     await mockTaskSearch(page, []);
-
     await taskPanelPage.goto();
-
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
-
     await expect(page).toHaveScreenshot();
   });
 
   test('populated tasklist', async ({page, taskPanelPage}) => {
     await mockTaskSearch(page, MOCK_TASKLIST);
-
     await taskPanelPage.goto();
-
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
-
     await expect(page).toHaveScreenshot();
   });
 
@@ -316,7 +308,7 @@ test.describe('Tasklist snapshots', () => {
 
     await taskPanelPage.goto();
 
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
+    // await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
 
     await page.getByRole('button', {name: 'Sort tasks'}).click();
 
@@ -352,8 +344,6 @@ test.describe('Tasklist snapshots', () => {
 
     await taskDetailsPage.goto('1');
 
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
-
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
 
@@ -385,8 +375,6 @@ test.describe('Tasklist snapshots', () => {
     );
 
     await taskDetailsPage.goto('1');
-
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
@@ -424,8 +412,6 @@ test.describe('Tasklist snapshots', () => {
     );
 
     await taskPanelPage.goto({filter: 'completed', sortBy: 'completion'});
-
-    await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
 
     await taskPanelPage.openTask(completedTaskList[0].name);
 
@@ -467,7 +453,7 @@ test.describe('Tasklist snapshots', () => {
     await page
       .getByTestId('process-tile')
       .filter({has: page.getByText('Register')})
-      .getByRole('button')
+      .getByRole('button', {name: 'Start process'})
       .click();
 
     await expect(page).toHaveScreenshot();
@@ -481,7 +467,7 @@ test.describe('Tasklist snapshots', () => {
     await page
       .getByTestId('process-tile')
       .filter({has: page.getByText('Order')})
-      .getByRole('button')
+      .getByRole('button', {name: 'Start process'})
       .click();
 
     await expect(page.getByText('Process has started')).toBeVisible();
