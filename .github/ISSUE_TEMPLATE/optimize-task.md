@@ -46,7 +46,7 @@ assignees: ''
 - Preview environments: {Link(s) to preview environments}
 
 When all the resources are available, please let the Engineering review know via a comment that this
-issue is ready for review and assign them to the Feature PR.
+issue is ready for review, move it to "Eng Review" Status and assign them to the Feature PR.
 
 #### Engineering Review
 
@@ -55,17 +55,17 @@ issue is ready for review and assign them to the Feature PR.
 - [ ] If the API has changed, the API documentation is updated
 - [ ] All other PRs (docs, controller etc.) in the breakdown have been approved
 
-When all stages are complete, please let the QA know via a comment. If any stages are incomplete,
-please reassign it back to the author and move it back to "In Progress"
+When all stages are complete, please move the issue to the "QA Review" status. If any stages are
+incomplete, please move it back to "In Progress" and let the author know via a comment.
 
 #### QA Review
 
 - [ ] The change is implemented as described on all target environments/versions/modes
 - [ ] The documentation changes are as expected
 
-When all stages are complete, please let the author know via a comment. If any stages are
-incomplete, please explain the reasons why in a comment, reassign it back to the author and move it
-back to "In Progress"
+When all stages are complete, please move the issue to "Ready to Complete" status and let the author
+know via a comment. If any stages are incomplete, please move it back to "In Progress" and let the
+author know via a comment explaining the reasons why.
 
 ### Completion
 
