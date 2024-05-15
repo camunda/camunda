@@ -73,13 +73,15 @@ export default function NodeSelection({
             .forEach((element) => flowNodes.add(element.id));
           const allFlowNodes = Array.from(flowNodes);
 
-          let preExistingValues = filterData?.data.values;
+          let preExistingValues: string[] | undefined;
           if (preExistingValues && filterData?.data.operator === 'not in') {
             preExistingValues = allFlowNodes.filter((id) => !filterData?.data.values?.includes(id));
+          } else {
+            preExistingValues = allFlowNodes.filter((id) => filterData?.data.values?.includes(id));
           }
 
           setAllFlowNodes(allFlowNodes);
-          setSelectedNodes(preExistingValues || allFlowNodes);
+          setSelectedNodes(preExistingValues?.length ? preExistingValues : allFlowNodes);
           setXml(xml);
           setApplyTo(applyTo);
         },

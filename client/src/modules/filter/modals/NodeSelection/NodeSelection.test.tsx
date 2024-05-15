@@ -236,3 +236,26 @@ it('should populate selected values correctly', async () => {
     appliedTo: ['definition'],
   });
 });
+
+it('should replace selected nodes when changing definition', async () => {
+  const definitions = [
+    {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
+    {
+      identifier: 'otherDefinition',
+      key: 'otherDefinitionKey',
+      versions: ['1'],
+      tenantIds: ['marketing', 'sales'],
+    },
+  ];
+  const node = shallow(<NodeSelection {...props} definitions={definitions} />);
+
+  await runAllEffects();
+
+  node.find(ClickBehavior).prop('onClick')({id: 'a'});
+
+  node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
+
+  await runAllEffects();
+
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual(['a', 'b', 'c']);
+});
