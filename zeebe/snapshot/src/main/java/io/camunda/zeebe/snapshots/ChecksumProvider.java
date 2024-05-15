@@ -16,10 +16,12 @@ import org.rocksdb.RocksDBException;
 
 public class ChecksumProvider {
 
-  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) throws RocksDBException {
+  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
     try (final var db = RocksDB.openReadOnly(snapshotPath.toString())) {
       return db.getLiveFilesMetaData().stream()
           .collect(Collectors.toMap(this::getMetadataName, LiveFileMetaData::fileChecksum));
+    } catch (final RocksDBException e) {
+      throw new RuntimeException(e);
     }
   }
 
