@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
+import org.rocksdb.RocksDBException;
 
 public final class SnapshotChecksumTest {
 
@@ -163,7 +164,7 @@ public final class SnapshotChecksumTest {
   }
 
   @Test
-  void shouldDetectCorruptedSnapshot() throws IOException {
+  void shouldDetectCorruptedSnapshot() throws IOException, RocksDBException {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
     final var checksumPath = corruptedSnapshot.resolveSibling("checksum");
@@ -178,7 +179,7 @@ public final class SnapshotChecksumTest {
   }
 
   @Test
-  void shouldCalculateSameChecksumOfLargeFile() throws IOException {
+  void shouldCalculateSameChecksumOfLargeFile() throws IOException, RocksDBException {
     // given
     final var largeSnapshot = createTempDir("large");
     final Path file = largeSnapshot.resolve("file");
@@ -216,7 +217,7 @@ public final class SnapshotChecksumTest {
   }
 
   @Test
-  void shouldWriteTheNumberOfFiles() throws IOException {
+  void shouldWriteTheNumberOfFiles() throws IOException, RocksDBException {
     // given
     final var folder = createTempDir("folder");
     createChunk(folder, "file1.txt");
@@ -234,7 +235,7 @@ public final class SnapshotChecksumTest {
   }
 
   @Test
-  void shouldAddChecksumOfMetadataAtTheEnd() throws IOException {
+  void shouldAddChecksumOfMetadataAtTheEnd() throws IOException, RocksDBException {
     // given
     final var folder = createTempDir("folder");
     createChunk(folder, "file1.txt");

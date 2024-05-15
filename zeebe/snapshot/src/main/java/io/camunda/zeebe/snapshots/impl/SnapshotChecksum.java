@@ -7,17 +7,24 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
+import org.rocksdb.RocksDBException;
 
 final class SnapshotChecksum {
 
@@ -41,10 +48,18 @@ final class SnapshotChecksum {
     }
   }
 
-  public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
+  public static MutableChecksumsSFV calculate(final Path snapshotDirectory)
+      throws IOException, RocksDBException {
+    return calculate(snapshotDirectory, Optional.empty());
+  }
+
+  public static MutableChecksumsSFV calculate(
+      final Path snapshotDirectory, final Optional<ChecksumProvider> checksumProvider)
+      throws IOException, RocksDBException {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
-      final var sfvChecksum = createCombinedChecksum(fileStream);
+      final var sfvChecksum =
+          createCombinedChecksumFullFileChecksums(fileStream, checksumProvider, snapshotDirectory);
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
@@ -82,12 +97,32 @@ final class SnapshotChecksum {
    *
    * @return the SfvChecksum object
    */
-  private static SfvChecksumImpl createCombinedChecksum(final Stream<Path> files) {
+  private static SfvChecksumImpl createCombinedChecksumFullFileChecksums(
+      final Stream<Path> files,
+      final Optional<ChecksumProvider> checksumProvider,
+      final Path snapshotDirectory)
+      throws RocksDBException {
+
     final SfvChecksumImpl checksum = new SfvChecksumImpl();
+    final Map<String, byte[]> liveFileChecksums = new HashMap<>();
+
+    if (checksumProvider.isPresent()) {
+      liveFileChecksums.putAll(checksumProvider.get().getSnapshotChecksums(snapshotDirectory));
+    }
+
     files.forEachOrdered(
         path -> {
           try {
-            checksum.updateFromFile(path);
+            if (path.toString().endsWith(".sst") && checksumProvider.isPresent()) {
+              final var fileName = path.getFileName().toString();
+              final Integer sstChecksum =
+                  ByteBuffer.wrap(liveFileChecksums.get(fileName))
+                      .order(ByteOrder.BIG_ENDIAN)
+                      .getInt();
+              checksum.updateFromChecksum(path, Integer.toUnsignedLong(sstChecksum));
+            } else {
+              checksum.updateFromFile(path);
+            }
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }

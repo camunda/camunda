@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.rocksdb.RocksDBException;
 
 public final class FileBasedSnapshotTest {
   private static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
@@ -44,7 +45,7 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shouldDeleteSnapshot() throws IOException {
+  public void shouldDeleteSnapshot() throws IOException, RocksDBException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
@@ -59,7 +60,7 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shouldReserveSnapshot() throws IOException {
+  public void shouldReserveSnapshot() throws IOException, RocksDBException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
@@ -73,7 +74,7 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shouldReleaseReservedSnapshot() throws IOException {
+  public void shouldReleaseReservedSnapshot() throws IOException, RocksDBException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
@@ -88,7 +89,8 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shouldReleaseSnapshotOnlyAfterAllReservationsAreReleased() throws IOException {
+  public void shouldReleaseSnapshotOnlyAfterAllReservationsAreReleased()
+      throws IOException, RocksDBException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
@@ -110,7 +112,7 @@ public final class FileBasedSnapshotTest {
   }
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
-      throws IOException {
+      throws IOException, RocksDBException {
     final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L);
 
     FileUtil.ensureDirectoryExists(snapshotPath);
