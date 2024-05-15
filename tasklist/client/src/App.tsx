@@ -61,9 +61,15 @@ const router = createBrowserRouter(
           />
           <Route
             path=":id"
-            lazy={() => import('./Tasks/Task')}
+            lazy={() => import('./Tasks/Task/Details')}
             ErrorBoundary={ErrorWithinLayout}
-          />
+          >
+            <Route
+              index
+              lazy={() => import('./Tasks/Task')}
+              ErrorBoundary={ErrorWithinLayout}
+            />
+          </Route>
         </Route>
       </Route>
     </Route>,

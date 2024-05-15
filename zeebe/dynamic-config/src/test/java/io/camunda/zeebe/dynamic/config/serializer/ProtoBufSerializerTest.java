@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -22,10 +23,15 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.List;
@@ -38,7 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 final class ProtoBufSerializerTest {
 
-  final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
+  private final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
 
   @ParameterizedTest
   @MethodSource("provideClusterTopologies")
@@ -143,6 +149,20 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldEncodeAndDecodeExporterDisableRequest() {
+    // given
+    final var exporterDisableRequest = new ExporterDisableRequest("expId", false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterDisableRequest(exporterDisableRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterDisableRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterDisableRequest);
+  }
+
+  @Test
   void shouldEncodeAndDecodeTopologyChangeResponse() {
     // given
     final var topologyChangeResponse =
@@ -180,7 +200,9 @@ final class ProtoBufSerializerTest {
         topologyWithTwoMembers(),
         topologyWithClusterChangePlan(),
         topologyWithCompletedClusterChangePlan(),
-        topologyWithClusterChangePlanWithMemberOperations());
+        topologyWithClusterChangePlanWithMemberOperations(),
+        topologyWithExporterState(),
+        topologyWithExporterDisableOperation());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -207,21 +229,24 @@ final class ProtoBufSerializerTest {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()))));
   }
 
   private static ClusterConfiguration topologyWithOneMemberOneLeavingPartition() {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()).toLeaving())));
   }
 
   private static ClusterConfiguration topologyWithOneMemberOneJoiningPartition() {
     return ClusterConfiguration.init()
         .addMember(
             MemberId.from("0"),
-            MemberState.initializeAsActive(Map.of(1, PartitionState.joining(1))));
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.joining(1, DynamicPartitionConfig.init()))));
   }
 
   private static ClusterConfiguration topologyWithOneMemberTwoPartitions() {
@@ -229,7 +254,11 @@ final class ProtoBufSerializerTest {
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
-                Map.of(1, PartitionState.active(1), 2, PartitionState.active(2).toLeaving())));
+                Map.of(
+                    1,
+                    PartitionState.active(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init()).toLeaving())));
   }
 
   private static ClusterConfiguration topologyWithTwoMembers() {
@@ -237,7 +266,11 @@ final class ProtoBufSerializerTest {
         .addMember(
             MemberId.from("0"),
             MemberState.initializeAsActive(
-                Map.of(1, PartitionState.joining(1), 2, PartitionState.active(2))))
+                Map.of(
+                    1,
+                    PartitionState.joining(1, DynamicPartitionConfig.init()),
+                    2,
+                    PartitionState.active(2, DynamicPartitionConfig.init()))))
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()).toLeaving());
   }
 
@@ -272,5 +305,29 @@ final class ProtoBufSerializerTest {
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startConfigurationChange(changes);
+  }
+
+  private static ClusterConfiguration topologyWithExporterState() {
+    final var dynamicConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(
+                    "expA",
+                    new ExporterState(State.ENABLED),
+                    "expB",
+                    new ExporterState(State.DISABLED))));
+    return ClusterConfiguration.init()
+        .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+        .updateMember(
+            MemberId.from("1"),
+            m ->
+                m.addPartition(
+                    1, new PartitionState(PartitionState.State.ACTIVE, 1, dynamicConfig)));
+  }
+
+  private static ClusterConfiguration topologyWithExporterDisableOperation() {
+    return topologyWithExporterState()
+        .startConfigurationChange(
+            List.of(new PartitionDisableExporterOperation(MemberId.from("1"), 1, "expA")));
   }
 }

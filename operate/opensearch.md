@@ -226,7 +226,6 @@ Implementation of interfaces for Opensearch (packages sorted by most important f
 1. search_after doesn't support null dates in Opensearch java client. [Ticket #5788](https://github.com/camunda/operate/issues/5788)
 
     <details>
-    Test to reproduce: [io.camunda.operate.elasticsearch.ListViewQueryIT.testVariousQueries](qa/integration-tests/src/test/java/io/camunda/operate/elasticsearch/ListViewQueryIT.java)
 
    Sample search request:
 

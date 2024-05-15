@@ -64,4 +64,11 @@ public class MessagingException extends IOException {
       super(message);
     }
   }
+
+  /** Exception indicating a connection was closed unexpectedly. */
+  public static class ConnectionClosed extends MessagingException {
+    public ConnectionClosed(final String message) {
+      super(message);
+    }
+  }
 }

@@ -187,7 +187,7 @@ final class ReconfigurationTest {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       commit.complete(index);
     }
 

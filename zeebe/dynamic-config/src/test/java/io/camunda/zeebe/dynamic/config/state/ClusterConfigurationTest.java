@@ -22,31 +22,43 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class ClusterConfigurationTest {
+
+  private final DynamicPartitionConfig emptyPartitionConfig = DynamicPartitionConfig.init();
+
   @Test
   void canInitializeClusterWithPreExistingMembers() {
     // when
     final var topology =
         ClusterConfiguration.init()
             .addMember(
-                member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))))
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
             .addMember(
-                member(2), MemberState.initializeAsActive(Map.of(2, PartitionState.active(1))))
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(2, PartitionState.active(1, emptyPartitionConfig))))
             .addMember(
-                member(3), MemberState.initializeAsActive(Map.of(3, PartitionState.active(1))));
+                member(3),
+                MemberState.initializeAsActive(
+                    Map.of(3, PartitionState.active(1, emptyPartitionConfig))));
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.active(1));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(2, PartitionState.active(1));
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
         .hasMemberWithState(3, State.ACTIVE)
         .member(3)
-        .hasPartitionWithState(3, PartitionState.active(1));
+        .hasPartitionWithState(3, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(3, 1);
   }
 
   @Test
@@ -55,11 +67,17 @@ class ClusterConfigurationTest {
     final var topology =
         ClusterConfiguration.init()
             .addMember(
-                member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))))
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
             .addMember(
-                member(2), MemberState.initializeAsActive(Map.of(1, PartitionState.active(2))))
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, emptyPartitionConfig))))
             .addMember(
-                member(3), MemberState.initializeAsActive(Map.of(1, PartitionState.active(3))));
+                member(3),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(3, emptyPartitionConfig))));
 
     // then
     assertThat(topology.clusterSize()).isEqualTo(3);
@@ -73,9 +91,13 @@ class ClusterConfigurationTest {
     final var topology =
         ClusterConfiguration.init()
             .addMember(
-                member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.joining(1))))
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.joining(1, emptyPartitionConfig))))
             .addMember(
-                member(2), MemberState.initializeAsActive(Map.of(2, PartitionState.joining(1))));
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(2, PartitionState.joining(1, emptyPartitionConfig))));
 
     // update topology in one member
     final var topologyInMemberOne =
@@ -93,11 +115,13 @@ class ClusterConfigurationTest {
     ClusterConfigurationAssert.assertThatClusterTopology(mergedTopologyOne)
         .hasMemberWithState(1, State.ACTIVE)
         .member(1)
-        .hasPartitionWithState(1, PartitionState.active(1));
+        .hasPartitionWithState(1, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(1, 1);
     ClusterConfigurationAssert.assertThatClusterTopology(mergedTopologyOne)
         .hasMemberWithState(2, State.ACTIVE)
         .member(2)
-        .hasPartitionWithState(2, PartitionState.active(1));
+        .hasPartitionWithState(2, PartitionState.State.ACTIVE)
+        .hasPartitionWithPriority(2, 1);
 
     assertThat(mergedTopologyTwo).isEqualTo(mergedTopologyOne);
   }
@@ -108,9 +132,13 @@ class ClusterConfigurationTest {
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(
-                member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))))
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig))))
             .addMember(
-                member(2), MemberState.initializeAsActive(Map.of(2, PartitionState.active(1))));
+                member(2),
+                MemberState.initializeAsActive(
+                    Map.of(2, PartitionState.active(1, emptyPartitionConfig))));
 
     var topologyOnAnotherMember = ClusterConfiguration.init().merge(initialTopology);
 
@@ -207,18 +235,61 @@ class ClusterConfigurationTest {
     // when
     final var finalTopology =
         initialTopology.advanceConfigurationChange(
-            t -> t.updateMember(member(1), m -> m.addPartition(1, PartitionState.active(1))));
+            t ->
+                t.updateMember(
+                    member(1),
+                    m -> m.addPartition(1, PartitionState.active(1, emptyPartitionConfig))));
 
     // then
     final var expected =
         new ClusterConfiguration(
             2,
-            Map.of(member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1)))),
+            Map.of(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, emptyPartitionConfig)))),
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty());
 
     ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
+  }
+
+  @Test
+  void shouldUpdateExporterState() {
+    // given
+    final String exporterName = "exporter";
+    final var exportersConfig =
+        new ExportersConfig(Map.of(exporterName, new ExporterState(ExporterState.State.ENABLED)));
+    final var config = new DynamicPartitionConfig(exportersConfig);
+
+    final var initialTopology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, new PartitionState(PartitionState.State.ACTIVE, 1, config))));
+
+    // when
+    final var updatedTopology =
+        initialTopology.updateMember(
+            member(1),
+            m ->
+                m.updatePartition(
+                    1,
+                    p ->
+                        p.updateConfig(
+                            c ->
+                                c.updateExporting(
+                                    e ->
+                                        e.updateExporter(
+                                            exporterName,
+                                            new ExporterState(ExporterState.State.DISABLED))))));
+
+    // then
+    assertThat(
+            updatedTopology.getMember(member(1)).getPartition(1).config().exporting().exporters())
+        .containsEntry(exporterName, new ExporterState(ExporterState.State.DISABLED));
   }
 
   private MemberId member(final int id) {

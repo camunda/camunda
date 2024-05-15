@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -301,7 +302,8 @@ class ClusterConfigurationManagementIntegrationTest {
                   clusterMembers,
                   cluster.getMembershipService().getLocalMember().id(),
                   List.of(),
-                  3));
+                  3,
+                  DynamicPartitionConfig.init()));
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {

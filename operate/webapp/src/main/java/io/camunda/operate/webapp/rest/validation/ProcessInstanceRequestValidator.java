@@ -7,11 +7,15 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,10 +25,20 @@ public class ProcessInstanceRequestValidator {
   private final CreateRequestOperationValidator createRequestOperationValidator;
 
   public ProcessInstanceRequestValidator(
-      final CreateRequestOperationValidator createRequestOperationValidator,
-      final CreateBatchOperationRequestValidator createBatchOperationRequestValidator) {
+      @NotNull final CreateRequestOperationValidator createRequestOperationValidator,
+      @NotNull final CreateBatchOperationRequestValidator createBatchOperationRequestValidator) {
     this.createRequestOperationValidator = createRequestOperationValidator;
     this.createBatchOperationRequestValidator = createBatchOperationRequestValidator;
+  }
+
+  public void validateFlowNodeStatisticsRequest(final ListViewQueryDto request) {
+    final List<Long> processDefinitionKeys =
+        CollectionUtil.toSafeListOfLongs(request.getProcessIds());
+    if ((processDefinitionKeys != null && processDefinitionKeys.size() == 1)
+        == (request.getBpmnProcessId() != null && request.getProcessVersion() != null)) {
+      throw new InvalidRequestException(
+          "Exactly one process must be specified in the request (via processIds or bpmnProcessId/version).");
+    }
   }
 
   public void validateFlowNodeMetadataRequest(final FlowNodeMetadataRequestDto request) {

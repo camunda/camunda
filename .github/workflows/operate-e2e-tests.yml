@@ -39,7 +39,7 @@ jobs:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -50,7 +50,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.0
+        image: camunda/zeebe:8.5.1
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter

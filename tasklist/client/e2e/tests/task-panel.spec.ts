@@ -111,8 +111,8 @@ test.describe('task panel page', () => {
     await expect(page.getByText(/some text/)).not.toHaveCount(50);
   });
 
-  test.skip('scrolling', async ({page, taskPanelPage}) => {
-    test.setTimeout(40000);
+  test('scrolling', async ({page, taskPanelPage}) => {
+    test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);

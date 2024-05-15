@@ -69,7 +69,7 @@ public class ListViewQueryDto {
     return running;
   }
 
-  public ListViewQueryDto setRunning(boolean running) {
+  public ListViewQueryDto setRunning(final boolean running) {
     this.running = running;
     return this;
   }
@@ -78,7 +78,7 @@ public class ListViewQueryDto {
     return completed;
   }
 
-  public ListViewQueryDto setCompleted(boolean completed) {
+  public ListViewQueryDto setCompleted(final boolean completed) {
     this.completed = completed;
     return this;
   }
@@ -87,7 +87,7 @@ public class ListViewQueryDto {
     return incidents;
   }
 
-  public ListViewQueryDto setIncidents(boolean incidents) {
+  public ListViewQueryDto setIncidents(final boolean incidents) {
     this.incidents = incidents;
     return this;
   }
@@ -96,7 +96,7 @@ public class ListViewQueryDto {
     return active;
   }
 
-  public ListViewQueryDto setActive(boolean active) {
+  public ListViewQueryDto setActive(final boolean active) {
     this.active = active;
     return this;
   }
@@ -105,7 +105,7 @@ public class ListViewQueryDto {
     return finished;
   }
 
-  public ListViewQueryDto setFinished(boolean finished) {
+  public ListViewQueryDto setFinished(final boolean finished) {
     this.finished = finished;
     return this;
   }
@@ -114,7 +114,7 @@ public class ListViewQueryDto {
     return canceled;
   }
 
-  public ListViewQueryDto setCanceled(boolean canceled) {
+  public ListViewQueryDto setCanceled(final boolean canceled) {
     this.canceled = canceled;
     return this;
   }
@@ -123,7 +123,7 @@ public class ListViewQueryDto {
     return retriesLeft;
   }
 
-  public ListViewQueryDto setRetriesLeft(boolean retriesLeft) {
+  public ListViewQueryDto setRetriesLeft(final boolean retriesLeft) {
     this.retriesLeft = retriesLeft;
     return this;
   }
@@ -132,7 +132,7 @@ public class ListViewQueryDto {
     return ids;
   }
 
-  public ListViewQueryDto setIds(List<String> ids) {
+  public ListViewQueryDto setIds(final List<String> ids) {
     this.ids = ids;
     return this;
   }
@@ -141,7 +141,7 @@ public class ListViewQueryDto {
     return errorMessage;
   }
 
-  public ListViewQueryDto setErrorMessage(String errorMessage) {
+  public ListViewQueryDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
     return this;
   }
@@ -150,7 +150,7 @@ public class ListViewQueryDto {
     return activityId;
   }
 
-  public ListViewQueryDto setActivityId(String activityId) {
+  public ListViewQueryDto setActivityId(final String activityId) {
     this.activityId = activityId;
     return this;
   }
@@ -159,7 +159,7 @@ public class ListViewQueryDto {
     return startDateAfter;
   }
 
-  public ListViewQueryDto setStartDateAfter(OffsetDateTime startDateAfter) {
+  public ListViewQueryDto setStartDateAfter(final OffsetDateTime startDateAfter) {
     this.startDateAfter = startDateAfter;
     return this;
   }
@@ -168,7 +168,7 @@ public class ListViewQueryDto {
     return startDateBefore;
   }
 
-  public ListViewQueryDto setStartDateBefore(OffsetDateTime startDateBefore) {
+  public ListViewQueryDto setStartDateBefore(final OffsetDateTime startDateBefore) {
     this.startDateBefore = startDateBefore;
     return this;
   }
@@ -177,7 +177,7 @@ public class ListViewQueryDto {
     return endDateAfter;
   }
 
-  public ListViewQueryDto setEndDateAfter(OffsetDateTime endDateAfter) {
+  public ListViewQueryDto setEndDateAfter(final OffsetDateTime endDateAfter) {
     this.endDateAfter = endDateAfter;
     return this;
   }
@@ -186,7 +186,7 @@ public class ListViewQueryDto {
     return endDateBefore;
   }
 
-  public ListViewQueryDto setEndDateBefore(OffsetDateTime endDateBefore) {
+  public ListViewQueryDto setEndDateBefore(final OffsetDateTime endDateBefore) {
     this.endDateBefore = endDateBefore;
     return this;
   }
@@ -195,7 +195,7 @@ public class ListViewQueryDto {
     return processIds;
   }
 
-  public ListViewQueryDto setProcessIds(List<String> processIds) {
+  public ListViewQueryDto setProcessIds(final List<String> processIds) {
     this.processIds = processIds;
     return this;
   }
@@ -204,7 +204,7 @@ public class ListViewQueryDto {
     return bpmnProcessId;
   }
 
-  public ListViewQueryDto setBpmnProcessId(String bpmnProcessId) {
+  public ListViewQueryDto setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -213,7 +213,7 @@ public class ListViewQueryDto {
     return processVersion;
   }
 
-  public ListViewQueryDto setProcessVersion(Integer processVersion) {
+  public ListViewQueryDto setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
     return this;
   }
@@ -222,7 +222,7 @@ public class ListViewQueryDto {
     return excludeIds;
   }
 
-  public ListViewQueryDto setExcludeIds(List<String> excludeIds) {
+  public ListViewQueryDto setExcludeIds(final List<String> excludeIds) {
     this.excludeIds = excludeIds;
     return this;
   }
@@ -231,7 +231,7 @@ public class ListViewQueryDto {
     return variable;
   }
 
-  public ListViewQueryDto setVariable(VariablesQueryDto variable) {
+  public ListViewQueryDto setVariable(final VariablesQueryDto variable) {
     this.variable = variable;
     return this;
   }
@@ -240,8 +240,9 @@ public class ListViewQueryDto {
     return batchOperationId;
   }
 
-  public void setBatchOperationId(String batchOperationId) {
+  public ListViewQueryDto setBatchOperationId(final String batchOperationId) {
     this.batchOperationId = batchOperationId;
+    return this;
   }
 
   public Long getParentInstanceId() {
@@ -257,7 +258,7 @@ public class ListViewQueryDto {
     return tenantId;
   }
 
-  public ListViewQueryDto setTenantId(String tenantId) {
+  public ListViewQueryDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -289,7 +290,7 @@ public class ListViewQueryDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

@@ -50,12 +50,13 @@ async function request(
 
     if (response.ok) {
       authenticationStore.activateSession();
-      const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
+    }
 
-      // If the token is found in the response headers, use it
-      if (tokenFromResponse) {
-        sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
-      }
+    const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
+
+    // If the token is found in the response headers, use it
+    if (tokenFromResponse) {
+      sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
     }
 
     if (!skipSessionCheck && response.status === 401) {

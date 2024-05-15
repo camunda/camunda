@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -28,6 +29,7 @@ class PartitionReconfigurePriorityApplierTest {
 
   private static final PartitionChangeExecutor FAILING_EXECUTOR =
       mock(PartitionChangeExecutor.class);
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @BeforeAll
   static void init() {
@@ -46,7 +48,9 @@ class PartitionReconfigurePriorityApplierTest {
     final ClusterConfiguration clusterConfigurationWithMember =
         ClusterConfiguration.init()
             .addMember(
-                memberId, MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                memberId,
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
 
     // when
     final var result = partitionReconfigurePriorityApplier.init(clusterConfigurationWithMember);
@@ -69,7 +73,8 @@ class PartitionReconfigurePriorityApplierTest {
         ClusterConfiguration.init()
             .addMember(
                 memberId,
-                MemberState.initializeAsActive(Map.of(partitionId, PartitionState.joining(1))));
+                MemberState.initializeAsActive(
+                    Map.of(partitionId, PartitionState.joining(1, partitionConfig))));
 
     // when
     final var result = partitionReconfigurePriorityApplier.init(clusterConfigurationWithMember);
@@ -92,7 +97,8 @@ class PartitionReconfigurePriorityApplierTest {
         ClusterConfiguration.init()
             .addMember(
                 memberId,
-                MemberState.initializeAsActive(Map.of(partitionId, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(partitionId, PartitionState.active(1, partitionConfig))));
 
     // when
     final var result = partitionReconfigurePriorityApplier.init(initialClusterConfiguration);
@@ -115,7 +121,8 @@ class PartitionReconfigurePriorityApplierTest {
         ClusterConfiguration.init()
             .addMember(
                 memberId,
-                MemberState.initializeAsActive(Map.of(partitionId, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(partitionId, PartitionState.active(1, partitionConfig))));
 
     // when
     final var newMemberState =
