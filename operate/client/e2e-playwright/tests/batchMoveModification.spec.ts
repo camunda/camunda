@@ -75,7 +75,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveButton.click();
 
     // Confirm move modification modal
-    await page.getByRole('button', {name: 'Continue'}).click();
+    await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
     await processesPage.diagram.clickFlowNode('Ship Articles');
@@ -124,6 +124,8 @@ test.describe('Process Instance Batch Modification', () => {
       })
       .click();
 
+    await commonPage.collapseOperationsPanel();
+
     await processesPage.selectProcess('Order process');
     await processesPage.selectVersion(initialData.version.toString());
 
@@ -170,7 +172,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveButton.click();
 
     // Confirm move modification modal
-    await page.getByRole('button', {name: 'Continue'}).click();
+    await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
     await processesPage.diagram.clickFlowNode('Ship Articles');
