@@ -28,6 +28,14 @@ on:
         required: false
         default: 4
         type: number
+      command:
+        description: "Maven command to trigger the test"
+        required: true
+        type: string
+      test-type:
+        description: "Title of the test run step"
+        required: true
+        type: string
 
 defaults:
   run:
