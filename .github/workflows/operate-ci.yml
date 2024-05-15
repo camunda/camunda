@@ -49,7 +49,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+      command: mvn -f operate/qa/integration-tests verify -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
       test-type: Integration Tests
 
   test-summary:
