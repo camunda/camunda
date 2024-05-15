@@ -657,9 +657,7 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Deprecated
-    @DeprecatedConfigurationProperty(
-        replacement = "not required",
-        reason = "The handling of scopes is done by the oidc type 'camunda.client.auth.oidc-type'")
+    @DeprecatedConfigurationProperty(replacement = "not required", reason = "not required")
     public String getScope() {
       return scope;
     }

@@ -34,7 +34,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 @SpringBootTest(
     classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
     properties = {
-      "camunda.client.mode=oidc",
+      "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
