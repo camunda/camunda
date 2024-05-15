@@ -60,7 +60,7 @@
     <!-- testing config -->
     <h2.version>2.2.224</h2.version>
     <postgres.version>42.7.3</postgres.version>
-    <mockito.version>5.11.0</mockito.version>
+    <mockito.version>5.12.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.10.2</junit.jupiter.version>
     <junit.platform.version>1.10.2</junit.platform.version>
