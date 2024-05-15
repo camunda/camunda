@@ -529,10 +529,11 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnIncompleteState() throws IOException {
     final Long backupId = 2L;
-    // we have only 2 out of 3 snapshots
+    // we have only 2 out of 3 snapshots + timeout
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
             "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+    when(snapshotInfo1.startTime()).thenReturn(0L);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
             "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -711,17 +712,19 @@ public class BackupControllerIT {
             new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
-    // we have only 2 out of 3 snapshots -> INCOMPLETE
+    // we have only 2 out of 3 snapshots + TIMEOUT -> INCOMPLETE
     final SnapshotInfo snapshotInfo21 =
         createSnapshotInfoMock(
             new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(1).setPartCount(3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
+    when(snapshotInfo21.startTime()).thenReturn(0L);
     final SnapshotInfo snapshotInfo22 =
         createSnapshotInfoMock(
             new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(2).setPartCount(3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
+    when(snapshotInfo22.startTime()).thenReturn(0L);
     // IN_PROGRESS
     final SnapshotInfo snapshotInfo31 =
         createSnapshotInfoMock(
@@ -820,7 +823,7 @@ public class BackupControllerIT {
   }
 
   private void assertBackupDetails(
-      List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
+      final List<SnapshotInfo> snapshotInfos, final GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
@@ -836,27 +839,32 @@ public class BackupControllerIT {
             snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final String name, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(null, name, uuid, state, null);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(Metadata metadata, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final Metadata metadata, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(metadata, null, uuid, state, null);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     return createSnapshotInfoMock(null, name, uuid, state, failures);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      Metadata metadata,
-      String name,
-      String uuid,
-      SnapshotState state,
-      List<SnapshotShardFailure> failures) {
+      final Metadata metadata,
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
       when(snapshotInfo.snapshotId())
