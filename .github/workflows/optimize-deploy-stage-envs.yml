@@ -113,6 +113,7 @@ jobs:
           --helm-set camunda-platform.identity.image.tag=${{ steps.versions.outputs.identity }}
           --helm-set camunda-platform.zeebe.image.tag=${{ steps.versions.outputs.zeebe }}
           --helm-set camunda-platform.zeebe-gateway.image.tag=${{ steps.versions.outputs.zeebe }}
+          --helm-set camunda-platform.identity.fullURL=https://identity-${app_url} \
         COMMON_ARGS: >-
           --dest-namespace optimize-${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}
           --file ${{ steps.params.outputs.argocd-app-config-file }}
