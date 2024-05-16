@@ -53,14 +53,12 @@ describe('TimeStampPill', () => {
 
     expect(screen.getByText('Show End Date')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole('switch', {name: 'Show End Date'})).toBeEnabled();
+      expect(screen.getByLabelText(/show end date/i)).toBeEnabled();
     });
 
-    await user.click(screen.getByRole('switch', {name: 'Show End Date'}));
+    await user.click(screen.getByLabelText(/show end date/i));
 
-    expect(
-      await screen.findByRole('switch', {name: 'Hide End Date'}),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText(/hide end date/i)).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {

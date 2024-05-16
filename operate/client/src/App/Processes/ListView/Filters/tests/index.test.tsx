@@ -359,7 +359,7 @@ describe('Filters', () => {
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
-    await user.click(screen.getByRole('switch', {name: 'Multiple'}));
+    await user.click(screen.getByLabelText(/multiple/i));
     await user.type(screen.getByLabelText(/^values$/i), '1, 2, 3');
     await user.click(screen.getByRole('button', {name: /open editor modal/i}));
 

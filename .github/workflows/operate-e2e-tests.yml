@@ -98,6 +98,8 @@ jobs:
         run: mvn -f operate clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
         run: mvn -q -B spring-boot:start -f operate/webapp/pom.xml -Dspring-boot.run.fork=true
+        env:
+          CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci
