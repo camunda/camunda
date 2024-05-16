@@ -18,6 +18,7 @@ package io.camunda.zeebe.spring.client.jobhandling;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -25,27 +26,48 @@ import java.util.concurrent.TimeUnit;
 public class CommandWrapper {
 
   private final FinalCommandStep<Void> command;
-
   private final ActivatedJob job;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final MetricsRecorder metricsRecorder;
 
   private long currentRetryDelay = 50L;
   private int invocationCounter = 0;
-  private final int maxRetries = 20; // TODO: Make configurable
+  private final int maxRetries;
 
   public CommandWrapper(
       final FinalCommandStep<Void> command,
       final ActivatedJob job,
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy) {
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder,
+      final int maxRetries) {
     this.command = command;
     this.job = job;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.metricsRecorder = metricsRecorder;
+    this.maxRetries = maxRetries;
   }
 
   public void executeAsync() {
     invocationCounter++;
     command
         .send()
+        .exceptionally(
+            t -> {
+              commandExceptionHandlingStrategy.handleCommandError(this, t);
+              return null;
+            });
+  }
+
+  public void executeAsyncWithMetrics(
+      final String metricName, final String action, final String type) {
+    invocationCounter++;
+    command
+        .send()
+        .thenApply(
+            result -> {
+              metricsRecorder.increase(metricName, action, type);
+              return result;
+            })
         .exceptionally(
             t -> {
               commandExceptionHandlingStrategy.handleCommandError(this, t);

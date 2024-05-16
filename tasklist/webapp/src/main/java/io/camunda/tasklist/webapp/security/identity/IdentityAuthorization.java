@@ -15,23 +15,35 @@ import java.util.List;
 
 public class IdentityAuthorization implements Serializable {
 
-  private static final String PROCESS_DEFINITION = "process-definition";
   // TODO - the UPDATE_PROCESS_INSTANCE is being used temporarily until we have the new permission
-  private static final String PROCESS_PERMISSION = "START_PROCESS_INSTANCE";
+  public static final String PROCESS_PERMISSION_START = "START_PROCESS_INSTANCE";
+  public static final String PROCESS_PERMISSION_READ = "READ";
+  private static final String PROCESS_DEFINITION = "process-definition";
   private List<String> processesAllowedToStart;
+  private final List<String> processesAllowedToRead;
 
-  public IdentityAuthorization(List<Authorization> authorizations) {
+  public IdentityAuthorization(final List<Authorization> authorizations) {
     processesAllowedToStart = new ArrayList<String>();
-    for (Authorization authorization : authorizations) {
-      if (authorization.getResourceType().equals(PROCESS_DEFINITION)
-          && authorization.getPermissions().contains(PROCESS_PERMISSION)) {
-        if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
-          processesAllowedToStart.clear();
-          processesAllowedToStart.add(IdentityProperties.ALL_RESOURCES);
-          break;
-        } else {
-          processesAllowedToStart.add(authorization.getResourceKey());
-        }
+    processesAllowedToRead = new ArrayList<String>();
+    for (final Authorization authorization : authorizations) {
+      if (authorization.getResourceType().equals(PROCESS_DEFINITION)) {
+        addPermissions(authorization, processesAllowedToStart, PROCESS_PERMISSION_START);
+        addPermissions(authorization, processesAllowedToRead, PROCESS_PERMISSION_READ);
+      }
+    }
+  }
+
+  private void addPermissions(
+      final Authorization authorization,
+      final List<String> processesAllowed,
+      final String expectedPermission) {
+    if (!processesAllowed.contains(IdentityProperties.ALL_RESOURCES)
+        && authorization.getPermissions().contains(expectedPermission)) {
+      if (authorization.getResourceKey().equals(IdentityProperties.ALL_RESOURCES)) {
+        processesAllowed.clear();
+        processesAllowed.add(IdentityProperties.ALL_RESOURCES);
+      } else {
+        processesAllowed.add(authorization.getResourceKey());
       }
     }
   }
@@ -40,8 +52,13 @@ public class IdentityAuthorization implements Serializable {
     return processesAllowedToStart;
   }
 
-  public IdentityAuthorization setProcessesAllowedToStart(List<String> processesAllowedToStart) {
+  public IdentityAuthorization setProcessesAllowedToStart(
+      final List<String> processesAllowedToStart) {
     this.processesAllowedToStart = processesAllowedToStart;
     return this;
+  }
+
+  public List<String> getProcessesAllowedToRead() {
+    return processesAllowedToRead;
   }
 }

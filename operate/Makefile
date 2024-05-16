@@ -83,4 +83,5 @@ start-e2e:
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \
 	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
 	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
+	CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dserver.port=8081

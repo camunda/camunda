@@ -42,21 +42,19 @@ test.beforeAll(async ({request}) => {
 
 test.describe('Process Instance Batch Modification', () => {
   test('Move Operation', async ({processesPage, commonPage, page}) => {
-    await processesPage.navigateToProcesses({
-      searchParams: {active: 'true'},
-    });
-
     const processInstanceKeys = initialData.processInstances
       .map((instance) => instance.processInstanceKey)
       .join(',');
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion(initialData.version.toString());
-    await processesPage.selectFlowNode('Check payment');
-
-    // Filter by all process instances which have been created in setup
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(processInstanceKeys);
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        ids: processInstanceKeys,
+        process: initialData.bpmnProcessId,
+        version: initialData.version.toString(),
+        flowNodeId: 'checkPayment',
+      },
+    });
 
     await expect(
       processesPage.processInstancesTable.getByText(
@@ -77,7 +75,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveButton.click();
 
     // Confirm move modification modal
-    await page.getByRole('button', {name: 'Continue'}).click();
+    await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
     await processesPage.diagram.clickFlowNode('Ship Articles');
@@ -126,6 +124,8 @@ test.describe('Process Instance Batch Modification', () => {
       })
       .click();
 
+    await commonPage.collapseOperationsPanel();
+
     await processesPage.selectProcess('Order process');
     await processesPage.selectVersion(initialData.version.toString());
 
@@ -172,7 +172,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveButton.click();
 
     // Confirm move modification modal
-    await page.getByRole('button', {name: 'Continue'}).click();
+    await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
     await processesPage.diagram.clickFlowNode('Ship Articles');

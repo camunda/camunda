@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-public record PartitionState(State state, int priority) {
-  public static PartitionState active(final int priority) {
-    return new PartitionState(State.ACTIVE, priority);
+import java.util.function.UnaryOperator;
+
+public record PartitionState(State state, int priority, DynamicPartitionConfig config) {
+  public static PartitionState active(
+      final int priority, final DynamicPartitionConfig partitionConfig) {
+    return new PartitionState(State.ACTIVE, priority, partitionConfig);
   }
 
-  public static PartitionState joining(final int priority) {
-    return new PartitionState(State.JOINING, priority);
+  public static PartitionState joining(
+      final int priority, final DynamicPartitionConfig partitionConfig) {
+    return new PartitionState(State.JOINING, priority, partitionConfig);
   }
 
   public PartitionState toActive() {
@@ -21,11 +25,19 @@ public record PartitionState(State state, int priority) {
       throw new IllegalStateException(
           String.format("Cannot transition to ACTIVE when current state is %s", state));
     }
-    return new PartitionState(State.ACTIVE, priority);
+    return new PartitionState(State.ACTIVE, priority, config);
   }
 
   public PartitionState toLeaving() {
-    return new PartitionState(State.LEAVING, priority);
+    return new PartitionState(State.LEAVING, priority, config);
+  }
+
+  public PartitionState updateConfig(final DynamicPartitionConfig config) {
+    return new PartitionState(state, priority, config);
+  }
+
+  public PartitionState updateConfig(final UnaryOperator<DynamicPartitionConfig> configUpdater) {
+    return new PartitionState(state, priority, configUpdater.apply(config));
   }
 
   public enum State {

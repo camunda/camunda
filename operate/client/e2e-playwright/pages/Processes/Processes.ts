@@ -11,6 +11,7 @@ import {convertToQueryString} from '../../utils/convertToQueryString';
 import {Paths} from 'modules/Routes';
 import {DeleteResourceModal} from '../components/DeleteResourceModal';
 import MigrationModal from '../components/MigrationModal';
+import MoveModificationModal from '../components/MoveModificationModal';
 import {Diagram} from '../components/Diagram';
 
 type OptionalFilter =
@@ -27,6 +28,7 @@ export class Processes {
   private page: Page;
   readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
   readonly migrationModal: InstanceType<typeof MigrationModal>;
+  readonly moveModificationModal: InstanceType<typeof MoveModificationModal>;
   readonly diagram: InstanceType<typeof Diagram>;
   readonly activeCheckbox: Locator;
   readonly incidentsCheckbox: Locator;
@@ -57,6 +59,7 @@ export class Processes {
       name: /Delete Process Definition/i,
     });
     this.migrationModal = new MigrationModal(page);
+    this.moveModificationModal = new MoveModificationModal(page);
     this.diagram = new Diagram(page);
     this.activeCheckbox = page.getByRole('checkbox', {name: 'Active'});
     this.incidentsCheckbox = page.getByRole('checkbox', {name: 'Incidents'});
@@ -122,11 +125,11 @@ export class Processes {
     });
 
     this.migrateButton = this.processInstancesTable.getByRole('button', {
-      name: 'Migrate',
+      name: /^migrate$/i,
     });
 
     this.moveButton = this.processInstancesTable.getByRole('button', {
-      name: 'Move',
+      name: /^move$/i,
     });
   }
 

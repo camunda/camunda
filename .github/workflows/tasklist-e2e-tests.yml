@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

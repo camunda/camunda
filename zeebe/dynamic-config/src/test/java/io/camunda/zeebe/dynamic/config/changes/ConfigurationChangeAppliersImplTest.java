@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -52,6 +53,9 @@ final class ConfigurationChangeAppliersImplTest {
             PartitionReconfigurePriorityApplier.class),
         Arguments.of(
             new PartitionForceReconfigureOperation(localMemberId, 1, List.of()),
-            PartitionForceReconfigureApplier.class));
+            PartitionForceReconfigureApplier.class),
+        Arguments.of(
+            new PartitionDisableExporterOperation(localMemberId, 1, "expId"),
+            PartitionDisableExporterApplier.class));
   }
 }

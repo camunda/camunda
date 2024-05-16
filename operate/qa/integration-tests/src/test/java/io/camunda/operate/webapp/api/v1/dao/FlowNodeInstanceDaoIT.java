@@ -25,7 +25,6 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -34,7 +33,6 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   private final String firstNodeStartDate = "2024-02-15T22:40:10.834+0000";
   private final String secondNodeStartDate = "2024-02-15T22:41:10.834+0000";
-  private final String thirdNodeStartDate = "2024-01-15T22:40:10.834+0000";
   private final String endDate = "2024-02-15T22:41:10.834+0000";
   @Autowired private FlowNodeInstanceDao dao;
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
@@ -51,8 +49,8 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
             .setKey(2251799813685256L)
             .setProcessInstanceKey(2251799813685253L)
             .setProcessDefinitionKey(2251799813685249L)
-            .setStartDate(OffsetDateTime.now())
-            .setEndDate(OffsetDateTime.now())
+            .setStartDate(dateTimeFormatter.parseGeneralDateTime(firstNodeStartDate))
+            .setEndDate(dateTimeFormatter.parseGeneralDateTime(endDate))
             .setFlowNodeId("start")
             .setType(FlowNodeType.START_EVENT)
             .setState(FlowNodeState.COMPLETED)
@@ -65,7 +63,7 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
             .setKey(2251799813685258L)
             .setProcessInstanceKey(2251799813685253L)
             .setProcessDefinitionKey(2251799813685249L)
-            .setStartDate(OffsetDateTime.now())
+            .setStartDate(dateTimeFormatter.parseGeneralDateTime(secondNodeStartDate))
             .setEndDate(null)
             .setFlowNodeId("taskA")
             .setType(FlowNodeType.SERVICE_TASK)
@@ -192,15 +190,84 @@ public class FlowNodeInstanceDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnByKey() {
-    final FlowNodeInstance flowNodeInstance = dao.byKey(2251799813685258L);
+    final FlowNodeInstance flowNodeInstance = dao.byKey(2251799813685256L);
 
     assertThat(flowNodeInstance)
-        .extracting("flowNodeId", "flowNodeName")
-        .containsExactly("taskA", "task A");
+        .extracting("flowNodeId", "flowNodeName", "startDate", "endDate")
+        .containsExactly("start", "start", firstNodeStartDate, endDate);
   }
 
   @Test
   public void shouldThrowWhenKeyNotExists() {
     assertThrows(ResourceNotFoundException.class, () -> dao.byKey(1L));
+  }
+
+  @Test
+  public void shouldFilterByStartDate() {
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
+        dao.search(
+            new Query<FlowNodeInstance>()
+                .setFilter(new FlowNodeInstance().setStartDate(firstNodeStartDate)));
+
+    assertThat(flowNodeInstanceResults.getTotal()).isEqualTo(1L);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getFlowNodeId()).isEqualTo("start");
+    assertThat(flowNodeInstanceResults.getItems().get(0).getStartDate())
+        .isEqualTo(firstNodeStartDate);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getEndDate()).isEqualTo(endDate);
+  }
+
+  @Test
+  public void shouldFilterByStartDateWithDateMath() {
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
+        dao.search(
+            new Query<FlowNodeInstance>()
+                .setFilter(new FlowNodeInstance().setStartDate(firstNodeStartDate + "||/d")));
+
+    assertThat(flowNodeInstanceResults.getTotal()).isEqualTo(2L);
+
+    FlowNodeInstance checkFlowNode =
+        flowNodeInstanceResults.getItems().stream()
+            .filter(item -> "START_EVENT".equals(item.getType()))
+            .findFirst()
+            .orElse(null);
+    assertThat(checkFlowNode)
+        .extracting("flowNodeId", "flowNodeName", "startDate", "endDate")
+        .containsExactly("start", "start", firstNodeStartDate, endDate);
+
+    checkFlowNode =
+        flowNodeInstanceResults.getItems().stream()
+            .filter(item -> "SERVICE_TASK".equals(item.getType()))
+            .findFirst()
+            .orElse(null);
+    assertThat(checkFlowNode)
+        .extracting("flowNodeId", "flowNodeName", "startDate", "endDate")
+        .containsExactly("taskA", "task A", secondNodeStartDate, null);
+  }
+
+  @Test
+  public void shouldFilterByEndDate() {
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
+        dao.search(
+            new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance().setEndDate(endDate)));
+
+    assertThat(flowNodeInstanceResults.getTotal()).isEqualTo(1L);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getFlowNodeId()).isEqualTo("start");
+    assertThat(flowNodeInstanceResults.getItems().get(0).getStartDate())
+        .isEqualTo(firstNodeStartDate);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getEndDate()).isEqualTo(endDate);
+  }
+
+  @Test
+  public void shouldFilterByEndDateWithDateMath() {
+    final Results<FlowNodeInstance> flowNodeInstanceResults =
+        dao.search(
+            new Query<FlowNodeInstance>()
+                .setFilter(new FlowNodeInstance().setEndDate(endDate + "||/d")));
+
+    assertThat(flowNodeInstanceResults.getTotal()).isEqualTo(1L);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getFlowNodeId()).isEqualTo("start");
+    assertThat(flowNodeInstanceResults.getItems().get(0).getStartDate())
+        .isEqualTo(firstNodeStartDate);
+    assertThat(flowNodeInstanceResults.getItems().get(0).getEndDate()).isEqualTo(endDate);
   }
 }

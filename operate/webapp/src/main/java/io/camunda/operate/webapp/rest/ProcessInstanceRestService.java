@@ -14,7 +14,6 @@ import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.store.SequenceFlowStore;
-import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -230,16 +229,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PostMapping(path = "/statistics")
   public Collection<FlowNodeStatisticsDto> getStatistics(
       @RequestBody final ListViewQueryDto query) {
-    final List<Long> processDefinitionKeys =
-        CollectionUtil.toSafeListOfLongs(query.getProcessIds());
-    final String bpmnProcessId = query.getBpmnProcessId();
-    final Integer processVersion = query.getProcessVersion();
-
-    if ((processDefinitionKeys != null && processDefinitionKeys.size() == 1)
-        == (bpmnProcessId != null && processVersion != null)) {
-      throw new InvalidRequestException(
-          "Exactly one process must be specified in the request (via processIds or bpmnProcessId/version).");
-    }
+    processInstanceRequestValidator.validateFlowNodeStatisticsRequest(query);
     return flowNodeStatisticsReader.getFlowNodeStatistics(query);
   }
 

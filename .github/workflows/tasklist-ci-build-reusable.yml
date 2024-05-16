@@ -62,7 +62,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -158,4 +158,3 @@ jobs:
         with:
           build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
           gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
-          big_query_table_name: "ci-30-162810:prod_ci_analytics.build_status_v2"

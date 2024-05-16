@@ -3,30 +3,30 @@ name: Operate E2E Tests
 on:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
-      - 'release/**'
+      - "main"
+      - "stable/**"
+      - "release/**"
     paths:
-      - '.ci/**'
-      - '.github/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/operate-*"
+      - "bom/*"
+      - "distro/**"
+      - "operate.Dockerfile"
+      - "operate/**"
+      - "parent/*"
+      - "pom.xml"
   pull_request:
     paths:
-      - '.ci/**'
-      - '.github/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/operate-*"
+      - "bom/*"
+      - "distro/**"
+      - "operate.Dockerfile"
+      - "operate/**"
+      - "parent/*"
+      - "pom.xml"
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -39,7 +39,7 @@ jobs:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -117,7 +117,9 @@ jobs:
       - name: Build backend
         run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
+        env:
+          CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci

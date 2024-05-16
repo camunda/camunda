@@ -63,7 +63,6 @@ final class LogStorageAppenderTest {
             INITIAL_POSITION,
             4 * 1024 * 1024,
             new SequencerMetrics(PARTITION_ID),
-            logStreamMetrics,
             new FlowControl(logStreamMetrics));
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }

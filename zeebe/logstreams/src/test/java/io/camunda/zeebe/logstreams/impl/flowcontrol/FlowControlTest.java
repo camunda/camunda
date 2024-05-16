@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import java.time.Duration;
 import java.util.LinkedList;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -29,7 +30,7 @@ final class FlowControlTest {
     Awaitility.await("Rejects new appends")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> flow.tryAcquire(WriteContext.internal()).isLeft());
+        .until(() -> flow.tryAcquire(WriteContext.internal(), List.of()).isLeft());
   }
 
   @Test
@@ -39,19 +40,19 @@ final class FlowControlTest {
     final var flow = new FlowControl(logStreamMetrics);
     // when
     boolean rejecting = false;
-    final var inFlight = new LinkedList<InFlightAppend>();
+    final var inFlight = new LinkedList<InFlightEntry>();
     do {
-      final var result = flow.tryAcquire(WriteContext.internal());
+      final var result = flow.tryAcquire(WriteContext.internal(), List.of());
       if (result.isLeft()) {
         rejecting = true;
       } else {
         inFlight.push(result.get());
       }
     } while (!rejecting);
-    inFlight.forEach(append -> append.onCommit(1));
+    inFlight.forEach(InFlightEntry::onCommit);
 
     // then
     Awaitility.await("Eventually accepts appends again")
-        .until(() -> flow.tryAcquire(WriteContext.internal()).isRight());
+        .until(() -> flow.tryAcquire(WriteContext.internal(), List.of()).isRight());
   }
 }

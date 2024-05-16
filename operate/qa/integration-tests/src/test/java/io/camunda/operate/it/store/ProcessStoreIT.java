@@ -45,6 +45,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   private ProcessEntity firstProcessDefinition;
   private ProcessEntity secondProcessDefinition;
+  private ProcessEntity thirdProcessDefinition;
   private ProcessInstanceForListViewEntity firstProcessInstance;
   private ProcessInstanceForListViewEntity secondProcessInstance;
   private ProcessInstanceForListViewEntity thirdProcessInstance;
@@ -61,10 +62,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setBpmnXml(resourceXml);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processDefinitionIndex.getFullQualifiedName(),
-        firstProcessDefinition.getId(),
-        firstProcessDefinition);
 
     secondProcessDefinition =
         new ProcessEntity()
@@ -74,10 +71,15 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process 1")
             .setBpmnXml(resourceXml);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processDefinitionIndex.getFullQualifiedName(),
-        secondProcessDefinition.getId(),
-        secondProcessDefinition);
+
+    thirdProcessDefinition =
+        new ProcessEntity()
+            .setKey(3251799813685249L)
+            .setId("3251799813685249")
+            .setBpmnProcessId("demoProcess-2")
+            .setTenantId("tenant2")
+            .setName("Demo process 2")
+            .setBpmnXml(resourceXml);
 
     firstProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -91,10 +93,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTreePath("PI_4503599627370497")
             .setTenantId(DEFAULT_TENANT_ID)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        firstProcessInstance.getId(),
-        firstProcessInstance);
 
     secondProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -110,10 +108,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setIncident(false)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        secondProcessInstance.getId(),
-        secondProcessInstance);
 
     thirdProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -129,10 +123,19 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setIncident(true)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        thirdProcessInstance.getId(),
-        thirdProcessInstance);
+
+    final var definitionEntities =
+        List.of(firstProcessDefinition, secondProcessDefinition, thirdProcessDefinition);
+    for (final var entity : definitionEntities) {
+      testSearchRepository.createOrUpdateDocumentFromObject(
+          processDefinitionIndex.getFullQualifiedName(), entity.getId(), entity);
+    }
+    final var instanceEntities =
+        List.of(firstProcessInstance, secondProcessInstance, thirdProcessInstance);
+    for (final var entity : instanceEntities) {
+      testSearchRepository.createOrUpdateDocumentFromObject(
+          listViewTemplate.getFullQualifiedName(), entity.getId(), entity);
+    }
 
     searchContainerManager.refreshIndices("*");
   }
@@ -143,7 +146,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
         processStore.getDistinctCountFor(ListViewTemplate.BPMN_PROCESS_ID);
 
     assertThat(optionalCount).isNotNull();
-    assertThat(optionalCount.get()).isEqualTo(2L);
+    assertThat(optionalCount.get()).isEqualTo(3L);
   }
 
   @Test
@@ -169,7 +172,8 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             DEFAULT_TENANT_ID,
             Set.of(
                 firstProcessDefinition.getBpmnProcessId(),
-                secondProcessDefinition.getBpmnProcessId()));
+                secondProcessDefinition.getBpmnProcessId(),
+                thirdProcessDefinition.getBpmnProcessId()));
 
     assertThat(results.values().size()).isEqualTo(2);
     assertThat(
@@ -397,7 +401,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
     assertThat(deleted).isEqualTo(4);
   }
 
-  private String getFullIndexNameForDependant(String indexName) {
+  private String getFullIndexNameForDependant(final String indexName) {
     final ProcessInstanceDependant dependant =
         processInstanceDependantTemplates.stream()
             .filter(template -> template.getFullQualifiedName().contains(indexName))
