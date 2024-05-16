@@ -9,16 +9,16 @@ package io.camunda.zeebe.shared.security;
 
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
-import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
-import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +38,26 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 @EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
 public final class SecurityConfiguration {
+
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public SecurityFilterChain managementSecurity(final HttpSecurity http) throws Exception {
+    http.securityMatchers(
+        (matchers) -> {
+          matchers
+              // all actuator endpoints
+              .requestMatchers(EndpointRequest.toAnyEndpoint())
+              // endpoints defined in BrokerHealthRoutes
+              .requestMatchers("/ready", "/health", "/startup")
+              // allows forwarding the failure when request failed
+              // for example when an endpoint could not be found
+              .requestMatchers("/error");
+        });
+
+    return configureSecurity(http)
+        .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
+        .build();
+  }
 
   @Bean
   @ConditionalOnRestGatewayEnabled
@@ -72,26 +92,12 @@ public final class SecurityConfiguration {
     }
   }
 
-  private static HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
+  private HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
     return http.csrf(CsrfConfigurer::disable)
         .cors(CorsConfigurer::disable)
         .logout(LogoutConfigurer::disable)
         .formLogin(FormLoginConfigurer::disable)
         .httpBasic(HttpBasicConfigurer::disable)
         .anonymous(AnonymousConfigurer::disable);
-  }
-
-  @Profile("identity-auth")
-  @ConditionalOnManagementContext
-  @EnableWebSecurity
-  @EnableMethodSecurity
-  @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
-  public static final class ManagementSecurityConfiguration {
-    @Bean
-    public SecurityFilterChain managementSecurity(final HttpSecurity http) throws Exception {
-      return configureSecurity(http)
-          .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
-          .build();
-    }
   }
 }
