@@ -538,8 +538,6 @@
                   <executable>docker-compose</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
-                    <argument>-f</argument>
-                    <argument>../docker-compose.opensearch.yml</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>opensearch</argument>
@@ -558,8 +556,6 @@
                   <executable>docker-compose</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
-                    <argument>-f</argument>
-                    <argument>../docker-compose.opensearch.yml</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
