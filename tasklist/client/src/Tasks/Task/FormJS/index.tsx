@@ -10,6 +10,7 @@ import {useMemo, useRef, useState} from 'react';
 import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
+import {Data} from '@bpmn-io/form-js-viewer/dist/types/types';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
@@ -63,10 +64,9 @@ function extractVariablesFromFormSchema(
   }
 }
 
-function formatFormDataToVariables(data: object) {
+function formatFormDataToVariables(data: Data) {
   return Object.keys(data).map((key) => ({
     name: key,
-    // @ts-expect-error TS7053: data[key] can be anything
     value: JSON.stringify(data[key]),
   }));
 }
@@ -205,9 +205,7 @@ const FormJS: React.FC<Props> = ({
             onClick={() => {
               save(
                 formatFormDataToVariables(
-                  formManagerRef.current
-                    ?.get('form')
-                    ._getSubmitData() as object,
+                  formManagerRef.current?.get('form')._getSubmitData() as Data,
                 ),
               );
             }}
