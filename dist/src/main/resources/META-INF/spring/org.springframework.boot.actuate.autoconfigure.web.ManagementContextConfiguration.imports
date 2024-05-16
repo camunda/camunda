@@ -1,2 +1,1 @@
 io.camunda.zeebe.broker.health.BrokerHealthRoutes
-io.camunda.zeebe.shared.security.SecurityConfiguration.ManagementSecurityConfiguration
