@@ -117,7 +117,7 @@ jobs:
       - name: Build backend
         run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.operate.StandaloneOperate
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
         env:
           CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
       - name: Run tests

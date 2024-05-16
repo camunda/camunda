@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.google.common.collect.ObjectArrays;
 import io.atomix.cluster.MemberId;
+import io.camunda.application.Profile;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;

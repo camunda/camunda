@@ -33,7 +33,7 @@ import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
-  private StandaloneGateway gateway;
+  private GatewayModuleConfiguration gateway;
   private BrokerClient brokerClient;
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
@@ -57,7 +57,7 @@ final class StandaloneGatewaySecurityTest {
 
     // when
     gateway = buildGateway(cfg);
-    gateway.run();
+    gateway.gateway();
 
     // then
     final var clusterAddress =
@@ -135,7 +135,7 @@ final class StandaloneGatewaySecurityTest {
     return config;
   }
 
-  private StandaloneGateway buildGateway(final GatewayProperties gatewayCfg) {
+  private GatewayModuleConfiguration buildGateway(final GatewayProperties gatewayCfg) {
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = new GatewayClusterConfiguration();
     atomixCluster =
@@ -152,7 +152,7 @@ final class StandaloneGatewaySecurityTest {
     brokerClient = brokerClientComponent.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
-    return new StandaloneGateway(
+    return new GatewayModuleConfiguration(
         config,
         null, // identity is disabled by default
         new SpringGatewayBridge(),

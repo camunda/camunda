@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.shared;
 
+import io.camunda.application.Profile;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.shared.Profile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
