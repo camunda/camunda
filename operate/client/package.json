@@ -73,7 +73,7 @@
     "@types/carbon-components-react": "7.55.10",
     "@types/carbon__elements": "11.10.3",
     "@types/jest": "29.5.12",
-    "@types/lodash": "4.17.2",
+    "@types/lodash": "4.17.3",
     "@types/mixpanel-browser": "2.49.0",
     "@types/node": "20.12.12",
     "@types/react": "18.3.2",
