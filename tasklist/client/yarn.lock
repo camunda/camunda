@@ -1410,10 +1410,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/lodash@4.17.1":
-  version "4.17.1"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.1.tgz#0fabfcf2f2127ef73b119d98452bd317c4a17eb8"
-  integrity sha512-X+2qazGS3jxLAIz5JDXDzglAF3KpijdhFxlf/V1+hEsOUc+HnWi81L/uv/EvGuV90WY+7mPGFCUDGfQC3Gj95Q==
+"@types/lodash@4.17.2":
+  version "4.17.2"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.2.tgz#548e4164db302c4fd3fe652b8f76725d38d81bb3"
+  integrity sha512-0xPVnyTDZk6OquD2XeiCvqO/KMDhHdyqRUgXoVtJWy8TjsQsDDTFb5wnifke51/yuzxZ3UWVt4qfxltnCWW2TQ==
 
 "@types/mdast@^3.0.0":
   version "3.0.15"
