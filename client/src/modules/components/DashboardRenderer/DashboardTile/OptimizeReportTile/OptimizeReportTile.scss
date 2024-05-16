@@ -12,7 +12,7 @@
     display: flex;
     min-height: 45px;
 
-    .Popover .buttonWrapper .ButtonTrigger {
+    .Popover .ButtonTrigger {
       opacity: 0;
 
       &.active,
@@ -36,8 +36,6 @@
   }
 
   .InstanceCount {
-    height: auto;
-    margin-top: 0;
     position: absolute;
     top: 0;
     right: 0;
@@ -68,8 +66,11 @@
   }
 }
 
-.DashboardView .OptimizeReportTile:hover {
-  .Popover .buttonWrapper .ButtonTrigger {
-    opacity: 1;
+.Sharing,
+.DashboardView {
+  .OptimizeReportTile:hover {
+    .Popover .ButtonTrigger {
+      opacity: 1;
+    }
   }
 }

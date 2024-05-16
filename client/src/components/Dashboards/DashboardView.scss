@@ -23,12 +23,6 @@
     height: calc(100% - 75px);
   }
 
-  .OptimizeReportTile:hover {
-    .Popover .buttonWrapper .Button {
-      opacity: 1;
-    }
-  }
-
   &.fullscreen {
     padding: 20px;
 

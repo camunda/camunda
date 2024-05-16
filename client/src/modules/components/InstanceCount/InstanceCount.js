@@ -17,7 +17,17 @@ import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export default function InstanceCount({report, noInfo, additionalFilter, showHeader, trigger}) {
+export default function InstanceCount({
+  report,
+  noInfo,
+  additionalFilter,
+  showHeader,
+  trigger = (
+    <Popover.Button size="sm" kind="ghost" className="defaultTrigger">
+      {t('report.instanceCount.appliedFilters')}.
+    </Popover.Button>
+  ),
+}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [variables, setVariables] = useState();
   const {mightFail} = useErrorHandling();
@@ -149,7 +159,7 @@ export default function InstanceCount({report, noInfo, additionalFilter, showHea
             )}
           </Popover>
         </span>
-      )}{' '}
+      )}
       <span className="countString">
         {typeof instanceCount === 'number' &&
           t(

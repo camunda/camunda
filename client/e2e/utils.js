@@ -69,7 +69,7 @@ export async function createNewCombinedReport(t) {
 }
 
 export async function selectVersion(t, selector, version) {
-  await t.click(selector.find('.Popover .buttonWrapper button'));
+  await t.click(selector.find('.Popover button'));
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
@@ -81,7 +81,7 @@ export async function selectVersion(t, selector, version) {
     }
   }
 
-  await t.click(selector.find('.Popover .buttonWrapper button'));
+  await t.click(selector.find('.Popover button'));
 }
 
 export async function selectReportDefinition(t, name, version) {

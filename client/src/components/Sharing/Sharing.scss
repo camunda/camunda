@@ -16,10 +16,6 @@
     .title-button {
       flex-shrink: 0;
     }
-
-    > .InstanceCount {
-      margin-top: 0;
-    }
   }
 
   .title-container {
@@ -49,12 +45,6 @@
       bottom: 10px;
       opacity: 0.5;
       z-index: var(--z-above);
-    }
-  }
-
-  .OptimizeReportTile:hover {
-    .Popover .buttonWrapper .ButtonTrigger {
-      opacity: 1;
     }
   }
 

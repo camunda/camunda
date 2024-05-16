@@ -16,8 +16,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer').nth(0);
 export const report = Selector('.ListItem.report');
 export const definitionCopyButton = (definition) => definition.find('.actionBtn').nth(0);
-export const definitionEditButton = (definition) =>
-  definition.find('.Popover .buttonWrapper button');
+export const definitionEditButton = (definition) => definition.find('.Popover button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group by').nextSibling();
 export const viewDropdown = checkbox('View').nextSibling();
@@ -33,7 +32,7 @@ export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number .data');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
-export const configurationButton = Selector('.configurationPopover .buttonWrapper button');
+export const configurationButton = Selector('.configurationPopover button');
 export const resetButton = Selector('.resetButton');
 export const goalTargetInput = Selector('.configurationPopover fieldset')
   .withText('Set target')
@@ -83,7 +82,7 @@ export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
 export const definitionEditorPopover = Selector('.DefinitionList .Popover');
-export const definitionEditor = definitionEditorPopover.find('.buttonWrapper button');
+export const definitionEditor = definitionEditorPopover.find('button');
 export const definitionEditorDialog = definitionEditorPopover.find('.popoverContent');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Common.radioButton('All');
@@ -95,7 +94,7 @@ export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) =>
   Selector('.AggregationType .cds--toggle__label').withText(text);
-export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper button');
+export const detailsPopoverButton = Selector('.EntityName .Popover button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');

@@ -39,7 +39,7 @@ interface PopoverProps extends Omit<CarbonPopoverProps<'div'>, 'open'> {
   onOpen?: () => void;
   onClose?: () => void;
   autoOpen?: boolean;
-  trigger: ReactNode;
+  trigger: NonNullable<ReactNode>;
 }
 
 interface TriggerContextProps {
@@ -236,7 +236,7 @@ export default function Popover({
         open={open}
         ref={popoverRef}
       >
-        <div className="buttonWrapper">{trigger}</div>
+        {trigger}
         {open && (
           <PopoverContent
             id={popoverId}

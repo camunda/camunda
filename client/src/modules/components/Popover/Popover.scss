@@ -3,7 +3,7 @@
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
-.dark .Popover > .cds--popover {
+.dark .Popover > .cds--popover > .popoverContent {
   @include theme.theme(themes.$g100);
 }
 
@@ -14,49 +14,35 @@
     min-width: 100%;
   }
 
-  > .cds--popover {
+  > .cds--popover > .popoverContent {
     @include theme.theme(themes.$g10);
+    padding: spacing.$spacing-05;
 
-    > .popoverContent {
-      padding: spacing.$spacing-05;
-
-      &.scrollable {
-        @include scrollable;
-      }
+    &.scrollable {
+      @include scrollable;
     }
   }
 
-  .buttonWrapper {
-    .Button {
-      width: 100%;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-      text-align: left;
+  .ListBoxTrigger .cds--list-box__label {
+    display: flex;
+    align-items: center;
 
-      .downIcon {
-        position: absolute;
-        right: 0;
-        display: inline-block;
-        margin-right: 7px;
-      }
-
-      &:not(.icon) {
-        padding-right: 30px;
-      }
+    svg {
+      margin-right: 0.5rem;
+      flex-shrink: 0;
     }
+  }
 
-    .ListBoxTrigger,
-    .ButtonTrigger {
-      min-width: 100%;
-    }
+  .ListBoxTrigger,
+  .ButtonTrigger {
+    min-width: 100%;
+  }
 
-    .ButtonTrigger.active {
-      box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+  .ButtonTrigger.active {
+    box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
 
-      &.cds--btn--ghost {
-        background-color: var(--cds-layer);
-      }
+    &.cds--btn--ghost {
+      background-color: var(--cds-layer);
     }
   }
 }
