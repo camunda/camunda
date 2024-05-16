@@ -2,6 +2,7 @@
 name: Optimize Generate Camunda BPM test datasets
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       cambpm-version:
@@ -61,10 +62,24 @@ on:
 
 jobs:
   generate-data:
-    name: Generate Camunda BPM test datasets (output=${{ inputs.sql-dump-filename }}, use-e2e-presets=${{ inputs.use-e2e-presets }})
+    # Use matrix only for testing purposes as a replacement for inputs from workflow_dispatch
+    strategy:
+      matrix:
+        inputs:
+        - profile: default
+          cambpm-version:
+          postgres-version: 11.2
+          sql-dump-filename: optimize_data-medium-gh-540.sqlc
+          use-e2e-presets: false
+          process-instances-number: 100000
+          process-instances-adjust-dates: false
+          process-definitions: ""
+          decision-instances-number: 10000
+          decision-definitions: ""
+    name: Generate Camunda BPM test datasets (output=${{ matrix.inputs.sql-dump-filename }}, use-e2e-presets=${{ matrix.inputs.use-e2e-presets }})
     concurrency:
       cancel-in-progress: true
-      group: ${{ github.workflow }}-${{ inputs.sql-dump-filename }}
+      group: ${{ github.workflow }}-${{ matrix.inputs.sql-dump-filename }}
     runs-on: gcp-core-32-longrunning-big-ssd
     env:
       PGDATABASE: engine
@@ -72,15 +87,15 @@ jobs:
       PGPASSWORD: camunda
       PGUSER: camunda
       TZ: Europe/Berlin
-      CAMBPM_VERSION: ${{ inputs.cambpm-version }}
-      POSTGRES_VERSION: ${{ inputs.postgres-version }}
-      SQL_DUMP_FILENAME: ${{ inputs.sql-dump-filename }}
-      USE_E2E_PRESETS: ${{ inputs.use-e2e-presets }}
-      PROCESS_INSTANCES_NUMBER: ${{ inputs.process-instances-number }}
-      PROCESS_INSTANCES_ADJUST_DATES: ${{ inputs.process-instances-adjust-dates }}
-      PROCESS_DEFINITIONS: ${{ inputs.process-definitions }}
-      DECISION_INSTANCES_NUMBER: ${{ inputs.decision-instances-number }}
-      DECISION_DEFINITIONS: ${{ inputs.decision-definitions }}
+      CAMBPM_VERSION: ${{ matrix.inputs.cambpm-version }}
+      POSTGRES_VERSION: ${{ matrix.inputs.postgres-version }}
+      SQL_DUMP_FILENAME: ${{ matrix.inputs.sql-dump-filename }}
+      USE_E2E_PRESETS: ${{ matrix.inputs.use-e2e-presets }}
+      PROCESS_INSTANCES_NUMBER: ${{ matrix.inputs.process-instances-number }}
+      PROCESS_INSTANCES_ADJUST_DATES: ${{ matrix.inputs.process-instances-adjust-dates }}
+      PROCESS_DEFINITIONS: ${{ matrix.inputs.process-definitions }}
+      DECISION_INSTANCES_NUMBER: ${{ matrix.inputs.decision-instances-number }}
+      DECISION_DEFINITIONS: ${{ matrix.inputs.decision-definitions }}
     steps:
     - uses: actions/checkout@v4
     - name: Read pom.xml
@@ -141,7 +156,7 @@ jobs:
         parameters: >-
           -pl qa/data-generation -am clean install -DskipTests -Dskip.docker -Dskip.fe.build
     # cannot use actions/run-maven as quotes in exec args are badly escaped
-    - name: Exec qa/data-generation (use-e2e-presets=${{ inputs.use-e2e-presets }})
+    - name: Exec qa/data-generation (use-e2e-presets=${{ matrix.inputs.use-e2e-presets }})
       env:
         EXEC_ARGS: >-
           --processDefinitions "${{ env.PROCESS_DEFINITIONS }}"
