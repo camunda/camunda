@@ -170,10 +170,6 @@
     </profile>
 
     <profile>
-      <!--
-        We have to skip spotbugs analysis until Operate team have fixed several findings
-        See https://github.com/camunda/zeebe/issues/17331
-      -->
       <id>spotbugs</id>
       <build>
         <plugins>
@@ -181,9 +177,6 @@
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>
             <version>${plugin.version.spotbugs}</version>
-            <configuration>
-              <excludeFilterFile>operate-spotbugs-exclude.xml</excludeFilterFile>
-            </configuration>
           </plugin>
         </plugins>
       </build>

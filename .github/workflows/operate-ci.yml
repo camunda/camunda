@@ -49,7 +49,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile
+      command: mvn -f operate verify -T1C -B -P skipFrontendBuild,spotbugs -DskipITs -DskipDockerProfile
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
