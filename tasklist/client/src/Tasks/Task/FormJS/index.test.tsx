@@ -602,7 +602,7 @@ describe('<FormJS />', () => {
       vi.runOnlyPendingTimers();
     });
 
-    expect(screen.getByRole('status')).not.toBeVisible();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('should show an error message when save completes unsuccessfully', async () => {

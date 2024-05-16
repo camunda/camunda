@@ -1501,10 +1501,10 @@ describe('<Variables />', () => {
     });
 
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.runOnlyPendingTimers();
     });
 
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('should show an error message when save completes unsuccessfully', async () => {
