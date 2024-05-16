@@ -102,7 +102,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
         with:
-          check_name: "Operate Test Results"
+          check_name: "Operate ${{ inputs.test-type }} Results"
           files: |
             operate/**/target/*-reports/*.xml
             !operate/**/target/*-reports/*-summary.xml
