@@ -8,7 +8,7 @@ env-up:
 	   mvn -f webapp/pom.xml exec:java -Dexec.mainClass="io.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
-	docker-compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
+	docker-compose -f docker-compose.opensearch.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
