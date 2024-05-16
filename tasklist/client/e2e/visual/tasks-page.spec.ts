@@ -761,6 +761,7 @@ test.describe('tasks page', () => {
     await expect(page).toHaveScreenshot();
 
     await taskDetailsPage.addVariable({name: 'var', value: '"lorem ipsum"'});
+    await expect(page.getByText('Complete task')).toBeEnabled();
 
     await expect(page).toHaveScreenshot();
 
