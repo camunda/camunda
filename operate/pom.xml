@@ -182,7 +182,7 @@
             <artifactId>spotbugs-maven-plugin</artifactId>
             <version>${plugin.version.spotbugs}</version>
             <configuration>
-              <skip>true</skip>
+              <excludeFilterFile>operate-spotbugs-exclude.xml</excludeFilterFile>
             </configuration>
           </plugin>
         </plugins>
