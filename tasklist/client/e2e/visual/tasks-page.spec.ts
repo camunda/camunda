@@ -759,6 +759,14 @@ test.describe('tasks page', () => {
     await taskDetailsPage.goto(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
+
+    await taskDetailsPage.addVariable({name: 'var', value: '"lorem ipsum"'});
+
+    await expect(page).toHaveScreenshot();
+
+    await page.getByLabel('Open JSON code editor').nth(0).hover();
+
+    await expect(page).toHaveScreenshot();
   });
 
   test('selected assigned task', async ({page, taskDetailsPage}) => {
