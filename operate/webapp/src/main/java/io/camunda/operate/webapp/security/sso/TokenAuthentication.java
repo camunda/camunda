@@ -15,6 +15,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.Auth0Properties;
@@ -40,11 +41,14 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
  * This class may be created in two ways: user freshly authenticated or stored session is
  * deserialized. In the second case all the fields marked with JsonIgnore will be empty.
  */
+@SuppressFBWarnings(
+    value = "DL_SYNCHRONIZATION_ON_BOXED_PRIMITIVE",
+    justification = "Needs more research into intent of lock and integer pooling")
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
-  private static Logger logger = LoggerFactory.getLogger(TokenAuthentication.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TokenAuthentication.class);
   @JsonIgnore private final Integer lock = 0;
   private String claimName;
   private String organization;
@@ -55,7 +59,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String refreshToken;
   private String accessToken;
   private String salesPlanType;
-  private List<Permission> permissions = new ArrayList<>();
+  private final List<Permission> permissions = new ArrayList<>();
   @JsonIgnore private List<IdentityAuthorization> authorizations;
   private Instant lastResourceBasedPermissionsUpdated = Instant.now();
 
@@ -63,13 +67,13 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     super(null);
   }
 
-  public TokenAuthentication(Auth0Properties auth0Properties, String organizationId) {
+  public TokenAuthentication(final Auth0Properties auth0Properties, final String organizationId) {
     this();
-    this.claimName = auth0Properties.getClaimName();
-    this.organization = organizationId;
-    this.domain = auth0Properties.getDomain();
-    this.clientId = auth0Properties.getClientId();
-    this.clientSecret = auth0Properties.getClientSecret();
+    claimName = auth0Properties.getClaimName();
+    organization = organizationId;
+    domain = auth0Properties.getDomain();
+    clientId = auth0Properties.getClientId();
+    clientSecret = auth0Properties.getClientSecret();
   }
 
   private boolean isIdEqualsOrganization(final Map<String, String> orgs) {
@@ -79,12 +83,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      logger.info("Tokens are expired");
+      LOGGER.info("Tokens are expired");
       if (refreshToken == null) {
         setAuthenticated(false);
-        logger.info("No refresh token available. Authentication is invalid.");
+        LOGGER.info("No refresh token available. Authentication is invalid.");
       } else {
-        logger.info("Get a new tokens by using refresh token");
+        LOGGER.info("Get a new tokens by using refresh token");
         getNewTokenByRefreshToken();
       }
     }
@@ -131,8 +135,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return permissions;
   }
 
-  public void addPermission(Permission permission) {
-    this.permissions.add(permission);
+  public void addPermission(final Permission permission) {
+    permissions.add(permission);
   }
 
   public List<IdentityAuthorization> getAuthorizations() {
@@ -144,7 +148,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return authorizations;
   }
 
-  public TokenAuthentication setAuthorizations(List<IdentityAuthorization> authorizations) {
+  public TokenAuthentication setAuthorizations(final List<IdentityAuthorization> authorizations) {
     this.authorizations = authorizations;
     return this;
   }
@@ -165,11 +169,11 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
                 getIdentity()
                     .authorizations()
                     .forToken(accessToken, getOperateProperties().getCloud().getOrganizationId()));
-        logger.debug("Authorizations updated: " + identityAuthorizations);
+        LOGGER.debug("Authorizations updated: " + identityAuthorizations);
         authorizations = identityAuthorizations;
         lastResourceBasedPermissionsUpdated = Instant.now();
-      } catch (RestException ex) {
-        logger.warn(
+      } catch (final RestException ex) {
+        LOGGER.warn(
             "Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(),
             ex);
         authorizations = new ArrayList<>();
@@ -185,10 +189,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       final TokenHolder tokenHolder = tokenRequest.execute();
       authenticate(
           tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
-      logger.info("New tokens received and validated.");
+      LOGGER.info("New tokens received and validated.");
       return accessToken;
-    } catch (Auth0Exception e) {
-      logger.error(e.getMessage(), e.getCause());
+    } catch (final Auth0Exception e) {
+      LOGGER.error(e.getMessage(), e.getCause());
       setAuthenticated(false);
       return null;
     }
@@ -241,8 +245,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       if (claims != null) {
         setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }
-    } catch (JWTDecodeException e) {
-      logger.debug("Read organization claim as list of maps failed.", e);
+    } catch (final JWTDecodeException e) {
+      LOGGER.debug("Read organization claim as list of maps failed.", e);
     }
   }
 
@@ -262,8 +266,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     try {
       final Map<String, Claim> claims = getClaims();
       return findRolesForOrganization(claims, organizationsKey, organization);
-    } catch (Exception e) {
-      logger.error("Could not get roles. Return empty roles list.", e);
+    } catch (final Exception e) {
+      LOGGER.error("Could not get roles. Return empty roles list.", e);
     }
     return List.of();
   }
@@ -281,8 +285,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
           return (List<String>) orgInfo.get().get(ROLES_KEY);
         }
       }
-    } catch (Exception e) {
-      logger.error(
+    } catch (final Exception e) {
+      LOGGER.error(
           String.format(
               "Couldn't extract roles for organization '%s' in JWT claims. Return empty roles list.",
               organization),
@@ -306,7 +310,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private Identity getIdentity() {
     try {
       return SpringContextHolder.getBean(Identity.class);
-    } catch (NoSuchBeanDefinitionException ex) {
+    } catch (final NoSuchBeanDefinitionException ex) {
       return null;
     }
   }
