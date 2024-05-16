@@ -3,6 +3,7 @@
   "extends": [
     "config:base"
   ],
+
   "commitMessagePrefix": "deps:",
   "baseBranches": [
     "/^stable\\/8\\..*/",
