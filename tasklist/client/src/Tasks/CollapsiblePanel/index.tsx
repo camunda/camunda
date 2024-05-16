@@ -46,8 +46,7 @@ function getNavLinkSearchParam(options: {
     currentParams.entries(),
   );
   const values: Record<string, string> =
-    (sortBy === 'completion' && !['custom', 'completed'].includes(sortBy)) ||
-    sortBy === undefined
+    sortBy === 'completion' || sortBy === undefined
       ? {filter}
       : {filter, sortBy};
   if (filter === 'custom') {
