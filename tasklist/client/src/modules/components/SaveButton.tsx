@@ -32,7 +32,7 @@ const SaveButton: React.FC<Props> = ({
         })}
         description="Saving..."
         iconDescription="Saving"
-        status={'active'}
+        status="active"
       />
       <Button
         className={cn({

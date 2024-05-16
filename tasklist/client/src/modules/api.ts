@@ -219,14 +219,12 @@ const api = {
     taskId: Task['id'];
     variables: Pick<Variable, 'name' | 'value'>[];
   }) => {
-    const body = {
-      variables,
-    };
-
     return new Request(getFullURL(`/v1/tasks/${taskId}/variables`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        variables,
+      }),
       headers: {
         'Content-Type': 'application/json',
       },

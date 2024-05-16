@@ -65,23 +65,18 @@ function createInitialFormValuesFromVariables(variables: Variable[]) {
   const entries: Array<[string, string | null]> = [];
   const newVariables: Array<Pick<Variable, 'name' | 'value'>> = [];
 
-  variables.forEach((variable) => {
-    if (variable.draft) {
-      if (variable.value === null) {
-        newVariables.push({
-          name: variable.name,
-          value: variable.draft.value ?? variable.draft.previewValue,
-        });
-      } else {
-        entries.push([
-          createVariableFieldName(variable.name),
-          variable.draft.value ?? variable.draft.previewValue,
-        ]);
-      }
+  variables.forEach(({value, draft, name, previewValue}) => {
+    if (draft === null) {
+      entries.push([createVariableFieldName(name), value ?? previewValue]);
+    } else if (value === null) {
+      newVariables.push({
+        name: name,
+        value: draft.value ?? draft.previewValue,
+      });
     } else {
       entries.push([
-        createVariableFieldName(variable.name),
-        variable.value ?? variable.previewValue,
+        createVariableFieldName(name),
+        draft.value ?? draft.previewValue,
       ]);
     }
   });

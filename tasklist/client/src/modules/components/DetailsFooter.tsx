@@ -19,7 +19,9 @@ const DetailsFooter: React.FC<Props> = ({className, children, status}) => {
   return (
     <div className={styles.container}>
       <TaskDetailsRow className={styles.row}>
-        <div role="status">{status}</div>
+        <div role="status" aria-hidden={status === undefined}>
+          {status}
+        </div>
         <div className={className}>{children}</div>
       </TaskDetailsRow>
     </div>

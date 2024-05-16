@@ -80,7 +80,7 @@ const VariableEditor: React.FC<Props> = ({
   const {dirtyFields} = useFormState<FormValues, Partial<FormValues>>();
 
   const nonDraftVariables = variables.filter(
-    (v) => v.value !== null || v.previewValue !== null,
+    ({value, previewValue}) => value !== null || previewValue !== null,
   );
 
   return (

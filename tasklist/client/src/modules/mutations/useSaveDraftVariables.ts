@@ -21,7 +21,7 @@ function useSaveDraftVariables(taskId: string) {
       const {error} = await request(api.saveVariables({taskId, variables}));
 
       if (error !== null) {
-        throw error ?? new Error('Could not complete task');
+        throw error;
       }
     },
   });

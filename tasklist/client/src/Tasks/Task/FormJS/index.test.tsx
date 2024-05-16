@@ -599,10 +599,10 @@ describe('<FormJS />', () => {
     });
 
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.runOnlyPendingTimers();
     });
 
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.getByRole('status')).not.toBeVisible();
   });
 
   it('should show an error message when save completes unsuccessfully', async () => {
@@ -633,9 +633,7 @@ describe('<FormJS />', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTitle(/save current progress/i)).not.toHaveAttribute(
-        'disabled',
-      );
+      expect(screen.getByTitle(/save current progress/i)).toBeEnabled();
     });
 
     await user.click(screen.getByTitle(/save current progress/i));
