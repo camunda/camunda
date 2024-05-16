@@ -20,6 +20,13 @@ import {getStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
+function getCustomFilterParams(userId: string) {
+  const customFilters = getStateLocally('customFilters')?.custom;
+  return customFilters === undefined
+    ? {}
+    : prepareCustomFiltersParams(customFilters, userId);
+}
+
 function getNavLinkSearchParam(options: {
   currentParams: URLSearchParams;
   filter: TaskFilters['filter'];
@@ -45,45 +52,28 @@ function getNavLinkSearchParam(options: {
   const {sortBy, ...convertedParams} = Object.fromEntries(
     currentParams.entries(),
   );
-  const values: Record<string, string> =
-    sortBy === 'completion' || sortBy === undefined
-      ? {filter}
-      : {filter, sortBy};
-  if (filter === 'custom') {
-    const customFilters = getStateLocally('customFilters')?.custom;
-    const customFiltersParams =
-      customFilters !== undefined
-        ? prepareCustomFiltersParams(customFilters, userId)
-        : {};
-    const updatedParams = new URLSearchParams({
-      ...convertedParams,
-      ...values,
-      ...customFiltersParams,
-    });
-    const paramsToDelete = difference(
-      CUSTOM_FILTERS_PARAMS,
-      Object.keys(customFiltersParams),
-    );
-
-    paramsToDelete.forEach((param) => {
-      updatedParams.delete(param);
-    });
-
-    return updatedParams.toString();
-  }
+  const customFilterParams =
+    filter === 'custom' ? getCustomFilterParams(userId) : {};
 
   const updatedParams = new URLSearchParams({
     ...convertedParams,
-    ...values,
+    ...customFilterParams,
+    filter,
   });
+
+  if (sortBy !== undefined && sortBy !== 'completion') {
+    updatedParams.set('sortBy', sortBy);
+  }
 
   if (filter === 'completed') {
     updatedParams.set('sortBy', 'completion');
   }
 
-  CUSTOM_FILTERS_PARAMS.forEach((param) => {
-    updatedParams.delete(param);
-  });
+  difference(CUSTOM_FILTERS_PARAMS, Object.keys(customFilterParams)).forEach(
+    (param) => {
+      updatedParams.delete(param);
+    },
+  );
 
   return updatedParams.toString();
 }
