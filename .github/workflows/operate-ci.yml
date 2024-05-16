@@ -43,13 +43,22 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
+  java-checks:
+    name: Operate Java Checks
+    uses: ./.github/workflows/operate-ci-build-observe-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate verify -T1C -B -DskipTests -DskipDockerProfile -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      runner-type: gcp-core-4-default
+
   run-unit-tests:
     name: Operate Backend Unit Tests
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -T1C -B -P skipFrontendBuild,spotbugs -DskipITs -DskipDockerProfile
+      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
