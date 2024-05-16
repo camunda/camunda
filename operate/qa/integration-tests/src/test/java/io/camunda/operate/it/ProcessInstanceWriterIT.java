@@ -73,11 +73,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
         getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
         new VariableEntity().setProcessInstanceKey(processInstanceKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     processInstanceWriter.deleteInstanceById(processInstance.getProcessInstanceKey());
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     assertThrows(
         NotFoundException.class,
@@ -116,11 +116,11 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
         getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
         new VariableEntity().setProcessInstanceKey(processInstanceKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     processInstanceWriter.deleteInstanceById(processInstanceKey);
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     assertThrows(
         NotFoundException.class,
@@ -148,7 +148,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     assertThrows(
         IllegalArgumentException.class,
@@ -159,7 +159,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
     processInstanceWriter.deleteInstanceById(processInstanceKey);
   }
 
