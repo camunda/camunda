@@ -37,18 +37,31 @@ concurrency:
 
 jobs:
   run-build:
-    name: run-build
+    name: Operate Build
     uses: ./.github/workflows/operate-ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
-  run-tests:
-    name: run-tests
+  run-unit-tests:
+    name: Operate Backend Unit Tests
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile
+      test-type: Unit Tests
+      runner-type: gcp-core-4-default
+
+  run-integration-tests:
+    name: Operate Backend Integration Tests
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate/qa/integration-tests verify -P operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Integration Tests
+      runner-type: gcp-core-32-default
 
   test-summary:
     # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
