@@ -1,9 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended"
   ],
-
   "commitMessagePrefix": "deps:",
   "baseBranches": [
     "/^stable\\/8\\..*/",
@@ -107,11 +106,11 @@
       "groupName": "definitelyTyped"
     },
     {
-      "extends": "monorepo:react",
+      "extends": ["monorepo:react"],
       "groupName": "react monorepo"
     },
     {
-      "extends": "monorepo:react-router",
+      "extends": ["monorepo:react-router"],
       "groupName": "react-router monorepo"
     },
     {
