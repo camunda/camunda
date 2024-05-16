@@ -55,6 +55,8 @@ test.describe('decision detail', () => {
 
       const results = await makeAxeBuilder()
         .exclude('.tjs-table-container')
+        // the search input for DRDs is not used in Operate
+        .exclude('.djs-search-input')
         .analyze();
 
       validateResults(results);
@@ -82,6 +84,8 @@ test.describe('decision detail', () => {
 
       const results = await makeAxeBuilder()
         .exclude('.tjs-table-container')
+        // the search input for DRDs is not used in Operate
+        .exclude('.djs-search-input')
         .analyze();
 
       validateResults(results);
@@ -109,6 +113,8 @@ test.describe('decision detail', () => {
 
       const results = await makeAxeBuilder()
         .exclude('.tjs-table-container')
+        // the search input for DRDs is not used in Operate
+        .exclude('.djs-search-input')
         .analyze();
 
       validateResults(results);
