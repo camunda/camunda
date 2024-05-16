@@ -13,7 +13,10 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,21 +28,84 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   private static final String INDEX_NAME = "test";
 
   @Autowired private TasklistProperties tasklistProperties;
+
   @Autowired private List<IndexDescriptor> indexDescriptors;
+
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+
   @Autowired private IndexSchemaValidator indexSchemaValidator;
+
   @Autowired private NoSqlHelper noSqlHelper;
+
   @Autowired private SchemaManager schemaManager;
+
   @Autowired private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   private String originalSchemaContent;
-
   private IndexDescriptor indexDescriptor;
 
   @BeforeEach
   public void setUp() throws Exception {
+    indexDescriptor = createIndexDescriptor();
+    originalSchemaContent = readSchemaContent();
+    assertThat(originalSchemaContent).doesNotContain("\"prop2\"");
+  }
 
-     indexDescriptor = new IndexDescriptor() {
+  @AfterEach
+  public void tearDown() throws Exception {
+    restoreOriginalSchemaContent();
+    retryElasticsearchClient.deleteIndicesFor(getFullIndexName());
+  }
+
+  @Test
+  public void shouldValidateDynamicIndexWithAddedProperty() throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(indexDescriptor));
+    schemaManager.createIndex(indexDescriptor);
+
+    var diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isEmpty();
+
+    createDocument("prop0", "test");
+
+    updateSchemaContent(
+        originalSchemaContent.replace(
+            "\"properties\": {", "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"));
+
+    final String newSchemaContent = readSchemaContent();
+    assertThat(newSchemaContent).contains("\"prop2\"");
+
+    diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isNotEmpty();
+  }
+
+  @Test
+  public void shouldValidateDynamicIndexWithRemovedPropertyAndWillIgnoreRemovals()
+      throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(indexDescriptor));
+    schemaManager.createIndex(indexDescriptor);
+
+    var diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isEmpty();
+
+    createDocument("prop0", "test");
+
+    updateSchemaContent(
+        originalSchemaContent.replace(
+            "    \"properties\": {\n"
+                + "      \"prop0\": {\n"
+                + "        \"type\": \"keyword\"\n"
+                + "      },",
+            "\"properties\": {"));
+
+    final String newSchemaContent = readSchemaContent();
+    assertThat(newSchemaContent).doesNotContain("\"prop0\"");
+
+    diff = indexSchemaValidator.validateIndexMappings();
+    assertThat(diff).isEmpty();
+  }
+
+  private IndexDescriptor createIndexDescriptor() {
+    return new IndexDescriptor() {
       @Override
       public String getIndexName() {
         return INDEX_NAME;
@@ -47,7 +113,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
       @Override
       public String getFullQualifiedName() {
-        return idxName(INDEX_NAME);
+        return getFullIndexName();
       }
 
       @Override
@@ -57,100 +123,46 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
       @Override
       public String getAllVersionsIndexNameRegexPattern() {
-        return idxName(INDEX_NAME)+"*";
+        return getFullIndexName() + "*";
       }
     };
-
-    // Read the original schema content
-    originalSchemaContent = new String(Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
-    assertThat(originalSchemaContent).doesNotContain("\"prop2\"");
   }
 
-  @AfterEach
-  public void tearDown() throws Exception {
-    // Restore the original schema content
-    Files.write(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()), originalSchemaContent.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
-    retryElasticsearchClient.deleteIndicesFor(schemaManager.getIndexPrefix() +"-"+ INDEX_NAME);
+  private String readSchemaContent() throws Exception {
+    return new String(
+        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
   }
 
-  @Test
-  public void shouldValidateDynamicIndexWithAddedProperty() throws Exception {
-    // Create a new list containing only the new IndexDescriptor
-    final Set<IndexDescriptor> newIndexDescriptorsSet = new HashSet<>(Collections.singleton(indexDescriptor));
-
-    // Use reflection to replace the indexDescriptors field in IndexSchemaValidator
-    replaceIndexDescriptors(indexSchemaValidator, newIndexDescriptorsSet);
-
-    // Create a new Schema on ElasticSearch
-    schemaManager.createIndex(indexDescriptor);
-    // Validate the schema before updating
-    var diff = indexSchemaValidator.validateIndexMappings();
-    assertThat(diff).isEmpty(); // No differences expected yet
-
-    final Map<String, Object> document = Map.of("prop0", "test");
-    final boolean created2 = retryElasticsearchClient.createOrUpdateDocument(indexDescriptor.getFullQualifiedName(), "id", document);
-    System.out.println("Created: "+created2);
-
-    // Update the schema file to include the new property
-    final String updatedSchemaContent = originalSchemaContent.replace(
-        "\"properties\": {",
-        "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"
-    );
-    Files.write(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()), updatedSchemaContent.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
-
-    // Ensure the schema file was updated correctly
-    final String newSchemaContent = new String(Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
-    assertThat(newSchemaContent).contains("\"prop2\"");
-
-    // Validate the schema after updating
-    diff = indexSchemaValidator.validateIndexMappings();
-    assertThat(diff).isNotEmpty(); // Expecting a difference due to the new property
+  private void restoreOriginalSchemaContent() throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        originalSchemaContent.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  @Test
-  public void shouldValidateDynamicIndexWithRemovedPropertyAndWillIgnoreRemovals() throws Exception {
-    // Create a new list containing only the new IndexDescriptor
-    final Set<IndexDescriptor> newIndexDescriptorsSet = new HashSet<>(Collections.singleton(indexDescriptor));
-
-    // Use reflection to replace the indexDescriptors field in IndexSchemaValidator
-    replaceIndexDescriptors(indexSchemaValidator, newIndexDescriptorsSet);
-
-    // Create a new Schema on ElasticSearch
-    schemaManager.createIndex(indexDescriptor);
-    // Validate the schema before updating
-    var diff = indexSchemaValidator.validateIndexMappings();
-    assertThat(diff).isEmpty(); // No differences expected yet
-
-    final Map<String, Object> document = Map.of("prop0", "test");
-    final boolean created2 = retryElasticsearchClient.createOrUpdateDocument(indexDescriptor.getFullQualifiedName(), "id", document);
-    System.out.println("Created: "+created2);
-
-    // Update the schema file to include the new property
-    final String updatedSchemaContent = originalSchemaContent.replace(
-        "    \"properties\": {\n"
-            + "      \"prop0\": {\n"
-            + "        \"type\": \"keyword\"\n"
-            + "      },",
-        "\"properties\": {"
-    );
-    Files.write(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()), updatedSchemaContent.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
-    // Ensure the schema file was updated correctly
-    final String newSchemaContent = new String(Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
-    assertThat(newSchemaContent).doesNotContain("\"prop0\"");
-
-    // Validate the schema after updating
-    diff = indexSchemaValidator.validateIndexMappings();
-    assertThat(diff).isEmpty(); // It will ignore the removal of the property - Not allowed 
+  private void createDocument(final String key, final String value) throws Exception {
+    final Map<String, Object> document = Map.of(key, value);
+    final boolean created =
+        retryElasticsearchClient.createOrUpdateDocument(
+            indexDescriptor.getFullQualifiedName(), "id", document);
+    System.out.println("Created: " + created);
   }
 
-  private String idxName(final String name) {
-    return schemaManager.getIndexPrefix() + "-" + name;
+  private void updateSchemaContent(final String content) throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        content.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  private void replaceIndexDescriptors(final Object target, final Set<IndexDescriptor> newIndexDescriptorsSet) throws NoSuchFieldException, IllegalAccessException {
-    // Use reflection to access and replace the indexDescriptors field
-    final Field indexDescriptorsField = target.getClass().getDeclaredField("indexDescriptors");
-    indexDescriptorsField.setAccessible(true);
-    indexDescriptorsField.set(target, newIndexDescriptorsSet);
+  private void replaceIndexDescriptorsInValidator(final Set<IndexDescriptor> newIndexDescriptors)
+      throws NoSuchFieldException, IllegalAccessException {
+    final Field field = indexSchemaValidator.getClass().getDeclaredField("indexDescriptors");
+    field.setAccessible(true);
+    field.set(indexSchemaValidator, newIndexDescriptors);
+  }
+
+  private String getFullIndexName() {
+    return schemaManager.getIndexPrefix() + "-" + INDEX_NAME;
   }
 }

@@ -45,7 +45,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
             + tasklistProperties.getElasticsearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
-    try{
+    try {
       final GetLifecyclePolicyResponse policyExists =
           retryElasticsearchClient.getLifeCyclePolicy(
               new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));

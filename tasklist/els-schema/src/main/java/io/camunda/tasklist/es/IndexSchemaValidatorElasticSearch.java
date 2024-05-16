@@ -183,7 +183,7 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
-      LOGGER.info("Validating index mappings difference for: "+ indexDescriptor.getIndexName());
+      LOGGER.info("Validating index mappings difference for: " + indexDescriptor.getIndexName());
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(indexMappings, indexDescriptor);
       // we don't check indices that were not yet created
