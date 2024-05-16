@@ -141,6 +141,21 @@
             ]
           },
           {
+            "name": "ExporterDisableRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "exporterId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "dryRun",
+                "type": "bool"
+              }
+            ]
+          },
+          {
             "name": "CancelTopologyChangeRequest",
             "fields": [
               {
@@ -287,6 +302,22 @@
                 "integer": 4
               }
             ]
+          },
+          {
+            "name": "EnabledDisabledState",
+            "enum_fields": [
+              {
+                "name": "ENABLED_DISBALED_UNKNOWN"
+              },
+              {
+                "name": "ENABLED",
+                "integer": 1
+              },
+              {
+                "name": "DISABLED",
+                "integer": 2
+              }
+            ]
           }
         ],
         "messages": [
@@ -372,6 +403,44 @@
                 "id": 2,
                 "name": "priority",
                 "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "config",
+                "type": "PartitionConfig"
+              }
+            ]
+          },
+          {
+            "name": "PartitionConfig",
+            "fields": [
+              {
+                "id": 1,
+                "name": "exporting",
+                "type": "ExportersConfig"
+              }
+            ]
+          },
+          {
+            "name": "ExportersConfig",
+            "maps": [
+              {
+                "key_type": "string",
+                "field": {
+                  "id": 1,
+                  "name": "exporters",
+                  "type": "ExporterState"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ExporterState",
+            "fields": [
+              {
+                "id": 1,
+                "name": "state",
+                "type": "EnabledDisabledState"
               }
             ]
           },
@@ -479,6 +548,11 @@
                 "id": 8,
                 "name": "memberRemove",
                 "type": "MemberRemoveOperation"
+              },
+              {
+                "id": 9,
+                "name": "partitionDisableExporter",
+                "type": "PartitionDisableExporterOperation"
               }
             ]
           },
@@ -550,6 +624,21 @@
                 "name": "members",
                 "type": "string",
                 "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "PartitionDisableExporterOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "exporterId",
+                "type": "string"
               }
             ]
           },

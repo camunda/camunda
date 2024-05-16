@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -47,6 +48,8 @@ final class ConfigurationChangeCoordinatorImplTest {
   private final ClusterConfiguration initialTopology =
       ClusterConfiguration.init()
           .addMember(MemberId.from("0"), MemberState.initializeAsActive(Map.of()));
+
+  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @Test
   void shouldFailOnInvalidChanges() {
@@ -79,9 +82,13 @@ final class ConfigurationChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(
         initialTopology
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-            .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1)))
+            .updateMember(
+                MemberId.from("1"),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
-            .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1))));
+            .updateMember(
+                MemberId.from("2"),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
 
     // when
 
@@ -129,7 +136,8 @@ final class ConfigurationChangeCoordinatorImplTest {
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
@@ -153,7 +161,8 @@ final class ConfigurationChangeCoordinatorImplTest {
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
@@ -197,7 +206,8 @@ final class ConfigurationChangeCoordinatorImplTest {
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =
@@ -232,7 +242,8 @@ final class ConfigurationChangeCoordinatorImplTest {
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(
                 MemberId.from("2"),
-                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig))));
     clusterTopologyManager.setClusterTopology(topology);
 
     final List<ClusterConfigurationChangeOperation> operations =

@@ -64,8 +64,6 @@ public class JobWorkerManager {
   public JobWorker openWorker(
       final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue, final JobHandler handler) {
 
-    // TODO: Trigger initialization of  worker values and defaults here
-
     final JobWorkerBuilderStep1.JobWorkerBuilderStep3 builder =
         client
             .newWorker()

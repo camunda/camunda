@@ -596,7 +596,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       commitFuture.complete(index);
     }
 

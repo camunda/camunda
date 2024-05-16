@@ -481,6 +481,8 @@ declare module '@carbon/react/icons' {
   export const Calendar: Icon;
   export const CheckmarkFilled: Icon;
   export const Notification: Icon;
+  export const CenterCircle: Icon;
+  export const Subtract: Icon;
 }
 
 declare module '@carbon/elements' {

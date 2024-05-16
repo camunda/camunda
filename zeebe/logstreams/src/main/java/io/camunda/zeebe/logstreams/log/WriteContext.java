@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.protocol.record.intent.Intent;
+
 public sealed interface WriteContext {
-  static WriteContext userCommand() {
-    return UserCommand.INSTANCE;
+  static WriteContext userCommand(final Intent intent) {
+    return new UserCommand(intent);
   }
 
   static WriteContext processingResult() {
@@ -28,9 +30,7 @@ public sealed interface WriteContext {
     return Internal.INSTANCE;
   }
 
-  final class UserCommand implements WriteContext {
-    private static final UserCommand INSTANCE = new UserCommand();
-  }
+  record UserCommand(Intent intent) implements WriteContext {}
 
   final class ProcessingResult implements WriteContext {
     private static final ProcessingResult INSTANCE = new ProcessingResult();

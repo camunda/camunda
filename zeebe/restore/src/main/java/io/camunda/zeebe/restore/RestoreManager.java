@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistributionResolver;
+import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
@@ -103,10 +103,7 @@ public class RestoreManager {
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
         new PartitionDistribution(
-            PartitionDistributionResolver.getStaticConfiguration(
-                    configuration.getCluster(),
-                    configuration.getExperimental().getPartitioning(),
-                    localMember)
+            StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
     final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 

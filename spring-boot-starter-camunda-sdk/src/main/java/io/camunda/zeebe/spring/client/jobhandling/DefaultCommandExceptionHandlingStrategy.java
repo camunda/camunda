@@ -62,24 +62,16 @@ public class DefaultCommandExceptionHandlingStrategy implements CommandException
       final StatusRuntimeException exception = (StatusRuntimeException) throwable;
       final Status.Code code = exception.getStatus().getCode();
 
-      // Success codes should not lead to an exception!
-      if (IGNORABLE_FAILURE_CODES.contains(code)) {
-        LOG.warn(
-            "Ignoring the error of type '"
-                + code
-                + "' during "
-                + command
-                + ". Job might have been canceled or already completed.");
-        // TODO: Is Ignorance really a good idea? Think of some local transaction that might need to
-        // TODO: be marked for rollback! But for sure, retry does not help at all
-        return;
-      } else if (RETRIABLE_CODES.contains(code)) {
-        if (command.hasMoreRetries()) {
-          command.increaseBackoffUsing(backoffSupplier);
-          LOG.warn("Retrying " + command + " after error of type '" + code + "' with backoff");
-          command.scheduleExecutionUsing(scheduledExecutorService);
-          return;
-        } else {
+      if (!RETRIABLE_CODES.contains(code)
+          || !IGNORABLE_FAILURE_CODES.contains(code)
+          || FAILURE_CODES.contains(code)) {
+        throw new RuntimeException(
+            "Could not execute " + command + " due to exception: " + throwable.getMessage(),
+            throwable);
+      }
+
+      if (RETRIABLE_CODES.contains(code)) {
+        if (!command.hasMoreRetries()) {
           throw new RuntimeException(
               "Could not execute "
                   + command
@@ -88,14 +80,14 @@ public class DefaultCommandExceptionHandlingStrategy implements CommandException
                   + "' and no retries are left",
               throwable);
         }
-      } else if (FAILURE_CODES.contains(code)) {
-        throw new RuntimeException(
-            "Could not execute " + command + " due to error of type '" + code + "'", throwable);
+        command.increaseBackoffUsing(backoffSupplier);
+        LOG.warn("Retrying {} after error of type '{}' with backoff", command, code);
+        command.scheduleExecutionUsing(scheduledExecutorService);
+        return;
       }
-    }
 
-    // if it wasn't handled yet, throw an exception
-    throw new RuntimeException(
-        "Could not execute " + command + " due to exception: " + throwable.getMessage(), throwable);
+      throw new RuntimeException(
+          "Could not execute " + command + " due to error of type '" + code + "'", throwable);
+    }
   }
 }

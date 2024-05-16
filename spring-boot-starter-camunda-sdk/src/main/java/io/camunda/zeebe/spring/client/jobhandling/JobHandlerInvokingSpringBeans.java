@@ -61,50 +61,43 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
 
   @Override
   public void handle(final JobClient jobClient, final ActivatedJob job) throws Exception {
-    // TODO: Figuring out parameters and assignments could probably also done only once in the
-    // beginning to save some computing time on each invocation
     final List<Object> args = createParameters(jobClient, job);
     LOG.trace("Handle {} and invoke worker {}", job, workerValue);
     try {
       metricsRecorder.increase(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-      Object result = null;
+      final Object result;
       try {
         result = workerValue.getMethodInfo().invoke(args.toArray());
       } catch (final Throwable t) {
         metricsRecorder.increase(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
-        // normal exceptions are handled by JobRunnableFactory
-        // (https://github.com/camunda-cloud/zeebe/blob/develop/clients/java/src/main/java/io/camunda/zeebe/client/impl/worker/JobRunnableFactory.java#L45)
-        // which leads to retrying
         throw t;
       }
 
       if (workerValue.getAutoComplete()) {
         LOG.trace("Auto completing {}", job);
-        // TODO: We should probably move the metrics recording to the callback of a successful
-        // command execution to avoid wrong counts
-        metricsRecorder.increase(
-            MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
         final CommandWrapper command =
             new CommandWrapper(
                 createCompleteCommand(jobClient, job, result),
                 job,
-                commandExceptionHandlingStrategy);
-        command.executeAsync();
+                commandExceptionHandlingStrategy,
+                metricsRecorder,
+                workerValue.getMaxRetries());
+        command.executeAsyncWithMetrics(
+            MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
       }
     } catch (final ZeebeBpmnError bpmnError) {
       LOG.trace("Catched BPMN error on {}", job);
-      // TODO: We should probably move the metrics recording to the callback of a successful command
-      // execution to avoid wrong counts
-      metricsRecorder.increase(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
       final CommandWrapper command =
           new CommandWrapper(
               createThrowErrorCommand(jobClient, job, bpmnError),
               job,
-              commandExceptionHandlingStrategy);
-      command.executeAsync();
+              commandExceptionHandlingStrategy,
+              metricsRecorder,
+              workerValue.getMaxRetries());
+      command.executeAsyncWithMetrics(
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
     }
   }
 
@@ -133,7 +126,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
       final JobClient jobClient, final ActivatedJob job, final ZeebeBpmnError bpmnError) {
     final ThrowErrorCommandStep2 command =
         jobClient
-            .newThrowErrorCommand(job.getKey()) // TODO: PR for taking a job only in command chain
+            .newThrowErrorCommand(job.getKey())
             .errorCode(bpmnError.getErrorCode())
             .errorMessage(bpmnError.getErrorMessage());
     if (bpmnError.getVariables() != null) {

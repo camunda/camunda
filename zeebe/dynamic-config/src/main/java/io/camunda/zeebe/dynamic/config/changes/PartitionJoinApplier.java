@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -96,12 +97,14 @@ final class PartitionJoinApplier implements MemberOperationApplier {
         && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
       // The state is already JOINING, so we don't need to change it. This can happen when the node
       // was restarted while applying the join operation. To ensure that the configuration change
-      // can
-      // make progress, we do not treat this as an error.
+      // can make progress, we do not treat this as an error.
       return Either.right(memberState -> memberState);
     } else {
+      final var partitionConfig = getPartitionConfig(currentClusterConfiguration);
       return Either.right(
-          memberState -> memberState.addPartition(partitionId, PartitionState.joining(priority)));
+          memberState ->
+              memberState.addPartition(
+                  partitionId, PartitionState.joining(priority, partitionConfig)));
     }
   }
 
@@ -123,6 +126,18 @@ final class PartitionJoinApplier implements MemberOperationApplier {
               }
             });
     return result;
+  }
+
+  private DynamicPartitionConfig getPartitionConfig(
+      final ClusterConfiguration currentClusterConfiguration) {
+    // Find configuration from any other member that has the same partition. We can assume that
+    // configuration is not being changed at the same time as scaling operations
+    return currentClusterConfiguration.members().values().stream()
+        .filter(m -> m.hasPartition(partitionId))
+        .map(m -> m.partitions().get(partitionId))
+        .findAny()
+        .orElseThrow() // We are certain that there is another member with the same partition
+        .config();
   }
 
   private HashMap<MemberId, Integer> collectPriorityByMembers(

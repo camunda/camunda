@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
@@ -47,7 +48,8 @@ final class MemberLeaveApplierTest {
         ClusterConfiguration.init()
             .addMember(
                 memberId,
-                MemberState.initializeAsActive(Map.of()).addPartition(1, PartitionState.active(1)));
+                MemberState.initializeAsActive(Map.of())
+                    .addPartition(1, PartitionState.active(1, DynamicPartitionConfig.init())));
 
     // when
     final var result = memberLeaveApplier.init(clusterConfigurationWithMember);
