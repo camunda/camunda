@@ -55,17 +55,11 @@ function getNavLinkSearchParam(options: {
       customFilters !== undefined
         ? prepareCustomFiltersParams(customFilters, userId)
         : {};
-    const updatedParams =
-      Object.keys(customFiltersParams).length > 0
-        ? new URLSearchParams({
-            ...convertedParams,
-            ...values,
-            ...customFiltersParams,
-          })
-        : new URLSearchParams({
-            ...convertedParams,
-            ...values,
-          });
+    const updatedParams = new URLSearchParams({
+      ...convertedParams,
+      ...values,
+      ...customFiltersParams,
+    });
     const paramsToDelete = difference(
       CUSTOM_FILTERS_PARAMS,
       Object.keys(customFiltersParams),
