@@ -13,8 +13,8 @@ import {Button} from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
 import {useSearchParams} from 'react-router-dom';
-import {type TaskFilters} from 'modules/hooks/useTaskFilters';
-import {SearchParamNavLink} from './SearchParamNavLink';
+import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
+import {ControlledNavLink} from './SearchParamNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
 import {getStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
@@ -90,6 +90,7 @@ function getNavLinkSearchParam(options: {
 
 const CollapsiblePanel: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const {filter} = useTaskFilters();
   const [searchParams] = useSearchParams();
   const customFilters = getStateLocally('customFilters')?.custom;
   const {data} = useCurrentUser();
@@ -138,7 +139,7 @@ const CollapsiblePanel: React.FC = () => {
           kind="ghost"
         />
       </span>
-      <SearchParamNavLink
+      <ControlledNavLink
         to={{
           search: getNavLinkSearchParam({
             currentParams: searchParams,
@@ -146,15 +147,11 @@ const CollapsiblePanel: React.FC = () => {
             userId,
           }),
         }}
-        activeParam={{
-          key: 'filter',
-          value: 'all-open',
-        }}
-        isActiveOnEmpty
+        isActive={filter === 'all-open'}
       >
         All open tasks
-      </SearchParamNavLink>
-      <SearchParamNavLink
+      </ControlledNavLink>
+      <ControlledNavLink
         to={{
           search: getNavLinkSearchParam({
             currentParams: searchParams,
@@ -162,14 +159,11 @@ const CollapsiblePanel: React.FC = () => {
             userId,
           }),
         }}
-        activeParam={{
-          key: 'filter',
-          value: 'assigned-to-me',
-        }}
+        isActive={filter === 'assigned-to-me'}
       >
         Assigned to me
-      </SearchParamNavLink>
-      <SearchParamNavLink
+      </ControlledNavLink>
+      <ControlledNavLink
         to={{
           search: getNavLinkSearchParam({
             currentParams: searchParams,
@@ -177,14 +171,11 @@ const CollapsiblePanel: React.FC = () => {
             userId,
           }),
         }}
-        activeParam={{
-          key: 'filter',
-          value: 'unassigned',
-        }}
+        isActive={filter === 'unassigned'}
       >
         Unassigned
-      </SearchParamNavLink>
-      <SearchParamNavLink
+      </ControlledNavLink>
+      <ControlledNavLink
         to={{
           search: getNavLinkSearchParam({
             currentParams: searchParams,
@@ -192,15 +183,12 @@ const CollapsiblePanel: React.FC = () => {
             userId,
           }),
         }}
-        activeParam={{
-          key: 'filter',
-          value: 'completed',
-        }}
+        isActive={filter === 'completed'}
       >
         Completed
-      </SearchParamNavLink>
+      </ControlledNavLink>
       {customFilters === undefined ? null : (
-        <SearchParamNavLink
+        <ControlledNavLink
           to={{
             search: getNavLinkSearchParam({
               currentParams: searchParams,
@@ -208,13 +196,10 @@ const CollapsiblePanel: React.FC = () => {
               userId,
             }),
           }}
-          activeParam={{
-            key: 'filter',
-            value: 'custom',
-          }}
+          isActive={filter === 'custom'}
         >
           Custom
-        </SearchParamNavLink>
+        </ControlledNavLink>
       )}
     </div>
   );

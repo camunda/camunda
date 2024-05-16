@@ -6,30 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {NavLink, Path, useSearchParams} from 'react-router-dom';
+import {NavLink, Path} from 'react-router-dom';
 import cn from 'classnames';
 import styles from './styles.module.scss';
 
 type Props = Omit<React.ComponentProps<typeof NavLink>, 'to' | 'className'> & {
   to: Partial<Path>;
-  activeParam: {
-    key: string;
-    value: string;
-  };
   className?: string;
-  isActiveOnEmpty?: boolean;
+  isActive: boolean;
 };
 
-const SearchParamNavLink: React.FC<Props> = ({
+const ControlledNavLink: React.FC<Props> = ({
   to,
   children,
-  activeParam,
   className,
-  isActiveOnEmpty,
+  isActive,
   ...props
 }) => {
-  const [searchParams] = useSearchParams();
-
   return (
     <NavLink
       {...props}
@@ -38,9 +31,7 @@ const SearchParamNavLink: React.FC<Props> = ({
         cn(
           styles.link,
           {
-            [styles.active]:
-              searchParams.get(activeParam.key) === activeParam.value ||
-              (isActiveOnEmpty && searchParams.get(activeParam.key) === null),
+            [styles.active]: isActive,
             pending: isPending,
             transitioning: isTransitioning,
           },
@@ -53,4 +44,4 @@ const SearchParamNavLink: React.FC<Props> = ({
   );
 };
 
-export {SearchParamNavLink};
+export {ControlledNavLink};
