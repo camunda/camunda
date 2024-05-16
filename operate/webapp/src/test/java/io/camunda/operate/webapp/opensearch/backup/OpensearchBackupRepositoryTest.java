@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchSnapshotOperations;
@@ -28,7 +29,9 @@ import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -271,5 +274,93 @@ class OpensearchBackupRepositoryTest {
             () -> repository.validateNoDuplicateBackupId("repo", 42L));
     assertThat(exception.getMessage())
         .isEqualTo("A backup with ID [42] already exists. Found snapshots: [test]");
+  }
+
+  @Test
+  void shouldReturnBackupStateIncomplete() throws IOException {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(0L);
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+  }
+
+  @Test
+  void shouldReturnBackupStateInProgress() throws IOException {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedWhenSnapshotIsPartialCompleted() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.PARTIAL)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedCompleted() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(2));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    final var lastSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedWhenSnapshotIsFailed() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.FAILED)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
   }
 }
