@@ -39,7 +39,7 @@ public class StartupIT {
   //  public static final String VERSION = "8.1.0-alpha4";
   private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   public TestRestTemplate restTemplate = new TestRestTemplate();
-  private TestContainerUtil testContainerUtil = new TestContainerUtil();
+  private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private GenericContainer operateContainer;
   private TestContext testContext;
 
@@ -79,7 +79,7 @@ public class StartupIT {
     final ResponseEntity<String> clientConfig =
         restTemplate.getForEntity(
             String.format(
-                "http://%s:%s/client-config.js",
+                "http://%s:%s/operate/client-config.js",
                 testContext.getExternalOperateHost(), testContext.getExternalOperatePort()),
             String.class);
 

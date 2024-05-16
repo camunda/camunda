@@ -19,8 +19,6 @@ public class StandaloneOperate {
 
   public static final String OPERATE_STATIC_RESOURCES_LOCATION =
       "classpath:/META-INF/resources/operate/";
-  public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = OPERATE_STATIC_RESOURCES_LOCATION;
 
   public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -59,10 +57,6 @@ public class StandaloneOperate {
     return Map.of(
         "server.servlet.session.cookie.name",
         "OPERATE-SESSION",
-        "spring.thymeleaf.check-template-location",
-        "true",
-        SPRING_THYMELEAF_PREFIX_KEY,
-        SPRING_THYMELEAF_PREFIX_VALUE,
         "spring.mvc.pathmatch.matching-strategy",
         "ANT_PATH_MATCHER",
         // Return error messages for all endpoints by default, except for Internal API.

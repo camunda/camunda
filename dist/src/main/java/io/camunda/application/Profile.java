@@ -18,6 +18,7 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
+  TASKLIST("tasklist"),
 
   // environment profiles
   TEST("test"),

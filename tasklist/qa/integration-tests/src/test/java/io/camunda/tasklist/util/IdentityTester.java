@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD_2;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_USERNAME;
@@ -111,7 +109,6 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     registry.add("graphql.servlet.exception-handlers-enabled", () -> true);
     registry.add(
         "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
-    registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
     registry.add("server.servlet.session.cookie.name", () -> TasklistURIs.COOKIE_JSESSIONID);
     registry.add(
         "camunda.tasklist.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));

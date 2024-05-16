@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.graphql;
 
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,7 +37,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
-      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

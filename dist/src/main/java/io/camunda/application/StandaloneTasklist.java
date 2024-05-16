@@ -36,7 +36,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
       GraphQLAnnotationsAutoConfiguration.class
     })
 @ComponentScan(
-    basePackages = "io.camunda.tasklist",
+    basePackages = {"io.camunda.tasklist", "io.camunda.webapps"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
@@ -53,8 +53,6 @@ public class StandaloneTasklist {
 
   public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
       "classpath:/META-INF/resources/tasklist/";
-  public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
-  public static final String SPRING_THYMELEAF_PREFIX_VALUE = TASKLIST_STATIC_RESOURCES_LOCATION;
   private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneTasklist.class);
 
   public static void main(final String[] args) {
@@ -65,9 +63,6 @@ public class StandaloneTasklist {
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     System.setProperty("spring.web.resources.static-locations", TASKLIST_STATIC_RESOURCES_LOCATION);
-    // Hack for the moment to allow serving static resources in Tasklist.
-    // Must be removed with the single application.
-    System.setProperty("spring.web.resources.add-mappings", "true");
     System.setProperty("spring.banner.location", "classpath:/tasklist-banner.txt");
     // We need to disable this property in Tasklist (enabled in dist/application.properties),
     // otherwise ForwardErrorController does not get invoked
@@ -121,10 +116,6 @@ public class StandaloneTasklist {
     return Map.of(
         "server.servlet.session.cookie.name",
         TasklistURIs.COOKIE_JSESSIONID,
-        "spring.thymeleaf.check-template-location",
-        "true",
-        SPRING_THYMELEAF_PREFIX_KEY,
-        SPRING_THYMELEAF_PREFIX_VALUE,
         // Return error messages for all endpoints by default, except for Internal API.
         // Internal API error handling is defined in InternalAPIErrorController.
         "server.error.include-message",

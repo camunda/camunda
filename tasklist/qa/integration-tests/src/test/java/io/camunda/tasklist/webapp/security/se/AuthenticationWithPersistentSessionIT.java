@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -52,7 +50,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers",
-      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE + "static",
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
