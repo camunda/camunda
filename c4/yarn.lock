@@ -1921,7 +1921,7 @@ __metadata:
     "@babel/preset-env": "npm:^7.22.20"
     "@babel/preset-react": "npm:^7.22.15"
     "@babel/preset-typescript": "npm:^7.23.0"
-    "@carbon/icons-react": "npm:^11.28.0"
+    "@carbon/icons-react": "npm:^11.40.0"
     "@carbon/react": "npm:^1.56.0"
     "@chromatic-com/storybook": "npm:^1.3.3"
     "@storybook/addon-essentials": "npm:^8.0.9"
@@ -1978,15 +1978,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.47.0":
-  version: 10.47.0
-  resolution: "@carbon/icon-helpers@npm:10.47.0"
-  dependencies:
-    "@ibm/telemetry-js": "npm:^1.2.1"
-  checksum: 10c0/4ff57b2c506c2e6af5f95fa842539e0cb61f663ec9a72687bfd4e2c378b3cda6b4370fd437f3250e6dac37be08b4abbc7cb7b753449b52f9d01b94751a44ccdd
-  languageName: node
-  linkType: hard
-
 "@carbon/icon-helpers@npm:^10.48.0":
   version: 10.48.0
   resolution: "@carbon/icon-helpers@npm:10.48.0"
@@ -1996,20 +1987,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.28.0":
-  version: 11.40.0
-  resolution: "@carbon/icons-react@npm:11.40.0"
-  dependencies:
-    "@carbon/icon-helpers": "npm:^10.47.0"
-    "@ibm/telemetry-js": "npm:^1.2.1"
-    prop-types: "npm:^15.7.2"
-  peerDependencies:
-    react: ">=16"
-  checksum: 10c0/410518b7fba89f785a80843c2ec5640485ccb48aeffdd32b87a27c3b87d5d857c64c75dc4a86920386c7f159ad9e2dfe328ae8e6a8c7e4d4db88130ca018ab31
-  languageName: node
-  linkType: hard
-
-"@carbon/icons-react@npm:^11.41.0":
+"@carbon/icons-react@npm:^11.40.0, @carbon/icons-react@npm:^11.41.0":
   version: 11.41.0
   resolution: "@carbon/icons-react@npm:11.41.0"
   dependencies:
@@ -2381,15 +2359,6 @@ __metadata:
   version: 6.0.0-next.6
   resolution: "@ibm/plex@npm:6.0.0-next.6"
   checksum: 10c0/7f47f9535def1047dff51703fd1041c2f2915df1d405f1d62e785cc55b56478ea91af2e95b838692ef4142835ea765217935e2e336bac5a4437a9092ec0cfb4f
-  languageName: node
-  linkType: hard
-
-"@ibm/telemetry-js@npm:^1.2.1":
-  version: 1.3.0
-  resolution: "@ibm/telemetry-js@npm:1.3.0"
-  bin:
-    ibmtelemetry: dist/collect.js
-  checksum: 10c0/478c6ecdeba0645a1c3b30270dbc30e5c0b35d8b2534191ce90fe1a1d32f78394701e308fc7fe9a41a01af25eb47f1b329ebbbf36a2da1efc099bd3693a02239
   languageName: node
   linkType: hard
 

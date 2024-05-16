@@ -19,7 +19,7 @@
 		"@babel/preset-env": "^7.22.20",
 		"@babel/preset-react": "^7.22.15",
 		"@babel/preset-typescript": "^7.23.0",
-		"@carbon/icons-react": "^11.28.0",
+		"@carbon/icons-react": "^11.40.0",
 		"@carbon/react": "^1.56.0",
 		"@chromatic-com/storybook": "^1.3.3",
 		"@storybook/addon-essentials": "^8.0.9",
