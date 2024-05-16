@@ -29,6 +29,12 @@ class ProcessesPage {
     this.tasksTab = page.getByRole('link', {name: 'Tasks'});
   }
 
+  async goto() {
+    await this.page.goto('/processes', {
+      waitUntil: 'networkidle',
+    });
+  }
+
   async clickContinueButton() {
     await this.continueButton.click();
   }

@@ -49,8 +49,6 @@ public final class ProcessInstanceMigrationPreconditions {
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
       "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
-  private static final String ERROR_CHILD_PROCESS_INSTANCE =
-      "Expected to migrate process instance '%s' but process instance is a child process instance. Child process instances cannot be migrated.";
   private static final String ERROR_SOURCE_ELEMENT_ID_NOT_FOUND =
       """
               Expected to migrate process instance '%s' \
@@ -141,22 +139,6 @@ public final class ProcessInstanceMigrationPreconditions {
           String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.NOT_FOUND);
-    }
-  }
-
-  /**
-   * Checks whether the given process instance key is a parent key. Throws exception if given parent
-   * process key is a parent.
-   *
-   * @param parentProcessInstanceKey parent process instance key to do the check
-   * @param processInstanceKey process instance key to be logged
-   */
-  public static void requireNullParent(
-      final long parentProcessInstanceKey, final long processInstanceKey) {
-    if (parentProcessInstanceKey != NO_PARENT) {
-      final String reason = String.format(ERROR_CHILD_PROCESS_INSTANCE, processInstanceKey);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
     }
   }
 

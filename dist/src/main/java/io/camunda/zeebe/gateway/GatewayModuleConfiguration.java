@@ -14,37 +14,37 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.MainSupport;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the standalone gateway application. By default, it enables the {@link
- * Profile#GATEWAY} profile, loading the appropriate application properties overrides.
- *
- * <p>See {@link #main(String[])} for more.
+ * Entry point for the gateway modules by using the the {@link
+ * io.camunda.application.Profile#GATEWAY} profile, so that the appropriate gateway application
+ * properties are applied.
  */
-@SpringBootApplication(
-    proxyBeanMethods = false,
-    scanBasePackages = {
+@Configuration(proxyBeanMethods = false)
+@ComponentScan(
+    basePackages = {
       "io.camunda.zeebe.gateway",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.util.liveness"
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
-public class StandaloneGateway
-    implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
-  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+@EnableAutoConfiguration
+@Profile("gateway")
+public class GatewayModuleConfiguration implements CloseableSilently {
+
+  private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayConfiguration configuration;
   private final IdentityConfiguration identityConfiguration;
@@ -57,7 +57,7 @@ public class StandaloneGateway
   private Gateway gateway;
 
   @Autowired
-  public StandaloneGateway(
+  public GatewayModuleConfiguration(
       final GatewayConfiguration configuration,
       final IdentityConfiguration identityConfiguration,
       final SpringGatewayBridge springGatewayBridge,
@@ -74,23 +74,9 @@ public class StandaloneGateway
     this.jobStreamClient = jobStreamClient;
   }
 
-  public static void main(final String[] args) {
-    MainSupport.setDefaultGlobalConfiguration();
-    MainSupport.putSystemPropertyIfAbsent(
-        "spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
-
-    final var application =
-        MainSupport.createDefaultApplicationBuilder()
-            .sources(StandaloneGateway.class)
-            .profiles(Profile.GATEWAY.getId())
-            .build(args);
-
-    application.run();
-  }
-
-  @Override
-  public void run(final String... args) throws Exception {
-    LOG.info(
+  @Bean(destroyMethod = "close")
+  public Gateway gateway() {
+    LOGGER.info(
         "Starting standalone gateway {} with version {}",
         configuration.config().getCluster().getMemberId(),
         VersionUtil.getVersion());
@@ -119,12 +105,9 @@ public class StandaloneGateway
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     gateway.start().join(30, TimeUnit.SECONDS);
-    LOG.info("Standalone gateway is started!");
-  }
+    LOGGER.info("Standalone gateway is started!");
 
-  @Override
-  public void onApplicationEvent(final ContextClosedEvent event) {
-    close();
+    return gateway;
   }
 
   @Override
@@ -133,7 +116,7 @@ public class StandaloneGateway
       try {
         gateway.close();
       } catch (final Exception e) {
-        LOG.warn("Failed to gracefully shutdown gRPC gateway", e);
+        LOGGER.warn("Failed to gracefully shutdown gRPC gateway", e);
       }
     }
   }

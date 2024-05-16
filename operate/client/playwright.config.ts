@@ -60,6 +60,7 @@ const config: PlaywrightTestConfig = {
     baseURL: `http://localhost:${getPort()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 };
 
