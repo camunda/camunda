@@ -17,18 +17,10 @@ import {Link as CarbonLink} from '@carbon/react';
 
 // @ts-ignore
 import {NavItem} from 'components';
-import {
-  getOptimizeProfile,
-  isEnterpriseMode,
-  getWebappLinks,
-  getOnboardingConfig,
-  getNotificationsUrl,
-  getOptimizeDatabase,
-} from 'config';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
-import {useDocs, useErrorHandling} from 'hooks';
+import {useDocs, useErrorHandling, useUiConfig} from 'hooks';
 
 import {isEventBasedProcessEnabled, getUserToken} from './service';
 import useUserMenu from './useUserMenu';
@@ -37,58 +29,36 @@ import './Header.scss';
 
 const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
 
-export function Header({noActions}: {noActions?: boolean}) {
+export default function Header({noActions}: {noActions?: boolean}) {
   const [showEventBased, setShowEventBased] = useState(false);
-  const [enterpriseMode, setEnterpiseMode] = useState(true);
-  const [webappLinks, setwebappLinks] = useState<Record<string, string> | null>(null);
-  const location = useLocation();
-  const [organizationId, setOrganizationId] = useState<string>();
-  const [optimizeProfile, setOptimizeProfile] = useState<string>();
   const [userToken, setUserToken] = useState<string | null>(null);
-  const [notificationsUrl, setNotificationsUrl] = useState<string>();
+  const location = useLocation();
   const {mightFail} = useErrorHandling();
-  const [optimizeDatabase, setOptimizeDatabase] = useState<string>();
   const {getBaseDocsUrl} = useDocs();
   const userSideBar = useUserMenu();
+  const {
+    optimizeProfile,
+    enterpriseMode,
+    webappsLinks,
+    optimizeDatabase,
+    onboarding,
+    notificationsUrl,
+  } = useUiConfig();
 
   useEffect(() => {
     mightFail(
-      Promise.all([
-        isEventBasedProcessEnabled(),
-        getOptimizeProfile(),
-        isEnterpriseMode(),
-        getWebappLinks(),
-        getOnboardingConfig(),
-        getUserToken(),
-        getNotificationsUrl(),
-        getOptimizeDatabase(),
-      ]),
-      ([
-        enabled,
-        optimizeProfile,
-        isEnterpriseMode,
-        webappLinks,
-        onboardingConfig,
-        userToken,
-        notificationsUrl,
-        optimizeDatabase,
-      ]) => {
+      Promise.all([isEventBasedProcessEnabled(), getUserToken()]),
+      ([enabled, userToken]) => {
         setShowEventBased(enabled && optimizeProfile === 'platform');
-        setEnterpiseMode(isEnterpriseMode);
-        setwebappLinks(webappLinks);
-        setOptimizeProfile(optimizeProfile);
-        setOrganizationId(onboardingConfig.orgId);
         setUserToken(userToken);
-        setNotificationsUrl(notificationsUrl);
-        setOptimizeDatabase(optimizeDatabase);
       },
       showError
     );
-  }, [mightFail]);
+  }, [mightFail, optimizeProfile]);
 
   const props: C3NavigationProps = {
     app: createAppProps(location),
-    appBar: createAppBarProps(webappLinks),
+    appBar: createAppBarProps(webappsLinks),
     navbar: {elements: []},
   };
 
@@ -117,7 +87,7 @@ export function Header({noActions}: {noActions?: boolean}) {
       notificationsUrl={notificationsUrl}
       userToken={userToken}
       getNewUserToken={getUserToken}
-      organizationId={organizationId}
+      organizationId={onboarding.orgId}
     >
       <C3Navigation {...props} />
     </NavbarWrapper>
@@ -330,8 +300,6 @@ function createInfoSideBarProps(
     ],
   };
 }
-
-export default Header;
 
 type NavbarWrapperProps = Omit<
   ComponentProps<typeof C3UserConfigurationProvider>,

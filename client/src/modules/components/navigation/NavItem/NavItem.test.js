@@ -157,3 +157,17 @@ it('should use entity url to build breadcrumbs', async () => {
   expect(node.find({to: '/test/subUrl/tid/'})).toExist();
   expect(node.find({to: '/test/subUrl/tid/report/rid/'})).toExist();
 });
+
+it('should not invoke loadEntitiesNames if entity url is not found in the pathname', async () => {
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/test/*']}
+      location={{pathname: '/test/tid/report/rid'}}
+      breadcrumbsEntities={[{entity: 'test', entityUrl: 'test/subUrl'}]}
+    />
+  );
+
+  await node.update();
+  expect(loadEntitiesNames).not.toHaveBeenCalled();
+});

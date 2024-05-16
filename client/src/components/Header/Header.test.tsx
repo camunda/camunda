@@ -10,28 +10,22 @@ import {ShallowWrapper, shallow} from 'enzyme';
 import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-components';
 
 import {track} from 'tracking';
-import {getOptimizeDatabase, getOptimizeProfile, isEnterpriseMode} from 'config';
+import {useUiConfig} from 'hooks';
 
 import {isEventBasedProcessEnabled} from './service';
-import {Header} from './Header';
+import Header from './Header';
 
-jest.mock('config', () => ({
-  getHeader: jest.fn().mockReturnValue({
-    textColor: 'light',
-    backgroundColor: '#000',
-    logo: 'url',
-  }),
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-  isEnterpriseMode: jest.fn().mockReturnValue(true),
-  getWebappLinks: jest.fn().mockReturnValue({
+const defaultUiConfig = {
+  optimizeProfile: 'platform',
+  enterpriseMode: true,
+  webappsLinks: {
     optimize: 'http://optimize.com',
     console: 'http://console.com',
     operate: 'http://operate.com',
-  }),
-  getOnboardingConfig: jest.fn().mockReturnValue({orgId: 'orgId'}),
-  getNotificationsUrl: jest.fn().mockReturnValue('notificationsUrl'),
-  getOptimizeDatabase: jest.fn().mockReturnValue('elasticsearch'),
-}));
+  },
+  onboarding: {orgId: 'orgId'},
+  notificationsUrl: 'notificationsUrl',
+};
 
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
@@ -43,6 +37,7 @@ jest.mock('hooks', () => ({
   useUser: jest.fn(() => ({
     user: undefined,
   })),
+  useUiConfig: jest.fn(() => defaultUiConfig),
 }));
 
 jest.mock('./service', () => ({
@@ -63,6 +58,10 @@ function getNavItem(node: ShallowWrapper, key: string) {
   const navItems = node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').elements;
   return navItems.find((item) => item.key === key);
 }
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('should check if the event-based process feature is enabled', async () => {
   (isEventBasedProcessEnabled as jest.Mock).mockClear();
@@ -93,7 +92,7 @@ it('should show and hide the event-based process nav item depending on authoriza
 
 it('should hide event-based process nav item in cloud environment', async () => {
   (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(true);
-  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
+  (useUiConfig as jest.Mock).mockReturnValueOnce({...defaultUiConfig, optimizeProfile: 'cloud'});
   const node = shallow(<Header />);
 
   await runLastEffect();
@@ -103,7 +102,7 @@ it('should hide event-based process nav item in cloud environment', async () => 
 });
 
 it('should show license warning if enterpriseMode is not set', async () => {
-  (isEnterpriseMode as jest.Mock).mockReturnValueOnce(false);
+  (useUiConfig as jest.Mock).mockReturnValue({...defaultUiConfig, enterpriseMode: false});
   const node = shallow(<Header />);
 
   await runLastEffect();
@@ -166,7 +165,7 @@ it('should track app clicks from the app switcher', async () => {
 });
 
 it('should display the notifications component in cloud mode', async () => {
-  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
+  (useUiConfig as jest.Mock).mockReturnValue({...defaultUiConfig, optimizeProfile: 'cloud'});
 
   const node = shallow(<Header />);
 
@@ -187,7 +186,10 @@ it('should display the notifications component in cloud mode', async () => {
 });
 
 it('should display a warning if optimize is running in opensearch mode', async () => {
-  (getOptimizeDatabase as jest.Mock).mockReturnValueOnce('opensearch');
+  (useUiConfig as jest.Mock).mockReturnValue({
+    ...defaultUiConfig,
+    optimizeDatabase: 'opensearch',
+  });
   const node = shallow(<Header />);
 
   await runLastEffect();

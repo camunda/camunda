@@ -45,7 +45,7 @@ export default withRouter(
         breadcrumbsEntities,
       } = this.props;
 
-      if (!breadcrumbsEntities?.length) {
+      if (!breadcrumbsEntities?.length || !this.isActive()) {
         return;
       }
 
