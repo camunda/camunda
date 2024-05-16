@@ -304,7 +304,7 @@ describe('MetadataPopover', () => {
       screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'close'}));
+    await user.click(screen.getByRole('button', {name: /^close$/i}));
     expect(
       screen.queryByText(
         /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,

@@ -275,7 +275,7 @@ describe('Modification Summary Modal', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
+      expect(screen.getByRole('button', {name: /^apply$/i})).toBeEnabled(),
     );
 
     await user.click(
@@ -286,7 +286,7 @@ describe('Modification Summary Modal', () => {
       screen.getByText('No planned flow node modifications'),
     ).toBeInTheDocument();
     expect(modificationsStore.flowNodeModifications).toEqual([]);
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /^apply$/i})).toBeDisabled();
   });
 
   it('should delete cancel token modification applied on a single flow node instance key', async () => {
@@ -303,7 +303,7 @@ describe('Modification Summary Modal', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
+      expect(screen.getByRole('button', {name: /^apply$/i})).toBeEnabled(),
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
@@ -352,7 +352,7 @@ describe('Modification Summary Modal', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
+      expect(screen.getByRole('button', {name: /^apply$/i})).toBeEnabled(),
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
@@ -388,7 +388,7 @@ describe('Modification Summary Modal', () => {
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getByRole('button', {name: 'close'}));
+    await user.click(screen.getByRole('button', {name: /^close$/i}));
 
     expect(mockOnClose).toHaveBeenCalledTimes(2);
   });
@@ -540,7 +540,7 @@ describe('Modification Summary Modal', () => {
       },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(screen.getByRole('button', {name: /^apply$/i}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -578,7 +578,7 @@ describe('Modification Summary Modal', () => {
       },
     );
 
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(screen.getByRole('button', {name: /^apply$/i}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -614,7 +614,7 @@ describe('Modification Summary Modal', () => {
       <ModificationSummaryModal open setOpen={mockOnClose} />,
     );
 
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(screen.getByRole('button', {name: /^apply$/i}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -750,7 +750,7 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.queryByText(/needs to be canceled./i),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /^apply$/i})).toBeDisabled();
 
     act(() => {
       modificationsStore.cancelAllTokens('taskA');
@@ -769,6 +769,6 @@ describe('Modification Summary Modal', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/some root process - 3/i)).toBeInTheDocument();
     expect(screen.getByText(/needs to be canceled./i)).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /^apply$/i})).toBeDisabled();
   });
 });

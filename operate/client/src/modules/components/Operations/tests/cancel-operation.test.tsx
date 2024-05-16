@@ -41,10 +41,10 @@ describe('Operations - Cancel Operation', () => {
     );
 
     expect(screen.getByText(modalText)).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^apply$/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /^cancel$/i})).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+    await user.click(screen.getByRole('button', {name: /^cancel$/i}));
 
     expect(screen.queryByText(modalText)).not.toBeInTheDocument();
   });
@@ -73,13 +73,13 @@ describe('Operations - Cancel Operation', () => {
 
     expect(screen.getByText(modalText)).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Cancel'}),
+      screen.queryByRole('button', {name: /^cancel$/i}),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', {name: 'Apply'}),
+      screen.queryByRole('button', {name: /^apply$/i}),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'close'}));
+    await user.click(screen.getByRole('button', {name: /close/i}));
 
     expect(screen.queryByText(modalText)).not.toBeInTheDocument();
   });
