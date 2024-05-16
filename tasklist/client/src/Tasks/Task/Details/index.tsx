@@ -57,7 +57,8 @@ const Details: React.FC = () => {
       label: 'Show associated BPMN process',
       selected: useMatch(pages.taskDetailsProcess()) !== null,
       href: pages.taskDetailsProcess(id),
-      visible: !taskCompleted && process && process.bpmnXml !== null,
+      visible:
+        !taskCompleted && process !== undefined && process.bpmnXml !== null,
     },
   ];
 

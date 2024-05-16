@@ -25,7 +25,6 @@ type Props = {
 
 const TabListNav: React.FC<Props> = ({className, label, items}) => {
   const navigate = useNavigate();
-  console.log(JSON.stringify(styles));
   return (
     <nav className={cn(className, styles.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
