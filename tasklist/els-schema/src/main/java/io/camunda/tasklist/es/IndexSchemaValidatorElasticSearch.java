@@ -178,10 +178,12 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
    */
   @Override
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
+
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+      LOGGER.info("Validating index mappings difference for: "+ indexDescriptor.getIndexName());
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(indexMappings, indexDescriptor);
       // we don't check indices that were not yet created
