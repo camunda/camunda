@@ -52,7 +52,7 @@ function getNavLinkSearchParam(options: {
   if (filter === 'custom') {
     const customFilters = getStateLocally('customFilters')?.custom;
     const customFiltersParams =
-      filter === 'custom' && customFilters !== undefined
+      customFilters !== undefined
         ? prepareCustomFiltersParams(customFilters, userId)
         : {};
     const updatedParams =
