@@ -59,6 +59,10 @@ public class StreamProcessingComposite implements CommandWriter {
     return streams.newLogStreamWriter(logName);
   }
 
+  public LogStreamWriter getEventWriter() {
+    return streams.newLogStreamWriter(getLogName(partitionId));
+  }
+
   public StreamProcessor startTypedStreamProcessor(
       final StreamProcessorTestFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {

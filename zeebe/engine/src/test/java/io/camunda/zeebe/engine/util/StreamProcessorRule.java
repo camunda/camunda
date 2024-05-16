@@ -166,6 +166,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streams.getMockedResponseWriter();
   }
 
+  public LogStreamWriter getEventWriter() {
+    return streams.newLogStreamWriter(getLogName(startPartitionId));
+  }
+
   public ControlledActorClock getClock() {
     return clock;
   }

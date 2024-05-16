@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.timer;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
@@ -20,21 +21,29 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
+  private static final Logger LOG = LoggerFactory.getLogger(DueDateTimerChecker.class);
 
   private static final long TIMER_RESOLUTION = Duration.ofMillis(100).toMillis();
   private static final double GIVE_YIELD_FACTOR = 0.5;
   private final DueDateChecker dueDateChecker;
 
   public DueDateTimerChecker(
-      final TimerInstanceState timerInstanceState, final FeatureFlags featureFlags) {
+      final TimerInstanceState timerInstanceState,
+      final FeatureFlags featureFlags,
+      final BannedInstanceState bannedInstanceState) {
     dueDateChecker =
         new DueDateChecker(
             TIMER_RESOLUTION,
             featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(
-                timerInstanceState, ActorClock.current(), featureFlags.yieldingDueDateChecker()));
+                timerInstanceState,
+                ActorClock.current(),
+                bannedInstanceState,
+                featureFlags.yieldingDueDateChecker()));
   }
 
   public void scheduleTimer(final long dueDate) {
@@ -72,14 +81,17 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     private final ActorClock actorClock;
 
     private final TimerInstanceState timerInstanceState;
+    private final BannedInstanceState bannedInstanceState;
     private final boolean yieldControl;
 
     public TriggerTimersSideEffect(
         final TimerInstanceState timerInstanceState,
         final ActorClock actorClock,
+        final BannedInstanceState bannedInstanceState,
         final boolean yieldControl) {
       this.timerInstanceState = timerInstanceState;
       this.actorClock = actorClock;
+      this.bannedInstanceState = bannedInstanceState;
       this.yieldControl = yieldControl;
     }
 
@@ -93,9 +105,14 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
       if (yieldControl) {
         timerVisitor =
             new YieldingDecorator(
-                actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(taskResultBuilder));
+                actorClock,
+                yieldAfter,
+                new WriteTriggerTimerCommandVisitor(
+                    taskResultBuilder, bannedInstanceState, timerInstanceState));
       } else {
-        timerVisitor = new WriteTriggerTimerCommandVisitor(taskResultBuilder);
+        timerVisitor =
+            new WriteTriggerTimerCommandVisitor(
+                taskResultBuilder, bannedInstanceState, timerInstanceState);
       }
 
       return timerInstanceState.processTimersWithDueDateBefore(now, timerVisitor);
@@ -107,9 +124,16 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     private final TimerRecord timerRecord = new TimerRecord();
 
     private final TaskResultBuilder taskResultBuilder;
+    private final BannedInstanceState bannedInstanceState;
+    private final TimerInstanceState timerInstanceState;
 
-    public WriteTriggerTimerCommandVisitor(final TaskResultBuilder taskResultBuilder) {
+    public WriteTriggerTimerCommandVisitor(
+        final TaskResultBuilder taskResultBuilder,
+        final BannedInstanceState bannedInstanceState,
+        final TimerInstanceState timerInstanceState) {
       this.taskResultBuilder = taskResultBuilder;
+      this.bannedInstanceState = bannedInstanceState;
+      this.timerInstanceState = timerInstanceState;
     }
 
     @Override
@@ -123,6 +147,12 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
           .setRepetitions(timer.getRepetitions())
           .setProcessDefinitionKey(timer.getProcessDefinitionKey())
           .setTenantId(timer.getTenantId());
+
+      if (bannedInstanceState.isBanned(timerRecord)) {
+        LOG.info("The instance of the timer is banned, removing timer from the state.");
+        timerInstanceState.remove(timer);
+        return true;
+      }
 
       return taskResultBuilder.appendCommandRecord(
           timer.getKey(), TimerIntent.TRIGGER, timerRecord);

@@ -12,6 +12,8 @@ import java.util.function.Consumer;
 
 public interface TimerInstanceState {
 
+  void remove(TimerInstance timer);
+
   /**
    * Finds timers with due date before {@code timestamp}, and presents them to the {@code consumer}
    *

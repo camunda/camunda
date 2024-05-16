@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
@@ -18,8 +19,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -33,6 +36,44 @@ public class StraightThroughProcessingLoopValidationTest {
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporter = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldNotTriggerTimerEventWhenInstanceIsBanned() {
+    // given
+    final var processId = "process1";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .intermediateCatchEvent("timer", b -> b.timerWithDuration("PT3S"))
+                .endEvent("end")
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withIntents(TimerIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .isNotNull();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).banProcessInstance();
+    final var bannedInstanceState =
+        (MutableBannedInstanceState) ENGINE.getProcessingState().getBannedInstanceState();
+    bannedInstanceState.banProcessInstance(processInstanceKey);
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withIntents(TimerIntent.TRIGGER)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isFalse();
+  }
 
   @Test
   public void shouldRejectDeploymentWithSimpleUndefinedTaskLoop() {

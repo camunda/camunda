@@ -268,7 +268,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public ProcessInstanceClient processInstance() {
-    return new ProcessInstanceClient(environmentRule);
+    return new ProcessInstanceClient(environmentRule, environmentRule.getEventWriter());
   }
 
   public DecisionEvaluationClient decision() {

@@ -13,6 +13,4 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 public interface MutableTimerInstanceState extends TimerInstanceState {
 
   void store(TimerInstance timer);
-
-  void remove(TimerInstance timer);
 }

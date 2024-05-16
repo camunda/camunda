@@ -61,7 +61,8 @@ class DueDateTimerCheckerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
+      final var sut =
+          new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, null, true);
 
       // when
       sut.apply(mockTaskResultBuilder);
@@ -103,7 +104,8 @@ class DueDateTimerCheckerTest {
           new TestTimerInstanceStateThatSimulatesAnEndlessListOfDueTimers(
               mockTimer, testActorClock);
 
-      final var sut = new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, true);
+      final var sut =
+          new TriggerTimersSideEffect(testTimerInstanceState, testActorClock, null, true);
 
       // when
       sut.apply(mockTaskResultBuilder);
@@ -218,6 +220,10 @@ class DueDateTimerCheckerTest {
         final TimerInstance timer, final TestActorClock testActorClock) {
       this.timer = timer;
       this.testActorClock = testActorClock;
+    }
+
+    @Override
+    public void remove(final TimerInstance timer) { // do nothing
     }
 
     @Override

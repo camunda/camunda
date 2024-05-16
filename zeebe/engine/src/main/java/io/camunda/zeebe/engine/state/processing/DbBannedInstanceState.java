@@ -95,6 +95,15 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   }
 
   @Override
+  public boolean isBanned(final ProcessInstanceRelated value) {
+    final long processInstanceKey = value.getProcessInstanceKey();
+    if (processInstanceKey >= 0) {
+      return isBanned(processInstanceKey);
+    }
+    return false;
+  }
+
+  @Override
   public boolean tryToBanInstance(
       final TypedRecord<?> typedRecord, final Consumer<Long> onBanningInstance) {
     final Intent intent = typedRecord.getIntent();

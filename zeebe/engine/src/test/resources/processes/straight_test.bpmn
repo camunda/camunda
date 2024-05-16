@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.22.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0" camunda:diagramRelationId="eb53fcb1-5305-43cf-8c22-9b5c514460cf">
+  <bpmn:process id="GamedayProcess" name="test_process_id" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Send Email newsletter">
+      <bpmn:outgoing>Flow_0yg4sg4</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0yg4sg4" sourceRef="StartEvent_1" targetRef="Event_02vb3b2" />
+    <bpmn:intermediateCatchEvent id="Event_02vb3b2" name="16 o&#39;clock">
+      <bpmn:incoming>Flow_0yg4sg4</bpmn:incoming>
+      <bpmn:incoming>Flow_1dr09o3</bpmn:incoming>
+      <bpmn:outgoing>Flow_0bbnbt4</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1mcgxr7">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">="PT2S"</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_1537k1v" sourceRef="Gateway_1knikyw" targetRef="Activity_1r2d7uw" />
+    <bpmn:endEvent id="Event_1rb64gr">
+      <bpmn:incoming>Flow_1jfq4dj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:parallelGateway id="Gateway_1knikyw">
+      <bpmn:incoming>Flow_0bbnbt4</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dr09o3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1537k1v</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_1jfq4dj" sourceRef="Activity_1r2d7uw" targetRef="Event_1rb64gr" />
+    <bpmn:serviceTask id="Activity_1r2d7uw" name="Send Email">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="sendNewsletter" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1537k1v</bpmn:incoming>
+      <bpmn:outgoing>Flow_1jfq4dj</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1dr09o3" name="Next Day again" sourceRef="Gateway_1knikyw" targetRef="Event_02vb3b2" />
+    <bpmn:sequenceFlow id="Flow_0bbnbt4" sourceRef="Event_02vb3b2" targetRef="Gateway_1knikyw" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="GamedayProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="141" y="166" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_121xx9h_di" bpmnElement="Event_02vb3b2">
+        <dc:Bounds x="252" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="255" y="93" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1rb64gr_di" bpmnElement="Event_1rb64gr">
+        <dc:Bounds x="572" y="120" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0i1s8cx_di" bpmnElement="Gateway_1knikyw">
+        <dc:Bounds x="335" y="113" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_16cmsco_di" bpmnElement="Activity_1r2d7uw">
+        <dc:Bounds x="420" y="98" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0yg4sg4_di" bpmnElement="Flow_0yg4sg4">
+        <di:waypoint x="188" y="138" />
+        <di:waypoint x="252" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1537k1v_di" bpmnElement="Flow_1537k1v">
+        <di:waypoint x="385" y="138" />
+        <di:waypoint x="420" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jfq4dj_di" bpmnElement="Flow_1jfq4dj">
+        <di:waypoint x="520" y="138" />
+        <di:waypoint x="572" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dr09o3_di" bpmnElement="Flow_1dr09o3">
+        <di:waypoint x="360" y="163" />
+        <di:waypoint x="360" y="210" />
+        <di:waypoint x="270" y="210" />
+        <di:waypoint x="270" y="156" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="277" y="192" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bbnbt4_di" bpmnElement="Flow_0bbnbt4">
+        <di:waypoint x="288" y="138" />
+        <di:waypoint x="335" y="138" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

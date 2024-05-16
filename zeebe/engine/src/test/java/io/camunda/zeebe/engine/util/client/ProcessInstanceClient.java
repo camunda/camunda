@@ -9,8 +9,12 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -21,6 +25,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -32,6 +39,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
@@ -44,9 +52,11 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceClient {
 
   private final CommandWriter writer;
+  private final LogStreamWriter eventWriter;
 
-  public ProcessInstanceClient(final CommandWriter writer) {
+  public ProcessInstanceClient(final CommandWriter writer, final LogStreamWriter eventWriter) {
     this.writer = writer;
+    this.eventWriter = eventWriter;
   }
 
   public ProcessInstanceCreationClient ofBpmnProcessId(final String bpmnProcessId) {
@@ -54,7 +64,7 @@ public final class ProcessInstanceClient {
   }
 
   public ExistingInstanceClient withInstanceKey(final long processInstanceKey) {
-    return new ExistingInstanceClient(writer, processInstanceKey);
+    return new ExistingInstanceClient(writer, eventWriter, processInstanceKey);
   }
 
   public static class ProcessInstanceCreationClient {
@@ -216,14 +226,19 @@ public final class ProcessInstanceClient {
 
     private static final int DEFAULT_PARTITION = -1;
     private final CommandWriter writer;
+    private final LogStreamWriter eventWriter;
     private final long processInstanceKey;
 
     private String[] authorizedTenants;
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-    public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
+    public ExistingInstanceClient(
+        final CommandWriter writer,
+        final LogStreamWriter eventWriter,
+        final long processInstanceKey) {
       this.writer = writer;
+      this.eventWriter = eventWriter;
       this.processInstanceKey = processInstanceKey;
       authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
     }
@@ -276,6 +291,23 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceMigrationClient migration() {
       return new ProcessInstanceMigrationClient(writer, processInstanceKey, authorizedTenants);
+    }
+
+    public void banProcessInstance() {
+      final var errorRecord = new ErrorRecord();
+      errorRecord.initErrorRecord(new Exception("Instance was banned from outside."), -1);
+      errorRecord.setProcessInstanceKey(processInstanceKey);
+      final var recordMetadata =
+          new RecordMetadata()
+              .recordType(RecordType.EVENT)
+              .valueType(ValueType.ERROR)
+              .intent(ErrorIntent.CREATED)
+              .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
+              .rejectionType(RejectionType.NULL_VAL)
+              .rejectionReason("");
+      final var entry =
+          RecordBatchEntry.createEntry(processInstanceKey, recordMetadata, -1, errorRecord);
+      eventWriter.tryWrite(WriteContext.internal(), entry);
     }
   }
 

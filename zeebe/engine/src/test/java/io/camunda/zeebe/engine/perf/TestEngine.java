@@ -91,7 +91,8 @@ public final class TestEngine {
   }
 
   public ProcessInstanceClient createProcessInstanceClient() {
-    return new ProcessInstanceClient(streamProcessingComposite);
+    return new ProcessInstanceClient(
+        streamProcessingComposite, streamProcessingComposite.getEventWriter());
   }
 
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
