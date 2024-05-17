@@ -7,7 +7,21 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import io.camunda.tasklist.schema.IndexMapping;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import java.util.Map;
+import java.util.Set;
+
 public interface SchemaManager {
 
   public void createSchema();
+
+  IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
+
+  Map<String, IndexMapping> getIndexMappings(String s);
+
+  String getIndexPrefix();
+
+  void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 }
