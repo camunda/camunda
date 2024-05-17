@@ -34,7 +34,7 @@ public class MembershipServiceTest {
 
     membershipService.addUserToGroup(camundaUser, group);
 
-    Assertions.assertTrue(membershipService.geMembers(group).contains(camundaUser));
+    Assertions.assertTrue(membershipService.getMembers(group).contains(camundaUser));
     Assertions.assertTrue(membershipService.getUserGroups(camundaUser).contains(group));
   }
 
@@ -67,7 +67,7 @@ public class MembershipServiceTest {
 
     membershipService.removeUserFromGroup(camundaUser, group);
 
-    Assertions.assertFalse(membershipService.geMembers(group).contains(camundaUser));
+    Assertions.assertFalse(membershipService.getMembers(group).contains(camundaUser));
   }
 
   @Test
@@ -79,7 +79,7 @@ public class MembershipServiceTest {
 
     membershipService.removeUserFromGroup(camundaUser, group);
 
-    Assertions.assertFalse(membershipService.geMembers(group).contains(camundaUser));
+    Assertions.assertFalse(membershipService.getMembers(group).contains(camundaUser));
     Assertions.assertFalse(membershipService.getUserGroups(camundaUser).contains(group));
   }
 }

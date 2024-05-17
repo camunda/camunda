@@ -8,37 +8,34 @@
 package io.camunda.identity.usermanagement.service;
 
 import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GroupService {
   private final CamundaUserDetailsManager userDetailsManager;
 
-  public GroupService(final CamundaUserDetailsManager userDetailsManager) {
+  private final GroupRepository groupRepository;
+
+  public GroupService(
+      final CamundaUserDetailsManager userDetailsManager, final GroupRepository groupRepository) {
     this.userDetailsManager = userDetailsManager;
+    this.groupRepository = groupRepository;
   }
 
   public List<Group> findAllGroups() {
-    return userDetailsManager.findAllGroups().stream()
-        .map(g -> new Group(userDetailsManager.findGroupId(g), g))
-        .toList();
+    return groupRepository.findAllGroups();
   }
 
-  public Optional<Group> findGroupByName(final String group) {
-    final int groupId = userDetailsManager.findGroupId(group);
-    if (groupId < 0) {
-      return Optional.empty();
-    }
-    return Optional.of(new Group(groupId, group));
+  public Group findGroupByName(final String group) {
+    return groupRepository.findGroup(group);
   }
 
   public Group createGroup(final Group group) {
     userDetailsManager.createGroup(group.name(), Collections.emptyList());
-    final int groupId = userDetailsManager.findGroupId(group.name());
-    return new Group(groupId, group.name());
+    return groupRepository.findGroup(group.name());
   }
 
   public void deleteGroup(final Group group) {
@@ -47,7 +44,6 @@ public class GroupService {
 
   public Group updateGroup(final String name, final Group group) {
     userDetailsManager.renameGroup(name, group.name());
-    final int groupId = userDetailsManager.findGroupId(group.name());
-    return new Group(groupId, group.name());
+    return groupRepository.findGroup(group.name());
   }
 }

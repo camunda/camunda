@@ -9,6 +9,7 @@ package io.camunda.identity.usermanagement.service;
 
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.usermanagement.repository.MembershipRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -20,13 +21,17 @@ public class MembershipService {
 
   private final GroupService groupService;
 
+  private final MembershipRepository membershipRepository;
+
   public MembershipService(
       final CamundaUserDetailsManager userDetailsManager,
       final UserService userService,
-      final GroupService groupService) {
+      final GroupService groupService,
+      final MembershipRepository membershipRepository) {
     this.userDetailsManager = userDetailsManager;
     usersService = userService;
     this.groupService = groupService;
+    this.membershipRepository = membershipRepository;
   }
 
   public void addUserToGroup(final CamundaUser user, final Group group) {
@@ -37,19 +42,13 @@ public class MembershipService {
     userDetailsManager.removeUserFromGroup(user.username(), group.name());
   }
 
-  public List<CamundaUser> geMembers(final Group group) {
+  public List<CamundaUser> getMembers(final Group group) {
     return userDetailsManager.findUsersInGroup(group.name()).stream()
         .map(usersService::findUserByUsername)
         .toList();
   }
 
   public List<Group> getUserGroups(final CamundaUser user) {
-    return userDetailsManager.loadUserGroups(user.username()).stream()
-        .map(
-            g ->
-                groupService
-                    .findGroupByName(g)
-                    .orElseThrow(() -> new RuntimeException("group.notFound")))
-        .toList();
+    return membershipRepository.loadUserGroups(user.username());
   }
 }
