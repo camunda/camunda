@@ -28,31 +28,34 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <nav className={cn(className, styles.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, href, visible}) => (
-          <button
-            key={key}
-            type="button"
-            role="link"
-            aria-label={label}
-            aria-current={selected ? 'page' : undefined}
-            className={cn(
-              {[styles.hidden]: visible === false},
-              'cds--tabs__nav-item',
-              'cds--tabs__nav-link',
-              {
-                ['cds--tabs__nav-item--selected']: selected,
-              },
-            )}
-            tabIndex={selected ? 0 : -1}
-            hidden={visible === false}
-            aria-hidden={visible === false}
-            onClick={() => navigate(href)}
-          >
-            <div className="cds--tabs__nav-item-label-wrapper">
-              <span className="cds--tabs__nav-item-label">{title}</span>
-            </div>
-          </button>
-        ))}
+        {items.map(({key, title, label, selected, href, visible}) => {
+          const isHidden = visible === false;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="link"
+              aria-label={label}
+              aria-current={selected ? 'page' : undefined}
+              className={cn(
+                {[styles.hidden]: isHidden},
+                'cds--tabs__nav-item',
+                'cds--tabs__nav-link',
+                {
+                  ['cds--tabs__nav-item--selected']: selected,
+                },
+              )}
+              tabIndex={selected ? 0 : -1}
+              hidden={isHidden}
+              aria-hidden={isHidden}
+              onClick={() => navigate(href)}
+            >
+              <div className="cds--tabs__nav-item-label-wrapper">
+                <span className="cds--tabs__nav-item-label">{title}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

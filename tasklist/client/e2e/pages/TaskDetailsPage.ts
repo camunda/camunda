@@ -72,9 +72,12 @@ class TaskDetailsPage {
     this.taskCompletionNotification = page.getByText('Task completed');
   }
 
-  async goto(id: string, subpath?: string) {
-    const path = subpath ? `/${id}/${subpath}` : `/${id}`;
-    await this.page.goto(path, {waitUntil: 'networkidle'});
+  async gotoTaskView(id: string) {
+    await this.page.goto(`/${id}`, {waitUntil: 'networkidle'});
+  }
+
+  async gotoProcessView(id: string) {
+    await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
   }
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {

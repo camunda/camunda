@@ -25,17 +25,17 @@ const ProcessView: React.FC = () => {
   const {taskDefinitionId} = task;
 
   return (
-    <div className={styles.container}>
+    <Layer className={styles.container}>
       <div className={styles.header}>
         <span className={styles.processName}>{name}</span>
         <Tag className={styles.version}>Version: {version}</Tag>
       </div>
       {bpmnXml !== null ? (
-        <Layer level={1} className={styles.diagramFrame}>
+        <Layer className={styles.diagramFrame}>
           <BPMNDiagram xml={bpmnXml} highlightActivity={[taskDefinitionId]} />
         </Layer>
       ) : null}
-    </div>
+    </Layer>
   );
 };
 

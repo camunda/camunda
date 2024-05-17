@@ -710,7 +710,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -756,7 +756,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
 
@@ -807,7 +807,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -851,7 +851,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -899,7 +899,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -944,7 +944,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -988,7 +988,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskView(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -1027,7 +1027,7 @@ test.describe('tasks page', () => {
       mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK_WITH_TENANT.id);
+    await taskDetailsPage.gotoTaskView(NON_FORM_TASK_WITH_TENANT.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -1079,7 +1079,7 @@ test.describe('tasks page', () => {
   test('process view', async ({page, taskDetailsPage}) => {
     await page.route(/^.*\/v1.*$/i, mockResponses([FORM_TASK], FORM_TASK));
 
-    await taskDetailsPage.goto(FORM_TASK.id, 'process');
+    await taskDetailsPage.gotoProcessView(FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
