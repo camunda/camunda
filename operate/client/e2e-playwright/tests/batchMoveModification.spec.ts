@@ -41,7 +41,12 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Batch Modification', () => {
-  test('Move Operation', async ({processesPage, commonPage, page}) => {
+  test('Move Operation @roundtrip', async ({
+    processesPage,
+    commonPage,
+    page,
+  }) => {
+    test.slow();
     const processInstanceKeys = initialData.processInstances
       .map((instance) => instance.processInstanceKey)
       .join(',');

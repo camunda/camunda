@@ -92,8 +92,11 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance', () => {
-  test('Resolve an incident', async ({page, processInstancePage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 3 * 15000); // 15 seconds for each applied operation in this test
+  test('Resolve an incident @roundtrip', async ({
+    page,
+    processInstancePage,
+  }) => {
+    test.slow();
 
     await processInstancePage.navigateToProcessInstance({
       id: initialData.instanceWithIncidentToResolve.processInstanceKey,
@@ -199,8 +202,8 @@ test.describe('Process Instance', () => {
     ).toBeVisible();
   });
 
-  test('Cancel an instance', async ({page, processInstancePage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
+  test('Cancel an instance @roundtrip', async ({page, processInstancePage}) => {
+    test.slow();
 
     const instanceId =
       initialData.instanceWithIncidentToCancel.processInstanceKey;
