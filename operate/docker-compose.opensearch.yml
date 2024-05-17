@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.13.0
+    image: opensearchproject/opensearch:2.14.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -22,7 +22,7 @@ services:
         hard: 65536
     ports:
       - "9200:9200"
-      - "9600:9600" # required for Performance Analyzer
+      - "9601:9600" # required for Performance Analyzer
     volumes:
       - ./os-snapshots:/usr/local/os-snapshots
   zeebe-opensearch:

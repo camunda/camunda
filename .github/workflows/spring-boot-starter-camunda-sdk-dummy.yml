@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - 'zeebe/client/java/**'
       - 'spring-boot-starter-camunda-sdk/**'
+      - '.github/workflows/spring-boot-starter-camunda-sdk-ci.yml'
 
 jobs:
   test-summary:

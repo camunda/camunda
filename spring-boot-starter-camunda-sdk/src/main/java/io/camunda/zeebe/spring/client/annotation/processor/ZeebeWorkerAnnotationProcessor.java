@@ -120,7 +120,8 @@ public class ZeebeWorkerAnnotationProcessor extends AbstractZeebeAnnotationProce
               Arrays.asList(annotation.tenantIds()),
               annotation.fetchAllVariables(),
               annotation.streamEnabled(),
-              Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS)));
+              Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
+              annotation.maxRetries()));
     }
     return Optional.empty();
   }

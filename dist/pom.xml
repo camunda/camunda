@@ -115,6 +115,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -138,6 +143,16 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-importer</artifactId>
     </dependency>
 
     <dependency>
@@ -277,6 +292,12 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -446,11 +467,11 @@
           <programs>
             <program>
               <id>broker</id>
-              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
+              <mainClass>io.camunda.application.StandaloneBroker</mainClass>
             </program>
             <program>
               <id>gateway</id>
-              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
+              <mainClass>io.camunda.application.StandaloneGateway</mainClass>
             </program>
             <program>
               <id>restore</id>
@@ -458,7 +479,7 @@
             </program>
             <program>
               <id>operate</id>
-              <mainClass>io.camunda.operate.StandaloneOperate</mainClass>
+              <mainClass>io.camunda.application.StandaloneOperate</mainClass>
             </program>
             <program>
               <id>migrate</id>
@@ -471,6 +492,10 @@
             <program>
               <id>tasklist-migrate</id>
               <mainClass>io.camunda.tasklist.schema.migration.SchemaMigration</mainClass>
+            </program>
+            <program>
+              <id>camunda</id>
+              <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
@@ -558,6 +583,9 @@
 
             <dependency>io.camunda:operate-webapp</dependency>
             <dependency>io.camunda:operate-data-generator</dependency>
+            <dependency>io.camunda:operate-archiver</dependency>
+            <dependency>io.camunda:operate-importer</dependency>
+
             <dependency>io.camunda:tasklist-webapp</dependency>
 
             <!-- Used to parse PKCS1 certificates -->

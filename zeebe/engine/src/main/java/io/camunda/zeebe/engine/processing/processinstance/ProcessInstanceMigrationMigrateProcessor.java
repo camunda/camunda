@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditionChecker.*;
+import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
 import io.camunda.zeebe.engine.Loggers;
@@ -104,7 +104,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     requireAuthorizedTenant(
         command.getAuthorizations(), processInstance.getValue().getTenantId(), processInstanceKey);
-    requireNullParent(processInstance.getValue().getParentProcessInstanceKey(), processInstanceKey);
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =
@@ -373,7 +372,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final boolean existSubscriptionForMessageName =
         processMessageSubscriptionState.existSubscriptionForElementInstance(
             elementInstance.getKey(), messageName, tenantId);
-    ProcessInstanceMigrationPreconditionChecker.requireNoSubscriptionForMessage(
+    ProcessInstanceMigrationPreconditions.requireNoSubscriptionForMessage(
         existSubscriptionForMessageName, elementInstance, messageName, targetCatchEventId);
   }
 

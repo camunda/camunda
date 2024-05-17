@@ -48,6 +48,23 @@ class FormJSDetailsPage {
     await this.dateInput.press('Enter');
   }
 
+  async forEachDynamicListItem(
+    locator: Locator,
+    fn: (value: Locator, index: number, array: Locator[]) => Promise<void>,
+  ) {
+    const elements = await locator.all();
+
+    for (const element of elements) {
+      await fn(element, elements.indexOf(element), elements);
+    }
+  }
+  async fillDateField(label: string, value: string) {
+    const field = this.page.getByLabel(label);
+    await field.click();
+    await field.fill(value);
+    await field.press('Enter');
+  }
+
   async enterTime(time: string) {
     await this.timeInput.click();
     await this.page.getByText(time).click();
@@ -63,6 +80,29 @@ class FormJSDetailsPage {
     for (const value of values) {
       await this.page.getByText(value, {exact: true}).click();
     }
+  }
+
+  async selectDropdownOption(label: string, value: string) {
+    await this.page.getByText(label).click();
+    await this.page.getByText(value).click();
+  }
+
+  async mapDynamicListItems<MappedValue>(
+    locator: Locator,
+    fn: (
+      value: Locator,
+      index: number,
+      array: Locator[],
+    ) => Promise<MappedValue>,
+  ): Promise<Array<MappedValue>> {
+    const elements = await locator.all();
+    const mapped: Array<MappedValue> = [];
+
+    for (const element of elements) {
+      mapped.push(await fn(element, elements.indexOf(element), elements));
+    }
+
+    return mapped;
   }
 }
 export {FormJSDetailsPage};

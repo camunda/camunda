@@ -8,20 +8,20 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.application.Profile;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
-import io.camunda.zeebe.gateway.StandaloneGateway;
+import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
-/** Encapsulates an instance of the {@link StandaloneGateway} Spring application. */
+/** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final GatewayProperties config;
 
   public TestStandaloneGateway() {
-    super(StandaloneGateway.class);
+    super(GatewayModuleConfiguration.class);
     config = new GatewayProperties();
 
     config.getNetwork().setHost("0.0.0.0");
