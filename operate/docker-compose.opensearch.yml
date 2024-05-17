@@ -1,8 +1,16 @@
 version: "2.4"
 services:
+  opensearch-init:
+    image: bash
+    privileged: true
+    user: root
+    command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
+
   opensearch:
     image: opensearchproject/opensearch:2.14.0
     container_name: opensearch
+    depends_on:
+      - opensearch-init
     environment:
       - cluster.name=opensearch-cluster
       - node.name=opensearch
