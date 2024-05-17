@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.tasklist.Application;
+import io.camunda.application.StandaloneTasklist;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
@@ -124,7 +124,7 @@ public class HealthCheckIT {
 
     @Override
     public void initialize(final ConfigurableApplicationContext applicationContext) {
-      final Map<String, Object> map = Application.getManagementProperties();
+      final Map<String, Object> map = StandaloneTasklist.getManagementProperties();
       final List<String> properties = new ArrayList<>();
       map.forEach(
           (key, value) -> {

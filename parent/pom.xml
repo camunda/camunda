@@ -268,6 +268,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-zeebe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
