@@ -12,13 +12,13 @@ import java.util.Objects;
 
 public abstract class AbstractStep implements Step {
 
-  private final String content = null;
-  private final String description = null;
+  private String content = null;
+  private String description = null;
   private OffsetDateTime createdDate;
   private OffsetDateTime appliedDate;
-  private final String indexName = null;
+  private String indexName = null;
   private boolean isApplied = false;
-  private final String version = null;
+  private String version = null;
   private final Integer order = 0;
 
   @Override
@@ -80,6 +80,22 @@ public abstract class AbstractStep implements Step {
   @Override
   public String getDescription() {
     return description;
+  }
+
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public void setContent(final String content) {
+    this.content = content;
+  }
+
+  public void setIndexName(final String indexName) {
+    this.indexName = indexName;
+  }
+
+  public void setVersion(final String version) {
+    this.version = version;
   }
 
   @Override
