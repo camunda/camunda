@@ -83,5 +83,6 @@ jobs:
             --org camunda --repo zeebe)
           fi
 
-          echo "changelog=$changelog" >> $GITHUB_OUTPUT
-          echo "$changelog" >> $GITHUB_STEP_SUMMARY
+          echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
+          echo $changelog >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
