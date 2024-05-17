@@ -7,13 +7,16 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.tasklist.util.CollectionUtil;
 import java.io.IOException;
@@ -62,6 +65,7 @@ import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -94,6 +98,8 @@ public class RetryElasticsearchClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
 
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private ObjectMapper objectMapper;
 
   @Autowired private ElasticsearchInternalTask elasticsearchTask;
 
@@ -247,11 +253,11 @@ public class RetryElasticsearchClient {
             if (createIndexRequest.aliases() != null
                 && !createIndexRequest.aliases().isEmpty()
                 && !aliasExist(
-                    createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
+                createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
               final IndicesAliasesRequest request = new IndicesAliasesRequest();
               final IndicesAliasesRequest.AliasActions aliasAction =
                   new IndicesAliasesRequest.AliasActions(
-                          IndicesAliasesRequest.AliasActions.Type.ADD)
+                      IndicesAliasesRequest.AliasActions.Type.ADD)
                       .index(createIndexRequest.index())
                       .alias(createIndexRequest.aliases().iterator().next().name())
                       .writeIndex(false);
@@ -359,10 +365,15 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(
+      final PutComposableIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
           }
           return true;
@@ -768,9 +779,9 @@ public class RetryElasticsearchClient {
         () -> {
           if (!templatesExist(request.name())
               || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
-                  .equals(
-                      String.valueOf(
-                          tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+              .equals(
+                  String.valueOf(
+                      tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
             return esClient
                 .cluster()
                 .putComponentTemplate(request, requestOptions)
@@ -797,6 +808,56 @@ public class RetryElasticsearchClient {
         String.format("Get LifeCyclePolicy %s ", getLifecyclePolicyRequest.getPolicyNames()),
         () ->
             esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
+        null);
+  }
+
+  public Map<String, IndexMapping> getIndexMappings(final String namePattern) {
+    return executeWithRetries(
+        "Get indices mappings for " + namePattern,
+        () -> {
+          try {
+            final Map<String, IndexMapping> mappingsMap = new HashMap<>();
+            final Map<String, MappingMetadata> mappings =
+                esClient
+                    .indices()
+                    .getMapping(
+                        new GetMappingsRequest().indices(namePattern), RequestOptions.DEFAULT)
+                    .mappings();
+            for (final Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
+              final Map<String, Object> mappingMetadata =
+                  objectMapper.readValue(
+                      entry.getValue().source().string(),
+                      new TypeReference<HashMap<String, Object>>() {});
+              final Map<String, Object> properties =
+                  (Map<String, Object>) mappingMetadata.get("properties");
+              final Map<String, Object> metaProperties =
+                  (Map<String, Object>) mappingMetadata.get("_meta");
+              final String dynamic = (String) mappingMetadata.get("dynamic");
+              mappingsMap.put(
+                  entry.getKey(),
+                  new IndexMapping()
+                      .setIndexName(entry.getKey())
+                      .setDynamic(dynamic)
+                      .setProperties(
+                          properties.entrySet().stream()
+                              .map(p -> createIndexMappingProperty(p))
+                              .collect(Collectors.toSet()))
+                      .setMetaProperties(metaProperties));
+            }
+            return mappingsMap;
+          } catch (final ElasticsearchException e) {
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Map.of();
+            }
+            throw e;
+          }
+        });
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        String.format("Put Mapping %s ", request.indices()),
+        () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
   }
 }
