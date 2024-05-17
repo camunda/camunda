@@ -65,11 +65,13 @@ jobs:
 
   run-opensearch-tests:
     name: Operate Backend Opensearch ITs
-    uses: ./.github/workflows/operate-ci-opensearch-temp.yml
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -Dfailsafe.rerunFailingTestsCount=2
       test-type: Opensearch ITs
+      runner-type: gcp-core-32-default
 
   test-summary:
     # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
