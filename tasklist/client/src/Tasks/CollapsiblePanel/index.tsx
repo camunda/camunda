@@ -90,7 +90,6 @@ const CollapsiblePanel: React.FC = () => {
     return (
       <nav
         id="task-nav-bar"
-        aria-labelledby="filters-title"
         className={cn(styles.base, styles.collapsedContainer)}
         aria-label="Filter controls"
         aria-owns="task-nav-bar-controls"
