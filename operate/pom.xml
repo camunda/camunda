@@ -163,8 +163,8 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/schema/*IT.java</includeITNames>
-        <excludeITNames>**/SchemaManagerIT.java, **/ImportStoreIT.java</excludeITNames>
+        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
