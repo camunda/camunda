@@ -8,29 +8,49 @@
 package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestUtil;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
+  private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test.json";
+  private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
+  @Autowired private List<TemplateDescriptor> templateDescriptors;
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;
   @Autowired private SchemaManager schemaManager;
+
+  private final String originalSchemaContent = readSchemaContent();
+
+  private final IndexDescriptor testIndex = createIndexDescriptor();
+
+  public ElasticSearchSchemaManagementIT() throws Exception {}
 
   @BeforeAll
   public static void beforeClass() {
@@ -45,17 +65,17 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
     tasklistProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
     schemaManager.createSchema();
 
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
-              noSqlHelper.indexHasAlias(
-                  indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
+          noSqlHelper.indexHasAlias(
+              indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
           .isTrue();
       assertThat(
-              retryElasticsearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+          retryElasticsearchClient
+              .getIndexSettingsFor(
+                  indexDescriptor.getFullQualifiedName(),
+                  RetryElasticsearchClient.NUMBERS_OF_REPLICA)
+              .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(initialNumberOfReplicas));
     }
 
@@ -65,18 +85,137 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     schemaManager.createSchema();
 
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
-              noSqlHelper.indexHasAlias(
-                  indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
+          noSqlHelper.indexHasAlias(
+              indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
           .isTrue();
       assertThat(
-              retryElasticsearchClient
-                  .getIndexSettingsFor(
-                      indexDescriptor.getFullQualifiedName(),
-                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+          retryElasticsearchClient
+              .getIndexSettingsFor(
+                  indexDescriptor.getFullQualifiedName(),
+                  RetryElasticsearchClient.NUMBERS_OF_REPLICA)
+              .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
     }
+  }
+
+  @Test
+  public void shouldGetIndexMappings() throws IOException {
+    schemaManager.createSchema();
+
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+      final Map<String, IndexMapping> indexMappings =
+          schemaManager.getIndexMappings(indexDescriptor.getAlias());
+      assertThat(indexMappings).isNotEmpty();
+    }
+  }
+
+  @Test
+  public void shouldGetExpectedIndexFields() throws IOException {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+      final IndexMapping indexMapping = schemaManager.getExpectedIndexFields(indexDescriptor);
+      assertThat(indexMapping).isNotNull();
+      assertThat(indexMapping.getIndexName()).isEqualTo(indexDescriptor.getIndexName());
+      assertThat(indexMapping.getProperties()).isNotEmpty();
+    }
+  }
+
+  @Test
+  public void shouldAddFieldToIndex() throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(testIndex));
+    schemaManager.createIndex(testIndex);
+
+    // Update file with new field
+    final var originalSchemaContent = readSchemaContent();
+
+    updateSchemaContent(
+        originalSchemaContent.replace(
+            "\"properties\": {", "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"));
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        indexSchemaValidator.validateIndexMappings();
+
+    // when
+    schemaManager.updateSchema(indexDiff);
+
+    // then
+    final String indexName = testIndex.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
+
+    restoreOriginalSchemaContent();
+
+    assertThat(indexMappings)
+        .containsExactly(
+            entry(
+                indexName,
+                new IndexMapping()
+                    .setIndexName(indexName)
+                    .setDynamic("strict")
+                    .setProperties(
+                        Set.of(
+                            new IndexMappingProperty()
+                                .setName("prop0")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop1")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop2")
+                                .setTypeDefinition(Map.of("type", "keyword"))))));
+  }
+
+  private IndexDescriptor createIndexDescriptor() {
+    return new IndexDescriptor() {
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME;
+      }
+
+      @Override
+      public String getFullQualifiedName() {
+        return getFullIndexName();
+      }
+
+      @Override
+      public String getSchemaClasspathFilename() {
+        return ORIGINAL_SCHEMA_PATH;
+      }
+
+      @Override
+      public String getAllVersionsIndexNameRegexPattern() {
+        return getFullIndexName() + "*";
+      }
+    };
+  }
+
+  private String getFullIndexName() {
+    return schemaManager.getIndexPrefix() + "-" + INDEX_NAME;
+  }
+
+  private void updateSchemaContent(final String content) throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        content.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private String readSchemaContent() throws Exception {
+    return new String(
+        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
+  }
+
+  private void restoreOriginalSchemaContent() throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        originalSchemaContent.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private void replaceIndexDescriptorsInValidator(final Set<IndexDescriptor> newIndexDescriptors)
+      throws NoSuchFieldException, IllegalAccessException {
+    final Field field = indexSchemaValidator.getClass().getDeclaredField("indexDescriptors");
+    field.setAccessible(true);
+    field.set(indexSchemaValidator, newIndexDescriptors);
   }
 }

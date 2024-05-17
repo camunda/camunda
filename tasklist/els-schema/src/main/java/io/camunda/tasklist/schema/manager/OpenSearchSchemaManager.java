@@ -97,6 +97,27 @@ public class OpenSearchSchemaManager implements SchemaManager {
     //TODO: Implement this method
   }
 
+  @Override
+  public void createIndex(final IndexDescriptor indexDescriptor) {
+    final String indexFilename =
+        String.format("/schema/os/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
+    final InputStream indexDescription =
+        OpenSearchSchemaManager.class.getResourceAsStream(indexFilename);
+
+    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+    final JsonParser parser = mapper.jsonProvider().createParser(indexDescription);
+
+    final CreateIndexRequest request =
+        new CreateIndexRequest.Builder()
+            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+            .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
+            .settings(getIndexSettings())
+            .index(indexDescriptor.getFullQualifiedName())
+            .build();
+
+    createIndex(request, indexDescriptor.getFullQualifiedName());
+  }
+
   public void createIndexLifeCycles() {
     LOGGER.info("Creating ISM Policy for deleting archived indices");
 
@@ -244,26 +265,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
     } else {
       LOGGER.debug("Index [{}] was NOT created", indexName);
     }
-  }
-
-  private void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename =
-        String.format("/schema/os/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
-    final InputStream indexDescription =
-        OpenSearchSchemaManager.class.getResourceAsStream(indexFilename);
-
-    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-    final JsonParser parser = mapper.jsonProvider().createParser(indexDescription);
-
-    final CreateIndexRequest request =
-        new CreateIndexRequest.Builder()
-            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
-            .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
-            .settings(getIndexSettings())
-            .index(indexDescriptor.getFullQualifiedName())
-            .build();
-
-    createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
   private void createIndices() {
