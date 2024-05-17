@@ -22,7 +22,7 @@
   &.twoColumns {
     grid-template-columns:
       layout.to-rem(312px)
-      1fr !important;
+      1fr;
   }
 }
 
