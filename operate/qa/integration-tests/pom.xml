@@ -401,11 +401,34 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.5</version>
         <configuration>
+          <skipITs>false</skipITs>
+          <includes>
+            <include>${includeITNames}</include>
+          </includes>
+          <excludes>
+            <exclude>${excludeITNames}</exclude>
+          </excludes>
+          <forkCount>1</forkCount>
+          <reuseForks>true</reuseForks>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
+            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
+          <environmentVariables>
+            <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
+          </environmentVariables>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -444,7 +467,6 @@
       </activation>
       <build>
         <plugins>
-
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
@@ -496,10 +518,10 @@
       <id>docker-opensearch</id>
       <properties>
         <property>skipDockerProfile</property>
+        <itDatabase>opensearch</itDatabase>
       </properties>
       <build>
         <plugins>
-
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
@@ -538,15 +560,6 @@
                 </configuration>
               </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <environmentVariables>
-                <CAMUNDA_OPERATE_DATABASE>opensearch</CAMUNDA_OPERATE_DATABASE>
-              </environmentVariables>
-            </configuration>
           </plugin>
         </plugins>
       </build>

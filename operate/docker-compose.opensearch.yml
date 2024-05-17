@@ -22,7 +22,7 @@ services:
         hard: 65536
     ports:
       - "9200:9200"
-      - "9600:9600" # required for Performance Analyzer
+      - "9601:9600" # required for Performance Analyzer
     volumes:
       - ./os-snapshots:/usr/local/os-snapshots
   zeebe-opensearch:

@@ -22,7 +22,7 @@ services:
         hard: 65536
     ports:
       - "9200:9200"
-      - "9600:9600" # re
+      - "9601:9600" # re
   postgres:
     container_name: postgres
     image: postgres:16.3-alpine

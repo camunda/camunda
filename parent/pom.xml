@@ -77,7 +77,7 @@
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
-    <version.protobuf-common>2.39.0</version.protobuf-common>
+    <version.protobuf-common>2.39.1</version.protobuf-common>
     <version.micrometer>1.13.0</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
@@ -122,7 +122,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.39.0</version.google-sdk>
     <version.azure-sdk>1.2.23</version.azure-sdk>
-    <version.awssdk>2.25.53</version.awssdk>
+    <version.awssdk>2.25.54</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.723</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.724</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
