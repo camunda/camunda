@@ -81,3 +81,4 @@ jobs:
           fi
 
           echo "changelog=$changelog" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_STEP_SUMMARY
