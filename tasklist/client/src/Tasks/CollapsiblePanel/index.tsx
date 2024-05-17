@@ -88,35 +88,58 @@ const CollapsiblePanel: React.FC = () => {
 
   if (isCollapsed) {
     return (
-      <div className={cn(styles.base, styles.collapsedContainer)}>
-        <Button
-          hasIconOnly
-          iconDescription="Expand to show filters"
-          tooltipPosition="right"
-          onClick={() => {
-            setIsCollapsed(false);
-          }}
-          renderIcon={SidePanelOpen}
-          size="md"
-          kind="ghost"
-        />
-        <Button
-          hasIconOnly
-          iconDescription="Custom filter"
-          tooltipPosition="right"
-          onClick={() => {}}
-          renderIcon={Filter}
-          size="md"
-          kind="ghost"
-        />
-      </div>
+      <nav
+        id="task-nav-bar"
+        aria-labelledby="filters-title"
+        className={cn(styles.base, styles.collapsedContainer)}
+        aria-label="Filter controls"
+        aria-owns="task-nav-bar-controls"
+      >
+        <ul
+          id="task-nav-bar-controls"
+          role="group"
+          aria-labelledby="task-nav-bar"
+        >
+          <li>
+            <Button
+              hasIconOnly
+              iconDescription="Expand to show filters"
+              tooltipPosition="right"
+              onClick={() => {
+                setIsCollapsed(false);
+              }}
+              renderIcon={SidePanelOpen}
+              size="md"
+              kind="ghost"
+              aria-controls="task-nav-bar"
+              aria-expanded="false"
+            />
+          </li>
+          <li>
+            <Button
+              hasIconOnly
+              iconDescription="Custom filter"
+              tooltipPosition="right"
+              onClick={() => {}}
+              renderIcon={Filter}
+              size="md"
+              kind="ghost"
+            />
+          </li>
+        </ul>
+      </nav>
     );
   }
 
   return (
-    <div className={cn(styles.base, styles.expandedContainer)}>
+    <nav
+      aria-labelledby="filters-title"
+      className={cn(styles.base, styles.expandedContainer)}
+      id="task-nav-bar"
+      aria-owns="filters-menu"
+    >
       <span className={cn(styles.header, sharedStyles.panelHeader)}>
-        <h1>Filters</h1>
+        <h1 id="filters-title">Filters</h1>
         <Button
           hasIconOnly
           iconDescription="Collapse "
@@ -127,71 +150,85 @@ const CollapsiblePanel: React.FC = () => {
           renderIcon={SidePanelClose}
           size="md"
           kind="ghost"
+          aria-controls="task-nav-bar"
+          aria-expanded="true"
         />
       </span>
-      <ControlledNavLink
-        to={{
-          search: getNavLinkSearchParam({
-            currentParams: searchParams,
-            filter: 'all-open',
-            userId,
-          }),
-        }}
-        isActive={filter === 'all-open'}
-      >
-        All open tasks
-      </ControlledNavLink>
-      <ControlledNavLink
-        to={{
-          search: getNavLinkSearchParam({
-            currentParams: searchParams,
-            filter: 'assigned-to-me',
-            userId,
-          }),
-        }}
-        isActive={filter === 'assigned-to-me'}
-      >
-        Assigned to me
-      </ControlledNavLink>
-      <ControlledNavLink
-        to={{
-          search: getNavLinkSearchParam({
-            currentParams: searchParams,
-            filter: 'unassigned',
-            userId,
-          }),
-        }}
-        isActive={filter === 'unassigned'}
-      >
-        Unassigned
-      </ControlledNavLink>
-      <ControlledNavLink
-        to={{
-          search: getNavLinkSearchParam({
-            currentParams: searchParams,
-            filter: 'completed',
-            userId,
-          }),
-        }}
-        isActive={filter === 'completed'}
-      >
-        Completed
-      </ControlledNavLink>
-      {customFilters === undefined ? null : (
-        <ControlledNavLink
-          to={{
-            search: getNavLinkSearchParam({
-              currentParams: searchParams,
-              filter: 'custom',
-              userId,
-            }),
-          }}
-          isActive={filter === 'custom'}
-        >
-          Custom
-        </ControlledNavLink>
-      )}
-    </div>
+      <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
+        <li>
+          <ControlledNavLink
+            to={{
+              search: getNavLinkSearchParam({
+                currentParams: searchParams,
+                filter: 'all-open',
+                userId,
+              }),
+            }}
+            isActive={filter === 'all-open'}
+          >
+            All open tasks
+          </ControlledNavLink>
+        </li>
+        <li>
+          <ControlledNavLink
+            to={{
+              search: getNavLinkSearchParam({
+                currentParams: searchParams,
+                filter: 'assigned-to-me',
+                userId,
+              }),
+            }}
+            isActive={filter === 'assigned-to-me'}
+          >
+            Assigned to me
+          </ControlledNavLink>
+        </li>
+        <li>
+          <ControlledNavLink
+            to={{
+              search: getNavLinkSearchParam({
+                currentParams: searchParams,
+                filter: 'unassigned',
+                userId,
+              }),
+            }}
+            isActive={filter === 'unassigned'}
+          >
+            Unassigned
+          </ControlledNavLink>
+        </li>
+        <li>
+          <ControlledNavLink
+            to={{
+              search: getNavLinkSearchParam({
+                currentParams: searchParams,
+                filter: 'completed',
+                userId,
+              }),
+            }}
+            isActive={filter === 'completed'}
+          >
+            Completed
+          </ControlledNavLink>
+        </li>
+        {customFilters === undefined ? null : (
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'custom',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'custom'}
+            >
+              Custom
+            </ControlledNavLink>
+          </li>
+        )}
+      </ul>
+    </nav>
   );
 };
 
