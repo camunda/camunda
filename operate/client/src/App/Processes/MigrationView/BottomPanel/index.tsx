@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {Select, SelectItem} from '@carbon/react';
+import {SelectItem, Stack} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
@@ -17,9 +17,12 @@ import {autoMappingStore} from 'modules/stores/autoMapping';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {
   BottomSection,
+  CheckmarkFilled,
   DataTable,
   ErrorMessageContainer,
   LeftColumn,
+  IconContainer,
+  Select,
 } from './styled';
 
 const BottomPanel: React.FC = observer(() => {
@@ -98,29 +101,40 @@ const BottomPanel: React.FC = observer(() => {
                     flowNodeMapping[sourceFlowNode.id] ?? '';
 
                   return (
-                    <Select
-                      disabled={
-                        processInstanceMigrationStore.state.currentStep ===
-                          'summary' || selectableFlowNodes.length === 0
-                      }
-                      size="sm"
-                      hideLabel
-                      labelText={`Target flow node for ${sourceFlowNode.name}`}
-                      id={sourceFlowNode.id}
-                      value={targetFlowNodeId}
-                      onChange={({target}) => {
-                        processInstanceMigrationStore.updateFlowNodeMapping({
-                          sourceId: sourceFlowNode.id,
-                          targetId: target.value,
-                        });
-                      }}
-                    >
-                      {[{id: '', name: ''}, ...selectableFlowNodes].map(
-                        ({id, name}) => {
-                          return <SelectItem key={id} value={id} text={name} />;
-                        },
-                      )}
-                    </Select>
+                    <Stack orientation="horizontal" gap={4}>
+                      <Select
+                        disabled={
+                          processInstanceMigrationStore.state.currentStep ===
+                            'summary' || selectableFlowNodes.length === 0
+                        }
+                        size="sm"
+                        hideLabel
+                        labelText={`Target flow node for ${sourceFlowNode.name}`}
+                        id={sourceFlowNode.id}
+                        value={targetFlowNodeId}
+                        onChange={({target}) => {
+                          processInstanceMigrationStore.updateFlowNodeMapping({
+                            sourceId: sourceFlowNode.id,
+                            targetId: target.value,
+                          });
+                        }}
+                      >
+                        {[{id: '', name: ''}, ...selectableFlowNodes].map(
+                          ({id, name}) => {
+                            return (
+                              <SelectItem key={id} value={id} text={name} />
+                            );
+                          },
+                        )}
+                      </Select>
+                      {isAutoMappable(sourceFlowNode.id) &&
+                        // show icon only when target flow node is selected
+                        sourceFlowNode.id === targetFlowNodeId && (
+                          <IconContainer title="This flow node was automatically mapped">
+                            <CheckmarkFilled data-testid="select-icon" />
+                          </IconContainer>
+                        )}
+                    </Stack>
                   );
                 })(),
               };
