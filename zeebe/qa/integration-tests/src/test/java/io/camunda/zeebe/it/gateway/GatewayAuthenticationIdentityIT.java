@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.application.Profile;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Status;
 import io.grpc.Status.Code;

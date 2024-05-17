@@ -8,7 +8,8 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.StandaloneBroker;
+import io.camunda.application.Profile;
+import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
-/** Represents an instance of the {@link StandaloneBroker} Spring application. */
+/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
@@ -35,7 +35,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final BrokerProperties config;
 
   public TestStandaloneBroker() {
-    super(StandaloneBroker.class);
+    super(BrokerModuleConfiguration.class);
 
     config = new BrokerProperties();
 

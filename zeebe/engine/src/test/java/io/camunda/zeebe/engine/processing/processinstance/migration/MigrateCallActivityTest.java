@@ -235,4 +235,218 @@ public class MigrateCallActivityTest {
         .describedAs("Expect that both the parent and child process instance terminated")
         .contains(childProcessInstanceKey, parentProcessInstanceKey);
   }
+
+  @Test
+  public void shouldMigrateChildProcessInstance() {
+    // given
+    final String processId = helper.getBpmnProcessId() + "_source";
+    final String childProcessId = helper.getBpmnProcessId() + "_child";
+    final String targetChildProcessId = helper.getBpmnProcessId() + "_target";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(childProcessId))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(childProcessId)
+                    .startEvent("start")
+                    .userTask("A", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetChildProcessId)
+                    .startEvent("start")
+                    .userTask("B", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final var childUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .getFirst();
+    final var childProcessInstanceKey = childUserTask.getValue().getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetChildProcessId);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(childProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(childProcessInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key is changed")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(targetChildProcessId)
+        .hasElementId("B")
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(childProcessInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed for child process")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed for child process")
+        .hasBpmnProcessId(targetChildProcessId)
+        .hasElementId(targetChildProcessId)
+        .describedAs("Expect that version number did not change for child process")
+        .hasVersion(1);
+  }
+
+  @Test
+  public void shouldAllowToContinueFlowAfterMigratingChildProcessInstance() {
+    // given
+    final String processId = helper.getBpmnProcessId() + "_source";
+    final String childProcessId = helper.getBpmnProcessId() + "_child";
+    final String targetChildProcessId = helper.getBpmnProcessId() + "_target";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(childProcessId))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(childProcessId)
+                    .startEvent("start")
+                    .userTask("A", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetChildProcessId)
+                    .startEvent("start")
+                    .userTask("B", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final var childUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .getFirst();
+    final var childProcessInstanceKey = childUserTask.getValue().getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetChildProcessId);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(childProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    ENGINE.userTask().ofInstance(childProcessInstanceKey).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(childProcessInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst())
+        .describedAs("Expect that the child process instance completed")
+        .isNotNull();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst())
+        .describedAs("Expect that the parent process instance completes after migrating")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldAllowToTerminateFlowAfterMigratingChildProcessInstance() {
+    // given
+    final String parentProcessId = helper.getBpmnProcessId() + "_source";
+    final String childProcessId = helper.getBpmnProcessId() + "_child";
+    final String targetChildProcessId = helper.getBpmnProcessId() + "_target";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(parentProcessId)
+                    .startEvent("start")
+                    .callActivity("callActivity", c -> c.zeebeProcessId(childProcessId))
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(childProcessId)
+                    .startEvent("start")
+                    .userTask("A", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetChildProcessId)
+                    .startEvent("start")
+                    .userTask("B", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final long parentProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    final var childUserTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentProcessInstanceKey)
+            .withElementType(BpmnElementType.USER_TASK)
+            .withElementId("A")
+            .getFirst();
+    final var childProcessInstanceKey = childUserTask.getValue().getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetChildProcessId);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(childProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    ENGINE.processInstance().withInstanceKey(parentProcessInstanceKey).cancel();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withElementType(BpmnElementType.PROCESS)
+                .limit(2)
+                .map(Record::getValue)
+                .map(ProcessInstanceRecordValue::getProcessInstanceKey))
+        .describedAs("Expect that both the parent and child process instance terminated")
+        .contains(childProcessInstanceKey, parentProcessInstanceKey);
+  }
 }

@@ -30,7 +30,7 @@
     "react-final-form-arrays": "3.1.4",
     "react-router-dom": "6.4.2",
     "react-transition-group": "4.4.5",
-    "sass": "1.77.1",
+    "sass": "1.77.2",
     "serve": "14.2.3",
     "styled-components": "6.1.11",
     "stylis": "4.3.2"
@@ -73,7 +73,7 @@
     "@types/carbon-components-react": "7.55.10",
     "@types/carbon__elements": "11.10.3",
     "@types/jest": "29.5.12",
-    "@types/lodash": "4.17.1",
+    "@types/lodash": "4.17.4",
     "@types/mixpanel-browser": "2.49.0",
     "@types/node": "20.12.12",
     "@types/react": "18.3.2",
