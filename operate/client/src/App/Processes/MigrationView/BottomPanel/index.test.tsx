@@ -175,4 +175,45 @@ describe('MigrationView/BottomPanel', () => {
       ).not.toBeInTheDocument();
     },
   );
+
+  it('should auto-map flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+
+    render(<BottomPanel />, {wrapper: Wrapper});
+
+    const comboboxCheckPayment = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${checkPayment.name}`, 'i'),
+    });
+
+    const comboboxShippingSubProcess = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${shippingSubProcess.name}`, 'i'),
+    });
+
+    const comboboxShipArticles = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${shipArticles.name}`, 'i'),
+    });
+
+    const comboboxRequestForPayment = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
+    });
+
+    screen.getByRole('button', {name: /fetch target process/i}).click();
+
+    await waitFor(() => {
+      expect(comboboxCheckPayment).toBeEnabled();
+    });
+
+    // Expect auto-mapping (same id, same bpmn type)
+    expect(comboboxCheckPayment).toHaveValue(checkPayment.id);
+
+    // Expect auto-mapping (same id, same bpmn type)
+    expect(comboboxShipArticles).toHaveValue(shipArticles.id);
+
+    // Expect no auto-mapping (flow node does not exist in target)
+    expect(comboboxShippingSubProcess).toHaveValue('');
+    expect(comboboxShippingSubProcess).toBeDisabled();
+
+    // Expect no auto-mapping (different bpmn type)
+    expect(comboboxRequestForPayment).toHaveValue('');
+  });
 });
