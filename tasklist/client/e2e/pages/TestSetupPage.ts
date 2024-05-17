@@ -16,7 +16,7 @@ class TestSetupPage {
   }
 
   async goToLoginPage() {
-    await this.page.goto('/login');
+    await this.page.goto('./login');
   }
 }
 export {TestSetupPage};

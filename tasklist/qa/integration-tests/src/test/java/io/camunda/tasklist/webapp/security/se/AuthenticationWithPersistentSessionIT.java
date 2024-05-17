@@ -21,6 +21,7 @@ import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,14 +44,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {TestApplication.class, WebappsModuleConfiguration.class},
     properties = {
       TasklistProperties.PREFIX + ".persistentSessionsEnabled = true",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers",
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
+      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID,
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({AUTH_PROFILE, "test"})
@@ -125,7 +126,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(
-            "/does-not-exist",
+            "/tasklist/does-not-exist",
             HttpMethod.GET,
             prepareRequestWithCookies(loginResponse.getHeaders()),
             String.class);

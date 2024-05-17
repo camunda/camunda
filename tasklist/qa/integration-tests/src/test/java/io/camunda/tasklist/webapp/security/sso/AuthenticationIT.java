@@ -197,7 +197,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   private void assertThatClientConfigContains(final String text) {
     final ResponseEntity<String> clientConfigContent =
-        testRestTemplate.getForEntity("/client-config.js", String.class);
+        testRestTemplate.getForEntity("/tasklist/client-config.js", String.class);
     assertThat(clientConfigContent.getBody()).contains(text);
   }
 

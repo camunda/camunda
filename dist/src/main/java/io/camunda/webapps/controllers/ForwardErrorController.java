@@ -8,13 +8,11 @@
 package io.camunda.webapps.controllers;
 
 import static io.camunda.application.Profile.*;
-import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
-import static io.camunda.operate.webapp.security.OperateURIs.REQUESTED_URL;
 
-import io.camunda.operate.util.ConversionUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +27,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class ForwardErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
+
+  private static final String LOGIN_RESOURCE = "/api/login";
+
+  private static final String REQUESTED_URL = "requestedUrl";
 
   @Autowired private Environment environment;
 
@@ -56,7 +58,7 @@ public class ForwardErrorController {
     final String requestedUri =
         request.getRequestURI().substring(request.getContextPath().length());
     final String queryString = request.getQueryString();
-    if (ConversionUtils.stringIsEmpty(queryString)) {
+    if (StringUtils.isEmpty(queryString)) {
       return requestedUri;
     } else {
       return requestedUri + "?" + queryString;

@@ -47,7 +47,7 @@ const test = base.extend<PlaywrightFixtures>({
   },
   resetData: async ({baseURL}, use) => {
     await use(async () => {
-      await fetch(`${baseURL}/v1/external/devUtil/recreateData`, {
+      await fetch(`${baseURL}../v1/external/devUtil/recreateData`, {
         method: 'POST',
       });
     });

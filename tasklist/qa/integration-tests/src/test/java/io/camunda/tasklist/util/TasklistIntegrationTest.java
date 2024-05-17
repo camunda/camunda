@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.zeebe.PartitionHolder;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +21,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {TestApplication.class, WebappsModuleConfiguration.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -34,6 +36,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles({"tasklist", "test"})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;

@@ -70,7 +70,7 @@ test.beforeEach(async ({page, testSetupPage, loginPage}) => {
     username: 'demo',
     password: 'demo',
   });
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('../tasklist');
 });
 
 test.describe('task details page', () => {
