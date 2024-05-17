@@ -45,7 +45,6 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
                   ['cds--tabs__nav-item--selected']: selected,
                 },
               )}
-              tabIndex={selected ? 0 : -1}
               hidden={isHidden}
               aria-hidden={isHidden}
               onClick={() => navigate(href)}
