@@ -48,6 +48,7 @@ jobs:
       - name: Generate Changelog for patch release
         id: gen-changelog
         run: |
+          set -euox pipefail
           changelog="Release ${{ inputs.releaseVersion }}"
           
           # Right now we only support patch releases for generating the changelog
