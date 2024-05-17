@@ -52,6 +52,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
         .setPermissions(List.of(Permission.WRITE));
   }
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

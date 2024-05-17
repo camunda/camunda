@@ -15,7 +15,7 @@ import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {

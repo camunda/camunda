@@ -10,8 +10,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {SessionWatcher} from './SessionWatcher';
-import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 

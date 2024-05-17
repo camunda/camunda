@@ -44,6 +44,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       "mutation {unclaimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;

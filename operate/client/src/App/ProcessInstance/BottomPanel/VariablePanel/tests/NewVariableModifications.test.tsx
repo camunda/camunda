@@ -29,8 +29,7 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {

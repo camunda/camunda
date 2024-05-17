@@ -9,8 +9,7 @@
 import {render, screen} from 'modules/testing-library';
 import {Header} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {act} from 'react-dom/test-utils';
-import {useEffect} from 'react';
+import {useEffect, act} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {groupedProcessesMock} from 'modules/testUtils';
