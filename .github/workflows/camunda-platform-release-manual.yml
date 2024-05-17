@@ -49,9 +49,10 @@ jobs:
         id: gen-changelog
         run: |
           changelog="Release ${{ inputs.releaseVersion }}"
+          
           # Right now we only support patch releases for generating the changelog
           # as it is the easiest to automate and the most repetitive work to do on a release
-          if [[ "$version" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
+          if [[ "${{ inputs.releaseVersion }}" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
           then
             # Next, add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
             #
