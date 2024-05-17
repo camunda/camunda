@@ -162,7 +162,6 @@
       fileMatch: [
         ".github/scripts/build-docker-images.sh",
         ".github/scripts/build-release-docker-images.sh",
-        ".ci/pipelines/release_optimize.groovy",
       ],
       matchStrings: [
         "export BASE_IMAGE=(?<depName>.*?):(?<currentValue>.*?)\\s",
