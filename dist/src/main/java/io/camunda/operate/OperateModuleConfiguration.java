@@ -7,6 +7,7 @@
  */
 package io.camunda.operate;
 
+import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -24,7 +26,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
-    basePackages = {"io.camunda.operate", "io.camunda.webapps"},
+    basePackages = "io.camunda.operate",
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
@@ -39,6 +41,7 @@ import org.springframework.context.annotation.Profile;
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(WebappsModuleConfiguration.class)
 @EnableAutoConfiguration
 @Profile("operate")
 public class OperateModuleConfiguration {

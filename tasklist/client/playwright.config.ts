@@ -47,7 +47,7 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}`,
+    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}/tasklist/`,
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
   },

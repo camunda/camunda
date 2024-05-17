@@ -13,6 +13,7 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT
 import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.ConfigurableEnvironment;
 
 @SpringBootApplication(
@@ -36,7 +38,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
       GraphQLAnnotationsAutoConfiguration.class
     })
 @ComponentScan(
-    basePackages = {"io.camunda.tasklist", "io.camunda.webapps"},
+    basePackages = "io.camunda.tasklist",
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
@@ -49,6 +51,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(WebappsModuleConfiguration.class)
 public class StandaloneTasklist {
 
   public static final String TASKLIST_STATIC_RESOURCES_LOCATION =
@@ -66,7 +69,7 @@ public class StandaloneTasklist {
     System.setProperty("spring.banner.location", "classpath:/tasklist-banner.txt");
     // We need to disable this property in Tasklist (enabled in dist/application.properties),
     // otherwise ForwardErrorController does not get invoked
-    System.setProperty("spring.mvc.problemdetails.enabled", "false");
+    // System.setProperty("spring.mvc.problemdetails.enabled", "false");
     final SpringApplication springApplication = new SpringApplication(StandaloneTasklist.class);
     // add "tasklist" profile, so that application-tasklist.yml gets loaded. This is a way to not
     // load other components' 'application-{component}.yml'
@@ -116,6 +119,8 @@ public class StandaloneTasklist {
     return Map.of(
         "server.servlet.session.cookie.name",
         TasklistURIs.COOKIE_JSESSIONID,
+        "spring.mvc.pathmatch.matching-strategy",
+        "ANT_PATH_MATCHER",
         // Return error messages for all endpoints by default, except for Internal API.
         // Internal API error handling is defined in InternalAPIErrorController.
         "server.error.include-message",

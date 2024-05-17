@@ -27,6 +27,7 @@ public enum Profile {
 
   // other
   IDENTITY_AUTH("identity-auth"),
+  SSO_AUTH("sso-auth"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");
