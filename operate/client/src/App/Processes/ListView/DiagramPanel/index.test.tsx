@@ -26,8 +26,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 

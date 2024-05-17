@@ -25,7 +25,7 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 const instanceMock = createInstance({id: '1'});
 

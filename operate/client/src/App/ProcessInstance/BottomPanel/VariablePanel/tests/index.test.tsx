@@ -37,8 +37,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
-import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 

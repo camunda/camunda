@@ -11,7 +11,7 @@ import {IncidentsWrapper} from '../index';
 import {Wrapper, mockIncidents, mockResolvedIncidents} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 describe('Filtering', () => {
   beforeEach(async () => {
