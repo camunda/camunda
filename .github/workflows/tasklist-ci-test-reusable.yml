@@ -81,7 +81,7 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       - name: Build backend
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: mvn clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Run integration tests in parallel
       - name: Run Integration Tests
