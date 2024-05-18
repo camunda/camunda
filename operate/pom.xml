@@ -39,10 +39,10 @@
 
     <skip.fe.build>false</skip.fe.build>
     <skipSurefire>false</skipSurefire>
-    <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
-
+    <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
+    <itDatabase>elasticsearch</itDatabase>
   </properties>
 
   <build>
@@ -62,41 +62,13 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <skip>${skipSurefire}</skip>
-            <forkCount>${failsafeForkCount}</forkCount>
+            <forkCount>${testForkCount}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
           </configuration>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.5</version>
-          <configuration>
-            <includes>
-              <include>${includeITNames}</include>
-            </includes>
-            <excludes>
-              <exclude>${excludeITNames}</exclude>
-            </excludes>
-            <forkCount>${failsafeForkCount}</forkCount>
-            <reuseForks>true</reuseForks>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
 
         <plugin>
@@ -167,7 +139,6 @@
       <properties>
         <includeITNames>**/*IT.java</includeITNames>
         <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
       </properties>
     </profile>
 
@@ -176,7 +147,6 @@
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
@@ -186,7 +156,6 @@
       <properties>
         <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
@@ -194,9 +163,8 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/schema/*IT.java</includeITNames>
-        <excludeITNames>**/SchemaManagerIT.java</excludeITNames>
-        <failsafeForkCount>1</failsafeForkCount>
+        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
     </profile>

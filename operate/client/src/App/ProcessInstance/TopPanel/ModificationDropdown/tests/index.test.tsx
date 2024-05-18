@@ -22,7 +22,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {open} from 'modules/mocks/diagrams';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {

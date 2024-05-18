@@ -48,11 +48,16 @@ public class OperateModuleConfiguration {
 
   // if present, then it will ensure
   // that the broker is started first
-  @Autowired(required = false)
-  private Broker broker;
+  private final Broker broker;
 
   // if present, then it will ensure
   // that the gateway is started first
-  @Autowired(required = false)
-  private Gateway gateway;
+  private final Gateway gateway;
+
+  public OperateModuleConfiguration(
+      @Autowired(required = false) final Broker broker,
+      @Autowired(required = false) Gateway gateway) {
+    this.broker = broker;
+    this.gateway = gateway;
+  }
 }
