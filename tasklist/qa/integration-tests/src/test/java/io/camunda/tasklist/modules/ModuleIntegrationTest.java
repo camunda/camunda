@@ -8,7 +8,6 @@
 package io.camunda.tasklist.modules;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
@@ -20,7 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -38,10 +37,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
+@ActiveProfiles({"tasklist", "test"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired protected ApplicationContext applicationContext;
