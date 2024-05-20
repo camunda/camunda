@@ -2486,6 +2486,7 @@
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>io.camunda:auth-spring-boot-starter</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
