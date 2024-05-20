@@ -30,6 +30,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
+  private long incidentKey;
 
   public JobRecordValueImpl() {}
 
@@ -131,6 +132,15 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return this;
   }
 
+  @Override
+  public long getIncidentKey() {
+    return incidentKey;
+  }
+
+  public void setIncidentKey(final long incidentKey) {
+    this.incidentKey = incidentKey;
+  }
+
   public void setProcessDefinitionVersion(final int processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
   }
@@ -202,7 +212,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         errorMessage,
         errorCode,
         tenantId,
-        jobKind);
+        jobKind,
+        incidentKey);
   }
 
   @Override
@@ -231,7 +242,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
-        && jobKind == that.jobKind;
+        && jobKind == that.jobKind
+        && incidentKey == that.incidentKey;
   }
 
   @Override
@@ -274,6 +286,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobKind="
         + jobKind
+        + '\''
+        + ", incidentKey="
+        + incidentKey
         + '}';
   }
 }

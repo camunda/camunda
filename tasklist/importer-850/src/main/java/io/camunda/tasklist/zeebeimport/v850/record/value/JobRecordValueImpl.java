@@ -30,6 +30,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
+  private long incidentKey;
 
   public JobRecordValueImpl() {}
 
@@ -38,7 +39,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
@@ -117,61 +118,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return processDefinitionKey;
   }
 
-  @Override
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public void setProcessDefinitionKey(long processDefinitionKey) {
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public void setProcessDefinitionVersion(int processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public void setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
-  }
-
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public void setElementId(String elementId) {
-    this.elementId = elementId;
-  }
-
-  public void setErrorCode(String errorCode) {
-    this.errorCode = errorCode;
-  }
-
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-  public void setDeadline(long deadline) {
-    this.deadline = deadline;
-  }
-
-  public void setRetries(int retries) {
-    this.retries = retries;
-  }
-
-  public void setWorker(String worker) {
-    this.worker = worker;
-  }
-
-  public void setCustomHeaders(Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public void setTenantId(String tenantId) {
-    this.tenantId = tenantId;
   }
 
   @Override
@@ -179,13 +127,97 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return jobKind;
   }
 
-  public JobRecordValueImpl setJobKind(JobKind jobKind) {
+  public JobRecordValueImpl setJobKind(final JobKind jobKind) {
     this.jobKind = jobKind;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public long getIncidentKey() {
+    return incidentKey;
+  }
+
+  public void setIncidentKey(final long incidentKey) {
+    this.incidentKey = incidentKey;
+  }
+
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+  }
+
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public void setElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public void setElementId(final String elementId) {
+    this.elementId = elementId;
+  }
+
+  public void setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  public void setDeadline(final long deadline) {
+    this.deadline = deadline;
+  }
+
+  public void setRetries(final int retries) {
+    this.retries = retries;
+  }
+
+  public void setWorker(final String worker) {
+    this.worker = worker;
+  }
+
+  public void setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionVersion,
+        type,
+        worker,
+        deadline,
+        customHeaders,
+        retries,
+        errorMessage,
+        errorCode,
+        tenantId,
+        jobKind,
+        incidentKey);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -210,28 +242,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
-        && jobKind == that.jobKind;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        bpmnProcessId,
-        elementId,
-        elementInstanceKey,
-        processInstanceKey,
-        processDefinitionKey,
-        processDefinitionVersion,
-        type,
-        worker,
-        deadline,
-        customHeaders,
-        retries,
-        errorMessage,
-        errorCode,
-        tenantId,
-        jobKind);
+        && jobKind == that.jobKind
+        && incidentKey == that.incidentKey;
   }
 
   @Override
@@ -274,6 +286,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobKind="
         + jobKind
+        + '\''
+        + ", incidentKey="
+        + incidentKey
         + '}';
   }
 }
