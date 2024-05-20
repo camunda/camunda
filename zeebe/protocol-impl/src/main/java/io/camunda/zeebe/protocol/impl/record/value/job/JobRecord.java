@@ -67,6 +67,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty incidentKeyProp = new LongProperty("incidentKey", -1L);
 
   public JobRecord() {
     super(19);
@@ -88,7 +89,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(jobKindProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(incidentKeyProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -111,6 +113,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    incidentKeyProp.setValue(record.getIncidentKey());
   }
 
   public void wrap(final JobRecord record) {
@@ -221,6 +224,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public JobKind getJobKind() {
     return jobKindProp.getValue();
+  }
+
+  @Override
+  public long getIncidentKey() {
+    return incidentKeyProp.getValue();
+  }
+
+  public JobRecord setIncidentKey(final long incidentKey) {
+    incidentKeyProp.setValue(incidentKey);
+    return this;
   }
 
   public JobRecord setJobKind(final JobKind jobKind) {

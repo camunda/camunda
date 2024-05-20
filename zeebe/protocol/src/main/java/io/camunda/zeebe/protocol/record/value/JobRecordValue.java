@@ -118,4 +118,9 @@ public interface JobRecordValue
    * @return the job kind indicating the specific category of the job
    */
   JobKind getJobKind();
+
+  /**
+   * @return the incident key of the corresponding service task
+   */
+  long getIncidentKey();
 }
