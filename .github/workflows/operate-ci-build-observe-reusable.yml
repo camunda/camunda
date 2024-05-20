@@ -1,20 +1,4 @@
-# This GitHub Actions workflow automates the CI test process for the 'operate' service.
-# It triggers on a `workflow_call` event and accepts inputs for branch name[required] and fork count[optional]
-#
-# It consists of a several steps:
-# 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
-# 2. Tests: Runs unit and integration tests.
-# 3. Reports: Publishes the test results, even if some steps failed.
-#
-# Environment variables are used to control CPU limits.
-# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
-# and enables detailed reporting of test results.
-
-# CI IT test reusable GitHub Actions Workflow
-# Triggers on a workflow_call event and accepts inputs for branch name and fork count
-# Performs integration tests for the tasklist service with parallel execution.
-
-name: Operate CI IT test reusable
+name: Operate CI Build Observability Reusable
 
 on:
   workflow_call:
@@ -29,7 +13,7 @@ on:
         type: string
       runner-type:
         description: "CI runner type for the tests"
-        default: gcp-core-32-default
+        default: gcp-core-4-default
         type: string
 
 defaults:
