@@ -7,12 +7,9 @@
  */
 package io.camunda.identity.authentication.basic;
 
-import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.stereotype.Component;
@@ -31,29 +28,5 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     return getJdbcTemplate().queryForList(SELECT_USERNAMES_FROM_USERS, String.class).stream()
         .map(this::loadUserByUsername)
         .toList();
-  }
-
-  @Override
-  protected List<GrantedAuthority> loadUserAuthorities(final String username) {
-    final List<GrantedAuthority> roles = super.loadUserAuthorities(username);
-    return loadRolePrivileges(roles);
-  }
-
-  private List<GrantedAuthority> loadRolePrivileges(final List<GrantedAuthority> roles) {
-    final List<GrantedAuthority> authorities = new ArrayList<>();
-    authorities.addAll(roles);
-    authorities.addAll(
-        roles.stream()
-            .flatMap(
-                role ->
-                    getJdbcTemplate()
-                        .query(
-                            "SELECT authority FROM role_authorities WHERE role_name = ? ",
-                            new String[] {role.getAuthority()},
-                            (rs, rowNum) -> new SimpleGrantedAuthority(rs.getString(1)))
-                        .stream())
-            .distinct()
-            .toList());
-    return authorities;
   }
 }

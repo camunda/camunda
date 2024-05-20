@@ -33,7 +33,7 @@ public class CamundaOidcUserService extends OidcUserService {
     final UserDetails details = userDetailsManager.loadUserByUsername(oidcUser.getName());
     if (details != null) {
       return new CamundaOidcUser(
-          oidcUser, details.getAuthorities().stream().map(a -> (GrantedAuthority) a).toList());
+          oidcUser, details.getAuthorities().stream().map(GrantedAuthority.class::cast).toList());
     }
     return oidcUser;
   }

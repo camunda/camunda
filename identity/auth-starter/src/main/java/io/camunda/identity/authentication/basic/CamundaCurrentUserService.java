@@ -12,20 +12,30 @@ import io.camunda.identity.record.CamundaUser;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("identity-basic-auth")
+@Profile({"identity-basic-auth", "identity-oidc-auth"})
 public class CamundaCurrentUserService implements CurrentUserService {
   @Override
   public CamundaUser getCurrentUser() {
     final var authentication = getAuthentication();
+
     return new CamundaUser(
-        authentication.getName(),
+        getUsername(authentication),
         authentication.getAuthorities().stream().map(Object::toString).toList());
   }
 
   private Authentication getAuthentication() {
     return SecurityContextHolder.getContext().getAuthentication();
+  }
+
+  private String getUsername(final Authentication authentication) {
+    if (authentication instanceof final OAuth2AuthenticationToken oauthToken) {
+      return oauthToken.getPrincipal().getAttribute("preferred_username");
+    } else {
+      return authentication.getName();
+    }
   }
 }
