@@ -1626,7 +1626,14 @@
     "@floating-ui/core" "^1.0.0"
     "@floating-ui/utils" "^0.2.0"
 
-"@floating-ui/react-dom@2.0.9", "@floating-ui/react-dom@^2.0.0":
+"@floating-ui/react-dom@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@floating-ui/react-dom/-/react-dom-2.1.0.tgz#4f0e5e9920137874b2405f7d6c862873baf4beff"
+  integrity sha512-lNzj5EQmEKn5FFKc04+zasr09h/uX8RtJRNj5gUXsSQIXHVWTVh+hVAg1vOMCexkX8EgvemMvIFpQfkosnVNyA==
+  dependencies:
+    "@floating-ui/dom" "^1.0.0"
+
+"@floating-ui/react-dom@^2.0.0":
   version "2.0.9"
   resolved "https://registry.yarnpkg.com/@floating-ui/react-dom/-/react-dom-2.0.9.tgz#264ba8b061000baa132b5910f0427a6acf7ad7ce"
   integrity sha512-q0umO0+LQK4+p6aGyvzASqKbKOJcAHJ7ycE9CuUvfx3s9zTHWmGJTPOIlM/hmSBfUfg/XfY5YhLBLR/LHwShQQ==
