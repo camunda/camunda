@@ -41,10 +41,6 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-jdbc</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-    </dependency>
 
     <!--Runtime dependencies -->
     <dependency>
@@ -58,8 +54,14 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>6.1.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>6.1.7</version>
     </dependency>
   </dependencies>
 
@@ -78,6 +80,12 @@
             <dep>org.codehaus.plexus:plexus-utils</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>org.springframework.boot:spring-boot-starter-test</dep>
+            <dep>org.springframework:spring-jdbc</dep>
+            <dep>org.springframework:spring-beans</dep>
+            <dep>org.springframework:spring-web</dep>
+            <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
+            <dep>org.slf4j:slf4j-api</dep>
+            <dep>org.yaml:snakeyaml</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>
