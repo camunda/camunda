@@ -75,6 +75,9 @@
             },
             "jobKind": {
               "type": "keyword"
+            },
+            "incidentKey": {
+              "type": "long"
             }
           }
         }
