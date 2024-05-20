@@ -17,12 +17,18 @@ class ProcessesPage {
   readonly searchProcessesInput: Locator;
   readonly processTile: Locator;
   readonly tasksTab: Locator;
+  readonly startProcessSubButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.cancelButton = page.getByRole('button', {name: 'Cancel'});
     this.startProcessButton = page.getByRole('button', {name: 'Start process'});
+    this.startProcessSubButton = page
+      .getByRole('button', {
+        name: 'Start process',
+      })
+      .last();
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');
