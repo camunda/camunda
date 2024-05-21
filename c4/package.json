@@ -28,7 +28,7 @@
 		"@storybook/addon-mdx-gfm": "^8.1.0",
 		"@storybook/addon-styling-webpack": "^1.0.0",
 		"@storybook/addon-webpack5-compiler-swc": "^1.0.2",
-		"@storybook/blocks": "^8.0.9",
+		"@storybook/blocks": "^8.1.1",
 		"@storybook/react": "^8.1.0",
 		"@storybook/react-webpack5": "^8.1.0",
 		"@types/carbon__icons-react": "11.26.2",
