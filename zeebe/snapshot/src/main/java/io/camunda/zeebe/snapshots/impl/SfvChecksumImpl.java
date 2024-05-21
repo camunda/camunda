@@ -102,9 +102,10 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
-    if (checksumMethod != null) {
-      writer.printf(FORMAT_CHECKSUM_METHOD_LINE, checksumMethod);
+    if (checksumMethod == null) {
+      throw new RuntimeException("Checksum method not set");
     }
+    writer.printf(FORMAT_CHECKSUM_METHOD_LINE, checksumMethod);
     writer.flush();
 
     if (writer.checkError()) {
@@ -182,7 +183,8 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
           try {
             setChecksumMethod(ChecksumMethod.valueOf(checksumMethod));
           } catch (final IllegalArgumentException e) {
-            throw new RuntimeException("ChecksumMethod Does not currently support " + checksumMethod);
+            throw new RuntimeException(
+                "ChecksumMethod Does not currently support " + checksumMethod);
           }
         } else {
           setChecksumMethod(ChecksumMethod.MANUAL);
