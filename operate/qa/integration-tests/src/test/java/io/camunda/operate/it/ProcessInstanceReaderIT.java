@@ -74,7 +74,7 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationTemplate.getFullQualifiedName(), operationData);
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
   }
 
   @Test

@@ -31,6 +31,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.operate.zeebe.StandalonePartitionSupplier;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -214,7 +215,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    partitionHolder.setZeebeClient(getClient());
+    final var partitionSupplier = new StandalonePartitionSupplier(getClient());
+    partitionHolder.setPartitionSupplier(partitionSupplier);
   }
 
   @After

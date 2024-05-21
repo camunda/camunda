@@ -19,7 +19,7 @@ import Variables from '../index';
 import {Wrapper, mockVariables} from './mocks';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 const instanceMock = createInstance({id: '1'});
 

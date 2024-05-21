@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.graphql;
 
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

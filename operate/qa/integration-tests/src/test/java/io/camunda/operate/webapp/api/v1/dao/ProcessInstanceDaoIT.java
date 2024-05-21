@@ -95,7 +95,7 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         processInstanceIndex.getFullQualifiedName(), processInstance.getId(), processInstance);
 
-    searchContainerManager.refreshIndices("*operate-list*");
+    searchContainerManager.refreshIndices("*operate*");
   }
 
   @Test
@@ -297,11 +297,11 @@ public class ProcessInstanceDaoIT extends OperateSearchAbstractIT {
         getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
         new VariableEntity().setProcessInstanceKey(processInstanceKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     dao.delete(processInstance.getProcessInstanceKey());
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     Assertions.assertThrows(
         ResourceNotFoundException.class, () -> dao.byKey(processInstance.getProcessInstanceKey()));

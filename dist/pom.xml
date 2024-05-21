@@ -115,6 +115,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -159,6 +164,11 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
     </dependency>
 
     <dependency>
@@ -374,6 +384,11 @@
     <!-- /end -->
 
     <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -482,7 +497,7 @@
             </program>
             <program>
               <id>tasklist</id>
-              <mainClass>io.camunda.tasklist.Application</mainClass>
+              <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
             <program>
               <id>tasklist-migrate</id>
@@ -581,8 +596,6 @@
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
 
-            <dependency>io.camunda:tasklist-webapp</dependency>
-
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
@@ -593,7 +606,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.5.0</version>
+        <version>7.6.0</version>
         <executions>
           <execution>
             <id>backups</id>
