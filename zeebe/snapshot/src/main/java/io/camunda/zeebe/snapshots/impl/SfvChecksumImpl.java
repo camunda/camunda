@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -154,20 +155,14 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hashCode(checksums);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
+  public boolean sameChecksums(final ImmutableChecksumsSFV o) {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null) {
       return false;
     }
-    final SfvChecksumImpl that = (SfvChecksumImpl) o;
-    return Objects.equals(checksums, that.checksums);
+    return Objects.equals(checksums, o.getChecksums());
   }
 
   private static class PreDefinedImmutableChecksum implements Checksum {
