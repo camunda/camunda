@@ -17,20 +17,16 @@ import org.springframework.stereotype.Service;
 public class MembershipService {
   private final CamundaUserDetailsManager userDetailsManager;
 
-  private final UserService usersService;
-
-  private final GroupService groupService;
+  private final UserService userService;
 
   private final MembershipRepository membershipRepository;
 
   public MembershipService(
       final CamundaUserDetailsManager userDetailsManager,
       final UserService userService,
-      final GroupService groupService,
       final MembershipRepository membershipRepository) {
     this.userDetailsManager = userDetailsManager;
-    usersService = userService;
-    this.groupService = groupService;
+    this.userService = userService;
     this.membershipRepository = membershipRepository;
   }
 
@@ -44,7 +40,7 @@ public class MembershipService {
 
   public List<CamundaUser> getMembers(final Group group) {
     return userDetailsManager.findUsersInGroup(group.name()).stream()
-        .map(usersService::findUserByUsername)
+        .map(userService::findUserByUsername)
         .toList();
   }
 
