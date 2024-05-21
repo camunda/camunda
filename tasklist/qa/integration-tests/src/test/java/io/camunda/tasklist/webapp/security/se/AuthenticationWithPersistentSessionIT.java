@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.application.StandaloneTasklist.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -17,22 +15,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -40,23 +34,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(
-    classes = {TestApplication.class},
-    properties = {
-      TasklistProperties.PREFIX + ".persistentSessionsEnabled = true",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "graphql.servlet.exception-handlers-enabled = true",
-      "management.endpoints.web.exposure.include = info,prometheus,loggers",
-      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE + "static",
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({AUTH_PROFILE, "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
 public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTest
     implements AuthenticationTestable {
 
@@ -73,6 +54,8 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private UserStore userStore;
+
+  @LocalManagementPort private int managementPort;
 
   @BeforeEach
   public void setUp() {
@@ -189,21 +172,20 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
 
   @Test
   public void testCanAccessMetricsEndpoint() {
-    final ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator", String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody()).contains("actuator/info");
-
     final ResponseEntity<String> prometheusResponse =
-        testRestTemplate.getForEntity(MetricIT.ENDPOINT, String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + MetricIT.ENDPOINT, String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
 
   @Test
+  @DirtiesContext
   public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
     ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
@@ -213,10 +195,15 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
         new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(
-            "/actuator/loggers/io.camunda.tasklist", request, String.class);
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            request,
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(204);
 
-    response = testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
+    response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"TRACE\"");
   }

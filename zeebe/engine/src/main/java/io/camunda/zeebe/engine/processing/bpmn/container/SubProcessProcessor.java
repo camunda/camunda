@@ -55,18 +55,20 @@ public final class SubProcessProcessor
   public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
 
-    return variableMappingBehavior
-        .applyInputMappings(activating, element)
-        .thenDo(
-            ok -> {
-              final var activated =
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-              final ExecutableStartEvent startEvent = element.getNoneStartEvent();
-              if (startEvent == null) {
-                throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
-              }
-              stateTransitionBehavior.activateChildInstance(activated, startEvent);
-            });
+    return variableMappingBehavior.applyInputMappings(activating, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+    final ExecutableStartEvent startEvent = element.getNoneStartEvent();
+    if (startEvent == null) {
+      throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
+    }
+    stateTransitionBehavior.activateChildInstance(activated, startEvent);
+    return SUCCESS;
   }
 
   @Override
@@ -74,12 +76,15 @@ public final class SubProcessProcessor
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
     return variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, completing);
-              return stateTransitionBehavior.transitionToCompleted(element, completing);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(completing));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);

@@ -84,4 +84,6 @@ start-e2e:
 	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
 	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
 	CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dserver.port=8081
+	SERVER_PORT=8081 \
+  MANAGEMENT_SERVER_PORT=9601 \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate"
