@@ -98,6 +98,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final var retries = failJobCommandRecord.getRetries();
     final var retryBackOff = failJobCommandRecord.getRetryBackoff();
 
+    long incidentKey = -1L;
+
     final JobRecord failedJob = jobState.getJob(jobKey, record.getAuthorizations());
     if (failedJob == null) {
       final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
@@ -111,6 +113,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         limitString(failJobCommandRecord.getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
     failedJob.setRetryBackoff(retryBackOff);
     failedJob.setVariables(failJobCommandRecord.getVariablesBuffer());
+
+    if (retries <= 0) {
+      incidentKey = keyGenerator.nextKey();
+      failedJob.setIncidentKey(incidentKey);
+    }
 
     if (retries > 0 && retryBackOff > 0) {
       final long receivedTime = record.getTimestamp();
@@ -133,7 +140,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     }
 
     if (retries <= 0) {
-      raiseIncident(jobKey, failedJob);
+      raiseIncident(jobKey, incidentKey, failedJob);
     }
   }
 
@@ -151,7 +158,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     }
   }
 
-  private void raiseIncident(final long key, final JobRecord value) {
+  private void raiseIncident(final long key, final long incidentKey, final JobRecord value) {
     final DirectBuffer jobErrorMessage = value.getErrorMessageBuffer();
     DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
     if (jobErrorMessage.capacity() > 0) {
@@ -176,6 +183,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setVariableScopeKey(value.getElementInstanceKey())
         .setTenantId(value.getTenantId());
 
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+    stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.CREATED, incidentEvent);
   }
 }
