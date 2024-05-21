@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.SortedMap;
 
 /**
  * Immutable checksum collection in simple file verification (SFV) file format, which only allows to
@@ -27,4 +28,9 @@ public interface ImmutableChecksumsSFV {
    * @param stream in which the data will be written to
    */
   void write(OutputStream stream) throws IOException;
+
+  /**
+   * @return the map containing the individual file checksums
+   */
+  SortedMap<String, Long> getChecksums();
 }
