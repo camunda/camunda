@@ -25,7 +25,7 @@ public interface ImmutableChecksumsSFV {
   /**
    * @return an Enum representing how the checksums were generated
    */
-  SnapshotVersion getVersion();
+  ChecksumGenerateApproach getVersion();
 
   /**
    * Write the checksum collection in SFV format to the given output stream.

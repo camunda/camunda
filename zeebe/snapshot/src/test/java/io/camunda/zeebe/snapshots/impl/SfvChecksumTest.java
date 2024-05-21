@@ -11,7 +11,7 @@ import static io.camunda.zeebe.snapshots.impl.SnapshotChecksumTest.createChunk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.snapshots.SnapshotVersion;
+import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,7 +26,7 @@ public class SfvChecksumTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private SfvChecksumImpl sfvChecksum;
-  private final SnapshotVersion checksumVersion = SnapshotVersion.MANUAL_CHECKSUM;
+  private final ChecksumGenerateApproach checksumVersion = ChecksumGenerateApproach.MANUAL_CHECKSUM;
 
   @Before
   public void setUp() throws Exception {
