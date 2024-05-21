@@ -42,7 +42,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
@@ -164,26 +163,9 @@ public class EventProcessClient {
         .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public OptimizeRequestExecutor createDeleteEventProcessMappingRequest(
-      final String eventProcessMappingId) {
-    return getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
-  }
-
   public OptimizeRequestExecutor createBulkDeleteEventProcessMappingsRequest(
       final List<String> eventProcessMappingIds) {
     return getRequestExecutor().bulkDeleteEventProcessMappingsRequest(eventProcessMappingIds);
-  }
-
-  public ConflictResponseDto getDeleteConflictsForEventProcessMapping(
-      String eventProcessMappingId) {
-    return createGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId)
-        .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  public OptimizeRequestExecutor createGetDeleteConflictsForEventProcessMappingRequest(
-      final String eventProcessMappingId) {
-    return getRequestExecutor()
-        .buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public boolean eventProcessMappingRequestBulkDeleteHasConflicts(
@@ -191,11 +173,6 @@ public class EventProcessClient {
     return getRequestExecutor()
         .buildCheckBulkDeleteConflictsForEventProcessMappingRequest(eventBasedProcessIds)
         .execute(Boolean.class, Response.Status.OK.getStatusCode());
-  }
-
-  public void deleteEventProcessMapping(final String eventProcessMappingId) {
-    createDeleteEventProcessMappingRequest(eventProcessMappingId)
-        .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public EventProcessMappingDto buildEventProcessMappingDto(final String xml) {

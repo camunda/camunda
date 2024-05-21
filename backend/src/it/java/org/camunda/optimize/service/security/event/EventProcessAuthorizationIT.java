@@ -86,19 +86,6 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void deleteEventProcessMappingWithoutAuthentication() {
-    // when
-    Response response =
-        eventProcessClient
-            .createDeleteEventProcessMappingRequest("doesNotMatter")
-            .withoutAuthentication()
-            .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
   public void getEventProcessMappingWithoutAuthentication() {
     // when
     Response response =
@@ -153,19 +140,6 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
         eventProcessClient
             .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
             .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  @Test
-  public void deleteEventProcessMappingWithoutAuthorization() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessAccessUserIds().clear();
-
-    // when
-    Response response =
-        eventProcessClient.createDeleteEventProcessMappingRequest("doesNotMatter").execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());

@@ -43,15 +43,16 @@ export async function cleanEntities({ctx}) {
 export async function cleanEventProcesses() {
   const headers = {
     Cookie: `X-Optimize-Authorization="Bearer ${await getSession(config.users.Chrome[0].user1)}"`,
+    'Content-Type': 'application/json',
   };
 
   const response = await fetch(`${config.endpoint}/api/eventBasedProcess`, {headers});
   const processes = await response.json();
+  const processesIds = processes.map(({id}) => id);
 
-  for (let i = 0; i < processes.length; i++) {
-    await fetch(`${config.endpoint}/api/eventBasedProcess/${processes[i].id}`, {
-      method: 'DELETE',
-      headers,
-    });
-  }
+  await fetch(`${config.endpoint}/api/eventBasedProcess/delete`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(processesIds),
+  });
 }

@@ -11,7 +11,6 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 
@@ -19,12 +18,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,68 +30,6 @@ public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
   @BeforeAll
   public static void setup() {
     simpleDiagramXml = createProcessDefinitionXml();
-  }
-
-  @Test
-  public void getDeleteConflictsForEventProcessMapping_withoutAuthentication() {
-    // when
-    Response response =
-        eventProcessClient
-            .createGetDeleteConflictsForEventProcessMappingRequest("doesNotMatter")
-            .withoutAuthentication()
-            .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void getDeleteConflictsForEventProcessMapping_returnsOnlyConflictedItems() {
-    // given a published event process with various dependent resources created using its definition
-    EventProcessMappingDto eventProcessMappingDto =
-        createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey =
-        eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
-
-    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    collectionClient.addScopeEntryToCollection(
-        collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
-
-    String conflictedReportId =
-        reportClient.createSingleProcessReport(
-            reportClient.createSingleProcessReportDefinitionDto(
-                collectionId, eventProcessDefinitionKey, Collections.emptyList()));
-    String nonConflictedReportId =
-        reportClient.createSingleProcessReport(
-            reportClient.createSingleProcessReportDefinitionDto(
-                collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
-    String conflictedCombinedReportId =
-        reportClient.createCombinedReport(
-            collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId));
-
-    String conflictedAlertId = alertClient.createAlertForReport(conflictedReportId);
-    alertClient.createAlertForReport(nonConflictedReportId);
-
-    String conflictedDashboardId =
-        dashboardClient.createDashboard(
-            collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId));
-
-    // when
-    ConflictResponseDto conflictResponseDto =
-        eventProcessClient.getDeleteConflictsForEventProcessMapping(eventProcessDefinitionKey);
-
-    // then
-    assertThat(conflictResponseDto.getConflictedItems())
-        .extracting(ConflictedItemDto.Fields.id, ConflictedItemDto.Fields.type)
-        .containsExactlyInAnyOrder(
-            new Tuple(conflictedReportId, ConflictedItemType.REPORT),
-            new Tuple(conflictedCombinedReportId, ConflictedItemType.COMBINED_REPORT),
-            new Tuple(conflictedDashboardId, ConflictedItemType.DASHBOARD),
-            new Tuple(conflictedAlertId, ConflictedItemType.ALERT));
   }
 
   @Test

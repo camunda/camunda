@@ -197,7 +197,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
   }
 
   @ParameterizedTest(name = "Event Process Definition is deleted on {0}.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void eventProcessDefinitionIsDeletedOn(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
@@ -226,7 +226,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
   @ParameterizedTest(
       name = "Only expected instance index is deleted on {0}, others are still present.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void otherEventProcessDefinitionIsNotAffectedOn(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given

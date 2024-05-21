@@ -49,10 +49,6 @@ public class EventProcessMappingWriter {
         eventProcessMappingDto, Sets.newHashSet(EventProcessMappingIndex.ROLES));
   }
 
-  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    return mappingRepository.deleteEventProcessMapping(eventProcessMappingId);
-  }
-
   public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
     mappingRepository.deleteEventProcessMappings(eventProcessMappingIds);
   }

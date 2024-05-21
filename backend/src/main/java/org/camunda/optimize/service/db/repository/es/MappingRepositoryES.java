@@ -29,8 +29,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -116,25 +114,6 @@ public class MappingRepositoryES implements MappingRepository {
               id);
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
-    }
-  }
-
-  @Override
-  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    log.debug("Deleting event-based process with id [{}].", eventProcessMappingId);
-    final DeleteRequest request =
-        new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
-            .id(eventProcessMappingId)
-            .setRefreshPolicy(IMMEDIATE);
-
-    try {
-      return esClient.delete(request).getResult().equals(DeleteResponse.Result.DELETED);
-    } catch (IOException e) {
-      String errorMessage =
-          String.format(
-              "Could not delete event-based process with id [%s]. ", eventProcessMappingId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 

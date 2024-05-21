@@ -28,7 +28,6 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -93,23 +92,6 @@ public class MappingRepositoryOS implements MappingRepository {
       log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
-  }
-
-  @Override
-  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    log.debug("Deleting event-based process with id [{}].", eventProcessMappingId);
-    final DeleteRequest.Builder requestBuilder =
-        new DeleteRequest.Builder()
-            .index(EVENT_PROCESS_MAPPING_INDEX_NAME)
-            .id(eventProcessMappingId)
-            .refresh(Refresh.True);
-
-    return osClient
-        .delete(
-            requestBuilder,
-            format("Could not delete event-based process with id [%s]. ", eventProcessMappingId))
-        .result()
-        .equals(Result.Deleted);
   }
 
   @Override

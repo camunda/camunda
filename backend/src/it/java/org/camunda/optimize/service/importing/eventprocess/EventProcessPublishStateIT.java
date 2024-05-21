@@ -135,7 +135,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   }
 
   @ParameterizedTest(name = "Event process publish state is deleted on {0}.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void eventProcessPublishStateIsDeletedOn(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
@@ -161,7 +161,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
   @ParameterizedTest(
       name = "Only expected event publish state is deleted on {0}, other is still present.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void otherEventPublishStateIsNotAffectedOn(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given

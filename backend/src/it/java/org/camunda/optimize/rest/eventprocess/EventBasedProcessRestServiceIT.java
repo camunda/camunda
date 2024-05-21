@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest.eventprocess;
 
-import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.HttpMethod.PUT;
@@ -89,7 +88,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   private static Stream<Arguments> getAllEndpointsThatNeedEventAuthorization() {
     return Stream.of(
         Arguments.of(GET, "/eventBasedProcess", null),
-        Arguments.of(GET, "/eventBasedProcess/someId/delete-conflicts", null),
         Arguments.of(POST, "/eventBasedProcess/delete-conflicts", Collections.emptyList()),
         Arguments.of(POST, "/eventBasedProcess", null),
         Arguments.of(
@@ -98,7 +96,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
             EventProcessMappingRequestDto.builder().name("someName").build()),
         Arguments.of(POST, "/eventBasedProcess/someId/_publish", null),
         Arguments.of(POST, "/eventBasedProcess/someId/_cancelPublish", null),
-        Arguments.of(DELETE, "/eventBasedProcess/someId", null),
         Arguments.of(GET, "/eventBasedProcess/someId/role", null),
         Arguments.of(
             PUT,

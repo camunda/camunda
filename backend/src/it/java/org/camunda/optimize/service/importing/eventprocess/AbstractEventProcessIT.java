@@ -155,16 +155,12 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   // it's used as test param via @MethodSource
   @SuppressWarnings(UNUSED)
-  protected static Stream<Arguments> cancelOrDeleteAction() {
+  protected static Stream<Arguments> cancelAction() {
     return Stream.of(
         Arguments.arguments(
             "cancelPublish",
             (BiConsumer<EventProcessClient, String>)
-                EventProcessClient::cancelPublishEventProcessMapping),
-        Arguments.arguments(
-            "deleteEventProcessMapping",
-            (BiConsumer<EventProcessClient, String>)
-                EventProcessClient::deleteEventProcessMapping));
+                EventProcessClient::cancelPublishEventProcessMapping));
   }
 
   protected void republishEventProcess(final String eventProcessMapping) {

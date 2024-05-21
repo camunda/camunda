@@ -8,9 +8,7 @@ package org.camunda.optimize.rest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -32,7 +30,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleReq
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
@@ -143,38 +140,6 @@ public class EventBasedProcessRestService {
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessService.cancelPublish(userId, eventProcessId);
-  }
-
-  @GET
-  @Path("/{id}/delete-conflicts")
-  @Produces(MediaType.APPLICATION_JSON)
-  public ConflictResponseDto getDeleteConflicts(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String eventProcessId) {
-    validateAccessToEventProcessManagement(
-        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    return eventProcessService.getDeleteConflictingItems(eventProcessId);
-  }
-
-  @DELETE
-  @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  public void deleteEventProcess(
-      @PathParam("id") final String eventProcessId,
-      @Context final ContainerRequestContext requestContext) {
-    validateAccessToEventProcessManagement(
-        sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    final boolean wasFoundAndDeleted =
-        eventProcessService.deleteEventProcessMapping(eventProcessId);
-
-    if (!wasFoundAndDeleted) {
-      final String errorMessage =
-          String.format(
-              "Could not delete event-based process with id [%s]. Event-based process does not exist. "
-                  + "Maybe it was already deleted by someone else?",
-              eventProcessId);
-      throw new NotFoundException(errorMessage);
-    }
   }
 
   @GET

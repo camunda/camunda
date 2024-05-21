@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -151,7 +152,7 @@ public class EventProcessService {
     eventProcessMappingWriter.updateEventProcessMapping(eventProcessMappingDto);
   }
 
-  public ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
+  private ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
     List<ReportDefinitionDto> reportsForProcessDefinitionKey =
         reportService.getAllReportsForProcessDefinitionKeyOmitXml(eventProcessId);
     Set<ConflictedItemDto> conflictedItems = new HashSet<>();
@@ -198,16 +199,6 @@ public class EventProcessService {
       }
     }
     eventProcessMappingWriter.deleteEventProcessMappings(eventProcessMappingsToDelete);
-  }
-
-  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
-    collectionWriter.deleteScopeEntryFromAllCollections(
-        CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(PROCESS, eventProcessMappingId));
-    processVariableLabelService.deleteVariableLabelsForDefinition(eventProcessMappingId);
-    eventProcessPublishStateWriter
-        .markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
-    return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);
   }
 
   public EventProcessMappingDto getEventProcessMapping(
@@ -461,10 +452,10 @@ public class EventProcessService {
   }
 
   private EventImportSourceDto createEventImportSourceFromCamundaSource(
-      CamundaEventSourceEntryDto camundaSourceEntry) {
+      final CamundaEventSourceEntryDto camundaSourceEntry) {
     Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps =
         camundaEventService.getMinAndMaxIngestedTimestampsForDefinition(
-            (camundaSourceEntry.getConfiguration()).getProcessDefinitionKey());
+            camundaSourceEntry.getConfiguration().getProcessDefinitionKey());
     return EventImportSourceDto.builder()
         .firstEventForSourceAtTimeOfPublishTimestamp(
             minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
@@ -478,7 +469,7 @@ public class EventProcessService {
   }
 
   private EventImportSourceDto createEventImportSourceFromExternalSources(
-      List<ExternalEventSourceEntryDto> externalSources) {
+      final List<ExternalEventSourceEntryDto> externalSources) {
     boolean includeAllGroups =
         externalSources.stream()
             .map(EventSourceEntryDto::getConfiguration)
@@ -544,7 +535,10 @@ public class EventProcessService {
         camundaSources.stream()
             .map(
                 camundaSource ->
-                    camundaSource.getConfiguration().getProcessDefinitionKey().toLowerCase())
+                    camundaSource
+                        .getConfiguration()
+                        .getProcessDefinitionKey()
+                        .toLowerCase(Locale.ENGLISH))
             .filter(definitionKey -> !camundaEventIndexSuffixes.contains(definitionKey))
             .toList();
     if (!unimportedEventCamundaSources.isEmpty()) {
@@ -724,7 +718,7 @@ public class EventProcessService {
     try {
       return BpmnModelUtil.parseBpmnModel(xmlString);
     } catch (ModelParseException ex) {
-      throw new BadRequestException("The provided xml is not valid");
+      throw new BadRequestException("The provided xml is not valid", ex);
     }
   }
 }

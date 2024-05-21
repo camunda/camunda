@@ -1635,25 +1635,11 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetDeleteConflictsForEventProcessMappingRequest(
-      final String eventProcessId) {
-    this.path = "eventBasedProcess/" + eventProcessId + "/delete-conflicts";
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(
       final List<String> eventBasedProcessConflictIds) {
     this.path = "eventBasedProcess/delete-conflicts";
     this.method = POST;
     this.body = getBody(eventBasedProcessConflictIds);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(
-      final String eventProcessId) {
-    this.path = "eventBasedProcess/" + eventProcessId;
-    this.method = DELETE;
     return this;
   }
 

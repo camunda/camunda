@@ -16,7 +16,5 @@ public interface MappingRepository {
   void updateEventProcessMappingWithScript(
       EventProcessMappingDto eventProcessMappingDto, Set<String> fieldsToUpdate);
 
-  boolean deleteEventProcessMapping(String eventProcessMappingId);
-
   void deleteEventProcessMappings(List<String> eventProcessMappingIds);
 }

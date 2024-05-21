@@ -105,7 +105,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   @ParameterizedTest(name = "Instance index is deleted on {0}.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void dedicatedInstanceIndexIsDeletedOn(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
@@ -128,7 +128,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
   @ParameterizedTest(
       name = "Only expected instance index is deleted on {0}, other is still present.")
-  @MethodSource("cancelOrDeleteAction")
+  @MethodSource("cancelAction")
   public void dedicatedInstanceIndexIsDeletedOtherInstanceIndexNotAffected(
       final String actionName, final BiConsumer<EventProcessClient, String> action) {
     // given
