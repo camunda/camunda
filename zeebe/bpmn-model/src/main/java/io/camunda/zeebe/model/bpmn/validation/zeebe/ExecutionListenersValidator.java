@@ -20,7 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,9 +32,11 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ExecutionListenersValidator implements ModelElementValidator<ZeebeExecutionListeners> {
 
   private static final Set<String> ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS =
-      new HashSet<>(
+      new LinkedHashSet<>(
           Arrays.asList(
               BpmnModelConstants.BPMN_ELEMENT_PROCESS,
+              BpmnModelConstants.BPMN_ELEMENT_SUB_PROCESS,
+              BpmnModelConstants.BPMN_ELEMENT_CALL_ACTIVITY,
               BpmnModelConstants.BPMN_ELEMENT_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SEND_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK,
