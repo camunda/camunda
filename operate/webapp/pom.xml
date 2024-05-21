@@ -427,6 +427,7 @@
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>com.nimbusds:nimbus-jose-jwt</dep>
+            <dep>com.github.spotbugs:spotbugs-annotations</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

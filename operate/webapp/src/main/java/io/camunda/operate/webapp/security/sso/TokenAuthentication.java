@@ -15,7 +15,6 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.Auth0Properties;
@@ -41,15 +40,18 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
  * This class may be created in two ways: user freshly authenticated or stored session is
  * deserialized. In the second case all the fields marked with JsonIgnore will be empty.
  */
-@SuppressFBWarnings(
-    value = "DL_SYNCHRONIZATION_ON_BOXED_PRIMITIVE",
-    justification = "Needs more research into intent of lock and integer pooling")
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
   private static final Logger LOGGER = LoggerFactory.getLogger(TokenAuthentication.class);
-  @JsonIgnore private final Integer lock = 0;
+
+  // Need to research further whether a lock shared between all instances is the desired behavior.
+  // This was originally an Integer member variable (non-static) but due to integer pooling, it
+  // was effectively a shared instance. This static object mirrors that behavior to keep consistent
+  // behavior until we research further.
+  @JsonIgnore private static final Object RESOURCE_PERMISSIONS_LOCK = new Object();
+
   private String claimName;
   private String organization;
   private String domain;
@@ -141,7 +143,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public List<IdentityAuthorization> getAuthorizations() {
     if (getIdentity() != null && (authorizations == null || needToUpdate())) {
-      synchronized (lock) {
+      synchronized (RESOURCE_PERMISSIONS_LOCK) {
         updateResourcePermissions();
       }
     }
