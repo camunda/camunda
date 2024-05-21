@@ -46,7 +46,7 @@ test.describe('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('');
+    await expect(page).toHaveURL('../operate');
     await commonPage.logout();
     await expect(page).toHaveURL(Paths.login());
   });

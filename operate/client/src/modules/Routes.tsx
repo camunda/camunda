@@ -16,22 +16,22 @@ type RouterState = {
 
 const Paths = {
   login() {
-    return '/login';
+    return './login';
   },
   dashboard() {
     return '/';
   },
   processes() {
-    return '/processes';
+    return './processes';
   },
   processInstance(processInstanceId: string = ':processInstanceId') {
-    return `/processes/${processInstanceId}`;
+    return `./processes/${processInstanceId}`;
   },
   decisions() {
-    return '/decisions';
+    return './decisions';
   },
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
-    return `/decisions/${decisionInstanceId}`;
+    return `./decisions/${decisionInstanceId}`;
   },
 } as const;
 
