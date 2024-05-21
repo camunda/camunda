@@ -10,6 +10,7 @@ package io.camunda.identity.usermanagement.service;
 import io.camunda.identity.authentication.basic.CamundaUserDetailsManager;
 import io.camunda.identity.record.CamundaUser;
 import io.camunda.identity.record.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.repository.UserRepository;
 import java.util.List;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,11 +21,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
   private final CamundaUserDetailsManager userDetailsManager;
+  private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
-      final CamundaUserDetailsManager userDetailsManager, final PasswordEncoder passwordEncoder) {
+      final CamundaUserDetailsManager userDetailsManager,
+      final UserRepository userRepository,
+      final PasswordEncoder passwordEncoder) {
     this.userDetailsManager = userDetailsManager;
+    this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
   }
 
@@ -68,14 +73,7 @@ public class UserService {
   }
 
   public List<CamundaUser> findAllUsers() {
-    return userDetailsManager.loadUsers().stream()
-        .map(
-            detail ->
-                new CamundaUser(
-                    detail.getUsername(),
-                    detail.isEnabled(),
-                    detail.getAuthorities().stream().map(Object::toString).toList()))
-        .toList();
+    return userRepository.loadUsers();
   }
 
   public CamundaUser updateUser(final String username, final CamundaUserWithPassword user) {

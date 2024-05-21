@@ -34,7 +34,6 @@ import org.springframework.boot.test.context.SpringBootTest;
       RetryElasticsearchClient.class,
     },
     properties = {
-      "graphql.servlet.websocket.enabled=false",
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false"
     },

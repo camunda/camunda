@@ -20,6 +20,7 @@ import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFi
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import styles from './styles.module.scss';
+import sharedStyles from 'modules/styles/panelHeader.module.scss';
 import cn from 'classnames';
 
 type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
@@ -77,7 +78,10 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
   const customFilters = getStateLocally('customFilters')?.custom;
 
   return (
-    <section className={styles.container} aria-label="Filters">
+    <section
+      className={cn(styles.container, sharedStyles.panelHeader)}
+      aria-label="Filters"
+    >
       <Form<FormValues>
         onSubmit={(values) => {
           const customFilters = getStateLocally('customFilters')?.custom;

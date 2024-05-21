@@ -9,5 +9,3 @@ camunda.tasklist:
     clusterName: elasticsearch
     url: http://localhost:9200
     prefix: zeebe-record
-  documentation:
-    apiMigrationDocsUrl: https://docs.camunda.io/docs/apis-tools/tasklist-api-rest/tasklist-api-rest-overview/ #TODO update this URL
