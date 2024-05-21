@@ -430,6 +430,7 @@ public class CompactRecordLogger {
     }
 
     result.append(" ").append(value.getRetries()).append(" retries,");
+    result.append(" ").append(value.getIncidentKey()).append(" incidentKey,");
 
     if (!StringUtils.isEmpty(value.getErrorCode())) {
       result.append(" ").append(value.getErrorCode()).append(":").append(value.getErrorMessage());
