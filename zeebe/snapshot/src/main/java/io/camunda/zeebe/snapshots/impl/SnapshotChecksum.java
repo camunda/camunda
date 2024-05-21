@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
+import io.camunda.zeebe.snapshots.ChecksumMethod;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
@@ -93,7 +93,7 @@ final class SnapshotChecksum {
             throw new UncheckedIOException(e);
           }
         });
-    checksum.setVersion(ChecksumGenerateApproach.MANUAL_CHECKSUM);
+    checksum.setChecksumMethod(ChecksumMethod.MANUAL);
     return checksum;
   }
 }
