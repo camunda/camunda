@@ -27,11 +27,15 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.function.Consumer;
 
 public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBuilder<B>>
-    extends AbstractFlowElementBuilder<B, SubProcess> implements ZeebeVariablesMappingBuilder<B> {
+    extends AbstractFlowElementBuilder<B, SubProcess>
+    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
+
+  private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
 
   protected AbstractEventSubProcessBuilder(
       final BpmnModelInstance modelInstance, final SubProcess element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   public StartEventBuilder startEvent() {
@@ -96,5 +100,31 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
     input.setTarget(target);
 
     return myself;
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

@@ -483,6 +483,8 @@ declare module '@carbon/react/icons' {
   export const Notification: Icon;
   export const CenterCircle: Icon;
   export const Subtract: Icon;
+  export const SidePanelOpen: Icon;
+  export const SidePanelClose: Icon;
 }
 
 declare module '@carbon/elements' {

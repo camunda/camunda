@@ -17,7 +17,7 @@
    - Click on the "+" button in the top left corner to add a new configuration.
    - Select "Spring Boot" from the list of templates.
    - In the "Name" field, give your run configuration a name, e.g., "TasklistSpringBootApp."
-   - In the "Main class" field, click on the "Browse" button to select the main class of _tasklist_ Spring Boot application: `io.camunda.tasklist.Application` (located in `webapp/src/main/java/io/camunda/tasklist/` folder).
+   - In the "Main class" field, click on the "Browse" button to select the main class of _tasklist_ Spring Boot application: `io.camunda.application.StandaloneTasklist` (located in `../dist/src/main/java/io/camunda/application/` folder).
    - In the "Active profiles" field, add the following profiles: `dev,dev-data,auth`.
    - Click "Apply" to save the configuration, and then click "OK" to close the dialog. As a result you will have:
      <img alt="SpringBoot app IntelliJ IDEA run configuration" src="/docs_assets/spring_boot_app_IDEA_config.png" width="550"/>

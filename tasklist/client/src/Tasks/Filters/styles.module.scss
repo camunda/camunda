@@ -8,8 +8,6 @@
 
 .container {
   width: 100%;
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-  border-bottom: 1px solid var(--cds-border-subtle);
 
   :global(.cds--custom-sorting-menu-options-wrapper) {
     width: 180px;

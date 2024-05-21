@@ -72,6 +72,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   private HttpClient httpClient = HttpClient.newHttpClient();
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

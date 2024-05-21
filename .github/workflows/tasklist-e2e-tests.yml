@@ -57,7 +57,7 @@ jobs:
           - 26500:26500
     steps:
       - name: Check out repository code
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
@@ -113,7 +113,7 @@ jobs:
       - name: Build backend
         run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Tasklist
-        run: mvn -q -B spring-boot:start -pl tasklist/webapp -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
