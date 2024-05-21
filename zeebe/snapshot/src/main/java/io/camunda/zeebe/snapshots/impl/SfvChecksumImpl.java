@@ -102,7 +102,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   public String toString() {
     return "SfvChecksumImpl{"
         + "combinedChecksum="
-        + combinedChecksum
+        + combinedChecksum.getValue()
         + ", checksums="
         + checksums
         + '}';
