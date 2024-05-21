@@ -42,6 +42,7 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
 
   /**
    * Returns if all file checksums match exactly.
+   *
    * @param o The other checksum
    * @return boolean denoting match
    */

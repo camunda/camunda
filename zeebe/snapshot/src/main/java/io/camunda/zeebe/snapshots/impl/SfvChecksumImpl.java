@@ -107,6 +107,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         + checksums
         + '}';
   }
+
   public void setSnapshotDirectoryComment(final String headerComment) {
     snapshotDirectoryComment = headerComment;
   }
