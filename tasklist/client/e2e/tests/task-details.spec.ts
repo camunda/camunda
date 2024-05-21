@@ -158,7 +158,7 @@ test.describe('task details page', () => {
     await expect(formJSDetailsPage.completeTaskButton).not.toBeVisible();
   });
 
-  test.only('complete zeebe and job worker tasks', async ({
+  test('complete zeebe and job worker tasks', async ({
     page,
     taskDetailsPage,
     taskPanelPage,
