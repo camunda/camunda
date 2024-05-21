@@ -431,6 +431,8 @@ message FailJobRequest {
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
   // valid argument, as the root of the JSON document is an array and not an object.
   string variables = 5;
+  // the incident key of the corresponding job
+  int64 incidentKey = 6;
 }
 
 message FailJobResponse {

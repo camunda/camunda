@@ -864,6 +864,11 @@
                 "id": 5,
                 "name": "variables",
                 "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "incidentKey",
+                "type": "int64"
               }
             ]
           },
