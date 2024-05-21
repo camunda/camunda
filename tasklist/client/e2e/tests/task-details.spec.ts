@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {createInstances, deploy} from '../zeebeClient';
+import exp from 'constants';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -31,6 +32,7 @@ test.beforeAll(async () => {
     './e2e/resources/text-templating-form-task.bpmn',
     './e2e/resources/processWithDeployedForm.bpmn',
     './e2e/resources/create-invoice_8-5.form',
+    './e2e/resources/Zeebe_Process.bpmn',
   ]);
 
   await Promise.all([
@@ -61,6 +63,7 @@ test.beforeAll(async () => {
       age: '50',
     }),
     createInstances('processWithDeployedForm', 1, 1),
+    createInstances('Zeebe_Process', 1, 1),
   ]);
 });
 
@@ -151,6 +154,50 @@ test.describe('task details page', () => {
 
     await page.goto(taskUrl);
 
+    await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
+    await expect(taskDetailsPage.unassignButton).not.toBeVisible();
+    await expect(formJSDetailsPage.completeTaskButton).not.toBeVisible();
+  });
+
+  test.only('complete zeebe and job worker tasks', async ({
+    page,
+    taskDetailsPage,
+    taskPanelPage,
+    formJSDetailsPage,
+  }) => {
+    await taskPanelPage.openTask('Zeebe_user_task');
+    await taskDetailsPage.unassignButton.click();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
+    await taskDetailsPage.assignToMeButton.click();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+    await taskDetailsPage.addVariable({
+      name: 'zeebeVar',
+      value: '{"Name":"John","Age":20}',
+    });
+    await formJSDetailsPage.completeTaskButton.click();
+    await expect(taskDetailsPage.taskCompletionNotification).toBeVisible();
+
+    await taskPanelPage.openTask('JobWorker_user_task');
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
+    await taskDetailsPage.assignToMeButton.click();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+    await taskDetailsPage.addVariable({
+      name: 'jobWorkerVar',
+      value: '{"Name":"John","Age":22}',
+    });
+    await formJSDetailsPage.completeTaskButton.click();
+    await expect(taskDetailsPage.taskCompletionNotification).toBeVisible();
+
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.openTask('Zeebe_user_task');
+    await expect(page.getByText('zeebeVar')).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
+    await expect(taskDetailsPage.unassignButton).not.toBeVisible();
+    await expect(formJSDetailsPage.completeTaskButton).not.toBeVisible();
+
+    await taskPanelPage.openTask('JobWorker_user_task');
+    await expect(page.getByText('jobWorkerVar')).toBeVisible();
+    await expect(page.getByText('zeebeVar')).toBeVisible();
     await expect(taskDetailsPage.assignToMeButton).not.toBeVisible();
     await expect(taskDetailsPage.unassignButton).not.toBeVisible();
     await expect(formJSDetailsPage.completeTaskButton).not.toBeVisible();
