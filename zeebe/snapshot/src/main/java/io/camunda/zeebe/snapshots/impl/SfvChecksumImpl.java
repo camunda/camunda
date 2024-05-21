@@ -98,9 +98,10 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
-    if (checksumMethod != null) {
-      writer.printf(FORMAT_CHECKSUM_METHOD_LINE, checksumMethod);
+    if (checksumMethod == null) {
+      throw new RuntimeException("Checksum method not set");
     }
+    writer.printf(FORMAT_CHECKSUM_METHOD_LINE, checksumMethod);
     writer.flush();
 
     if (writer.checkError()) {
