@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
-import com.netflix.concurrency.limits.Limiter.Listener;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
@@ -67,25 +66,24 @@ public final class FlowControl implements AppendListener {
    */
   public Either<Rejection, InFlightEntry.PendingAppend> tryAcquire(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    metrics.increaseTriedAppends();
+
+    metrics.received(context);
+
     final var appendListener = appendLimiter.acquire(null).orElse(null);
     if (appendListener == null) {
-      metrics.increaseDeferredAppends();
-      LOG.trace("Skipping append due to backpressure");
+      metrics.dropped(context);
       return Either.left(new AppendLimitExhausted());
     }
 
-    final Listener requestListener;
-    if (context instanceof UserCommand(final var intent)) {
-      metrics.receivedRequest();
-      requestListener = requestLimiter.acquire(intent).orElse(null);
-      if (requestListener == null) {
-        metrics.droppedRequest();
-        appendListener.onDropped();
-        return Either.left(new RequestLimitExhausted());
-      }
-    } else {
-      requestListener = null;
+    if (!(context instanceof UserCommand(final var intent))) {
+      return Either.right(new PendingAppend(metrics, batchMetadata, appendListener, null));
+    }
+
+    final var requestListener = requestLimiter.acquire(intent).orElse(null);
+    if (requestListener == null) {
+      metrics.dropped(context);
+      appendListener.onDropped();
+      return Either.left(new RequestLimitExhausted());
     }
 
     return Either.right(new PendingAppend(metrics, batchMetadata, appendListener, requestListener));

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -150,6 +152,20 @@ public final class LogStreamMetrics {
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
   }
 
+  public void received(final WriteContext context) {
+    triedAppends.inc();
+    if (context instanceof UserCommand) {
+      receivedRequests.inc();
+    }
+  }
+
+  public void dropped(final WriteContext context) {
+    deferredAppends.inc();
+    if (context instanceof UserCommand) {
+      droppedRequests.inc();
+    }
+  }
+
   public void increaseInflightAppends() {
     inflightAppends.inc();
   }
@@ -160,18 +176,6 @@ public final class LogStreamMetrics {
 
   public void setAppendLimit(final long limit) {
     appendLimit.set(limit);
-  }
-
-  public void increaseTriedAppends() {
-    triedAppends.inc();
-  }
-
-  public void receivedRequest() {
-    receivedRequests.inc();
-  }
-
-  public void droppedRequest() {
-    droppedRequests.inc();
   }
 
   public void setInflightRequests(final int count) {
@@ -188,10 +192,6 @@ public final class LogStreamMetrics {
 
   public void decreaseInflightRequests() {
     inflightRequests.dec();
-  }
-
-  public void increaseDeferredAppends() {
-    deferredAppends.inc();
   }
 
   public Timer startWriteTimer() {
