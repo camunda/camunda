@@ -22,7 +22,6 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       TasklistProperties.PREFIX + ".importerEnabled = false",
       TasklistProperties.PREFIX + ".archiverEnabled = false",
-      "graphql.servlet.websocket.enabled=false"
     })
 public class OnlyWebappIT extends ModuleIntegrationTest {
 
