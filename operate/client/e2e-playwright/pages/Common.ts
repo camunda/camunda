@@ -236,7 +236,7 @@ export class Common {
       canLogout: true,
       isLoginDelegated: false,
       contextPath: '',
-      baseName: '/tasklist',
+      baseName: '/operate',
       organizationId: null,
       clusterId: null,
       stage: null,
