@@ -30,14 +30,15 @@ import org.slf4j.LoggerFactory;
 public final class FlowControl implements AppendListener {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControl.class);
 
+  private final LogStreamMetrics metrics;
+  private final Limit appendLimit;
+  private final Limit requestLimit;
   private final Limiter<Void> appendLimiter;
   private final Limiter<Intent> requestLimiter;
-  private final LogStreamMetrics metrics;
+
   private final Map<Long, InFlightEntry.Unwritten> unwritten = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Uncommitted> uncommitted = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Unprocessed> unprocessed = new ConcurrentHashMap<>();
-  private final Limit appendLimit;
-  private final Limit requestLimit;
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
