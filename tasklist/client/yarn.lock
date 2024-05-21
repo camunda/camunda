@@ -15,12 +15,12 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
-"@axe-core/playwright@4.9.0":
-  version "4.9.0"
-  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.9.0.tgz#3538c5af8868f1704eedeb58a6b5a84feb0ccfe1"
-  integrity sha512-Q1Lz75dNsX38jof+aev7RficDMdH/HLOLySkDdXR0fUoeFcLdw4UNgDO2CNNP4CTpoesEdfYRdd6VmDXjhBgbA==
+"@axe-core/playwright@4.9.1":
+  version "4.9.1"
+  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.9.1.tgz#9c17c2976464d31d96d310c56df8ba100d87d772"
+  integrity sha512-8m4WZbZq7/aq7ZY5IG8GqV+ZdvtGn/iJdom+wBg+iv/3BAOBIfNQtIu697a41438DzEEyptXWmC3Xl5Kx/o9/g==
   dependencies:
-    axe-core "~4.9.0"
+    axe-core "~4.9.1"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.10.4", "@babel/code-frame@^7.23.5", "@babel/code-frame@^7.24.2":
   version "7.24.2"
@@ -1972,7 +1972,7 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-axe-core@4.9.1, axe-core@~4.9.0:
+axe-core@4.9.1, axe-core@~4.9.1:
   version "4.9.1"
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.9.1.tgz#fcd0f4496dad09e0c899b44f6c4bb7848da912ae"
   integrity sha512-QbUdXJVTpvUTHU7871ppZkdOLBeGUKBQWHkHrvN2V9IQWGMt61zf3B45BtzjxEJzYuj0JBjBZP/hmYS/R9pmAw==
