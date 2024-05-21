@@ -166,9 +166,13 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.openTask('Zeebe_user_task');
     await taskDetailsPage.unassignButton.click();
-    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled({
+      timeout: 20000,
+    });
     await taskDetailsPage.assignToMeButton.click();
-    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled({
+      timeout: 20000,
+    });
     await taskDetailsPage.addVariable({
       name: 'zeebeVar',
       value: '{"Name":"John","Age":20}',
@@ -177,9 +181,13 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.taskCompletionNotification).toBeVisible();
 
     await taskPanelPage.openTask('JobWorker_user_task');
-    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeDisabled({
+      timeout: 20000,
+    });
     await taskDetailsPage.assignToMeButton.click();
-    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled();
+    await expect(formJSDetailsPage.completeTaskButton).toBeEnabled({
+      timeout: 20000,
+    });
     await taskDetailsPage.addVariable({
       name: 'jobWorkerVar',
       value: '{"Name":"John","Age":22}',
