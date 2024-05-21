@@ -16,8 +16,7 @@ import styles from './index.module.scss';
 const ProcessView: React.FC = () => {
   const {task, process} = useOutletContext<OutletContext>();
 
-  if (!process) {
-    console.log({className: styles.somethingWentWrong});
+  if (process === undefined) {
     return <SomethingWentWrong className={styles.somethingWentWrong} />;
   }
 
