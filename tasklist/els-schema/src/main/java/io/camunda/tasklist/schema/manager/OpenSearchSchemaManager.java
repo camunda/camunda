@@ -154,8 +154,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public String getIndexPrefix() {
-    //TODO: Implement this method
-    return "";
+    return tasklistProperties.getOpenSearch().getIndexPrefix();
   }
 
   @Override

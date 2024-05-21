@@ -15,6 +15,7 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class SchemaStartup {
   @Autowired private MigrationProperties migrationProperties;
 
   @PostConstruct
-  public void initializeSchema() throws MigrationException {
+  public void initializeSchema() throws MigrationException, IOException {
     try {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");
