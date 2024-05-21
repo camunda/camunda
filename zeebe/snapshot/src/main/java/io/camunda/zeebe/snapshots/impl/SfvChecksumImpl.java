@@ -98,6 +98,15 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     return checksums;
   }
 
+  @Override
+  public String toString() {
+    return "SfvChecksumImpl{"
+        + "combinedChecksum="
+        + combinedChecksum
+        + ", checksums="
+        + checksums
+        + '}';
+  }
   public void setSnapshotDirectoryComment(final String headerComment) {
     snapshotDirectoryComment = headerComment;
   }
