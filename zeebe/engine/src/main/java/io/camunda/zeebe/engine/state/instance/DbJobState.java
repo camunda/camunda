@@ -220,6 +220,9 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
+      if (retries > 0) {
+        job.resetIncidentKey();
+      }
       updateJobRecord(jobKey, job);
     }
     return job;
