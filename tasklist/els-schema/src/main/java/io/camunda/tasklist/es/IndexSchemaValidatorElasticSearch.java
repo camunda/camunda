@@ -227,30 +227,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     return true;
   }
 
-  /**
-   * Validates existing indices mappings against schema files defined in codebase.
-   *
-   * @return newFields map with the new field definitions per index
-   * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
-   *     settings
-   */
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMapping() throws IOException {
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
-    final Map<String, IndexMapping> indexMappings =
-        schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
-      final Map<String, IndexMapping> indexMappingsGroup =
-          filterIndexMappings(indexMappings, indexDescriptor);
-      // we don't check indices that were not yet created
-      if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
-            getDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
-      }
-    }
-    return newFields;
-  }
-
   private IndexMappingDifference getDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     return getIndexMappingDifference(indexDescriptor, indexMappingsGroup);

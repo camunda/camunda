@@ -688,4 +688,13 @@ public class RetryOpenSearchClient {
     request.setJsonEntity(updateJson);
     opensearchRestClient.performRequest(request);
   }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        "PutMapping " + request.index(),
+        () -> {
+          openSearchClient.indices().putMapping(request);
+          return true;
+        });
+  }
 }

@@ -7,6 +7,10 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static com.amazonaws.util.json.Jackson.toJsonString;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
@@ -17,10 +21,13 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,8 +36,10 @@ import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
@@ -38,6 +47,8 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
+import org.opensearch.client.opensearch.indices.get_mapping.IndexMappingRecord;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +77,9 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Autowired private OpenSearchClient openSearchClient;
 
+  @Autowired private ObjectMapper objectMapper;
+
+
   @Override
   public void createSchema() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
@@ -89,9 +103,28 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final GetMappingResponse response =
         openSearchClient.indices().getMapping(s -> s.index(indexNamePattern));
 
-    return Map.of();
-  }
+    for (final Map.Entry<String, IndexMappingRecord> indexMapping :
+        response.result().entrySet()) {
+      final Set<IndexMappingProperty> properties = new HashSet<>();
+      for (final Map.Entry<String, Property> entry :
+          indexMapping.getValue().mappings().properties().entrySet()) {
+        final Property propertyVariant = entry.getValue();
+        final String propertyAsJson = toJsonString(propertyVariant);
 
+        final Map<String, Object> indexMappingAsMap =
+            objectMapper.readValue(
+                propertyAsJson, new TypeReference<HashMap<String, Object>>() {});
+        properties.add(
+            new IndexMappingProperty()
+                .setName(entry.getKey())
+                .setTypeDefinition(indexMappingAsMap));
+      }
+      final IndexMapping mapping =
+          new IndexMapping().setIndexName(indexMapping.getKey()).setProperties(properties);
+      mappings.put(indexMapping.getKey(), mapping);
+    }
+    return mappings;
+  }
 
   @Override
   public String getIndexPrefix() {
@@ -101,7 +134,42 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
-    //TODO: Implement this method
+    for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
+        newFields.entrySet()) {
+      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
+        LOGGER.info(
+            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
+        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+        final InputStream json = readJSONFile(templateDescriptor.getSchemaClasspathFilename());
+        final PutIndexTemplateRequest indexTemplateRequest =
+            prepareIndexTemplateRequest(templateDescriptor, json);
+        putIndexTemplate(indexTemplateRequest);
+      }
+
+      final Map<String, Property> properties;
+      try (
+          final JsonParser jsonParser =
+          JsonProvider.provider()
+              .createParser(
+                  new StringReader(
+                      IndexMappingProperty.toJsonString(
+                          indexNewFields.getValue(), objectMapper)))) {
+        final JsonpMapper jsonpMapper = openSearchClient._transport().jsonpMapper();
+        properties =
+            JsonpDeserializer.stringMapDeserializer(Property._DESERIALIZER)
+                .deserialize(jsonParser, jsonpMapper);
+      }
+      final PutMappingRequest request =
+          new PutMappingRequest.Builder()
+              .index(indexNewFields.getKey().getAlias())
+              .properties(properties)
+              .build();
+      LOGGER.info(
+          String.format(
+              "Index alias: %s. New fields will be added: %s",
+              indexNewFields.getKey().getAlias(), indexNewFields.getValue()));
+      retryOpenSearchClient.putMapping(request);
+    }
   }
 
   @Override
@@ -123,6 +191,21 @@ public class OpenSearchSchemaManager implements SchemaManager {
             .build();
 
     createIndex(request, indexDescriptor.getFullQualifiedName());
+  }
+
+  private PutIndexTemplateRequest prepareIndexTemplateRequest(final TemplateDescriptor templateDescriptor, final InputStream json) {
+    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+    final JsonParser parser = mapper.jsonProvider().createParser(json);
+    final IndexTemplateMapping template = new IndexTemplateMapping.Builder()
+        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
+        .build();
+    return new PutIndexTemplateRequest.Builder()
+        .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
+        .template(template)
+        .name(templateDescriptor.getTemplateName())
+        .composedOf(List.of(settingsTemplateName()))
+        .build();
   }
 
   public void createIndexLifeCycles() {
