@@ -46,7 +46,6 @@ import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo.SalesPlan;
@@ -92,7 +91,6 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.cloud.consoleUrl=https://consoleUrl",
       "camunda.tasklist.csrf-prevention-enabled=false",
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID,
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     },

@@ -10,7 +10,6 @@ package io.camunda.tasklist.util;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.time.OffsetDateTime;
@@ -31,9 +30,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "graphql.servlet.exception-handlers-enabled = true",
-      "management.endpoints.web.exposure.include = info,prometheus,loggers,usage-metrics",
-      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "test"})

@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.identity;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.IDENTITY_CALLBACK_URI;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
@@ -48,7 +47,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "camunda.tasklist.identity.clientId=tasklist",
       "camunda.tasklist.identity.clientSecret=the-cake-is-alive",
       "camunda.tasklist.identity.audience=tasklist-api",
-      "server.servlet.session.cookie.name = " + COOKIE_JSESSIONID,
       "camunda.tasklist.persistentSessionsEnabled = true",
       "camunda.tasklist.importer.startLoadingDataOnStartup = false",
       "camunda.tasklist.archiver.rolloverEnabled = false",
