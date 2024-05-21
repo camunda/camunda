@@ -1,5 +1,5 @@
 ---
-# A workflow to deploy/update the c7 and c8 stage environments
+# A workflow to deploy/update the c7 stage environments
 name: Optimize Deploy stage environments
 
 on:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [C7, C8]
+        env: [C7]
     timeout-minutes: 20
     steps:
     - name: Import secrets
@@ -72,9 +72,8 @@ jobs:
           ${{
             fromJson(
               format(
-                '{{ "C7": "{0}", "C8": "{1}" }}',
-                '.ci/deployments-resources/argo/c7-optimize-application.yml',
-                '.ci/deployments-resources/argo/c8-optimize-application.yml'
+                '{{ "C7": "{0}" }}',
+                '.ci/deployments-resources/argo/c7-optimize-application.yml'
               )
             )[matrix.env]
           }}
@@ -82,9 +81,8 @@ jobs:
           ${{
             fromJson(
               format(
-                '{{ "C7": "{0}", "C8": "{1}" }}',
-                'optimize-',
-                'c8-optimize-'
+                '{{ "C7": "{0}" }}',
+                'optimize-'
               )
             )[matrix.env]
           }}
@@ -106,14 +104,6 @@ jobs:
           --helm-set optimize.image.tag=${{ steps.params.outputs.commit-sha }}
           --helm-set cambpm.image.tag=${{ steps.versions.outputs.cambpm }}
           --helm-set elasticsearch.image.tag=${{ steps.versions.outputs.elasticsearch }}
-        C8: >-
-          --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud/auth/realms/camunda-platform
-          --helm-set global.identity.auth.optimize.redirectUrl=https://${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud
-          --helm-set camunda-platform.optimize.image.tag=${{ steps.params.outputs.commit-sha }}
-          --helm-set camunda-platform.identity.image.tag=${{ steps.versions.outputs.identity }}
-          --helm-set camunda-platform.zeebe.image.tag=${{ steps.versions.outputs.zeebe }}
-          --helm-set camunda-platform.zeebe-gateway.image.tag=${{ steps.versions.outputs.zeebe }}
-          --helm-set camunda-platform.identity.fullURL=https://identity-${app_url} \
         COMMON_ARGS: >-
           --dest-namespace optimize-${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}
           --file ${{ steps.params.outputs.argocd-app-config-file }}
