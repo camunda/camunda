@@ -37,6 +37,7 @@ public class IdentityAuthorizationService {
   public List<String> getUserGroups() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String accessToken = null;
+
     final Identity identity = SpringContextHolder.getBean(Identity.class);
     // Extract access token based on authentication type
     if (authentication instanceof IdentityAuthentication) {
@@ -45,7 +46,10 @@ public class IdentityAuthorizationService {
     } else if (authentication instanceof TokenAuthentication) {
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
       final String organization = ((TokenAuthentication) authentication).getOrganization();
-      return identity.authentication().getGroups(accessToken, organization);
+      // Sending explicit the audience null to get the groups in the organization
+      // Method getGroups is not used because it returns the groups of the user without consider
+      // organization
+      return identity.authentication().getGroupsInOrganization(accessToken, null, organization);
     }
 
     // Fallback groups if authentication type is unrecognized or access token is null
