@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import static io.camunda.zeebe.snapshots.SnapshotVersion.CHECKSUM_FROM_DB;
-import static io.camunda.zeebe.snapshots.SnapshotVersion.MANUAL_CHECKSUM;
+import static io.camunda.zeebe.snapshots.ChecksumGenerateApproach.CHECKSUM_FROM_DB;
+import static io.camunda.zeebe.snapshots.ChecksumGenerateApproach.MANUAL_CHECKSUM;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
-import io.camunda.zeebe.snapshots.SnapshotVersion;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -52,7 +52,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
   private static final Pattern FILE_VERSION_PATTERN =
       Pattern.compile(
-          "; checksumVersion = (" + SnapshotVersion.MANUAL_CHECKSUM + "|" + CHECKSUM_FROM_DB + ")");
+          "; checksumVersion = (" + ChecksumGenerateApproach.MANUAL_CHECKSUM + "|" + CHECKSUM_FROM_DB + ")");
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
   private static final Pattern COMBINED_VALUE_PATTERN =
@@ -60,7 +60,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private Checksum combinedChecksum;
   private final SortedMap<String, Long> checksums = new TreeMap<>();
   private String snapshotDirectoryComment;
-  private SnapshotVersion version;
+  private ChecksumGenerateApproach version;
 
   /**
    * creates an immutable and pre-defined checksum
@@ -81,11 +81,11 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public SnapshotVersion getVersion() {
+  public ChecksumGenerateApproach getVersion() {
     return version;
   }
 
-  public void setVersion(final SnapshotVersion version) {
+  public void setVersion(final ChecksumGenerateApproach version) {
     this.version = version;
   }
 
@@ -172,7 +172,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         final Matcher versionMatcher = FILE_VERSION_PATTERN.matcher(line);
         if (versionMatcher.find()) {
           final String version = versionMatcher.group(1);
-          setVersion(SnapshotVersion.valueOf(version));
+          setVersion(ChecksumGenerateApproach.valueOf(version));
         }
 
       } else {
