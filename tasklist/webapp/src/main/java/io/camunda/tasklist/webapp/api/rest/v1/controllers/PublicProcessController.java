@@ -30,7 +30,7 @@ public class PublicProcessController {
   @GetMapping("/{bpmnProcessId}")
   public ModelAndView index(
       final Model model, @PathVariable final String bpmnProcessId, final HttpServletRequest req) {
-    final ModelAndView modelAndView = new ModelAndView("forward:/index.html");
+    final ModelAndView modelAndView = new ModelAndView("forward:/tasklist/index.html");
     modelAndView.setStatus(HttpStatus.OK);
     final ProcessEntity processEntity = processStore.getProcessByBpmnProcessId(bpmnProcessId);
     final String title =

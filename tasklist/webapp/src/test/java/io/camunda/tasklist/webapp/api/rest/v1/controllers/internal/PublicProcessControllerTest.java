@@ -52,6 +52,6 @@ public class PublicProcessControllerTest {
         .andExpect(model().attribute("title", "processEntity"))
         .andExpect(model().attribute("ogImage", "http://localhost/public-start-form-og-image.jpg"))
         .andExpect(model().attribute("ogUrl", "http://localhost/new/test"))
-        .andExpect(forwardedUrl("/index.html"));
+        .andExpect(forwardedUrl("/tasklist/index.html"));
   }
 }
