@@ -153,6 +153,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private void publishIncidentRelatedJob(final long jobKey) {
     if (isJobRelatedIncident(jobKey)) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
+      failedJobRecord.resetIncidentKey();
       jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
   }
