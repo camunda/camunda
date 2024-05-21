@@ -41,6 +41,7 @@ public final class JobUpdateRetriesProcessor implements CommandProcessor<JobReco
       if (job != null) {
         // update retries for response sent to client
         job.setRetries(retries);
+        job.resetIncidentKey();
 
         commandControl.accept(JobIntent.RETRIES_UPDATED, job);
       } else {
