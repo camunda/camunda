@@ -18,6 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -101,16 +102,6 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public String toString() {
-    return "SfvChecksum{"
-        + "combinedChecksum="
-        + combinedChecksum.getValue()
-        + ", checksums="
-        + checksums
-        + '}';
-  }
-
-  @Override
   public void updateFromFile(final Path filePath) throws IOException {
     final String fileName = filePath.getFileName().toString();
     final byte[] chunkId = fileName.getBytes(UTF_8);
@@ -160,6 +151,23 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         }
       }
     }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(checksums);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SfvChecksumImpl that = (SfvChecksumImpl) o;
+    return Objects.equals(checksums, that.checksums);
   }
 
   private static class PreDefinedImmutableChecksum implements Checksum {
