@@ -47,7 +47,8 @@ public class IdentityAuthorizationService {
       accessToken = ((TokenAuthentication) authentication).getAccessToken();
       final String organization = ((TokenAuthentication) authentication).getOrganization();
       // Sending explicit the audience null to get the groups in the organization
-      // Method getGroups is not used because it returns the groups of the user without consider organization
+      // Method getGroups is not used because it returns the groups of the user without consider
+      // organization
       return identity.authentication().getGroupsInOrganization(accessToken, null, organization);
     }
 
