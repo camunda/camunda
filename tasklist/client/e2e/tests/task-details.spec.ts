@@ -35,7 +35,7 @@ test.beforeAll(async () => {
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
-    createInstances('user_registration', 1, 2),
+    createInstances('user_registration', 1, 3),
     createInstances('user_registration_with_vars', 1, 2, {
       name: 'Jane',
       age: '50',
