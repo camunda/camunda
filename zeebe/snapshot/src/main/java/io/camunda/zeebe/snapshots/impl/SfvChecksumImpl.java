@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import static io.camunda.zeebe.snapshots.ChecksumMethod.FROM_ROCKS_DB;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.ChecksumMethod;
@@ -49,7 +48,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private static final String FORMAT_CHECKSUM_METHOD_LINE = "; checksumMethod = %s\n";
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
   private static final Pattern FILE_CHECKSUM_METHOD_PATTERN =
-      Pattern.compile("; checksumMethod = (" + FROM_ROCKS_DB + ")");
+      Pattern.compile("; checksumMethod = ([A-Z_]+)");
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
   private static final Pattern COMBINED_VALUE_PATTERN =
@@ -169,8 +168,13 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
 
         final Matcher checksumMethodMatcher = FILE_CHECKSUM_METHOD_PATTERN.matcher(line);
         if (checksumMethodMatcher.find()) {
-          final String version = checksumMethodMatcher.group(1);
-          setChecksumMethod(ChecksumMethod.valueOf(version));
+          final String checksumMethod = checksumMethodMatcher.group(1);
+
+          try {
+            setChecksumMethod(ChecksumMethod.valueOf(checksumMethod));
+          } catch (final IllegalArgumentException e) {
+            throw new RuntimeException("ChecksumMethod Does not currently support " + checksumMethod);
+          }
         } else {
           setChecksumMethod(ChecksumMethod.MANUAL);
         }
