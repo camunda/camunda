@@ -62,5 +62,6 @@ public final class FailJobTest extends GatewayTest {
 
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getVariablesBuffer(), variables);
     assertThat(brokerRequestValue.getVariables().get("foo")).isEqualTo("bar");
+    assertThat(brokerRequestValue.getIncidentKey()).isEqualTo(-1L);
   }
 }

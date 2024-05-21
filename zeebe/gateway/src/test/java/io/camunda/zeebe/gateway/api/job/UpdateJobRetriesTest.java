@@ -44,5 +44,6 @@ public final class UpdateJobRetriesTest extends GatewayTest {
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
+    assertThat(brokerRequestValue.getIncidentKey()).isEqualTo(-1L);
   }
 }
