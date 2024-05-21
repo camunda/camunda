@@ -26,11 +26,13 @@ import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
@@ -56,6 +58,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 @Component("schemaManager")
 @Profile("!test")
@@ -92,8 +95,31 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public IndexMapping getExpectedIndexFields(final IndexDescriptor indexDescriptor) {
-    //TODO: Implement this method
-    return null;
+    final InputStream description =
+        OpenSearchSchemaManager.class.getResourceAsStream(
+            indexDescriptor.getSchemaClasspathFilename());
+    try {
+      final String currentVersionSchema =
+          StreamUtils.copyToString(description, StandardCharsets.UTF_8);
+      final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
+      final Map<String, Object> mappings =
+          (Map<String, Object>) objectMapper.readValue(currentVersionSchema, type).get("mappings");
+      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final String dynamic = (String) mappings.get("dynamic");
+      return new IndexMapping()
+          .setIndexName(indexDescriptor.getIndexName())
+          .setDynamic(dynamic)
+          .setProperties(
+              properties.entrySet().stream()
+                  .map(
+                      entry ->
+                          new IndexMappingProperty()
+                              .setName(entry.getKey())
+                              .setTypeDefinition(entry.getValue()))
+                  .collect(Collectors.toSet()));
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
   }
 
   @Override
