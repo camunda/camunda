@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,7 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
@@ -81,10 +83,15 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public Map<String, IndexMapping> getIndexMappings(final String s) {
-    //TODO: Implement this method
+  public Map<String, IndexMapping> getIndexMappings(final String indexNamePattern)
+      throws IOException {
+    final Map<String, IndexMapping> mappings = new HashMap<>();
+    final GetMappingResponse response =
+        openSearchClient.indices().getMapping(s -> s.index(indexNamePattern));
+
     return Map.of();
   }
+
 
   @Override
   public String getIndexPrefix() {

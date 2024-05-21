@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -177,7 +178,8 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
    *     settings
    */
   @Override
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
+      throws IOException {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
@@ -232,7 +234,7 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
    * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
    *     settings
    */
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMapping() {
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMapping() throws IOException {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
