@@ -46,7 +46,7 @@ final class SnapshotChecksum {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
       final var sfvChecksum = createCombinedChecksum(fileStream);
-
+      sfvChecksum.setChecksumMethod(ChecksumMethod.MANUAL);
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
       // the file name, the sorted file list will have a differnt order and thus result in a
