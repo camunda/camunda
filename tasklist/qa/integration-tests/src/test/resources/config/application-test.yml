@@ -26,6 +26,6 @@ management:
 spring:
   web:
     resources:
-      static-locations: classpath:/static
+      static-locations: classpath:/test-static/tasklist/
   thymeleaf:
-    prefix: classpath:/static
+    prefix: classpath:/test-static/

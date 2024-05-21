@@ -9,8 +9,12 @@ package io.camunda.webapps.controllers;
 
 import static io.camunda.application.Profile.*;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -20,8 +24,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 public class ForwardErrorController {
@@ -29,13 +35,40 @@ public class ForwardErrorController {
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
   private static final String LOGIN_RESOURCE = "/api/login";
-
+  private static final String API = "/api/**";
+  private static final String PUBLIC_API = "/v*/**";
+  private static final String DEFAULT_MANAGEMENT_URI = "/actuator/**";
+  private static final String SSO_CALLBACK_URI = "/sso-callback";
+  private static final String NO_PERMISSION = "/noPermission";
+  private static final String IDENTITY_CALLBACK_URI = "/identity-callback";
   private static final String REQUESTED_URL = "requestedUrl";
 
   @Autowired private Environment environment;
 
-  @GetMapping(value = {"/{regex:[\\w-]+}", "/**/{regex:[\\w-]+}"})
-  public String forward404(final HttpServletRequest request) {
+  private List<RequestMatcher> ignoredRequestsMatchers;
+
+  @PostConstruct
+  public void init() {
+    ignoredRequestsMatchers =
+        List.of(
+            new AntPathRequestMatcher(PUBLIC_API),
+            new AntPathRequestMatcher(API),
+            new AntPathRequestMatcher(NO_PERMISSION),
+            new AntPathRequestMatcher(SSO_CALLBACK_URI),
+            new AntPathRequestMatcher(IDENTITY_CALLBACK_URI),
+            new AntPathRequestMatcher(
+                Optional.ofNullable(environment.getProperty("management.endpoints.web.base-path"))
+                    .map(s -> s.concat("/**"))
+                    .orElse(DEFAULT_MANAGEMENT_URI)));
+  }
+
+  @RequestMapping(value = {"/{regex:[\\w-]+}", "/**/{regex:[\\w-]+}"})
+  public String forward404(final HttpServletRequest request, final HttpServletResponse response) {
+    if (ignoredRequestsMatchers.stream()
+        .anyMatch(requestMatcher -> requestMatcher.matches(request))) {
+      response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
     final String requestedURL = getRequestedURL(request);
     if (!requestedURL.startsWith("/tasklist") && !requestedURL.startsWith("/operate")) {
       if (environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId())) {
@@ -46,7 +79,7 @@ public class ForwardErrorController {
     } else if (isLoginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURL);
     } else {
-      if (requestedURL.startsWith("/tasklist")) {
+      if (environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId())) {
         return "forward:/tasklist";
       } else {
         return "forward:/operate";

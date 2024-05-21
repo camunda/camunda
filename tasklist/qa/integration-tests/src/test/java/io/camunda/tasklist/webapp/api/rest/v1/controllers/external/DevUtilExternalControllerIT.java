@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.util.MockMvcHelper;
-import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-public class DevUtilExternalControllerIT extends TasklistZeebeIntegrationTest {
+public class DevUtilExternalControllerIT extends TasklistIntegrationTest {
   private MockMvcHelper mockMvcHelper;
 
   @Autowired private ObjectMapper objectMapper;
