@@ -72,11 +72,11 @@ class TaskDetailsPage {
     this.taskCompletionNotification = page.getByText('Task completed');
   }
 
-  async gotoTaskView(id: string) {
+  async gotoTaskDetails(id: string) {
     await this.page.goto(`/${id}`, {waitUntil: 'networkidle'});
   }
 
-  async gotoProcessView(id: string) {
+  async gotoTaskDetailsProcessTab(id: string) {
     await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
   }
 

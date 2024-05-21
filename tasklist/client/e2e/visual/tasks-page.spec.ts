@@ -7,8 +7,8 @@
  */
 
 import {expect, Route, Request} from '@playwright/test';
-import schema from '../resources/bigForm.json' assert {type: 'json'};
-import {test} from '../test-fixtures';
+import schema from '@/resources/bigForm.json' assert {type: 'json'};
+import {test} from '@/test-fixtures';
 
 type Task = {
   id: string;
@@ -71,7 +71,7 @@ const NON_FORM_TASK: Task = {
   context: null,
 };
 
-const NON_FORM_TASK_EMPTY_VARIABLES = [];
+const NON_FORM_TASK_EMPTY_VARIABLES: unknown[] = [] as const;
 
 const NON_FORM_TASK_VARIABLES = [
   {
@@ -246,7 +246,7 @@ function mockResponses(
       });
     }
 
-    route.continue();
+    return route.continue();
   };
 }
 
@@ -260,9 +260,9 @@ test.describe('tasks page', () => {
   });
 
   test('empty state dark theme', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('theme', '"dark"');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -274,9 +274,9 @@ test.describe('tasks page', () => {
     page,
     taskPanelPage,
   }) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -710,7 +710,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -756,7 +756,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
 
@@ -807,7 +807,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -851,7 +851,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -899,7 +899,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -944,7 +944,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -988,7 +988,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.gotoTaskView(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -1027,7 +1027,7 @@ test.describe('tasks page', () => {
       mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
     );
 
-    await taskDetailsPage.gotoTaskView(NON_FORM_TASK_WITH_TENANT.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK_WITH_TENANT.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -1079,7 +1079,7 @@ test.describe('tasks page', () => {
   test('process view', async ({page, taskDetailsPage}) => {
     await page.route(/^.*\/v1.*$/i, mockResponses([FORM_TASK], FORM_TASK));
 
-    await taskDetailsPage.gotoProcessView(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetailsProcessTab(FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });

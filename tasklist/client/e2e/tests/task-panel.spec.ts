@@ -7,8 +7,8 @@
  */
 
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from '../zeebeClient';
-import {test} from '../test-fixtures';
+import {deploy, createInstances} from '@/utils/zeebeClient';
+import {test} from '@/test-fixtures';
 
 test.beforeAll(async () => {
   await Promise.all([
