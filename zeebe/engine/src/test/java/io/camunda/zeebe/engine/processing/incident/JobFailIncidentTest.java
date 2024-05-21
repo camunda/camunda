@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
@@ -101,7 +102,8 @@ public final class JobFailIncidentTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
 
     // when
-    ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).withRetries(0).fail();
+    final Record<JobRecordValue> nextFailedEvent =
+        ENGINE.job().withType(JOB_TYPE).ofInstance(processInstanceKey).withRetries(0).fail();
     final Record<IncidentRecordValue> nextIncident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .filter(r -> r.getPosition() > firstIncident.getPosition())
@@ -109,7 +111,9 @@ public final class JobFailIncidentTest {
             .getFirst();
 
     // then
+    assertThat(failedEvent.getValue().getIncidentKey()).isEqualTo(firstIncident.getKey());
     assertThat(nextIncident.getKey()).isGreaterThan(firstIncident.getKey());
+    assertThat(nextFailedEvent.getValue().getIncidentKey()).isEqualTo(nextIncident.getKey());
   }
 
   @Test
@@ -136,6 +140,7 @@ public final class JobFailIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(failedEvent.getSourceRecordPosition());
+    assertThat(failedEvent.getValue().getIncidentKey()).isEqualTo(incidentEvent.getKey());
 
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
@@ -158,13 +163,14 @@ public final class JobFailIncidentTest {
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
 
     // when
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    final Record<JobRecordValue> failedEvent =
+        ENGINE
+            .job()
+            .withType(JOB_TYPE)
+            .withRetries(0)
+            .ofInstance(piKey)
+            .withAuthorizedTenantIds(tenantId)
+            .fail();
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
@@ -174,6 +180,7 @@ public final class JobFailIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getValue()).hasTenantId(tenantId);
+    assertThat(failedEvent.getValue().getIncidentKey()).isEqualTo(incidentEvent.getKey());
   }
 
   @Test
@@ -195,7 +202,8 @@ public final class JobFailIncidentTest {
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
-    final Record failEvent =
+
+    final Record<JobRecordValue> failEvent =
         RecordingExporter.jobRecords()
             .withIntent(JobIntent.FAILED)
             .withProcessInstanceKey(processInstanceKey)
@@ -210,6 +218,7 @@ public final class JobFailIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(failEvent.getSourceRecordPosition());
+    assertThat(failEvent.getValue().getIncidentKey()).isEqualTo(incidentEvent.getKey());
 
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
@@ -229,10 +238,12 @@ public final class JobFailIncidentTest {
     // when
     final JobClient jobClient = ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE);
 
-    jobClient.withRetries(1).withErrorMessage("first message").fail();
+    final Record<JobRecordValue> firstFailedEvent =
+        jobClient.withRetries(1).withErrorMessage("first message").fail();
 
     ENGINE.jobs().withType(JOB_TYPE).activate();
-    jobClient.withRetries(0).withErrorMessage("second message").fail();
+    final Record<JobRecordValue> secondFailedEvent =
+        jobClient.withRetries(0).withErrorMessage("second message").fail();
 
     // then
     final Record activityEvent =
@@ -247,6 +258,9 @@ public final class JobFailIncidentTest {
             .withIntent(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
+
+    assertThat(firstFailedEvent.getValue().getIncidentKey()).isEqualTo(-1L);
+    assertThat(secondFailedEvent.getValue().getIncidentKey()).isEqualTo(incidentEvent.getKey());
 
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
@@ -277,10 +291,12 @@ public final class JobFailIncidentTest {
             .ofInstance(processInstanceKey)
             .withKey(incidentCreatedEvent.getKey())
             .resolve();
-    ENGINE.jobs().withType(JOB_TYPE).activate();
 
+    final Record<JobBatchRecordValue> batchRecordValueRecord =
+        ENGINE.jobs().withType(JOB_TYPE).activate();
+    System.out.println(batchRecordValueRecord.getValue().getJobs().get(0).getIncidentKey());
     // then
-    final Record jobEvent =
+    final Record<JobRecordValue> jobEvent =
         RecordingExporter.jobRecords()
             .withIntent(JobIntent.FAILED)
             .withProcessInstanceKey(processInstanceKey)
@@ -301,6 +317,7 @@ public final class JobFailIncidentTest {
 
     final long lastPos = incidentEvent.getPosition();
 
+    assertThat(jobEvent.getValue().getIncidentKey()).isEqualTo(resolvedIncident.getKey());
     assertThat(resolvedIncident.getKey()).isGreaterThan(0);
     assertThat(resolvedIncident.getSourceRecordPosition()).isEqualTo(lastPos);
 
@@ -331,6 +348,7 @@ public final class JobFailIncidentTest {
 
     assertThat(secondActivationJobKey).isEqualTo(jobEvent.getKey());
     assertThat(secondActivationJobValue).hasRetries(1);
+    assertThat(secondActivationJobValue.getIncidentKey()).isEqualTo(-1L);
 
     // and the job lifecycle is correct
     final List<Record> jobEvents =
@@ -360,13 +378,14 @@ public final class JobFailIncidentTest {
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    final Record<JobRecordValue> failedEvent =
+        ENGINE
+            .job()
+            .withType(JOB_TYPE)
+            .withRetries(0)
+            .ofInstance(piKey)
+            .withAuthorizedTenantIds(tenantId)
+            .fail();
 
     // when
     ENGINE
@@ -381,6 +400,7 @@ public final class JobFailIncidentTest {
         ENGINE.incident().ofInstance(piKey).withAuthorizedTenantIds(tenantId).resolve();
 
     // then
+    assertThat(failedEvent.getValue().getIncidentKey()).isEqualTo(resolvedIncident.getKey());
     assertThat(resolvedIncident.getValue()).hasTenantId(tenantId);
     assertThat(resolvedIncident).hasIntent(IncidentIntent.RESOLVED);
   }
@@ -394,13 +414,14 @@ public final class JobFailIncidentTest {
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    final Record<JobRecordValue> failedEvent =
+        ENGINE
+            .job()
+            .withType(JOB_TYPE)
+            .withRetries(0)
+            .ofInstance(piKey)
+            .withAuthorizedTenantIds(tenantId)
+            .fail();
 
     // when
     final Record<IncidentRecordValue> resolvedIncident =
@@ -412,6 +433,7 @@ public final class JobFailIncidentTest {
             .resolve();
 
     // then
+    assertThat(failedEvent.getValue().getIncidentKey()).isGreaterThan(0);
     assertThat(resolvedIncident).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
@@ -449,6 +471,8 @@ public final class JobFailIncidentTest {
             .withIntent(IncidentIntent.RESOLVED)
             .getFirst();
 
+    assertThat(jobCancelled.getValue().getIncidentKey()).isGreaterThan(0);
+
     assertThat(resolvedIncidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
 
     assertThat(resolvedIncidentEvent.getValue())
@@ -483,6 +507,7 @@ public final class JobFailIncidentTest {
             .resolve();
 
     // then
+    assertThat(failedJob.getValue().getIncidentKey()).isGreaterThan(0);
     assertThat(resolvedIncidentRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
