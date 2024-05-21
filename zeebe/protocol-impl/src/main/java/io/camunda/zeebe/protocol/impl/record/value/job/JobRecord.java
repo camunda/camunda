@@ -126,6 +126,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  public JobRecord resetIncidentKey() {
+    incidentKeyProp.reset();
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getCustomHeadersBuffer() {
     return customHeadersProp.getValue();
