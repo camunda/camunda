@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
-public enum ChecksumGenerateApproach {
-  MANUAL_CHECKSUM,
-  CHECKSUM_FROM_DB
+public enum ChecksumMethod {
+  MANUAL,
+  FROM_ROCKS_DB
 }

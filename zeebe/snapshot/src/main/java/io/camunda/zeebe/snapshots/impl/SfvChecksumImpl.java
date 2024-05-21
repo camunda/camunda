@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import static io.camunda.zeebe.snapshots.ChecksumGenerateApproach.CHECKSUM_FROM_DB;
-import static io.camunda.zeebe.snapshots.ChecksumGenerateApproach.MANUAL_CHECKSUM;
+import static io.camunda.zeebe.snapshots.ChecksumMethod.FROM_ROCKS_DB;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
+import io.camunda.zeebe.snapshots.ChecksumMethod;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,7 +20,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -48,11 +46,10 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private static final String FORMAT_SNAPSHOT_DIRECTORY_LINE = "; snapshot directory = %s\n";
   private static final String FORMAT_FILE_CRC_LINE = "%s   %s\n";
   private static final String FORMAT_COMBINED_VALUE_LINE = "; combinedValue = %s\n";
-  private static final String FORMAT_CHECKSUM_VERSION_LINE = "; checksumVersion = %s\n";
+  private static final String FORMAT_CHECKSUM_METHOD_LINE = "; checksumMethod = %s\n";
   private static final String FILE_CRC_SEPARATOR_REGEX = " {3}";
-  private static final Pattern FILE_VERSION_PATTERN =
-      Pattern.compile(
-          "; checksumVersion = (" + ChecksumGenerateApproach.MANUAL_CHECKSUM + "|" + CHECKSUM_FROM_DB + ")");
+  private static final Pattern FILE_CHECKSUM_METHOD_PATTERN =
+      Pattern.compile("; checksumMethod = (" + FROM_ROCKS_DB + ")");
   private static final Pattern FILE_CRC_PATTERN =
       Pattern.compile("(.*)" + FILE_CRC_SEPARATOR_REGEX + "([0-9a-fA-F]{1,16})");
   private static final Pattern COMBINED_VALUE_PATTERN =
@@ -60,7 +57,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   private Checksum combinedChecksum;
   private final SortedMap<String, Long> checksums = new TreeMap<>();
   private String snapshotDirectoryComment;
-  private ChecksumGenerateApproach version;
+  private ChecksumMethod checksumMethod;
 
   /**
    * creates an immutable and pre-defined checksum
@@ -81,12 +78,12 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public ChecksumGenerateApproach getVersion() {
-    return version;
+  public ChecksumMethod getChecksumMethod() {
+    return checksumMethod;
   }
 
-  public void setVersion(final ChecksumGenerateApproach version) {
-    this.version = version;
+  public void setChecksumMethod(final ChecksumMethod checksumMethod) {
+    this.checksumMethod = checksumMethod;
   }
 
   @Override
@@ -102,8 +99,9 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     for (final Entry<String, Long> entry : checksums.entrySet()) {
       writer.printf(FORMAT_FILE_CRC_LINE, entry.getKey(), Long.toHexString(entry.getValue()));
     }
-    final String versionStr = Optional.ofNullable(version).orElse(MANUAL_CHECKSUM).toString();
-    writer.printf(FORMAT_CHECKSUM_VERSION_LINE, versionStr);
+    if (checksumMethod != null) {
+      writer.printf(FORMAT_CHECKSUM_METHOD_LINE, checksumMethod);
+    }
     writer.flush();
 
     if (writer.checkError()) {
@@ -122,8 +120,8 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         + combinedChecksum.getValue()
         + ", checksums="
         + checksums
-        + ", version="
-        + version
+        + ", checksumMethod="
+        + checksumMethod
         + '}';
   }
 
@@ -169,10 +167,12 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
           combinedChecksum = new PreDefinedImmutableChecksum(crc);
         }
 
-        final Matcher versionMatcher = FILE_VERSION_PATTERN.matcher(line);
-        if (versionMatcher.find()) {
-          final String version = versionMatcher.group(1);
-          setVersion(ChecksumGenerateApproach.valueOf(version));
+        final Matcher checksumMethodMatcher = FILE_CHECKSUM_METHOD_PATTERN.matcher(line);
+        if (checksumMethodMatcher.find()) {
+          final String version = checksumMethodMatcher.group(1);
+          setChecksumMethod(ChecksumMethod.valueOf(version));
+        } else {
+          setChecksumMethod(ChecksumMethod.MANUAL);
         }
 
       } else {
