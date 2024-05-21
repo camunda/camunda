@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_TIMEOUT;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import com.google.rpc.Code;
@@ -370,16 +373,12 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
   public static class Builder {
 
-    private static final long DEFAULT_LONG_POLLING_TIMEOUT = 10_000; // 10 seconds
-    private static final long DEFAULT_PROBE_TIMEOUT = 10_000; // 10 seconds
-    // Minimum number of responses with jobCount 0 to infer that no jobs are available
-    private static final int EMPTY_RESPONSE_THRESHOLD = 3;
-
     private BrokerClient brokerClient;
     private long maxMessageSize;
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
-    private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
+    // Minimum number of responses with jobCount 0 to infer that no jobs are available
+    private int minEmptyResponses = DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
 
     public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
