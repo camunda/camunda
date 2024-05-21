@@ -23,6 +23,7 @@ public class DBConfig {
     return new EmbeddedDatabaseBuilder()
         .setType(EmbeddedDatabaseType.H2)
         .addScript(JdbcDaoImpl.DEFAULT_USER_SCHEMA_DDL_LOCATION)
+        .addScript("scripts/groups.ddl")
         .build();
   }
 }

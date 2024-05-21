@@ -5,21 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared;
+package io.camunda.application;
 
 /**
  * A fixed set of Spring profiles. Some are application specific (broker, gateway), and others
  * environment specific (dev, test ,prod). Here to avoid littering the code base with different hard
  * coded strings, leading to potential errors.
- *
- * <p>You can activate application & environment profiles together, but should avoid activating two
- * of the same category.
  */
 public enum Profile {
   // application specific profiles
   BROKER("broker"),
   GATEWAY("gateway"),
   RESTORE("restore"),
+  OPERATE("operate"),
 
   // environment profiles
   TEST("test"),
@@ -27,7 +25,10 @@ public enum Profile {
   PRODUCTION("prod"),
 
   // other
-  IDENTITY_AUTH("identity-auth");
+  IDENTITY_AUTH("identity-auth"),
+
+  // indicating legacy standalone application
+  STANDALONE("standalone");
 
   private final String id;
 

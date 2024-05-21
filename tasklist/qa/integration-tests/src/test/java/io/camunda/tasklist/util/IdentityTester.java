@@ -7,13 +7,11 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD_2;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_USERNAME;
 import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_USERNAME_2;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +19,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Collections;
@@ -38,11 +35,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+@ActiveProfiles({IDENTITY_AUTH_PROFILE, "tasklist", "test"})
 public abstract class IdentityTester extends SessionlessTasklistZeebeIntegrationTest {
   public static TestContext testContext;
   protected static final String USER = KEYCLOAK_USERNAME;
@@ -56,7 +55,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
   @Autowired private ObjectMapper objectMapper;
   @Autowired private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
-  protected static void beforeClass(boolean multiTenancyEnabled) {
+  protected static void beforeClass(final boolean multiTenancyEnabled) {
 
     testContainerUtil = new TestContainerUtil();
     testContext = new TestContext();
@@ -80,6 +79,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
                 + "/auth/realms/camunda-platform/protocol/openid-connect/token");
   }
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();
@@ -90,7 +90,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
   }
 
   protected static void registerProperties(
-      DynamicPropertyRegistry registry, boolean multiTenancyEnabled) {
+      final DynamicPropertyRegistry registry, final boolean multiTenancyEnabled) {
     registry.add(
         "camunda.tasklist.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
     registry.add("camunda.tasklist.identity.resourcePermissionsEnabled", () -> true);
@@ -103,15 +103,9 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     registry.add("camunda.tasklist.identity.clientId", () -> "tasklist");
     registry.add("camunda.tasklist.identity.clientSecret", () -> "the-cake-is-alive");
     registry.add("camunda.tasklist.identity.audience", () -> "tasklist-api");
-    registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
     registry.add(TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup", () -> false);
     registry.add(TasklistProperties.PREFIX + ".archiver.rolloverEnabled", () -> false);
     registry.add(TasklistProperties.PREFIX + "importer.jobType", () -> "testJobType");
-    registry.add("graphql.servlet.exception-handlers-enabled", () -> true);
-    registry.add(
-        "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
-    registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
-    registry.add("server.servlet.session.cookie.name", () -> TasklistURIs.COOKIE_JSESSIONID);
     registry.add(
         "camunda.tasklist.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
   }
@@ -136,7 +130,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
         "tasklist-api");
   }
 
-  protected String generateTokenForUser(String username) {
+  protected String generateTokenForUser(final String username) {
     return generateToken(
         username,
         USERS_STORE.get(username),
@@ -146,7 +140,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
         null);
   }
 
-  private String generateToken(String clientId, String clientSecret) {
+  private String generateToken(final String clientId, final String clientSecret) {
     return generateToken(null, null, clientId, clientSecret, "client_credentials", null);
   }
 
@@ -179,7 +173,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
             getAuthTokenUrl(), new HttpEntity<>(formValues, httpHeaders), String.class);
     try {
       return objectMapper.readTree(tokenJson).get("access_token").asText();
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
@@ -188,11 +182,11 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     return getUserId(0);
   }
 
-  protected String getUserId(int index) {
+  protected String getUserId(final int index) {
     final String response = getUsers();
     try {
       return objectMapper.readTree(response).get(index).get("id").asText();
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
@@ -210,11 +204,11 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
   }
 
   protected void createAuthorization(
-      String entityId,
-      String entityType,
-      String resourceKey,
-      String resourceType,
-      String permission)
+      final String entityId,
+      final String entityType,
+      final String resourceKey,
+      final String resourceType,
+      final String permission)
       throws JSONException {
     final JSONObject obj = new JSONObject();
 

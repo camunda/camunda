@@ -137,7 +137,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
           listViewTemplate.getFullQualifiedName(), entity.getId(), entity);
     }
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
   }
 
   @Test
@@ -385,11 +385,11 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
         getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
         new VariableEntity().setProcessInstanceKey(processKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     final long deleted = processStore.deleteProcessInstancesAndDependants(Set.of(processKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
     final var response =
         testSearchRepository.searchTerm(
             listViewTemplate.getFullQualifiedName(),

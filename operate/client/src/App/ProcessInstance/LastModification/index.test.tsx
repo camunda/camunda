@@ -20,7 +20,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {open} from 'modules/mocks/diagrams';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 type Props = {
   children?: React.ReactNode;

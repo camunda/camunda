@@ -21,7 +21,7 @@ import {createInstance, createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 
 jest.mock('modules/stores/notifications', () => ({

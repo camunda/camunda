@@ -34,10 +34,10 @@ defaults:
     shell: bash
 
 jobs:
-  unit-tests:
-    name: Unit tests
+  build-sdk:
+    name: Build Spring Zeebe SDK
     runs-on: "gcp-core-4-default"
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
@@ -47,12 +47,19 @@ jobs:
         with:
           java-version: '21'
           distribution: 'adopt'
-      - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+          cache: 'maven'
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache-key-modifier: it-${{ matrix.group }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: Build Java Client
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -pl zeebe/clients/java -am
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
@@ -75,19 +82,8 @@ jobs:
         if: ${{ failure() || cancelled() }}
         with:
           name: "unit tests"
-  java-checks:
-    name: Java checks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
-          maven-cache-key-modifier: java-checks
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs -f spring-boot-starter-camunda-sdk verify
+      - name: Java Checks
+        run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs -f spring-boot-starter-camunda-sdk verify
   sdk-test-summary:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -98,8 +94,7 @@ jobs:
     outputs:
       flakyUnitTests: ${{ needs.unit-tests.outputs.flakyTests }}
     needs:
-      - unit-tests
-      - java-checks
+      - build-sdk
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
   notify-if-failed:

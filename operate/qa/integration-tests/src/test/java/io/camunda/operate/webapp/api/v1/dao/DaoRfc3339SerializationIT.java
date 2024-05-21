@@ -224,7 +224,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
     testSearchRepository.createOrUpdateDocumentFromObject(
         processInstanceIndex.getFullQualifiedName(), processInstance.getId(), processInstance);
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
   }
 
   @Override

@@ -65,10 +65,11 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                   expandedContent !== undefined &&
                   React.isValidElement(expandedContent);
 
+                const {key, ...props} = getRowProps({row});
                 return (
                   <React.Fragment key={row.id}>
                     <TableExpandRow
-                      {...getRowProps({row})}
+                      {...props}
                       data-testid={`${dataTestId}-${index}`}
                       $isExpandable={isExpandable}
                     >

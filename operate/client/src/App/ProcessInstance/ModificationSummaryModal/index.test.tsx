@@ -18,8 +18,7 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {open} from 'modules/mocks/diagrams';
-import {useEffect} from 'react';
-import {act} from 'react-dom/test-utils';
+import {useEffect, act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 
 jest.mock('modules/stores/notifications', () => ({

@@ -27,7 +27,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.9.0
+    image: opensearchproject/opensearch:2.14.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -35,6 +35,7 @@ services:
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
     ulimits:
       memlock:
         soft: -1
@@ -74,7 +75,7 @@ services:
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
-      - 9600:9600
+      - 9601:9600
       - 8089:8080
     depends_on:
       - elasticsearch

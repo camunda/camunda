@@ -115,6 +115,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -142,6 +147,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
       <exclusions>
         <exclusion>
@@ -149,6 +164,11 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
     </dependency>
 
     <dependency>
@@ -277,6 +297,12 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.tomcat</groupId>
+          <artifactId>tomcat-annotations-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -356,6 +382,11 @@
     </dependency>
 
     <!-- /end -->
+
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -446,11 +477,11 @@
           <programs>
             <program>
               <id>broker</id>
-              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
+              <mainClass>io.camunda.application.StandaloneBroker</mainClass>
             </program>
             <program>
               <id>gateway</id>
-              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
+              <mainClass>io.camunda.application.StandaloneGateway</mainClass>
             </program>
             <program>
               <id>restore</id>
@@ -458,7 +489,7 @@
             </program>
             <program>
               <id>operate</id>
-              <mainClass>io.camunda.operate.StandaloneOperate</mainClass>
+              <mainClass>io.camunda.application.StandaloneOperate</mainClass>
             </program>
             <program>
               <id>migrate</id>
@@ -466,11 +497,15 @@
             </program>
             <program>
               <id>tasklist</id>
-              <mainClass>io.camunda.tasklist.Application</mainClass>
+              <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
             <program>
               <id>tasklist-migrate</id>
               <mainClass>io.camunda.tasklist.schema.migration.SchemaMigration</mainClass>
+            </program>
+            <program>
+              <id>camunda</id>
+              <mainClass>io.camunda.application.StandaloneCamunda</mainClass>
             </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
@@ -558,7 +593,8 @@
 
             <dependency>io.camunda:operate-webapp</dependency>
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:tasklist-webapp</dependency>
+            <dependency>io.camunda:operate-archiver</dependency>
+            <dependency>io.camunda:operate-importer</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
@@ -570,7 +606,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.5.0</version>
+        <version>7.6.0</version>
         <executions>
           <execution>
             <id>backups</id>
