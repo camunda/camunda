@@ -890,7 +890,7 @@ test.describe('tasks page', () => {
         "canLogout":true,
         "isLoginDelegated":false,
         "contextPath":"",
-        "baseName":"/tasklist",
+        "baseName":"",
         "organizationId":null,
         "clusterId":null,
         "stage":null,
