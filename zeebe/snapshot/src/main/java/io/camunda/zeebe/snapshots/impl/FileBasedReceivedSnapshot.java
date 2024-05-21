@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ChecksumMethod;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -118,6 +119,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     if (checksumCollection == null) {
       checksumCollection = new SfvChecksumImpl();
+
+      checksumCollection.setChecksumMethod(ChecksumMethod.MANUAL);
     }
     checksumCollection.updateFromBytes(
         snapshotFile.getFileName().toString(), snapshotChunk.getContent());
