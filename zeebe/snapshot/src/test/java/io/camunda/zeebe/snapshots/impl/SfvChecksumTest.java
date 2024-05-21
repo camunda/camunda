@@ -11,7 +11,7 @@ import static io.camunda.zeebe.snapshots.impl.SnapshotChecksumTest.createChunk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
+import io.camunda.zeebe.snapshots.ChecksumMethod;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,12 +26,12 @@ public class SfvChecksumTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private SfvChecksumImpl sfvChecksum;
-  private final ChecksumGenerateApproach checksumVersion = ChecksumGenerateApproach.MANUAL_CHECKSUM;
+  private final ChecksumMethod checksumMethod = ChecksumMethod.FROM_ROCKS_DB;
 
   @Before
   public void setUp() throws Exception {
     sfvChecksum = new SfvChecksumImpl();
-    sfvChecksum.setVersion(checksumVersion);
+    sfvChecksum.setChecksumMethod(checksumMethod);
   }
 
   @Test
@@ -55,17 +55,29 @@ public class SfvChecksumTest {
   }
 
   @Test
-  public void shouldReadChecksumVersionFromComment() {
+  public void shouldReadChecksumMethodFromComment() {
     // given
     final String[] sfvLines = {
-      "; a simple comment to be ignored", "; checksumVersion = " + checksumVersion
+      "; a simple comment to be ignored", "; checksumMethod = " + checksumMethod
     };
 
     // when
     sfvChecksum.updateFromSfvFile(sfvLines);
 
     // then
-    assertThat(sfvChecksum.getVersion()).isEqualTo(checksumVersion);
+    assertThat(sfvChecksum.getChecksumMethod()).isEqualTo(checksumMethod);
+  }
+
+  @Test
+  public void shouldDefaultToManualIfChecksumMethodNotDefined() {
+    // given
+    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+
+    // when
+    sfvChecksum.updateFromSfvFile(givenSfvLines);
+
+    // then
+    assertThat(sfvChecksum.getChecksumMethod()).isEqualTo(ChecksumMethod.MANUAL);
   }
 
   @Test
@@ -154,19 +166,6 @@ public class SfvChecksumTest {
     // then
     assertThatThrownBy(() -> sfvChecksum.updateFromFile(folder))
         .isInstanceOf(UnsupportedOperationException.class);
-  }
-
-  @Test
-  public void shouldWriteVersionChecksum() throws IOException {
-    // given
-    final var arrayOutputStream = new ByteArrayOutputStream();
-    sfvChecksum.write(arrayOutputStream);
-
-    // when
-    final String serialized = arrayOutputStream.toString(StandardCharsets.UTF_8);
-
-    // then
-    assertThat(serialized).contains("; checksumVersion = " + checksumVersion);
   }
 
   private static final class FailingFlushOutputStream extends OutputStream {
