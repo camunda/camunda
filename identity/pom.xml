@@ -26,6 +26,14 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -38,12 +46,6 @@
       <artifactId>log4j-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jdbc</artifactId>
-    </dependency>
-
-    <!--Runtime dependencies -->
-    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>runtime</scope>
@@ -52,16 +54,6 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-web</artifactId>
-      <version>6.1.7</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <version>6.1.7</version>
     </dependency>
   </dependencies>
 
@@ -83,6 +75,8 @@
             <dep>org.springframework:spring-jdbc</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-web</dep>
+            <dep>org.springframework.boot:spring-boot-starter-web</dep>
+            <dep>org.springframework.boot:spring-boot-starter-jdbc</dep>
             <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
             <dep>org.slf4j:slf4j-api</dep>
             <dep>org.yaml:snakeyaml</dep>

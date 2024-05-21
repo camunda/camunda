@@ -9,7 +9,7 @@ package io.camunda.identity.authentication.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-import io.camunda.identity.authentication.handler.CamundaAuthenticationFailureHandler;
+import io.camunda.identity.authentication.handler.AuthFailureHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -20,13 +20,10 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
 @Configuration
-@Profile({"identity-basic-auth", "identity-oidc-auth"})
+@Profile("auth-basic")
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
@@ -45,9 +42,9 @@ public class WebSecurityConfig {
 
   @Bean
   @Primary
-  @Profile("identity-basic-auth")
+  @Profile("auth-basic")
   public HttpSecurity localHttpSecurity(
-      final HttpSecurity httpSecurity, final CamundaAuthenticationFailureHandler authFailureHandler)
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring basic auth login");
     return baseHttpSecurity(httpSecurity, authFailureHandler)
@@ -55,26 +52,8 @@ public class WebSecurityConfig {
         .logout((logout) -> logout.logoutSuccessUrl("/"));
   }
 
-  @Bean
-  @Primary
-  @Profile("identity-oidc-auth")
-  public HttpSecurity oidcHttpSecurity(
-      final HttpSecurity httpSecurity,
-      final ClientRegistrationRepository clientRegistrationRepository,
-      final CamundaAuthenticationFailureHandler authFailureHandler)
-      throws Exception {
-    LOG.info("Configuring OIDC login");
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .oauth2Login(withDefaults())
-        .logout(
-            logout ->
-                logout.logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository)))
-        .oidcLogout((logout) -> logout.backChannel(withDefaults()));
-  }
-
   private HttpSecurity baseHttpSecurity(
-      final HttpSecurity httpSecurity,
-      final CamundaAuthenticationFailureHandler authFailureHandler) {
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler) {
     try {
       return httpSecurity
           .authorizeHttpRequests(
@@ -101,15 +80,5 @@ public class WebSecurityConfig {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private LogoutSuccessHandler oidcLogoutSuccessHandler(
-      final ClientRegistrationRepository clientRegistrationRepository) {
-    final OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler =
-        new OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository);
-
-    oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
-
-    return oidcLogoutSuccessHandler;
   }
 }

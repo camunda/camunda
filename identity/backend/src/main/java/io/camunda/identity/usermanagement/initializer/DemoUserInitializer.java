@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.initializer;
 
-import io.camunda.identity.authentication.basic.CamundaUserDetailsManager;
+import io.camunda.identity.authentication.user.CamundaUserDetailsManager;
 import jakarta.annotation.PostConstruct;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("identity-basic-auth")
+@Profile("auth-basic")
 @DependsOnDatabaseInitialization
 public class DemoUserInitializer {
   private static final Logger LOG = LoggerFactory.getLogger(DemoUserInitializer.class);

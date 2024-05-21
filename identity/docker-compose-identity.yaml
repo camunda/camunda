@@ -7,4 +7,4 @@ services:
     environment:
       POSTGRES_DB: identity
       POSTGRES_USER: identity
-      POSTGRES_PASSWORD: "test-db-passowrd"
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"

@@ -26,13 +26,13 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.stereotype.Component;
 
 @Component
-public final class CamundaAuthenticationFailureHandler
+public final class AuthFailureHandler
     implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
 
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public CamundaAuthenticationFailureHandler(final ObjectMapper objectMapper) {
+  public AuthFailureHandler(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

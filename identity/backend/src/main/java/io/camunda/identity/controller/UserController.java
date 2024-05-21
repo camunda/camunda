@@ -7,8 +7,8 @@
  */
 package io.camunda.identity.controller;
 
-import io.camunda.identity.record.CamundaUser;
-import io.camunda.identity.record.CamundaUserWithPassword;
+import io.camunda.identity.user.CamundaUser;
+import io.camunda.identity.user.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;

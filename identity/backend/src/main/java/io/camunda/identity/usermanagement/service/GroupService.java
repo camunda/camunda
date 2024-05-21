@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import io.camunda.identity.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.Group;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;

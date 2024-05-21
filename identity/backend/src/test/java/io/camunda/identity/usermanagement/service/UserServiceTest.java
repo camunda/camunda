@@ -12,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.identity.authentication.basic.CamundaUserDetailsManager;
-import io.camunda.identity.record.CamundaUser;
-import io.camunda.identity.record.CamundaUserWithPassword;
+import io.camunda.identity.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.user.CamundaUser;
+import io.camunda.identity.user.CamundaUserWithPassword;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,9 @@ class UserServiceTest {
         new CamundaUserWithPassword(new CamundaUser("user" + UUID.randomUUID()), "password"));
 
     final var users = userService.findAllUsers();
-    assertEquals(2, users.size());
+
+    // Set to 3 due to a demo user being initialized.
+    assertEquals(3, users.size());
   }
 
   @Test
