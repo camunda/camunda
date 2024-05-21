@@ -39,4 +39,12 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
    * @param lines the lines (in SFV) to build up the checksum collection
    */
   void updateFromSfvFile(final String... lines);
+
+  /**
+   * Returns if all file checksums match exactly.
+   *
+   * @param o The other checksum
+   * @return boolean denoting match
+   */
+  boolean sameChecksums(ImmutableChecksumsSFV o);
 }

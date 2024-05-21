@@ -10,7 +10,7 @@ jobs:
     if: ${{ github.event.label.name == 'component/operate' }}
     steps:
       - id: get_project_count
-        uses: octokit/graphql-action@v2.3.1
+        uses: octokit/graphql-action@v2.3.2
         with:
           # API https://docs.github.com/en/graphql/reference/objects#issue
           query: |
