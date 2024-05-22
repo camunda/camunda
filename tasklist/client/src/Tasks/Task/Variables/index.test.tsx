@@ -7,7 +7,6 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
@@ -31,9 +30,7 @@ const getWrapper = () => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </QueryClientProvider>
+    <QueryClientProvider client={mockClient}>{children}</QueryClientProvider>
   );
 
   return Wrapper;

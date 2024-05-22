@@ -13,7 +13,6 @@ import {
   within,
 } from 'modules/testing-library';
 import {AvailableTasks} from './index';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -37,12 +36,10 @@ const getWrapper = (
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-          <Link to="/">go home</Link>
-        </MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <Link to="/">go home</Link>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 
