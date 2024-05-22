@@ -222,6 +222,13 @@
       <artifactId>log4j-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <scope>provided</scope>
+      <!-- only used at compile time -->
+    </dependency>
+
     <!-- TEST -->
 
     <dependency>
