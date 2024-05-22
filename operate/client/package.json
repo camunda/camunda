@@ -5,7 +5,7 @@
   "dependencies": {
     "@axe-core/playwright": "4.9.1",
     "@bpmn-io/element-template-icon-renderer": "0.5.2",
-    "@camunda/camunda-composite-components": "0.6.4",
+    "@camunda/camunda-composite-components": "0.7.0",
     "@carbon/elements": "11.46.0",
     "@carbon/react": "1.58.0",
     "@devbookhq/splitter": "1.4.2",
