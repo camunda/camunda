@@ -68,6 +68,9 @@ const test = base.extend<
         return;
       }
 
+      // when using a baseURL containing domain + basePath, playwright expects a slash at the end of the baseURL when navigating and validating Urls
+      // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
+      // removing the slash here, as the used goto(url) below does not work with double slashes
       if (baseURL && baseURL.endsWith('/')) {
         baseURL = baseURL.slice(0, -1);
       }

@@ -49,6 +49,7 @@ public class ForwardErrorController {
 
   @PostConstruct
   public void init() {
+    // list of endpoints for which 404 is returned
     ignoredRequestsMatchers =
         List.of(
             new AntPathRequestMatcher(PUBLIC_API),
@@ -56,6 +57,7 @@ public class ForwardErrorController {
             new AntPathRequestMatcher(NO_PERMISSION),
             new AntPathRequestMatcher(SSO_CALLBACK_URI),
             new AntPathRequestMatcher(IDENTITY_CALLBACK_URI),
+            // actuator endpoints
             new AntPathRequestMatcher(
                 Optional.ofNullable(environment.getProperty("management.endpoints.web.base-path"))
                     .map(s -> s.concat("/**"))
@@ -71,7 +73,7 @@ public class ForwardErrorController {
     }
     final String requestedURL = getRequestedURL(request);
     if (!requestedURL.startsWith("/tasklist") && !requestedURL.startsWith("/operate")) {
-      if (environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId())) {
+      if (isStandaloneTasklist()) {
         return "redirect:/tasklist" + requestedURL;
       } else {
         return "redirect:/operate" + requestedURL;
@@ -79,12 +81,16 @@ public class ForwardErrorController {
     } else if (isLoginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURL);
     } else {
-      if (environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId())) {
+      if (isStandaloneTasklist()) {
         return "forward:/tasklist";
       } else {
         return "forward:/operate";
       }
     }
+  }
+
+  private boolean isStandaloneTasklist() {
+    return environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId());
   }
 
   private String getRequestedURL(final HttpServletRequest request) {

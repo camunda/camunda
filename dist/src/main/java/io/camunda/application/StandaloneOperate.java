@@ -57,8 +57,6 @@ public class StandaloneOperate {
     return Map.of(
         "server.servlet.session.cookie.name",
         "OPERATE-SESSION",
-        "spring.mvc.pathmatch.matching-strategy",
-        "ANT_PATH_MATCHER",
         // Return error messages for all endpoints by default, except for Internal API.
         // Internal API error handling is defined in InternalAPIErrorController.
         "server.error.include-message",

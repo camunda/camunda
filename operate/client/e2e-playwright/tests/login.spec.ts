@@ -37,7 +37,7 @@ test.describe('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('../operate');
+    await expect(page).toHaveURL('../operate'); // dashboard url, we need to do this because baseURL contains a slash at the end as expected by playwright
   });
 
   test('Log out', async ({loginPage, commonPage, page}) => {
@@ -46,7 +46,7 @@ test.describe('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('../operate');
+    await expect(page).toHaveURL('../operate'); // dashboard url, we need to do this because baseURL contains a slash at the end as expected by playwright
     await commonPage.logout();
     await expect(page).toHaveURL('.' + Paths.login());
   });

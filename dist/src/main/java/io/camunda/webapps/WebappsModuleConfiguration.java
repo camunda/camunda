@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+/** Configuration for shared spring components used by webapps */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.webapps")
 @EnableAutoConfiguration

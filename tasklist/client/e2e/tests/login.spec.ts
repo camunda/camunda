@@ -24,7 +24,8 @@ test.describe.parallel('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('../tasklist');
+    await expect(page).toHaveURL('../tasklist'); //Root URL, we need to do this because baseURL contains a slash at the end as expected by playwright
+    // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
   });
 
   test('have no a11y violations', async ({makeAxeBuilder}) => {

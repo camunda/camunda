@@ -13,6 +13,8 @@ const IS_E2E = Boolean(process.env.IS_E2E);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
+ * when using the base path '/tasklist' to the baseURL, we need to add a slash '/' at the end as expected by playwright https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
+ *
  */
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
