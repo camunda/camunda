@@ -313,7 +313,7 @@ test.describe('Processes', () => {
           const definitions: {total: number} = await response.json();
           return definitions.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: 60000},
       )
       .toBe(0);
   });
