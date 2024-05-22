@@ -25,8 +25,11 @@ import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @SpringBootTest(
     classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
@@ -35,6 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
+@ExtendWith(OutputCaptureExtension.class)
 public class ZeebeClientConfigurationImplOidcTest {
   @Autowired ZeebeClientConfiguration zeebeClientConfiguration;
   @Autowired JsonMapper jsonMapper;
@@ -168,5 +172,11 @@ public class ZeebeClientConfigurationImplOidcTest {
   void shouldHaveDefaultRetryPolicy() {
     assertThat(zeebeClientConfiguration.useDefaultRetryPolicy())
         .isEqualTo(DEFAULT.useDefaultRetryPolicy());
+  }
+
+  @Test
+  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
+    assertThat(output).contains("clientId='***'");
+    assertThat(output).contains("clientSecret='***'");
   }
 }
