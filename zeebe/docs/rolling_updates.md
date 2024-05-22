@@ -34,6 +34,17 @@ The third option is the one we chose when implementing dynamic scaling, where ne
 The new version avoids the need to communicate with an old version because it can assume the state of the old version and make decisions without communicating.
 See `RollingUpdateAwareInitializerV83ToV84` for implementation details.
 
+### Protocol
+
+The [Zeebe protocol](../protocol/src/main/resources/protocol.xml) defines both the network protocol between gateways and brokers as well as the on-disk serialization of records.
+The protocol is defined as [SBE](https://www.fixtrading.org/standards/sbe-online/), a binary encoding with limited support for backwards compatibility.
+We must be careful when extending or modifying the protocol to ensure that we do not break compatibility.
+Because SBE is a binary encoding with relatively little overhead, accidentally breaking compatibility can result in silent data corruption when data is read the wrong way.
+See https://github.com/camunda/zeebe/issues/14957 for an example of such an issue.
+
+There is guidance on message versioning that explains some of the rules we have to follow to ensure compatibility: https://github.com/real-logic/simple-binary-encoding/wiki/Message-Versioning
+Additionally, we have automated tests that prevent changes until we [mark them as acceptable](../protocol/revapi.json).
+
 ### Processing
 
 Processing is ideally compatible between old and new versions.
