@@ -47,8 +47,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
 
   @Autowired RetryOpenSearchClient retryOpenSearchClient;
 
-  @Autowired
-  SchemaManager schemaManager;
+  @Autowired SchemaManager schemaManager;
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
@@ -162,7 +161,6 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     if (!errors.isEmpty()) {
       throw new TasklistRuntimeException("Error(s) in index schema: " + String.join(";", errors));
     }
-
   }
 
   @Override
@@ -237,7 +235,6 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
-
     IndexMappingDifference difference = null;
     // compare every index in group
     for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {

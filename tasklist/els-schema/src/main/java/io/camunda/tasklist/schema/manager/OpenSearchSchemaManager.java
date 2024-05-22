@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.schema.manager;
 
-import static com.amazonaws.util.json.Jackson.toJsonString;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
@@ -33,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
@@ -46,11 +45,9 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
-import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
-import org.opensearch.client.opensearch.indices.get_mapping.IndexMappingRecord;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +79,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Autowired private ObjectMapper objectMapper;
 
-
   @Override
   public void createSchema() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
@@ -102,10 +98,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
       final String currentVersionSchema =
           StreamUtils.copyToString(description, StandardCharsets.UTF_8);
       final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
-      final Map<String, Object> mappings =
-          (Map<String, Object>) objectMapper.readValue(currentVersionSchema, type).get("mappings");
-      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
-      final String dynamic = (String) mappings.get("dynamic");
+      final Map<String, Object> properties =
+          (Map<String, Object>)
+              objectMapper.readValue(currentVersionSchema, type).get("properties");
+      final String dynamic =
+          (String) objectMapper.readValue(currentVersionSchema, type).get("dynamic");
       return new IndexMapping()
           .setIndexName(indexDescriptor.getIndexName())
           .setDynamic(dynamic)
@@ -126,29 +123,49 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public Map<String, IndexMapping> getIndexMappings(final String indexNamePattern)
       throws IOException {
     final Map<String, IndexMapping> mappings = new HashMap<>();
-    final GetMappingResponse response =
-        openSearchClient.indices().getMapping(s -> s.index(indexNamePattern));
 
-    for (final Map.Entry<String, IndexMappingRecord> indexMapping :
-        response.result().entrySet()) {
-      final Set<IndexMappingProperty> properties = new HashSet<>();
-      for (final Map.Entry<String, Property> entry :
-          indexMapping.getValue().mappings().properties().entrySet()) {
-        final Property propertyVariant = entry.getValue();
-        final String propertyAsJson = toJsonString(propertyVariant);
+    final Request request = new Request("GET", "/" + indexNamePattern + "/_mapping/");
+    final Response response = opensearchRestClient.performRequest(request);
+    final String responseBody = EntityUtils.toString(response.getEntity());
 
-        final Map<String, Object> indexMappingAsMap =
-            objectMapper.readValue(
-                propertyAsJson, new TypeReference<HashMap<String, Object>>() {});
-        properties.add(
-            new IndexMappingProperty()
-                .setName(entry.getKey())
-                .setTypeDefinition(indexMappingAsMap));
+    // Initialize ObjectMapper instance
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Parse the JSON response body
+    final Map<String, Map<String, Map<String, Object>>> parsedResponse =
+        objectMapper.readValue(responseBody, new TypeReference<>() {});
+
+    // Iterate over the parsed JSON to build the mappings
+    for (final Map.Entry<String, Map<String, Map<String, Object>>> indexEntry :
+        parsedResponse.entrySet()) {
+      final String indexName = indexEntry.getKey();
+      final Map<String, Object> indexMappingData = indexEntry.getValue().get("mappings");
+      final String dynamicSetting = (String) indexMappingData.get("dynamic");
+
+      // Extract the properties
+      final Map<String, Object> propertiesData =
+          (Map<String, Object>) indexMappingData.get("properties");
+      final Set<IndexMapping.IndexMappingProperty> propertiesSet = new HashSet<>();
+
+      for (final Map.Entry<String, Object> propertyEntry : propertiesData.entrySet()) {
+        final IndexMapping.IndexMappingProperty property =
+            new IndexMapping.IndexMappingProperty()
+                .setName(propertyEntry.getKey())
+                .setTypeDefinition(propertyEntry.getValue());
+        propertiesSet.add(property);
       }
-      final IndexMapping mapping =
-          new IndexMapping().setIndexName(indexMapping.getKey()).setProperties(properties);
-      mappings.put(indexMapping.getKey(), mapping);
+
+      // Create IndexMapping object
+      final IndexMapping indexMapping =
+          new IndexMapping()
+              .setIndexName(indexName)
+              .setDynamic(dynamicSetting)
+              .setProperties(propertiesSet);
+
+      // Add to mappings map
+      mappings.put(indexName, indexMapping);
     }
+
     return mappings;
   }
 
@@ -172,8 +189,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
       }
 
       final Map<String, Property> properties;
-      try (
-          final JsonParser jsonParser =
+      try (final JsonParser jsonParser =
           JsonProvider.provider()
               .createParser(
                   new StringReader(
@@ -218,13 +234,15 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
-  private PutIndexTemplateRequest prepareIndexTemplateRequest(final TemplateDescriptor templateDescriptor, final InputStream json) {
+  private PutIndexTemplateRequest prepareIndexTemplateRequest(
+      final TemplateDescriptor templateDescriptor, final InputStream json) {
     final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
     final JsonParser parser = mapper.jsonProvider().createParser(json);
-    final IndexTemplateMapping template = new IndexTemplateMapping.Builder()
-        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
-        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
-        .build();
+    final IndexTemplateMapping template =
+        new IndexTemplateMapping.Builder()
+            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+            .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
+            .build();
     return new PutIndexTemplateRequest.Builder()
         .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
         .template(template)
