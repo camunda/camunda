@@ -6328,16 +6328,20 @@ glob-to-regexp@^0.4.1:
   integrity sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 glob@10.4.1:
   version "10.4.1"
   resolved "https://registry.yarnpkg.com/glob/-/glob-10.4.1.tgz#0cfb01ab6a6b438177bfe6a58e2576f6efe909c2"
   integrity sha512-2jelhlq3E4ho74ZyVLN03oKdAZVUa6UDZzFLVH1H7dnoax+y9qyaq8zBkfDIggjniU19z0wU18y16jMB2eyVIw==
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> a8459b8ddb (fix: update lock file)
 glob@10.3.16:
   version "10.3.16"
   resolved "https://registry.yarnpkg.com/glob/-/glob-10.3.16.tgz#bf6679d5d51279c8cfae4febe0d051d2a4bf4c6f"
   integrity sha512-JDKXl1DiuuHJ6fVS2FXjownaavciiHNUU4mOvV/B793RLh05vZL1rcPnCSaOgv1hDT6RDlY7AB7ZUvFYAtPgAw==
+<<<<<<< HEAD
 =======
 glob@10.3.15, glob@^10.3.10:
   version "10.3.15"
@@ -6345,12 +6349,25 @@ glob@10.3.15, glob@^10.3.10:
   integrity sha512-0c6RlJt1TICLyvJYIApxb8GsXoai0KUP7AxKKAtsYXdgJR1mGEUa7DgwShbdk1nly0PYoZj01xd4hzbq3fsjpw==
 >>>>>>> 33103771b2 (fix: reinstall dependencies to try to solve node_modules error on CI)
 >>>>>>> 567d36327b (fix: reinstall dependencies to try to solve node_modules error on CI)
+=======
+>>>>>>> a8459b8ddb (fix: update lock file)
   dependencies:
     foreground-child "^3.1.0"
     jackspeak "^3.1.2"
     minimatch "^9.0.4"
     minipass "^7.1.2"
     path-scurry "^1.11.1"
+
+glob@^10.3.10:
+  version "10.3.15"
+  resolved "https://registry.yarnpkg.com/glob/-/glob-10.3.15.tgz#e72bc61bc3038c90605f5dd48543dc67aaf3b50d"
+  integrity sha512-0c6RlJt1TICLyvJYIApxb8GsXoai0KUP7AxKKAtsYXdgJR1mGEUa7DgwShbdk1nly0PYoZj01xd4hzbq3fsjpw==
+  dependencies:
+    foreground-child "^3.1.0"
+    jackspeak "^2.3.6"
+    minimatch "^9.0.1"
+    minipass "^7.0.4"
+    path-scurry "^1.11.0"
 
 glob@^7.1.1, glob@^7.1.2, glob@^7.1.3, glob@^7.1.4, glob@^7.1.6:
   version "7.2.3"
@@ -7274,15 +7291,6 @@ iterator.prototype@^1.1.2:
     has-symbols "^1.0.3"
     reflect.getprototypeof "^1.0.4"
     set-function-name "^2.0.1"
-
-jackspeak@^2.3.6:
-  version "2.3.6"
-  resolved "https://registry.yarnpkg.com/jackspeak/-/jackspeak-2.3.6.tgz#647ecc472238aee4b06ac0e461acc21a8c505ca8"
-  integrity sha512-N3yCS/NegsOBokc8GAdM8UcmfsKiSS8cipheD/nivzr700H+nsMOxJjQnvwOcRYVuFkdH0wGUvW2WbXGmrZGbQ==
-  dependencies:
-    "@isaacs/cliui" "^8.0.2"
-  optionalDependencies:
-    "@pkgjs/parseargs" "^0.11.0"
 
 jackspeak@^3.1.2:
   version "3.1.2"
@@ -12953,6 +12961,7 @@ yallist@^3.0.2:
   integrity sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 yallist@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
@@ -12960,16 +12969,12 @@ yallist@^4.0.0:
 
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> cae16de3a5 (fix: update lock file)
 yaml@2.4.2, yaml@^2.3.4:
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.4.2.tgz#7a2b30f2243a5fc299e1f14ca58d475ed4bc5362"
   integrity sha512-B3VqDZ+JAg1nZpaEmWtTXUlBneoGx6CPM9b0TENK6aoSu5t73dItudwdgmi6tHlIZZId4dZ9skcAQ2UbcyAeVA==
-=======
-yaml@2.3.4:
-  version "2.3.4"
-  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.3.4.tgz#53fc1d514be80aabf386dc6001eb29bf3b7523b2"
-  integrity sha512-8aAvwVUSHpfEqTQ4w/KMlf3HcRdt50E5ODIQJBw1fQ5RL34xabzxtUlzTXVqc4rkZsPbvrXKWnABCD7kWSmocA==
->>>>>>> 33103771b2 (fix: reinstall dependencies to try to solve node_modules error on CI)
 
 >>>>>>> 1c49590982 (fix: reinstall dependencies to try to solve node_modules error on CI)
 yaml@^1.10.0, yaml@^1.10.2, yaml@^1.7.2:
