@@ -17,9 +17,8 @@ import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -43,15 +42,21 @@ public class ElasticsearchDataAggregator implements DataAggregator {
   public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
       final List<BatchOperationEntity> batchEntities) {
 
-    final List<BatchOperationDto> resultDtos = new ArrayList<>(batchEntities.size());
     if (batchEntities.isEmpty()) {
-      return resultDtos;
+      return new ArrayList<>();
     }
 
-    final Map<String, BatchOperationEntity> entityMap =
-        batchEntities.stream()
-            .collect(Collectors.toMap(BatchOperationEntity::getId, entity -> entity));
-    final List<String> idList = entityMap.keySet().stream().toList();
+    /* using this map as starting point ensures that
+     * 1. BatchOperations that have no completed operations yet are also included in the end result
+     * 2. The sorting stays the same
+     */
+    final LinkedHashMap<String, BatchOperationDto> resultDtos =
+        new LinkedHashMap<>(batchEntities.size());
+    batchEntities.forEach(
+        entity -> {
+          resultDtos.put(entity.getId(), BatchOperationDto.createFrom(entity, objectMapper));
+        });
+    final List<String> idList = resultDtos.keySet().stream().toList();
 
     final AggregationBuilder metadataAggregation =
         AggregationBuilders.filters(
@@ -80,12 +85,11 @@ public class ElasticsearchDataAggregator implements DataAggregator {
                   .getDocCount();
       final String batchId = bucket.getKeyAsString();
 
-      final BatchOperationDto batchOperationDto =
-          BatchOperationDto.createFrom(entityMap.get(batchId), objectMapper)
-              .setFailedOperationsCount(failedCount)
-              .setCompletedOperationsCount(completedCount);
-      resultDtos.add(batchOperationDto);
+      resultDtos
+          .get(batchId)
+          .setFailedOperationsCount(failedCount)
+          .setCompletedOperationsCount(completedCount);
     }
-    return resultDtos;
+    return resultDtos.values().stream().toList();
   }
 }

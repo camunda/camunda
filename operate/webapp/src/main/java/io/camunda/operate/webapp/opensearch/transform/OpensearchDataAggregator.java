@@ -28,9 +28,9 @@ import io.camunda.operate.webapp.opensearch.reader.OpensearchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -58,15 +58,21 @@ public class OpensearchDataAggregator implements DataAggregator {
   public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
       final List<BatchOperationEntity> batchEntities) {
 
-    final List<BatchOperationDto> resultDtos = new ArrayList<>(batchEntities.size());
     if (batchEntities.isEmpty()) {
-      return resultDtos;
+      return new ArrayList<>();
     }
 
-    final Map<String, BatchOperationEntity> entityMap =
-        batchEntities.stream()
-            .collect(Collectors.toMap(BatchOperationEntity::getId, entity -> entity));
-    final List<String> idList = entityMap.keySet().stream().toList();
+    /* using this map as starting point ensures that
+     * 1. BatchOperations that have no completed operations yet are also included in the end result
+     * 2. The sorting stays the same
+     */
+    final LinkedHashMap<String, BatchOperationDto> resultDtos =
+        new LinkedHashMap<>(batchEntities.size());
+    batchEntities.forEach(
+        entity -> {
+          resultDtos.put(entity.getId(), BatchOperationDto.createFrom(entity, objectMapper));
+        });
+    final List<String> idList = resultDtos.keySet().stream().toList();
 
     final var searchRequestBuilder = getSearchRequestByIdWithMetadata(idList);
     final StringTermsAggregate idAggregate;
@@ -96,11 +102,10 @@ public class OpensearchDataAggregator implements DataAggregator {
                     .get(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT)
                     .docCount();
 
-        final BatchOperationDto batchOperationDto =
-            BatchOperationDto.createFrom(entityMap.get(bucket.key()), objectMapper)
-                .setFailedOperationsCount(failedCount)
-                .setCompletedOperationsCount(completedCount);
-        resultDtos.add(batchOperationDto);
+        resultDtos
+            .get(bucket.key())
+            .setFailedOperationsCount(failedCount)
+            .setCompletedOperationsCount(completedCount);
       }
     } catch (final OperateRuntimeException e) {
       final String message =
@@ -109,8 +114,7 @@ public class OpensearchDataAggregator implements DataAggregator {
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
-
-    return resultDtos;
+    return resultDtos.values().stream().toList();
   }
 
   public Builder getSearchRequestByIdWithMetadata(final List<String> batchOperationIds) {
