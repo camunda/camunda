@@ -265,7 +265,8 @@ jobs:
 
           # Default changelog value
           changelog="Release ${{ inputs.releaseVersion }}"
-          # Right now we only support patch release for generating the change log
+
+          # Right now we only support patch releases for generating the changelog
           # as it is the easiest to automate and the most repetitive work to do on a release
           if [[ "$version" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
           then
