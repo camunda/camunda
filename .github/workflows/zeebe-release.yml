@@ -235,7 +235,7 @@ jobs:
           fi
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Install Zeebe changelog tool
