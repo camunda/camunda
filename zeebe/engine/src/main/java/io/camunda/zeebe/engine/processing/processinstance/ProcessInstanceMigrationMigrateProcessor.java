@@ -104,7 +104,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     requireAuthorizedTenant(
         command.getAuthorizations(), processInstance.getValue().getTenantId(), processInstanceKey);
-    requireNullParent(processInstance.getValue().getParentProcessInstanceKey(), processInstanceKey);
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =
