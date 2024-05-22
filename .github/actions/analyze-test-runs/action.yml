@@ -41,7 +41,7 @@ runs:
 
       # Extracting flaky tests
       # Based on old Jenkins script
-      # https://github.com/camunda/zeebe/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
+      # https://github.com/camunda/camunda/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
       if grep -q "\[WARNING\] Flakes:" "$BUILD_OUTPUT_FILE_PATH"; then
         irOutputFile=$(mktemp)
 
