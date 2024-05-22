@@ -37,14 +37,26 @@ See `RollingUpdateAwareInitializerV83ToV84` for implementation details.
 ### Processing
 
 Processing is ideally compatible between old and new versions.
-This is not always possible, for example because the new version supports a new feature or has changed the behavior of an existing feature.
-In that case we must fail early and stay on the safe side by stopping processing.
+This is not always possible, otherwise we would not be able to implement new features or fix bugs.
+All changes we make should fall into one of two categories:
+1. Adding new commands and events, typically to implement new features.
+2. Changing command behavior to produce different sequence of events, typically to fix bugs or extend features.
 
-There are two mechanisms that ensure processing correctness:
-1. Processing and replay is stopped when encountering commands or events that are unknown.
-2. Events have a version that is incremented whenever the behavior changes.
+When adding new commands or events, we break compatibility with older brokers because they cannot process or replay them.
+This is a transient state during rolling updates and resolves itself once the old broker is updated.
 
-The event versioning is not automatically enforced and requires awareness of the developers.
+When changing command behavior, older brokers can simply continue replaying the new sequence of events produced.
+When the old broker is processing, it will continue to produce the old sequence of events and new brokers will have to replay it.
+
+It is _not allowed_ to change behavior of events because we must ensure that the state of old and new brokers do not diverge.
+If we were to change how an event behaves, old brokers would apply this event differently to new brokers, resulting in a different runtime state.
+This can lead to serious bugs that are difficult to diagnose.
+
+Instead, we either have to introduce _new_ events or add a new _version_ of an existing event.
+Both prevent diverging states because old brokers will stop processing or replaying when encountering new events or new versions.
+
+> [!WARNING]
+> We currently have no mechanism to enforce that event behavior is not modified so we rely on developer awareness.
 
 ## Data migrations
 
