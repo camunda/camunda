@@ -281,6 +281,14 @@ jobs:
       - name: Generate Changelog for patch release
         id: gen-changelog
         run: |
+          # We set some bash properties to better fail/debug this script
+          #
+          # * https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
+          # * https://explainshell.com/explain?cmd=set+-euox+pipefail
+          #
+          set -euox pipefail
+
+          # Default changelog value
           changelog="Release ${{ inputs.releaseVersion }}"
           # Right now we only support patch release for generating the change log
           # as it is the easiest to automate and the most repetitive work to do on a release
