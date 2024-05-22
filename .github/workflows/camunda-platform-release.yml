@@ -301,9 +301,10 @@ jobs:
             # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
             #
             # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
-            # To find the previous patch version we extract the patch version and subsctract by one
-            patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]\*\.//')
-            majorMinor=$(echo ${{ inputs.releaseVersion }} | sed 's/\.[1-9][0-9]\*$//')
+
+            # To find the previous patch version we extract the patch version and subtract by one
+            patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]*\.//')
+            majorMinor=$(echo ${{ inputs.releaseVersion }} | sed 's/\.[1-9][0-9]*$//')
             ZCL_FROM_REV="$majorMinor".$(( patchVersion - 1 ))
             ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
