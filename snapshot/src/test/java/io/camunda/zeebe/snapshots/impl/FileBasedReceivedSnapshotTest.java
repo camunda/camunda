@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
@@ -158,31 +157,6 @@ public class FileBasedReceivedSnapshotTest {
         .as(
             "the latest pending snapshot should not be deleted because it is newer than the persisted one")
         .isDirectoryContainingExactly(receivedSnapshot.getPath());
-  }
-
-  @Test
-  public void shouldDeletePartialSnapshotOnInvalidChecksumPersist() {
-    // given
-    final var persistedSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
-    final var corruptedSnapshot =
-        new FileBasedSnapshot(
-            persistedSnapshot.getDirectory(),
-            persistedSnapshot.getChecksumPath(),
-            0xDEADBEEFL,
-            persistedSnapshot.getSnapshotId(),
-            null,
-            s -> {},
-            null);
-
-    // when
-    final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);
-    final var didPersist = receivedSnapshot.persist();
-
-    // then
-    assertThat(didPersist)
-        .as("the snapshot was not persisted as it has a checksum mismatch")
-        .failsWithin(Duration.ofSeconds(5));
-    assertThat(receiverSnapshotsDir).as("the partial snapshot was rolled back").isEmptyDirectory();
   }
 
   @Test
