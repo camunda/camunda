@@ -261,7 +261,7 @@ jobs:
           # as it is the easiest to automate and the most repetitive work to do on a release
           if [[ "${{ inputs.releaseVersion }}" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
           then
-            # Next, to add the release labels to release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
+            # Next, add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
             #
             # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and 
             # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
@@ -273,7 +273,8 @@ jobs:
             ZCL_FROM_REV="$majorMinor".$(( patchVersion - 1 ))
             ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
-            # This will add labels to the issues in GitHub. You can verify this step by looking at closed issues. They should now be tagged with the release.
+            # The following command will add labels to the issues on GitHub.
+            # You can verify this step by looking at closed issues. They should now be tagged with the release.
             ./zcl add-labels \
             --token=${{ secrets.GITHUB_TOKEN }} \
             --from=$ZCL_FROM_REV \
