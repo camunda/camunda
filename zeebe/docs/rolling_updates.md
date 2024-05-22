@@ -155,5 +155,5 @@ For each matrix job, the `RollingUpdateTest` will run with on a separate "shard"
 You may want to increase parallelism after a reset of the coverage report to speed up the testing.
 Once the report is complete, you can reduce the parallelism to save resources.
 
-[zeebe-version-compatibility.yml workflow]: https://github.com/camunda/zeebe/actions/workflows/zeebe-version-compatibility.yml
+[zeebe-version-compatibility.yml workflow]: https://github.com/camunda/camunda/actions/workflows/zeebe-version-compatibility.yml
 
