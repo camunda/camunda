@@ -592,6 +592,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String activityId = "activity";
               final int activityInstanceKey = 123;
+              final int incidentKey = -1;
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -608,7 +609,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionVersion(processDefinitionVersion)
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementId(wrapString(activityId))
-                  .setElementInstanceKey(activityInstanceKey);
+                  .setElementInstanceKey(activityInstanceKey)
+                  .setIncidentKey(incidentKey);
 
               return record;
             },
@@ -643,7 +645,8 @@ final class JsonSerializableToJsonTest {
               "customHeaders": {},
               "deadline": 1000,
               "timeout": -1,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "incidentKey": -1
             }
           ],
           "timeout": 2,
@@ -693,6 +696,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String elementId = "activity";
               final int activityInstanceKey = 123;
+              final int incidentKey = -1;
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -714,7 +718,8 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionVersion(processDefinitionVersion)
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
-                      .setElementInstanceKey(activityInstanceKey);
+                      .setElementInstanceKey(activityInstanceKey)
+                      .setIncidentKey(incidentKey);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -743,7 +748,8 @@ final class JsonSerializableToJsonTest {
           },
           "deadline": 13,
           "timeout": 14,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "incidentKey": -1
         }
         """
       },
@@ -774,7 +780,8 @@ final class JsonSerializableToJsonTest {
           "customHeaders": {},
           "deadline": -1,
           "timeout": -1,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "incidentKey": -1
         }
         """
       },
@@ -810,7 +817,8 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "processDefinitionVersion": -1,
           "customHeaders": {},
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "incidentKey": -1
         }
         """
       },
