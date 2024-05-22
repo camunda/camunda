@@ -4,7 +4,7 @@ Starting with 8.5.0, Zeebe officially supports rolling updates.
 
 ## Breaking Changes
 
-To support rolling updates, we have to ensure that all patch version of the previous or current minor are compatible with the development version.
+To support rolling updates, we have to ensure that all patch versions of the previous or current minor are compatible with the development version.
 
 ### Network
 
@@ -13,7 +13,7 @@ Most importantly, they need to be able to form a raft replication group, and upd
 The command API should also remain compatible between old and new versions but exceptions can be made.
 Breaking command API compatibility drastically increases the impact of rolling updates because it may block all processing until the rolling update is finished.
 
-Compatibility can be achieved through differently, depending on the use case.
+Compatibility can be achieved differently, depending on the use case.
 For example:
 1. New version supports both old and new protocol and can automatically choose which to use.
 2. New version supports a new protocol but doesn't use it by default.
@@ -26,11 +26,11 @@ See `AbstractMessageDecoder` and its implementations for an (old) example.
 Details are documented in our [messaging](./messaging.md#protocol-format) docs.
 
 The second option should be avoided if possible because it requires more effort.
-When switching to a new protocol requires a configuration change, this has a higher impact than the rolling update itself.
+Switching to a new protocol requires a configuration change, this has a higher impact than the rolling update itself.
 Additionally, the old protocol has to be deprecated and can only be removed later.
 When removing a deprecated protocol, there is the risk that unaware users encounter problems during the rolling update.
 
-The third option is the one we chose when implementing dynamic scaling where new versions would communicate via a new gossip protocol that old versions did not support.
+The third option is the one we chose when implementing dynamic scaling, where new versions would communicate via a new gossip protocol that old versions did not support.
 The new version avoids the need to communicate with an old version because it can assume the state of the old version and make decisions without communicating.
 See `RollingUpdateAwareInitializerV83ToV84` for implementation details.
 
