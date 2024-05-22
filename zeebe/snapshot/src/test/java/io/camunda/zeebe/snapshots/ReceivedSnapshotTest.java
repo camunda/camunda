@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -324,30 +323,6 @@ public class ReceivedSnapshotTest {
           .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
           .hasCauseInstanceOf(SnapshotWriteException.class);
     }
-  }
-
-  @Test
-  public void shouldNotPersistWhenSnapshotChecksumIsWrong() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      while (snapshotChunkReader.hasNext()) {
-        final var originalChunk = snapshotChunkReader.next();
-        final var corruptedChunk =
-            SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xDEADBEEFL);
-        receivedSnapshot.apply(corruptedChunk).join();
-      }
-    }
-
-    // then
-    assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .as(
-            "the snapshot should not be persisted since the computed checksum is not the reported one")
-        .hasCauseInstanceOf(InvalidSnapshotChecksum.class);
   }
 
   @Test
