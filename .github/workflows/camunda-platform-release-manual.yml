@@ -90,5 +90,4 @@ jobs:
       - name: Generate Changelog for patch release
         id: print-changelog
         run: |
-          set -euox pipefail
-          echo ${{ steps.gen-changelog.outputs.changelog }}
+          echo "${{ steps.gen-changelog.outputs.changelog }}"
