@@ -880,6 +880,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-jdbc</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-common</artifactId>
         <version>${project.version}</version>
