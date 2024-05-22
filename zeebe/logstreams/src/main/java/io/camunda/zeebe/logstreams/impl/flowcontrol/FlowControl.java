@@ -122,6 +122,8 @@ public final class FlowControl implements AppendListener {
     cleanupUnprocessed(position);
   }
 
+  public void onExported(final long position) {}
+
   private void cleanupUncommitted(final long highestPosition) {
     final var size = uncommitted.size();
     final var limit = appendLimit != null ? 2 * appendLimit.getLimit() : 2048;
