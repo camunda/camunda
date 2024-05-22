@@ -68,6 +68,10 @@ const test = base.extend<
         return;
       }
 
+      if (baseURL && baseURL.endsWith('/')) {
+        baseURL = baseURL.slice(0, -1);
+      }
+
       // Important: make sure we authenticate in a clean environment by unsetting storage state.
       const page = await browser.newPage({storageState: undefined});
       await page.goto(`${baseURL}/login`);

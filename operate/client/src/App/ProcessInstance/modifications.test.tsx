@@ -459,16 +459,18 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should block navigation when navigating to processes page modification mode is enabled - with context path', async () => {
     const contextPath = '/custom';
+    const baseName = contextPath + '/operate';
     window.clientConfig = {
       contextPath,
+      baseName,
     };
 
     mockRequests(contextPath);
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({
-        initialPath: `${contextPath}/processes/4294980768`,
-        contextPath,
+        initialPath: `${baseName}/processes/4294980768`,
+        contextPath: baseName,
       }),
     });
     await waitForElementToBeRemoved(
@@ -523,8 +525,10 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should block navigation when navigating to dashboard with modification mode is enabled - with context path', async () => {
     const contextPath = '/custom';
+    const baseName = contextPath + '/operate';
     window.clientConfig = {
       contextPath,
+      baseName,
     };
 
     mockRequests(contextPath);
@@ -536,8 +540,8 @@ describe('ProcessInstance - modification mode', () => {
       </>,
       {
         wrapper: getWrapper({
-          initialPath: `${contextPath}/processes/4294980768`,
-          contextPath,
+          initialPath: `${baseName}/processes/4294980768`,
+          contextPath: baseName,
         }),
       },
     );

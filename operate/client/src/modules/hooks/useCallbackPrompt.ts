@@ -80,7 +80,7 @@ export function useCallbackPrompt({
 
   useEffect(() => {
     if (confirmedNavigation && lastLocation) {
-      const contextPath = window.clientConfig?.contextPath;
+      const contextPath = window.clientConfig?.baseName;
 
       if (contextPath !== undefined) {
         const pathname = lastLocation.pathname.replace(contextPath, '');
