@@ -10,7 +10,6 @@ package io.camunda.zeebe.snapshots.impl;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.ChecksumMethod;
-import io.camunda.zeebe.snapshots.ChecksumGenerateApproach;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
@@ -22,7 +21,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
