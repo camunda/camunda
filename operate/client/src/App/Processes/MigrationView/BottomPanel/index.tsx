@@ -30,6 +30,12 @@ import {
 } from './styled';
 
 const BottomPanel: React.FC = observer(() => {
+  const {selectedSourceFlowNodeIds} = processInstanceMigrationStore;
+
+  const handleCheckIsRowSelected = (selectedSourceFlowNodes?: string[]) => {
+    return (rowId: string) => selectedSourceFlowNodes?.includes(rowId) ?? false;
+  };
+
   return (
     <BottomSection>
       {!processXmlMigrationSourceStore.hasSelectableFlowNodes ? (
@@ -57,10 +63,9 @@ const BottomPanel: React.FC = observer(() => {
           onRowClick={(rowId) => {
             processInstanceMigrationStore.selectSourceFlowNode(rowId);
           }}
-          checkIsRowSelected={(
-            (selectedSourceFlowNodes) => (rowId) =>
-              selectedSourceFlowNodes?.includes(rowId) ?? false
-          )(processInstanceMigrationStore.selectedSourceFlowNodeIds)}
+          checkIsRowSelected={handleCheckIsRowSelected(
+            selectedSourceFlowNodeIds,
+          )}
           rows={processXmlMigrationSourceStore.selectableFlowNodes.map(
             (sourceFlowNode) => {
               const selectableFlowNodes =

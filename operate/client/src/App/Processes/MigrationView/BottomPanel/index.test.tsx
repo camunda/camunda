@@ -53,6 +53,12 @@ const shipArticles = {
   type: 'userTask',
 };
 
+const confirmDelivery = {
+  id: 'confirmDelivery',
+  name: 'Confirm delivery',
+  type: 'callActivity',
+};
+
 const Wrapper = ({children}: Props) => {
   processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
   processInstanceMigrationStore.enable();
@@ -99,14 +105,19 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByRole('cell', {name: shippingSubProcess.name}),
     ).toBeInTheDocument();
 
-    // expect table to have 1 header + 4 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(5);
+    expect(
+      screen.getByRole('cell', {name: confirmDelivery.name}),
+    ).toBeInTheDocument();
+
+    // expect table to have 1 header + 5 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(6);
   });
 
   it.each([
     {source: checkPayment, target: checkPayment},
     {source: shipArticles, target: shipArticles},
     {source: shippingSubProcess, target: shippingSubProcess},
+    {source: confirmDelivery, target: confirmDelivery},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -136,10 +147,16 @@ describe('MigrationView/BottomPanel', () => {
   it.each([
     {source: checkPayment, target: shipArticles},
     {source: checkPayment, target: shippingSubProcess},
+    {source: checkPayment, target: confirmDelivery},
     {source: shipArticles, target: checkPayment},
     {source: shipArticles, target: shippingSubProcess},
+    {source: shipArticles, target: confirmDelivery},
     {source: shippingSubProcess, target: checkPayment},
     {source: shippingSubProcess, target: shipArticles},
+    {source: shippingSubProcess, target: confirmDelivery},
+    {source: confirmDelivery, target: checkPayment},
+    {source: confirmDelivery, target: shipArticles},
+    {source: confirmDelivery, target: shippingSubProcess},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
