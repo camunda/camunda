@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * skipping of records. It can be especially useful for testing purposes. Note that the listener is
  * invoked inside the context of the stream processor and should not block its execution.
  */
+@FunctionalInterface
 public interface StreamProcessorListener {
 
   /**
@@ -29,5 +30,5 @@ public interface StreamProcessorListener {
    *
    * @param skippedRecord the record that is skipped
    */
-  void onSkipped(final LoggedEvent skippedRecord);
+  default void onSkipped(final LoggedEvent skippedRecord) {}
 }

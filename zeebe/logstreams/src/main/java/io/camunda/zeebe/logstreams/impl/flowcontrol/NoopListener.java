@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import com.netflix.concurrency.limits.Limiter;
-import java.util.Optional;
+import com.netflix.concurrency.limits.Limiter.Listener;
 
-final class NoopLimiter<Context> implements Limiter<Context> {
+class NoopListener implements Listener {
+  public static final NoopListener INSTANCE = new NoopListener();
 
   @Override
-  public Optional<Listener> acquire(final Context context) {
-    return Optional.of(NoopListener.INSTANCE);
-  }
+  public void onSuccess() {}
+
+  @Override
+  public void onIgnore() {}
+
+  @Override
+  public void onDropped() {}
 }

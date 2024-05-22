@@ -496,6 +496,17 @@
           # maxConcurrency: 32768
           # alphaLimit: 0.7
           # betaLimit: 0.95
+      # Configure flow control for user requests. This setting takes precedence over the backpressure configuration.
+      # request:
+        # enabled: true
+        # algorithm: "aimd"
+        # useWindowed: true
+        # aimd:
+          # requestTimeout: "200ms"
+          # initialLimit: 100
+          # minLimit: 1
+          # maxLimit: 1000
+          # backoffRatio: 0.9
 
     # backpressure:
       # Configure backpressure below.

@@ -134,8 +134,6 @@ public final class ZeebePartitionFactory {
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
-    final var partitionId = raftPartition.id().id();
-
     final StateController stateController =
         createStateController(raftPartition, snapshotStore, snapshotStore);
 
@@ -151,7 +149,6 @@ public final class ZeebePartitionFactory {
             actorSchedulingService,
             brokerCfg,
             commandApiService::newCommandResponseWriter,
-            () -> commandApiService.getOnProcessedListener(partitionId),
             snapshotStore,
             stateController,
             typedRecordProcessorsFactory,
@@ -163,9 +160,7 @@ public final class ZeebePartitionFactory {
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
 
-    final ZeebePartition zeebePartition =
-        new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
-    return zeebePartition;
+    return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
   private StateController createStateController(
