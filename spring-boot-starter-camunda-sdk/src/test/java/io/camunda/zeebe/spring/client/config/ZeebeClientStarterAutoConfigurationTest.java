@@ -28,15 +28,19 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(SpringExtension.class)
-@TestPropertySource(
+@ExtendWith(OutputCaptureExtension.class)
+@SpringBootTest(
+    classes = {
+      CamundaAutoConfiguration.class,
+      ZeebeClientStarterAutoConfigurationTest.TestConfig.class
+    },
     properties = {
       "zeebe.client.broker.gatewayAddress=localhost:1234",
       "zeebe.client.broker.grpcAddress=https://localhost:1234",
@@ -51,12 +55,9 @@ import org.springframework.test.util.ReflectionTestUtils;
       "zeebe.client.worker.override.foo.enabled=false",
       "zeebe.client.message.timeToLive=99s",
       "zeebe.client.security.certpath=aPath",
-      "zeebe.client.security.plaintext=true"
-    })
-@ContextConfiguration(
-    classes = {
-      CamundaAutoConfiguration.class,
-      ZeebeClientStarterAutoConfigurationTest.TestConfig.class
+      "zeebe.client.security.plaintext=true",
+      "zeebe.client.cloud.clientSecret=client-secret",
+      "zeebe.client.cloud.clientId=client-id",
     })
 public class ZeebeClientStarterAutoConfigurationTest {
 
@@ -106,6 +107,12 @@ public class ZeebeClientStarterAutoConfigurationTest {
     assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
     assertThat(client.getConfiguration().getDefaultJobPollInterval())
         .isEqualTo(Duration.ofSeconds(99));
+  }
+
+  @Test
+  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
+    assertThat(output).contains("clientId='***'");
+    assertThat(output).contains("clientSecret='***'");
   }
 
   public static class TestConfig {
