@@ -241,8 +241,8 @@ jobs:
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
       - name: Install Zeebe changelog tool
         run: |
-          wget https://github.com/zeebe-io/zeebe-changelog/releases/download/0.7.0/zeebe-changelog_0.7.0_Linux_i386.tar.gz
-          tar -xzvf zeebe-changelog_0.7.0_Linux_i386.tar.gz
+          gh release download --repo zeebe-io/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
+          tar -xzvf zeebe-changelog_*
           chmod +x zcl
       - name: Generate Changelog for patch release
         id: gen-changelog
