@@ -33,4 +33,24 @@ describe('stores/processXml/processXml.list', () => {
       'confirmDelivery',
     ]);
   });
+
+  it('should return true for isTargetSelected', async () => {
+    expect(processXmlStore.isTargetSelected).toBe(false);
+
+    mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+
+    processXmlStore.fetchProcessXml('1');
+    expect(processXmlStore.state.status).toBe('fetching');
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+
+    expect(processXmlStore.isTargetSelected).toBe(true);
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual([
+      'checkPayment',
+      'requestForPayment',
+      'shippingSubProcess',
+      'shipArticles',
+    ]);
+  });
 });
