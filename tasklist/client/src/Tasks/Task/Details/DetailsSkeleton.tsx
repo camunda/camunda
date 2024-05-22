@@ -19,7 +19,7 @@ import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';
 import styles from './styles.module.scss';
 import headerStyles from './Header.module.scss';
 import asideStyles from './Aside.module.scss';
-import tabStyles from './TabListNav.module.scss';
+import tabStyles from './TabListNav/styles.module.scss';
 
 type Props = {
   'data-testid'?: string;

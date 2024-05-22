@@ -49,14 +49,18 @@ const Details: React.FC = () => {
       title: 'Task',
       label: 'Show task',
       selected: useMatch(pages.taskDetails()) !== null,
-      href: pages.taskDetails(id),
+      to: {
+        pathname: pages.taskDetails(id),
+      },
     },
     {
       key: 'process',
       title: 'Process',
       label: 'Show associated BPMN process',
       selected: useMatch(pages.taskDetailsProcess()) !== null,
-      href: pages.taskDetailsProcess(id),
+      to: {
+        pathname: pages.taskDetailsProcess(id),
+      },
       visible:
         !taskCompleted && process !== undefined && process.bpmnXml !== null,
     },

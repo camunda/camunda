@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useNavigate} from 'react-router-dom';
-import styles from './TabListNav.module.scss';
+import {useLocation, useNavigate, type Path} from 'react-router-dom';
+import styles from './styles.module.scss';
 import cn from 'classnames';
 
 type Props = {
@@ -18,17 +18,19 @@ type Props = {
     title: string;
     label: string;
     selected: boolean;
-    href: string;
+    to: Partial<Path>;
     visible?: boolean;
   }>;
 };
 
 const TabListNav: React.FC<Props> = ({className, label, items}) => {
+  const location = useLocation();
   const navigate = useNavigate();
+
   return (
     <nav className={cn(className, styles.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, href, visible}) => {
+        {items.map(({key, title, label, selected, to, visible}) => {
           const isHidden = visible === false;
           return (
             <button
@@ -47,7 +49,12 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
               )}
               hidden={isHidden}
               aria-hidden={isHidden}
-              onClick={() => navigate(href)}
+              onClick={() =>
+                navigate({
+                  ...location,
+                  ...to,
+                })
+              }
             >
               <div className="cds--tabs__nav-item-label-wrapper">
                 <span className="cds--tabs__nav-item-label">{title}</span>
