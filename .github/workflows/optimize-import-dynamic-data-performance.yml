@@ -88,12 +88,12 @@ jobs:
       - name: Build
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl backend,qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker clean install -B
+          parameters: -pl optimize/backend,optimize/qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker clean install -B
 
       - name: Run tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: -Plive-data-import-performance-test -f qa/import-performance-tests/pom.xml clean test -B
+          parameters: -Plive-data-import-performance-test -f optimize/qa/import-performance-tests/pom.xml clean test -B
 
       - name: Pull Indices
         run: |

@@ -41,13 +41,13 @@ jobs:
       with:
         node-version: ${{ steps.pom_info.outputs.x_version_node }}
         cache: yarn
-        cache-dependency-path: ./client/yarn.lock
+        cache-dependency-path: ./optimize/client/yarn.lock
     - name: Pull Dependencies
-      working-directory: ./client
+      working-directory: ./optimize/client
       run: |
         yarn
     - name: Test
-      working-directory: ./client
+      working-directory: ./optimize/client
       run: |
         yarn test:ci
     - name: Upload Test Results

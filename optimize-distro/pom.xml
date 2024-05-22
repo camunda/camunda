@@ -4,8 +4,9 @@
 
   <parent>
     <groupId>org.camunda.optimize</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>optimize-parent</artifactId>
     <version>3.14.0-SNAPSHOT</version>
+    <relativePath>../optimize/pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>

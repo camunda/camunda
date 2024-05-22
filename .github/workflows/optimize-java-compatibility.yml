@@ -99,7 +99,7 @@ jobs:
           LIMITS_CPU: 8
         with:
           threads: 8
-          parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl backend -am
+          parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl optimize/backend -am
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -166,11 +166,11 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest
-      - name: Verify qa/upgrade-tests
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/backend,upgrade,optimize/qa/data-generation,optimize/qa/optimize-data-generator -am -Pengine-latest
+      - name: Verify optimize/qa/upgrade-tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dfailsafe.rerunFailingTestsCount=2 -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
+          parameters: verify -Dfailsafe.rerunFailingTestsCount=2 -Dskip.docker -Dskip.fe.build -f optimize/qa/upgrade-tests -Pupgrade-optimize-data
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4

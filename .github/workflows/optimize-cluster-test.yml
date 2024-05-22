@@ -67,7 +67,7 @@ jobs:
       uses: ./.github/actions/run-maven
       with:
           parameters: >-
-                  -B -Pclustering-tests verify -pl qa/clustering-tests
+                  -B -Pclustering-tests verify -pl optimize/qa/clustering-tests
                   -Doptimize.importing.host=optimize-import.$NAMESPACE -Doptimize.importing.port=8090
                   -Doptimize.notImporting.host=optimize-no-import.$NAMESPACE -Doptimize.notImporting.port=8090
                   -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn

@@ -198,7 +198,7 @@ jobs:
       if: matrix.env == 'C7'
       env:
         OPTIMIZE_ENDPOINT: http://optimize.optimize-${{ steps.params.outputs.app-name }}:8090
-        OPTIMIZE_DEMO_DATA_FILE: ./client/demo-data/eventIngestionBatch.json
+        OPTIMIZE_DEMO_DATA_FILE: ./optimize/client/demo-data/eventIngestionBatch.json
       run: |
         # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
         curl \

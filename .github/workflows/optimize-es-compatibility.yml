@@ -91,7 +91,7 @@ jobs:
           LIMITS_CPU: 8
         with:
           threads: 8
-          parameters: verify -Dfailsafe.rerunFailingTestsCount=2 -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profile }} -pl backend -am
+          parameters: verify -Dfailsafe.rerunFailingTestsCount=2 -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profile }} -pl optimize/backend -am
 
       - name: Upload Test Results
         if: always()

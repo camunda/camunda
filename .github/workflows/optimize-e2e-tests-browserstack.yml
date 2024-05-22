@@ -49,10 +49,10 @@ jobs:
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
           cache: "yarn"
-          cache-dependency-path: client/yarn.lock
+          cache-dependency-path: optimize/client/yarn.lock
 
       - name: Install node dependencies
-        working-directory: ./client
+        working-directory: ./optimize/client
         run: yarn install
 
       - name: Setup Maven
@@ -66,12 +66,12 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Build backend & frontend
-        run: mvn clean install -DskipTests -Dskip.docker -pl backend,qa/data-generation -am
+        run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend,optimize/qa/data-generation -am
 
       - name: Start Postgress, Engine and Elasticsearch
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/client/docker-compose.yml
+          compose_file: ${{ github.workspace }}/optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile platform"
 
@@ -81,15 +81,15 @@ jobs:
           sql_dump: "optimize_data-e2e.sqlc"
 
       - name: Create backend logs file
-        run: mkdir -p ./client/build && touch ./client/build/backendLogs.log
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
 
       - name: Start back-end
-        working-directory: ./client
+        working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
 
       - name: Start front-end
-        working-directory: ./client
+        working-directory: ./optimize/client
         run: yarn start &
 
       - name: Wait for import to complete
@@ -99,7 +99,7 @@ jobs:
         run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
 
       - name: Run tests
-        working-directory: ./client
+        working-directory: ./optimize/client
         env:
           BROWSERSTACK_USERNAME: "${{ steps.secrets.outputs.BROWSERSTACK_USERNAME }}"
           BROWSERSTACK_ACCESS_KEY: "${{ steps.secrets.outputs.BROWSERSTACK_ACCESS_KEY }}"
@@ -110,7 +110,7 @@ jobs:
         if: always()
         with:
           name: logs
-          path: ./client/build/*.log
+          path: ./optimize/client/build/*.log
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs

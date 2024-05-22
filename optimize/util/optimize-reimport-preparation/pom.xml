@@ -126,7 +126,7 @@
                   <workingDirectory>../../</workingDirectory>
                   <arguments>
                     <argument>-f</argument>
-                    <argument>backend/pom.xml</argument>
+                    <argument>optimize/backend/pom.xml</argument>
                     <argument>-Pit</argument>
                     <argument>pre-integration-test</argument>
                   </arguments>

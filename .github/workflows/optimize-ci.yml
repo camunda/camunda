@@ -54,6 +54,7 @@ jobs:
       uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5
       with:
         context: .
+        file: optimize.Dockerfile
         provenance: false
         build-args: |
           VERSION=${{ steps.pom-info.outputs.project_version }}
@@ -111,15 +112,15 @@ jobs:
     - name: Verify upgrade
       uses: ./.github/actions/run-maven
       with:
-        parameters: verify -Dskip.docker -pl upgrade
-    - name: Verify util/optimize-reimport-preparation
+        parameters: verify -Dskip.docker -pl optimize/upgrade
+    - name: Verify optimize/util/optimize-reimport-preparation
       uses: ./.github/actions/run-maven
       with:
-        parameters: verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it
-    - name: Verify qa/upgrade-tests
+        parameters: verify -Dskip.docker -pl optimize/util/optimize-reimport-preparation -Pengine-latest,it
+    - name: Verify optimize/qa/upgrade-tests
       uses: ./.github/actions/run-maven
       with:
-        parameters: verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests
+        parameters: verify -Dskip.docker -pl optimize/qa/upgrade-tests -Pupgrade-es-schema-tests
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -184,10 +185,10 @@ jobs:
       uses: ./.github/actions/run-maven
       with:
         parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
-    - name: Verify qa/upgrade-tests
+    - name: Verify optimize/qa/upgrade-tests
       uses: ./.github/actions/run-maven
       with:
-        parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
+        parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/upgrade-tests -Pupgrade-optimize-data
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -275,7 +276,7 @@ jobs:
           -Dit.test.includedGroups=${{ matrix.includedGroups }}
           -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
           -Dfailsafe.rerunFailingTestsCount=2
-          -Ddatabase.type=elasticsearch -pl backend -am
+          -Ddatabase.type=elasticsearch -pl optimize/backend -am
 
     - name: Upload Test Results
       if: always()
@@ -353,7 +354,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl backend -am
+            -Ddatabase.type=opensearch -pl optimize/backend -am
 
       - name: Upload Test Results
         if: always()
@@ -433,7 +434,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl backend -am
+            -Ddatabase.type=opensearch -pl optimize/backend -am
 
       - name: Upload Test Results
         if: always()

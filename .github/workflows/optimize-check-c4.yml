@@ -4,10 +4,10 @@ on:
     branches:
       - master
     paths:
-      - "c4/**"
+      - "optimize/c4/**"
   pull_request:
     paths:
-      - "c4/**"
+      - "optimize/c4/**"
 
 jobs:
   build:
@@ -27,16 +27,16 @@ jobs:
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
           cache: "yarn"
-          cache-dependency-path: c4/yarn.lock
+          cache-dependency-path: optimize/c4/yarn.lock
 
       - name: Install dependencies
-        working-directory: ./c4
+        working-directory: ./optimize/c4
         run: yarn
 
       - name: Build storybook
-        working-directory: ./c4
+        working-directory: ./optimize/c4
         run: yarn build-storybook
 
       - name: Build C4 package
-        working-directory: ./c4
+        working-directory: ./optimize/c4
         run: yarn build

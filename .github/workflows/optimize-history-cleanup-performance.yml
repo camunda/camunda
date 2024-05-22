@@ -89,8 +89,8 @@ jobs:
       - name: Run cleanup performance test
         shell: bash
         run: |
-          mvn -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install
-          mvn -Pengine-cleanup-performance -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.$NAMESPACE:5432/engine -Dengine.url=http://cambpm.$NAMESPACE:8080/engine-rest -Des.host=elasticsearch.$NAMESPACE -Dcleanup.timeout.minutes=${{ env.CLEANUP_TIMEOUT_MINUTES }}
+          mvn -pl optimize/backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install
+          mvn -Pengine-cleanup-performance -f optimize/qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.$NAMESPACE:5432/engine -Dengine.url=http://cambpm.$NAMESPACE:8080/engine-rest -Des.host=elasticsearch.$NAMESPACE -Dcleanup.timeout.minutes=${{ env.CLEANUP_TIMEOUT_MINUTES }}
 
       - name: Pull Indices
         if: always()

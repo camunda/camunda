@@ -50,25 +50,25 @@ jobs:
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
         cache: "yarn"
-        cache-dependency-path: client/yarn.lock    
+        cache-dependency-path: optimize/client/yarn.lock    
     - name: Install node dependencies
-      working-directory: ./client
+      working-directory: ./optimize/client
       run: yarn install
     - name: 'build backend & frontend'
-      run: mvn clean install -DskipTests -Dskip.docker -pl backend,qa/data-generation -am
+      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend,optimize/qa/data-generation -am
     - name: 'start backend'
-      working-directory: ./client
+      working-directory: ./optimize/client
       run: |
         yarn run start-backend-cloud ci &
     - name: Start frontend app
-      working-directory: ./client
+      working-directory: ./optimize/client
       run: yarn start &
     - name: Wait for backend to start
       run: ./.github/scripts/wait-for.sh http://localhost:8090/api/readyz
     - name: Wait for frontend to start
       run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
     - name: 'start e2e test'
-      working-directory: ./client
+      working-directory: ./optimize/client
       env:
         AUTH0_CLIENTSECRET: "${{ steps.secrets.outputs.AUTH0_CLIENTSECRET }}"
         AUTH0_USEREMAIL: "${{ steps.secrets.outputs.AUTH0_USEREMAIL }}"

@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-c4:
+  publish-optimize-c4:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./c4 
+        working-directory: ./optimize/c4 
     steps:
       - name: Checkout repository
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
           cache: "yarn"
-          cache-dependency-path: 'c4/yarn.lock'
+          cache-dependency-path: 'optimize/c4/yarn.lock'
       - name: Install
         run: yarn install --frozen-lockfile
       - name: Build

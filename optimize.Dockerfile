@@ -22,7 +22,7 @@ FROM ${BASE_IMAGE_NAME} as builder
 
 ARG VERSION=""
 ARG DISTRO=production
-ARG ARTIFACT_PATH=./distro/target
+ARG ARTIFACT_PATH=./optimize-distro/target
 
 ENV TMP_DIR=/tmp/optimize \
     BUILD_DIR=/tmp/build
@@ -33,7 +33,7 @@ RUN mkdir -p ${TMP_DIR} && \
 COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
 RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
     rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
-COPY docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
+COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 # Prevent environment-config.yaml from overriding service-config.yaml since the
 # service-config.yaml allows usage of OPTIMIZE_ environment variables
 RUN rm ${BUILD_DIR}/config/environment-config.yaml

@@ -15,14 +15,14 @@ nohup.out
 errorShots/
 .DS_Store
 
-client/.vscode/
-client/dist
-client/*.md
-client/.node/
+optimize/client/.vscode/
+optimize/client/dist
+optimize/client/*.md
+optimize/client/.node/
 
-qa/engine-rest-secure/overlays
-qa/engine-rest-custom/overlays
-qa/engine-it-plugin/overlays
+optimize/qa/engine-rest-secure/overlays
+optimize/qa/engine-rest-custom/overlays
+optimize/qa/engine-it-plugin/overlays
 
 # visual studio code workspace files
 *.code-workspace

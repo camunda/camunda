@@ -4,11 +4,11 @@ on:
     branches:
       - master
     paths-ignore:
-      - "client/**"
+      - "optimize/client/**"
       - ".ci/**"
   pull_request:
     paths-ignore:
-      - "client/**"
+      - "optimize/client/**"
       - ".ci/**"
 jobs:
   linting:

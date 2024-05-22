@@ -50,7 +50,7 @@ runs:
       mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
   # workaround, maven has troubles creating a subdirectory of a non existing directory
   - shell: bash
-    run: mkdir -p ${{ github.workspace }}/backend/target/classes/
+    run: mkdir -p ${{ github.workspace }}/optimize/backend/target/classes/
   - shell: bash
     run: |
       sudo rm -rf /etc/localtime

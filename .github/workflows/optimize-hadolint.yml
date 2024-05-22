@@ -8,8 +8,8 @@ jobs:
       matrix:
         dockerfile:
           [
-            "Dockerfile",
-            "qa/clustering-tests/src/main/docker/optimize/Dockerfile",
+            "optimize.Dockerfile",
+            "optimize/qa/clustering-tests/src/main/docker/optimize/Dockerfile",
           ]
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4

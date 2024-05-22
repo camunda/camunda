@@ -69,9 +69,9 @@ services:
       - 8080:8080
       - 9092:9092
     volumes:
-      - "./backend/target/cambpm_logs:/camunda/logs"
-      - "./backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
-      - "./backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
+      - "./optimize/backend/target/cambpm_logs:/camunda/logs"
+      - "./optimize/backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
+      - "./optimize/backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
     restart: always
     cpu_count: 4
     mem_limit: 2g

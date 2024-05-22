@@ -193,7 +193,7 @@ jobs:
           ee: "true"
           env: "prod"
           version: ${{ github.event.inputs.RELEASE_VERSION }}
-          artifact_file: target/checkout/distro/target/*.{tar.gz,zip}
+          artifact_file: target/checkout/optimize-distro/target/*.{tar.gz,zip}
           repo_name: "optimize"
 
       - name: Auto-update previous version

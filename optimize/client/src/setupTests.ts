@@ -11,7 +11,7 @@ import Adapter from '@wojtekmaj/enzyme-adapter-react-17';
 import 'jest-enzyme';
 import './modules/polyfills/array_flat';
 import {setTranslation} from 'translation';
-import translation from '../../backend/src/main/resources/localization/en.json';
+import translation from '../../../optimize/backend/src/main/resources/localization/en.json';
 import {setImmediate} from 'timers';
 
 Enzyme.configure({adapter: new Adapter()});

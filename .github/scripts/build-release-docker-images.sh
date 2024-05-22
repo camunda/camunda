@@ -49,9 +49,9 @@ docker buildx build \
     --platform linux/arm64 \
     --provenance false \
     --load \
-    .
+    -f optimize.Dockerfile .
 export ARCHITECTURE=arm64
-./docker/test/verify.sh "${tags[@]}"
+./optimize/docker/test/verify.sh "${tags[@]}"
 
 # Now amd64
 docker buildx build \
@@ -62,7 +62,7 @@ docker buildx build \
     --platform linux/amd64 \
     --provenance false \
     --load \
-    .
+    -f optimize.Dockerfile .
 export ARCHITECTURE=amd64
-./docker/test/verify.sh "${tags[@]}"
+./optimize/docker/test/verify.sh "${tags[@]}"
 

@@ -22,7 +22,7 @@ const dataGenerationParameters = Object.keys(e2ePresets)
 
 const generateDataProcess = spawn(
   'mvn',
-  ['exec:java', '-f ./qa/data-generation/pom.xml', `-Dexec.args="${dataGenerationParameters}"`],
+  ['exec:java', '-f ./optimize/qa/data-generation/pom.xml', `-Dexec.args="${dataGenerationParameters}"`],
   {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: 'inherit',

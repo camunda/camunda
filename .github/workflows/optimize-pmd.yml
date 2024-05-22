@@ -28,7 +28,7 @@ jobs:
           version: '6.55.0'
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
           rulesets: '.github/configuration/optimize-pmd.xml'
-          sourcePath: 'backend/src/main/java'
+          sourcePath: 'optimize/backend/src/main/java'
           analyzeModifiedFilesOnly: true
       - name: Upload SARIF file
         if: steps.pmd.outputs.violations != 0

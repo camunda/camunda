@@ -122,7 +122,7 @@ jobs:
       - name: Performance test
         uses: ./.github/actions/run-maven
         with:
-          parameters: -Pupgrade-es-schema-tests -pl qa/upgrade-tests clean verify
+          parameters: -Pupgrade-es-schema-tests -pl optimize/qa/upgrade-tests clean verify
           threads: 5
 
       - name: Pull Indices
@@ -149,6 +149,6 @@ jobs:
         with:
           name: upgrade-data-performance-tests-logs
           path: |
-            ./qa/upgrade-tests/target/**/*.log
+            ./optimize/qa/upgrade-tests/target/**/*.log
           retention-days: 7
           if-no-files-found: ignore

@@ -7,16 +7,16 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.basedir}/../backend/target/lib</directory>
+      <directory>${project.basedir}/../optimize/backend/target/lib</directory>
       <outputDirectory>lib</outputDirectory>
     </fileSet>
 
     <fileSet>
-      <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
+      <directory>${project.basedir}/../optimize/backend/src/main/resources/localization/</directory>
       <outputDirectory>config/localization</outputDirectory>
     </fileSet>
     <fileSet>
-      <directory>${project.basedir}/../backend/src/main/resources/logo/</directory>
+      <directory>${project.basedir}/../optimize/backend/src/main/resources/logo/</directory>
       <outputDirectory>config/logo</outputDirectory>
     </fileSet>
 
@@ -53,7 +53,7 @@
   <files>
     <!-- root directory -->
     <file>
-      <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
+      <source>${project.basedir}/../optimize/backend/target/optimize-backend-${project.version}.jar</source>
       <outputDirectory></outputDirectory>
     </file>
     <file>
@@ -88,7 +88,7 @@
     <!-- upgrade directory -->
     <file>
       <source>
-        ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
+        ${project.basedir}/../optimize/upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
       </source>
       <outputDirectory>upgrade</outputDirectory>
     </file>
@@ -108,7 +108,7 @@
     <!-- reimport directory -->
     <file>
       <source>
-        ${project.basedir}/../util/optimize-reimport-preparation/target/optimize-reimport-preparation-${project.version}.jar
+        ${project.basedir}/../optimize/util/optimize-reimport-preparation/target/optimize-reimport-preparation-${project.version}.jar
       </source>
       <outputDirectory>reimport</outputDirectory>
     </file>

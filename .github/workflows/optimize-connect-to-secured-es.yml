@@ -93,12 +93,12 @@ jobs:
       - name: Build project
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl qa/connect-to-secured-es-tests -am
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/qa/connect-to-secured-es-tests -am
 
       - name: Run tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -Psecured-es-it
+          parameters: verify -Dskip.docker -Dskip.fe.build -pl optimize/qa/connect-to-secured-es-tests -Psecured-es-it
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -112,7 +112,7 @@ jobs:
         with:
           name: connect-to-secured-es-tests-logs
           path: |
-            ./backend/target/failsafe-reports/**/*.xml
+            ./optimize/backend/target/failsafe-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
 

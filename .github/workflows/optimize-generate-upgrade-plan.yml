@@ -53,7 +53,7 @@ jobs:
         GITHUB_ACTOR_ID=${{ github.actor_id }}
 
         # Define Java content using a Here Document
-        cat <<EOF > upgrade/src/main/java/org/camunda/optimize/upgrade/plan/factories/Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory.java
+        cat <<EOF > optimize/upgrade/src/main/java/org/camunda/optimize/upgrade/plan/factories/Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory.java
         package org.camunda.optimize.upgrade.plan.factories;
 
         import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
