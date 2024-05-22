@@ -35,6 +35,7 @@ public class ProcessVariableReaderOS implements ProcessVariableReader {
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final List<String> processDefinitionKeysToTarget,
       final BoolQueryBuilder baseQuery,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
     log.debug("Functionality not implemented for OpenSearch");

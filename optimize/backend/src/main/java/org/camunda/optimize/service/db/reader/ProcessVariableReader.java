@@ -29,6 +29,7 @@ public interface ProcessVariableReader {
       final ProcessVariableNameRequestDto variableNameRequest);
 
   List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final List<String> processDefinitionKeysToTarget,
       final BoolQueryBuilder baseQuery,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos);
 

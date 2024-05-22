@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,7 @@ import org.camunda.optimize.service.db.reader.VariableLabelReader;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -143,11 +145,13 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
             .toList(),
         FilterContext.builder().timezone(variableNameRequest.getTimezone()).build());
 
-    return getVariableNamesForInstancesMatchingQuery(query, definitionLabelsDtos);
+    return getVariableNamesForInstancesMatchingQuery(
+        processDefinitionKeys, query, definitionLabelsDtos);
   }
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
+      final List<String> processDefinitionKeysToTarget,
       final BoolQueryBuilder baseQuery,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
     List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
@@ -168,8 +172,11 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
             .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
             .size(0);
 
-    SearchRequest searchRequest =
-        new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+    String[] indicesToTarget =
+        processDefinitionKeysToTarget.stream()
+            .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
+            .toArray(String[]::new);
+    SearchRequest searchRequest = new SearchRequest(indicesToTarget).source(searchSourceBuilder);
 
     List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
     ElasticsearchCompositeAggregationScroller.create()
@@ -342,7 +349,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     boolean isStringVariable = VariableType.STRING.equals(variableType);
     boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
-      final String lowerCaseValue = valueFilter.toLowerCase();
+      final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
       QueryBuilder filter =
           (lowerCaseValue.length() > MAX_GRAM)
               /*

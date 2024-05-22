@@ -283,6 +283,36 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   }
 
   @Test
+  public void getVariableNames_multipleDefinitions_oneHasNoInstanceData() {
+    // given
+    final String key1 = "key1";
+    final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("var1", "value1");
+    variables1.put("var2", "value2");
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
+    final String key2 = "key2";
+    deploySimpleProcessDefinition(key2, null);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse =
+        variablesClient.getProcessVariableNames(
+            new ProcessVariableNameRequestDto(
+                List.of(
+                    new ProcessToQueryDto(
+                        key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+                    new ProcessToQueryDto(
+                        key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS))));
+
+    // then
+    assertThat(variableResponse)
+        .extracting(ProcessVariableNameResponseDto::getName)
+        .containsExactly("var1", "var2");
+  }
+
+  @Test
   public void getVariableNamesSingleBucketFilteredBySingleTenant() {
     // given
     final String tenantId1 = "tenantId1";

@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -98,13 +100,19 @@ public class ProcessViewRawData extends ProcessViewPart {
       final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
+    List<String> defKeysToTarget =
+        context.getReportData().getDefinitions().stream()
+            .map(ReportDataDefinitionDto::getKey)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
     // we do not fetch the variable labels as part of the /evaluate
     // endpoint, but the frontend will query the /variables endpoint
     // to fetch them
     final Set<String> allVariableNamesForMatchingInstances =
         processVariableReader
-            .getVariableNamesForInstancesMatchingQuery(variableQuery, Collections.emptyMap())
+            .getVariableNamesForInstancesMatchingQuery(
+                defKeysToTarget, variableQuery, Collections.emptyMap())
             .stream()
             .map(ProcessVariableNameResponseDto::getName)
             .collect(Collectors.toSet());
