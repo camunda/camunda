@@ -77,8 +77,15 @@ public final class FileBasedSnapshotStore extends Actor
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private ChecksumProvider checksumProvider;
   private final String actorName;
   private final int partitionId;
+
+  public FileBasedSnapshotStore(
+      final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
+    this(partitionId, root);
+    this.checksumProvider = checksumProvider;
+  }
 
   public FileBasedSnapshotStore(final int partitionId, final Path root) {
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
@@ -199,8 +206,9 @@ public final class FileBasedSnapshotStore extends Actor
 
     try {
       final var expectedChecksum = SnapshotChecksum.read(checksumPath);
-      final var actualChecksum = SnapshotChecksum.calculate(path);
-      if (expectedChecksum.getCombinedValue() != actualChecksum.getCombinedValue()) {
+      final var actualChecksum =
+          SnapshotChecksum.calculateWithFullFileChecksums(path, checksumProvider);
+      if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
             path,
@@ -422,7 +430,7 @@ public final class FileBasedSnapshotStore extends Actor
     // with the sfv checksum file they are marked as valid
     final var directory = buildSnapshotDirectory(newSnapshotId);
     final var newPendingSnapshot =
-        new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor);
+        new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor, checksumProvider);
     addPendingSnapshot(newPendingSnapshot);
     return Either.right(newPendingSnapshot);
   }

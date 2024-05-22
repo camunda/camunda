@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProvider;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -40,17 +41,20 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private MutableChecksumsSFV checksum;
+  private final ChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
-      final ActorControl actor) {
+      final ActorControl actor,
+      final ChecksumProvider checksumProvider) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
+    this.checksumProvider = checksumProvider;
   }
 
   @Override
@@ -81,7 +85,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculate(directory);
+          checksum = SnapshotChecksum.calculateWithFullFileChecksums(directory, checksumProvider);
 
           snapshot = null;
           isValid = true;
