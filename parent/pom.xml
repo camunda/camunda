@@ -94,7 +94,7 @@
     <version.feel-scala>1.17.7</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.7</version.spring>
+    <version.spring>6.1.8</version.spring>
     <version.spring-security>6.3.0</version.spring-security>
     <version.spring-boot>3.2.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
