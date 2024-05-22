@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.Limit;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -74,16 +73,9 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   public ActorFuture<LogStream> buildAsync() {
     validate();
 
-    final var logStreamMetrics = new LogStreamMetrics(partitionId);
     final var logStreamService =
         new LogStreamImpl(
-            logName,
-            partitionId,
-            maxFragmentSize,
-            logStorage,
-            appendLimit,
-            requestLimit,
-            logStreamMetrics);
+            logName, partitionId, maxFragmentSize, logStorage, appendLimit, requestLimit);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService

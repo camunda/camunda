@@ -58,8 +58,7 @@ public final class LogStreamImpl extends Actor
       final int maxFragmentSize,
       final LogStorage logStorage,
       final Limit appendLimit,
-      final Limit requestLimit,
-      final LogStreamMetrics logStreamMetrics) {
+      final Limit requestLimit) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -69,7 +68,7 @@ public final class LogStreamImpl extends Actor
     this.logStorage = logStorage;
     this.appendLimit = appendLimit;
     this.requestLimit = requestLimit;
-    this.logStreamMetrics = logStreamMetrics;
+    logStreamMetrics = new LogStreamMetrics(partitionId);
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
   }
