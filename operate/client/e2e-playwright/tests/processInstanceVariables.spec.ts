@@ -9,7 +9,7 @@
 import {setup} from './processInstanceVariables.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {DEFAULT_TEST_TIMEOUT, SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
