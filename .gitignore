@@ -17,7 +17,6 @@ errorShots/
 
 optimize/client/.vscode/
 optimize/client/dist
-optimize/client/*.md
 optimize/client/.node/
 
 optimize/qa/engine-rest-secure/overlays

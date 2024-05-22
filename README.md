@@ -29,7 +29,7 @@ optimize-distro/target ```
 
 ## Frontend
 
-Learn how to build, debug, test and more in the front-end in the [Front-End README](client/README.md)
+Learn how to build, debug, test and more in the front-end in the [Front-End README](./optimize/client/README.md)
 
 ## Backend
 
