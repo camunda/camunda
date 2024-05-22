@@ -155,64 +155,6 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   }
 
   @Test
-  public void shouldRejectMigrationForActiveCallActivity() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .callActivity("A", c -> c.zeebeProcessId("CHILD_PROCESS"))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .callActivity("A", c -> c.zeebeProcessId("CHILD_PROCESS"))
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess("CHILD_PROCESS")
-                    .startEvent()
-                    .userTask("C")
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withParentProcessInstanceKey(processInstanceKey)
-        .withElementId("CHILD_PROCESS")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "A", "CALL_ACTIVITY"));
-  }
-
-  @Test
   public void shouldRejectMigrationForActiveExclusiveGateway() {
     // given
     final var deployment =
