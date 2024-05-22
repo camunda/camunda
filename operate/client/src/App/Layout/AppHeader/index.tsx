@@ -135,17 +135,20 @@ const AppHeader: React.FC = observer(() => {
       appBar={{
         ariaLabel: 'App Panel',
         isOpen: false,
-        appTeaserRouteProps: {
-          operate: {
-            to: `/org/${window.clientConfig?.organizationId}/appTeaser/operate`,
-          },
-          optimize: {
-            to: `/org/${window.clientConfig?.organizationId}/appTeaser/optimize`,
-          },
-          tasklist: {
-            to: `/org/${window.clientConfig?.organizationId}/appTeaser/tasklist`,
-          },
-        },
+        appTeaserRouteProps: window.clientConfig?.organizationId
+          ? {
+              operate: {
+                to: `/org/${window.clientConfig?.organizationId}/appTeaser/operate`,
+              },
+              optimize: {
+                to: `/org/${window.clientConfig?.organizationId}/appTeaser/optimize`,
+              },
+              tasklist: {
+                to: `/org/${window.clientConfig?.organizationId}/appTeaser/tasklist`,
+              },
+            }
+          : undefined,
+        ...(!window.clientConfig?.organizationId && {elements: []}),
         elementClicked: (app) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',

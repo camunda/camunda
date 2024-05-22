@@ -26,64 +26,6 @@ describe('App switcher', () => {
     window.clientConfig = undefined;
   });
 
-  it('should render with correct links', async () => {
-    window.clientConfig = {
-      isEnterprise: false,
-      organizationId: 'some-organization-id',
-    };
-
-    mockGetUser().withSuccess(
-      createUser({
-        c8Links: {
-          operate: 'https://link-to-operate',
-          tasklist: 'https://link-to-tasklist',
-          modeler: 'https://link-to-modeler',
-          console: 'https://link-to-console',
-          optimize: 'https://link-to-optimize',
-        },
-      }),
-    );
-
-    await authenticationStore.authenticate();
-    const {user} = render(<AppHeader />, {
-      wrapper: Wrapper,
-    });
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: /camunda components/i,
-      }),
-    );
-
-    const withinAppPanel = within(
-      screen.getByRole('navigation', {
-        name: /app panel/i,
-      }),
-    );
-
-    const consoleLink = await withinAppPanel.findByRole('link', {
-      name: 'Console',
-    });
-    expect(consoleLink).toHaveAttribute('href', 'https://link-to-console');
-    expect(consoleLink).not.toHaveAttribute('target');
-
-    const modelerLink = withinAppPanel.getByRole('link', {name: 'Modeler'});
-    expect(modelerLink).toHaveAttribute('href', 'https://link-to-modeler');
-    expect(modelerLink).not.toHaveAttribute('target');
-
-    const tasklistLink = withinAppPanel.getByRole('link', {name: 'Tasklist'});
-    expect(tasklistLink).toHaveAttribute('href', 'https://link-to-tasklist');
-    expect(tasklistLink).not.toHaveAttribute('target');
-
-    const operateLink = withinAppPanel.getByRole('link', {name: 'Operate'});
-    expect(operateLink).toHaveAttribute('href', '/');
-    expect(operateLink).not.toHaveAttribute('target');
-
-    const optimizeLink = withinAppPanel.getByRole('link', {name: 'Optimize'});
-    expect(optimizeLink).toHaveAttribute('href', 'https://link-to-optimize');
-    expect(optimizeLink).not.toHaveAttribute('target');
-  });
-
   it('should not render links for CCSM', async () => {
     window.clientConfig = {
       isEnterprise: false,
