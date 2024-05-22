@@ -81,6 +81,20 @@ public class SfvChecksumTest {
   }
 
   @Test
+  public void shouldThrowExceptionIfChecksumMethodDoesNotExist() {
+    // given
+    final String[] sfvLines = {
+      "; a simple comment to be ignored", "; checksumMethod = NOT_YET_IMPLEMENTED"
+    };
+
+    // when
+    // then
+    assertThatThrownBy(() -> sfvChecksum.updateFromSfvFile(sfvLines))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("ChecksumMethod does not currently support NOT_YET_IMPLEMENTED");
+  }
+
+  @Test
   public void shouldReadAndWriteSameValues() throws IOException {
     // given
     final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};

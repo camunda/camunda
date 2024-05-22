@@ -184,7 +184,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
             setChecksumMethod(ChecksumMethod.valueOf(checksumMethod));
           } catch (final IllegalArgumentException e) {
             throw new RuntimeException(
-                "ChecksumMethod Does not currently support " + checksumMethod);
+                "ChecksumMethod does not currently support " + checksumMethod);
           }
         } else {
           setChecksumMethod(ChecksumMethod.MANUAL);
