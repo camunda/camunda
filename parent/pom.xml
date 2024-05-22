@@ -397,6 +397,14 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-gateway</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-grpc</artifactId>
         <version>${project.version}</version>
       </dependency>

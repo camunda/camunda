@@ -23,6 +23,14 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
 
