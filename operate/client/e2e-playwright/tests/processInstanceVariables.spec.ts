@@ -9,7 +9,7 @@
 import {setup} from './processInstanceVariables.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {DEFAULT_TEST_TIMEOUT, SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
@@ -47,8 +47,8 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Variables', () => {
-  test('Edit variables', async ({page, processInstancePage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
+  test('Edit variables @roundtrip', async ({page, processInstancePage}) => {
+    test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
@@ -81,8 +81,12 @@ test.describe('Process Instance Variables', () => {
     await expect(page.getByText('"editedTestValue"')).toBeVisible();
   });
 
-  test('Add variables', async ({page, processInstancePage, processesPage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
+  test('Add variables @roundtrip', async ({
+    page,
+    processInstancePage,
+    processesPage,
+  }) => {
+    test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
