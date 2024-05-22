@@ -8,9 +8,13 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import jakarta.servlet.Filter;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -44,6 +48,15 @@ public class GatewayConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return config.getMultiTenancy();
+  }
+
+  @Bean
+  public Filter restApiCompositeFilter() {
+    final List<FilterCfg> filterCfgs = config.getFilters();
+    final List<Filter> filters =
+        new FilterRepository().load(filterCfgs).instantiate().collect(Collectors.toList());
+
+    return new ZeebeRestCompositeFilter(filters);
   }
 
   @ConfigurationProperties("zeebe.gateway")
