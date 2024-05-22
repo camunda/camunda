@@ -24,6 +24,10 @@ const getPort = () => {
   return 8081;
 };
 
+const getBasePath = () => {
+  return IS_E2E && IS_CI ? '/operate' : '';
+}
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -57,7 +61,7 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${getPort()}`,
+    baseURL: `http://localhost:${getPort()}${getBasePath()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
