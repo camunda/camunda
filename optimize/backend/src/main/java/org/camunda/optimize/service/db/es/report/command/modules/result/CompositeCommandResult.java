@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -294,7 +295,7 @@ public class CompositeCommandResult {
                 try {
                   return keyIsOfNumericType
                       ? Double.valueOf(entry.getKey())
-                      : entry.getKey().toLowerCase();
+                      : entry.getKey().toLowerCase(Locale.ENGLISH);
                 } catch (final NumberFormatException exception) {
                   throw new OptimizeRuntimeException(
                       "Error sorting numerically for key: " + entry.getKey());
@@ -306,7 +307,7 @@ public class CompositeCommandResult {
         valueToSortByExtractor = MapResultEntryDto::getValue;
         break;
       case ReportSortingDto.SORT_BY_LABEL:
-        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
+        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
         break;
     }
 
@@ -355,7 +356,7 @@ public class CompositeCommandResult {
                           try {
                             return keyIsOfNumericType
                                 ? Double.valueOf(entry.getKey())
-                                : entry.getKey().toLowerCase();
+                                : entry.getKey().toLowerCase(Locale.ENGLISH);
                           } catch (final NumberFormatException exception) {
                             throw new OptimizeRuntimeException(
                                 "Error sorting numerically for key: " + entry.getKey());
@@ -364,7 +365,7 @@ public class CompositeCommandResult {
                       };
                   break;
                 case ReportSortingDto.SORT_BY_LABEL:
-                  valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
+                  valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
                   break;
               }
 

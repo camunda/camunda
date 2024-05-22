@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.alert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,6 +23,6 @@ public enum AlertNotificationType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 }

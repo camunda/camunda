@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.event.process;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum EventProcessState {
   UNMAPPED,
@@ -17,7 +18,7 @@ public enum EventProcessState {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

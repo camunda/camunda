@@ -24,6 +24,7 @@ import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareMod
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForNextSource;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -216,7 +217,7 @@ public class CamundaEventModelBuilderService {
     } else {
       log.debug(
           "Connecting or moving to {} gateway with id {}",
-          direction.toString().toLowerCase(),
+          direction.toString().toLowerCase(Locale.ENGLISH),
           gatewayId);
       return Diverging.equals(direction)
           ? nextBuilder.moveToNode(gatewayId)

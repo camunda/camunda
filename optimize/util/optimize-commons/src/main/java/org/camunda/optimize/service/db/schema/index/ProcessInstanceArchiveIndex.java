@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
+import java.util.Locale;
 import org.camunda.optimize.service.db.DatabaseConstants;
 
 public abstract class ProcessInstanceArchiveIndex<TBuilder> extends ProcessInstanceIndex<TBuilder> {
@@ -18,7 +19,7 @@ public abstract class ProcessInstanceArchiveIndex<TBuilder> extends ProcessInsta
   // will get overridden when a subclass such as EventProcessInstanceIndex is being instantiated
   public static String constructIndexName(final String processInstanceIndexKey) {
     return DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX
-        + processInstanceIndexKey.toLowerCase();
+        + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
   @Override

@@ -28,6 +28,7 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -131,7 +132,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
             .must(termQuery(getNestedVariableNameField(), variableName))
             .must(termQuery(getNestedVariableTypeField(), VariableType.STRING.getId()));
 
-    final String lowerCaseValue = valueToContain.toLowerCase();
+    final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
     QueryBuilder filter =
         (lowerCaseValue.length() > MAX_GRAM)
             /*

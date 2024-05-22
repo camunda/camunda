@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -218,7 +219,7 @@ public class DefinitionService implements ConfigurationReloadable {
     final List<DefinitionResponseDto> allProcessDefs =
         getFullyImportedDefinitions(DefinitionType.PROCESS, userId);
     return allProcessDefs.stream()
-        .filter(def -> camundaEventImportedKeys.contains(def.getKey().toLowerCase()))
+        .filter(def -> camundaEventImportedKeys.contains(def.getKey().toLowerCase(Locale.ENGLISH)))
         .toList();
   }
 
@@ -244,7 +245,10 @@ public class DefinitionService implements ConfigurationReloadable {
         // sort by name case-insensitive
         .sorted(
             Comparator.comparing(
-                a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
+                a ->
+                    a.getName() == null
+                        ? a.getKey().toLowerCase(Locale.ENGLISH)
+                        : a.getName().toLowerCase(Locale.ENGLISH)))
         .toList();
   }
 
@@ -309,8 +313,8 @@ public class DefinitionService implements ConfigurationReloadable {
                           Comparator.comparing(
                               a ->
                                   a.getName() == null
-                                      ? a.getKey().toLowerCase()
-                                      : a.getName().toLowerCase()))
+                                      ? a.getKey().toLowerCase(Locale.ENGLISH)
+                                      : a.getName().toLowerCase(Locale.ENGLISH)))
                       .toList();
               return new TenantWithDefinitionsResponseDto(
                   tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);

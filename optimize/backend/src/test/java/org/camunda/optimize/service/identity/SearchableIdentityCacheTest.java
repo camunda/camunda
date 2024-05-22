@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -318,7 +319,7 @@ public class SearchableIdentityCacheTest {
         cache.searchIdentities(searchTerm.toUpperCase()).getResult();
     assertThat(searchResultUpperCase).hasSize(expectedResultCount);
     final List<IdentityWithMetadataResponseDto> searchResultLowerCase =
-        cache.searchIdentities(searchTerm.toLowerCase()).getResult();
+        cache.searchIdentities(searchTerm.toLowerCase(Locale.ENGLISH)).getResult();
     assertThat(searchResultLowerCase).hasSize(expectedResultCount);
   }
 

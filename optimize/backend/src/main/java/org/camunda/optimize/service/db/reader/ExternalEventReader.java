@@ -14,6 +14,7 @@ import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRA
 import com.google.common.collect.ImmutableMap;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,11 +32,11 @@ public interface ExternalEventReader {
 
   Map<String, String> sortableFieldLookup =
       ImmutableMap.of(
-          EventDto.Fields.group.toLowerCase(), GROUP,
-          EventDto.Fields.source.toLowerCase(), SOURCE,
-          EventDto.Fields.eventName.toLowerCase(), EVENT_NAME,
-          EventDto.Fields.traceId.toLowerCase(), TRACE_ID,
-          EventDto.Fields.timestamp.toLowerCase(), TIMESTAMP);
+          EventDto.Fields.group.toLowerCase(Locale.ENGLISH), GROUP,
+          EventDto.Fields.source.toLowerCase(Locale.ENGLISH), SOURCE,
+          EventDto.Fields.eventName.toLowerCase(Locale.ENGLISH), EVENT_NAME,
+          EventDto.Fields.traceId.toLowerCase(Locale.ENGLISH), TRACE_ID,
+          EventDto.Fields.timestamp.toLowerCase(Locale.ENGLISH), TIMESTAMP);
 
   String EVENT_GROUP_AGG = "eventGroupAggregation";
   String LOWERCASE_GROUP_AGG = "lowercaseGroupAggregation";

@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +82,7 @@ public class LicenseFilter implements Filter {
 
   private static boolean isLicenseCheckNeeded(
       HttpServletRequest servletRequest, ApplicationContext applicationContext) {
-    String requestPath = servletRequest.getServletPath().toLowerCase();
+    String requestPath = servletRequest.getServletPath().toLowerCase(Locale.ENGLISH);
     String pathInfo = servletRequest.getPathInfo();
 
     return !isStaticResource(requestPath)

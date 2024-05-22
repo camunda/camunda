@@ -21,6 +21,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_OBJECT;
 import static org.camunda.optimize.service.db.DatabaseConstants.TYPE_TEXT;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
@@ -117,14 +118,14 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public static final String INCIDENT_TENANT_ID = IncidentDto.Fields.tenantId;
 
   protected ProcessInstanceIndex(final String processInstanceIndexKey) {
-    indexName = getIndexPrefix() + processInstanceIndexKey.toLowerCase();
+    indexName = getIndexPrefix() + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
   // This needs to be done separately to the logic of the constructor, because the non-static method
   // getIndexPrefix()
   // will get overridden when a subclass such as EventProcessInstanceIndex is being instantiated
   public static String constructIndexName(final String processInstanceIndexKey) {
-    return PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase();
+    return PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
   private final String indexName;

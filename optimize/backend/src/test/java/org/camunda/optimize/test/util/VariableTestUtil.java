@@ -9,6 +9,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_PRIMITIVE_PR
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -34,7 +35,7 @@ public class VariableTestUtil {
   public static Map<String, Object> createAllPrimitiveVariableTypesWithNullValues() {
     final Map<String, Object> variables = new HashMap<>();
     for (final VariableType type : ALL_PRIMITIVE_PROCESS_VARIABLE_TYPES) {
-      final String varName = String.format("%sVar", type.getId().toLowerCase());
+      final String varName = String.format("%sVar", type.getId().toLowerCase(Locale.ENGLISH));
       variables.put(varName, new VariableDto().setType(type.getId()).setValue(null));
     }
     return variables;

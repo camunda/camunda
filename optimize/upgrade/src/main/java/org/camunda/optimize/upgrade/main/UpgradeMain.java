@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -101,7 +102,7 @@ public class UpgradeMain {
     String answer = "";
     while (!ANSWER_OPTIONS_YES.contains(answer)) {
       Scanner console = new Scanner(System.in);
-      answer = console.next().trim().toLowerCase();
+      answer = console.next().trim().toLowerCase(Locale.ENGLISH);
       if (ANSWER_OPTIONS_NO.contains(answer)) {
         System.out.println("The Optimize upgrade was aborted.");
         System.exit(1);

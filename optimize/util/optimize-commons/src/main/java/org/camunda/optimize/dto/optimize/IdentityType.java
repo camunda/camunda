@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum IdentityType {
   USER,
@@ -14,7 +15,7 @@ public enum IdentityType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

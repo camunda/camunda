@@ -10,6 +10,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
@@ -63,7 +64,8 @@ public abstract class EventProcessInstanceIndex<TBuilder> extends ProcessInstanc
   // getIndexPrefix()
   // will get overridden when a subclass such as EventProcessInstanceIndex is being instantiated
   public static String constructIndexName(final String processInstanceIndexKey) {
-    return EVENT_PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase();
+    return EVENT_PROCESS_INSTANCE_INDEX_PREFIX
+        + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
   private XContentBuilder addPendingEventUpdateObjectFields(final XContentBuilder builder)

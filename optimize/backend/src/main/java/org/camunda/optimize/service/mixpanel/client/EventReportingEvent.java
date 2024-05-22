@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.mixpanel.client;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum EventReportingEvent {
   HEARTBEAT,
@@ -22,7 +23,7 @@ public enum EventReportingEvent {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

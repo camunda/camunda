@@ -12,6 +12,7 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.QueryParam;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,11 +33,11 @@ public class EventSearchRequestDto {
 
   public static final List<String> sortableFields =
       ImmutableList.of(
-          EventDto.Fields.group.toLowerCase(),
-          EventDto.Fields.source.toLowerCase(),
-          EventDto.Fields.eventName.toLowerCase(),
-          EventDto.Fields.traceId.toLowerCase(),
-          EventDto.Fields.timestamp.toLowerCase());
+          EventDto.Fields.group.toLowerCase(Locale.ENGLISH),
+          EventDto.Fields.source.toLowerCase(Locale.ENGLISH),
+          EventDto.Fields.eventName.toLowerCase(Locale.ENGLISH),
+          EventDto.Fields.traceId.toLowerCase(Locale.ENGLISH),
+          EventDto.Fields.timestamp.toLowerCase(Locale.ENGLISH));
 
   @QueryParam("searchTerm")
   private String searchTerm;
@@ -56,14 +57,15 @@ public class EventSearchRequestDto {
     }
     final Optional<String> sortBy = sortRequestDto.getSortBy();
     final Optional<SortOrder> sortOrder = sortRequestDto.getSortOrder();
-    if ((sortBy.isPresent() && !sortOrder.isPresent())
-        || (!sortBy.isPresent() && sortOrder.isPresent())) {
+    if ((sortBy.isPresent() && sortOrder.isEmpty())
+        || (sortBy.isEmpty() && sortOrder.isPresent())) {
       throw new BadRequestException(
           String.format(
               "Cannot supply only one of %s and %s",
               SortRequestDto.SORT_BY, SortRequestDto.SORT_ORDER));
     } else if (sortBy.isPresent()
-        && !EventSearchRequestDto.sortableFields.contains(sortBy.get().toLowerCase())) {
+        && !EventSearchRequestDto.sortableFields.contains(
+            sortBy.get().toLowerCase(Locale.ENGLISH))) {
       throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
     }
   }

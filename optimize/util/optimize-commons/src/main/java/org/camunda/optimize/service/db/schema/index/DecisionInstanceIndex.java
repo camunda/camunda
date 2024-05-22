@@ -10,6 +10,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.FIELDS;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
@@ -60,7 +61,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   }
 
   public static String constructIndexName(String decisionDefinitionKey) {
-    return DECISION_INSTANCE_INDEX_PREFIX + decisionDefinitionKey.toLowerCase();
+    return DECISION_INSTANCE_INDEX_PREFIX + decisionDefinitionKey.toLowerCase(Locale.ENGLISH);
   }
 
   @Override

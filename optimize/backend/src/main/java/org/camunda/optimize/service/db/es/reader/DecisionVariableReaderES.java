@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
@@ -244,7 +245,7 @@ public class DecisionVariableReaderES implements DecisionVariableReader {
   private void addValueFilter(
       final String variablePath, final String valueFilter, final BoolQueryBuilder filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
-      final String lowerCaseValue = valueFilter.toLowerCase();
+      final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
       QueryBuilder filter =
           (lowerCaseValue.length() > MAX_GRAM)
               /*

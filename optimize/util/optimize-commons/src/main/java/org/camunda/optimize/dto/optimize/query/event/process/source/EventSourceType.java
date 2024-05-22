@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.event.process.source;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum EventSourceType {
   EXTERNAL,
@@ -14,7 +15,7 @@ public enum EventSourceType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

@@ -9,6 +9,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
@@ -44,7 +45,7 @@ public abstract class CamundaActivityEventIndex<TBuilder>
   }
 
   public static String constructIndexName(final String processDefinitionKey) {
-    return CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey.toLowerCase();
+    return CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey.toLowerCase(Locale.ENGLISH);
   }
 
   @Override

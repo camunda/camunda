@@ -9,6 +9,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Locale;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
@@ -58,7 +59,7 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
             // lowercase as the index names are automatically lowercased and thus the entry contains
             // has a lowercase suffix
             DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX
-                + definitionKey.toLowerCase(),
+                + definitionKey.toLowerCase(Locale.ENGLISH),
             DatabaseConstants.ENGINE_ALIAS_OPTIMIZE);
     return lastImportTimestampOfTimestampBasedImportIndex.toInstant().toEpochMilli();
   }

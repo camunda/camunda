@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.alert;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum AlertIntervalUnit {
   SECONDS,
@@ -18,6 +19,6 @@ public enum AlertIntervalUnit {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 }

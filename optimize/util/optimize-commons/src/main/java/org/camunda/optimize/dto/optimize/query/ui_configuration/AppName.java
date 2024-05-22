@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.ui_configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Locale;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public enum AppName {
@@ -27,6 +28,6 @@ public enum AppName {
 
   @Override
   public String toString() {
-    return super.toString().toLowerCase();
+    return super.toString().toLowerCase(Locale.ENGLISH);
   }
 }

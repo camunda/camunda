@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.event.process.source;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum EventScopeType {
   ALL,
@@ -15,7 +16,7 @@ public enum EventScopeType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

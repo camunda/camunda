@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -29,12 +30,15 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
 
   private static final ImmutableMap<String, Comparator<EntityResponseDto>> sortComparators =
       ImmutableMap.of(
-          name.toLowerCase(),
+          name.toLowerCase(Locale.ENGLISH),
               Comparator.comparing(
                   EntityResponseDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
-          entityType.toLowerCase(), Comparator.comparing(EntityResponseDto::getEntityType),
-          lastModified.toLowerCase(), Comparator.comparing(EntityResponseDto::getLastModified),
-          lastModifier.toLowerCase(), Comparator.comparing(EntityResponseDto::getLastModifier));
+          entityType.toLowerCase(Locale.ENGLISH),
+              Comparator.comparing(EntityResponseDto::getEntityType),
+          lastModified.toLowerCase(Locale.ENGLISH),
+              Comparator.comparing(EntityResponseDto::getLastModified),
+          lastModifier.toLowerCase(Locale.ENGLISH),
+              Comparator.comparing(EntityResponseDto::getLastModifier));
 
   public EntitySorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
@@ -47,10 +51,11 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
     final Optional<String> sortByOpt = getSortBy();
     if (sortByOpt.isPresent()) {
       final String sortBy = sortByOpt.get();
-      if (!sortComparators.containsKey(sortBy.toLowerCase())) {
+      if (!sortComparators.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
-      Comparator<EntityResponseDto> entityDtoComparator = sortComparators.get(sortBy.toLowerCase());
+      Comparator<EntityResponseDto> entityDtoComparator =
+          sortComparators.get(sortBy.toLowerCase(Locale.ENGLISH));
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         entityDtoComparator = entityDtoComparator.reversed();
       }

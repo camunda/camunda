@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.util.configuration.users;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum AuthorizedUserType {
   ALL,
@@ -14,7 +15,7 @@ public enum AuthorizedUserType {
 
   @JsonValue
   public String getId() {
-    return this.name().toLowerCase();
+    return this.name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

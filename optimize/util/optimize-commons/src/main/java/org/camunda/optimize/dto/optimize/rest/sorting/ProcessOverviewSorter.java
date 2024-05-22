@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.rest.sorting;
 import jakarta.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
@@ -19,16 +20,16 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
 
   private static final Map<String, Comparator<ProcessOverviewResponseDto>> sortComparators =
       Map.of(
-          ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase(),
+          ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase(Locale.ENGLISH),
           Comparator.comparing(ProcessOverviewResponseDto::getProcessDefinitionName),
-          ProcessOverviewResponseDto.Fields.owner.toLowerCase(),
+          ProcessOverviewResponseDto.Fields.owner.toLowerCase(Locale.ENGLISH),
           Comparator.comparing(
               processOverviewResponseDto -> processOverviewResponseDto.getOwner().getName(),
               Comparator.nullsLast(Comparator.naturalOrder())));
 
   private static final Comparator<ProcessOverviewResponseDto> DEFAULT_PROCESS_OVERVIEW_COMPARATOR =
       sortComparators
-          .get(ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase())
+          .get(ProcessOverviewResponseDto.Fields.processDefinitionName.toLowerCase(Locale.ENGLISH))
           .thenComparing(ProcessOverviewResponseDto::getProcessDefinitionKey);
 
   public ProcessOverviewSorter(final String sortBy, final SortOrder sortOrder) {
@@ -44,12 +45,12 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
     if (sortByOpt.isPresent()) {
       final String sortBy = sortByOpt.get();
       Comparator<ProcessOverviewResponseDto> processOverviewSorterComparator;
-      if (!sortComparators.containsKey(sortBy.toLowerCase())) {
+      if (!sortComparators.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       } else {
         processOverviewSorterComparator =
             sortComparators
-                .get(sortBy.toLowerCase())
+                .get(sortBy.toLowerCase(Locale.ENGLISH))
                 .thenComparing(DEFAULT_PROCESS_OVERVIEW_COMPARATOR);
         if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
           processOverviewSorterComparator = processOverviewSorterComparator.reversed();

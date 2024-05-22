@@ -10,6 +10,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
 import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -40,7 +41,8 @@ public abstract class EventSequenceCountIndex<TBuilder>
   }
 
   public static String constructIndexName(final String indexKey) {
-    return DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey.toLowerCase();
+    return DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX
+        + indexKey.toLowerCase(Locale.ENGLISH);
   }
 
   @Override

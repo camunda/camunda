@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum RoleType {
   // note: the order matters here, the order of roles corresponds to more might
@@ -16,7 +17,7 @@ public enum RoleType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

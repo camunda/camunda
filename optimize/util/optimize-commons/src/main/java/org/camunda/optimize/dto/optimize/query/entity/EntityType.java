@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.entity;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum EntityType {
   COLLECTION,
@@ -15,7 +16,7 @@ public enum EntityType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   public static EntityType valueOfId(final String id) {

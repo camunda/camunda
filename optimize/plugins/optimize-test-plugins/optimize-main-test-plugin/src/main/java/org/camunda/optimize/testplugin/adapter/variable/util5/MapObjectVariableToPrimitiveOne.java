@@ -20,7 +20,7 @@ public class MapObjectVariableToPrimitiveOne implements VariableImportAdapter {
   public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
     List<PluginVariableDto> resultList = new ArrayList<>();
     for (PluginVariableDto pluginVariableDto : list) {
-      if (pluginVariableDto.getType().toLowerCase().equals("object")
+      if (pluginVariableDto.getType().equalsIgnoreCase("object")
           && pluginVariableDto.getValueInfo().get("objectTypeName").equals("org.camunda.foo.Person")
           && pluginVariableDto
               .getValueInfo()

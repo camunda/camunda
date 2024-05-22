@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -349,7 +350,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT
     assertThat(resultData).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     final List<String> resultKeys =
-        resultData.stream().map(entry -> entry.getKey().toLowerCase()).collect(Collectors.toList());
+        resultData.stream()
+            .map(entry -> entry.getKey().toLowerCase(Locale.ENGLISH))
+            .collect(Collectors.toList());
     // expect descending order ignoring case
     assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
@@ -381,7 +384,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     final List<String> resultLabels =
         resultData.stream()
-            .map(entry -> entry.getLabel().toLowerCase())
+            .map(entry -> entry.getLabel().toLowerCase(Locale.ENGLISH))
             .collect(Collectors.toList());
     // expect descending order ignoring case
     assertThat(resultLabels).isSortedAccordingTo(Comparator.reverseOrder());

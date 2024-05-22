@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.rest.export;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum ExportEntityType {
   SINGLE_PROCESS_REPORT,
@@ -15,7 +16,7 @@ public enum ExportEntityType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

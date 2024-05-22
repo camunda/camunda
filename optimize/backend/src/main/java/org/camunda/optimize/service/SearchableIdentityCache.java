@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -384,7 +385,7 @@ public class SearchableIdentityCache implements AutoCloseable {
       // explicit to lowercase field ofr id for exact match ignoring case
       final String allLowerCaseIdField = getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id);
       searchBuilder.add(
-          new PrefixQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase())),
+          new PrefixQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase(Locale.ENGLISH))),
           BooleanClause.Occur.SHOULD);
       // exact id matches are boosted
       searchBuilder.add(
@@ -394,7 +395,8 @@ public class SearchableIdentityCache implements AutoCloseable {
           // explicit to lowercase as we also do to lowercase on insert, for cheap case
           // insensitivity
           new BoostQuery(
-              new TermQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase())), 6),
+              new TermQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase(Locale.ENGLISH))),
+              6),
           BooleanClause.Occur.SHOULD);
 
       // do phrase query on name as it may consist of multiple terms and phrase matches are to be
@@ -414,7 +416,7 @@ public class SearchableIdentityCache implements AutoCloseable {
           new PrefixQuery(
               new Term(
                   getAllLowerCaseFieldForDtoField(UserDto.Fields.email),
-                  searchQuery.toLowerCase())),
+                  searchQuery.toLowerCase(Locale.ENGLISH))),
           BooleanClause.Occur.SHOULD);
     } else {
       searchBuilder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
@@ -457,7 +459,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     document.add(
         new StringField(
             getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id),
-            identity.getId().toLowerCase(),
+            identity.getId().toLowerCase(Locale.ENGLISH),
             Field.Store.NO));
     document.add(
         new StringField(IdentityDto.Fields.type, identity.getType().name(), Field.Store.YES));
@@ -469,19 +471,18 @@ public class SearchableIdentityCache implements AutoCloseable {
               document.add(
                   new SortedDocValuesField(
                       IdentityWithMetadataResponseDto.Fields.name,
-                      new BytesRef(name.toLowerCase())));
+                      new BytesRef(name.toLowerCase(Locale.ENGLISH))));
               document.add(
                   new StringField(
                       IdentityWithMetadataResponseDto.Fields.name, name, Field.Store.YES));
               document.add(
                   new TextField(
                       getNgramFieldForDtoField(IdentityWithMetadataResponseDto.Fields.name),
-                      name.toLowerCase(),
+                      name.toLowerCase(Locale.ENGLISH),
                       Field.Store.YES));
             });
 
-    if (identity instanceof UserDto) {
-      final UserDto userDto = (UserDto) identity;
+    if (identity instanceof UserDto userDto) {
       Optional.ofNullable(userDto.getFirstName())
           .ifPresent(
               firstName ->
@@ -501,15 +502,14 @@ public class SearchableIdentityCache implements AutoCloseable {
                 document.add(
                     new StringField(
                         getAllLowerCaseFieldForDtoField(UserDto.Fields.email),
-                        email.toLowerCase(),
+                        email.toLowerCase(Locale.ENGLISH),
                         Field.Store.NO));
               });
       Optional.ofNullable(userDto.getRoles()).stream()
           .flatMap(Collection::stream)
           .forEach(
               role -> document.add(new StringField(UserDto.Fields.roles, role, Field.Store.YES)));
-    } else if (identity instanceof GroupDto) {
-      final GroupDto groupDto = (GroupDto) identity;
+    } else if (identity instanceof GroupDto groupDto) {
       Optional.ofNullable(groupDto.getMemberCount())
           .ifPresent(
               memberCount ->
@@ -528,15 +528,10 @@ public class SearchableIdentityCache implements AutoCloseable {
 
   private static IdentityWithMetadataResponseDto mapDocumentToIdentityDto(final Document document) {
     final IdentityType identityType = IdentityType.valueOf(document.get(IdentityDto.Fields.type));
-    switch (identityType) {
-      case USER:
-        return mapDocumentToUserDto(document);
-      case GROUP:
-        return mapDocumentToGroupDto(document);
-      default:
-        throw new OptimizeRuntimeException(
-            "Unsupported identity type :" + identityType.name() + ".");
-    }
+    return switch (identityType) {
+      case USER -> mapDocumentToUserDto(document);
+      case GROUP -> mapDocumentToGroupDto(document);
+    };
   }
 
   private static GroupDto mapDocumentToGroupDto(final Document document) {

@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -118,7 +119,7 @@ public class EventModelBuilderUtil {
   public static String generateGatewayIdForNode(
       final EventTypeDto eventTypeDto, GatewayDirection gatewayDirection) {
     return removeIllegalCharacters(
-        generateId(gatewayDirection.toString().toLowerCase(), eventTypeDto));
+        generateId(gatewayDirection.toString().toLowerCase(Locale.ENGLISH), eventTypeDto));
   }
 
   public static String generateModelGatewayIdForSource(
@@ -127,14 +128,15 @@ public class EventModelBuilderUtil {
     return String.join(
         "_",
         Arrays.asList(
-            gatewayDirection.toString().toLowerCase(),
+            gatewayDirection.toString().toLowerCase(Locale.ENGLISH),
             camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()));
   }
 
   public static String generateConnectionGatewayIdForDefinitionKey(
       final GatewayDirection direction, final String definitionKey) {
     return String.join(
-        "_", Arrays.asList(CONNECTION, direction.toString().toLowerCase(), definitionKey));
+        "_",
+        Arrays.asList(CONNECTION, direction.toString().toLowerCase(Locale.ENGLISH), definitionKey));
   }
 
   public static String generateTaskIdForDefinitionKey(final String definitionKey) {

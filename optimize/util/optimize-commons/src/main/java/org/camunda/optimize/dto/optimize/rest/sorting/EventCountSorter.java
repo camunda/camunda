@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
@@ -51,10 +52,10 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
 
   private static final ImmutableMap<String, Comparator<EventCountResponseDto>> sortComparators =
       ImmutableMap.of(
-          group.toLowerCase(), GROUP_COMPARATOR,
-          source.toLowerCase(), SOURCE_COMPARATOR,
-          eventName.toLowerCase(), EVENT_NAME_COMPARATOR,
-          count.toLowerCase(), COUNTS_COMPARATOR);
+          group.toLowerCase(Locale.ENGLISH), GROUP_COMPARATOR,
+          source.toLowerCase(Locale.ENGLISH), SOURCE_COMPARATOR,
+          eventName.toLowerCase(Locale.ENGLISH), EVENT_NAME_COMPARATOR,
+          count.toLowerCase(Locale.ENGLISH), COUNTS_COMPARATOR);
 
   public EventCountSorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
@@ -67,11 +68,11 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
     final Optional<String> sortByOpt = getSortBy();
     if (sortByOpt.isPresent()) {
       final String sortBy = sortByOpt.get();
-      if (!sortComparators.containsKey(sortBy.toLowerCase())) {
+      if (!sortComparators.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       eventCountSorter =
-          sortComparators.get(sortBy.toLowerCase()).thenComparing(DEFAULT_COMPARATOR);
+          sortComparators.get(sortBy.toLowerCase(Locale.ENGLISH)).thenComparing(DEFAULT_COMPARATOR);
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         eventCountSorter = eventCountSorter.reversed();
       }

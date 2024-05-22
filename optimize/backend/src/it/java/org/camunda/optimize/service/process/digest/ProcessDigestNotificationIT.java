@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -464,7 +465,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     for (int i = 0; i < multipart.getCount(); i++) {
       final Part part = multipart.getBodyPart(i);
       final String contentType = part.getContentType();
-      if (contentType != null && contentType.toLowerCase().contains("text/html")) {
+      if (contentType != null && contentType.toLowerCase(Locale.ENGLISH).contains("text/html")) {
         return (String) part.getContent();
       } else if (part.getContent() instanceof Multipart) {
         return extractHtmlContentFromMultipart((Multipart) part.getContent());

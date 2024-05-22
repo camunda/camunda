@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
@@ -526,10 +527,14 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
             .filter(
                 event ->
                     (event.getGroup().isPresent()
-                            && event.getGroup().get().toLowerCase().contains(searchTerm))
-                        || event.getSource().toLowerCase().contains(searchTerm)
-                        || event.getType().toLowerCase().contains(searchTerm)
-                        || event.getTraceid().toLowerCase().contains(searchTerm))
+                            && event
+                                .getGroup()
+                                .get()
+                                .toLowerCase(Locale.ENGLISH)
+                                .contains(searchTerm))
+                        || event.getSource().toLowerCase(Locale.ENGLISH).contains(searchTerm)
+                        || event.getType().toLowerCase(Locale.ENGLISH).contains(searchTerm)
+                        || event.getTraceid().toLowerCase(Locale.ENGLISH).contains(searchTerm))
             .collect(Collectors.toList());
     assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
     assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
@@ -565,10 +570,14 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
             .filter(
                 event ->
                     (event.getGroup().isPresent()
-                            && event.getGroup().get().toLowerCase().contains(searchTerm))
-                        || event.getSource().toLowerCase().contains(searchTerm)
-                        || event.getType().toLowerCase().contains(searchTerm)
-                        || event.getTraceid().toLowerCase().contains(searchTerm))
+                            && event
+                                .getGroup()
+                                .get()
+                                .toLowerCase(Locale.ENGLISH)
+                                .contains(searchTerm))
+                        || event.getSource().toLowerCase(Locale.ENGLISH).contains(searchTerm)
+                        || event.getType().toLowerCase(Locale.ENGLISH).contains(searchTerm)
+                        || event.getTraceid().toLowerCase(Locale.ENGLISH).contains(searchTerm))
             .collect(Collectors.toList());
     assertThat(eventsPage.getSortBy()).isEqualTo(GROUP);
     assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);

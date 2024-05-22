@@ -10,6 +10,7 @@ import static org.camunda.optimize.dto.optimize.alert.AlertNotificationType.REMI
 import static org.camunda.optimize.dto.optimize.alert.AlertNotificationType.RESOLVED;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -176,7 +177,7 @@ public class AlertJob implements Job {
   }
 
   private boolean isReminder(JobKey key) {
-    return key.getName().toLowerCase().contains("reminder");
+    return key.getName().toLowerCase(Locale.ENGLISH).contains("reminder");
   }
 
   private String composeAlertText(

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -100,7 +101,7 @@ public class CollectionEntityService {
             default:
               throw new OptimizeRuntimeException(
                   "You can't copy a "
-                      + e.getEntityType().toString().toLowerCase()
+                      + e.getEntityType().toString().toLowerCase(Locale.ENGLISH)
                       + " to a collection");
           }
         });

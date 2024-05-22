@@ -35,6 +35,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -179,7 +180,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
       query =
           boolQuery()
               .must(
-                  matchQuery(getNgramSearchField(GROUP), searchTerm.toLowerCase())
+                  matchQuery(getNgramSearchField(GROUP), searchTerm.toLowerCase(Locale.ENGLISH))
                       .analyzer(KEYWORD_ANALYZER));
     }
 
@@ -305,7 +306,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
     return boolQuery()
         .should(
             QueryBuilders.multiMatchQuery(
-                    searchTerm.toLowerCase(),
+                    searchTerm.toLowerCase(Locale.ENGLISH),
                     getNgramSearchField(GROUP),
                     getNgramSearchField(SOURCE),
                     getNgramSearchField(EVENT_NAME),
@@ -343,8 +344,8 @@ public class ExternalEventReaderES implements ExternalEventReader {
   }
 
   private String convertToIndexSortField(final String providedField) {
-    if (sortableFieldLookup.containsKey(providedField.toLowerCase())) {
-      return sortableFieldLookup.get(providedField.toLowerCase());
+    if (sortableFieldLookup.containsKey(providedField.toLowerCase(Locale.ENGLISH))) {
+      return sortableFieldLookup.get(providedField.toLowerCase(Locale.ENGLISH));
     } else {
       throw new OptimizeRuntimeException(
           "Could not extract event sort field from " + providedField);

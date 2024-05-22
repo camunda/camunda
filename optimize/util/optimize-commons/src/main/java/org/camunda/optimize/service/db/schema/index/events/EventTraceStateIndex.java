@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.schema.index.events;
 
 import java.io.IOException;
+import java.util.Locale;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -32,7 +33,7 @@ public abstract class EventTraceStateIndex<TBuilder> extends DefaultIndexMapping
   }
 
   public static String constructIndexName(final String indexKey) {
-    return DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey.toLowerCase();
+    return DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey.toLowerCase(Locale.ENGLISH);
   }
 
   @Override

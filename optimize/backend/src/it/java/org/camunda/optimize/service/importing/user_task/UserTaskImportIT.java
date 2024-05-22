@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -668,7 +669,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
   private static List<ProcessReportDataType> allUserTaskReports() {
     return Arrays.stream(ProcessReportDataType.values())
-        .filter(type -> type.name().toLowerCase().startsWith("user_task_"))
+        .filter(type -> type.name().toLowerCase(Locale.ENGLISH).startsWith("user_task_"))
         .collect(Collectors.toList());
   }
 

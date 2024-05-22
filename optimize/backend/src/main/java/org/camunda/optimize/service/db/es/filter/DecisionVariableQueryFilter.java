@@ -25,6 +25,7 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -141,7 +142,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     final BoolQueryBuilder containsVariableString =
         boolQuery().must(termQuery(getVariableIdField(), variableId));
 
-    final String lowerCaseValue = valueToContain.toLowerCase();
+    final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
     QueryBuilder filter =
         (lowerCaseValue.length() > MAX_GRAM)
             /*

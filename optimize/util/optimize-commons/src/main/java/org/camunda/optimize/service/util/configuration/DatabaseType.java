@@ -9,6 +9,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,7 +23,7 @@ public enum DatabaseType {
 
   @JsonValue
   public String getId() {
-    return this.name().toLowerCase();
+    return this.name().toLowerCase(Locale.ENGLISH);
   }
 
   public static DatabaseType fromString(final String profileString) {

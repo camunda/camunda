@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.steps;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum UpgradeStepType {
   DATA_INSERT,
@@ -20,7 +21,7 @@ public enum UpgradeStepType {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase().replace("_", "-");
+    return name().toLowerCase(Locale.ENGLISH).replace("_", "-");
   }
 
   @Override

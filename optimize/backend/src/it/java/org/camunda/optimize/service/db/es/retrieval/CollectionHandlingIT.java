@@ -32,6 +32,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -586,7 +587,8 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     CollectionDefinitionRestDto copyDefinition = collectionClient.getCollectionById(copyId);
 
     // then
-    assertThat(copyDefinition.getName().toLowerCase().contains("copy")).isEqualTo(true);
+    assertThat(copyDefinition.getName().toLowerCase(Locale.ENGLISH).contains("copy"))
+        .isEqualTo(true);
   }
 
   @Test
@@ -747,7 +749,8 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     assertThat(copiedCollectionWithNewName.getName()).isEqualTo("newCoolName");
     assertThat(copiedCollectionWithoutNewName.getName().contains(originalCollection.getName()))
         .isEqualTo(true);
-    assertThat(copiedCollectionWithoutNewName.getName().toLowerCase().contains("copy"))
+    assertThat(
+            copiedCollectionWithoutNewName.getName().toLowerCase(Locale.ENGLISH).contains("copy"))
         .isEqualTo(true);
   }
 

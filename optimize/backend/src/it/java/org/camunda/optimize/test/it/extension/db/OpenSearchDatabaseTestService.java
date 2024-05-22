@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -831,7 +832,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .delete(
             TIMESTAMP_BASED_IMPORT_INDEX_NAME,
             Fields.esTypeIndexRefersTo,
-            EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase());
+            EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(Locale.ENGLISH));
   }
 
   @Override

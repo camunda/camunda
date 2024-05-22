@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.persistence.incident;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 
 public enum IncidentStatus {
   OPEN,
@@ -14,7 +15,7 @@ public enum IncidentStatus {
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase();
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

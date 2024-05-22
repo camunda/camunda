@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.schema;
 
+import java.util.Locale;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -114,6 +115,6 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     if (!indexName.startsWith(indexPrefix)) {
       original = String.join("-", indexPrefix, indexName);
     }
-    return original.toLowerCase();
+    return original.toLowerCase(Locale.ENGLISH);
   }
 }

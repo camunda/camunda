@@ -7,6 +7,7 @@ package org.camunda.optimize.service.util;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public enum ProcessReportDataType {
@@ -136,20 +137,20 @@ public enum ProcessReportDataType {
     return Arrays.stream(ProcessReportDataType.values())
         .filter(
             type ->
-                type.name().toLowerCase().endsWith("start_date")
-                    || type.name().toLowerCase().endsWith("end_date"))
+                type.name().toLowerCase(Locale.ENGLISH).endsWith("start_date")
+                    || type.name().toLowerCase(Locale.ENGLISH).endsWith("end_date"))
         .collect(Collectors.toList());
   }
 
   public static List<ProcessReportDataType> allVariableReports() {
     return Arrays.stream(ProcessReportDataType.values())
-        .filter(type -> type.name().toLowerCase().contains("_variable"))
+        .filter(type -> type.name().toLowerCase(Locale.ENGLISH).contains("_variable"))
         .collect(Collectors.toList());
   }
 
   public static List<ProcessReportDataType> allViewUserTaskReports() {
     return Arrays.stream(ProcessReportDataType.values())
-        .filter(type -> type.name().toLowerCase().startsWith("user_task_"))
+        .filter(type -> type.name().toLowerCase(Locale.ENGLISH).startsWith("user_task_"))
         .collect(Collectors.toList());
   }
 }

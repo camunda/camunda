@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -109,7 +110,9 @@ public class EngineDatabaseExtension implements Extension {
   }
 
   private String handleDatabaseSyntax(String statement) {
-    return (database.equals(DATABASE_POSTGRESQL)) ? statement.toLowerCase() : statement;
+    return (database.equals(DATABASE_POSTGRESQL))
+        ? statement.toLowerCase(Locale.ENGLISH)
+        : statement;
   }
 
   @SneakyThrows

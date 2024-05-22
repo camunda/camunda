@@ -7,6 +7,7 @@ package org.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
@@ -57,7 +58,7 @@ public class CookieConfiguration {
 
     @JsonValue
     public String getId() {
-      return name().toLowerCase();
+      return name().toLowerCase(Locale.ENGLISH);
     }
 
     @Override
