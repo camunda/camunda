@@ -42,7 +42,6 @@ public class WebSecurityConfig {
 
   @Bean
   @Primary
-  @Profile("auth-basic")
   public HttpSecurity localHttpSecurity(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
