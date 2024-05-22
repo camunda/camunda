@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -26,7 +27,9 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            context.partitionMetadata().id().id(), context.partitionDirectory());
+            context.partitionMetadata().id().id(),
+            context.partitionDirectory(),
+            new ChecksumProvider());
 
     final var submit =
         context.schedulingService().submitActor(snapshotStore, SchedulingHints.ioBound());
