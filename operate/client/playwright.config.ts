@@ -57,7 +57,7 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${getPort()}/operate/`,
+    baseURL: `http://localhost:${getPort()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

@@ -48,7 +48,7 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
         history={createMemoryHistory({
           initialEntries: [initialPath],
         })}
-        basename={`${contextPath}/operate`}
+        basename={contextPath ?? ''}
       >
         <Routes>
           <Route

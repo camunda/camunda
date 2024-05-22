@@ -109,7 +109,7 @@ function getWrapper(options?: {
         history={createMemoryHistory({
           initialEntries: [initialPath],
         })}
-        basename={`${contextPath}/operate`}
+        basename={contextPath ?? ''}
       >
         <Routes>
           <Route path={Paths.processInstance()} element={children} />
