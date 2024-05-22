@@ -87,3 +87,8 @@ jobs:
           echo $changelog >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
           echo "$changelog" >> $GITHUB_STEP_SUMMARY
+      - name: Generate Changelog for patch release
+        id: print-changelog
+        run: |
+          set -euox pipefail
+          echo ${{ steps.gen-changelog.outputs.changelog }}
