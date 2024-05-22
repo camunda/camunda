@@ -292,7 +292,7 @@ jobs:
             --label="version:$ZCL_TARGET_REV" \
             --org camunda --repo zeebe
 
-            # This command will print markdown code to the console. You will need to manually insert this output into the release draft.
+            # The following command will print the markdown code to sysout - we are storing this into our variable "changelog"
             changelog=$(./zcl generate \
             --token=${{ secrets.GITHUB_TOKEN }} \
             --label="version:$ZCL_TARGET_REV" \
