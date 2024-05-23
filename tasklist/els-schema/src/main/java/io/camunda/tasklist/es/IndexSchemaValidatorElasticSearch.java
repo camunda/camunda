@@ -225,29 +225,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     return true;
   }
 
-  /**
-   * Validates existing indices mappings against schema files defined in codebase.
-   *
-   * @return newFields map with the new field definitions per index
-   * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
-   *     settings
-   */
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMapping() {
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
-    final Map<String, IndexMapping> indexMappings =
-        schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
-      final Map<String, IndexMapping> indexMappingsGroup =
-          filterIndexMappings(indexMappings, indexDescriptor);
-      // we don't check indices that were not yet created
-      if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
-            getDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
-      }
-    }
-    return newFields;
-  }
 
   private IndexMappingDifference getDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
@@ -258,33 +235,34 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
       final IndexDescriptor indexDescriptor,
       final IndexMappingDifference difference,
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
-    if (difference != null && !difference.isEqual()) {
-      LOGGER.debug(
-          String.format(
-              "Index fields differ from expected. Index name: %s. Difference: %s.",
-              indexDescriptor.getIndexName(), difference));
-      if (!difference.getEntriesDiffering().isEmpty()) {
-        final String errorMsg =
-            String.format(
-                "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-                indexDescriptor.getIndexName(), difference.getEntriesDiffering());
-        LOGGER.error(errorMsg);
-        throw new TasklistRuntimeException(errorMsg);
-      } else if (!difference.getEntriesOnlyOnRight().isEmpty()) {
-        final String message =
-            String.format(
-                "Index name: %s. Field deletion is requested, will be ignored. Fields: %s",
-                indexDescriptor.getIndexName(), difference.getEntriesOnlyOnRight());
-        LOGGER.info(message);
-      } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
-        newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
-      }
-    } else {
+    if (difference == null || difference.isEqual()) {
       LOGGER.debug(
           String.format(
               "Index fields are up to date. Index name: %s.", indexDescriptor.getIndexName()));
+      return;
+    }
+    LOGGER.debug(
+        String.format(
+            "Index fields differ from expected. Index name: %s. Difference: %s.",
+            indexDescriptor.getIndexName(), difference));
+    if (!difference.getEntriesDiffering().isEmpty()) {
+      final String errorMsg =
+          String.format(
+              "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
+              indexDescriptor.getIndexName(), difference.getEntriesDiffering());
+      LOGGER.error(errorMsg);
+      throw new TasklistRuntimeException(errorMsg);
+    } else if (!difference.getEntriesOnlyOnRight().isEmpty()) {
+      final String message =
+          String.format(
+              "Index name: %s. Field deletion is requested, will be ignored. Fields: %s",
+              indexDescriptor.getIndexName(), difference.getEntriesOnlyOnRight());
+      LOGGER.info(message);
+    } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
+      newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
     }
   }
+
 
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
