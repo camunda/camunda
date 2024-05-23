@@ -28,13 +28,6 @@ final class SnapshotAfterScalingTest {
   @TestZeebe
   TestCluster cluster =
       TestCluster.builder()
-          .withBrokerConfig(
-              broker ->
-                  broker
-                      .brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .useRecordingExporter(true)
           .withBrokersCount(2)
           .withReplicationFactor(1)

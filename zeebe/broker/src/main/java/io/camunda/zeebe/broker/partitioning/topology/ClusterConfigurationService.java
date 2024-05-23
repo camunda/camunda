@@ -10,10 +10,11 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
-public interface ClusterTopologyService extends AsyncClosable {
+public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
   void registerPartitionChangeExecutor(PartitionChangeExecutor executor);
@@ -22,7 +23,9 @@ public interface ClusterTopologyService extends AsyncClosable {
 
   ActorFuture<Void> start(BrokerStartupContext brokerStartupContext);
 
-  void registerTopologyChangeListener(InconsistentConfigurationListener listener);
+  void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
-  void removeTopologyChangeListener();
+  void removeInconsistentConfigurationListener();
+
+  ClusterConfiguration getInitialClusterConfiguration();
 }

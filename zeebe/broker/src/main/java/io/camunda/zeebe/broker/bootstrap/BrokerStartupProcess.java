@@ -47,7 +47,7 @@ public final class BrokerStartupProcess {
     final var result = new ArrayList<StartupStep<BrokerStartupContext>>();
 
     result.add(new ClusterServicesStep());
-    result.add(new ClusterTopologyManagerStep());
+    result.add(new ClusterConfigurationManagerStep());
 
     // must be executed before any disk space usage listeners are registered
     result.add(new DiskSpaceUsageMonitorStep());

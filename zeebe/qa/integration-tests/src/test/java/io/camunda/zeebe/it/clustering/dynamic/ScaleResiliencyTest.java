@@ -65,10 +65,6 @@ class ScaleResiliencyTest {
             .withBrokerConfig(
                 b -> {
                   b.brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true);
-                  b.brokerConfig()
                       .getCluster()
                       .getMembership()
                       // Decrease the timeouts for fast convergence of gateway topology.
@@ -154,7 +150,6 @@ class ScaleResiliencyTest {
           new TestStandaloneBroker()
               .withBrokerConfig(
                   b -> {
-                    b.getExperimental().getFeatures().setEnableDynamicClusterTopology(true);
                     b.getCluster().setClusterSize(newClusterSize);
                     b.getCluster().setNodeId(newBrokerId);
                     b.getCluster().setReplicationFactor(replicationFactor);

@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -43,7 +44,6 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -71,6 +71,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+  private DynamicPartitionConfig partitionConfig;
 
   @Override
   public int getPartitionId() {
@@ -156,6 +157,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {}
 
   @Override
+  public DynamicPartitionConfig getDynamicPartitionConfig() {
+    return partitionConfig;
+  }
+
+  @Override
+  public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
+    this.partitionConfig = partitionConfig;
+  }
+
+  @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {
     this.exporterDirector = exporterDirector;
   }
@@ -195,7 +206,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
-    return Set.of();
+    return exporterRepository.getExporters().values();
   }
 
   @Override

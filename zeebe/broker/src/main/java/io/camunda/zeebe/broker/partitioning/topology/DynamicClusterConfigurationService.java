@@ -14,15 +14,18 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.time.Duration;
 
-public class DynamicClusterTopologyService implements ClusterTopologyService {
+public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
   private PartitionDistribution partitionDistribution;
+
+  private ClusterConfiguration initialClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
 
@@ -67,7 +70,7 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
             clusterConfigurationManagerService
                 .getClusterTopology()
                 .onComplete(
-                    (topology, error) -> {
+                    (configuration, error) -> {
                       if (error != null) {
                         started.completeExceptionally(error);
                       } else {
@@ -75,7 +78,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
                           partitionDistribution =
                               new PartitionDistribution(
                                   ConfigurationUtil.getPartitionDistributionFrom(
-                                      topology, PartitionManagerImpl.GROUP_NAME));
+                                      configuration, PartitionManagerImpl.GROUP_NAME));
+                          initialClusterConfiguration = configuration;
                           started.complete(null);
                         } catch (final Exception topologyConversionFailed) {
                           started.completeExceptionally(topologyConversionFailed);
@@ -88,7 +92,8 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   }
 
   @Override
-  public void registerTopologyChangeListener(final InconsistentConfigurationListener listener) {
+  public void registerInconsistentConfigurationListener(
+      final InconsistentConfigurationListener listener) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerTopologyChangedListener(listener);
     } else {
@@ -98,10 +103,15 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
   }
 
   @Override
-  public void removeTopologyChangeListener() {
+  public void removeInconsistentConfigurationListener() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
     }
+  }
+
+  @Override
+  public ClusterConfiguration getInitialClusterConfiguration() {
+    return initialClusterConfiguration;
   }
 
   @Override
@@ -136,11 +146,11 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
-        getDefaultClusterTopologyGossipConfig() // TODO: allow user specified config
+        getDefaultClusterConfigurationGossiperConfig() // TODO: allow user specified config
         );
   }
 
-  private ClusterConfigurationGossiperConfig getDefaultClusterTopologyGossipConfig() {
+  private ClusterConfigurationGossiperConfig getDefaultClusterConfigurationGossiperConfig() {
     return new ClusterConfigurationGossiperConfig(
         true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
   }
