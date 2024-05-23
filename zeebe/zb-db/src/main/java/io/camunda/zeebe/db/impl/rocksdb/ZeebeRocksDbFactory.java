@@ -111,7 +111,7 @@ public final class ZeebeRocksDbFactory<
   }
 
   private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
-    final Properties props = new Properties();
+    final var props = new Properties();
     props.put("file_checksum_gen_factory", "FileChecksumGenCrc32cFactory");
     //    Enables full file checksum
 
