@@ -13,10 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
-import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -34,7 +34,7 @@ public class BatchOperationRestService extends InternalAPIErrorController {
   public static final String BATCH_OPERATIONS_URL = "/api/batch-operations";
 
   @Autowired private BatchOperationReader batchOperationReader;
-  @Autowired private OperationReader operationReader;
+  @Autowired private DataAggregator dataAggregator;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -62,6 +62,6 @@ public class BatchOperationRestService extends InternalAPIErrorController {
 
     final List<BatchOperationEntity> batchOperations =
         batchOperationReader.getBatchOperations(batchOperationRequestDto);
-    return operationReader.enrichBatchEntitiesWithMetadata(batchOperations);
+    return dataAggregator.enrichBatchEntitiesWithMetadata(batchOperations);
   }
 }

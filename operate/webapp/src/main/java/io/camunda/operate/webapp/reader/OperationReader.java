@@ -11,7 +11,6 @@ import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import java.util.List;
 import java.util.Map;
 
@@ -32,9 +31,6 @@ public interface OperationReader {
   List<BatchOperationEntity> getBatchOperations(int pageSize);
 
   List<OperationDto> getOperationsByBatchOperationId(String batchOperationId);
-
-  public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
-      final List<BatchOperationEntity> batchEntities);
 
   List<OperationDto> getOperations(
       OperationType operationType, String processInstanceId, String scopeId, String variableName);

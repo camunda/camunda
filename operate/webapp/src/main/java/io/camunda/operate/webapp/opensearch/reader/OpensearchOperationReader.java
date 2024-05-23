@@ -33,7 +33,6 @@ import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
@@ -41,18 +40,14 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.security.UserService;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
-import org.opensearch.client.opensearch.core.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -214,53 +209,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
-  }
-
-  @Override
-  public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
-      final List<BatchOperationEntity> batchEntities) {
-
-    final List<BatchOperationDto> resultDtos = new ArrayList<>(batchEntities.size());
-    for (final BatchOperationEntity batchEntity : batchEntities) {
-      final var searchRequestBuilder = getSearchRequestByIdWithMetadata(batchEntity.getId());
-      final Aggregate aggregate;
-      try {
-        final SearchResponse<OperationEntity> searchResponse =
-            richOpenSearchClient.doc().search(searchRequestBuilder, OperationEntity.class);
-        aggregate = searchResponse.aggregations().get(OperationTemplate.METADATA_AGGREGATION);
-
-        final Integer failedCount =
-            (int)
-                aggregate
-                    .filters()
-                    .buckets()
-                    .keyed()
-                    .get(BatchOperationTemplate.FAILED_OPERATIONS_COUNT)
-                    .docCount();
-        final Integer completedCount =
-            (int)
-                aggregate
-                    .filters()
-                    .buckets()
-                    .keyed()
-                    .get(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT)
-                    .docCount();
-
-        final BatchOperationDto batchOperationDto =
-            BatchOperationDto.createFrom(batchEntity, objectMapper)
-                .setFailedOperationsCount(failedCount)
-                .setCompletedOperationsCount(completedCount);
-        resultDtos.add(batchOperationDto);
-      } catch (final OperateRuntimeException e) {
-        final String message =
-            String.format(
-                "Exception occurred, while searching for batch operation metadata.",
-                e.getMessage());
-        LOGGER.error(message, e);
-        throw new OperateRuntimeException(message, e);
-      }
-    }
-    return resultDtos;
   }
 
   @Override

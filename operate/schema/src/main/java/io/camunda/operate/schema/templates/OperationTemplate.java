@@ -36,6 +36,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   public static final String MODIFIY_INSTRUCTIONS = "modifyInstructions";
   public static final String MIGRATION_PLAN = "migrationPlan";
   public static final String METADATA_AGGREGATION = "metadataAggregation";
+  public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
 
   @Override
   public String getIndexName() {

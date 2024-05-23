@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import static io.camunda.operate.entities.OperationState.LOCKED;
 import static io.camunda.operate.entities.OperationState.SCHEDULED;
 import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID;
+import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID_AGGREGATION;
 import static io.camunda.operate.schema.templates.OperationTemplate.ID;
 import static io.camunda.operate.schema.templates.OperationTemplate.INCIDENT_KEY;
 import static io.camunda.operate.schema.templates.OperationTemplate.PROCESS_INSTANCE_KEY;
@@ -30,7 +31,6 @@ import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -39,12 +39,10 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.security.UserService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,14 +51,12 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilters;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -325,46 +321,6 @@ public class OperationReader extends AbstractReader
   }
 
   @Override
-  public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
-      final List<BatchOperationEntity> batchEntities) {
-
-    final List<BatchOperationDto> resultDtos = new ArrayList<>(batchEntities.size());
-    for (final BatchOperationEntity batchEntity : batchEntities) {
-      final SearchRequest operationsRequest = getSearchRequestByIdWithMetadata(batchEntity.getId());
-      final SearchResponse searchResponse;
-      try {
-        searchResponse = esClient.search(operationsRequest, RequestOptions.DEFAULT);
-        final ParsedFilters aggregations =
-            searchResponse.getAggregations().get(OperationTemplate.METADATA_AGGREGATION);
-        final int failedCount =
-            (int)
-                aggregations
-                    .getBucketByKey(BatchOperationTemplate.FAILED_OPERATIONS_COUNT)
-                    .getDocCount();
-        final int completedCount =
-            (int)
-                aggregations
-                    .getBucketByKey(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT)
-                    .getDocCount();
-
-        final BatchOperationDto batchOperationDto =
-            BatchOperationDto.createFrom(batchEntity, objectMapper)
-                .setFailedOperationsCount(failedCount)
-                .setCompletedOperationsCount(completedCount);
-        resultDtos.add(batchOperationDto);
-      } catch (final IOException e) {
-        final String message =
-            String.format(
-                "Exception occurred, while adding metadata to batch operations: %s",
-                e.getMessage());
-        LOGGER.error(message, e);
-        throw new OperateRuntimeException(message, e);
-      }
-    }
-    return resultDtos;
-  }
-
-  @Override
   public List<OperationDto> getOperations(
       final OperationType operationType,
       final String processInstanceId,
@@ -394,22 +350,33 @@ public class OperationReader extends AbstractReader
     }
   }
 
-  public SearchRequest getSearchRequestByIdWithMetadata(final String batchOperationId) {
-    final QueryBuilder idQuery = termQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationId);
+  /* Returns Terms (Multi-Buckets Aggregation) with buckets aggregated by BATCH_OPERATION_ID (and provided sub-aggregations) */
+  public Terms getOperationsAggregatedByBatchOperationId(
+      final List<String> batchOperationIds, final AggregationBuilder subAggregations) {
+    final QueryBuilder idsQuery =
+        termsQuery(OperationTemplate.BATCH_OPERATION_ID, batchOperationIds);
 
-    final AggregationBuilder metadataAggregation =
-        AggregationBuilders.filters(
-            OperationTemplate.METADATA_AGGREGATION,
-            new FiltersAggregator.KeyedFilter(
-                BatchOperationTemplate.FAILED_OPERATIONS_COUNT,
-                QueryBuilders.termQuery(OperationTemplate.STATE, OperationState.FAILED)),
-            new FiltersAggregator.KeyedFilter(
-                BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                QueryBuilders.termQuery(OperationTemplate.STATE, OperationState.COMPLETED)));
+    final AggregationBuilder batchIdAggregation =
+        AggregationBuilders.terms(BATCH_OPERATION_ID_AGGREGATION)
+            .field(OperationTemplate.BATCH_OPERATION_ID)
+            .subAggregation(subAggregations);
 
     final SearchSourceBuilder sourceBuilder =
-        searchSource().query(constantScoreQuery(idQuery)).aggregation(metadataAggregation);
-    return searchRequest(operationTemplate.getAlias()).source(sourceBuilder);
+        searchSource().query(constantScoreQuery(idsQuery)).aggregation(batchIdAggregation);
+    final SearchRequest operationsRequest =
+        searchRequest(operationTemplate.getAlias()).source(sourceBuilder);
+    final SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(operationsRequest, RequestOptions.DEFAULT);
+    } catch (final IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while searching and aggregating operations by batch operation id: %s",
+              e.getMessage());
+      LOGGER.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+    return searchResponse.getAggregations().get(BATCH_OPERATION_ID_AGGREGATION);
   }
 
   private QueryBuilder createUsernameQuery() {
