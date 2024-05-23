@@ -380,12 +380,15 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     processMessageSubscriptionsToMigrate.forEach(
         processMessageSubscription -> {
-
-          // todo: adjust the record with new target definition
+          final var sourceCatchEventId = processMessageSubscription.getRecord().getElementId();
+          final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
           stateWriter.appendFollowUpEvent(
               processMessageSubscription.getKey(),
               ProcessMessageSubscriptionIntent.MIGRATED,
-              processMessageSubscription.getRecord());
+              processMessageSubscription
+                  .getRecord()
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setElementId(BufferUtil.wrapString(targetCatchEventId)));
 
           // todo: migrate the message subscription
         });
