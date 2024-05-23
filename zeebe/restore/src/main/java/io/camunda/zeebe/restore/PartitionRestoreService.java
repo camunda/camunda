@@ -15,7 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProvider;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
@@ -178,7 +178,9 @@ public class PartitionRestoreService {
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
-            partition.id().id(), partition.dataDirectory().toPath(), new ChecksumProvider());
+            partition.id().id(),
+            partition.dataDirectory().toPath(),
+            new ChecksumProviderRocksDBImpl());
 
     try {
       snapshotStore.restore(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.ChecksumProvider;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,8 +15,9 @@ import org.rocksdb.LiveFileMetaData;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
-public class ChecksumProvider {
+public class ChecksumProviderRocksDBImpl implements ChecksumProvider {
 
+  @Override
   public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
     try (final var db = RocksDB.openReadOnly(snapshotPath.toString())) {
       return db.getLiveFilesMetaData().stream()
