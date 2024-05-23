@@ -12,6 +12,8 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
@@ -69,6 +72,50 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createDefaults();
     createTemplates();
     createIndices();
+  }
+
+  @Override
+  public IndexMapping getExpectedIndexFields(final IndexDescriptor indexDescriptor) {
+    //TODO: Implement this method
+    return null;
+  }
+
+  @Override
+  public Map<String, IndexMapping> getIndexMappings(final String s) {
+    //TODO: Implement this method
+    return Map.of();
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    //TODO: Implement this method
+    return "";
+  }
+
+  @Override
+  public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+    //TODO: Implement this method
+  }
+
+  @Override
+  public void createIndex(final IndexDescriptor indexDescriptor) {
+    final String indexFilename =
+        String.format("/schema/os/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
+    final InputStream indexDescription =
+        OpenSearchSchemaManager.class.getResourceAsStream(indexFilename);
+
+    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+    final JsonParser parser = mapper.jsonProvider().createParser(indexDescription);
+
+    final CreateIndexRequest request =
+        new CreateIndexRequest.Builder()
+            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+            .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
+            .settings(getIndexSettings())
+            .index(indexDescriptor.getFullQualifiedName())
+            .build();
+
+    createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
   public void createIndexLifeCycles() {
@@ -218,26 +265,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
     } else {
       LOGGER.debug("Index [{}] was NOT created", indexName);
     }
-  }
-
-  private void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename =
-        String.format("/schema/os/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
-    final InputStream indexDescription =
-        OpenSearchSchemaManager.class.getResourceAsStream(indexFilename);
-
-    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-    final JsonParser parser = mapper.jsonProvider().createParser(indexDescription);
-
-    final CreateIndexRequest request =
-        new CreateIndexRequest.Builder()
-            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
-            .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
-            .settings(getIndexSettings())
-            .index(indexDescriptor.getFullQualifiedName())
-            .build();
-
-    createIndex(request, indexDescriptor.getFullQualifiedName());
   }
 
   private void createIndices() {
