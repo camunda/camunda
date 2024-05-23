@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -357,6 +359,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   RejectionType.INVALID_STATE);
             });
 
+    final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate = new ArrayList<>();
     catchEventBehavior.unsubscribeFromMessageEvents(
         elementInstance.getKey(),
         subscription -> {
@@ -366,17 +369,26 @@ public class ProcessInstanceMigrationMigrateProcessor
           }
 
           final var catchEventId = subscription.getRecord().getElementId();
-          //noinspection RedundantIfStatement
           if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it
+            processMessageSubscriptionsToMigrate.add(subscription);
             return false;
           }
 
           return true;
         });
 
-    // todo: migrate mapped message subscriptions
+    processMessageSubscriptionsToMigrate.forEach(
+        processMessageSubscription -> {
 
+          // todo: adjust the record with new target definition
+          stateWriter.appendFollowUpEvent(
+              processMessageSubscription.getKey(),
+              ProcessMessageSubscriptionIntent.MIGRATED,
+              processMessageSubscription.getRecord());
+
+          // todo: migrate the message subscription
+        });
   }
 
   private void appendIncidentMigratedEvent(
