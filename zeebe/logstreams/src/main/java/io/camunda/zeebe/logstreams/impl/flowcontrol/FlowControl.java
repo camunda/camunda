@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.VegasLimit;
-import com.netflix.concurrency.limits.limiter.SimpleLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.ExportLimitExhausted;
@@ -68,7 +67,7 @@ public final class FlowControl implements AppendListener {
             : new NoopLimiter<>();
     exportLimiter =
         exportLimit != null
-            ? SimpleLimiter.newBuilder().limit(exportLimit).build()
+            ? ExportLimiter.builder().limit(exportLimit).metrics(metrics).build()
             : new NoopLimiter<>();
   }
 

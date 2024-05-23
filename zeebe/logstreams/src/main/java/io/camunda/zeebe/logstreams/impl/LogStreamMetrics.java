@@ -82,6 +82,24 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge EXPORT_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("export_limit")
+          .help("Current limit for number of unexported entries")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge INFLIGHT_EXPORT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("export_inflight")
+          .help("Current number of unexported entries")
+          .labelNames("partition")
+          .register();
+
   private static final Gauge LAST_COMMITTED_POSITION =
       Gauge.build()
           .namespace("zeebe")
@@ -130,6 +148,8 @@ public final class LogStreamMetrics {
   private final Counter.Child droppedRequests;
   private final Gauge.Child inflightRequests;
   private final Gauge.Child requestLimit;
+  private final Gauge.Child exportLimit;
+  private final Gauge.Child inflightExport;
   private final Gauge.Child lastCommitted;
   private final Gauge.Child lastWritten;
   private final Histogram.Child commitLatency;
@@ -146,6 +166,8 @@ public final class LogStreamMetrics {
     droppedRequests = TOTAL_DROPPED_REQUESTS.labels(partitionLabel);
     inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
     requestLimit = REQUEST_LIMIT.labels(partitionLabel);
+    exportLimit = EXPORT_LIMIT.labels(partitionLabel);
+    inflightExport = INFLIGHT_EXPORT.labels(partitionLabel);
     lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
     lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
@@ -192,6 +214,18 @@ public final class LogStreamMetrics {
 
   public void decreaseInflightRequests() {
     inflightRequests.dec();
+  }
+
+  public void setExportLimit(final long limit) {
+    exportLimit.set(limit);
+  }
+
+  public void increaseInflightExport() {
+    inflightExport.inc();
+  }
+
+  public void decreaseInflightExport() {
+    inflightExport.dec();
   }
 
   public Timer startWriteTimer() {

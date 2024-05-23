@@ -65,7 +65,7 @@ public final class InFlightEntry {
     }
 
     public Unexported unexported() {
-      return new Unexported(exportListener);
+      return new Unexported(metrics, exportListener);
     }
   }
 
@@ -130,14 +130,18 @@ public final class InFlightEntry {
   }
 
   public static final class Unexported {
+    private final LogStreamMetrics metrics;
     private final Listener exportListener;
 
-    Unexported(final Listener exportListener) {
+    Unexported(final LogStreamMetrics metrics, final Listener exportListener) {
+      this.metrics = metrics;
       this.exportListener = exportListener;
+      metrics.increaseInflightExport();
     }
 
     public void finish() {
       exportListener.onSuccess();
+      metrics.decreaseInflightExport();
     }
   }
 }
