@@ -11,17 +11,14 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PR
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.DEFAULT_AUTH;
 
 import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
-import io.camunda.tasklist.data.DataGenerator;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -43,7 +40,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
           pattern = "io\\.camunda\\.tasklist\\.webapp\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
+          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class StandaloneTasklist {
@@ -80,13 +80,6 @@ public class StandaloneTasklist {
             env.addActiveProfile(DEFAULT_AUTH);
           }
         });
-  }
-
-  @Bean(name = "dataGenerator")
-  @ConditionalOnMissingBean
-  public DataGenerator stubDataGenerator() {
-    LOGGER.debug("Create Data generator stub");
-    return DataGenerator.DO_NOTHING;
   }
 
   public static class ApplicationErrorListener

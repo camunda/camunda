@@ -21,12 +21,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-data-generator</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
       <scope>runtime</scope>
     </dependency>
@@ -517,7 +511,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-data-generator</dependency>
             <dependency>io.camunda:tasklist-importer</dependency>
             <dependency>io.camunda:tasklist-archiver</dependency>
             <dependency>io.camunda:tasklist-webjar</dependency>
