@@ -76,7 +76,7 @@ This is a small overview of the contents of the different modules:
 
 ### Test Execution
 
-Tests can be executed via maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
+Tests can be executed via maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
 
 > [!TIP]
 > To execute the tests quickly, run `mvn verify -Dquickly -DskipTests=false`.
@@ -84,7 +84,7 @@ Tests can be executed via maven (`mvn verify`) or in your preferred IDE. The Zee
 
 #### Test Troubleshooting
 
-- If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it.
+- If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/camunda/issues/10488 to resolve it.
 
 ### Build profiling
 
@@ -145,7 +145,7 @@ follow the following steps:
    ```
 7. If you think you finished the issue please prepare the branch for review.
    Please consider our [pull requests and code
-   reviews](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews)
+   reviews](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews)
    guide, before requesting a review. In general, the commits should be squashed
    into meaningful commits with a helpful message. This means cleanup/fix etc
    commits should be squashed into the related commit. If you made refactorings
@@ -160,7 +160,7 @@ follow the following steps:
 
 ## Creating a pull request
 
-Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
+Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
 1. To start the review process create a new pull request on GitHub from your
    branch to the `main` branch. Give it a meaningful name and describe
@@ -193,7 +193,7 @@ Before opening your first pull request, please have a look at this [guide](https
 
 ## Reviewing a pull request
 
-Before doing your first review, please have a look at this [guide](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
+Before doing your first review, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
 
 As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
 
@@ -299,7 +299,7 @@ The commit header should be kept short, preferably under 72 chars but we allow a
 Should describe the motivation for the change.
 This is optional but encouraged.
 Good commit messages explain what changed AND why you changed it.
-See [I've written a clear changelist description](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
+See [I've written a clear changelist description](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
 
 ## Contributor License Agreement
 
@@ -333,10 +333,10 @@ This project adheres to the [Camunda Code of Conduct](https://camunda.com/events
 By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
 unacceptable behavior as soon as possible.
 
-[issues]: https://github.com/camunda/zeebe/issues
+[issues]: https://github.com/camunda/camunda/issues
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
-[clients/java]: https://github.com/camunda/zeebe/labels/scope%2Fclients-java
-[clients/go]: https://github.com/camunda/zeebe/labels/scope%2Fclients-go
+[clients/java]: https://github.com/camunda/camunda/labels/scope%2Fclients-java
+[clients/go]: https://github.com/camunda/camunda/labels/scope%2Fclients-go
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
 

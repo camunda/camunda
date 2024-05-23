@@ -158,7 +158,7 @@ public class EscalationEventTest {
 
   @Test
   public void shouldCatchEscalationOnBoundaryEventWithNumericEscalationCode() {
-    // Regression for https://github.com/camunda/zeebe/issues/12326
+    // Regression for https://github.com/camunda/camunda/issues/12326
     // given
     final var process =
         Bpmn.createExecutableProcess(PROCESS_ID)

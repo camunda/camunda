@@ -183,14 +183,14 @@ final class PartitionJoinApplierTest {
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
     final var updatedTopology =
         partitionJoinApplier.init(initialTopology).get().apply(initialTopology);
-    when(partitionChangeExecutor.join(anyInt(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var resultingTopology = partitionJoinApplier.apply().join().apply(updatedTopology);
 
     // then
-    verify(partitionChangeExecutor, times(1)).join(anyInt(), any());
+    verify(partitionChangeExecutor, times(1)).join(anyInt(), any(), any());
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
@@ -201,7 +201,7 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldReturnExceptionWhenJoinFailed() {
     // given
-    when(partitionChangeExecutor.join(anyInt(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
 

@@ -32,6 +32,7 @@ final class PartitionJoinApplier implements MemberOperationApplier {
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final MemberId localMemberId;
   private Map<MemberId, Integer> partitionMembersWithPriority;
+  private DynamicPartitionConfig partitionConfig;
 
   PartitionJoinApplier(
       final int partitionId,
@@ -98,9 +99,10 @@ final class PartitionJoinApplier implements MemberOperationApplier {
       // The state is already JOINING, so we don't need to change it. This can happen when the node
       // was restarted while applying the join operation. To ensure that the configuration change
       // can make progress, we do not treat this as an error.
+      partitionConfig = localMemberState.getPartition(partitionId).config();
       return Either.right(memberState -> memberState);
     } else {
-      final var partitionConfig = getPartitionConfig(currentClusterConfiguration);
+      partitionConfig = getPartitionConfig(currentClusterConfiguration);
       return Either.right(
           memberState ->
               memberState.addPartition(
@@ -114,7 +116,7 @@ final class PartitionJoinApplier implements MemberOperationApplier {
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .join(partitionId, partitionMembersWithPriority)
+        .join(partitionId, partitionMembersWithPriority, partitionConfig)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {

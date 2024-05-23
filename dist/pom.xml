@@ -168,7 +168,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
+      <artifactId>tasklist-data-generator</artifactId>
     </dependency>
 
     <dependency>
@@ -604,6 +604,7 @@
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
+            <dependency>io.camunda:tasklist-data-generator</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>

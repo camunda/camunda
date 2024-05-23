@@ -10,13 +10,10 @@ package io.camunda.application;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.tasklist.TasklistModuleConfiguration;
-import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneTasklist {
@@ -45,12 +42,5 @@ public class StandaloneTasklist {
             .build(args);
 
     standaloneTasklistApplication.run(args);
-  }
-
-  @Bean(name = "dataGenerator")
-  @ConditionalOnMissingBean
-  public DataGenerator stubDataGenerator() {
-    LOGGER.debug("Create Data generator stub");
-    return DataGenerator.DO_NOTHING;
   }
 }

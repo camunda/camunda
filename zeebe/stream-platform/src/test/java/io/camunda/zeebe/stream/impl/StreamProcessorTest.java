@@ -221,7 +221,7 @@ public final class StreamProcessorTest {
         .untilAsserted(() -> assertThat(streamPlatform.getStreamProcessor().isFailed()).isTrue());
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
+  @RegressionTest("https://github.com/camunda/camunda/issues/13101")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingFails() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -241,7 +241,7 @@ public final class StreamProcessorTest {
         .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 1);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/pull/13427#issuecomment-1630700316")
+  @RegressionTest("https://github.com/camunda/camunda/pull/13427#issuecomment-1630700316")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingSkippedCommand() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -537,7 +537,7 @@ public final class StreamProcessorTest {
     }
   }
 
-  @Disabled("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
+  @Disabled("Should be enabled when https://github.com/camunda/camunda/issues/11849 is fixed")
   @Test
   public void shouldRunAsyncSchedulingEvenIfProcessingIsBlocked() throws InterruptedException {
     // given

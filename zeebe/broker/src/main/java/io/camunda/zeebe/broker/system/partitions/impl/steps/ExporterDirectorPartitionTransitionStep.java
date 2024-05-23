@@ -12,18 +12,38 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
+
+  private final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
+      exporterDirectorBuilder;
+
+  public ExporterDirectorPartitionTransitionStep() {
+    this(ExporterDirector::new);
+  }
+
+  @VisibleForTesting("to allow mocking ExporterDirector in tests")
+  ExporterDirectorPartitionTransitionStep(
+      final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
+          exporterDirectorBuilder) {
+    this.exporterDirectorBuilder = exporterDirectorBuilder;
+  }
 
   @Override
   public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
@@ -82,7 +102,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
   private ActorFuture<Void> openExporter(
       final PartitionTransitionContext context, final Role targetRole) {
-    final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
+    final Collection<ExporterDescriptor> exporterDescriptors =
+        getEnabledExporterDescriptors(context);
     final var exporterFilter =
         SkipPositionsFilter.of(
             context.getBrokerCfg() != null
@@ -101,7 +122,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter);
 
-    final ExporterDirector director = new ExporterDirector(exporterCtx, context.getExporterPhase());
+    final ExporterDirector director =
+        exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
 
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 
@@ -122,8 +144,44 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
                 director.resumeExporting();
                 break;
             }
+
+            // The config might have changed after ExporterDirector has created
+            disableExportersIfConfigChanged(exporterDescriptors, context);
           }
         });
     return startFuture;
+  }
+
+  private void disableExportersIfConfigChanged(
+      final Collection<ExporterDescriptor> startedExporters,
+      final PartitionTransitionContext context) {
+    final var currentEnabledExporters = getEnabledExporterDescriptors(context);
+
+    for (final var exporter : startedExporters) {
+      if (!currentEnabledExporters.contains(exporter)) {
+        context.getExporterDirector().disableExporter(exporter.getId());
+      }
+    }
+    // TODO: Enable newly enabled exporters when the functionality is added
+  }
+
+  private static Collection<ExporterDescriptor> getEnabledExporterDescriptors(
+      final PartitionTransitionContext context) {
+    final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
+    final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
+    return exporterDescriptors.stream()
+        .filter(exporterDescriptor -> isEnabled(exporterConfig, exporterDescriptor))
+        .toList();
+  }
+
+  private static boolean isEnabled(
+      final Map<String, ExporterState> exporterConfig,
+      final ExporterDescriptor exporterDescriptor) {
+    // TODO: If the exporter is not found in exporterConfig, it should be considered as disabled.
+    // But we can do that only after https://github.com/camunda/zeebe/issues/18296 is implemented.
+    // Until then, we assume if the exporter is not found in the config, it is considered as
+    // enabled. Note that this is a temporary workaround.
+    return !exporterConfig.containsKey(exporterDescriptor.getId())
+        || exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
   }
 }

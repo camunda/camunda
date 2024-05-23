@@ -43,13 +43,22 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
 
+  java-checks:
+    name: Operate Java Checks
+    uses: ./.github/workflows/operate-ci-build-observe-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: mvn -f operate verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile
+      runner-type: gcp-core-4-default
+
   run-unit-tests:
     name: Operate Backend Unit Tests
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile
+      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile -DskipChecks
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
@@ -59,7 +68,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate/qa/integration-tests verify -P operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
+      command: mvn -f operate/qa/integration-tests verify -P operateItStage1 -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Integration Tests
       runner-type: gcp-core-32-default
 
@@ -69,7 +78,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -Dfailsafe.rerunFailingTestsCount=2
+      command: mvn -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Opensearch ITs
       runner-type: gcp-core-32-default
 

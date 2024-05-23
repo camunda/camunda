@@ -23,7 +23,7 @@ public class EngineRuleTest {
    * Previously, commands were written with timestamps that weren't controlled by the actor clock in
    * {@link EngineRule}.
    *
-   * @see <a href="https://github.com/camunda/zeebe/issues/8891">Issue 8891</a>
+   * @see <a href="https://github.com/camunda/camunda/issues/8891">Issue 8891</a>
    */
   @Test
   public void commandTimestampIsControllable() {

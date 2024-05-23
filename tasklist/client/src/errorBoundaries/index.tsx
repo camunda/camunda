@@ -9,22 +9,7 @@
 import {FallbackProps} from 'react-error-boundary';
 import {useRouteError} from 'react-router-dom';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
-import {styled} from 'styled-components';
-
-const PageContainer = styled.main`
-  --cds-layer: #f4f4f4;
-  --cds-text-primary: #262626;
-  --cds-background: #ffffff;
-  --cds-spacing-08: 2.5rem;
-  --cds-spacing-12: 6rem;
-  padding: var(--cds-spacing-08);
-  background: var(--cds-background);
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
+import styles from './styles.module.scss';
 
 const ErrorWithinLayout: React.FC = () => {
   const error = useRouteError();
@@ -36,9 +21,9 @@ const ErrorWithinLayout: React.FC = () => {
 const FallbackErrorPage: React.FC<FallbackProps> = ({error}) => {
   console.error(error);
   return (
-    <PageContainer>
+    <main className={styles.container}>
       <SomethingWentWrong />
-    </PageContainer>
+    </main>
   );
 };
 

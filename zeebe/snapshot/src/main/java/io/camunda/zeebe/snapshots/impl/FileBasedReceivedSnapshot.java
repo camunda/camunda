@@ -276,13 +276,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return;
     }
 
-    if (expectedSnapshotChecksum != checksumCollection.getCombinedValue()) {
-      future.completeExceptionally(
-          new InvalidSnapshotChecksum(
-              directory, expectedSnapshotChecksum, checksumCollection.getCombinedValue()));
-      return;
-    }
-
     try {
       if (metadata == null) {
         // backward compatibility

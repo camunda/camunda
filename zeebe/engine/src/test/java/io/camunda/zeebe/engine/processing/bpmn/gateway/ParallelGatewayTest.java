@@ -351,7 +351,7 @@ public final class ParallelGatewayTest {
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
   }
 
-  // Regression test for https://github.com/camunda/zeebe/issues/6778
+  // Regression test for https://github.com/camunda/camunda/issues/6778
   @Test
   public void shouldRejectActivateCommandWhenSequenceFlowIsTakenTwice() {
     // given

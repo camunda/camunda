@@ -8,7 +8,6 @@
 
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 
 const getWrapper = () => {
@@ -20,9 +19,7 @@ const getWrapper = () => {
 
   const Wrapper: React.FC<Props> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
   return Wrapper;

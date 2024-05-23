@@ -40,6 +40,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
   @Autowired
   private OpenSearchClient osClient;
 
+  @Override
   public void createUser(String username, String firstname, String lastname) {
     final String password = username;
     final String passwordEncoded = passwordEncoder.encode(password);
@@ -62,6 +63,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
     LOGGER.info("Created demo user {} with password {}", username, password);
   }
 
+  @Override
   public boolean shouldCreateData() {
     try {
 

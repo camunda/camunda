@@ -163,7 +163,7 @@ public final class ExporterDirectorPauseTest {
 
     // when -- exporter is closed
     // Wait for exporter to properly close before submitting pause/resume jobs.
-    // Needed to prevent flaky test https://github.com/camunda/zeebe/issues/10439
+    // Needed to prevent flaky test https://github.com/camunda/camunda/issues/10439
     Awaitility.await()
         .alias("Exporter is closed")
         .ignoreExceptions() // joining can still throw if actor is closed after `getPhase` is called

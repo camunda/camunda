@@ -8,7 +8,6 @@
 
 import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
@@ -47,10 +46,8 @@ function getWrapper(
     return (
       <QueryClientProvider client={mockClient}>
         <MemoryRouter initialEntries={initialEntries}>
-          <MockThemeProvider>
-            {children}
-            <LocationLog />
-          </MockThemeProvider>
+          {children}
+          <LocationLog />
         </MemoryRouter>
       </QueryClientProvider>
     );
