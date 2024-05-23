@@ -18,12 +18,12 @@ docker buildx create --use
 export VERSION="${VERSION}"
 export DATE="$(date +%FT%TZ)"
 export REVISION="${REVISION}"
-export BASE_IMAGE=docker.io/library/alpine:3.19.1
+export BASE_IMAGE=docker.io/library/alpine:3.20.0
 
 # if CI (GHA) export the variables for pushing in a later step
-if [ "${CI}" = "true"  ]; then
-    echo "DATE=$DATE" >> "$GITHUB_ENV"
-    echo "tag_arguments=$tag_arguments" >> "$GITHUB_ENV"
+if [ "${CI}" = "true" ]; then
+    echo "DATE=$DATE" >>"$GITHUB_ENV"
+    echo "tag_arguments=$tag_arguments" >>"$GITHUB_ENV"
 fi
 
 # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
