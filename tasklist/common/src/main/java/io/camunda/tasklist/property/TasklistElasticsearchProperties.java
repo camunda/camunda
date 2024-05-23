@@ -18,8 +18,8 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
-  private Map<String, Integer> numberOfShardsForIndices = Map.of();
-  private Map<String, Integer> numberOfReplicasForIndices = Map.of();
+  private Map<String, Integer> numberOfShardsPerIndex = Map.of();
+  private Map<String, Integer> numberOfReplicasPerIndices = Map.of();
 
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
@@ -59,19 +59,19 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
     this.refreshInterval = refreshInterval;
   }
 
-  public Map<String, Integer> getNumberOfShardsForIndices() {
-    return numberOfShardsForIndices;
+  public Map<String, Integer> getNumberOfShardsPerIndex() {
+    return numberOfShardsPerIndex;
   }
 
-  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
-    this.numberOfShardsForIndices = numberOfShardsForIndices;
+  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfReplicasForIndices() {
-    return numberOfReplicasForIndices;
+  public Map<String, Integer> getNumberOfReplicasPerIndices() {
+    return numberOfReplicasPerIndices;
   }
 
-  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
-    this.numberOfReplicasForIndices = numberOfReplicasForIndices;
+  public void setNumberOfReplicasPerIndices(final Map<String, Integer> numberOfReplicasPerIndices) {
+    this.numberOfReplicasPerIndices = numberOfReplicasPerIndices;
   }
 }
