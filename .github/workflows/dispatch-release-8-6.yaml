@@ -32,7 +32,7 @@ jobs:
           payload: |
             {
               "text": ":success: Release job for ${{ github.event.client_payload.releaseVersion }} succeeded! :success:\n",
-             	"blocks": [
+              "blocks": [
                 {
                   "type": "section",
                   "text": {
@@ -44,7 +44,7 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK      
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
   notify-if-failed:
     name: Send slack notification on failure
     runs-on: ubuntu-latest
