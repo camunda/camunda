@@ -330,12 +330,11 @@ public class ProcessInstanceMigrationMigrateProcessor
             catchEvent -> {
               final var element = catchEvent.element();
               final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
-              requireNoMappedCatchEventsInTarget(
-                  sourceElementIdToTargetElementId,
-                  targetCatchEventId,
-                  processInstanceKey,
-                  elementId,
-                  targetElementId);
+              if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
+                // We will migrate this mapped catch event, so we don't want to subscribe to it
+                return false;
+              }
+
               if (element.isMessage()) {
                 requireNoSubscriptionForMessage(
                     elementInstance,
@@ -365,11 +364,19 @@ public class ProcessInstanceMigrationMigrateProcessor
             // We just subscribed to this message for this migration, we don't want to undo that
             return false;
           }
+
           final var catchEventId = subscription.getRecord().getElementId();
-          requireNoMappedCatchEventsInSource(
-              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
+          //noinspection RedundantIfStatement
+          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it
+            return false;
+          }
+
           return true;
         });
+
+    // todo: migrate mapped message subscriptions
+
   }
 
   private void appendIncidentMigratedEvent(
