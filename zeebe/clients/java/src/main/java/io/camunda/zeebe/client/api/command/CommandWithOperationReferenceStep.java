@@ -15,8 +15,13 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
+public interface CommandWithOperationReferenceStep<T> {
 
-public interface DeleteResourceCommandStep1
-    extends CommandWithOperationReferenceStep<DeleteResourceCommandStep1>,
-        FinalCommandStep<DeleteResourceResponse> {}
+  /**
+   * @param operationReference a reference key sent from the client to correlate the operation with
+   *     its result records
+   * @return the builder for this command with the tenant specified
+   * @since 8.6
+   */
+  T operationReference(long operationReference);
+}

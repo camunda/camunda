@@ -66,7 +66,9 @@ public interface MigrateProcessInstanceCommandStep1 {
   }
 
   interface MigrateProcessInstanceCommandFinalStep
-      extends MigrateProcessInstanceCommandStep2, FinalCommandStep<MigrateProcessInstanceResponse> {
+      extends MigrateProcessInstanceCommandStep2,
+          CommandWithOperationReferenceStep<MigrateProcessInstanceCommandFinalStep>,
+          FinalCommandStep<MigrateProcessInstanceResponse> {
 
     /**
      * Add a {@link
