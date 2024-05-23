@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
+import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
@@ -241,10 +242,14 @@ public class RetryOpenSearchClient {
   }
 
   public boolean createTemplate(final PutIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return openSearchClient.indices().putIndexTemplate(request).acknowledged();
           }
           return true;

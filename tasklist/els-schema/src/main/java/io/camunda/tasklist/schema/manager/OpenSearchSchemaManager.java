@@ -8,6 +8,7 @@
 package io.camunda.tasklist.schema.manager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
@@ -39,6 +41,7 @@ import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
+import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
@@ -49,6 +52,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +66,8 @@ import org.springframework.util.StreamUtils;
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchSchemaManager implements SchemaManager {
 
+  public static final String SETTINGS = "settings";
+  public static final String MAPPINGS = "properties";
   public static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchSchemaManager.class);
 
@@ -182,7 +188,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
         LOGGER.info(
             "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
         final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
-        final InputStream json = readJSONFile(templateDescriptor.getSchemaClasspathFilename());
+        final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
         final PutIndexTemplateRequest indexTemplateRequest =
             prepareIndexTemplateRequest(templateDescriptor, json);
         putIndexTemplate(indexTemplateRequest);
@@ -215,8 +221,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename =
-        String.format("/schema/os/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
+    final String indexFilename = indexDescriptor.getSchemaClasspathFilename();
     final InputStream indexDescription =
         OpenSearchSchemaManager.class.getResourceAsStream(indexFilename);
 
@@ -235,20 +240,40 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private PutIndexTemplateRequest prepareIndexTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final InputStream json) {
-    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-    final JsonParser parser = mapper.jsonProvider().createParser(json);
-    final IndexTemplateMapping template =
+      final TemplateDescriptor templateDescriptor, final String json) {
+    final var templateSettings = templateSettings(templateDescriptor);
+    final var templateBuilder =
         new IndexTemplateMapping.Builder()
-            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
-            .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
-            .build();
-    return new PutIndexTemplateRequest.Builder()
-        .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
-        .template(template)
-        .name(templateDescriptor.getTemplateName())
-        .composedOf(List.of(settingsTemplateName()))
-        .build();
+            .aliases(templateDescriptor.getAlias(), new Alias.Builder().build());
+
+    try {
+
+      final var indexAsJSONNode = objectMapper.readTree(new StringReader(json));
+
+      final var customSettings = getCustomSettings(templateSettings, indexAsJSONNode);
+      final var mappings = getMappings(indexAsJSONNode.get(MAPPINGS));
+
+      final IndexTemplateMapping template =
+          templateBuilder.mappings(mappings).settings(customSettings).build();
+
+      final PutIndexTemplateRequest request =
+          new Builder()
+              .name(templateDescriptor.getTemplateName())
+              .indexPatterns(templateDescriptor.getIndexPattern())
+              .template(template)
+              .composedOf(settingsTemplateName())
+              .build();
+      return request;
+    } catch (final Exception ex) {
+      throw new TasklistRuntimeException(ex);
+    }
+  }
+
+  private TypeMapping getMappings(final JsonNode mappingsAsJSON) {
+    final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
+    final JsonParser jsonParser =
+        JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
+    return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
   public void createIndexLifeCycles() {
@@ -351,7 +376,18 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndex(new CreateIndexRequest.Builder().index(indexName).build(), indexName);
   }
 
-  private void putIndexTemplate(final PutIndexTemplateRequest request) {
+  private void putIndexTemplate(
+      final PutIndexTemplateRequest request, final boolean overwrite) {
+    final boolean created = retryOpenSearchClient.createTemplate(request, overwrite);
+    if (created) {
+      LOGGER.debug("Template [{}] was successfully created", request.name());
+    } else {
+      LOGGER.debug("Template [{}] was NOT created", request.name());
+    }
+  }
+
+  private void putIndexTemplate(
+      final PutIndexTemplateRequest request) {
     final boolean created = retryOpenSearchClient.createTemplate(request);
     if (created) {
       LOGGER.debug("Template [{}] was successfully created", request.name());
@@ -402,5 +438,63 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private void createIndices() {
     indexDescriptors.forEach(this::createIndex);
+  }
+
+  private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
+    final var shards =
+        tasklistProperties
+            .getOpenSearch()
+            .getNumberOfShardsPerIndex()
+            .get(indexDescriptor.getIndexName());
+
+    final var replicas =
+        tasklistProperties
+            .getOpenSearch()
+            .getNumberOfReplicasPerIndices()
+            .get(indexDescriptor.getIndexName());
+
+    if (shards != null || replicas != null) {
+      final var indexSettingsBuilder = new IndexSettings.Builder();
+
+      if (shards != null) {
+        indexSettingsBuilder.numberOfShards(shards.toString());
+      }
+
+      if (replicas != null) {
+        indexSettingsBuilder.numberOfReplicas(replicas.toString());
+      }
+
+      return indexSettingsBuilder.build();
+    }
+    return null;
+  }
+
+  private IndexSettings getCustomSettings(
+      final IndexSettings defaultSettings, final JsonNode indexAsJSONNode) {
+    final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
+    if (indexAsJSONNode.has(SETTINGS)) {
+      final var settingsJSON = indexAsJSONNode.get(SETTINGS);
+      final JsonParser jsonParser =
+          JsonProvider.provider().createParser(new StringReader(settingsJSON.toPrettyString()));
+      final var updatedSettings = IndexSettings._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
+      return new IndexSettings.Builder()
+          .index(defaultSettings)
+          .analysis(updatedSettings.analysis())
+          .build();
+    }
+    return defaultSettings;
+  }
+
+  private static String readTemplateJson(final String classPathResourceName) {
+    try {
+      // read settings and mappings
+      final InputStream description =
+          OpenSearchSchemaManager.class.getResourceAsStream(classPathResourceName);
+      final String json = StreamUtils.copyToString(description, StandardCharsets.UTF_8);
+      return json;
+    } catch (final Exception e) {
+      throw new TasklistRuntimeException(
+          "Exception occurred when reading template JSON: " + e.getMessage(), e);
+    }
   }
 }
