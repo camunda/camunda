@@ -36,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -313,9 +314,9 @@ final class ProtoBufSerializerTest {
             new ExportersConfig(
                 Map.of(
                     "expA",
-                    new ExporterState(State.ENABLED),
+                    new ExporterState(10, State.ENABLED, Optional.of("expB")),
                     "expB",
-                    new ExporterState(State.DISABLED))));
+                    new ExporterState(5, State.DISABLED, Optional.empty()))));
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .updateMember(

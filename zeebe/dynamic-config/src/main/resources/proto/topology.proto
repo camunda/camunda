@@ -39,6 +39,8 @@ message ExportersConfig{
 
 message ExporterState {
   EnabledDisabledState state = 1;
+  int64 metadataVersion = 2;
+  optional string initializedFrom = 3;
 }
 
 message ClusterChangePlan {
@@ -48,7 +50,6 @@ message ClusterChangePlan {
   google.protobuf.Timestamp startedAt = 4;
   repeated CompletedTopologyChangeOperation completedOperations = 5;
   repeated TopologyChangeOperation pendingOperations = 6;
-
 }
 
 message CompletedChange {

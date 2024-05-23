@@ -58,7 +58,8 @@ public final class StaticConfigurationGenerator {
     brokerCfg
         .getExporters()
         .forEach(
-            (exporterId, ignore) -> exporters.put(exporterId, new ExporterState(State.ENABLED)));
+            (exporterId, ignore) ->
+                exporters.put(exporterId, new ExporterState(0, State.ENABLED, null)));
     return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
   }
 

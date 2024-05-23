@@ -441,6 +441,16 @@
                 "id": 1,
                 "name": "state",
                 "type": "EnabledDisabledState"
+              },
+              {
+                "id": 2,
+                "name": "metadataVersion",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "initializedFrom",
+                "type": "string"
               }
             ]
           },

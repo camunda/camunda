@@ -349,7 +349,8 @@ final class ClusterConfigurationManagementApiTest {
         new ClusterConfigurationManagementRequest.ExporterDisableRequest(exporterId, false);
     final var partitionConfigWithExporter =
         new DynamicPartitionConfig(
-            new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
+            new ExportersConfig(
+                Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
             id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));

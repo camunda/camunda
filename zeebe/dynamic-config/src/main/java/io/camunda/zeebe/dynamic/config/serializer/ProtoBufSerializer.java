@@ -199,9 +199,15 @@ public class ProtoBufSerializer
   }
 
   private ExporterState decodeExporterState(final Topology.ExporterState value) {
+    final Optional<String> initializeFrom =
+        value.hasInitializedFrom() ? Optional.of(value.getInitializedFrom()) : Optional.empty();
     return switch (value.getState()) {
-      case ENABLED -> new ExporterState(ExporterState.State.ENABLED);
-      case DISABLED -> new ExporterState(ExporterState.State.DISABLED);
+      case ENABLED ->
+          new ExporterState(
+              value.getMetadataVersion(), ExporterState.State.ENABLED, initializeFrom);
+      case DISABLED ->
+          new ExporterState(
+              value.getMetadataVersion(), ExporterState.State.DISABLED, initializeFrom);
       case UNRECOGNIZED, ENABLED_DISBALED_UNKNOWN ->
           throw new IllegalStateException("Unknown exporter state " + value.getState());
     };
@@ -254,7 +260,12 @@ public class ProtoBufSerializer
           case ENABLED -> Topology.EnabledDisabledState.ENABLED;
           case DISABLED -> Topology.EnabledDisabledState.DISABLED;
         };
-    return Topology.ExporterState.newBuilder().setState(state).build();
+    final var builder =
+        Topology.ExporterState.newBuilder()
+            .setState(state)
+            .setMetadataVersion(value.metadataVersion());
+    value.initializedFrom().ifPresent(builder::setInitializedFrom);
+    return builder.build();
   }
 
   private Topology.State toSerializedState(final MemberState.State state) {

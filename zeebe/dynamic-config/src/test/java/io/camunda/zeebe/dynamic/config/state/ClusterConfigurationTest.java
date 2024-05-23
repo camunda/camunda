@@ -260,7 +260,10 @@ class ClusterConfigurationTest {
     // given
     final String exporterName = "exporter";
     final var exportersConfig =
-        new ExportersConfig(Map.of(exporterName, new ExporterState(ExporterState.State.ENABLED)));
+        new ExportersConfig(
+            Map.of(
+                exporterName,
+                new ExporterState(1, ExporterState.State.ENABLED, Optional.of("other"))));
     final var config = new DynamicPartitionConfig(exportersConfig);
 
     final var initialTopology =
@@ -279,17 +282,13 @@ class ClusterConfigurationTest {
                     1,
                     p ->
                         p.updateConfig(
-                            c ->
-                                c.updateExporting(
-                                    e ->
-                                        e.updateExporter(
-                                            exporterName,
-                                            new ExporterState(ExporterState.State.DISABLED))))));
+                            c -> c.updateExporting(e -> e.disableExporter(exporterName)))));
 
     // then
     assertThat(
             updatedTopology.getMember(member(1)).getPartition(1).config().exporting().exporters())
-        .containsEntry(exporterName, new ExporterState(ExporterState.State.DISABLED));
+        .containsEntry(
+            exporterName, new ExporterState(1, ExporterState.State.DISABLED, Optional.empty()));
   }
 
   private MemberId member(final int id) {

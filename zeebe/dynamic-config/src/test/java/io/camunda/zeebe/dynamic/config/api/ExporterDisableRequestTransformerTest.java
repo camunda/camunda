@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ExporterDisableRequestTransformerTest {
@@ -29,7 +30,8 @@ final class ExporterDisableRequestTransformerTest {
   private final MemberId id1 = MemberId.from("1");
   private final DynamicPartitionConfig config =
       new DynamicPartitionConfig(
-          new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
+          new ExportersConfig(
+              Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
 
   @Test
   void shouldGenerateOperationForAllPartitionsAndMembers() {

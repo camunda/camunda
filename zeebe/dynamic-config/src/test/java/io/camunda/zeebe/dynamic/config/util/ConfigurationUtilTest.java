@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +31,8 @@ class ConfigurationUtilTest {
   private static final String GROUP_NAME = "test";
   private final DynamicPartitionConfig partitionConfig =
       new DynamicPartitionConfig(
-          new ExportersConfig(Map.of("expA", new ExporterState(ExporterState.State.ENABLED))));
+          new ExportersConfig(
+              Map.of("expA", new ExporterState(1, ExporterState.State.ENABLED, Optional.empty()))));
 
   @Test
   void shouldGenerateTopologyFromPartitionDistribution() {
