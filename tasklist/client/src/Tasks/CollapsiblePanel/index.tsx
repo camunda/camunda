@@ -14,7 +14,7 @@ import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
 import {useSearchParams} from 'react-router-dom';
 import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
-import {ControlledNavLink} from './SearchParamNavLink';
+import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
 import {getStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
