@@ -7,8 +7,9 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.user.CamundaUser;
+import io.camunda.identity.user.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.repository.UserRepository;
 import java.util.List;
 import org.springframework.dao.DuplicateKeyException;
@@ -20,9 +21,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
   private final CamundaUserDetailsManager userDetailsManager;
-
   private final UserRepository userRepository;
-
   private final PasswordEncoder passwordEncoder;
 
   public UserService(

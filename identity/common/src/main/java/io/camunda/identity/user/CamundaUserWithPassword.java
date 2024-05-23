@@ -5,11 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.usermanagement;
+package io.camunda.identity.user;
 
-public record CamundaUser(String username, boolean enabled) {
-
-  public CamundaUser(final String username) {
-    this(username, true);
-  }
-}
+public record CamundaUserWithPassword(CamundaUser user, String password) {}
