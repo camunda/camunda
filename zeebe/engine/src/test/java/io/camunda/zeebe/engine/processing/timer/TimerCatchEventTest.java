@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -400,6 +401,105 @@ public final class TimerCatchEventTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldNotAllowToDeployTimerWithNonExistentStaticDate() {
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("shouldNotAllowToDeployTimerWithNonExistentStaticDate")
+                    .startEvent()
+                    .intermediateCatchEvent("timer", t -> t.timerWithDate("2024-04-31T10:00:00Z"))
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason()).contains("Invalid timer date expression");
+  }
+
+  @Test
+  public void shouldRaiseIncidentOnNonExistentDateTime() {
+    // given
+    // reset time to one day before
+    ENGINE.increaseTime(
+        Duration.between(LocalDateTime.now(), LocalDateTime.of(2024, 4, 25, 0, 0, 0)));
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldRaiseIncidentOnNonExistentDateTime")
+                .startEvent()
+                .intermediateCatchEvent(
+                    "timer", t -> t.timerWithDateExpression("date and time(nonexistent_datetime)"))
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("shouldRaiseIncidentOnNonExistentDateTime")
+            .withVariable("nonexistent_datetime", "2024-04-31T10:00:00Z")
+            .create();
+
+    // when
+    ENGINE.increaseTime(Duration.ofDays(2));
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expect that incident is raised")
+        .isTrue();
+
+    assert false;
+  }
+
+  @Test
+  public void shouldRaiseIncidentOnNonExistentDateInDurationExpression() {
+    // given
+    // reset time to one day before
+    ENGINE.increaseTime(
+        Duration.between(LocalDateTime.now(), LocalDateTime.of(2024, 4, 4, 12, 57, 49)));
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldRaiseIncidentOnNonExistentDateInDurationExpression")
+                .startEvent()
+                .intermediateCatchEvent(
+                    "timer",
+                    t ->
+                        t.timerWithDurationExpression(
+                            "date and time(date and time(nonexistent_datetime), time(\"T04:00:00Z\")) - now() - duration(\"P1D\")"))
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("shouldRaiseIncidentOnNonExistentDateInDurationExpression")
+            .withVariable("nonexistent_datetime", "2024-04-31T10:00:00Z")
+            .create();
+
+    // when
+    ENGINE.pauseProcessing(1);
+    ENGINE.increaseTime(Duration.ofDays(30));
+    ENGINE.stop();
+    ENGINE.start();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expect that incident is raised")
+        .isTrue();
+
+    assert false;
   }
 
   @Test
