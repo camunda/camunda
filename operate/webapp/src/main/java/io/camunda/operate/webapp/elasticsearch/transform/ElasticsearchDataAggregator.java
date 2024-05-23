@@ -7,56 +7,34 @@
  */
 package io.camunda.operate.webapp.elasticsearch.transform;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilters;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class ElasticsearchDataAggregator implements DataAggregator {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchDataAggregator.class);
-  @Autowired protected ObjectMapper objectMapper;
+public class ElasticsearchDataAggregator extends DataAggregator {
+
   @Autowired private OperationReader operationReader;
 
   @Override
-  public List<BatchOperationDto> enrichBatchEntitiesWithMetadata(
-      final List<BatchOperationEntity> batchEntities) {
-
-    if (batchEntities.isEmpty()) {
-      return new ArrayList<>();
-    }
-
-    /* using this map as starting point ensures that
-     * 1. BatchOperations that have no completed operations yet are also included in the end result
-     * 2. The sorting stays the same
-     */
-    final LinkedHashMap<String, BatchOperationDto> resultDtos =
-        new LinkedHashMap<>(batchEntities.size());
-    batchEntities.forEach(
-        entity -> {
-          resultDtos.put(entity.getId(), BatchOperationDto.createFrom(entity, objectMapper));
-        });
-    final List<String> idList = resultDtos.keySet().stream().toList();
+  public Map<String, BatchOperationDto> requestAndAddMetadata(
+      final Map<String, BatchOperationDto> resultDtos, final List<String> idList) {
 
     final AggregationBuilder metadataAggregation =
         AggregationBuilders.filters(
@@ -90,6 +68,6 @@ public class ElasticsearchDataAggregator implements DataAggregator {
           .setFailedOperationsCount(failedCount)
           .setCompletedOperationsCount(completedCount);
     }
-    return resultDtos.values().stream().toList();
+    return resultDtos;
   }
 }
