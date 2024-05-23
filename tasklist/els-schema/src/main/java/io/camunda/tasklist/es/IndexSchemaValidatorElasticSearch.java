@@ -226,7 +226,7 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     }
     return true;
   }
-  
+
   private IndexMappingDifference getDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     return getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
