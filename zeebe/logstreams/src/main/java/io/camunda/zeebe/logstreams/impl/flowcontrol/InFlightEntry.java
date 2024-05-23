@@ -32,16 +32,19 @@ public final class InFlightEntry {
     private final List<LogAppendEntryMetadata> entryMetadata;
     private final Listener appendListener;
     private final Listener requestListener;
+    private final Listener exportListener;
 
     PendingAppend(
         final LogStreamMetrics metrics,
         final List<LogAppendEntryMetadata> entryMetadata,
         final Listener appendListener,
-        final Listener requestListener) {
+        final Listener requestListener,
+        final Listener exportListener) {
       this.metrics = metrics;
       this.entryMetadata = entryMetadata;
       this.appendListener = appendListener;
       this.requestListener = requestListener;
+      this.exportListener = exportListener;
     }
 
     public Unwritten unwritten() {
@@ -59,6 +62,10 @@ public final class InFlightEntry {
     public Optional<Unprocessed> unprocessed() {
       return Optional.ofNullable(requestListener)
           .map(listener -> new Unprocessed(metrics, listener));
+    }
+
+    public Unexported unexported() {
+      return new Unexported(exportListener);
     }
   }
 
@@ -119,6 +126,18 @@ public final class InFlightEntry {
     public void finish() {
       requestListener.onSuccess();
       metrics.decreaseInflightRequests();
+    }
+  }
+
+  public static final class Unexported {
+    private final Listener exportListener;
+
+    Unexported(final Listener exportListener) {
+      this.exportListener = exportListener;
+    }
+
+    public void finish() {
+      exportListener.onSuccess();
     }
   }
 }

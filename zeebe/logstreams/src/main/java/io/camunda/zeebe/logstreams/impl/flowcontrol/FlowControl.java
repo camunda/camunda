@@ -13,6 +13,7 @@ import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limiter.SimpleLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.ExportLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.RequestLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightEntry.PendingAppend;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
@@ -42,6 +43,7 @@ public final class FlowControl implements AppendListener {
   private final Map<Long, InFlightEntry.Unwritten> unwritten = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Uncommitted> uncommitted = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Unprocessed> unprocessed = new ConcurrentHashMap<>();
+  private final Map<Long, InFlightEntry.Unexported> unexported = new ConcurrentHashMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build(), null);
@@ -87,24 +89,35 @@ public final class FlowControl implements AppendListener {
       return Either.left(new AppendLimitExhausted());
     }
 
+    final var exportListener = exportLimiter.acquire(null).orElse(null);
+    if (exportListener == null) {
+      metrics.dropped(context);
+      appendListener.onDropped();
+      return Either.left(new ExportLimitExhausted());
+    }
+
     if (!(context instanceof UserCommand(final var intent))) {
-      return Either.right(new PendingAppend(metrics, batchMetadata, appendListener, null));
+      return Either.right(
+          new PendingAppend(metrics, batchMetadata, appendListener, null, exportListener));
     }
 
     final var requestListener = requestLimiter.acquire(intent).orElse(null);
     if (requestListener == null) {
       metrics.dropped(context);
       appendListener.onDropped();
+      exportListener.onDropped();
       return Either.left(new RequestLimitExhausted());
     }
 
-    return Either.right(new PendingAppend(metrics, batchMetadata, appendListener, requestListener));
+    return Either.right(
+        new PendingAppend(metrics, batchMetadata, appendListener, requestListener, exportListener));
   }
 
   public void onAppend(final PendingAppend nowAppended, final long highestPosition) {
     unwritten.put(highestPosition, nowAppended.unwritten());
     uncommitted.put(highestPosition, nowAppended.uncommitted());
     nowAppended.unprocessed().ifPresent(inFlight -> unprocessed.put(highestPosition, inFlight));
+    unexported.put(highestPosition, nowAppended.unexported());
   }
 
   @Override
@@ -133,7 +146,13 @@ public final class FlowControl implements AppendListener {
     cleanupUnprocessed(position);
   }
 
-  public void onExported(final long position) {}
+  public void onExported(final long position) {
+    final var exported = unexported.remove(position);
+    if (exported != null) {
+      exported.finish();
+    }
+    cleanupUnexported(position);
+  }
 
   private void cleanupUncommitted(final long highestPosition) {
     final var size = uncommitted.size();
@@ -171,9 +190,23 @@ public final class FlowControl implements AppendListener {
     }
   }
 
+  private void cleanupUnexported(final long highestPosition) {
+    final var size = unexported.size();
+    final var limit = exportLimit != null ? 2 * exportLimit.getLimit() : 2048;
+    if (size > 2 * limit) {
+      final var removedAny = unexported.keySet().removeIf(position -> position <= highestPosition);
+      if (removedAny) {
+        LOG.warn(
+            "Removed {} unexported entries that were not acknowledged", size - unexported.size());
+      }
+    }
+  }
+
   public sealed interface Rejection {
     record AppendLimitExhausted() implements Rejection {}
 
     record RequestLimitExhausted() implements Rejection {}
+
+    record ExportLimitExhausted() implements Rejection {}
   }
 }
