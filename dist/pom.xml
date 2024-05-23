@@ -639,7 +639,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/cluster-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>
