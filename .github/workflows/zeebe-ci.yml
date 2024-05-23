@@ -319,7 +319,7 @@ jobs:
         uses: ./.github/actions/analyze-test-runs
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-          # workaround to avoid https://github.com/camunda/zeebe/issues/16604
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
           skipSummary: true
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts

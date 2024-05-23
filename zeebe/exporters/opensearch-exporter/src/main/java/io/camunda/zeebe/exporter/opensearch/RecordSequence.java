@@ -16,7 +16,7 @@ package io.camunda.zeebe.exporter.opensearch;
  *
  * @param partitionId the partition id of the record
  * @param counter the counter based on the record's value type
- * @see <a href="https://github.com/camunda/zeebe/issues/10568">Related issue</a>
+ * @see <a href="https://github.com/camunda/camunda/issues/10568">Related issue</a>
  */
 public record RecordSequence(int partitionId, long counter) {
 

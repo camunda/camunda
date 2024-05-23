@@ -88,7 +88,7 @@ public final class DeploymentClusteredTest {
     // wait for long before restart.
     // Add time in small increments to simulate gradual progression of the time.
     // For each increment, we expect the broker to retry sending the deployment.
-    // https://github.com/camunda/zeebe/issues/8525
+    // https://github.com/camunda/camunda/issues/8525
 
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
@@ -149,7 +149,7 @@ public final class DeploymentClusteredTest {
   }
 
   /**
-   * Regression test against https://github.com/camunda/zeebe/issues/9877
+   * Regression test against https://github.com/camunda/camunda/issues/9877
    *
    * <p>We expect that the DISTRIBUTE command is written a second time, after restart of the leader
    * of the deployment partition. Both DISTRIBUTE commands should be processed and resulting in

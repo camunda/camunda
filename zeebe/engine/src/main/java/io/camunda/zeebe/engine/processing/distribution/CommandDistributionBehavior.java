@@ -28,7 +28,8 @@ import java.util.stream.IntStream;
  * <p>This behavior allows distributing a command to other partitions, and for those receiving
  * partitions to acknowledge the distributed commands back to the partition that started.
  *
- * @see <a href="https://github.com/camunda/zeebe/blob/main/zeebe/docs/generalized_distribution.md">
+ * @see <a
+ *     href="https://github.com/camunda/camunda/blob/main/zeebe/docs/generalized_distribution.md">
  *     generalized_distribution.md</a>
  */
 public final class CommandDistributionBehavior {

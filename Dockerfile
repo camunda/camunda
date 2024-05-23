@@ -118,7 +118,7 @@ LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/zeebe-deployment/"
-LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
+LABEL org.opencontainers.image.source="https://github.com/camunda/camunda"
 LABEL org.opencontainers.image.version="${VERSION}"
 # According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 # and given we set the base.name and base.digest, we reference the manifest of the base image here

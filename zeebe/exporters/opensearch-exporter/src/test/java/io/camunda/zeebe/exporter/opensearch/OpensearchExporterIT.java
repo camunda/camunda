@@ -123,11 +123,11 @@ final class OpensearchExporterIT {
             record);
   }
 
-  // both tests below are regression tests for https://github.com/camunda/zeebe/issues/4640
+  // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640
   // one option would be to get rid of these and instead have unit tests on the templates themselves
   // where we can guarantee that this field is not indexed, for example
 
-  // regression test for https://github.com/camunda/zeebe/issues/4640
+  // regression test for https://github.com/camunda/camunda/issues/4640
   @Test
   void shouldExportJobRecordWithOverlappingCustomHeaders() {
     // given
@@ -147,7 +147,7 @@ final class OpensearchExporterIT {
     assertThat(response.source()).isEqualTo(record);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/4640
+  // regression test for https://github.com/camunda/camunda/issues/4640
   @Test
   void shouldExportJobBatchRecordWithOverlappingCustomHeaders() {
     // given

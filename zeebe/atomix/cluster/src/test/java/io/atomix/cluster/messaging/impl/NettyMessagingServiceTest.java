@@ -736,7 +736,7 @@ final class NettyMessagingServiceTest {
     }
 
     @EnabledOnOs(OS.LINUX)
-    @RegressionTest("https://github.com/camunda/zeebe/issues/14837")
+    @RegressionTest("https://github.com/camunda/camunda/issues/14837")
     void shouldNotLeakUdpSockets() throws IOException {
       // given
       // the configured amount of threads for Netty's epoll transport
