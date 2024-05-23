@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -203,7 +204,8 @@ final class ProtoBufSerializerTest {
         topologyWithCompletedClusterChangePlan(),
         topologyWithClusterChangePlanWithMemberOperations(),
         topologyWithExporterState(),
-        topologyWithExporterDisableOperation());
+        topologyWithExporterDisableOperation(),
+        topologyWithExporterEnableOperation());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -330,5 +332,17 @@ final class ProtoBufSerializerTest {
     return topologyWithExporterState()
         .startConfigurationChange(
             List.of(new PartitionDisableExporterOperation(MemberId.from("1"), 1, "expA")));
+  }
+
+  private static ClusterConfiguration topologyWithExporterEnableOperation() {
+    return topologyWithExporterState()
+        .startConfigurationChange(
+            List.of(
+                // with initialize from another exporter
+                new PartitionEnableExporterOperation(
+                    MemberId.from("1"), 1, "expA", Optional.of("expB")),
+                // without initialize from another exporter
+                new PartitionEnableExporterOperation(
+                    MemberId.from("1"), 1, "expA", Optional.empty())));
   }
 }
