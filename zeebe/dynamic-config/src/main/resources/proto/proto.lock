@@ -563,6 +563,11 @@
                 "id": 9,
                 "name": "partitionDisableExporter",
                 "type": "PartitionDisableExporterOperation"
+              },
+              {
+                "id": 10,
+                "name": "partitionEnableExporter",
+                "type": "PartitionEnableExporterOperation"
               }
             ]
           },
@@ -648,6 +653,26 @@
               {
                 "id": 2,
                 "name": "exporterId",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "PartitionEnableExporterOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "exporterId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "initializeFrom",
                 "type": "string"
               }
             ]

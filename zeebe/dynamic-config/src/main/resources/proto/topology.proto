@@ -70,6 +70,7 @@ message TopologyChangeOperation {
     PartitionForceReconfigureOperation partitionForceReconfigure = 7;
     MemberRemoveOperation memberRemove = 8;
     PartitionDisableExporterOperation partitionDisableExporter = 9;
+    PartitionEnableExporterOperation partitionEnableExporter = 10;
   }
 }
 
@@ -100,6 +101,12 @@ message PartitionForceReconfigureOperation {
 message PartitionDisableExporterOperation {
   int32 partitionId = 1;
   string exporterId = 2;
+}
+
+message PartitionEnableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+  optional string initializeFrom = 3;
 }
 
 message MemberJoinOperation {}
