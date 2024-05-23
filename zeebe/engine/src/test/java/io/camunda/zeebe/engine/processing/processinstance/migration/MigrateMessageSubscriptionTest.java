@@ -110,4 +110,6 @@ public class MigrateMessageSubscriptionTest {
   }
 
   // TODO - Test that interrupting status change is not allowed
+
+  // TODO - Test that we can migrate an active element with multiple message boundary events
 }
