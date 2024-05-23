@@ -49,6 +49,7 @@ public final class LogStreamImpl extends Actor
   private HealthReport healthReport = HealthReport.healthy(this);
   private final Limit appendLimit;
   private final Limit requestLimit;
+  private final Limit exportLimit;
   private final LogStreamMetrics logStreamMetrics;
   private FlowControl flowControl;
 
@@ -58,7 +59,8 @@ public final class LogStreamImpl extends Actor
       final int maxFragmentSize,
       final LogStorage logStorage,
       final Limit appendLimit,
-      final Limit requestLimit) {
+      final Limit requestLimit,
+      final Limit exportLimit) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -69,6 +71,7 @@ public final class LogStreamImpl extends Actor
     this.appendLimit = appendLimit;
     this.requestLimit = requestLimit;
     logStreamMetrics = new LogStreamMetrics(partitionId);
+    this.exportLimit = exportLimit;
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
   }
@@ -163,7 +166,8 @@ public final class LogStreamImpl extends Actor
         () -> {
           try {
             if (sequencer == null) {
-              flowControl = new FlowControl(logStreamMetrics, appendLimit, requestLimit);
+              flowControl =
+                  new FlowControl(logStreamMetrics, appendLimit, requestLimit, exportLimit);
               sequencer =
                   new Sequencer(
                       logStorage,

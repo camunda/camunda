@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.VegasLimit;
+import com.netflix.concurrency.limits.limiter.SimpleLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.AppendLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.RequestLimitExhausted;
@@ -33,22 +34,28 @@ public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
   private final Limit appendLimit;
   private final Limit requestLimit;
+  private final Limit exportLimit;
   private final Limiter<Void> appendLimiter;
   private final Limiter<Intent> requestLimiter;
+  private final Limiter<Void> exportLimiter;
 
   private final Map<Long, InFlightEntry.Unwritten> unwritten = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Uncommitted> uncommitted = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Unprocessed> unprocessed = new ConcurrentHashMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
-    this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build());
+    this(metrics, VegasLimit.newDefault(), StabilizingAIMDLimit.newBuilder().build(), null);
   }
 
   public FlowControl(
-      final LogStreamMetrics metrics, final Limit appendLimit, final Limit requestLimit) {
+      final LogStreamMetrics metrics,
+      final Limit appendLimit,
+      final Limit requestLimit,
+      final Limit exportLimit) {
     this.metrics = metrics;
     this.appendLimit = appendLimit;
     this.requestLimit = requestLimit;
+    this.exportLimit = exportLimit;
     appendLimiter =
         appendLimit != null
             ? AppendLimiter.builder().limit(appendLimit).metrics(metrics).build()
@@ -56,6 +63,10 @@ public final class FlowControl implements AppendListener {
     requestLimiter =
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
+            : new NoopLimiter<>();
+    exportLimiter =
+        exportLimit != null
+            ? SimpleLimiter.newBuilder().limit(exportLimit).build()
             : new NoopLimiter<>();
   }
 

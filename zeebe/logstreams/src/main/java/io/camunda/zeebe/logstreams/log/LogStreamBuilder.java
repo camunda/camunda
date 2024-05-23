@@ -61,6 +61,8 @@ public interface LogStreamBuilder {
 
   LogStreamBuilder withRequestLimit(Limit requestLimit);
 
+  LogStreamBuilder withExportLimit(Limit exportLimit);
+
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.
    *

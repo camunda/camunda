@@ -74,6 +74,12 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withExportLimit(final Limit exportLimit) {
+    delegate.withExportLimit(exportLimit);
+    return this;
+  }
+
+  @Override
   public ActorFuture<LogStream> buildAsync() {
     return delegate.buildAsync();
   }

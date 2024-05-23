@@ -25,6 +25,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private String logName;
   private Limit appendLimit;
   private Limit requestLimit;
+  private Limit exportLimit;
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -70,12 +71,24 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withExportLimit(final Limit exportLimit) {
+    this.exportLimit = exportLimit;
+    return this;
+  }
+
+  @Override
   public ActorFuture<LogStream> buildAsync() {
     validate();
 
     final var logStreamService =
         new LogStreamImpl(
-            logName, partitionId, maxFragmentSize, logStorage, appendLimit, requestLimit);
+            logName,
+            partitionId,
+            maxFragmentSize,
+            logStorage,
+            appendLimit,
+            requestLimit,
+            exportLimit);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService
