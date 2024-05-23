@@ -1,4 +1,4 @@
-name: Optimzie Commands Dispatch
+name: Optimize Commands Dispatch
 on:
   issue_comment:
     types: [created]
