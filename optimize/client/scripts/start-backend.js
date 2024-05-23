@@ -176,7 +176,7 @@ function buildBackend() {
     buildBackendProcess = spawnWithArgs(
       'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend,optimize/qa/data-generation -am',
       {
-        cwd: path.resolve(__dirname, '..', '..'),
+        cwd: path.resolve(__dirname, '..', '..', '..'),
         shell: true,
       }
     );
