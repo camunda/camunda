@@ -8,8 +8,10 @@
 package io.camunda.application;
 
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.SpringBootConfiguration;
@@ -35,11 +37,12 @@ public class StandaloneOperate {
 
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OperateModuleConfiguration.class)
+            .sources(OperateModuleConfiguration.class, WebappsModuleConfiguration.class)
             .profiles(Profile.OPERATE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())
-            .initializers(new DefaultAuthenticationInitializer())
+            .initializers(
+                new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 

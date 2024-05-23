@@ -7,7 +7,12 @@
  */
 package io.camunda.webapps;
 
+import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
+import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,4 +20,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.webapps")
 @EnableAutoConfiguration
-public class WebappsModuleConfiguration {}
+@EnableConfigurationProperties(WebappsProperties.class)
+public class WebappsModuleConfiguration {
+  @ConfigurationProperties("camunda.webapps")
+  public static record WebappsProperties(
+      List<String> enabledApps, @NotNull String defaultApp, boolean loginDelegated) {}
+}

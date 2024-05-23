@@ -9,18 +9,17 @@ package io.camunda.webapps.controllers;
 
 import static io.camunda.application.Profile.*;
 
+import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,7 +42,10 @@ public class ForwardErrorController {
   private static final String IDENTITY_CALLBACK_URI = "/identity-callback";
   private static final String REQUESTED_URL = "requestedUrl";
 
-  @Autowired private Environment environment;
+  @Value("management.endpoints.web.base-path")
+  private String managementBasePath;
+
+  @Autowired private WebappsProperties webappsProperties;
 
   private List<RequestMatcher> ignoredRequestsMatchers;
 
@@ -59,7 +61,7 @@ public class ForwardErrorController {
             new AntPathRequestMatcher(IDENTITY_CALLBACK_URI),
             // actuator endpoints
             new AntPathRequestMatcher(
-                Optional.ofNullable(environment.getProperty("management.endpoints.web.base-path"))
+                Optional.ofNullable(managementBasePath)
                     .map(s -> s.concat("/**"))
                     .orElse(DEFAULT_MANAGEMENT_URI)));
   }
@@ -72,25 +74,17 @@ public class ForwardErrorController {
       return null;
     }
     final String requestedURL = getRequestedURL(request);
-    if (!requestedURL.startsWith("/tasklist") && !requestedURL.startsWith("/operate")) {
-      if (isStandaloneTasklist()) {
-        return "redirect:/tasklist" + requestedURL;
-      } else {
-        return "redirect:/operate" + requestedURL;
-      }
-    } else if (isLoginDelegated() && isNotLoggedIn()) {
+    final Optional<String> requestedApp =
+        webappsProperties.enabledApps().stream()
+            .filter(app -> requestedURL.startsWith("/" + app))
+            .findFirst();
+    if (requestedApp.isEmpty()) {
+      return "redirect:/" + webappsProperties.defaultApp() + requestedURL;
+    } else if (webappsProperties.loginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request, requestedURL);
     } else {
-      if (isStandaloneTasklist()) {
-        return "forward:/tasklist";
-      } else {
-        return "forward:/operate";
-      }
+      return "forward:/" + requestedApp.get();
     }
-  }
-
-  private boolean isStandaloneTasklist() {
-    return environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId());
   }
 
   private String getRequestedURL(final HttpServletRequest request) {
@@ -116,10 +110,5 @@ public class ForwardErrorController {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     return (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
-  }
-
-  private boolean isLoginDelegated() {
-    return Arrays.stream(environment.getActiveProfiles())
-        .anyMatch(Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId())::contains);
   }
 }

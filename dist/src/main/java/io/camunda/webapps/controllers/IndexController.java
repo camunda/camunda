@@ -7,11 +7,9 @@
  */
 package io.camunda.webapps.controllers;
 
-import static io.camunda.application.Profile.*;
-
+import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +17,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class IndexController {
   @Autowired private ServletContext context;
-  @Autowired private Environment environment;
+  @Autowired private WebappsProperties webappsProperties;
 
   @GetMapping("/index.html")
   public String index() {
-    if (environment.acceptsProfiles(TASKLIST.getId(), "!" + OPERATE.getId())) {
-      return "redirect:/tasklist";
-    } else {
-      return "redirect:/operate";
-    }
+    return "redirect:/" + webappsProperties.defaultApp();
   }
 
   @GetMapping("/operate")
