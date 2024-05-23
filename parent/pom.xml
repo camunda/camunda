@@ -271,6 +271,30 @@
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-service</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-data-store-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-data-store-client-elasticsearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-data-store-client-opensearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -9,10 +9,10 @@ package io.camunda.application;
 
 import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
 
-import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.services.CamundaServicesConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import java.util.HashMap;
@@ -37,10 +37,10 @@ public class StandaloneCamunda {
             .sources(
                 OperateModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
-                GatewayModuleConfiguration.class)
+                GatewayModuleConfiguration.class,
+                CamundaServicesConfiguration.class)
             .properties(defaultActiveProfiles)
-            .initializers(
-                new DefaultAuthenticationInitializer(), new HealthConfigurationInitializer())
+            .initializers(new HealthConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 

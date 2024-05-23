@@ -23,6 +23,36 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-data-store-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-data-store-client-elasticsearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-data-store-client-opensearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 

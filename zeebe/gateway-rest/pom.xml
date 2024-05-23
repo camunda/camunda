@@ -33,6 +33,16 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-data-store-client</artifactId>
+    </dependency>
+
     <!-- zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>

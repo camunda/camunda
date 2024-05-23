@@ -192,6 +192,27 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/search1:
+    post:
+      tags:
+        - Process Instance
+      summary: Process Instance Search Query
+      description: FOO BAR
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
+      responses:
+        '200':
+          $ref: "#/components/responses/ProcessInstanceSearchQueryResponse"
+        '400':
+          description: foo bar
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   responses:
@@ -406,6 +427,135 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+    SearchQueryRequest:
+      description: FOO BAR
+      type: object
+      properties:
+        sort:
+          allOf:
+            - $ref: "#/components/schemas/SearchQuerySortRequest"
+          type: object
+        page:
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageRequest"
+          type: object
+    SearchQueryPageRequest:
+      description: FOO BAR
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        searchAfter:
+          type: array
+          items:
+            type: object
+        searchAfterOrEqual:
+          type: array
+          items:
+            type: object
+        searchBefore:
+          type: array
+          items:
+            type: object
+        searchBeforeOrEqual:
+          type: array
+          items:
+            type: object
+    SearchQuerySortRequest:
+      description: FOO BAR
+      type: object
+      properties:
+        field:
+          type: string
+        order:
+          type: string
+    SearchQueryResponse:
+      description: FOO BAR
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        sortValues:
+          type: array
+          items:
+            type: object
+    ProcessInstanceFilter:
+      description: BAR FOO
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilter"
+    VariableValueFilter:
+      description: BAR FOO
+      type: object
+      properties:
+        name:
+          type: string
+        eq:
+          type: object
+        gt:
+          type: object
+        gte:
+          type: object
+        lt:
+          type: object
+        lte:
+          type: object
+    ProcessInstance:
+      description: BAR FOO
+      type: object
+      properties:
+        tenantId:
+          type: string
+        key:
+          type: integer
+          format: int64
+        processVersion:
+          type: integer
+          format: int32
+        bpmnProcessId:
+          type: string
+        parentKey:
+          type: integer
+          format: int64
+        parentFlowNodeInstanceKey:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+    ProcessInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: FOO BAR
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilter"
+    ProcessInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: FOO BAR
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstance"
   securitySchemes:
     bearerAuth:
       type: http
