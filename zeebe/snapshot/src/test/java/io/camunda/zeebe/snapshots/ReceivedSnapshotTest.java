@@ -326,6 +326,29 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
+  public void shouldPersistEvenIfCombinedChecksumDoesNotMatch() {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot();
+
+    // when
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      while (snapshotChunkReader.hasNext()) {
+        final var originalChunk = snapshotChunkReader.next();
+        final var corruptedChunk =
+            SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xDEADBEEFL);
+        receivedSnapshot.apply(corruptedChunk).join();
+      }
+    }
+
+    // then
+    assertThat(receivedSnapshot.persist().join())
+        .as("The snapshot should persist with mis-match in combined checksums")
+        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
+  }
+
+  @Test
   public void shouldNotPersistWhenSnapshotIsPartial() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();

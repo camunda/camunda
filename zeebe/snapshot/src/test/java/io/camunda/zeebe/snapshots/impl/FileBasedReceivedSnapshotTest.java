@@ -155,6 +155,29 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
+  public void shouldPersistOnPartialSnapshotOnInvalidChecksumPersist() {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    final var corruptedSnapshot =
+        new FileBasedSnapshot(
+            persistedSnapshot.getDirectory(),
+            persistedSnapshot.getChecksumPath(),
+            0xDEADBEEFL,
+            persistedSnapshot.getSnapshotId(),
+            null,
+            s -> {},
+            null);
+
+    // when
+    final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);
+    final var didPersist = receivedSnapshot.persist().join();
+
+    assertThat(didPersist)
+        .as("The snapshot should persist with mis-match in combined checksums")
+        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
+  }
+
+  @Test
   public void shouldNotifyListenersOnNewSnapshot() {
     // given
     final AtomicReference<PersistedSnapshot> snapshotRef = new AtomicReference<>();
