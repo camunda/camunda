@@ -21,6 +21,7 @@ public class ChecksumProviderRocksDBImpl implements ChecksumProvider {
   public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
     try (final var db = RocksDB.openReadOnly(snapshotPath.toString())) {
       return db.getLiveFilesMetaData().stream()
+          .filter(fileMetaData -> fileMetaData.fileChecksum().length != 0)
           .collect(Collectors.toMap(this::getMetadataName, LiveFileMetaData::fileChecksum));
     } catch (final RocksDBException e) {
       throw new RuntimeException(e);
