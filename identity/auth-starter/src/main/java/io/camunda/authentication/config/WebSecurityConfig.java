@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.authentication.config;
+package io.camunda.authentication.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-import io.camunda.identity.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.AuthFailureHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

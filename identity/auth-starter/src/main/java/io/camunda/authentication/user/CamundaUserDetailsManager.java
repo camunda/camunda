@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.authentication.user;
+package io.camunda.authentication.user;
 
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Profile;

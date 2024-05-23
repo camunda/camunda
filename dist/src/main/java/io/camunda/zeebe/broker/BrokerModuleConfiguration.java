@@ -35,13 +35,13 @@ import org.springframework.context.annotation.Profile;
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.gateway.rest",
-      "io.camunda.identity.authentication"
+      "io.camunda.authentication"
     })
 @ConfigurationPropertiesScan(
     basePackages = {
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
-      "io.camunda.identity.authentication"
+      "io.camunda.authentication"
     })
 @EnableAutoConfiguration
 @Profile("broker")

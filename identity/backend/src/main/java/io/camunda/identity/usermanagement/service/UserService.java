@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.identity.authentication.user.CamundaUserDetailsManager;
+import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.user.CamundaUser;
 import io.camunda.identity.user.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.repository.UserRepository;

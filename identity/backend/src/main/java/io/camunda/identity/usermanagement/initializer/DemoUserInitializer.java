@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.initializer;
 
-import io.camunda.identity.authentication.user.CamundaUserDetailsManager;
+import io.camunda.authentication.user.CamundaUserDetailsManager;
 import jakarta.annotation.PostConstruct;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
