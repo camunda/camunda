@@ -191,7 +191,7 @@ func NewClient(config *ClientConfig) (Client, error) {
 
 	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent(config.UserAgent))
 
-	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
+	conn, err := grpc.NewClient(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
 	}
