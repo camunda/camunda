@@ -9,6 +9,7 @@ package io.camunda.identity.usermanagement.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,10 +36,12 @@ class UserServiceTest {
   void uniqueUsernameCreateUserCreated() {
     final var username = "user" + UUID.randomUUID();
 
-    userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
 
-    final var existingUser = userService.findUserByUsername(username);
+    final var existingUser = userService.findUserById(user.id());
     Assertions.assertNotNull(existingUser);
+    Assertions.assertEquals(username, existingUser.username());
   }
 
   @Test
@@ -56,24 +59,23 @@ class UserServiceTest {
   @Test
   void existingUserDeleteUserDeleted() {
     final var username = "user" + UUID.randomUUID();
-    userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
+    final CamundaUser user =
+        userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
 
-    userService.deleteUser(username);
+    userService.deleteUser(user.id());
 
-    Assertions.assertThrows(RuntimeException.class, () -> userService.findUserByUsername(username));
+    assertThrows(RuntimeException.class, () -> userService.findUserById(user.id()));
   }
 
   @Test
   void nonExistingUserDeleteUserException() {
-    final var username = "user" + UUID.randomUUID();
-
-    assertThrows(RuntimeException.class, () -> userService.deleteUser(username));
+    assertThrows(RuntimeException.class, () -> userService.deleteUser(1000));
   }
 
   @Test
   void nonExistingUserFindUserByUsernameThrowsException() {
     final var username = "user" + UUID.randomUUID();
-    Assertions.assertThrows(RuntimeException.class, () -> userService.findUserByUsername(username));
+    assertThrows(RuntimeException.class, () -> userService.findUserByUsername(username));
   }
 
   @Test
@@ -90,45 +92,86 @@ class UserServiceTest {
   @Test
   void nonExistingUserUpdateUserThrowsException() {
     final var username = "user" + UUID.randomUUID();
-    final var user = new CamundaUserWithPassword(new CamundaUser(username, false), "password");
-    Assertions.assertThrows(RuntimeException.class, () -> userService.updateUser(username, user));
+    final var user =
+        new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password");
+    assertThrows(RuntimeException.class, () -> userService.updateUser(0, user));
   }
 
   @Test
   void existingUserEnableUpdateUserEnabled() {
     final var username = "user" + UUID.randomUUID();
-    userService.createUser(
-        new CamundaUserWithPassword(new CamundaUser(username, false), "password"));
+    final var user =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser(username, "email", false), "password"));
 
     userService.updateUser(
-        username, new CamundaUserWithPassword(new CamundaUser(username, true), "password"));
+        user.id(),
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email", true), "password"));
 
     final var existingUser = userService.findUserByUsername(username);
     assertTrue(existingUser.enabled());
   }
 
   @Test
-  void existingUserDisableUpdateUserDisabled() {
+  void existingUserNewEmailUpdateUserEmailChanged() {
     final var username = "user" + UUID.randomUUID();
-    userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
+    final var user =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser(username, "email", false), "password"));
 
     userService.updateUser(
-        username, new CamundaUserWithPassword(new CamundaUser(username, false), "password"));
+        user.id(),
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email2", true), "password"));
 
     final var existingUser = userService.findUserByUsername(username);
+    assertEquals("email2", existingUser.email());
+  }
+
+  @Test
+  void existingUserEmptyEmailUpdateUserEmailChanged() {
+    final var username = "user" + UUID.randomUUID();
+    final CamundaUser user =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password"));
+
+    userService.updateUser(
+        user.id(),
+        new CamundaUserWithPassword(new CamundaUser(user.id(), username, null, true), "password"));
+
+    final var existingUser = userService.findUserById(user.id());
+    assertNull(existingUser.email());
+  }
+
+  @Test
+  void existingUserDisableUpdateUserDisabled() {
+    final var username = "user" + UUID.randomUUID();
+    final CamundaUser user =
+        userService.createUser(new CamundaUserWithPassword(new CamundaUser(username), "password"));
+
+    userService.updateUser(
+        user.id(),
+        new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password"));
+
+    final var existingUser = userService.findUserById(user.id());
     assertFalse(existingUser.enabled());
   }
 
   @Test
   void noChangePassUpdateUserPasswordNotChanged() {
     final var username = "user" + UUID.randomUUID();
-    final var user = new CamundaUserWithPassword(new CamundaUser(username, false), "password");
-    userService.createUser(user);
+    final var user =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser(username, "email", false), "password"));
+    final var userWithPassword =
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email", false), "password");
 
-    userService.updateUser(username, user);
+    userService.updateUser(user.id(), userWithPassword);
 
     final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
-    assertTrue(passwordEncoder.matches(user.password(), updatedUser.getPassword()));
+    assertTrue(passwordEncoder.matches(userWithPassword.password(), updatedUser.getPassword()));
   }
 
   @Test
@@ -136,10 +179,14 @@ class UserServiceTest {
     final var username = "user" + UUID.randomUUID();
     final var password = "password";
     final var newPassword = "password1";
-    userService.createUser(new CamundaUserWithPassword(new CamundaUser(username, false), password));
+    final var user =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser(username, "email", false), password));
 
     userService.updateUser(
-        username, new CamundaUserWithPassword(new CamundaUser(username, false), newPassword));
+        user.id(),
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email", false), newPassword));
 
     final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
     assertTrue(passwordEncoder.matches(newPassword, updatedUser.getPassword()));

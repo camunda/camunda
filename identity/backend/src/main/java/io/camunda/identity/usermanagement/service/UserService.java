@@ -11,11 +11,13 @@ import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.repository.UserRepository;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -34,6 +36,7 @@ public class UserService {
     this.passwordEncoder = passwordEncoder;
   }
 
+  @Transactional
   public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
     try {
       final UserDetails userDetails =
@@ -45,23 +48,30 @@ public class UserService {
               .roles("DEFAULT_USER")
               .build();
       userDetailsManager.createUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      userRepository.createProfile(userWithCredential.user());
+      return userRepository.loadUser(userWithCredential.user().username());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
   }
 
-  public void deleteUser(final String username) {
-    if (!userDetailsManager.userExists(username)) {
+  @Transactional
+  public void deleteUser(final int id) {
+    final CamundaUser user = findUserById(id);
+    userDetailsManager.deleteUser(user.username());
+  }
+
+  public CamundaUser findUserById(final Integer id) {
+    try {
+      return userRepository.loadUserById(id);
+    } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
-    userDetailsManager.deleteUser(username);
   }
 
   public CamundaUser findUserByUsername(final String username) {
     try {
-      final UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      return userRepository.loadUser(username);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
@@ -71,23 +81,30 @@ public class UserService {
     return userRepository.loadUsers();
   }
 
-  public CamundaUser updateUser(final String username, final CamundaUserWithPassword user) {
+  @Transactional
+  public CamundaUser updateUser(final Integer id, final CamundaUserWithPassword user) {
     try {
-      if (!username.equals(user.user().username())) {
+      if (!Objects.equals(id, user.user().id())) {
+        throw new RuntimeException("user.notFound");
+      }
+      final CamundaUser existingUser = userRepository.loadUserById(id);
+      if (existingUser == null || !existingUser.username().equals(user.user().username())) {
         throw new RuntimeException("user.notFound");
       }
 
-      final UserDetails existingUser = userDetailsManager.loadUserByUsername(username);
+      final UserDetails existingUserDetail =
+          userDetailsManager.loadUserByUsername(existingUser.username());
 
       final UserDetails userDetails =
-          org.springframework.security.core.userdetails.User.withUsername(username)
+          org.springframework.security.core.userdetails.User.withUsername(existingUser.username())
               .password(user.password())
               .passwordEncoder(passwordEncoder::encode)
-              .authorities(existingUser.getAuthorities())
+              .authorities(existingUserDetail.getAuthorities())
               .disabled(!user.user().enabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      userRepository.updateProfile(user.user());
+      return userRepository.loadUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }

@@ -7,9 +7,17 @@
  */
 package io.camunda.identity.usermanagement;
 
-public record CamundaUser(String username, boolean enabled) {
+public record CamundaUser(Integer id, String username, String email, boolean enabled) {
 
   public CamundaUser(final String username) {
-    this(username, true);
+    this(username, null);
+  }
+
+  public CamundaUser(final String username, final String email) {
+    this(username, email, true);
+  }
+
+  public CamundaUser(final String username, final String email, final boolean enabled) {
+    this(null, username, email, enabled);
   }
 }

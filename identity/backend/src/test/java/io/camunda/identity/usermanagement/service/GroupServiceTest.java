@@ -8,11 +8,11 @@
 package io.camunda.identity.usermanagement.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.identity.usermanagement.Group;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,10 +29,10 @@ public class GroupServiceTest {
     final var groupName = "gr" + UUID.randomUUID();
 
     final var group = groupService.createGroup(new Group(groupName));
-    Assertions.assertNotNull(group.id());
+    assertNotNull(group.id());
 
     final var existingGroup = groupService.findGroupByName(groupName);
-    Assertions.assertNotNull(existingGroup);
+    assertNotNull(existingGroup);
   }
 
   @Test
@@ -50,7 +50,7 @@ public class GroupServiceTest {
 
     groupService.deleteGroup(group);
 
-    Assertions.assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
+    assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
   }
 
   @Test
@@ -64,7 +64,7 @@ public class GroupServiceTest {
   void nonExistingGroupFindGroupByNameThrowsException() {
     final var groupName = "gr" + UUID.randomUUID();
 
-    Assertions.assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
+    assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
   }
 
   @Test
@@ -81,7 +81,7 @@ public class GroupServiceTest {
   void nonExistingGroupUpdateGroupThrowsException() {
     final var groupName = "gr" + UUID.randomUUID();
 
-    Assertions.assertThrows(
+    assertThrows(
         RuntimeException.class, () -> groupService.updateGroup(groupName, new Group(groupName)));
   }
 
@@ -94,6 +94,6 @@ public class GroupServiceTest {
     groupService.updateGroup(groupName, new Group(newGroupName));
 
     final var group = groupService.findGroupByName(newGroupName);
-    Assertions.assertNotNull(group);
+    assertNotNull(group);
   }
 }

@@ -7,11 +7,14 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.Group;
 import java.util.UUID;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,13 +32,14 @@ public class MembershipServiceTest {
   @Test
   void addUserToGroupAdded() {
     final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
+    final var createdUser =
+        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
     final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
 
     membershipService.addUserToGroup(camundaUser, group);
 
-    Assertions.assertTrue(membershipService.getMembers(group).contains(camundaUser));
-    Assertions.assertTrue(membershipService.getUserGroups(camundaUser).contains(group));
+    assertTrue(membershipService.getMembers(group).contains(createdUser));
+    assertTrue(membershipService.getUserGroups(camundaUser).contains(group));
   }
 
   @Test
@@ -45,7 +49,7 @@ public class MembershipServiceTest {
     final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
 
     membershipService.addUserToGroup(camundaUser, group);
-    Assertions.assertThrows(
+    assertThrows(
         RuntimeException.class, () -> membershipService.addUserToGroup(camundaUser, group));
   }
 
@@ -55,7 +59,7 @@ public class MembershipServiceTest {
     userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
     final var group = new Group("group" + UUID.randomUUID());
 
-    Assertions.assertThrows(
+    assertThrows(
         RuntimeException.class, () -> membershipService.addUserToGroup(camundaUser, group));
   }
 
@@ -67,7 +71,7 @@ public class MembershipServiceTest {
 
     membershipService.removeUserFromGroup(camundaUser, group);
 
-    Assertions.assertFalse(membershipService.getMembers(group).contains(camundaUser));
+    assertFalse(membershipService.getMembers(group).contains(camundaUser));
   }
 
   @Test
@@ -79,7 +83,7 @@ public class MembershipServiceTest {
 
     membershipService.removeUserFromGroup(camundaUser, group);
 
-    Assertions.assertFalse(membershipService.getMembers(group).contains(camundaUser));
-    Assertions.assertFalse(membershipService.getUserGroups(camundaUser).contains(group));
+    assertFalse(membershipService.getMembers(group).contains(camundaUser));
+    assertFalse(membershipService.getUserGroups(camundaUser).contains(group));
   }
 }
