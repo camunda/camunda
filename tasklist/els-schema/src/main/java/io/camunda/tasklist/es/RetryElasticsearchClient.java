@@ -253,11 +253,11 @@ public class RetryElasticsearchClient {
             if (createIndexRequest.aliases() != null
                 && !createIndexRequest.aliases().isEmpty()
                 && !aliasExist(
-                    createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
+                createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
               final IndicesAliasesRequest request = new IndicesAliasesRequest();
               final IndicesAliasesRequest.AliasActions aliasAction =
                   new IndicesAliasesRequest.AliasActions(
-                          IndicesAliasesRequest.AliasActions.Type.ADD)
+                      IndicesAliasesRequest.AliasActions.Type.ADD)
                       .index(createIndexRequest.index())
                       .alias(createIndexRequest.aliases().iterator().next().name())
                       .writeIndex(false);
@@ -779,9 +779,9 @@ public class RetryElasticsearchClient {
         () -> {
           if (!templatesExist(request.name())
               || !getOrDefaultComponentTemplateNumbersOfReplica(request.name(), NO_REPLICA)
-                  .equals(
-                      String.valueOf(
-                          tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
+              .equals(
+                  String.valueOf(
+                      tasklistProperties.getElasticsearch().getNumberOfReplicas()))) {
             return esClient
                 .cluster()
                 .putComponentTemplate(request, requestOptions)

@@ -33,6 +33,8 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private SchemaManager schemaManager;
 
+
+
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
 
@@ -84,10 +86,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-            "\"properties\": {\n"
-                + "    \"prop0\": {\n"
-                + "      \"type\": \"keyword\"\n"
-                + "    },",
+             "\"properties\": {\n"
+                 + "    \"prop0\": {\n"
+                 + "      \"type\": \"keyword\"\n"
+                 + "    },",
             "\"properties\": {"));
 
     final String newSchemaContent = readSchemaContent();
@@ -123,8 +125,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String readSchemaContent() throws Exception {
     return new String(
-        Files.readAllBytes(
-            Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
+        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
   }
 
   private void restoreOriginalSchemaContent() throws Exception {

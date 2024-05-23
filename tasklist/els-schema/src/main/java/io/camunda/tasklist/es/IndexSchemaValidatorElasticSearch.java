@@ -264,6 +264,7 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     }
   }
 
+
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
