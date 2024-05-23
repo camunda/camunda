@@ -507,6 +507,10 @@
           # minLimit: 1
           # maxLimit: 1000
           # backoffRatio: 0.9
+      # Configure flow control for exporting. Disabled by default. When enabled, writes are limited by exporting throughput.
+      # export:
+        # enabled: false
+
 
     # backpressure:
       # Configure backpressure below.

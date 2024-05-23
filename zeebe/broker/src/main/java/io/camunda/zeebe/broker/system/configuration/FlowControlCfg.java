@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg.LimitA
 public class FlowControlCfg implements ConfigurationEntry {
   private LimitCfg append = new LimitCfg();
   private LimitCfg request = null;
+  private LimitCfg export = null;
 
   public FlowControlCfg() {
     append.setAlgorithm(LimitAlgorithm.LEGACY_VEGAS);
@@ -33,5 +34,13 @@ public class FlowControlCfg implements ConfigurationEntry {
 
   public void setRequest(final LimitCfg request) {
     this.request = request;
+  }
+
+  public LimitCfg getExport() {
+    return export;
+  }
+
+  public void setExport(final LimitCfg export) {
+    this.export = export;
   }
 }
