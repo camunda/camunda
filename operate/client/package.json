@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
-    "@playwright/test": "1.44.0",
+    "@playwright/test": "1.44.1",
     "@testing-library/jest-dom": "6.4.5",
     "@testing-library/react": "15.0.7",
     "@testing-library/react-hooks": "8.0.1",
