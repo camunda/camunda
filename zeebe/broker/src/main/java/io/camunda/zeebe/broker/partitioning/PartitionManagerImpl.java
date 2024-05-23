@@ -417,4 +417,21 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
         });
     return result;
   }
+
+  @Override
+  public ActorFuture<Void> enableExporter(
+      final int partitionId, final String exporterId, final long metadataVersionToUpdate) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("Not implemented"));
+  }
+
+  @Override
+  public ActorFuture<Void> enableExporter(
+      final int partitionId,
+      final String exporterId,
+      final long metadataVersionToUpdate,
+      final String initializeFrom) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("Not implemented"));
+  }
 }
