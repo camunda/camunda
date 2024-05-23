@@ -1,16 +1,17 @@
-name: Optimize Command Assign DRI
+name: Optimize Command Engineering
 on:
   repository_dispatch:
-    types: [assign-command]
+    types: [eng-command]
 jobs:
-  optimize-assign-command:
-    name: Assign DRI
+  optimize-eng-command:
+    name: Eng Command
     runs-on: ubuntu-latest
     steps:
       - name: Create URL to the run output
         id: vars
         run: |
           {
+            echo "project_id=101"
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_OUTPUT"
 
@@ -40,42 +41,42 @@ jobs:
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           reactions: "+1"
 
-      - name: Get assignee from the payload
+      - name: Parse args
         id: parse-args
         run: |
-          ASSIGNEE=${{ github.event.client_payload.slash_command.args.unnamed.all }}
-          ASSIGNEE="${ASSIGNEE//@/}"
-          echo "assignee=${ASSIGNEE}" >> "$GITHUB_OUTPUT"
+          ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
+          ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
+          REVIEWER="${ARG2//@/}"
+          {
+            echo "arg1=${ARG1}"
+            echo "arg2=${ARG2}"
+            echo "reviewer=${REVIEWER}"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Replace assignee
+      - name: Assign reviewer
+        if: steps.parse-args.outputs.arg1 == 'review'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -z "${{ steps.parse-args.outputs.assignee }}" ]; then
-            echo "No assignee provided"
+          if [ -z "${{ steps.parse-args.outputs.reviewer }}" ]; then
+            echo "No reviewer provided"
             exit 1
           fi
           gh version
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
           sleep 2  # avoiding race condition between two commands
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.parse-args.outputs.assignee }}
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.parse-args.outputs.reviewer }}
 
-      - name: Get and update issue description
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Extract the issue description
-          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
-
-          # Remove the Engineering DRI from the description (either with an assignee or without)
-          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI: @\w\+[[:space:]]*$/d")
-          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI:[[:space:]]*$/d")
-
-          # Add new assignee at the beginning of the description (if there were exactly the same assignee already it will be replaced anyway)
-          ISSUE_DESCRIPTION=$(echo -e "Engineering DRI: @${{ steps.parse-args.outputs.assignee }}\\n\\n${ISSUE_DESCRIPTION}")
-
-          # Update the issue description
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --body "${ISSUE_DESCRIPTION}"
+      - name: Update Status field
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'review'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "Eng Review"
 
       - name: Update comment in case of failure
         if: failure()

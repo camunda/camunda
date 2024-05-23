@@ -3,27 +3,23 @@ on:
   issue_comment:
     types: [created]
 jobs:
-  optimzie-commands-dispatch:
+  optimize-commands-dispatch:
     name: Dispatch Command
     runs-on: ubuntu-latest
     steps:
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
-            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
       - name: Generate a GitHub token
         id: github-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
         with:
-          app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
       - name: Slash Command Dispatch
         uses: peter-evans/slash-command-dispatch@v4
         with:
@@ -31,3 +27,4 @@ jobs:
           permission: none
           commands: |
             assign
+            eng
