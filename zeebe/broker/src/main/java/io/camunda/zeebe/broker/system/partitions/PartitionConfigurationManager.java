@@ -62,7 +62,7 @@ final class PartitionConfigurationManager {
           if (error == null) {
             logger.debug("Exporter {} disabled", exporterId);
           } else {
-            logger.error("Failed to disable exporter {}", exporterId, error);
+            logger.warn("Failed to disable exporter {}", exporterId, error);
           }
         });
 
