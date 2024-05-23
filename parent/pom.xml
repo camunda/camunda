@@ -2492,6 +2492,7 @@
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
                   <dep>io.camunda:auth-spring-boot-starter</dep>
                 </ignoredUnusedDeclaredDependencies>
