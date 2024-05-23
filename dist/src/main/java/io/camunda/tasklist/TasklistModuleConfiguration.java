@@ -7,7 +7,9 @@
  */
 package io.camunda.tasklist;
 
+import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -31,11 +33,18 @@ import org.springframework.context.annotation.Profile;
           pattern = "io\\.camunda\\.tasklist\\.webapp\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
+          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
     },
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration
+@EnableAutoConfiguration(
+    exclude = {
+      ElasticsearchClientAutoConfiguration.class,
+      GraphQLAnnotationsAutoConfiguration.class
+    })
 @Profile("tasklist")
 public class TasklistModuleConfiguration {}

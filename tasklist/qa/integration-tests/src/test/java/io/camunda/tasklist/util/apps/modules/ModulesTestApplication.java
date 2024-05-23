@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.util.apps.modules;
 
-import io.camunda.application.StandaloneTasklist;
+import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
@@ -42,7 +42,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
       @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.tasklist\\.it\\..*"),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneTasklist.class)
+      @ComponentScan.Filter(
+          type = FilterType.ASSIGNABLE_TYPE,
+          value = TasklistModuleConfiguration.class)
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class ModulesTestApplication {
