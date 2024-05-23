@@ -12,18 +12,17 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile("auth-basic")
 public class DatabaseConfig {
   @Bean
   public DataSource dataSource(final DataSourceProperties dataSourceProperties) {
-    final var datasource =
-        DataSourceBuilder.create()
-            .url(dataSourceProperties.getUrl())
-            .username(dataSourceProperties.getUsername())
-            .password(dataSourceProperties.getPassword())
-            .build();
-
-    return datasource;
+    return DataSourceBuilder.create()
+        .url(dataSourceProperties.getUrl())
+        .username(dataSourceProperties.getUsername())
+        .password(dataSourceProperties.getPassword())
+        .build();
   }
 }
