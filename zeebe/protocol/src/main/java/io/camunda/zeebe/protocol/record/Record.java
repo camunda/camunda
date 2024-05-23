@@ -130,6 +130,14 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   T getValue();
 
   /**
+   * The operationReference is an id passed from clients to correlate operations with resulted
+   * records
+   *
+   * @return the reference for the operation that produced this record
+   */
+  long getOperationReference();
+
+  /**
    * Creates a deep copy of the current record. Can be used to collect records.
    *
    * @return a deep copy of this record

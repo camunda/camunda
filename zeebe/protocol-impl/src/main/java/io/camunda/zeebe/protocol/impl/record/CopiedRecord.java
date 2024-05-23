@@ -34,6 +34,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final String brokerVersion;
   private final AuthInfo authorization;
   private final int recordVersion;
+  private final long operationReference;
 
   public CopiedRecord(
       final T recordValue,
@@ -58,6 +59,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     brokerVersion = metadata.getBrokerVersion().toString();
     authorization = metadata.getAuthorization();
     recordVersion = metadata.getRecordVersion();
+    operationReference = metadata.getOperationReference();
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
@@ -92,6 +94,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     brokerVersion = copiedRecord.brokerVersion;
     authorization = copiedRecord.authorization;
     recordVersion = copiedRecord.recordVersion;
+    operationReference = copiedRecord.operationReference;
   }
 
   @Override
@@ -162,6 +165,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public T getValue() {
     return recordValue;
+  }
+
+  @Override
+  public long getOperationReference() {
+    return operationReference;
   }
 
   @Override
