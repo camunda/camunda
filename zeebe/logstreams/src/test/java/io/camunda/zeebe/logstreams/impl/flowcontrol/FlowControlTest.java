@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
+
+import com.netflix.concurrency.limits.limit.FixedLimit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightEntry.Uncommitted;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -55,5 +58,26 @@ final class FlowControlTest {
     // then
     Awaitility.await("Eventually accepts appends again")
         .until(() -> flow.tryAcquire(WriteContext.internal(), List.of()).isRight());
+  }
+
+  @Test
+  void rejectWithPartialProgress() {
+    // given -- hard limit of 1 and attempting two appends
+    final var logStreamMetrics = new LogStreamMetrics(1);
+    final var flow =
+        new FlowControl(logStreamMetrics, FixedLimit.of(1), FixedLimit.of(1), FixedLimit.of(1));
+
+    final var firstAppend = flow.tryAcquire(WriteContext.internal(), List.of());
+    final var secondAppend = flow.tryAcquire(WriteContext.internal(), List.of());
+
+    // when -- first append is written and committed
+    flow.onAppend(firstAppend.get(), 1);
+    flow.onWrite(1, 1);
+    flow.onCommit(1, 1);
+
+    // then -- second and third appends are rejected
+    assertThat(firstAppend).isRight();
+    assertThat(secondAppend).isLeft();
+    assertThat(flow.tryAcquire(WriteContext.internal(), List.of())).isLeft();
   }
 }
