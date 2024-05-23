@@ -1,0 +1,33 @@
+name: Optimzie Commands Dispatch
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  optimzie-commands-dispatch:
+    name: Dispatch Command
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
+      - name: Generate a GitHub token
+        id: github-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
+      - name: Slash Command Dispatch
+        uses: peter-evans/slash-command-dispatch@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          permission: none
+          commands: |
+            assign

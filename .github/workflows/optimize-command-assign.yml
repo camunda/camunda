@@ -1,0 +1,71 @@
+name: Optimize Assign DRI Command
+on:
+  repository_dispatch:
+    types: [assign-command]
+jobs:
+  optimize-assign-command:
+    name: Assign DRI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
+            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
+        with:
+          app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
+
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+
+      - name: Get assignee from the payload
+        id: parse-args
+        run: |
+          ASSIGNEE=${{ github.event.client_payload.slash_command.args.unnamed.all }}
+          ASSIGNEE="${ASSIGNEE//@/}"
+          echo "assignee=${ASSIGNEE}" >> "$GITHUB_OUTPUT"
+
+      - name: Replace assignee
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding race condition between two commands
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.parse-args.outputs.assignee }}
+
+      - name: Get and update issue description
+        run: |
+          # Extract the issue description
+          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
+
+          # Remove the Engineering DRI from the description (either with an assignee or without)
+          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI: @\w\+[[:space:]]*$/d")
+          ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed "/Engineering DRI:[[:space:]]*$/d")
+
+          # Add new assignee at the beginning of the description (if there were exactly the same assignee already it will be replaced anyway)
+          ISSUE_DESCRIPTION="Engineering DRI: @${{ steps.parse-args.outputs.assignee }}\n${ISSUE_DESCRIPTION}"
+
+          # Update the issue description
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --body "${ISSUE_DESCRIPTION}"
