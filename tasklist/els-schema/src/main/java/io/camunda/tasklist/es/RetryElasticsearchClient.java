@@ -829,9 +829,9 @@ public class RetryElasticsearchClient {
                       entry.getValue().source().string(),
                       new TypeReference<HashMap<String, Object>>() {});
               final Map<String, Object> properties =
-                  (Map<String, Object>) mappingMetadata.get("properties");
+                  (Map<String, Object>) mappingMetadata.getOrDefault("properties", new HashMap<>());
               final Map<String, Object> metaProperties =
-                  (Map<String, Object>) mappingMetadata.get("_meta");
+                  (Map<String, Object>) mappingMetadata.getOrDefault("_meta", new HashMap<>());
               final String dynamic = (String) mappingMetadata.get("dynamic");
               mappingsMap.put(
                   entry.getKey(),

@@ -36,9 +36,7 @@ public class IndexMapping {
   }
 
   public String getDynamic() {
-    // Opensearch changes the capitalization of this field on some query results, change to
-    // lowercase for consistency
-    return dynamic == null ? null : dynamic.toLowerCase();
+    return dynamic;
   }
 
   public IndexMapping setDynamic(final String dynamic) {
@@ -47,7 +45,7 @@ public class IndexMapping {
     this.dynamic = dynamic == null ? null : dynamic.toLowerCase();
     return this;
   }
-
+  
   public Set<IndexMappingProperty> getProperties() {
     return properties;
   }
@@ -89,6 +87,7 @@ public class IndexMapping {
     final IndexMapping that = (IndexMapping) o;
     return Objects.equals(indexName, that.indexName)
         && Objects.equals(properties, that.properties)
+        && Objects.equals(dynamic, that.dynamic)
         && Objects.equals(metaProperties, that.metaProperties);
   }
 
