@@ -85,7 +85,7 @@ final class BackupUploadIT {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/zeebe/issues/18177")
+  @Disabled("https://github.com/camunda/camunda/issues/18177")
   void shouldSaveBackupWithManyFiles() throws IOException {
     // given
     // Default values for the configuration

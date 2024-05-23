@@ -210,7 +210,7 @@ class ProcessingScheduleServiceTest {
         .containsExactly(1L);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
+  @RegressionTest("https://github.com/camunda/camunda/issues/10240")
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given - in order to make sure we would interleave tasks without the fix for #10240, we need
     // to make sure we retry at least twice, such that the second task can be executed in between

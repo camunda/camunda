@@ -741,7 +741,7 @@ public final class TimerCatchEventTest {
         .hasSize(expectedRepetitions);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/5420
+  // regression test for https://github.com/camunda/camunda/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnTimerTrigger() {
     // given
@@ -792,7 +792,7 @@ public final class TimerCatchEventTest {
     assertThat(triggerTimer.getSourceRecordPosition()).isLessThan(0);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/5934
+  // regression test for https://github.com/camunda/camunda/issues/5934
   @Test
   public void shouldRaiseIncidentWhenDurationExpressionResultIsNotADuration() {
     // This duration expression is faulty because the process expects a duration,

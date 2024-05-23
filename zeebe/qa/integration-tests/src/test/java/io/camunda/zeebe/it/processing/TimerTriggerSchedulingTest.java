@@ -31,7 +31,7 @@ public class TimerTriggerSchedulingTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   /**
-   * Regression test against issue <a href="https://github.com/camunda/zeebe/issues/17128">17128</a>
+   * Regression test against issue <a href="https://github.com/camunda/camunda/issues/17128">17128</a>
    *
    * <p>Given a process with a timer event that triggers some time in the future, and a process that
    * schedules a timer event every second, we should not produce many Timer TRIGGER commands for any
