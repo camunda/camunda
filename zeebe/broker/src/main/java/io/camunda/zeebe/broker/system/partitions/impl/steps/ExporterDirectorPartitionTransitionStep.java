@@ -38,7 +38,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     this(ExporterDirector::new);
   }
 
-  @VisibleForTesting
+  @VisibleForTesting("to allow mocking ExporterDirector in tests")
   ExporterDirectorPartitionTransitionStep(
       final BiFunction<ExporterDirectorContext, ExporterPhase, ExporterDirector>
           exporterDirectorBuilder) {
