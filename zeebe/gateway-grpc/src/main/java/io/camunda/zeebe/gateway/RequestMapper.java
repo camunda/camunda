@@ -121,12 +121,22 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerUpdateJobRetriesRequest toUpdateJobRetriesRequest(
       final UpdateJobRetriesRequest grpcRequest) {
-    return new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    final var brokerRequest =
+        new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerUpdateJobTimeoutRequest toUpdateJobTimeoutRequest(
       final UpdateJobTimeoutRequest grpcRequest) {
-    return new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
+    final var brokerRequest =
+        new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
@@ -150,8 +160,7 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
       final CreateProcessInstanceRequest grpcRequest) {
-    final BrokerCreateProcessInstanceRequest brokerRequest =
-        new BrokerCreateProcessInstanceRequest();
+    final var brokerRequest = new BrokerCreateProcessInstanceRequest();
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
@@ -161,16 +170,19 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList());
 
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+
     return brokerRequest;
   }
 
   public static BrokerCreateProcessInstanceWithResultRequest
       toCreateProcessInstanceWithResultRequest(
           final CreateProcessInstanceWithResultRequest grpcRequest) {
-    final BrokerCreateProcessInstanceWithResultRequest brokerRequest =
-        new BrokerCreateProcessInstanceWithResultRequest();
+    final var brokerRequest = new BrokerCreateProcessInstanceWithResultRequest();
 
-    final CreateProcessInstanceRequest request = grpcRequest.getRequest();
+    final var request = grpcRequest.getRequest();
     brokerRequest
         .setBpmnProcessId(request.getBpmnProcessId())
         .setKey(request.getProcessDefinitionKey())
@@ -180,6 +192,9 @@ public final class RequestMapper extends RequestUtil {
         .setStartInstructions(request.getStartInstructionsList())
         .setFetchVariables(grpcRequest.getFetchVariablesList());
 
+    if (request.hasOperationReference()) {
+      brokerRequest.setOperationReference(request.getOperationReference());
+    }
     return brokerRequest;
   }
 
@@ -198,21 +213,27 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerCancelProcessInstanceRequest toCancelProcessInstanceRequest(
       final CancelProcessInstanceRequest grpcRequest) {
-    final BrokerCancelProcessInstanceRequest brokerRequest =
-        new BrokerCancelProcessInstanceRequest();
-
+    final var brokerRequest = new BrokerCancelProcessInstanceRequest();
     brokerRequest.setProcessInstanceKey(grpcRequest.getProcessInstanceKey());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
 
     return brokerRequest;
   }
 
   public static BrokerSetVariablesRequest toSetVariablesRequest(
       final SetVariablesRequest grpcRequest) {
-    final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
+    final var brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
 
     return brokerRequest;
   }
@@ -233,29 +254,53 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
       final ResolveIncidentRequest grpcRequest) {
-    return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
+    final var brokerRequest = new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+
+    return brokerRequest;
   }
 
   public static BrokerModifyProcessInstanceRequest toModifyProcessInstanceRequest(
       final ModifyProcessInstanceRequest grpcRequest) {
-    return new BrokerModifyProcessInstanceRequest()
-        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
-        .addActivateInstructions(grpcRequest.getActivateInstructionsList())
-        .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+    final var brokerRequest =
+        new BrokerModifyProcessInstanceRequest()
+            .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+            .addActivateInstructions(grpcRequest.getActivateInstructionsList())
+            .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerMigrateProcessInstanceRequest toMigrateProcessInstanceRequest(
       final MigrateProcessInstanceRequest grpcRequest) {
-    return new BrokerMigrateProcessInstanceRequest()
-        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
-        .setTargetProcessDefinitionKey(
-            grpcRequest.getMigrationPlan().getTargetProcessDefinitionKey())
-        .addMappingInstructions(grpcRequest.getMigrationPlan().getMappingInstructionsList());
+    final var brokerRequest =
+        new BrokerMigrateProcessInstanceRequest()
+            .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+            .setTargetProcessDefinitionKey(
+                grpcRequest.getMigrationPlan().getTargetProcessDefinitionKey())
+            .addMappingInstructions(grpcRequest.getMigrationPlan().getMappingInstructionsList());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
       final DeleteResourceRequest grpcRequest) {
-    return new BrokerDeleteResourceRequest().setResourceKey(grpcRequest.getResourceKey());
+    final var brokerRequest =
+        new BrokerDeleteResourceRequest().setResourceKey(grpcRequest.getResourceKey());
+
+    if (grpcRequest.hasOperationReference()) {
+      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
+    }
+    return brokerRequest;
   }
 
   public static BrokerBroadcastSignalRequest toBroadcastSignalRequest(
