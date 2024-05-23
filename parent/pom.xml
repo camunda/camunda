@@ -133,6 +133,7 @@
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
+    <version.h2>2.2.224</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
     <version.reactor-netty>1.1.19</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
@@ -1376,6 +1377,12 @@
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <version>${version.postgresql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${version.h2}</version>
       </dependency>
 
       <dependency>
