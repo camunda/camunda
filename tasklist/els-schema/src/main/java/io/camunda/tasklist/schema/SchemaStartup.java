@@ -49,7 +49,7 @@ public class SchemaStartup {
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields =
           schemaValidator.validateIndexMappings();
       final boolean createSchema =
-          tasklistProperties.getDatabaseType().equals("opensearch")
+          TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
               ? tasklistProperties.getOpenSearch().isCreateSchema()
               : tasklistProperties.getElasticsearch().isCreateSchema();
       if (createSchema && !schemaValidator.schemaExists()) {

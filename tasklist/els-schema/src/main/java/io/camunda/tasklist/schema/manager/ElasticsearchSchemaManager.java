@@ -240,7 +240,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         prepareComposableTemplateRequest(templateDescriptor, templateClasspathResource);
     putIndexTemplate(request);
 
-    // This is necessary, otherwise operate won't find indexes at startup
+    // This is necessary, otherwise tasklist won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
     final var createIndexRequest =
         new CreateIndexRequest(indexName)
@@ -315,11 +315,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     final var shards =
         elsConfig
-            .getNumberOfShardsForIndices()
+            .getNumberOfShardsPerIndex()
             .getOrDefault(indexName, elsConfig.getNumberOfShards());
     final var replicas =
         elsConfig
-            .getNumberOfReplicasForIndices()
+            .getNumberOfReplicasPerIndices()
             .getOrDefault(indexName, elsConfig.getNumberOfReplicas());
     return Settings.builder()
         .put(NUMBER_OF_SHARDS, shards)
