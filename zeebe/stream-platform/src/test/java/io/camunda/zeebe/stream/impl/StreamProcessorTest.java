@@ -386,8 +386,10 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
+    final long operationReference = 1234L;
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+        RecordToWrite.command(operationReference)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -404,13 +406,29 @@ public final class StreamProcessorTest {
     final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
     logStreamReader.seekToFirstEvent();
     final var firstRecord = logStreamReader.next();
-    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    assertThat(firstRecord.getSourceEventPosition())
+        .as("First record should not point to any source events")
+        .isEqualTo(-1);
     final var firstRecordPosition = firstRecord.getPosition();
+
+    final var firstRecordMetadata = new RecordMetadata();
+    firstRecord.readMetadata(firstRecordMetadata);
+    assertThat(firstRecordMetadata.getOperationReference())
+        .as("Record metadata should contain the operation reference")
+        .isEqualTo(operationReference);
 
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     while (logStreamReader.hasNext()) {
-      assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+      final LoggedEvent followup = logStreamReader.next();
+      assertThat(followup.getSourceEventPosition())
+          .as("Followup records should point to source event")
+          .isEqualTo(firstRecordPosition);
+      final var followupMetadata = new RecordMetadata();
+      followup.readMetadata(followupMetadata);
+      assertThat(followupMetadata.getOperationReference())
+          .as("Followup records should contain the same operation reference of the initial command")
+          .isEqualTo(operationReference);
     }
   }
 

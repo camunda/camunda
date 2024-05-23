@@ -342,8 +342,11 @@ public final class ProcessingStateMachine {
    * commands are created.
    */
   private void batchProcessing(final TypedRecord<?> initialCommand) {
-    final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+    // propagate the operation reference from the initial command to the processingResultBuilder to
+    // be appended to the followup events
+    final var processingResultBuilder =
+        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+            .withOperationReference(initialCommand.getOperationReference());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -526,7 +529,8 @@ public final class ProcessingStateMachine {
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+            .withOperationReference(typedCommand.getOperationReference());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -538,7 +542,8 @@ public final class ProcessingStateMachine {
             .intent(ErrorIntent.CREATED)
             .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
+            .rejectionReason("")
+            .operationReference(typedCommand.getOperationReference());
     processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
@@ -565,7 +570,8 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents)
+                  .withOperationReference(typedCommand.getOperationReference());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
