@@ -23,21 +23,22 @@ import io.camunda.zeebe.spring.client.CamundaAutoConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
-@TestPropertySource(
-    properties = {
-      "zeebe.client.cloud.clusterId=123-abc-456-def",
-    })
-@ContextConfiguration(
+@ExtendWith(OutputCaptureExtension.class)
+@SpringBootTest(
     classes = {
       CamundaAutoConfiguration.class,
       ZeebeClientStarterAutoConfigurationCloudTest.TestConfig.class
+    },
+    properties = {
+      "zeebe.client.cloud.clusterId=123-abc-456-def",
+      "zeebe.client.cloud.clientSecret=client-secret",
+      "zeebe.client.cloud.clientId=client-id",
     })
 public class ZeebeClientStarterAutoConfigurationCloudTest {
 
@@ -52,6 +53,12 @@ public class ZeebeClientStarterAutoConfigurationCloudTest {
         .isEqualTo("https://123-abc-456-def.bru-2.zeebe.camunda.io:443");
     assertThat(client.getConfiguration().getRestAddress().toString())
         .isEqualTo("https://bru-2.zeebe.camunda.io:443/123-abc-456-def");
+  }
+
+  @Test
+  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
+    assertThat(output).contains("clientId='***'");
+    assertThat(output).contains("clientSecret='***'");
   }
 
   public static class TestConfig {
