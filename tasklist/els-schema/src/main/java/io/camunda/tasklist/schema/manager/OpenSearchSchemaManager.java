@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
@@ -50,9 +49,9 @@ import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest.Builder;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
-import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -376,8 +375,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     createIndex(new CreateIndexRequest.Builder().index(indexName).build(), indexName);
   }
 
-  private void putIndexTemplate(
-      final PutIndexTemplateRequest request, final boolean overwrite) {
+  private void putIndexTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     final boolean created = retryOpenSearchClient.createTemplate(request, overwrite);
     if (created) {
       LOGGER.debug("Template [{}] was successfully created", request.name());
@@ -386,8 +384,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void putIndexTemplate(
-      final PutIndexTemplateRequest request) {
+  private void putIndexTemplate(final PutIndexTemplateRequest request) {
     final boolean created = retryOpenSearchClient.createTemplate(request);
     if (created) {
       LOGGER.debug("Template [{}] was successfully created", request.name());

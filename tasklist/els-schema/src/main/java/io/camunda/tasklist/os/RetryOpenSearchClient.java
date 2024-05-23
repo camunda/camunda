@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
