@@ -24,4 +24,6 @@ public interface SchemaManager {
   String getIndexPrefix();
 
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
+
+  void createIndex(IndexDescriptor testIndex);
 }

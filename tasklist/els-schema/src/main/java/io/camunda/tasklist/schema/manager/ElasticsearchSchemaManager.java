@@ -155,6 +155,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     }
   }
 
+  @Override
+  public void createIndex(final IndexDescriptor indexDescriptor) {
+    createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
+  }
+
   private String settingsTemplateName() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());
@@ -212,10 +217,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private void createTemplates() {
     templateDescriptors.forEach(this::createTemplate);
-  }
-
-  private void createIndex(final IndexDescriptor indexDescriptor) {
-    createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
   }
 
   private void createIndex(
