@@ -12,11 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.elasticsearch.common.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,14 +28,19 @@ public class SortValuesWrapper implements Serializable {
 
   private static final Set<Class<?>> ALLOWED_SORTVALUE_TYPES = new HashSet<>();
 
+  // These values were taken from org.elasticsearch.search.searchafter.SearchAfterBuilder.
+  // Opensearch does not have a filter and just passes any type further on
   static {
     ALLOWED_SORTVALUE_TYPES.add(String.class);
-    ALLOWED_SORTVALUE_TYPES.add(Integer.class);
-    ALLOWED_SORTVALUE_TYPES.add(Double.class);
+    ALLOWED_SORTVALUE_TYPES.add(Text.class);
     ALLOWED_SORTVALUE_TYPES.add(Long.class);
+    ALLOWED_SORTVALUE_TYPES.add(Integer.class);
     ALLOWED_SORTVALUE_TYPES.add(Short.class);
+    ALLOWED_SORTVALUE_TYPES.add(Byte.class);
+    ALLOWED_SORTVALUE_TYPES.add(Double.class);
     ALLOWED_SORTVALUE_TYPES.add(Float.class);
     ALLOWED_SORTVALUE_TYPES.add(Boolean.class);
+    ALLOWED_SORTVALUE_TYPES.add(BigInteger.class);
   }
 
   public String value;
@@ -90,11 +97,11 @@ public class SortValuesWrapper implements Serializable {
         try {
           sortValues.add(objectMapper.readValue(svw.value.getBytes(), classType));
         } catch (final IOException e) {
-          LOGGER.warn("Unable to deserialize sortValues. Error: {}", e.getMessage());
+          LOGGER.error("Unable to deserialize sortValues. Error: {}", e.getMessage());
           throw new OperateRuntimeException(e);
         }
       } else {
-        LOGGER.warn("Unable to deserialize sortValues. Type {} is not allowed ", classType);
+        LOGGER.error("Unable to deserialize sortValues. Type {} is not allowed ", classType);
         throw new OperateRuntimeException("Invalid sortValues type: " + classType);
       }
     }
