@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
 
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProvider;
+import io.camunda.zeebe.db.ChecksumProvider;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
