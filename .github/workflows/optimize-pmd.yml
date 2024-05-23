@@ -1,7 +1,7 @@
 name: Optimize PMD
 on:
   pull_request:
-    branches: [ "master", "maintenance/**", "release/**" ]
+    branches: ["master", "maintenance/**", "release/**"]
   workflow_dispatch:
 
 permissions:
@@ -9,6 +9,7 @@ permissions:
   pull-requests: read
 jobs:
   pmd-code-scan:
+    name: PMD Code Scan
     permissions:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
@@ -16,19 +17,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+      - name: "Read Java Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
       - name: Set up JDK 21
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: ${{ steps.pom-info.outputs.java_version }}
+          distribution: "temurin"
       - name: Run PMD
         id: pmd
         uses: pmd/pmd-github-action@d9c1f3c5940cbf5923f1354e83fa858b4496ebaa # v2.0.0
         with:
-          version: '6.55.0'
-          token: ${{ secrets.BACKPORT_ACTION_PAT }}
-          rulesets: '.github/configuration/optimize-pmd.xml'
-          sourcePath: 'optimize/backend/src/main/java'
+          version: "6.55.0"
+          token: ${{ steps.github-token.outputs.token }}
+          rulesets: ".github/configuration/optimize-pmd.xml"
+          sourcePath: "optimize/backend/src/main/java"
           analyzeModifiedFilesOnly: true
       - name: Upload SARIF file
         if: steps.pmd.outputs.violations != 0
