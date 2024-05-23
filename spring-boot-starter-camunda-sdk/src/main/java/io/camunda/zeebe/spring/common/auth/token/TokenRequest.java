@@ -13,40 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.auth.jwt;
+package io.camunda.zeebe.spring.common.auth.token;
 
-/** Contains credential for particular product. Used for JWT authentication. */
-public class JwtCredential {
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+public class TokenRequest {
+
+  private final String grantType;
+  private final String audience;
   private final String clientId;
   private final String clientSecret;
-  private final String audience;
-  private final String authUrl;
 
-  public JwtCredential(
-      final String clientId,
-      final String clientSecret,
-      final String audience,
-      final String authUrl) {
+  TokenRequest(final String audience, final String clientId, final String clientSecret) {
+    grantType = "client_credentials";
+    this.audience = audience;
     this.clientId = clientId;
     this.clientSecret = clientSecret;
-    this.audience = audience;
-    this.authUrl = authUrl;
   }
 
-  public String getClientId() {
-    return clientId;
+  @JsonProperty("grant_type")
+  public String getGrantType() {
+    return grantType;
   }
 
-  public String getClientSecret() {
-    return clientSecret;
-  }
-
+  @JsonProperty("audience")
   public String getAudience() {
     return audience;
   }
 
-  public String getAuthUrl() {
-    return authUrl;
+  @JsonProperty("client_id")
+  public String getClientId() {
+    return clientId;
+  }
+
+  @JsonProperty("client_secret")
+  public String getClientSecret() {
+    return clientSecret;
   }
 }

@@ -21,17 +21,15 @@ import static org.springframework.util.StringUtils.hasText;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
+import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
 import io.camunda.zeebe.spring.client.properties.PropertiesUtil;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
-import io.camunda.zeebe.spring.common.auth.Authentication;
-import io.camunda.zeebe.spring.common.auth.DefaultNoopAuthentication;
-import io.camunda.zeebe.spring.common.auth.Product;
 import io.grpc.ClientInterceptor;
-import io.grpc.Status;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.net.URL;
@@ -52,7 +50,6 @@ public class ZeebeClientConfigurationImpl
   private final Map<String, Object> configCache = new HashMap<>();
   private final ZeebeClientConfigurationProperties properties;
   private final CamundaClientProperties camundaClientProperties;
-  private final Authentication authentication;
   private final JsonMapper jsonMapper;
   private final List<ClientInterceptor> interceptors;
   private final ZeebeClientExecutorService zeebeClientExecutorService;
@@ -61,13 +58,11 @@ public class ZeebeClientConfigurationImpl
   public ZeebeClientConfigurationImpl(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
-      final Authentication authentication,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
     this.properties = properties;
     this.camundaClientProperties = camundaClientProperties;
-    this.authentication = authentication;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
@@ -106,7 +101,7 @@ public class ZeebeClientConfigurationImpl
         "GrpcAddress",
         () -> camundaClientProperties.getZeebe().getGrpcAddress(),
         () -> properties.getBroker().getGrpcAddress(),
-        DEFAULT.getRestAddress(),
+        DEFAULT.getGrpcAddress(),
         configCache);
   }
 
@@ -236,7 +231,7 @@ public class ZeebeClientConfigurationImpl
   public CredentialsProvider getCredentialsProvider() {
     return getOrLegacyOrDefault(
         "CredentialsProvider",
-        this::identityCredentialsProvider,
+        this::credentialsProvider,
         this::legacyCredentialsProvider,
         null,
         configCache);
@@ -317,11 +312,17 @@ public class ZeebeClientConfigurationImpl
     return camundaClientProperties.getZeebe().isPreferRestOverGrpc();
   }
 
-  private CredentialsProvider identityCredentialsProvider() {
-    if (authentication instanceof DefaultNoopAuthentication) {
-      return null;
+  private CredentialsProvider credentialsProvider() {
+    final ClientMode clientMode = camundaClientProperties.getMode();
+    if (ClientMode.oidc.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
+      return CredentialsProvider.newCredentialsProviderBuilder()
+          .clientId(camundaClientProperties.getAuth().getClientId())
+          .clientSecret(camundaClientProperties.getAuth().getClientSecret())
+          .audience(camundaClientProperties.getZeebe().getAudience())
+          .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
+          .build();
     }
-    return new IdentityCredentialsProvider(authentication);
+    return new NoopCredentialsProvider();
   }
 
   private String composeGatewayAddress() {
@@ -391,8 +392,6 @@ public class ZeebeClientConfigurationImpl
         + properties
         + ", camundaClientProperties="
         + camundaClientProperties
-        + ", authentication="
-        + authentication
         + ", jsonMapper="
         + jsonMapper
         + ", interceptors="
@@ -400,24 +399,5 @@ public class ZeebeClientConfigurationImpl
         + ", zeebeClientExecutorService="
         + zeebeClientExecutorService
         + '}';
-  }
-
-  public static class IdentityCredentialsProvider implements CredentialsProvider {
-    private final Authentication authentication;
-
-    public IdentityCredentialsProvider(final Authentication authentication) {
-      this.authentication = authentication;
-    }
-
-    @Override
-    public void applyCredentials(final CredentialsApplier applier) {
-      final Map.Entry<String, String> authHeader = authentication.getTokenHeader(Product.ZEEBE);
-      applier.put(authHeader.getKey(), authHeader.getValue());
-    }
-
-    @Override
-    public boolean shouldRetryRequest(final StatusCode statusCode) {
-      return statusCode.code() == Status.Code.DEADLINE_EXCEEDED.value();
-    }
   }
 }
