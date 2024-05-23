@@ -7,14 +7,7 @@
 
 import {shallow} from 'enzyme';
 import {ComponentProps} from 'react';
-import {
-  DataTable,
-  MenuItemSelectable,
-  TableBatchActions,
-  TableContainer,
-  TableHeader,
-} from '@carbon/react';
-import {MenuButton} from '@camunda/camunda-optimize-composite-components';
+import {DataTable, TableBatchActions, TableContainer, TableHeader} from '@carbon/react';
 
 import EntityList from './EntityList';
 
@@ -107,24 +100,6 @@ it('should disable sorting if there are no sortable object headers', () => {
   expect(node.find(DataTable).prop('isSortable')).toBe(false);
 });
 
-it('should invoke onChange with default column order when selecting it from sorting menu', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <EntityList
-      {...props}
-      headers={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']}
-      sorting={{key: 'name', order: 'asc'}}
-      onChange={spy}
-    />
-  );
-
-  expect(node.find(DataTable).prop('isSortable')).toBe(true);
-
-  const dataTable = node.find(DataTable).dive();
-  dataTable.find(MenuButton).find(MenuItemSelectable).simulate('change');
-  expect(spy).toHaveBeenCalledWith('name', 'asc');
-});
-
 it('should not show a header entry for column entries that are hidden', () => {
   const node = shallow(
     <EntityList
@@ -171,27 +146,50 @@ it('should call onChange when sorting by one of columns', () => {
     />
   );
 
-  const dataTable = node.find(DataTable).dive();
+  let dataTable = node.find(DataTable).dive();
   dataTable.find(TableHeader).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalledWith('sortKey', 'asc');
+
+  node.setProps({sorting: {key: 'sortKey', order: 'asc'}});
+  dataTable = node.find(DataTable).dive();
+  dataTable.find(TableHeader).at(0).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
+
+  node.setProps({sorting: {key: 'sortKey', order: 'desc'}});
+  dataTable = node.find(DataTable).dive();
+  dataTable.find(TableHeader).at(0).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(undefined, undefined);
 });
 
-it('should reverse the order when clicking on a header column that is already sorted', () => {
+it('should reverse sorting when default order is desc', () => {
   const spy = jest.fn();
   const node = shallow(
     <EntityList
       {...props}
-      headers={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
-      sorting={{key: 'sortKey', order: 'asc'}}
+      headers={[{name: 'sortable', key: 'sortKey', defaultOrder: 'desc'}]}
       onChange={spy}
     />
   );
 
-  const dataTable = node.find(DataTable).dive();
+  let dataTable = node.find(DataTable).dive();
   dataTable.find(TableHeader).at(0).simulate('click');
 
   expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
+
+  node.setProps({sorting: {key: 'sortKey', order: 'desc'}});
+  dataTable = node.find(DataTable).dive();
+  dataTable.find(TableHeader).at(0).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('sortKey', 'asc');
+
+  node.setProps({sorting: {key: 'sortKey', order: 'asc'}});
+  dataTable = node.find(DataTable).dive();
+  dataTable.find(TableHeader).at(0).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(undefined, undefined);
 });
 
 it('should show bulk operation options if bulkAction is specified', () => {

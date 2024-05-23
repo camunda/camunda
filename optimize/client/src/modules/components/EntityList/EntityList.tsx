@@ -14,7 +14,6 @@ import React, {
   useState,
 } from 'react';
 import {Link} from 'react-router-dom';
-import {ArrowsVertical} from '@carbon/icons-react';
 import {
   DataTable,
   Table,
@@ -30,14 +29,10 @@ import {
   TableBatchActions,
   TableSelectAll,
   TableSelectRow,
-  MenuItemSelectable,
   DataTableSkeleton,
   Stack,
   Loading,
 } from '@carbon/react';
-import {MenuButton} from '@camunda/camunda-optimize-composite-components';
-
-import {t} from 'translation';
 
 import ListItemAction from './ListItemAction';
 
@@ -59,10 +54,14 @@ interface Row {
   actions: Action[];
 }
 
+type SortingOrder = 'asc' | 'desc';
+
+type Sorting = {key: string; order: SortingOrder};
+
 interface ObjectColumn {
   name: string;
   key: string;
-  defaultOrder?: 'asc' | 'desc';
+  defaultOrder?: SortingOrder;
   hidden?: boolean;
 }
 
@@ -81,8 +80,8 @@ interface EntityListProps {
   action: ReactNode;
   bulkActions?: React.ReactElement<BulkAction>;
   isLoading?: boolean;
-  sorting?: {key: string; order: 'asc' | 'desc'};
-  onChange?: (key?: string, order?: 'asc' | 'desc') => void;
+  sorting?: Sorting;
+  onChange?: (key?: string, order?: SortingOrder) => void;
   emptyStateComponent?: ReactNode;
 }
 
@@ -252,24 +251,6 @@ export default function EntityList({
                     }}
                     persistent
                   />
-                  {isSortable && (
-                    <MenuButton
-                      menuLabel={t('common.sort').toString()}
-                      label={<ArrowsVertical />}
-                      kind="ghost"
-                      hasIconOnly
-                      iconDescription={t('common.sort').toString()}
-                    >
-                      {objectHeaders.map(({name, key, defaultOrder}) => (
-                        <MenuItemSelectable
-                          selected={(sorting.key || 'entityType') === key}
-                          key={key}
-                          onChange={() => onChange?.(key, defaultOrder)}
-                          label={name}
-                        />
-                      ))}
-                    </MenuButton>
-                  )}
                   {action}
                 </TableToolbarContent>
               </TableToolbar>
@@ -295,10 +276,9 @@ export default function EntityList({
                             onClick: () => {
                               if (isObjectHeader(visibleHeader)) {
                                 if (visibleHeader.key === sorting?.key) {
-                                  onChange?.(
-                                    sorting.key,
-                                    sorting?.order === 'desc' ? 'asc' : 'desc'
-                                  );
+                                  const {key, order} =
+                                    getNextSorting(sorting, visibleHeader.defaultOrder) || {};
+                                  onChange?.(key, order);
                                 } else {
                                   onChange?.(visibleHeader.key, visibleHeader.defaultOrder);
                                 }
@@ -352,4 +332,25 @@ function isObjectHeader(header: Column): header is ObjectColumn {
 
 function containsSearchWord(value = '', searchWord: string) {
   return (typeof value !== 'string' ? '' : value).trim().toLowerCase().includes(searchWord);
+}
+
+function getNextSorting({key, order}: Sorting, defaultOrder?: SortingOrder): Sorting | undefined {
+  // In case of default order being desc, we need to invert the order
+  if (defaultOrder === 'desc') {
+    if (order === 'desc') {
+      return {key, order: 'asc'};
+    } else if (order === 'asc') {
+      return;
+    } else {
+      return {key, order: 'desc'};
+    }
+  }
+
+  if (order === 'asc') {
+    return {key, order: 'desc'};
+  } else if (order === 'desc') {
+    return;
+  } else {
+    return {key, order: 'asc'};
+  }
 }
