@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.junit.Rule;
 import org.junit.Test;
 
-// Regression test https://github.com/camunda/zeebe/issues/14509
+// Regression test https://github.com/camunda/camunda/issues/14509
 public class RaftResetTermAfterRestoreTest {
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(1);
 

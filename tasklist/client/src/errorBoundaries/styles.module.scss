@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Union} from 'ts-toolbelt';
-import {themes} from './themes';
-
-type CustomTheme = Union.Merge<typeof themes.g10 | typeof themes.g100>;
-
-declare module 'styled-components' {
-  export interface DefaultTheme extends CustomTheme {}
+.container {
+  padding: var(--cds-spacing-08);
+  background: var(--cds-background);
+  width: 100vw;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

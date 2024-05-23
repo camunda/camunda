@@ -231,6 +231,19 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
       # enabled: true
 
+      # Set the timeout for long polling in milliseconds
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_TIMEOUT.
+      # timeout: 10000
+
+      # Set the probe timeout for long polling in milliseconds
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_PROBETIMEOUT.
+      # probeTimeout: 10000
+
+      # Set the number of minimum empty responses, a minimum number of responses with jobCount of 0
+      # infers that no jobs are available
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_MINEMPTYRESPONSES.
+      # minEmptyResponses: 3
+
     # multiTenancy:
       # Enables multi tenancy for the gateway.
       # When enabled, the gateway enhances requests with the authorized tenant ids of the requester.

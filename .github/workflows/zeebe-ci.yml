@@ -319,7 +319,7 @@ jobs:
         uses: ./.github/actions/analyze-test-runs
         with:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-          # workaround to avoid https://github.com/camunda/zeebe/issues/16604
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
           skipSummary: true
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
@@ -600,7 +600,7 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ test-summary ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
       cancel-in-progress: false
@@ -644,7 +644,7 @@ jobs:
     name: Deploy snapshot Docker image
     needs: [ test-summary ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-docker-snapshot
       cancel-in-progress: false
@@ -672,7 +672,7 @@ jobs:
     name: Deploy benchmark images
     needs: [ test-summary ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-benchmark-images
       cancel-in-progress: false
@@ -707,7 +707,7 @@ jobs:
     name: Deploy Snyk development projects
     needs: [ test-summary ]
     if: |
-      github.repository == 'camunda/zeebe' &&
+      github.repository == 'camunda/camunda' &&
       github.event_name == 'push' &&
       (startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
     concurrency:
@@ -722,7 +722,7 @@ jobs:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
     needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot, deploy-snyk-projects ]
-    if: failure() && github.repository == 'camunda/zeebe' && github.ref == 'refs/heads/main'
+    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     steps:
       - id: slack-notify
         name: Send slack notification
@@ -780,11 +780,11 @@ jobs:
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
-    name: Auto-merge backport, release, and renovate PRs
+    name: Auto-merge backport and release PRs
     runs-on: ubuntu-latest
     needs: [ test-summary ]
     if: |
-      github.repository == 'camunda/zeebe' &&
+      github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
       (github.actor == 'backport-action' || github.actor == 'camundait')
     permissions:
@@ -812,7 +812,7 @@ jobs:
     if: |
       failure() &&
       fromJSON(github.run_attempt) < 3 &&
-      github.repository == 'camunda/zeebe' &&
+      github.repository == 'camunda/camunda' &&
       (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait') &&
       github.event_name != 'merge_queue'
     runs-on: ubuntu-latest

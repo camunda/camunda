@@ -109,6 +109,8 @@ public interface LogStorage {
      * Called when the entry has been successfully committed.
      *
      * @param index the index of the committed entry
+     * @param highestPosition the highest position (i.e. last position) of the records within the
+     *     entry that was committed.
      */
     default void onCommit(final long index, final long highestPosition) {}
   }

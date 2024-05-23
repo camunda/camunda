@@ -43,7 +43,7 @@ class CandidateRoleTest {
     raftContexts.shutdown();
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/11665")
+  @RegressionTest("https://github.com/camunda/camunda/issues/11665")
   void shouldTransitionToFollowerWhenElectionTimesOut() {
     // given
     final var chosenCandidate = 0; // chose any member as candidate

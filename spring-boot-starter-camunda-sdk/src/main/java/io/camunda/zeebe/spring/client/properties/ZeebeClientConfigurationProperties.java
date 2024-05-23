@@ -805,10 +805,10 @@ public class ZeebeClientConfigurationProperties {
           + clusterId
           + '\''
           + ", clientId='"
-          + clientId
+          + "***"
           + '\''
           + ", clientSecret='"
-          + clientSecret
+          + "***"
           + '\''
           + ", region='"
           + region

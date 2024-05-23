@@ -5,17 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import {rem} from '@carbon/elements';
-import styled, {css} from 'styled-components';
+import com.netflix.concurrency.limits.Limiter.Listener;
 
-const Container = styled.div`
-  ${({theme}) => css`
-    position: absolute;
-    top: ${rem(56)};
-    z-index: 1000;
-    right: ${theme.spacing03};
-  `}
-`;
+class NoopListener implements Listener {
+  public static final NoopListener INSTANCE = new NoopListener();
 
-export {Container};
+  @Override
+  public void onSuccess() {}
+
+  @Override
+  public void onIgnore() {}
+
+  @Override
+  public void onDropped() {}
+}

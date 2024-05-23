@@ -71,7 +71,7 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.109.Final</version.netty>
+    <version.netty>4.1.110.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
@@ -85,7 +85,7 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.5.4</version.wiremock>
+    <version.wiremock>3.6.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
@@ -94,7 +94,7 @@
     <version.feel-scala>1.17.7</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.7</version.spring>
+    <version.spring>6.1.8</version.spring>
     <version.spring-security>6.3.0</version.spring-security>
     <version.spring-boot>3.2.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -104,7 +104,7 @@
     <version.jqwik>1.8.4</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.14.15</version.byte-buddy>
+    <version.byte-buddy>1.14.16</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -122,9 +122,9 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.39.0</version.google-sdk>
     <version.azure-sdk>1.2.23</version.azure-sdk>
-    <version.awssdk>2.25.56</version.awssdk>
+    <version.awssdk>2.25.58</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
-    <version.validation-api>3.0.2</version.validation-api>
+    <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.1</version.jackson-annotations>
@@ -154,7 +154,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.726</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.728</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
@@ -203,7 +203,7 @@
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <plugin.version.exec>3.2.0</plugin.version.exec>
+    <plugin.version.exec>3.3.0</plugin.version.exec>
     <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
@@ -2668,7 +2668,7 @@
               <excludes>
                 <exclude>**/*RandomizedPropertyTest.java</exclude>
                 <exclude>**/*RandomizedRaftTest.java</exclude>
-                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/zeebe/issues/8637 -->
+                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/camunda/issues/8637 -->
                 <exclude>**/*$*.java</exclude>
               </excludes>
             </configuration>

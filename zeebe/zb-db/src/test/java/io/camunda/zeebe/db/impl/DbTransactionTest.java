@@ -461,7 +461,7 @@ public final class DbTransactionTest {
   }
 
   @Test
-  // See https://github.com/camunda/zeebe/issues/11681, this test is to ensure that we don't
+  // See https://github.com/camunda/camunda/issues/11681, this test is to ensure that we don't
   // hide exceptions from the `ProcessingStateMachine`.
   public void shouldNotWrapRuntimeExceptions() {
     // given

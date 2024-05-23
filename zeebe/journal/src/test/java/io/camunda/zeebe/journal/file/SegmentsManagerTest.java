@@ -257,7 +257,7 @@ class SegmentsManagerTest {
     assertThatNoException().isThrownBy(() -> segments.open());
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12754")
+  @RegressionTest("https://github.com/camunda/camunda/issues/12754")
   void shouldDeleteSegmentsInReverseOrderOnReset() {
     // given
     final var loader = Mockito.spy(journalFactory.segmentLoader());
