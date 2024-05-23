@@ -1,0 +1,26 @@
+name: Camunda Helm Chart Integration Test
+
+on:
+  push:
+  workflow_dispatch:
+
+
+jobs:
+  helm-deploy:
+    name: Helm chart Integration Tests
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      identifier: camunda-helm-int
+      test-enabled: true
+      caller-git-ref: master
+      extra-values: |
+        zeebe:
+          image:
+            tag: SNAPSHOT
+        operate:
+          image:
+            tag: SNAPSHOT
+        tasklist:
+          image:
+            tag: SNAPSHOT
