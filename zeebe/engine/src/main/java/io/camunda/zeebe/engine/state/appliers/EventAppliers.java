@@ -285,6 +285,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
+    register(ProcessMessageSubscriptionIntent.MIGRATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessEventAppliers(final MutableProcessingState state) {
