@@ -14,6 +14,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.Tuple;
+import java.math.BigInteger;
+import org.elasticsearch.common.text.Text;
 import org.junit.jupiter.api.Test;
 
 public class SortValuesWrapperTest {
@@ -34,16 +36,16 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testConvertSortValuesInteger() throws JsonProcessingException {
+  public void testConvertSortValuesText() throws JsonProcessingException {
     final SortValuesWrapper[] sortValuesWrappers = {
-      new SortValuesWrapper(objectMapper.writeValueAsString(123), Integer.class)
+      new SortValuesWrapper("\"testString\"", Text.class)
     };
 
     final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
 
     assertThat(result.length).isEqualTo(1);
-    assertThat(result[0]).isEqualTo(123);
-    assertThat(result[0].getClass()).isEqualTo(Integer.class);
+    assertThat(result[0]).isEqualTo(new Text("testString"));
+    assertThat(result[0].getClass()).isEqualTo(Text.class);
   }
 
   @Test
@@ -60,6 +62,19 @@ public class SortValuesWrapperTest {
   }
 
   @Test
+  public void testConvertSortValuesInteger() throws JsonProcessingException {
+    final SortValuesWrapper[] sortValuesWrappers = {
+      new SortValuesWrapper(objectMapper.writeValueAsString(123), Integer.class)
+    };
+
+    final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0]).isEqualTo(123);
+    assertThat(result[0].getClass()).isEqualTo(Integer.class);
+  }
+
+  @Test
   public void testConvertSortValuesShort() throws JsonProcessingException {
     final SortValuesWrapper[] sortValuesWrappers = {
       new SortValuesWrapper(objectMapper.writeValueAsString(Short.MIN_VALUE), Short.class)
@@ -73,16 +88,29 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testConvertSortValuesBoolean() throws JsonProcessingException {
+  public void testConvertSortValuesByte() throws JsonProcessingException {
     final SortValuesWrapper[] sortValuesWrappers = {
-      new SortValuesWrapper(objectMapper.writeValueAsString(false), Boolean.class)
+      new SortValuesWrapper(objectMapper.writeValueAsString(Byte.MIN_VALUE), Byte.class)
     };
 
     final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
 
     assertThat(result.length).isEqualTo(1);
-    assertThat(result[0]).isEqualTo(false);
-    assertThat(result[0].getClass()).isEqualTo(Boolean.class);
+    assertThat(result[0]).isEqualTo(Byte.MIN_VALUE);
+    assertThat(result[0].getClass()).isEqualTo(Byte.class);
+  }
+
+  @Test
+  public void testConvertSortValuesDouble() throws JsonProcessingException {
+    final SortValuesWrapper[] sortValuesWrappers = {
+      new SortValuesWrapper(objectMapper.writeValueAsString(Double.MIN_VALUE), Double.class)
+    };
+
+    final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0]).isEqualTo(Double.MIN_VALUE);
+    assertThat(result[0].getClass()).isEqualTo(Double.class);
   }
 
   @Test
@@ -99,16 +127,30 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testConvertSortValuesDouble() throws JsonProcessingException {
+  public void testConvertSortValuesBoolean() throws JsonProcessingException {
     final SortValuesWrapper[] sortValuesWrappers = {
-      new SortValuesWrapper(objectMapper.writeValueAsString(Double.MIN_VALUE), Double.class)
+      new SortValuesWrapper(objectMapper.writeValueAsString(false), Boolean.class)
     };
 
     final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
 
     assertThat(result.length).isEqualTo(1);
-    assertThat(result[0]).isEqualTo(Double.MIN_VALUE);
-    assertThat(result[0].getClass()).isEqualTo(Double.class);
+    assertThat(result[0]).isEqualTo(false);
+    assertThat(result[0].getClass()).isEqualTo(Boolean.class);
+  }
+
+  @Test
+  public void testConvertSortValuesBigInteger() throws JsonProcessingException {
+
+    final SortValuesWrapper[] sortValuesWrappers = {
+      new SortValuesWrapper(objectMapper.writeValueAsString(BigInteger.TWO), BigInteger.class)
+    };
+
+    final Object[] result = SortValuesWrapper.convertSortValues(sortValuesWrappers, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0]).isEqualTo(BigInteger.TWO);
+    assertThat(result[0].getClass()).isEqualTo(BigInteger.class);
   }
 
   @Test
@@ -147,25 +189,13 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testCreateFromInteger() throws JsonProcessingException {
-    final Object[] sortValues = {Integer.MAX_VALUE};
+  public void testCreateFromText() throws JsonProcessingException {
+    final Object[] sortValues = {new Text("testString")};
 
     final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
 
     assertThat(result.length).isEqualTo(1);
-    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Integer.MAX_VALUE));
-    assertThat(result[0].getValueType()).isEqualTo(Integer.class);
-  }
-
-  @Test
-  public void testCreateFromDouble() throws JsonProcessingException {
-    final Object[] sortValues = {Double.MAX_VALUE};
-
-    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
-
-    assertThat(result.length).isEqualTo(1);
-    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Double.MAX_VALUE));
-    assertThat(result[0].getValueType()).isEqualTo(Double.class);
+    assertThat(result[0].getValueType()).isEqualTo(Text.class);
   }
 
   @Test
@@ -180,6 +210,17 @@ public class SortValuesWrapperTest {
   }
 
   @Test
+  public void testCreateFromInteger() throws JsonProcessingException {
+    final Object[] sortValues = {Integer.MAX_VALUE};
+
+    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Integer.MAX_VALUE));
+    assertThat(result[0].getValueType()).isEqualTo(Integer.class);
+  }
+
+  @Test
   public void testCreateFromShort() throws JsonProcessingException {
     final Object[] sortValues = {Short.MAX_VALUE};
 
@@ -188,6 +229,28 @@ public class SortValuesWrapperTest {
     assertThat(result.length).isEqualTo(1);
     assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Short.MAX_VALUE));
     assertThat(result[0].getValueType()).isEqualTo(Short.class);
+  }
+
+  @Test
+  public void testCreateFromByte() throws JsonProcessingException {
+    final Object[] sortValues = {Byte.MAX_VALUE};
+
+    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Byte.MAX_VALUE));
+    assertThat(result[0].getValueType()).isEqualTo(Byte.class);
+  }
+
+  @Test
+  public void testCreateFromDouble() throws JsonProcessingException {
+    final Object[] sortValues = {Double.MAX_VALUE};
+
+    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(Double.MAX_VALUE));
+    assertThat(result[0].getValueType()).isEqualTo(Double.class);
   }
 
   @Test
@@ -210,6 +273,17 @@ public class SortValuesWrapperTest {
     assertThat(result.length).isEqualTo(1);
     assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(true));
     assertThat(result[0].getValueType()).isEqualTo(Boolean.class);
+  }
+
+  @Test
+  public void testCreateFromBigInteger() throws JsonProcessingException {
+    final Object[] sortValues = {BigInteger.TWO};
+
+    final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
+
+    assertThat(result.length).isEqualTo(1);
+    assertThat(result[0].getValue()).isEqualTo(objectMapper.writeValueAsString(BigInteger.TWO));
+    assertThat(result[0].getValueType()).isEqualTo(BigInteger.class);
   }
 
   @Test
