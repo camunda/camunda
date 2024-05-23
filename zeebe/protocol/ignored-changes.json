@@ -12,6 +12,60 @@
             "matcher": "java",
             "match": "type * { int io.camunda.zeebe.protocol.**::^initialOffset(); }"
           }
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "20",
+          "oldValue": "12"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "20",
+          "oldValue": "12"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "22",
+          "oldValue": "14"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "22",
+          "oldValue": "14"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.RecordMetadataDecoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.RecordMetadataDecoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "40",
+          "oldValue": "32"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.constantValueChanged",
+          "old": "field io.camunda.zeebe.protocol.record.RecordMetadataEncoder.BLOCK_LENGTH",
+          "new": "field io.camunda.zeebe.protocol.record.RecordMetadataEncoder.BLOCK_LENGTH",
+          "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
+          "newValue": "40",
+          "oldValue": "32"
         }
       ]
     }
