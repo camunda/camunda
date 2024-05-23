@@ -36,7 +36,7 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testConvertSortValuesText() throws JsonProcessingException {
+  public void testConvertSortValuesText() {
     final SortValuesWrapper[] sortValuesWrappers = {
       new SortValuesWrapper("\"testString\"", Text.class)
     };
@@ -189,11 +189,13 @@ public class SortValuesWrapperTest {
   }
 
   @Test
-  public void testCreateFromText() throws JsonProcessingException {
+  public void testCreateFromText() {
     final Object[] sortValues = {new Text("testString")};
 
     final SortValuesWrapper[] result = SortValuesWrapper.createFrom(sortValues, objectMapper);
 
+    // The object mapper does not have a module registered that correctly serializes Text types
+    // (the result is a string that reads "{fragment:true}")
     assertThat(result.length).isEqualTo(1);
     assertThat(result[0].getValueType()).isEqualTo(Text.class);
   }
