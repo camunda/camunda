@@ -67,7 +67,7 @@ jobs:
           issue_projects=$(gh issue view $issue_url --json "projectItems" --jq '.projectItems')
           issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
 
-          echo "issue_project=\"$(echo "$issue_project" | jq -c)\"" >> "$GITHUB_OUTPUT"
+          echo "issue_project=$(echo "$issue_project" | jq -c)" >> "$GITHUB_OUTPUT"
 
       - name: Validate inputs
         run: |
