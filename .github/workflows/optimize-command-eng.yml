@@ -58,6 +58,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
+          set -ex
           issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
           project_id=${{ steps.vars.outputs.project_id }}
           project_owner=${{ github.event.client_payload.github.payload.organization.login }}
@@ -72,6 +73,7 @@ jobs:
 
       - name: Validate inputs
         run: |
+          set -ex
           # General checks
           if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
             echo "No command provided"
@@ -92,6 +94,7 @@ jobs:
 
             # Check if the issue is in the correct status
             project_status=$(echo $issue_project | jq -r '.status.name')
+            echo $project_status
             if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
               echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
               exit 1
