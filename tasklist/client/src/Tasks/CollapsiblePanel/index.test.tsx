@@ -62,6 +62,20 @@ describe('<CollapsiblePanel />', () => {
   });
 
   it('should add custom filter from collapsed panel', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/processes',
+        () => {
+          return HttpResponse.json([
+            createMockProcess('process-0'),
+            createMockProcess('process-1'),
+          ]);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
     const {user} = render(<CollapsiblePanel />, {
       wrapper: createWrapper(),
     });
@@ -234,7 +248,8 @@ describe('<CollapsiblePanel />', () => {
     await user.click(
       screen.getByRole('button', {name: /custom filter actions/i}),
     );
-    await user.click(screen.getByText(/delete/i));
+    await user.click(screen.getByText(/^delete$/i));
+    await user.click(screen.getByRole('button', {name: /confirm deletion/i}));
 
     expect(
       screen.queryByRole('link', {name: 'Custom'}),

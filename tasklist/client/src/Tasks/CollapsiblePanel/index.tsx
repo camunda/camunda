@@ -15,6 +15,7 @@ import {
   Layer,
   OverflowMenu,
   OverflowMenuItem,
+  Modal,
 } from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
@@ -91,6 +92,9 @@ const CollapsiblePanel: React.FC = () => {
     useState(false);
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [customFilterToDelete, setCustomFilterToDelete] = useState<
+    string | null
+  >(null);
   const wasCollapsed = usePrevious(isCollapsed);
   const {filter} = useTaskFilters();
   const [searchParams] = useSearchParams();
@@ -283,14 +287,7 @@ const CollapsiblePanel: React.FC = () => {
                   isDelete
                   itemText="Delete"
                   onClick={() => {
-                    storeStateLocally('customFilters', {});
-                    navigate({
-                      search: getNavLinkSearchParam({
-                        currentParams: searchParams,
-                        filter: 'all-open',
-                        userId,
-                      }),
-                    });
+                    setCustomFilterToDelete('custom');
                   }}
                 />
               </OverflowMenu>
@@ -309,6 +306,29 @@ const CollapsiblePanel: React.FC = () => {
         </ul>
       </nav>
       {filtersModal}
+      <Modal
+        danger
+        open={customFilterToDelete !== null}
+        size="xs"
+        modalLabel="Delete filter"
+        modalHeading="The custom filter will be deleted."
+        primaryButtonText="Confirm deletion"
+        secondaryButtonText="Cancel"
+        onRequestClose={() => {
+          setCustomFilterToDelete(null);
+        }}
+        onRequestSubmit={() => {
+          storeStateLocally('customFilters', {});
+          navigate({
+            search: getNavLinkSearchParam({
+              currentParams: searchParams,
+              filter: 'all-open',
+              userId,
+            }),
+          });
+          setCustomFilterToDelete(null);
+        }}
+      />
     </Layer>
   );
 };
