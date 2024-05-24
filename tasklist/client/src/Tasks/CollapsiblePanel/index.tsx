@@ -9,7 +9,13 @@
 import {useState} from 'react';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
-import {Button, ButtonSet, OverflowMenu, OverflowMenuItem} from '@carbon/react';
+import {
+  Button,
+  ButtonSet,
+  Layer,
+  OverflowMenu,
+  OverflowMenuItem,
+} from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
 import {useNavigate, useSearchParams} from 'react-router-dom';
@@ -113,7 +119,8 @@ const CollapsiblePanel: React.FC = () => {
 
   if (isCollapsed) {
     return (
-      <nav
+      <Layer
+        as="nav"
         id="task-nav-bar"
         className={cn(styles.base, styles.collapsedContainer)}
         aria-label="Filter controls"
@@ -157,12 +164,12 @@ const CollapsiblePanel: React.FC = () => {
           </li>
         </ul>
         {filtersModal}
-      </nav>
+      </Layer>
     );
   }
 
   return (
-    <div className={styles.floatingContainer}>
+    <Layer className={styles.floatingContainer}>
       <nav
         aria-labelledby="filters-title"
         className={cn(styles.base, styles.expandedContainer)}
@@ -302,7 +309,7 @@ const CollapsiblePanel: React.FC = () => {
         </ul>
       </nav>
       {filtersModal}
-    </div>
+    </Layer>
   );
 };
 
