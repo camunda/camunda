@@ -34,12 +34,15 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -354,7 +357,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         .ifLeft(
             failure -> {
               throw new ProcessInstanceMigrationPreconditionFailedException(
-                  """
+                      """
                   Expected to migrate process instance '%s' \
                   but active element with id '%s' is mapped to element with id '%s' \
                   that must be subscribed to a message catch event. %s"""
@@ -384,17 +387,37 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     processMessageSubscriptionsToMigrate.forEach(
         processMessageSubscription -> {
-          final var sourceCatchEventId = processMessageSubscription.getRecord().getElementId();
+          final var processMessageSubscriptionRecord = processMessageSubscription.getRecord();
+          final var sourceCatchEventId = processMessageSubscriptionRecord.getElementId();
           final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
           stateWriter.appendFollowUpEvent(
               processMessageSubscription.getKey(),
               ProcessMessageSubscriptionIntent.MIGRATED,
-              processMessageSubscription
-                  .getRecord()
+              processMessageSubscriptionRecord
                   .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                   .setElementId(BufferUtil.wrapString(targetCatchEventId)));
 
-          // todo: migrate the message subscription
+          final long distributionKey = processMessageSubscription.getKey();
+
+          // TODO:add hasPendingDistribution check in the state class and throw exception if pending
+
+          final var messageSubscription =
+              new MessageSubscriptionRecord()
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setElementInstanceKey(processMessageSubscriptionRecord.getElementInstanceKey())
+                  .setProcessInstanceKey(processMessageSubscriptionRecord.getProcessInstanceKey())
+                  .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
+                  .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
+                  .setTenantId(processMessageSubscriptionRecord.getTenantId())
+                  .setInterrupting(processMessageSubscriptionRecord.isInterrupting());
+
+          // TODO: append the command instead of distributing if it is on a same partition
+          commandDistributionBehavior.distributeCommand(
+              distributionKey,
+              ValueType.MESSAGE_SUBSCRIPTION,
+              MessageSubscriptionIntent.MIGRATE,
+              messageSubscription,
+              List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
         });
   }
 
