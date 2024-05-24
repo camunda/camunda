@@ -63,15 +63,6 @@ jobs:
           echo "project_title=${project_title}" >> "$GITHUB_OUTPUT"
           echo "project_status=${project_status}" >> "$GITHUB_OUTPUT"
 
-      - name: Get issue labels
-        id: get-issue-labels
-        env:
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
-          issue_labels=$(gh issue view $issue_url --json "labels" --jq '.labels[].name')
-          echo "issue_labels=${issue_labels}" >> "$GITHUB_OUTPUT"
-
       - name: Get Engineering DRI
         id: get-engineering-dri
         env:
@@ -107,14 +98,14 @@ jobs:
             fi
 
             # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
-            if [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:epic' ] && [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:task' ] && [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:bug' ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
               echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
               exit 1
             fi
           fi
 
       - name: Assign PM
-        if: steps.parse-args.outputs.arg1 == 'approve' && contains(steps.get-issue-labels.outputs.issue_labels, 'type:epic')
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -125,7 +116,7 @@ jobs:
 
       - name: Update Status field
         uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'approve' && contains(steps.get-issue-labels.outputs.issue_labels, 'type:epic')
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic')
         with:
           github_token: ${{ steps.github-token.outputs.token }}
           organization: ${{ github.event.client_payload.github.payload.organization.login }}
@@ -135,7 +126,7 @@ jobs:
           value: "PM Review"
 
       - name: Assign engineering DRI
-        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(steps.get-issue-labels.outputs.issue_labels, 'type:task') || contains(steps.get-issue-labels.outputs.issue_labels, 'type:bug'))
+        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -146,7 +137,7 @@ jobs:
 
       - name: Update Status field
         uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(steps.get-issue-labels.outputs.issue_labels, 'type:task') || contains(steps.get-issue-labels.outputs.issue_labels, 'type:bug'))
+        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
         with:
           github_token: ${{ steps.github-token.outputs.token }}
           organization: ${{ github.event.client_payload.github.payload.organization.login }}
