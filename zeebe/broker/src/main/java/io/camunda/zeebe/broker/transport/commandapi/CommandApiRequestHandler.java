@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.Either;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -33,7 +34,7 @@ final class CommandApiRequestHandler
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private boolean isDiskSpaceAvailable = true;
-  private boolean processingPaused = false;
+  private boolean processingPaused = true;
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -48,6 +49,11 @@ final class CommandApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     return CompletableActorFuture.completed(
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    processingPaused = false;
   }
 
   @Override
