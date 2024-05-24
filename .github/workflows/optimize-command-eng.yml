@@ -66,8 +66,10 @@ jobs:
           project_title=$(gh project view $project_id --owner $project_owner --format json --jq '.title')
           issue_projects=$(gh issue view $issue_url --json "projectItems" --jq '.projectItems')
           issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
+          project_status=$(echo "$issue_project" | jq -r '.status.name')
 
-          echo "issue_project=$(echo "$issue_project" | jq -c)" >> "$GITHUB_OUTPUT"
+          echo "project_title=${project_title}" >> "$GITHUB_OUTPUT"
+          echo "project_status=${project_status}" >> "$GITHUB_OUTPUT"
 
       - name: Validate inputs
         run: |
@@ -91,7 +93,7 @@ jobs:
             fi
 
             # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.issue_project.status.name }}"
+            project_status="${{ steps.issue-project.outputs.issue_project_status }}"
             echo $project_status
             if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
               echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
