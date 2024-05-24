@@ -76,6 +76,16 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
+  public void onPaused() {
+    commandHandler.onPaused();
+  }
+
+  @Override
+  public void onResumed() {
+    commandHandler.onResumed();
+  }
+
+  @Override
   public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return removeLeaderHandlersAsync(partitionId);
   }
