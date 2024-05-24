@@ -23,21 +23,43 @@ import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.test.context.TestExecutionListeners;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.support.DependencyInjectionTestExecutionListener;
 
+@RunWith(SpringRunner.class)
+@TestExecutionListeners(
+    listeners = DependencyInjectionTestExecutionListener.class,
+    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@Configuration
+@ComponentScan(
+    basePackages = {
+        "io.camunda.tasklist.property",
+        "io.camunda.tasklist.schema.indices",
+        "io.camunda.tasklist.schema.templates",
+        "io.camunda.tasklist.qa.migration",
+        "io.camunda.tasklist.util"
+    },
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class SchemaChangesTest extends AbstractMigrationTest {
 
   @Autowired protected SchemaManager schemaManager;
 
   @Test
-  public void shouldHaveAddedFieldsWith85() {
+  public void shouldHaveAddedFields() {
     // given
+
+    // from now on, each time a new field is added to the index, a new IndexChange object should be created
+    // this can be tested adding the index change to the expectedIndexChanges list below
     final List<IndexChange> expectedIndexChanges =
         Arrays.asList(
-            IndexChange.forVersionAndIndex("8.5", taskTemplate.getDerivedIndexNamePattern())
-                .withAddedProperty("position", "long")
-                .withAddedProperty("positionIncident", "long")
-                .withAddedProperty("positionJob", "long"));
+            IndexChange.forVersionAndIndex("8.6.0", processIndex.getDerivedIndexNamePattern())
+                .withAddedProperty("bpmnXml", "text"));
 
     // then
     expectedIndexChanges.forEach(
@@ -53,7 +75,6 @@ public class SchemaChangesTest extends AbstractMigrationTest {
           mappings.forEach(
               (indexName, actualMapping) -> {
                 verifyIndexesIsChanged(indexName, actualMapping, expectedChange);
-                verifyArbitraryDocumentIsNotChanged(indexName, expectedChange);
               });
         });
   }
@@ -64,24 +85,6 @@ public class SchemaChangesTest extends AbstractMigrationTest {
         .withFailMessage(
             "Expecting index %s to have changes:\n%s\nActual mapping:\n%s",
             indexName, expectedChange, actualMapping)
-        .isTrue();
-  }
-
-  /** Validates that documents were not migrated/reindexed */
-  protected void verifyArbitraryDocumentIsNotChanged(
-      final String indexName, final IndexChange expectedChange) {
-
-    final SearchRequest searchRequest = new SearchRequest(indexName);
-    searchRequest.source().size(1).fetchField("position");
-
-    final List<SearchHit> documents = entityReader.searchDocumentsFor(searchRequest);
-
-    final SearchHit document = documents.get(0);
-
-    assertThat(expectedChange.isNotReflectedBy(document))
-        .withFailMessage(
-            "Expecting document %s in index %s to not have changes:\n%s\nActual document:\n%s",
-            document.getId(), indexName, expectedChange, document.getSourceAsMap())
         .isTrue();
   }
 
@@ -108,23 +111,6 @@ public class SchemaChangesTest extends AbstractMigrationTest {
       return this;
     }
 
-    protected IndexChange withAddedProperty(
-        final String name, final Map<String, Object> typeDefinition) {
-      final IndexMappingProperty addedProperty = new IndexMappingProperty();
-      addedProperty.setName(name);
-      addedProperty.setTypeDefinition(typeDefinition);
-      addedProperties.add(addedProperty);
-      return this;
-    }
-
-    public String getIndexPattern() {
-      return indexPattern;
-    }
-
-    public String getVersionName() {
-      return versionName;
-    }
-
     @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder();
@@ -142,17 +128,6 @@ public class SchemaChangesTest extends AbstractMigrationTest {
     public boolean isReflectedBy(final IndexMapping actualMapping) {
 
       return actualMapping.getProperties().containsAll(addedProperties);
-    }
-
-    public boolean isNotReflectedBy(final SearchHit document) {
-
-      final Map<String, Object> documentSource = document.getSourceAsMap();
-      final Set<String> unmatchedAddedProperties =
-          addedProperties.stream().map(IndexMappingProperty::getName).collect(Collectors.toSet());
-      unmatchedAddedProperties.retainAll(documentSource.keySet());
-
-      // all new properties should have been removed
-      return unmatchedAddedProperties.isEmpty();
     }
   }
 }

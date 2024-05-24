@@ -204,7 +204,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
   }
 
   private void restoreOriginalSchemaContent() {
-    try{
+    try {
       Files.write(
           Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
           originalSchemaContent.getBytes(),

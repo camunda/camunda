@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.tasklist.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +39,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private SchemaManager schemaManager;
-
-
 
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
@@ -86,10 +91,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-             "\"properties\": {\n"
-                 + "    \"prop0\": {\n"
-                 + "      \"type\": \"keyword\"\n"
-                 + "    },",
+            "\"properties\": {\n"
+                + "    \"prop0\": {\n"
+                + "      \"type\": \"keyword\"\n"
+                + "    },",
             "\"properties\": {"));
 
     final String newSchemaContent = readSchemaContent();
@@ -125,7 +130,8 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String readSchemaContent() throws Exception {
     return new String(
-        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
+        Files.readAllBytes(
+            Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
   }
 
   private void restoreOriginalSchemaContent() throws Exception {
