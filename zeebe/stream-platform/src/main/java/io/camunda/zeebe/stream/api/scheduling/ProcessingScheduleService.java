@@ -60,5 +60,5 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
    *     execution and have no effect.
    */
-  ScheduledTask runAtAsync(final long timestamp, final Task task);
+  ScheduledTask runAfterAsync(final long timestamp, final Task task);
 }
