@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
@@ -58,7 +59,8 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
-      final Writers writers) {
+      final Writers writers,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -92,7 +94,11 @@ public final class BpmnProcessors {
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors);
     addProcessInstanceMigrationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors);
+        typedRecordProcessors,
+        processingState,
+        writers,
+        bpmnBehaviors,
+        commandDistributionBehavior);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -229,11 +235,13 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
-        new ProcessInstanceMigrationMigrateProcessor(writers, processingState, bpmnBehaviors));
+        new ProcessInstanceMigrationMigrateProcessor(
+            writers, processingState, bpmnBehaviors, commandDistributionBehavior));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
