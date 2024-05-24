@@ -154,7 +154,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
         .nodeId(context.getNodeId())
-        .commandResponseWriter(context.getCommandResponseWriter())
+        .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
