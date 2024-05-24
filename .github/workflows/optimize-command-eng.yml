@@ -33,14 +33,6 @@ jobs:
           PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
         run: echo "$PAYLOAD_CONTEXT"
 
-      - name: Add reaction
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ steps.github-token.outputs.token }}
-          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          reactions: "+1"
-
       - name: Parse args
         id: parse-args
         run: |
@@ -58,7 +50,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          set -ex
           issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
           project_id=${{ steps.vars.outputs.project_id }}
           project_owner=${{ github.event.client_payload.github.payload.organization.login }}
@@ -73,7 +64,6 @@ jobs:
 
       - name: Validate inputs
         run: |
-          set -ex
           # General checks
           if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
             echo "No command provided"
@@ -94,7 +84,6 @@ jobs:
 
             # Check if the issue is in the correct status
             project_status="${{ steps.issue-project.outputs.project_status }}"
-            echo $project_status
             if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
               echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
               exit 1
@@ -121,6 +110,14 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "Eng Review"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
 
       - name: Update comment in case of failure
         if: failure()
