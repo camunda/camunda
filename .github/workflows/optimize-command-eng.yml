@@ -79,7 +79,7 @@ jobs:
             echo "No command provided"
             exit 1
           fi
-          if [ -z "${{ steps.issue-project.outputs.issue_project }}" ]; then
+          if [ -z "${{ steps.issue-project.outputs.project_title }}" ]; then
             echo "Issue not in the correct project"
             exit 1
           fi
