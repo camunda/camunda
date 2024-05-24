@@ -143,12 +143,15 @@ const SortableTable: React.FC<Props> = ({
                     />
                   )}
                   {headers.map((header) => {
+                    const {key, ...props} = getHeaderProps({
+                      header,
+                      isSortable: state === 'content',
+                    });
+
                     return (
                       <ColumnHeader
-                        {...getHeaderProps({
-                          header,
-                          isSortable: state === 'content',
-                        })}
+                        {...props}
+                        key={key}
                         label={header.header}
                         sortKey={header.sortKey ?? header.key}
                         isDefault={header.isDefault}
@@ -176,11 +179,14 @@ const SortableTable: React.FC<Props> = ({
                         return '';
                       };
 
+                      const {key, ...props} = getRowProps({row});
+
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow
                             className={expandRowStyleClasses()}
-                            {...getRowProps({row})}
+                            {...props}
+                            key={key}
                             isSelected={isSelected}
                             $isClickable={selectionType === 'row'}
                             aria-selected={isSelected}

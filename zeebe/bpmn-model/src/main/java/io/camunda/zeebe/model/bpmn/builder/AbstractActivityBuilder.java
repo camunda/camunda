@@ -32,14 +32,17 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
-    extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
+    extends AbstractFlowNodeBuilder<B, E>
+    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
 
   private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
+  private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
 
   protected AbstractActivityBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   public BoundaryEventBuilder boundaryEvent() {
@@ -161,5 +164,31 @@ public abstract class AbstractActivityBuilder<
   @Override
   public B zeebeOutput(final String source, final String target) {
     return variablesMappingBuilder.zeebeOutput(source, target);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

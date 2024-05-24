@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.operate.zeebe.StandalonePartitionSupplier;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
@@ -101,7 +102,9 @@ public class OperateZeebeSearchAbstractIT {
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    partitionHolder.setZeebeClient(zeebeClient);
+
+    final var partitionSupplier = new StandalonePartitionSupplier(zeebeClient);
+    partitionHolder.setPartitionSupplier(partitionSupplier);
 
     // Allows time for everything to settle and indices to show up
     zeebeStabilityDelay();

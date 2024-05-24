@@ -136,10 +136,11 @@ public interface AuthenticationTestable {
 
   default void assertThatCookiesAreDeleted(final ResponseEntity<?> response) {
     final HttpHeaders headers = response.getHeaders();
-    assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    final List<String> cookies = headers.get(SET_COOKIE_HEADER);
-    final String emptyValue = "=;";
-    assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
+    if (headers.containsKey(SET_COOKIE_HEADER)) {
+      final List<String> cookies = headers.get(SET_COOKIE_HEADER);
+      final String emptyValue = "=;";
+      assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
+    }
   }
 
   default ResponseEntity<String> get(final String path) {

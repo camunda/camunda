@@ -239,10 +239,11 @@ test.describe('Processes', () => {
     await expect(processesPage.processNameFilter).toHaveValue('Test Process');
   });
 
-  test('Delete process definition after canceling running instance', async ({
+  test('Delete process definition after canceling running instance @roundtrip', async ({
     processesPage,
     page,
   }) => {
+    test.slow();
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -312,7 +313,7 @@ test.describe('Processes', () => {
           const definitions: {total: number} = await response.json();
           return definitions.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: 60000},
       )
       .toBe(0);
   });

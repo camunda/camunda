@@ -49,7 +49,7 @@ final class LongPollingIT {
     }
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/9658")
+  @RegressionTest("https://github.com/camunda/camunda/issues/9658")
   void shouldActivateAndCompleteJobsInTime() {
     // given
     final var process =

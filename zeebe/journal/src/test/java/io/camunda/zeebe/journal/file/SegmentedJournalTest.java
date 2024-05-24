@@ -558,7 +558,7 @@ class SegmentedJournalTest {
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 
-  // Regression test for https://github.com/camunda/zeebe/issues/7962
+  // Regression test for https://github.com/camunda/camunda/issues/7962
   @Test
   void shouldNotFailOnDeleteAndOpeningReaderConcurrently() throws InterruptedException {
     // given

@@ -8,7 +8,6 @@
 
 import {screen, fireEvent} from '@testing-library/react';
 import {render} from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
@@ -30,12 +29,10 @@ const createWrapper = (
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-          <LocationLog />
-        </MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <LocationLog />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 

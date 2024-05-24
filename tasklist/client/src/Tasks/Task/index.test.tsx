@@ -15,7 +15,6 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -51,16 +50,14 @@ const getWrapper = (
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <QueryClientProvider client={mockClient}>
-        <MockThemeProvider>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path=":id" Component={LayoutComponent}>
-                <Route index element={children} />
-              </Route>
-            </Routes>
-            <LocationLog />
-          </MemoryRouter>
-        </MockThemeProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route path=":id" Component={LayoutComponent}>
+              <Route index element={children} />
+            </Route>
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };

@@ -10,8 +10,6 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -32,9 +30,6 @@ final class CommandApiRequestHandler
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
-  private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
-      new Int2ObjectHashMap<>();
-  private final BackpressureMetrics metrics = new BackpressureMetrics();
   private boolean isDiskSpaceAvailable = true;
 
   CommandApiRequestHandler() {
@@ -75,7 +70,6 @@ final class CommandApiRequestHandler
 
     final var command = reader.getMessageDecoder();
     final var logStreamWriter = leadingStreams.get(partitionId);
-    final var limiter = partitionLimiters.get(partitionId);
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
@@ -99,30 +93,12 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter);
     }
 
-    metrics.receivedRequest(partitionId);
-    if (!limiter.tryAcquire(partitionId, requestId, intent)) {
-      metrics.dropped(partitionId);
-      LOG.trace(
-          "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway",
-          partitionId,
-          limiter.getLimit(),
-          limiter.getInflightCount(),
-          requestId);
-      errorWriter.resourceExhausted();
-      return Either.left(errorWriter);
-    }
-
     try {
       return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
           .map(b -> responseWriter)
-          .mapLeft(
-              failure -> {
-                limiter.onIgnore(partitionId, requestId);
-                return errorWriter;
-              });
+          .mapLeft(failure -> errorWriter);
 
     } catch (final Exception error) {
-      limiter.onIgnore(partitionId, requestId);
       final String errorMessage =
           "Failed to write client request to partition '%d', %s".formatted(partitionId, error);
       LOG.error(errorMessage);
@@ -157,23 +133,12 @@ final class CommandApiRequestHandler
     }
   }
 
-  void addPartition(
-      final int partitionId,
-      final LogStreamWriter logStreamWriter,
-      final RequestLimiter<Intent> limiter) {
-    actor.submit(
-        () -> {
-          leadingStreams.put(partitionId, logStreamWriter);
-          partitionLimiters.put(partitionId, limiter);
-        });
+  void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
+    actor.submit(() -> leadingStreams.put(partitionId, logStreamWriter));
   }
 
   void removePartition(final int partitionId) {
-    actor.submit(
-        () -> {
-          leadingStreams.remove(partitionId);
-          partitionLimiters.remove(partitionId);
-        });
+    actor.submit(() -> leadingStreams.remove(partitionId));
   }
 
   void onDiskSpaceNotAvailable() {

@@ -210,7 +210,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     if (getActiveSequenceFlows() > 0) {
       activeSequenceFlowsProp.decrement();
       // This should never happen, but we should fix this in a better way
-      // https://github.com/camunda/zeebe/issues/9528
+      // https://github.com/camunda/camunda/issues/9528
       //    if (decrement < 0) {
       //      throw new IllegalStateException(
       //          "Not expected to have an active sequence flow count lower then zero!");

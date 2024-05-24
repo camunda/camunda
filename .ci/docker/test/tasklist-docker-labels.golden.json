@@ -13,7 +13,7 @@
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/tasklist-deployment/install-and-start/",
   "org.opencontainers.image.licenses": "Proprietary",
   "org.opencontainers.image.revision": $REVISION,
-  "org.opencontainers.image.source": "https://github.com/camunda/zeebe",
+  "org.opencontainers.image.source": "https://github.com/camunda/camunda",
   "org.opencontainers.image.title": "Camunda Tasklist",
   "org.opencontainers.image.url": "https://camunda.com/platform/tasklist/",
   "org.opencontainers.image.vendor": "Camunda Services GmbH",

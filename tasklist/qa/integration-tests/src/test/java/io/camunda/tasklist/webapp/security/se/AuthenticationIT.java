@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -33,10 +34,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
-@ActiveProfiles({AUTH_PROFILE, "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";
@@ -52,6 +54,8 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private UserStore userStore;
+
+  @LocalManagementPort private int managementPort;
 
   @BeforeEach
   public void setUp() {
@@ -169,21 +173,20 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
   @Test
   public void testCanAccessMetricsEndpoint() {
-    final ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator", String.class);
-    assertThat(response.getStatusCodeValue()).isEqualTo(200);
-    assertThat(response.getBody()).contains("actuator/info");
-
     final ResponseEntity<String> prometheusResponse =
-        testRestTemplate.getForEntity(MetricIT.ENDPOINT, String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + MetricIT.ENDPOINT, String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }
 
   @Test
+  @DirtiesContext
   public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
     ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"DEBUG\"");
 
@@ -193,10 +196,15 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
         new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(
-            "/actuator/loggers/io.camunda.tasklist", request, String.class);
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            request,
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(204);
 
-    response = testRestTemplate.getForEntity("/actuator/loggers/io.camunda.tasklist", String.class);
+    response =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
+            String.class);
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"configuredLevel\":\"TRACE\"");
   }

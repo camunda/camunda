@@ -41,7 +41,12 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Batch Modification', () => {
-  test('Move Operation', async ({processesPage, commonPage, page}) => {
+  test('Move Operation @roundtrip', async ({
+    processesPage,
+    commonPage,
+    page,
+  }) => {
+    test.slow();
     const processInstanceKeys = initialData.processInstances
       .map((instance) => instance.processInstanceKey)
       .join(',');
@@ -140,14 +145,21 @@ test.describe('Process Instance Batch Modification', () => {
       ),
     ).toBeVisible();
 
-    // Expect that shipArticles flow node instances got canceled in all process instances
-    await expect(
-      processesPage.diagram.diagram.getByTestId(
-        'state-overlay-shipArticles-active',
-      ),
-    ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+    // Expect that flow node instances have been created on shipArticles in all process instances.
+    // Reload page until data is updated.
+    await expect
+      .poll(
+        async () => {
+          await page.reload();
+          return processesPage.diagram.diagram
+            .getByTestId('state-overlay-shipArticles-active')
+            .textContent();
+        },
+        {timeout: 2000},
+      )
+      .toBe(NUM_SELECTED_PROCESS_INSTANCES.toString());
 
-    // Expect that flow node instances have been created on checkPayment in all process instances
+    // Expect that checkPayment flow node instances got canceled in all process instances
     await expect(
       processesPage.diagram.diagram.getByTestId(
         'state-overlay-checkPayment-canceled',

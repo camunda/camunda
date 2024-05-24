@@ -18,7 +18,6 @@ import {createMockProcess} from 'modules/queries/useProcesses';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
@@ -31,9 +30,7 @@ const getWrapper = () => {
 
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
-      <QueryClientProvider client={mockClient}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </QueryClientProvider>
+      <QueryClientProvider client={mockClient}>{children}</QueryClientProvider>
     );
   };
 

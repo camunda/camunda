@@ -12,7 +12,6 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -29,9 +28,7 @@ const getWrapper = () => {
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter>{children}</MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 

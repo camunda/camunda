@@ -11,8 +11,6 @@ import io.camunda.operate.ApplicationShutdownService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,8 +32,7 @@ public class PartitionHolder {
   private List<Integer> partitionIds = new ArrayList<>();
 
   @Autowired private OperateProperties operateProperties;
-
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired private PartitionSupplier partitionSupplier;
 
   @Autowired(required = false)
   private ApplicationShutdownService applicationShutdownService;
@@ -102,17 +99,21 @@ public class PartitionHolder {
   }
 
   protected Optional<List<Integer>> getPartitionIdsFromZeebe() {
-    LOGGER.debug("Requesting partition ids from Zeebe client");
-    try {
-      final Topology topology = zeebeClient.newTopologyRequest().send().join();
-      final int partitionCount = topology.getPartitionsCount();
+    LOGGER.debug("Requesting partition ids");
+
+    final var result = partitionSupplier.getPartitionsCount();
+
+    if (result.isLeft()) {
+      final var t = result.getLeft();
+      LOGGER.warn(
+          "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
+    } else {
+      final var partitionCount = result.get();
       if (partitionCount > 0) {
         return Optional.of(CollectionUtil.fromTo(1, partitionCount));
       }
-    } catch (Exception t) {
-      LOGGER.warn(
-          "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
     }
+
     return Optional.empty();
   }
 
@@ -120,7 +121,7 @@ public class PartitionHolder {
     ThreadUtil.sleepFor(milliseconds);
   }
 
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
+  public void setPartitionSupplier(final PartitionSupplier partitionSupplier) {
+    this.partitionSupplier = partitionSupplier;
   }
 }

@@ -54,7 +54,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+        uses: actions/checkout@b80ff79f1755d06ba70441c368a6fe801f5f3a62
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -62,7 +62,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
+        uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

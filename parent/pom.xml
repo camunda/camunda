@@ -53,7 +53,7 @@
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <version.error-prone>2.27.1</version.error-prone>
     <version.grpc>1.64.0</version.grpc>
-    <version.gson>2.10.1</version.gson>
+    <version.gson>2.11.0</version.gson>
     <version.guava>33.2.0-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
@@ -71,7 +71,7 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.109.Final</version.netty>
+    <version.netty>4.1.110.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
@@ -85,7 +85,7 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.5.4</version.wiremock>
+    <version.wiremock>3.6.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
@@ -94,8 +94,8 @@
     <version.feel-scala>1.17.7</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.7</version.spring>
-    <version.spring-security>6.2.4</version.spring-security>
+    <version.spring>6.1.8</version.spring>
+    <version.spring-security>6.3.0</version.spring-security>
     <version.spring-boot>3.2.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
@@ -104,7 +104,7 @@
     <version.jqwik>1.8.4</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.14.15</version.byte-buddy>
+    <version.byte-buddy>1.14.16</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -122,9 +122,9 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.39.0</version.google-sdk>
     <version.azure-sdk>1.2.23</version.azure-sdk>
-    <version.awssdk>2.25.54</version.awssdk>
+    <version.awssdk>2.25.58</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
-    <version.validation-api>3.0.2</version.validation-api>
+    <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.1</version.jackson-annotations>
@@ -133,6 +133,7 @@
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
+    <version.h2>2.2.224</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
     <version.reactor-netty>1.1.19</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
@@ -153,7 +154,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.log4j.testjar>2.19.0</version.log4j.testjar>
-    <version.aws-java-sdk>1.12.724</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.729</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
@@ -174,7 +175,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.39.1</version.nimbus-jose-jwt>
-    <version.keycloak>23.0.7</version.keycloak>
+    <version.keycloak>24.0.4</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -196,13 +197,13 @@
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
-    <plugin.version.build-helper>3.5.0</plugin.version.build-helper>
+    <plugin.version.build-helper>3.6.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.4.1</plugin.version.enforcer>
-    <plugin.version.exec>3.2.0</plugin.version.exec>
+    <plugin.version.exec>3.3.0</plugin.version.exec>
     <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
@@ -268,6 +269,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-zeebe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <!-- Internal Zeebe modules -->
       <dependency>
         <groupId>io.camunda</groupId>
@@ -870,6 +876,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>auth-spring-boot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
       </dependency>
@@ -1359,6 +1377,12 @@
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <version>${version.postgresql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${version.h2}</version>
       </dependency>
 
       <dependency>
@@ -2468,7 +2492,9 @@
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>io.camunda:auth-spring-boot-starter</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
@@ -2517,7 +2543,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.5.0</version>
+          <version>7.6.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->
@@ -2643,7 +2669,7 @@
               <excludes>
                 <exclude>**/*RandomizedPropertyTest.java</exclude>
                 <exclude>**/*RandomizedRaftTest.java</exclude>
-                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/zeebe/issues/8637 -->
+                <!-- Re-add the default exclude for inner classes, see https://github.com/camunda/camunda/issues/8637 -->
                 <exclude>**/*$*.java</exclude>
               </excludes>
             </configuration>

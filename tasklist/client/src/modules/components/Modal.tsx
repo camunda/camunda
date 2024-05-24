@@ -8,15 +8,15 @@
 
 import {createPortal} from 'react-dom';
 import {Modal as BaseModal} from '@carbon/react';
-import {CarbonTheme} from 'modules/theme/CarbonTheme';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 type Props = React.ComponentProps<typeof BaseModal>;
 
 const Modal: React.FC<Props> = ({children, ...props}) => {
   return createPortal(
-    <CarbonTheme>
+    <ThemeProvider>
       <BaseModal {...props}>{children}</BaseModal>
-    </CarbonTheme>,
+    </ThemeProvider>,
     document.body,
   );
 };

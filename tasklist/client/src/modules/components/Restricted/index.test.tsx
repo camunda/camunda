@@ -11,7 +11,6 @@ import {render, screen} from 'modules/testing-library';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {MemoryRouter} from 'react-router-dom';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -34,12 +33,8 @@ const getWrapper = () => {
     return (
       <QueryClientProvider client={mockClient}>
         <MemoryRouter initialEntries={['/']}>
-          <MockThemeProvider>
-            <>
-              <UserName />
-              {children}
-            </>
-          </MockThemeProvider>
+          <UserName />
+          {children}
         </MemoryRouter>
       </QueryClientProvider>
     );

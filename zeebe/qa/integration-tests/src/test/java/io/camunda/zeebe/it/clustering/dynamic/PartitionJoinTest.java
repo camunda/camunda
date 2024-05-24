@@ -68,13 +68,6 @@ final class PartitionJoinTest {
 
   TestCluster setupCluster(final InitialClusterState conf) {
     return TestCluster.builder()
-        .withBrokerConfig(
-            broker ->
-                broker
-                    .brokerConfig()
-                    .getExperimental()
-                    .getFeatures()
-                    .setEnableDynamicClusterTopology(true))
         .withBrokersCount(conf.clusterSize())
         .withReplicationFactor(conf.replicationFactor())
         .withPartitionsCount(conf.partitionCount())

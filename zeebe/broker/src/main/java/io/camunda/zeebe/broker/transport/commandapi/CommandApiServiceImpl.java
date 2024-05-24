@@ -11,29 +11,21 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
-import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
 public final class CommandApiServiceImpl extends Actor
     implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
 
-  private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
   private final QueryApiRequestHandler queryHandler;
@@ -42,12 +34,9 @@ public final class CommandApiServiceImpl extends Actor
 
   public CommandApiServiceImpl(
       final ServerTransport serverTransport,
-      final BrokerInfo localBroker,
-      final PartitionAwareRequestLimiter limiter,
       final ActorSchedulingService scheduler,
       final QueryApiCfg queryApiCfg) {
     this.serverTransport = serverTransport;
-    this.limiter = limiter;
     this.scheduler = scheduler;
     commandHandler = new CommandApiRequestHandler();
     queryHandler = new QueryApiRequestHandler(queryApiCfg);
@@ -101,8 +90,6 @@ public final class CommandApiServiceImpl extends Actor
     actor.call(
         () -> {
           leadPartitions.add(partitionId);
-          limiter.addPartition(partitionId);
-
           queryHandler.addPartition(partitionId, queryService);
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
 
@@ -111,8 +98,7 @@ public final class CommandApiServiceImpl extends Actor
               .onComplete(
                   (recordWriter, error) -> {
                     if (error == null) {
-                      final var requestLimiter = limiter.getLimiter(partitionId);
-                      commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      commandHandler.addPartition(partitionId, recordWriter);
                       serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
                       future.complete(null);
                     } else {
@@ -148,7 +134,6 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   private void removeForPartitionId(final int partitionId) {
-    limiter.removePartition(partitionId);
     serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
     serverTransport.unsubscribe(partitionId, RequestType.QUERY);
   }
@@ -156,16 +141,6 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   public CommandResponseWriter newCommandResponseWriter() {
     return new CommandResponseWriterImpl(serverTransport);
-  }
-
-  @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
-    final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
-    return typedRecord -> {
-      if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {
-        partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
-      }
-    };
   }
 
   @Override

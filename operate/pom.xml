@@ -163,30 +163,10 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/schema/*IT.java</includeITNames>
-        <excludeITNames>**/SchemaManagerIT.java, **/ImportStoreIT.java</excludeITNames>
+        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
-    </profile>
-
-    <profile>
-      <!--
-        We have to skip spotbugs analysis until Operate team have fixed several findings
-        See https://github.com/camunda/zeebe/issues/17331
-      -->
-      <id>spotbugs</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs-maven-plugin</artifactId>
-            <version>${plugin.version.spotbugs}</version>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
     <!--

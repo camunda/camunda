@@ -231,7 +231,7 @@ public final class ActivityTest {
     createProcessAndAssertIgnoredHeaders(null);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/16043
+  // regression test for https://github.com/camunda/camunda/issues/16043
   @Test
   public void shouldEscapeDoubleQuotesInStaticExpression() {
     final var process = createModelFromClasspathResource("/regression-variable-mapping.bpmn");
