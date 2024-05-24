@@ -115,7 +115,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
               final long scheduleFor = now + Math.max(dueDate - now, timerResolution);
               if (!(currentlyPlanned instanceof final Scheduled currentlyScheduled)
                   || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {
-                final var task = scheduleService.runAfter(scheduleFor, this::execute);
+                final var task = scheduleService.runAt(scheduleFor, this::execute);
                 return Optional.of(new Scheduled(scheduleFor, task));
               }
               return Optional.empty();
@@ -131,9 +131,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     final var scheduleService = processingContext.getScheduleService();
     if (scheduleAsync) {
-      this.scheduleService = scheduleService::runAfterAsync;
+      this.scheduleService = scheduleService::runAtAsync;
     } else {
-      this.scheduleService = scheduleService::runAfter;
+      this.scheduleService = scheduleService::runAt;
     }
 
     shouldRescheduleChecker = true;
@@ -169,11 +169,10 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   interface ScheduleDelayed {
     /**
      * Implemented by either {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAfter(long, Task)} or
-     * {@link io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAfterAsync(long,
-     * Task)}
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAt(long, Task)} or {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAtAsync(long, Task)}
      */
-    ScheduledTask runAfter(long timestamp, final Task task);
+    ScheduledTask runAt(long timestamp, final Task task);
   }
 
   interface NextExecution {
