@@ -19,8 +19,9 @@ import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-public class ClusterEndpointResponseIT {
-  @TestZeebe static TestStandaloneBroker broker = new TestStandaloneBroker();
+final class ClusterEndpointResponseIT {
+  @TestZeebe
+  static TestStandaloneBroker broker = new TestStandaloneBroker().withRecordingExporter(true);
 
   @Test
   void shouldMatchExpectedSerialization() throws IOException, InterruptedException {
@@ -43,7 +44,17 @@ public class ClusterEndpointResponseIT {
                                 {
                                   "id": 1,
                                   "state": "ACTIVE",
-                                  "priority": 1
+                                  "priority": 1,
+                                  "config":{
+                                     "exporting": {
+                                        "exporters": [
+                                          {
+                                            "id": "recordingExporter",
+                                            "state": "ENABLED"
+                                          }
+                                        ]
+                                     }
+                                  }
                                 }
                               ]
                             }
