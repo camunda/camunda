@@ -93,7 +93,7 @@ jobs:
             fi
 
             # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.issue_project_status }}"
+            project_status="${{ steps.issue-project.outputs.project_status }}"
             echo $project_status
             if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
               echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
