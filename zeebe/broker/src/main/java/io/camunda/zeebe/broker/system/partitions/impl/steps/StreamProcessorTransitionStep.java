@@ -163,7 +163,6 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             processedCommand ->
                 context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
         .addLifecycleListener(context.getCommandApiService())
-        .addLifecycleListener(context.getBackupApiRequestHandler())
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)

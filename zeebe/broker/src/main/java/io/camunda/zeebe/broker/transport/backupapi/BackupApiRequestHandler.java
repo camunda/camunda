@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
@@ -41,14 +40,13 @@ import java.util.Collection;
  */
 public final class BackupApiRequestHandler
     extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
-    implements DiskSpaceUsageListener, StreamProcessorLifecycleAware {
+    implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
-  private boolean processingPaused = false;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -100,16 +98,6 @@ public final class BackupApiRequestHandler
     };
   }
 
-  @Override
-  public void onPaused() {
-    processingPaused = true;
-  }
-
-  @Override
-  public void onResumed() {
-    processingPaused = false;
-  }
-
   private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
       final int requestStreamId,
       final long requestId,
@@ -136,8 +124,7 @@ public final class BackupApiRequestHandler
       // Response will be sent by the processor
       return Either.right(responseWriter.noResponse());
     } else {
-      return Either.left(
-          errorWriter.mapWriteError(partitionId, written.getLeft(), processingPaused));
+      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft(), false));
     }
   }
 
