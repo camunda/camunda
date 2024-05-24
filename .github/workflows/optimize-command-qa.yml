@@ -1,0 +1,173 @@
+name: Optimize Command QA
+on:
+  repository_dispatch:
+    types: [qa-command]
+jobs:
+  optimize-eng-command:
+    name: QA Command
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "project_id=101"
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "qa_engineer=RobertDorlan"
+            echo "pm=toco-cam"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      - name: Parse args
+        id: parse-args
+        run: |
+          ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
+          ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
+          REVIEWER="${ARG2//@/}"
+          {
+            echo "arg1=${ARG1}"
+            echo "arg2=${ARG2}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Get issue project
+        id: issue-project
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
+          project_id=${{ steps.vars.outputs.project_id }}
+          project_owner=${{ github.event.client_payload.github.payload.organization.login }}
+
+          project_title=$(gh project view $project_id --owner $project_owner --format json --jq '.title')
+          issue_projects=$(gh issue view $issue_url --json "projectItems" --jq '.projectItems')
+          issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
+          project_status=$(echo "$issue_project" | jq -r '.status.name')
+
+          echo "project_title=${project_title}" >> "$GITHUB_OUTPUT"
+          echo "project_status=${project_status}" >> "$GITHUB_OUTPUT"
+
+      - name: Get issue labels
+        id: get-issue-labels
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
+          issue_labels=$(gh issue view $issue_url --json "labels" --jq '.labels[].name')
+          echo "issue_labels=${issue_labels}" >> "$GITHUB_OUTPUT"
+
+      - name: Get Engineering DRI
+        id: get-engineering-dri
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
+          ENGINEERING_DRI=$(echo "$ISSUE_DESCRIPTION" | grep -oP 'Engineering DRI: @\K\w+')
+          echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate inputs
+        run: |
+          # General checks
+          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+            echo "Issue has no Engineering DRI"
+            exit 1
+          fi
+          if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
+            echo "No command provided"
+            exit 1
+          fi
+          if [ -z "${{ steps.issue-project.outputs.project_title }}" ]; then
+            echo "Issue not in the correct project"
+            exit 1
+          fi
+
+          # Validate approve command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'QA Review' ]; then
+              echo "QA Review can be approved only from 'QA Review' status"
+              exit 1
+            fi
+
+            # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
+            if [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:epic' ] && [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:task' ] && [ "${{ steps.get-issue-labels.outputs.issue_labels }}" != 'type:bug' ]; then
+              echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
+              exit 1
+            fi
+          fi
+
+      - name: Assign PM
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(steps.get-issue-labels.outputs.issue_labels, 'type:epic')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.pm }}
+
+      - name: Update Status field
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(steps.get-issue-labels.outputs.issue_labels, 'type:epic')
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "PM Review"
+
+      - name: Assign engineering DRI
+        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(steps.get-issue-labels.outputs.issue_labels, 'type:task') || contains(steps.get-issue-labels.outputs.issue_labels, 'type:bug'))
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
+
+      - name: Update Status field
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(steps.get-issue-labels.outputs.issue_labels, 'type:task') || contains(steps.get-issue-labels.outputs.issue_labels, 'type:bug'))
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "Ready to Complete"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+
+      - name: Update comment in case of failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+          reactions: confused
