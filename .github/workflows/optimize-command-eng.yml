@@ -64,7 +64,8 @@ jobs:
 
       - name: Get Engineering DRI
         id: get-engineering-dri
-        if: steps.parse-args.outputs.arg1 == 'reject'
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
           ENGINEERING_DRI=$(echo "$ISSUE_DESCRIPTION" | grep -oP 'Engineering DRI: @\K\w+')
