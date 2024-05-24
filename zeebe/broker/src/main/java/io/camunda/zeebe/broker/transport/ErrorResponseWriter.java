@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport;
 
+import static io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure.FULL;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
@@ -127,6 +128,13 @@ public final class ErrorResponseWriter implements BufferWriter {
 
   public ErrorResponseWriter mapWriteError(
       final int partitionId, final WriteFailure error, final boolean processingPaused) {
+    if (processingPaused && error == FULL) {
+      return resourceExhausted(
+          String.format(
+              "Failed to write client request to partition '%d', because processing is paused",
+              partitionId));
+    }
+
     return switch (error) {
       case CLOSED ->
           errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
