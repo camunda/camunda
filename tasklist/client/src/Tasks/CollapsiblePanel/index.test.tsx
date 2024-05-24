@@ -57,8 +57,24 @@ describe('<CollapsiblePanel />', () => {
       screen.getByRole('button', {name: 'Expand to show filters'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: 'Custom filter'}),
+      screen.getByRole('button', {name: 'Filter tasks'}),
     ).toBeInTheDocument();
+  });
+
+  it('should add custom filter from collapsed panel', async () => {
+    const {user} = render(<CollapsiblePanel />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(
+      screen.queryByRole('dialog', {name: /custom filters modal/i}),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Filter tasks'}));
+
+    expect(
+      screen.getByRole('dialog', {name: /custom filters modal/i}),
+    ).toBeVisible();
   });
 
   it('should render an expanded panel', async () => {

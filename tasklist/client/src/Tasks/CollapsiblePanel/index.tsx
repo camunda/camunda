@@ -91,6 +91,25 @@ const CollapsiblePanel: React.FC = () => {
   const customFilters = getStateLocally('customFilters')?.custom;
   const {data} = useCurrentUser();
   const userId = data?.userId ?? '';
+  const filtersModal = (
+    <CustomFiltersModal
+      key="custom-filters-modal"
+      isOpen={isCustomFiltersModalOpen}
+      onClose={() => {
+        setIsCustomFiltersModalOpen(false);
+      }}
+      onApply={() => {
+        setIsCustomFiltersModalOpen(false);
+        navigate({
+          search: getNavLinkSearchParam({
+            currentParams: searchParams,
+            filter: 'custom',
+            userId,
+          }),
+        });
+      }}
+    />
+  );
 
   if (isCollapsed) {
     return (
@@ -119,20 +138,25 @@ const CollapsiblePanel: React.FC = () => {
               aria-controls="task-nav-bar"
               aria-expanded="false"
               autoFocus={wasCollapsed !== null && !wasCollapsed}
+              type="button"
             />
           </li>
           <li>
             <Button
               hasIconOnly
-              iconDescription="Custom filter"
+              iconDescription="Filter tasks"
               tooltipPosition="right"
-              onClick={() => {}}
+              onClick={() => {
+                setIsCustomFiltersModalOpen(true);
+              }}
               renderIcon={Filter}
               size="md"
               kind="ghost"
+              type="button"
             />
           </li>
         </ul>
+        {filtersModal}
       </nav>
     );
   }
@@ -277,22 +301,7 @@ const CollapsiblePanel: React.FC = () => {
           </ButtonSet>
         </ul>
       </nav>
-      <CustomFiltersModal
-        isOpen={isCustomFiltersModalOpen}
-        onClose={() => {
-          setIsCustomFiltersModalOpen(false);
-        }}
-        onApply={() => {
-          setIsCustomFiltersModalOpen(false);
-          navigate({
-            search: getNavLinkSearchParam({
-              currentParams: searchParams,
-              filter: 'custom',
-              userId,
-            }),
-          });
-        }}
-      />
+      {filtersModal}
     </div>
   );
 };
