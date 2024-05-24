@@ -33,7 +33,7 @@ public interface SimpleProcessingScheduleService {
    * @implNote Can be silently ignored if the scheduling service is not ready.
    * @return A representation of the scheduled task.
    */
-  ScheduledTask runAfter(long timestamp, Task task);
+  ScheduledTask runAt(long timestamp, Task task);
 
   /**
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once

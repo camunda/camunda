@@ -67,12 +67,12 @@ public class ProcessingScheduleServiceImpl
   }
 
   @Override
-  public ScheduledTask runAfter(final long timestamp, final Task task) {
+  public ScheduledTask runAt(final long timestamp, final Task task) {
     if (actorControl == null) {
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    final var scheduledTimer = actorControl.runAfter(timestamp, toRunnable(task));
+    final var scheduledTimer = actorControl.runAt(timestamp, toRunnable(task));
     return scheduledTimer::cancel;
   }
 
