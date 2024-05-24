@@ -17,7 +17,7 @@ package worker
 import (
 	"sync"
 
-	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 )
 
 type jobDispatcher struct {
