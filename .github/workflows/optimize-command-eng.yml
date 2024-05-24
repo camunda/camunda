@@ -53,15 +53,52 @@ jobs:
             echo "reviewer=${REVIEWER}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Get issue project
+        id: issue-project
+        run: |
+          issue_id=${{ github.event.client_payload.github.payload.issue.node_id }}
+          project_id=${{ steps.vars.outputs.project_id }}
+          project_owner=${{ github.event.client_payload.github.payload.organization.login }}
+
+          project_title=$(gh project view $project_id --owner $project_owner --format json --jq '.title')
+          issue_projects=$(gh issue view $issue_id --json "projectItems" --jq '.projectItems')
+          issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
+
+          echo "issue_project=${issue_project}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate inputs
+        run: |
+          # General checks
+          if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
+            echo "No command provided"
+            exit 1
+          fi
+          if [ -z "${{ steps.issue-project.outputs.issue_project }}" ]; then
+            echo "Issue not in the correct project"
+            exit 1
+          fi
+
+          # Validate review command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            # Check if reviewer is provided
+            if [ -z "${{ steps.parse-args.outputs.reviewer }}" ]; then
+              echo "No reviewer provided"
+              exit 1
+            fi
+
+            # Check if the issue is in the correct status
+            project_status=$(echo $issue_project | jq -r '.status.name')
+            if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
+              echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
+              exit 1
+            fi
+          fi
+
       - name: Assign reviewer
         if: steps.parse-args.outputs.arg1 == 'review'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -z "${{ steps.parse-args.outputs.reviewer }}" ]; then
-            echo "No reviewer provided"
-            exit 1
-          fi
           gh version
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
           sleep 2  # avoiding race condition between two commands
