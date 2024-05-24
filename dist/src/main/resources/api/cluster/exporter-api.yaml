@@ -1,0 +1,52 @@
+openapi: "3.0.2"
+info:
+  title: API Title
+  version: "1.0"
+servers:
+  - url: "{schema}://{host}:{port}/actuator/exporters"
+    variables:
+     host:
+       default: localhost
+       description: Management server hostname
+     port:
+       default: "9600"
+       description: Management server port
+     schema:
+       default: http
+       description: Management server schema
+paths:
+  /{exporterId}/disable:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/ExporterId'
+      responses:
+        '202':
+          $ref: "#/components/responses/ExporterDisableResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+components:
+  parameters:
+    ExporterId:
+      name: exporterId
+      required: true
+      in: path
+      description: Id of the exporter
+      schema:
+        $ref: 'components.yaml#/schemas/ExporterId'
+
+  responses:
+    ExporterDisableResponse:
+      description: Request to disable exporters is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
