@@ -95,7 +95,7 @@
     "prettier": "3.2.5",
     "serve": "14.2.3",
     "source-map-explorer": "2.5.3",
-    "stylelint": "16.5.0",
+    "stylelint": "16.6.0",
     "stylelint-prettier": "5.0.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.4.5",
