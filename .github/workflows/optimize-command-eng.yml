@@ -58,12 +58,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          issue_id=${{ github.event.client_payload.github.payload.issue.node_id }}
+          issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
           project_id=${{ steps.vars.outputs.project_id }}
           project_owner=${{ github.event.client_payload.github.payload.organization.login }}
 
           project_title=$(gh project view $project_id --owner $project_owner --format json --jq '.title')
-          issue_projects=$(gh issue view $issue_id --json "projectItems" --jq '.projectItems')
+          issue_projects=$(gh issue view $issue_url --json "projectItems" --jq '.projectItems')
           issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
 
           echo "issue_project=${issue_project}" >> "$GITHUB_OUTPUT"
