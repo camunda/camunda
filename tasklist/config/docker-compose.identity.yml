@@ -187,7 +187,7 @@ services:
       elasticsearch:
         condition: service_started
     restart: on-failure
-    image: camunda/tasklist:8.5.1
+    image: camunda/tasklist:local-hb
     container_name: tasklist
     environment:
       - SERVER_PORT=8082

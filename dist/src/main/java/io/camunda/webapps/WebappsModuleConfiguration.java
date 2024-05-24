@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps;
 
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
@@ -21,8 +21,9 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = "io.camunda.webapps")
 @EnableAutoConfiguration
 @EnableConfigurationProperties(WebappsProperties.class)
+@ConditionalOnProperty(WebappsConfigurationInitializer.CAMUNDA_WEBAPPS_ENABLED_PROPERTY)
 public class WebappsModuleConfiguration {
+
   @ConfigurationProperties("camunda.webapps")
-  public static record WebappsProperties(
-      List<String> enabledApps, @NotNull String defaultApp, boolean loginDelegated) {}
+  public record WebappsProperties(boolean enabled, String defaultApp, boolean loginDelegated) {}
 }
