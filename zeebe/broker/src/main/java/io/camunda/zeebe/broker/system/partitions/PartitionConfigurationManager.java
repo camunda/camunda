@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.slf4j.Logger;
@@ -43,8 +41,7 @@ final class PartitionConfigurationManager {
     final var updatedConfig =
         context
             .getDynamicPartitionConfig()
-            .updateExporting(
-                config -> config.updateExporter(exporterId, new ExporterState(State.DISABLED)));
+            .updateExporting(config -> config.disableExporter(exporterId));
     context.setDynamicPartitionConfig(updatedConfig);
 
     final var exporterDirector = context.getExporterDirector();
