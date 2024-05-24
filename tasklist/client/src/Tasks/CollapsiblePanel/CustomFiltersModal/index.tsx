@@ -22,6 +22,7 @@ import {
   TextInput,
   Toggle,
   FormGroup,
+  Layer,
 } from '@carbon/react';
 import {Close, Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -79,7 +80,9 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
   const groups = currentUser?.groups ?? [];
 
   return (
-    <ComposedModal
+    <Layer
+      level={0}
+      as={ComposedModal}
       open={isOpen}
       preventCloseOnClickOutside
       size="md"
@@ -464,7 +467,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
           )}
         </Form>
       ) : null}
-    </ComposedModal>
+    </Layer>
   );
 };
 
