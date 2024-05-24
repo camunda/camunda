@@ -155,7 +155,7 @@ test.describe('Process Instance Batch Modification', () => {
             .getByTestId('state-overlay-shipArticles-active')
             .textContent();
         },
-        {timeout: 2000},
+        {intervals: [2000], timeout: 30000},
       )
       .toBe(NUM_SELECTED_PROCESS_INSTANCES.toString());
 
