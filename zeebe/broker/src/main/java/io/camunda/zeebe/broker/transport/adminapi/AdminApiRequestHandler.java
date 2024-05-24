@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
@@ -18,6 +21,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -61,8 +65,80 @@ public class AdminApiRequestHandler
       case SOFT_PAUSE_EXPORTING -> softPauseExporting(responseWriter, partitionId, errorWriter);
       case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
       case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);
+      case GET_FLOW_CONTROL -> getFlowControl(responseWriter, errorWriter);
+      case SET_FLOW_CONTROL -> setFlowControl(requestReader, responseWriter, errorWriter);
       default -> unknownRequest(errorWriter, requestReader.getMessageDecoder().type());
     };
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> setFlowControl(
+      final ApiRequestReader requestReader,
+      final ApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+
+    final int payloadLength = requestReader.getMessageDecoder().payloadLength();
+    final byte[] bytes = new byte[payloadLength];
+    requestReader.getMessageDecoder().getPayload(bytes, 0, payloadLength);
+    final ObjectMapper mapper = new ObjectMapper();
+    final FlowControlCfg flowControlCfg;
+
+    try {
+      flowControlCfg = mapper.readValue(bytes, FlowControlCfg.class);
+    } catch (final IOException e) {
+      result.completeExceptionally(e);
+      return result;
+    }
+
+    adminAccess
+        .configureFlowControl(flowControlCfg)
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                result.complete(Either.right(responseWriter));
+              } else {
+                LOG.error("Failed to set the flow control configuration.", t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to set the flow control configuration.")));
+              }
+            });
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getFlowControl(
+      final ApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+
+    final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
+    adminAccess
+        .getFlowControlConfiguration()
+        .onComplete(
+            (r, t) -> {
+              if (t == null) {
+                final ObjectMapper mapper = new ObjectMapper();
+                final byte[] bytes;
+                try {
+                  bytes = mapper.writeValueAsBytes(r);
+                } catch (final JsonProcessingException e) {
+                  result.completeExceptionally(e);
+                  return;
+                }
+
+                final int payloadLength = bytes.length;
+                responseWriter.getResponseEncoder().putPayload(bytes, 0, payloadLength);
+                result.complete(Either.right(responseWriter));
+
+              } else {
+                LOG.error("Failed to get the flow control configuration.", t);
+                result.complete(
+                    Either.left(
+                        errorWriter.internalError(
+                            "Failed to get the flow control configuration.")));
+              }
+            });
+
+    return result;
   }
 
   private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> banInstance(

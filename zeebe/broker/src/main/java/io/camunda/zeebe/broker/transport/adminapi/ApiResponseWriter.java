@@ -33,6 +33,10 @@ public class ApiResponseWriter implements ResponseWriter {
   @Override
   public void reset() {}
 
+  public AdminResponseEncoder getResponseEncoder() {
+    return responseEncoder;
+  }
+
   @Override
   public int getLength() {
     return MessageHeaderEncoder.ENCODED_LENGTH + AdminResponseEncoder.BLOCK_LENGTH;
