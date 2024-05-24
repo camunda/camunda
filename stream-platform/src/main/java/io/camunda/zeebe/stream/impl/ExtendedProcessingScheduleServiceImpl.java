@@ -51,12 +51,12 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public ScheduledTask runAtAsync(final long timestamp, final Task task) {
+  public ScheduledTask runAfterAsync(final long timestamp, final Task task) {
     final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
     concurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
-          final var scheduledTask = asyncActorService.runAt(timestamp, task);
+          final var scheduledTask = asyncActorService.runAfter(timestamp, task);
           futureScheduledTask.complete(scheduledTask);
         });
     return new AsyncScheduledTask(futureScheduledTask);
@@ -73,11 +73,11 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public ScheduledTask runAt(final long timestamp, final Task task) {
+  public ScheduledTask runAfter(final long timestamp, final Task task) {
     if (alwaysAsync) {
-      return runAtAsync(timestamp, task);
+      return runAfterAsync(timestamp, task);
     } else {
-      return processorActorService.runAt(timestamp, task);
+      return processorActorService.runAfter(timestamp, task);
     }
   }
 
