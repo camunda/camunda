@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
@@ -40,13 +41,14 @@ import java.util.Collection;
  */
 public final class BackupApiRequestHandler
     extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
-    implements DiskSpaceUsageListener {
+    implements DiskSpaceUsageListener, StreamProcessorLifecycleAware {
   private boolean isDiskSpaceAvailable = true;
   private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
+  private boolean processingPaused = false;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -96,6 +98,16 @@ public final class BackupApiRequestHandler
           CompletableActorFuture.completed(
               unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
     };
+  }
+
+  @Override
+  public void onPaused() {
+    processingPaused = true;
+  }
+
+  @Override
+  public void onResumed() {
+    processingPaused = false;
   }
 
   private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(

@@ -21,16 +21,19 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.Either;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 final class CommandApiRequestHandler
-    extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
+    extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter>
+    implements StreamProcessorLifecycleAware {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private boolean isDiskSpaceAvailable = true;
+  private boolean processingPaused = false;
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -45,6 +48,16 @@ final class CommandApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     return CompletableActorFuture.completed(
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  @Override
+  public void onPaused() {
+    processingPaused = true;
+  }
+
+  @Override
+  public void onResumed() {
+    processingPaused = false;
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
