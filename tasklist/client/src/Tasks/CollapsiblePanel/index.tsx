@@ -130,11 +130,7 @@ const CollapsiblePanel: React.FC = () => {
         aria-label="Filter controls"
         aria-owns="task-nav-bar-controls"
       >
-        <ul
-          id="task-nav-bar-controls"
-          role="group"
-          aria-labelledby="task-nav-bar"
-        >
+        <ul id="task-nav-bar-controls" aria-labelledby="task-nav-bar">
           <li>
             <Button
               hasIconOnly
@@ -197,7 +193,7 @@ const CollapsiblePanel: React.FC = () => {
             autoFocus
           />
         </span>
-        <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
+        <ul id="filters-menu" aria-labelledby="task-nav-bar">
           <li>
             <ControlledNavLink
               to={{
