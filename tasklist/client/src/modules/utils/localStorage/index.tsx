@@ -17,7 +17,7 @@ const validators = {
   theme: z.enum(['light', 'dark', 'system']),
   autoSelectNextTask: z.boolean(),
   customFilters: z.object({
-    custom: customFiltersSchema,
+    custom: customFiltersSchema.optional(),
   }),
 } as const;
 

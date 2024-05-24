@@ -84,6 +84,7 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
       preventCloseOnClickOutside
       size="md"
       onClose={onClose}
+      aria-label="Custom filters modal"
     >
       {isOpen ? (
         <Form<

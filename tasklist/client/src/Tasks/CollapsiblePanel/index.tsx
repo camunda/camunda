@@ -9,17 +9,18 @@
 import {useState} from 'react';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
-import {Button} from '@carbon/react';
+import {Button, ButtonSet, OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
-import {useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
-import {getStateLocally} from 'modules/utils/localStorage';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {usePrevious} from '@uidotdev/usehooks';
+import {CustomFiltersModal} from './CustomFiltersModal';
 
 function getCustomFilterParams(userId: string) {
   const customFilters = getStateLocally('customFilters')?.custom;
@@ -80,6 +81,9 @@ function getNavLinkSearchParam(options: {
 }
 
 const CollapsiblePanel: React.FC = () => {
+  const [isCustomFiltersModalOpen, setIsCustomFiltersModalOpen] =
+    useState(false);
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const wasCollapsed = usePrevious(isCollapsed);
   const {filter} = useTaskFilters();
@@ -141,7 +145,7 @@ const CollapsiblePanel: React.FC = () => {
         id="task-nav-bar"
         aria-owns="filters-menu"
       >
-        <span className={cn(styles.header, sharedStyles.panelHeader)}>
+        <span className={sharedStyles.panelHeader}>
           <h1 id="filters-title">Filters</h1>
           <Button
             hasIconOnly
@@ -216,7 +220,7 @@ const CollapsiblePanel: React.FC = () => {
             </ControlledNavLink>
           </li>
           {customFilters === undefined ? null : (
-            <li>
+            <li className={styles.customFilterContainer}>
               <ControlledNavLink
                 to={{
                   search: getNavLinkSearchParam({
@@ -226,13 +230,69 @@ const CollapsiblePanel: React.FC = () => {
                   }),
                 }}
                 isActive={filter === 'custom'}
+                className={styles.customFilterNav}
               >
                 Custom
               </ControlledNavLink>
+              <OverflowMenu
+                iconDescription="Custom filter actions"
+                size="lg"
+                className={cn(styles.overflowMenu, {
+                  [styles.selected]: filter === 'custom',
+                })}
+              >
+                <OverflowMenuItem
+                  itemText="Edit"
+                  onClick={() => {
+                    setIsCustomFiltersModalOpen(true);
+                  }}
+                />
+                <OverflowMenuItem
+                  hasDivider
+                  isDelete
+                  itemText="Delete"
+                  onClick={() => {
+                    storeStateLocally('customFilters', {});
+                    navigate({
+                      search: getNavLinkSearchParam({
+                        currentParams: searchParams,
+                        filter: 'all-open',
+                        userId,
+                      }),
+                    });
+                  }}
+                />
+              </OverflowMenu>
             </li>
           )}
+          <ButtonSet>
+            <Button
+              onClick={() => {
+                setIsCustomFiltersModalOpen(true);
+              }}
+              kind="ghost"
+            >
+              New filter
+            </Button>
+          </ButtonSet>
         </ul>
       </nav>
+      <CustomFiltersModal
+        isOpen={isCustomFiltersModalOpen}
+        onClose={() => {
+          setIsCustomFiltersModalOpen(false);
+        }}
+        onApply={() => {
+          setIsCustomFiltersModalOpen(false);
+          navigate({
+            search: getNavLinkSearchParam({
+              currentParams: searchParams,
+              filter: 'custom',
+              userId,
+            }),
+          });
+        }}
+      />
     </div>
   );
 };
