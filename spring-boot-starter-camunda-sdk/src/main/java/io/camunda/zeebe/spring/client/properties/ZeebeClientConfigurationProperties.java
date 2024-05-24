@@ -743,6 +743,9 @@ public class ZeebeClientConfigurationProperties {
     }
 
     public String getDefaultName() {
+      if (defaultName == null) {
+        return DEFAULT.getDefaultJobWorkerName();
+      }
       return defaultName;
     }
 

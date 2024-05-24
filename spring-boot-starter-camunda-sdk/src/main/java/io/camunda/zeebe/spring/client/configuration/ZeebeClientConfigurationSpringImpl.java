@@ -17,46 +17,45 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.common.auth.Authentication;
-import io.camunda.common.auth.DefaultNoopAuthentication;
-import io.camunda.common.auth.Product;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
-import io.grpc.Status.Code;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 
 public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfiguration {
 
-  @Autowired private ZeebeClientConfigurationProperties properties;
-
-  @Autowired private CommonConfigurationProperties commonConfigurationProperties;
-
-  @Autowired private Authentication authentication;
-
-  @Lazy // Must be lazy, otherwise we get circular dependencies on beans
-  @Autowired
-  private JsonMapper jsonMapper;
-
-  @Lazy
-  @Autowired(required = false)
-  private List<ClientInterceptor> interceptors;
-
-  @Lazy @Autowired private ZeebeClientExecutorService zeebeClientExecutorService;
+  private final ZeebeClientConfigurationProperties properties;
+  private final CommonConfigurationProperties commonConfigurationProperties;
+  private final JsonMapper jsonMapper;
+  private final List<ClientInterceptor> interceptors;
+  private final ZeebeClientExecutorService zeebeClientExecutorService;
   private CredentialsProvider credentialsProvider;
+
+  @Autowired
+  public ZeebeClientConfigurationSpringImpl(
+      final ZeebeClientConfigurationProperties properties,
+      final CommonConfigurationProperties commonConfigurationProperties,
+      final JsonMapper jsonMapper,
+      final List<ClientInterceptor> interceptors,
+      final ZeebeClientExecutorService zeebeClientExecutorService) {
+    this.properties = properties;
+    this.commonConfigurationProperties = commonConfigurationProperties;
+    this.jsonMapper = jsonMapper;
+    this.interceptors = interceptors;
+    this.zeebeClientExecutorService = zeebeClientExecutorService;
+  }
 
   @PostConstruct
   public void applyLegacy() {
@@ -195,21 +194,6 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
 
   private CredentialsProvider initCredentialsProvider() {
 
-    if (commonConfigurationProperties.getEnabled()
-        && !(authentication instanceof DefaultNoopAuthentication)) {
-      return new CredentialsProvider() {
-        @Override
-        public void applyCredentials(final CredentialsApplier applier) {
-          final Map.Entry<String, String> authHeader = authentication.getTokenHeader(Product.ZEEBE);
-          applier.put(authHeader.getKey(), authHeader.getValue());
-        }
-
-        @Override
-        public boolean shouldRetryRequest(final StatusCode statusCode) {
-          return statusCode.code() == Code.DEADLINE_EXCEEDED.value();
-        }
-      };
-    }
     if (hasText(properties.getCloud().getClientId())
         && hasText(properties.getCloud().getClientSecret())) {
       return CredentialsProvider.newCredentialsProviderBuilder()
@@ -232,7 +216,7 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
       }
       return builder.build();
     }
-    return null;
+    return new NoopCredentialsProvider();
   }
 
   @Override
@@ -242,8 +226,6 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
         + properties
         + ", commonConfigurationProperties="
         + commonConfigurationProperties
-        + ", authentication="
-        + authentication
         + ", jsonMapper="
         + jsonMapper
         + ", interceptors="

@@ -16,7 +16,6 @@
 package io.camunda.zeebe.spring.client;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.spring.client.configuration.CommonClientConfiguration;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.MetricsDefaultConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeActuatorConfiguration;
@@ -37,7 +36,6 @@ import org.springframework.context.annotation.Configuration;
 @ImportAutoConfiguration({
   ZeebeClientProdAutoConfiguration.class,
   ZeebeClientAllAutoConfiguration.class,
-  CommonClientConfiguration.class,
   JsonMapperConfiguration.class,
   ZeebeActuatorConfiguration.class,
   MetricsDefaultConfiguration.class

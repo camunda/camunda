@@ -24,6 +24,7 @@ import io.camunda.zeebe.spring.client.jobhandling.DefaultCommandExceptionHandlin
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
+import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
 import io.camunda.zeebe.spring.client.properties.PropertyBasedZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -38,7 +39,10 @@ import org.springframework.context.annotation.Import;
     havingValue = "true",
     matchIfMissing = true)
 @Import(AnnotationProcessorConfiguration.class)
-@EnableConfigurationProperties(ZeebeClientConfigurationProperties.class)
+@EnableConfigurationProperties({
+  ZeebeClientConfigurationProperties.class,
+  CommonConfigurationProperties.class
+})
 public class ZeebeClientAllAutoConfiguration {
 
   private final ZeebeClientConfigurationProperties configurationProperties;
