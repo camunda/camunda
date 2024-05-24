@@ -9,9 +9,13 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static java.util.Objects.requireNonNull;
 
+import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitType;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -26,6 +30,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -200,6 +206,51 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
                 "Failure on writing error record to ban instance {} onto the LogStream.",
                 processInstanceKey,
                 e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  @Override
+  public ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg) {
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            final FlowControl flowControl = adminControl.getLogStream().getFlowControl();
+            if (flowControlCfg.getAppend() != null) {
+              flowControl.setAppendLimit(flowControlCfg.getAppend().buildLimit());
+            }
+            if (flowControlCfg.getRequest() != null) {
+              flowControl.setRequestLimit(flowControlCfg.getRequest().buildLimit());
+            }
+            future.complete(null);
+          } catch (final Exception e) {
+            LOG.error(
+                "Failure on configuring the append limit of flow control with config {}.",
+                flowControlCfg,
+                e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  @Override
+  public ActorFuture<Map<LimitType, Limit>> getFlowControlConfiguration() {
+    final ActorFuture<Map<LimitType, Limit>> future = concurrencyControl.createFuture();
+    final Map<LimitType, Limit> map = new HashMap<>();
+
+    concurrencyControl.run(
+        () -> {
+          final FlowControl flowControl = adminControl.getLogStream().getFlowControl();
+          try {
+            map.put(LimitType.APPEND, flowControl.getAppendLimit());
+            map.put(LimitType.REQUEST, flowControl.getRequestLimit());
+            future.complete(map);
+          } catch (final Exception e) {
+            LOG.error("Failure on getting the limit configuration of flow control.", e);
             future.completeExceptionally(e);
           }
         });
