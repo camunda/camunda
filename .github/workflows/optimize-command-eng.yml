@@ -62,9 +62,21 @@ jobs:
           echo "project_title=${project_title}" >> "$GITHUB_OUTPUT"
           echo "project_status=${project_status}" >> "$GITHUB_OUTPUT"
 
+      - name: Get Engineering DRI
+        id: get-engineering-dri
+        if: steps.parse-args.outputs.arg1 == 'reject'
+        run: |
+          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
+          ENGINEERING_DRI=$(echo "$ISSUE_DESCRIPTION" | grep -oP 'Engineering DRI: @\K\w+')
+          echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
+
       - name: Validate inputs
         run: |
           # General checks
+          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+            echo "Issue has no Engineering DRI"
+            exit 1
+          fi
           if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
             echo "No command provided"
             exit 1
@@ -90,6 +102,16 @@ jobs:
             fi
           fi
 
+          # Validate reject command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'Eng Review' ]; then
+              echo "Eng Review can be rejected only from 'Eng Review' status"
+              exit 1
+            fi
+          fi
+
       - name: Assign reviewer
         if: steps.parse-args.outputs.arg1 == 'review'
         env:
@@ -110,6 +132,27 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "Eng Review"
+
+      - name: Assign engineering DRI
+        if: steps.parse-args.outputs.arg1 == 'reject'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
+
+      - name: Update Status field
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'reject'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "In Progress"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
