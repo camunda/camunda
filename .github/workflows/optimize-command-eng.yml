@@ -13,6 +13,7 @@ jobs:
           {
             echo "project_id=101"
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "qa_engineer=RobertDorlan"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate a GitHub token
@@ -103,6 +104,16 @@ jobs:
             fi
           fi
 
+          # Validate approve command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'Eng Review' ]; then
+              echo "Eng Review can be approved only from 'Eng Review' status"
+              exit 1
+            fi
+          fi
+
           # Validate reject command
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
             # Check if the issue is in the correct status
@@ -154,6 +165,27 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "In Progress"
+
+      - name: Assign QA
+        if: steps.parse-args.outputs.arg1 == 'approve'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
+
+      - name: Update Status field
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'approve'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "QA Review"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
