@@ -19,19 +19,26 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
+import io.camunda.zeebe.management.cluster.ExporterConfig;
+import io.camunda.zeebe.management.cluster.ExporterStateCode;
+import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.PartitionConfig;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -156,11 +163,17 @@ final class ClusterApiUtils {
                       .map(MemberId::id)
                       .map(Integer::parseInt)
                       .collect(Collectors.toList()));
-      case final ClusterConfigurationChangeOperation.MemberRemoveOperation memberRemoveOperation ->
+      case final MemberRemoveOperation memberRemoveOperation ->
           new Operation()
               .operation(OperationEnum.BROKER_REMOVE)
               .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
               .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+      case final PartitionDisableExporterOperation disableExporterOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_DISABLE_EXPORTER)
+              .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
+              .partitionId(disableExporterOperation.partitionId())
+              .exporterId(disableExporterOperation.exporterId());
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -205,8 +218,29 @@ final class ClusterApiUtils {
                 new PartitionState()
                     .id(entry.getKey())
                     .priority(entry.getValue().priority())
-                    .state(mapPartitionState(entry.getValue().state())))
+                    .state(mapPartitionState(entry.getValue().state()))
+                    .config(mapPartitionConfig(entry.getValue().config())))
         .toList();
+  }
+
+  private static PartitionConfig mapPartitionConfig(final DynamicPartitionConfig config) {
+    final var exporters =
+        config.exporting().exporters().entrySet().stream()
+            .map(
+                entry ->
+                    new ExporterConfig()
+                        .id(entry.getKey())
+                        .state(mapExporterState(entry.getValue().state())))
+            .toList();
+
+    return new PartitionConfig().exporting(new ExportingConfig().exporters(exporters));
+  }
+
+  private static ExporterStateCode mapExporterState(final ExporterState.State state) {
+    return switch (state) {
+      case DISABLED -> ExporterStateCode.DISABLED;
+      case ENABLED -> ExporterStateCode.ENABLED;
+    };
   }
 
   private static PartitionStateCode mapPartitionState(final State state) {
@@ -315,6 +349,12 @@ final class ClusterApiUtils {
                   .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
                   .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
                   .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
+          case final PartitionDisableExporterOperation disableExporterOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_DISABLE_EXPORTER)
+                  .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
+                  .partitionId(disableExporterOperation.partitionId())
+                  .exporterId(disableExporterOperation.exporterId());
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

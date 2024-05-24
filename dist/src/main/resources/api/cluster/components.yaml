@@ -176,6 +176,7 @@ schemas:
           - PARTITION_FORCE_RECONFIGURE
           - BROKER_FORCE_REMOVE
           - UNKNOWN
+          - PARTITION_DISABLE_EXPORTER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -189,6 +190,8 @@ schemas:
         type: array
         items:
           $ref: "components.yaml#/schemas/BrokerId"
+      exporterId:
+        $ref: "components.yaml#/schemas/ExporterId"
 
   BrokerState:
     title: BrokerState
@@ -237,7 +240,40 @@ schemas:
         format: int32
         description: The priority of the partition
         example: 1
+      config:
+        $ref: "components.yaml#/schemas/PartitionConfig"
 
+  PartitionConfig:
+    type: object
+    properties:
+      exporting:
+        $ref: "components.yaml#/schemas/ExportingConfig"
+
+  ExportingConfig:
+    type: object
+    properties:
+      exporters:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/ExporterConfig"
+
+  ExporterConfig:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ExporterId"
+      state:
+        $ref: "components.yaml#/schemas/ExporterStateCode"
+
+  ExporterStateCode:
+    title: ExporterStateCode
+    description: State of an exporter
+    type: string
+    enum:
+      - UNKNOWN
+      - ENABLED
+      - DISABLED
+  
   PartitionStateCode:
     title: PartitionStateCode
     description: State of a partition

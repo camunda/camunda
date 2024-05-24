@@ -13,6 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatException;
 
 import feign.FeignException;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.management.cluster.BrokerState;
+import io.camunda.zeebe.management.cluster.ExporterStateCode;
+import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -67,6 +70,11 @@ final class ExportersEndpointIT {
     // when
     final var response =
         ExportersActuator.of(cluster.anyGateway()).disableExporter("recordingExporter");
+    assertThat(response.getPlannedChanges().getFirst().getOperation())
+        .isEqualTo(OperationEnum.PARTITION_DISABLE_EXPORTER);
+    assertThat(response.getExpectedTopology().stream().allMatch(this::hasExporterDisabled))
+        .isTrue();
+
     Awaitility.await()
         .timeout(Duration.ofSeconds(30))
         .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
@@ -83,6 +91,14 @@ final class ExportersEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     assertThat(recordsBeforeDisable).isEqualTo(recordsAfterDisable);
+  }
+
+  private boolean hasExporterDisabled(final BrokerState b) {
+    return b.getPartitions().stream()
+        .allMatch(
+            p ->
+                p.getConfig().getExporting().getExporters().stream()
+                    .allMatch(e -> e.getState().equals(ExporterStateCode.DISABLED)));
   }
 
   @Test
