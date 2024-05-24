@@ -125,7 +125,8 @@ public final class ErrorResponseWriter implements BufferWriter {
         .errorMessage(String.format(PROCESS_NOT_FOUND_FORMAT, processIdentifier));
   }
 
-  public ErrorResponseWriter mapWriteError(final int partitionId, final WriteFailure error) {
+  public ErrorResponseWriter mapWriteError(
+      final int partitionId, final WriteFailure error, final boolean processingPaused) {
     return switch (error) {
       case CLOSED ->
           errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)

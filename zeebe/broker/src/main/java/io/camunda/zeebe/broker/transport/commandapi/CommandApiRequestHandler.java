@@ -137,7 +137,7 @@ final class CommandApiRequestHandler
       return logStreamWriter
           .tryWrite(WriteContext.userCommand(metadata.getIntent()), appendEntry)
           .map(ignore -> true)
-          .mapLeft(error -> errorWriter.mapWriteError(partitionId, error));
+          .mapLeft(error -> errorWriter.mapWriteError(partitionId, error, processingPaused));
     } else {
       return Either.left(
           errorWriter

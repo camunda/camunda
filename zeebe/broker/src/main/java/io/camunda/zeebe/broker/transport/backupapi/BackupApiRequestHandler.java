@@ -136,7 +136,8 @@ public final class BackupApiRequestHandler
       // Response will be sent by the processor
       return Either.right(responseWriter.noResponse());
     } else {
-      return Either.left(errorWriter.mapWriteError(partitionId, written.getLeft()));
+      return Either.left(
+          errorWriter.mapWriteError(partitionId, written.getLeft(), processingPaused));
     }
   }
 
