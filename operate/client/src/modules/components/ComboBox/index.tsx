@@ -30,6 +30,8 @@ const ComboBox: React.FC<Props> = observer(
 
     return (
       <BaseComboBox
+        // This is a workaround for a Carbon bug: https://github.com/carbon-design-system/carbon/issues/16565
+        key={value === '' ? 'empty' : 'selected'}
         id={id}
         items={items}
         onChange={onChange}
@@ -43,6 +45,12 @@ const ComboBox: React.FC<Props> = observer(
           );
         }}
         size="sm"
+        // This is a workaround for a Carbon bug: https://github.com/carbon-design-system/carbon/issues/16565
+        onInputChange={(value) => {
+          if (value === '') {
+            onChange({selectedItem: null});
+          }
+        }}
         {...props}
       />
     );
