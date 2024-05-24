@@ -37,6 +37,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
       @ComponentScan.Filter(
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.tasklist\\.archiver\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
       @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.tasklist\\.it\\..*"),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneTasklist.class)
