@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import org.agrona.collections.IntHashSet;
@@ -73,6 +74,11 @@ public final class CommandApiServiceImpl extends Actor
             Loggers.TRANSPORT_LOGGER.warn("Failed to close query API request handler", error);
           }
         });
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    commandHandler.onRecovered(context);
   }
 
   @Override
