@@ -35,7 +35,7 @@ public class DueDateCheckerTest {
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -45,7 +45,7 @@ public class DueDateCheckerTest {
     dueDateChecker.schedule(currentTimeMillis + 1000); // in one second
 
     // then
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
   }
 
   @Test
@@ -56,11 +56,11 @@ public class DueDateCheckerTest {
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
-    when(mockScheduleService.runAfter(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
+    when(mockScheduleService.runAt(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     Mockito.clearInvocations(mockScheduleService);
 
@@ -70,7 +70,7 @@ public class DueDateCheckerTest {
     dueDateChecker.schedule(currentTimeMillis + 100); // in 100 millis
 
     // then
-    verify(mockScheduleService, times(2)).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService, times(2)).runAt(anyLong(), any(Task.class));
     verify(mockScheduledTask).cancel();
   }
 
@@ -85,18 +85,18 @@ public class DueDateCheckerTest {
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
-    when(mockScheduleService.runAfter(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
+    when(mockScheduleService.runAt(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     // when
     dueDateChecker.execute(mock(TaskResultBuilder.class));
 
     // then
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
   }
 
   @Test
@@ -110,23 +110,23 @@ public class DueDateCheckerTest {
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
-    when(mockScheduleService.runAfter(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
+    when(mockScheduleService.runAt(anyLong(), any(Task.class))).thenReturn(mockScheduledTask);
 
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
     dueDateChecker.onRecovered(mockContext);
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     dueDateChecker.execute(mock(TaskResultBuilder.class));
     // expect that there is a next execution scheduled after execution
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     Mockito.clearInvocations(mockScheduleService);
 
     // when
     dueDateChecker.schedule(ActorClock.currentTimeMillis() + 100); // in one second
 
     // then
-    verify(mockScheduleService).runAfter(anyLong(), any(Task.class));
+    verify(mockScheduleService).runAt(anyLong(), any(Task.class));
     verify(mockScheduledTask).cancel();
   }
 }
