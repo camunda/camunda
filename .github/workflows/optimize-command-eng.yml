@@ -55,6 +55,8 @@ jobs:
 
       - name: Get issue project
         id: issue-project
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           issue_id=${{ github.event.client_payload.github.payload.issue.node_id }}
           project_id=${{ steps.vars.outputs.project_id }}
