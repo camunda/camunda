@@ -139,7 +139,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker);
+            timerChecker,
+            commandDistributionBehavior);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -210,7 +211,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -218,7 +220,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers);
+        writers,
+        commandDistributionBehavior);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
