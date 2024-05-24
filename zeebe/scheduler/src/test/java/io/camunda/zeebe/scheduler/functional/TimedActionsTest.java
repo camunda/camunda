@@ -200,7 +200,7 @@ public final class TimedActionsTest {
           new Actor() {
             @Override
             protected void onActorStarted() {
-              actor.runAt(1000, action);
+              actor.runAfter(1000, action);
             }
           };
 
@@ -221,7 +221,7 @@ public final class TimedActionsTest {
           new Actor() {
             @Override
             protected void onActorStarted() {
-              actor.runAt(1000, action);
+              actor.runAfter(1000, action);
             }
           };
 
@@ -240,7 +240,7 @@ public final class TimedActionsTest {
     public void shouldCancelRunAt() {
       // given
       final Runnable action = mock(Runnable.class);
-      final TimerActor actor = new TimerActor(actorControl -> actorControl.runAt(1000, action));
+      final TimerActor actor = new TimerActor(actorControl -> actorControl.runAfter(1000, action));
 
       // when
       actorScheduler.setClockTime(100);
@@ -259,7 +259,7 @@ public final class TimedActionsTest {
     public void shouldCancelRunDelayedAfterExecution() {
       // given
       final Runnable action = mock(Runnable.class);
-      final var actor = new TimerActor(actorControl -> actorControl.runAt(1000, action));
+      final var actor = new TimerActor(actorControl -> actorControl.runAfter(1000, action));
 
       // when
       actorScheduler.setClockTime(100);

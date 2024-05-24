@@ -443,9 +443,9 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public ScheduledTask runAt(final long timestamp, final Task task) {
+    public ScheduledTask runAfter(final long timestamp, final Task task) {
       final var futureScheduledTask =
-          actor.call(() -> processingScheduleService.runAt(timestamp, task));
+          actor.call(() -> processingScheduleService.runAfter(timestamp, task));
       return () ->
           actor.run(
               () ->
@@ -535,7 +535,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(90, mockedTask);
+      scheduleService.runAfter(90, mockedTask);
       actorScheduler.workUntilDone();
 
       // then
@@ -548,7 +548,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAfter(100, mockedTask);
       actorScheduler.workUntilDone();
 
       // then
@@ -562,8 +562,8 @@ class ProcessingScheduleServiceTest {
       final var mockedTask2 = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(100, mockedTask);
-      scheduleService.runAt(90, mockedTask2);
+      scheduleService.runAfter(100, mockedTask);
+      scheduleService.runAfter(90, mockedTask2);
       actorScheduler.workUntilDone();
 
       // then
@@ -580,7 +580,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAfter(100, mockedTask);
       // The task will be resubmitted infinitely. So workUntilDone will never return.
       actorScheduler.resume();
 
@@ -595,7 +595,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAfter(100, mockedTask);
       actorScheduler.workUntilDone();
 
       // then
@@ -609,7 +609,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAfter(100, mockedTask);
       // The task will be resubmitted infinitely. So workUntilDone will never return.
       actorScheduler.resume();
       verify(mockedTask, never()).execute(any());
@@ -632,7 +632,7 @@ class ProcessingScheduleServiceTest {
       final var mockedTask = spy(new DummyTask());
 
       // when
-      notOpenScheduleService.runAt(100, mockedTask);
+      notOpenScheduleService.runAfter(100, mockedTask);
       actorScheduler.workUntilDone();
 
       // then
@@ -644,7 +644,7 @@ class ProcessingScheduleServiceTest {
       // given
 
       // when
-      scheduleService.runAt(
+      scheduleService.runAfter(
           100,
           (builder) -> {
             builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));

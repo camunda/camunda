@@ -110,8 +110,8 @@ public class ActorControl implements ConcurrencyControl {
    * @param runnable The runnable to run at (or after) the timestamp
    * @return A handle to the scheduled timer task
    */
-  public ScheduledTimer runAt(final long timestamp, final Runnable runnable) {
-    ensureCalledFromWithinActor("runAt(...)");
+  public ScheduledTimer runAfter(final long timestamp, final Runnable runnable) {
+    ensureCalledFromWithinActor("runAfter(...)");
     return scheduleTimerSubscription(runnable, job -> new StampedTimerSubscription(job, timestamp));
   }
 
