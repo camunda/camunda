@@ -20,11 +20,19 @@ class TaskPanelPage {
   private page: Page;
   readonly availableTasks: Locator;
   readonly filterOptions: Locator;
+  readonly expandSidePanelButton: Locator;
+  readonly addCustomFilterButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
     this.filterOptions = page.getByRole('combobox', {name: 'Filter options'});
+    this.expandSidePanelButton = page.getByRole('button', {
+      name: 'Expand to show filters',
+    });
+    this.addCustomFilterButton = page.getByRole('button', {
+      name: 'Filter tasks',
+    });
   }
 
   async goto(params?: {filter?: FilterParam; sortBy?: SortByParam}) {
