@@ -312,7 +312,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         authorization,
         protocolVersion,
         brokerVersion,
-        recordVersion);
+        recordVersion,
+        operationReference);
   }
 
   @Override
@@ -334,7 +335,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
         && brokerVersion.equals(that.brokerVersion)
-        && recordVersion == that.recordVersion;
+        && recordVersion == that.recordVersion
+        && operationReference == that.operationReference;
   }
 
   @Override
