@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/camunda/camunda/clients/go/v8/cmd/zbctl/internal/commands"
+	"github.com/camunda/zeebe/clients/go/v8/cmd/zbctl/internal/commands"
 )
 
 func main() {

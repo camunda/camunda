@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"google.golang.org/grpc/metadata"
 	"net"
 	"strconv"
@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
-	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
 type clientTestSuite struct {
