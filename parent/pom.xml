@@ -133,6 +133,7 @@
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
+    <version.h2>2.2.224</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
     <version.reactor-netty>1.1.19</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
@@ -174,7 +175,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.39.1</version.nimbus-jose-jwt>
-    <version.keycloak>23.0.7</version.keycloak>
+    <version.keycloak>24.0.4</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -875,6 +876,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>auth-spring-boot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
       </dependency>
@@ -1364,6 +1377,12 @@
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <version>${version.postgresql}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${version.h2}</version>
       </dependency>
 
       <dependency>
@@ -2473,7 +2492,9 @@
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>io.camunda:auth-spring-boot-starter</dep>
                 </ignoredUnusedDeclaredDependencies>
               </configuration>
             </execution>
