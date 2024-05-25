@@ -158,7 +158,7 @@
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
-    <version.lucene>8.11.3</version.lucene>
+    <version.lucene>9.10.0</version.lucene>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.2.1</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
