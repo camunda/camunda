@@ -1,4 +1,4 @@
-module github.com/camunda/zeebe/clients/go/v8
+module github.com/camunda/camunda/clients/go/v8
 
 go 1.21
 
