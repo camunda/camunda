@@ -9,7 +9,6 @@
 import {Fragment} from 'react';
 import {
   Button,
-  ComposedModal,
   DatePicker,
   DatePickerInput,
   ModalBody,
@@ -22,7 +21,6 @@ import {
   TextInput,
   Toggle,
   FormGroup,
-  Layer,
 } from '@carbon/react';
 import {Close, Add} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
@@ -38,8 +36,9 @@ import {
 } from 'modules/custom-filters/customFiltersSchema';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {ProcessesSelect} from './ProcessesSelect';
-import styles from './styles.module.scss';
+import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
+import {Modal} from 'modules/components/Modal';
 
 type FormValues = CustomFilters;
 
@@ -71,7 +70,7 @@ type Props = {
   onApply: (values: FormValues) => void;
 };
 
-const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
+const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
   const initialValues =
     getStateLocally('customFilters')?.custom ?? DEFAULT_FORM_VALUES;
   const label = 'Advanced filters';
@@ -80,9 +79,8 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
   const groups = currentUser?.groups ?? [];
 
   return (
-    <Layer
-      level={0}
-      as={ComposedModal}
+    <Modal
+      variant="composed-modal"
       open={isOpen}
       preventCloseOnClickOutside
       size="md"
@@ -467,8 +465,8 @@ const CustomFiltersModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
           )}
         </Form>
       ) : null}
-    </Layer>
+    </Modal>
   );
 };
 
-export {CustomFiltersModal};
+export {FieldsModal};
