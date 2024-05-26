@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {CollapsiblePanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
@@ -249,7 +249,12 @@ describe('<CollapsiblePanel />', () => {
       screen.getByRole('button', {name: /custom filter actions/i}),
     );
     await user.click(screen.getByText(/^delete$/i));
-    await user.click(screen.getByRole('button', {name: /confirm deletion/i}));
+    await user.click(
+      within(screen.getByTestId('direct-delete-filter-modal')).getByRole(
+        'button',
+        {name: /confirm deletion/i},
+      ),
+    );
 
     expect(
       screen.queryByRole('link', {name: 'Custom'}),

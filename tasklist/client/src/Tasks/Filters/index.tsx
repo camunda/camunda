@@ -16,13 +16,13 @@ import sharedStyles from 'modules/styles/panelHeader.module.scss';
 import {useSearchParams} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
 
-const FILTER_LABELS = {
+const FILTER_LABELS: Record<string, string> = {
   'all-open': 'All open tasks',
   'assigned-to-me': 'Assigned to me',
   unassigned: 'Unassigned',
   completed: 'Completed',
   custom: 'Custom filter',
-} as const;
+};
 
 type Props = {
   disabled: boolean;
@@ -47,6 +47,7 @@ const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
 ];
 
 const Filters: React.FC<Props> = memo(({disabled}) => {
+  const customFilters = getStateLocally('customFilters');
   const [searchParams, setSearchParams] = useSearchParams();
   const {filter, sortBy} = useTaskFilters();
   const sortOptionsOrder = ['completed', 'custom'].includes(filter)
@@ -55,7 +56,9 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
 
   return (
     <section className={sharedStyles.panelHeader} aria-label="Filters">
-      <h1>{FILTER_LABELS[filter]}</h1>
+      <h1 className={styles.header}>
+        {FILTER_LABELS?.[filter] ?? customFilters?.[filter]?.name}
+      </h1>
       <OverflowMenu
         aria-label="Sort tasks"
         iconDescription="Sort tasks"

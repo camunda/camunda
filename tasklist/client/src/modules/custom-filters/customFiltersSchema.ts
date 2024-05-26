@@ -67,10 +67,13 @@ const customFiltersSchema = z.object({
 });
 
 const namedCustomFiltersSchema = customFiltersSchema.merge(
-  z.object({name: z.string().trim()}),
+  z.object({
+    name: z.string().trim().optional(),
+  }),
 );
 
 type CustomFilters = z.infer<typeof customFiltersSchema>;
+type NamedCustomFilters = z.infer<typeof namedCustomFiltersSchema>;
 
 export {customFiltersSchema, namedCustomFiltersSchema};
-export type {CustomFilters};
+export type {CustomFilters, NamedCustomFilters};

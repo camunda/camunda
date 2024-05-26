@@ -24,6 +24,7 @@
 
 .floatingContainer {
   width: fit-content;
+  max-height: 100%;
 }
 
 @include grid.breakpoint-down('xlg') {
@@ -40,6 +41,17 @@
 
 .expandedContainer {
   width: layout.to-rem(196px);
+  display: grid;
+  grid-template-rows: layout.to-rem(48px) 1fr;
+}
+
+.scrollContainer {
+  overflow-y: auto;
+  overflow-x: visible;
+
+  li {
+    max-height: layout.to-rem(40px);
+  }
 }
 
 .customFilterContainer {
