@@ -13,9 +13,7 @@ import zod from 'zod';
 const searchSchema = zod.tuple([zod.string(), zod.string()]);
 
 const filtersSchema = zod.object({
-  filter: zod
-    .enum(['all-open', 'unassigned', 'assigned-to-me', 'completed', 'custom'])
-    .default('all-open'),
+  filter: zod.string().default('all-open'),
   sortBy: zod
     .enum(['creation', 'follow-up', 'due', 'completion'])
     .default('creation'),
