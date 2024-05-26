@@ -15,7 +15,6 @@ import {
   Layer,
   OverflowMenu,
   OverflowMenuItem,
-  Modal,
 } from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
@@ -23,11 +22,12 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
-import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {getStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {usePrevious} from '@uidotdev/usehooks';
-import {CustomFiltersModal} from './CustomFiltersModal';
+import {FieldsModal} from './CustomFiltersModal/FieldsModal';
+import {DeleteFilterModal} from './CustomFiltersModal/DeleteFilterModal';
 
 function getCustomFilterParams(userId: string) {
   const customFilters = getStateLocally('customFilters')?.custom;
@@ -102,7 +102,7 @@ const CollapsiblePanel: React.FC = () => {
   const {data} = useCurrentUser();
   const userId = data?.userId ?? '';
   const filtersModal = (
-    <CustomFiltersModal
+    <FieldsModal
       key="custom-filters-modal"
       isOpen={isCustomFiltersModalOpen}
       onClose={() => {
@@ -302,19 +302,14 @@ const CollapsiblePanel: React.FC = () => {
         </ul>
       </nav>
       {filtersModal}
-      <Modal
-        danger
-        open={customFilterToDelete !== null}
-        size="xs"
-        modalLabel="Delete filter"
-        modalHeading="The custom filter will be deleted."
-        primaryButtonText="Confirm deletion"
-        secondaryButtonText="Cancel"
-        onRequestClose={() => {
+      <DeleteFilterModal
+        data-testid="direct-delete-filter-modal"
+        filterName={customFilterToDelete ?? ''}
+        isOpen={customFilterToDelete !== undefined}
+        onClose={() => {
           setCustomFilterToDelete(null);
         }}
-        onRequestSubmit={() => {
-          storeStateLocally('customFilters', {});
+        onDelete={() => {
           navigate({
             search: getNavLinkSearchParam({
               currentParams: searchParams,
