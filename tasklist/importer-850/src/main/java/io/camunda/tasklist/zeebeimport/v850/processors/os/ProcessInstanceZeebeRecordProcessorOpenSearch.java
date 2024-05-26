@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -62,14 +63,16 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
   }
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  public void processProcessInstanceRecord(Record record, List<BulkOperation> operations)
-      throws PersistenceException {
+  public void processProcessInstanceRecord(
+      final Record record, final List<BulkOperation> operations) throws PersistenceException {
 
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
@@ -99,7 +102,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private FlowNodeInstanceEntity createFlowNodeInstance(Record record) {
+  private FlowNodeInstanceEntity createFlowNodeInstance(final Record record) {
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
     final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
@@ -117,7 +120,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     return entity;
   }
 
-  private BulkOperation getFlowNodeInstanceQuery(FlowNodeInstanceEntity entity) {
+  private BulkOperation getFlowNodeInstanceQuery(final FlowNodeInstanceEntity entity) {
 
     LOGGER.debug("Flow node instance: id {}", entity.getId());
 
@@ -145,7 +148,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
         .build();
   }
 
-  private boolean isVariableScopeType(ProcessInstanceRecordValueImpl recordValue) {
+  private boolean isVariableScopeType(final ProcessInstanceRecordValueImpl recordValue) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;
@@ -153,11 +156,12 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
   }
 
-  private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
+  private boolean isProcessEvent(final ProcessInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
 
-  private boolean isOfType(ProcessInstanceRecordValueImpl recordValue, BpmnElementType type) {
+  private boolean isOfType(
+      final ProcessInstanceRecordValueImpl recordValue, final BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
       return false;

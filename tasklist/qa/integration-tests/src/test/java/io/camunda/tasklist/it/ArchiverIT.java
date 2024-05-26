@@ -55,7 +55,9 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private TaskStore taskStore;
 

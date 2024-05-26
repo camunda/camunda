@@ -94,7 +94,9 @@ public class BackupServiceElasticSearchTest {
 
   @Autowired private BackupService backupService;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Test
   public void shouldFailCreateBackupOnEmptyBackupId() {

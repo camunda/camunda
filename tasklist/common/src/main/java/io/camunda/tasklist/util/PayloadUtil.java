@@ -17,14 +17,17 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PayloadUtil {
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
-  public Map<String, Object> parsePayload(String payload) throws IOException {
+  public Map<String, Object> parsePayload(final String payload) throws IOException {
 
     final Map<String, Object> map = new LinkedHashMap<>();
 
@@ -33,19 +36,20 @@ public class PayloadUtil {
     return map;
   }
 
-  public String readJSONStringFromClasspath(String filename) {
-    try (InputStream inputStream = PayloadUtil.class.getResourceAsStream(filename)) {
+  public String readJSONStringFromClasspath(final String filename) {
+    try (final InputStream inputStream = PayloadUtil.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
       } else {
         throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
     }
   }
 
-  private void traverseTheTree(JsonNode jsonNode, Map<String, Object> map, String path) {
+  private void traverseTheTree(
+      final JsonNode jsonNode, final Map<String, Object> map, final String path) {
     if (jsonNode.isValueNode()) {
 
       Object value = null;
@@ -93,7 +97,7 @@ public class PayloadUtil {
         }
       } else if (jsonNode.isArray()) {
         int i = 0;
-        for (JsonNode child : jsonNode) {
+        for (final JsonNode child : jsonNode) {
           traverseTheTree(child, map, path + "[" + i + "]");
           i++;
         }

@@ -40,6 +40,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -56,10 +57,13 @@ public class UserStoreElasticSearch implements UserStore {
 
   @Autowired private UserIndex userIndex;
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public UserEntity getByUserId(String userId) {
+  public UserEntity getByUserId(final String userId) {
     final SearchRequest searchRequest =
         new SearchRequest(userIndex.getAlias())
             .source(
@@ -77,7 +81,7 @@ public class UserStoreElasticSearch implements UserStore {
         throw new NotFoundApiException(
             String.format("Could not find user with userId '%s'.", userId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -85,20 +89,20 @@ public class UserStoreElasticSearch implements UserStore {
   }
 
   @Override
-  public void create(UserEntity user) {
+  public void create(final UserEntity user) {
     try {
       final IndexRequest request =
           new IndexRequest(userIndex.getFullQualifiedName())
               .id(user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Could not create user with user id {}", user.getUserId(), e);
     }
   }
 
   @Override
-  public List<UserEntity> getUsersByUserIds(List<String> userIds) {
+  public List<UserEntity> getUsersByUserIds(final List<String> userIds) {
     final ConstantScoreQueryBuilder esQuery =
         constantScoreQuery(idsQuery().addIds(userIds.toArray(String[]::new)));
 
@@ -115,7 +119,7 @@ public class UserStoreElasticSearch implements UserStore {
 
     try {
       return ElasticsearchUtil.scroll(searchRequest, UserEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining users: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -134,7 +138,7 @@ public class UserStoreElasticSearch implements UserStore {
         ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptCode, Map.of("userIds", userIds));
   }
 
-  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }
 }

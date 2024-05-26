@@ -38,6 +38,7 @@ import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -53,13 +54,16 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   @Autowired private ProcessIndex processIndex;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
-  public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
+  @Override
+  public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
     final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
 
     final SearchRequest searchRequest =
@@ -80,17 +84,20 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   /** Gets the process by id. */
-  public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId) {
+  @Override
+  public ProcessEntity getProcessByBpmnProcessId(final String bpmnProcessId) {
     return getProcessByBpmnProcessId(bpmnProcessId, null);
   }
 
-  public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId, final String tenantId) {
+  @Override
+  public ProcessEntity getProcessByBpmnProcessId(
+      final String bpmnProcessId, final String tenantId) {
     final QueryBuilder qb;
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       qb =
@@ -119,14 +126,15 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public ProcessEntity getProcess(String processId) {
+  @Override
+  public ProcessEntity getProcess(final String processId) {
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
             .source(
@@ -144,17 +152,14 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private ProcessEntity fromSearchHit(String processString) {
-    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
-  }
-
+  @Override
   public List<ProcessEntity> getProcesses(
       final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
     final QueryBuilder qb;
@@ -192,8 +197,9 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery);
   }
 
+  @Override
   public List<ProcessEntity> getProcesses(
-      String search,
+      final String search,
       final List<String> processDefinitions,
       final String tenantId,
       final Boolean isStartedByForm) {
@@ -261,7 +267,25 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQuery);
   }
 
-  private QueryBuilder enhanceQueryByTenantIdCheck(QueryBuilder qb, final String tenantId) {
+  @Override
+  public List<ProcessEntity> getProcessesStartedByForm() {
+    final QueryBuilder qb;
+
+    qb =
+        QueryBuilders.boolQuery()
+            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb).stream()
+        .filter(ProcessEntity::isStartedByForm)
+        .toList();
+  }
+
+  private ProcessEntity fromSearchHit(final String processString) {
+    return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
+  }
+
+  private QueryBuilder enhanceQueryByTenantIdCheck(final QueryBuilder qb, final String tenantId) {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       return ElasticsearchUtil.joinWithAnd(
           QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
@@ -271,7 +295,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   }
 
   private QueryBuilder enhanceQueryByIsStartedByForm(
-      QueryBuilder qb, final Boolean isStartedByForm) {
+      final QueryBuilder qb, final Boolean isStartedByForm) {
     // Construct queries to check if FORM_KEY or FORM_ID is not null
     // This is in order to consider a process as started by form but not public
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -299,7 +323,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   }
 
   public List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
-      QueryBuilder qb) {
+      final QueryBuilder qb) {
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .query(qb)
@@ -339,23 +363,10 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         }
       }
       return results;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
-  }
-
-  public List<ProcessEntity> getProcessesStartedByForm() {
-    final QueryBuilder qb;
-
-    qb =
-        QueryBuilders.boolQuery()
-            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
-            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
-
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb).stream()
-        .filter(ProcessEntity::isStartedByForm)
-        .toList();
   }
 }

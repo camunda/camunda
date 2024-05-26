@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class VariableIT extends TasklistZeebeIntegrationTest {
 
@@ -42,7 +43,9 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public static Collection<Object[]> data() {
     final Collection<Object[]> params = new ArrayList();
@@ -64,10 +67,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnOverwrittenVariable(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
@@ -163,7 +166,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   }
 
   private void assertEqualsWithExistenceCheck(
-      Object expected, Supplier<Object> getActualValue, boolean shouldExist) {
+      final Object expected, final Supplier<Object> getActualValue, final boolean shouldExist) {
     if (shouldExist) {
       assertEquals(expected, getActualValue.get());
     } else {
@@ -174,10 +177,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnOverwrittenBigVariablesWithPreview(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final int size =
@@ -278,10 +281,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnSubprocessVariable(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
@@ -329,10 +332,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnMultiInstanceVariables(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
@@ -389,10 +392,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnOneTaskWithVariables(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final GraphQLResponse response =
@@ -430,10 +433,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldUpdateVariables(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     final String taskAId = "taskA";
     final String varName = "var";
@@ -516,10 +519,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnOneTaskWithBigVariablesWithPreview(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final int size =
@@ -589,10 +592,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnVariablesByNames(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final String taskId =
@@ -627,10 +630,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnVariablesByNamesForCompletedTask(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final String taskId =
@@ -682,10 +685,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnBigVariablesWithPreviewForCompletedTask(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final int size =
@@ -781,10 +784,10 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @ParameterizedTest
   @MethodSource("data")
   public void shouldReturnEventSubprocessVariable(
-      String variableFragmentResource,
-      boolean shouldContainPreview,
-      boolean shouldContainFullValue,
-      boolean shouldContainIsTruncatedFlag)
+      final String variableFragmentResource,
+      final boolean shouldContainPreview,
+      final boolean shouldContainFullValue,
+      final boolean shouldContainIsTruncatedFlag)
       throws IOException {
     // having
     final GraphQLResponse response =

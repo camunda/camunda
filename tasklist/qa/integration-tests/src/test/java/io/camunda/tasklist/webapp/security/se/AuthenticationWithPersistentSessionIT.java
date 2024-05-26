@@ -24,6 +24,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
@@ -51,7 +52,10 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Autowired private PasswordEncoder encoder;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @MockBean private UserStore userStore;
 

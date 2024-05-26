@@ -37,6 +37,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +62,9 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
 
   @Autowired TasklistProperties tasklistProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public DeletionStatus deleteProcessInstance(final String processInstanceId) {
@@ -82,10 +85,10 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
     }
   }
 
-  private DeletionStatus deleteProcessInstanceDependantsFor(String processInstanceId) {
+  private DeletionStatus deleteProcessInstanceDependantsFor(final String processInstanceId) {
     final List<String> dependantTaskIds = getDependantTasksIdsFor(processInstanceId);
     boolean deleted = false;
-    for (ProcessInstanceDependant dependant : processInstanceDependants) {
+    for (final ProcessInstanceDependant dependant : processInstanceDependants) {
       deleted =
           retryElasticsearchClient.deleteDocumentsByQuery(
                   dependant.getAllIndicesPattern(),
@@ -103,7 +106,7 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
     return taskStore.getTaskIdsByProcessInstanceId(processInstanceId);
   }
 
-  private Optional<ProcessInstanceEntity> getById(String processInstanceId) {
+  private Optional<ProcessInstanceEntity> getById(final String processInstanceId) {
     try {
       final SearchRequest searchRequest =
           new SearchRequest(processInstanceIndex.getFullQualifiedName());
@@ -122,7 +125,7 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
       final ProcessInstanceEntity entity =
           objectMapper.readValue(sourceAsString, ProcessInstanceEntity.class);
       return Optional.of(entity);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           String.format("Error retrieving processInstance with ID [%s]", processInstanceId), e);
       return Optional.empty();

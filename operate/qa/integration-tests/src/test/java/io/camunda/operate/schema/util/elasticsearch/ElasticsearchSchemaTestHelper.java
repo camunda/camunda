@@ -33,6 +33,7 @@ import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(ElasticsearchCondition.class)
@@ -42,7 +43,9 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private OperateProperties properties;
 

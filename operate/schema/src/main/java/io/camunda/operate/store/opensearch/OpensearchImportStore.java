@@ -33,6 +33,7 @@ import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +45,9 @@ public class OpensearchImportStore implements ImportStore {
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 
@@ -107,26 +110,6 @@ public class OpensearchImportStore implements ImportStore {
     }
   }
 
-  private void withImportPositionTimer(final Callable<Void> action) throws Exception {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
-  }
-
-  private <R> void addPositions(
-      final BulkRequest.Builder bulkRequestBuilder,
-      final List<ImportPositionEntity> positions,
-      final Function<ImportPositionEntity, R> entityProducer) {
-    for (final ImportPositionEntity position : positions) {
-      bulkRequestBuilder.operations(
-          op ->
-              op.update(
-                  upd ->
-                      upd.index(importPositionType.getFullQualifiedName())
-                          .id(position.getId())
-                          .upsert(entityProducer.apply(position))
-                          .document(entityProducer.apply(position))));
-    }
-  }
-
   @Override
   public void setConcurrencyMode(final boolean concurrencyMode) {
     final String indexName = importPositionType.getFullQualifiedName();
@@ -150,6 +133,26 @@ public class OpensearchImportStore implements ImportStore {
       final Object concurrencyMode =
           indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
       return concurrencyMode != null && (boolean) concurrencyMode;
+    }
+  }
+
+  private void withImportPositionTimer(final Callable<Void> action) throws Exception {
+    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
+  }
+
+  private <R> void addPositions(
+      final BulkRequest.Builder bulkRequestBuilder,
+      final List<ImportPositionEntity> positions,
+      final Function<ImportPositionEntity, R> entityProducer) {
+    for (final ImportPositionEntity position : positions) {
+      bulkRequestBuilder.operations(
+          op ->
+              op.update(
+                  upd ->
+                      upd.index(importPositionType.getFullQualifiedName())
+                          .id(position.getId())
+                          .upsert(entityProducer.apply(position))
+                          .document(entityProducer.apply(position))));
     }
   }
 

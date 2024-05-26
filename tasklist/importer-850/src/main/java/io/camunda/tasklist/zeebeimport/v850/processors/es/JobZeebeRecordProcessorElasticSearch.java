@@ -36,6 +36,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,13 +47,16 @@ public class JobZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorElasticSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private TaskTemplate taskTemplate;
 
   @Autowired private FormStore formStore;
 
-  public void processJobRecord(Record<JobRecordValueImpl> record, BulkRequest bulkRequest)
+  public void processJobRecord(
+      final Record<JobRecordValueImpl> record, final BulkRequest bulkRequest)
       throws PersistenceException {
     final JobRecordValueImpl recordValue = record.getValue();
 
@@ -66,7 +70,7 @@ public class JobZeebeRecordProcessorElasticSearch {
   }
 
   private UpdateRequest persistTask(
-      Record<JobRecordValueImpl> record, JobRecordValueImpl recordValue)
+      final Record<JobRecordValueImpl> record, final JobRecordValueImpl recordValue)
       throws PersistenceException {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
@@ -129,7 +133,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     if (candidateGroups != null) {
       try {
         entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
@@ -143,7 +147,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     if (candidateUsers != null) {
       try {
         entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
@@ -187,7 +191,8 @@ public class JobZeebeRecordProcessorElasticSearch {
     return getTaskQuery(entity, intent);
   }
 
-  private UpdateRequest getTaskQuery(TaskEntity entity, Intent intent) throws PersistenceException {
+  private UpdateRequest getTaskQuery(final TaskEntity entity, final Intent intent)
+      throws PersistenceException {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
       LOGGER.debug("Task instance: id {}", entity.getId());
@@ -211,7 +216,7 @@ public class JobZeebeRecordProcessorElasticSearch {
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
           e);

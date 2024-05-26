@@ -35,7 +35,9 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private WebApplicationContext context;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   private MockMvcHelper mockMvcHelper;
 

@@ -26,6 +26,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,13 +35,15 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorElasticSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private VariableIndex variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  public void processVariableRecord(Record record, BulkRequest bulkRequest)
+  public void processVariableRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
 
@@ -50,8 +53,8 @@ public class VariableZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)
-      throws PersistenceException {
+  private UpdateRequest persistVariable(
+      final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
     final VariableEntity entity = new VariableEntity();
     entity.setId(
         VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
@@ -75,7 +78,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
     return getVariableQuery(entity);
   }
 
-  private UpdateRequest getVariableQuery(VariableEntity entity) throws PersistenceException {
+  private UpdateRequest getVariableQuery(final VariableEntity entity) throws PersistenceException {
     try {
       LOGGER.debug("Variable instance for list view: id {}", entity.getId());
       final Map<String, Object> updateFields = new HashMap<>();
@@ -90,7 +93,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",

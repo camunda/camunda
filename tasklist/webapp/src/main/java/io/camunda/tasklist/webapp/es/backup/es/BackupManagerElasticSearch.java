@@ -62,6 +62,7 @@ import org.elasticsearch.transport.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -82,12 +83,14 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
-  private Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
+  private final Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
   @Override
-  public void deleteBackup(Long backupId) {
+  public void deleteBackup(final Long backupId) {
     validateRepositoryExists();
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
@@ -106,42 +109,8 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  private ActionListener<AcknowledgedResponse> getDeleteListener() {
-    return new ActionListener<>() {
-      @Override
-      public void onResponse(AcknowledgedResponse response) {
-        LOGGER.debug(
-            "Delete snapshot was acknowledged by Elasticsearch node: " + response.isAcknowledged());
-      }
-
-      @Override
-      public void onFailure(Exception e) {
-        if (isSnapshotMissingException(e)) {
-          // no snapshot with given backupID exists, this is fine, log warning
-          LOGGER.warn("No snapshot found for snapshot deletion: " + e.getMessage());
-        } else {
-          LOGGER.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
-        }
-      }
-    };
-  }
-
-  private boolean isSnapshotMissingException(Exception e) {
-    return e instanceof ElasticsearchStatusException
-        && ((ElasticsearchStatusException) e)
-            .getDetailedMessage()
-            .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
-  }
-
-  private boolean isRepositoryMissingException(Exception e) {
-    return e instanceof ElasticsearchStatusException
-        && ((ElasticsearchStatusException) e)
-            .getDetailedMessage()
-            .contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
-  }
-
   @Override
-  public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
+  public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
     validateRepositoryExists();
     validateNoDuplicateBackupId(request.getBackupId());
     if (requestsQueue.size() > 0) {
@@ -155,7 +124,110 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  private TakeBackupResponseDto scheduleSnapshots(TakeBackupRequestDto request) {
+  @Override
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    final List<SnapshotInfo> snapshots = findSnapshots(backupId);
+    return getBackupResponse(backupId, snapshots);
+  }
+
+  @Override
+  public List<GetBackupStateResponseDto> getBackups() {
+    final GetSnapshotsRequest snapshotsStatusRequest =
+        new GetSnapshotsRequest()
+            .repository(getRepositoryName())
+            .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + "*"})
+            // it looks like sorting as well as size/offset are not working, need to sort
+            // additionally before return
+            .sort(GetSnapshotsRequest.SortBy.START_TIME)
+            .order(SortOrder.DESC);
+    final GetSnapshotsResponse response;
+    try {
+      response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
+      final List<SnapshotInfo> snapshots =
+          response.getSnapshots().stream()
+              .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
+              .collect(toList());
+
+      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
+          snapshots.stream()
+              .collect(
+                  groupingBy(
+                      si -> {
+                        final Metadata metadata =
+                            objectMapper.convertValue(si.userMetadata(), Metadata.class);
+                        Long backupId = metadata.getBackupId();
+                        // backward compatibility with v. 8.1
+                        if (backupId == null) {
+                          backupId =
+                              Metadata.extractBackupIdFromSnapshotName(si.snapshotId().getName());
+                        }
+                        return backupId;
+                      },
+                      LinkedHashMap::new,
+                      toList()));
+
+      return groupedSnapshotInfos.entrySet().stream()
+          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+          .collect(toList());
+    } catch (final IOException | TransportException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+              getRepositoryName());
+      throw new TasklistElasticsearchConnectionException(reason, ex);
+    } catch (final Exception e) {
+      if (isRepositoryMissingException(e)) {
+        final String reason =
+            String.format(
+                "No repository with name [%s] could be found.",
+                tasklistProperties.getBackup().getRepositoryName());
+        throw new TasklistRuntimeException(reason);
+      }
+      if (isSnapshotMissingException(e)) {
+        // no snapshots exist
+        return new ArrayList<>();
+      }
+      final String reason =
+          String.format("Exception occurred when searching for backups: %s", e.getMessage());
+      throw new TasklistRuntimeException(reason, e);
+    }
+  }
+
+  private ActionListener<AcknowledgedResponse> getDeleteListener() {
+    return new ActionListener<>() {
+      @Override
+      public void onResponse(final AcknowledgedResponse response) {
+        LOGGER.debug(
+            "Delete snapshot was acknowledged by Elasticsearch node: " + response.isAcknowledged());
+      }
+
+      @Override
+      public void onFailure(final Exception e) {
+        if (isSnapshotMissingException(e)) {
+          // no snapshot with given backupID exists, this is fine, log warning
+          LOGGER.warn("No snapshot found for snapshot deletion: " + e.getMessage());
+        } else {
+          LOGGER.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+        }
+      }
+    };
+  }
+
+  private boolean isSnapshotMissingException(final Exception e) {
+    return e instanceof ElasticsearchStatusException
+        && ((ElasticsearchStatusException) e)
+            .getDetailedMessage()
+            .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+  }
+
+  private boolean isRepositoryMissingException(final Exception e) {
+    return e instanceof ElasticsearchStatusException
+        && ((ElasticsearchStatusException) e)
+            .getDetailedMessage()
+            .contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+  }
+
+  private TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
@@ -207,13 +279,13 @@ public class BackupManagerElasticSearch extends BackupManager {
         new GetRepositoriesRequest().repositories(new String[] {repositoryName});
     try {
       getRepository(getRepositoriesRequest);
-    } catch (IOException | TransportException ex) {
+    } catch (final IOException | TransportException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
               repositoryName);
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
@@ -227,7 +299,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  private GetRepositoriesResponse getRepository(GetRepositoriesRequest getRepositoriesRequest)
+  private GetRepositoriesResponse getRepository(final GetRepositoriesRequest getRepositoriesRequest)
       throws IOException {
     return esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
   }
@@ -240,13 +312,13 @@ public class BackupManagerElasticSearch extends BackupManager {
     final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
-    } catch (IOException | TransportException ex) {
+    } catch (final IOException | TransportException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
               getRepositoryName());
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         return;
@@ -269,19 +341,14 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  private void executeSnapshotting(CreateSnapshotRequest snapshotRequest) {
+  private void executeSnapshotting(final CreateSnapshotRequest snapshotRequest) {
     esClient
         .snapshot()
         .createAsync(snapshotRequest, RequestOptions.DEFAULT, getSnapshotActionListener());
   }
 
-  @Override
-  public GetBackupStateResponseDto getBackupState(Long backupId) {
-    final List<SnapshotInfo> snapshots = findSnapshots(backupId);
-    return getBackupResponse(backupId, snapshots);
-  }
-
-  private GetBackupStateResponseDto getBackupResponse(Long backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(
+      final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
@@ -304,7 +371,7 @@ public class BackupManagerElasticSearch extends BackupManager {
       response.setState(BackupStateDto.FAILED);
     }
     final List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
-    for (SnapshotInfo snapshot : snapshots) {
+    for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshotId().getName());
       detail.setStartTime(
@@ -349,7 +416,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     return response;
   }
 
-  private List<SnapshotInfo> findSnapshots(Long backupId) {
+  private List<SnapshotInfo> findSnapshots(final Long backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -358,13 +425,13 @@ public class BackupManagerElasticSearch extends BackupManager {
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
       return response.getSnapshots();
-    } catch (IOException | TransportException ex) {
+    } catch (final IOException | TransportException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
               getRepositoryName());
       throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         throw new NotFoundApiException(String.format("No backup with id [%s] found.", backupId), e);
@@ -378,69 +445,6 @@ public class BackupManagerElasticSearch extends BackupManager {
       }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new TasklistRuntimeException(reason, e);
-    }
-  }
-
-  @Override
-  public List<GetBackupStateResponseDto> getBackups() {
-    final GetSnapshotsRequest snapshotsStatusRequest =
-        new GetSnapshotsRequest()
-            .repository(getRepositoryName())
-            .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + "*"})
-            // it looks like sorting as well as size/offset are not working, need to sort
-            // additionally before return
-            .sort(GetSnapshotsRequest.SortBy.START_TIME)
-            .order(SortOrder.DESC);
-    final GetSnapshotsResponse response;
-    try {
-      response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
-      final List<SnapshotInfo> snapshots =
-          response.getSnapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
-              .collect(toList());
-
-      final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
-          snapshots.stream()
-              .collect(
-                  groupingBy(
-                      si -> {
-                        final Metadata metadata =
-                            objectMapper.convertValue(si.userMetadata(), Metadata.class);
-                        Long backupId = metadata.getBackupId();
-                        // backward compatibility with v. 8.1
-                        if (backupId == null) {
-                          backupId =
-                              Metadata.extractBackupIdFromSnapshotName(si.snapshotId().getName());
-                        }
-                        return backupId;
-                      },
-                      LinkedHashMap::new,
-                      toList()));
-
-      return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
-          .collect(toList());
-    } catch (IOException | TransportException ex) {
-      final String reason =
-          String.format(
-              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
-              getRepositoryName());
-      throw new TasklistElasticsearchConnectionException(reason, ex);
-    } catch (Exception e) {
-      if (isRepositoryMissingException(e)) {
-        final String reason =
-            String.format(
-                "No repository with name [%s] could be found.",
-                tasklistProperties.getBackup().getRepositoryName());
-        throw new TasklistRuntimeException(reason);
-      }
-      if (isSnapshotMissingException(e)) {
-        // no snapshots exist
-        return new ArrayList<>();
-      }
-      final String reason =
-          String.format("Exception occurred when searching for backups: %s", e.getMessage());
       throw new TasklistRuntimeException(reason, e);
     }
   }
@@ -460,7 +464,7 @@ public class BackupManagerElasticSearch extends BackupManager {
   public ActionListener<CreateSnapshotResponse> getSnapshotActionListener() {
     return new ActionListener<>() {
       @Override
-      public void onResponse(CreateSnapshotResponse response) {
+      public void onResponse(final CreateSnapshotResponse response) {
         switch (response.getSnapshotInfo().state()) {
           case SUCCESS -> {
             LOGGER.info("Snapshot done: " + response.getSnapshotInfo().snapshotId());
@@ -485,7 +489,7 @@ public class BackupManagerElasticSearch extends BackupManager {
       }
 
       @Override
-      public void onFailure(Exception e) {
+      public void onFailure(final Exception e) {
         LOGGER.error("Exception occurred while creating snapshot: " + e.getMessage(), e);
         // no need to continue
         requestsQueue.clear();

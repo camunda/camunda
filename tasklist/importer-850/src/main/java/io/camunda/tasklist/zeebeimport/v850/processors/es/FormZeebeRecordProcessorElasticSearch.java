@@ -27,6 +27,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,11 +36,13 @@ public class FormZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FormZeebeRecordProcessorElasticSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private FormIndex formIndex;
 
-  public void processFormRecord(Record record, BulkRequest bulkRequest)
+  public void processFormRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
 
     final FormRecordImpl recordValue = (FormRecordImpl) record.getValue();
@@ -68,13 +71,13 @@ public class FormZeebeRecordProcessorElasticSearch {
   }
 
   private void persistForm(
-      Long formKey,
-      String schema,
-      Long version,
-      String tenantId,
-      String formId,
-      boolean isDelete,
-      BulkRequest bulkRequest)
+      final Long formKey,
+      final String schema,
+      final Long version,
+      final String tenantId,
+      final String formId,
+      final boolean isDelete,
+      final BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
         new FormEntity(null, formId, schema, version, tenantId, formKey.toString(), false, false);
@@ -97,14 +100,14 @@ public class FormZeebeRecordProcessorElasticSearch {
                 .id(ConversionUtils.toStringOrNull(formEntity.getId()))
                 .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
       }
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the form query for the formId: [%s]", formEntity.getId()),
           e);
     }
   }
 
-  public static String bytesToXml(byte[] bytes) {
+  public static String bytesToXml(final byte[] bytes) {
     return new String(bytes, StandardCharsets.UTF_8);
   }
 }

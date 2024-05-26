@@ -37,6 +37,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 // TODO This class was used on the recover of aliases (I'm keeping it here for one release just in
 // case - This should be removed on 8.5 -- notice that is not enabled with @Component and is not
@@ -54,7 +55,9 @@ public class CUSTOMCopyProcessesFromOptimize {
 
   @Autowired private FormIndex formIndex;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public void copyProcesses() {
     String scrollId = null;
@@ -72,7 +75,7 @@ public class CUSTOMCopyProcessesFromOptimize {
       while (searchResponse.getHits().getHits().length > 0) {
         final BulkRequest bulkRequest = new BulkRequest();
 
-        for (SearchHit hit : searchResponse.getHits().getHits()) {
+        for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
           final Map<String, Object> processFromOptimize = hit.getSourceAsMap();
 
@@ -103,11 +106,11 @@ public class CUSTOMCopyProcessesFromOptimize {
                         if (!formExists(formEntity.getId(), esClient)) {
                           persistForm(formEntity, bulkRequest);
                         }
-                      } catch (Exception ex) {
+                      } catch (final Exception ex) {
                         LOGGER.warn("Unable to copy forms from Optimize: " + ex.getMessage(), ex);
                       }
                     });
-              } catch (JsonProcessingException e) {
+              } catch (final JsonProcessingException e) {
                 throw new RuntimeException(e.getMessage(), e);
               }
             }
@@ -126,7 +129,7 @@ public class CUSTOMCopyProcessesFromOptimize {
 
         LOGGER.info("Processes were successfully copied from Optimize.");
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.warn("Unable to copy processes from Optimize: " + ex.getMessage(), ex);
     } finally {
       if (scrollId != null) {
@@ -136,7 +139,8 @@ public class CUSTOMCopyProcessesFromOptimize {
   }
 
   private ProcessEntity createEntity(
-      Map<String, Object> processFromOptimize, BiConsumer<String, String> userTaskFormCollector) {
+      final Map<String, Object> processFromOptimize,
+      final BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(String.valueOf(processFromOptimize.get("id")));
     processEntity.setTenantId("<default>");
@@ -173,7 +177,7 @@ public class CUSTOMCopyProcessesFromOptimize {
         new GetRequest(formIndex.getFullQualifiedName(), formId), RequestOptions.DEFAULT);
   }
 
-  private void persistForm(FormEntity formEntity, BulkRequest bulkRequest)
+  private void persistForm(final FormEntity formEntity, final BulkRequest bulkRequest)
       throws PersistenceException {
 
     LOGGER.debug("Form: key {}", formEntity.getId());
@@ -184,7 +188,7 @@ public class CUSTOMCopyProcessesFromOptimize {
               .id(ConversionUtils.toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
 
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to insert task form [%s]", formEntity.getId()),
           e);

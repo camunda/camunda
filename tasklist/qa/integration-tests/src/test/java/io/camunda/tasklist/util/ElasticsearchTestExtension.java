@@ -80,7 +80,11 @@ public class ElasticsearchTestExtension
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   @Autowired private SchemaManager elasticsearchSchemaManager;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 

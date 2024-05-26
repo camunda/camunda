@@ -47,6 +47,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,14 +62,16 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public IncidentEntity getIncidentById(Long incidentKey) {
+  public IncidentEntity getIncidentById(final Long incidentKey) {
     final IdsQueryBuilder idsQ = idsQuery().addIds(incidentKey.toString());
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(idsQ, ACTIVE_INCIDENT_QUERY));
@@ -89,7 +92,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
         throw new NotFoundException(
             String.format("Could not find incident with key '%s'.", incidentKey));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incident: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -99,7 +102,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
-      String treePath, List<Map<ErrorType, Long>> errorTypes) {
+      final String treePath, final List<Map<ErrorType, Long>> errorTypes) {
     final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
 
     final String errorTypesAggName = "errorTypesAgg";
@@ -138,7 +141,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                               errorTypes.add(Map.of(errorType, b.getDocCount()));
                             }));
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -147,7 +150,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public List<IncidentEntity> getIncidentsByProcessInstanceKey(Long processInstanceKey) {
+  public List<IncidentEntity> getIncidentsByProcessInstanceKey(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final ConstantScoreQueryBuilder query =
@@ -167,7 +170,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, IncidentEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -176,7 +179,8 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
+  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
+      final List<Long> processInstanceKeys) {
     final QueryBuilder processInstanceKeysQuery =
         constantScoreQuery(
             joinWithAnd(
@@ -201,7 +205,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                 searchRequest,
                 esClient,
                 searchHits -> {
-                  for (SearchHit hit : searchHits.getHits()) {
+                  for (final SearchHit hit : searchHits.getHits()) {
                     CollectionUtil.addToMap(
                         result,
                         Long.valueOf(
@@ -216,7 +220,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return null;
           });
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);

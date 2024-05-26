@@ -33,6 +33,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -67,7 +68,10 @@ public class DataMultiplicator implements CommandLineRunner {
               SequenceFlowTemplate.class, SequenceFlowEntity.class,
               VariableTemplate.class, VariableEntity.class,
               IncidentTemplate.class, IncidentEntity.class);
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   public static void main(final String[] args) {
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");

@@ -28,6 +28,7 @@ import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -59,7 +60,9 @@ public class ElasticsearchInternalTask {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public Either<IOException, TaskResponse> getTaskResponse(final String taskId) {
     try {
@@ -68,7 +71,7 @@ public class ElasticsearchInternalTask {
       final var taskResponse =
           objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
       return Either.right(taskResponse);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return Either.left(e);
     }
   }
@@ -92,7 +95,7 @@ public class ElasticsearchInternalTask {
         .toList();
   }
 
-  private String toTaskId(TaskInfo taskInfo) {
+  private String toTaskId(final TaskInfo taskInfo) {
     return String.format("%s:%s", taskInfo.getTaskId().getNodeId(), taskInfo.getTaskId().getId());
   }
 
@@ -119,7 +122,7 @@ public class ElasticsearchInternalTask {
         .exists(new GetIndexRequest(SYSTEM_TASKS_INDEX), RequestOptions.DEFAULT);
   }
 
-  private String toTaskId(Map<String, Object> taskState) {
+  private String toTaskId(final Map<String, Object> taskState) {
     return String.format("%s:%s", taskState.get(NODE), taskState.get(ID));
   }
 

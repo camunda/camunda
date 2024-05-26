@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 
 @Ignore
@@ -42,7 +43,9 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
   @Autowired private MigrateProcessInstanceHandler migrateProcessInstanceHandler;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private OperationTemplate operationTemplate;
 

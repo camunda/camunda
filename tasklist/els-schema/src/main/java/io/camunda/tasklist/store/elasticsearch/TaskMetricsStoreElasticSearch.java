@@ -42,6 +42,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,10 +55,13 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
   @Autowired private MetricIndex index;
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public void registerTaskCompleteEvent(TaskEntity task) {
+  public void registerTaskCompleteEvent(final TaskEntity task) {
     final MetricEntity metric = createTaskCompleteEvent(task);
     final boolean inserted = insert(metric);
     if (!inserted) {
@@ -67,24 +71,9 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     }
   }
 
-  private boolean insert(MetricEntity entity) {
-    try {
-      final IndexRequest request =
-          new IndexRequest(index.getFullQualifiedName())
-              .id(entity.getId())
-              .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
-
-      final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
-      return response.status() == RestStatus.CREATED;
-    } catch (IOException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
-    }
-  }
-
   @Override
   public List<String> retrieveDistinctAssigneesBetweenDates(
-      OffsetDateTime startTime, OffsetDateTime endTime) {
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
 
     final BoolQueryBuilder rangeQuery =
         boolQuery()
@@ -108,7 +97,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       }
 
       final Aggregation group = aggregations.get(ASSIGNEE);
-      if (!(group instanceof ParsedStringTerms terms)) {
+      if (!(group instanceof final ParsedStringTerms terms)) {
         throw new TasklistRuntimeException("Unexpected response for aggregations");
       }
 
@@ -116,14 +105,29 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
           (List<ParsedStringTerms.ParsedBucket>) terms.getBuckets();
 
       return buckets.stream().map(it -> String.valueOf(it.getKey())).collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error while retrieving assigned users between dates from index: " + index, e);
       final String message = "Error while retrieving assigned users between dates";
       throw new TasklistRuntimeException(message);
     }
   }
 
-  private MetricEntity createTaskCompleteEvent(TaskEntity task) {
+  private boolean insert(final MetricEntity entity) {
+    try {
+      final IndexRequest request =
+          new IndexRequest(index.getFullQualifiedName())
+              .id(entity.getId())
+              .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+
+      final IndexResponse response = esClient.index(request, RequestOptions.DEFAULT);
+      return response.status() == RestStatus.CREATED;
+    } catch (final IOException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
+    }
+  }
+
+  private MetricEntity createTaskCompleteEvent(final TaskEntity task) {
     return new MetricEntity()
         .setEvent(EVENT_TASK_COMPLETED_BY_ASSIGNEE)
         .setValue(task.getAssignee())

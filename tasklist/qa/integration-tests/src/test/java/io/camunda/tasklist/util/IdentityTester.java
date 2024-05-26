@@ -28,6 +28,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -52,7 +53,11 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
       Map.of(USER, KEYCLOAK_PASSWORD, USER_2, KEYCLOAK_PASSWORD_2);
   private static JwtDecoder jwtDecoder;
   @Autowired private static TestContainerUtil testContainerUtil;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
   protected static void beforeClass(final boolean multiTenancyEnabled) {

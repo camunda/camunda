@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
 
@@ -29,7 +30,9 @@ public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
   public static final String USER_1 = "user1";
   public static final String USER_2 = "user2";
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Test
   public void shouldReturnAssigneeAndCandidateGroups() throws IOException {
@@ -157,7 +160,7 @@ public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
   public void shouldReturnAssigneeAndCandidateUsers() throws IOException {
     final String candidateUsers = USER_1 + ", " + USER_2;
     final GraphQLResponse response =
-        this.getAllTasksForAssigneeAndCandidateUsers(ASSIGNEE, candidateUsers, null);
+        getAllTasksForAssigneeAndCandidateUsers(ASSIGNEE, candidateUsers, null);
 
     final String taskId = response.get("$.data.tasks[0].id");
 
@@ -178,7 +181,7 @@ public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
     final String payload = "{\"candidateUsers\": []}";
 
     final GraphQLResponse response =
-        this.getAllTasksForAssigneeAndCandidateUsers(null, "=candidateUsers", payload);
+        getAllTasksForAssigneeAndCandidateUsers(null, "=candidateUsers", payload);
 
     final String taskId = response.get("$.data.tasks[0].id");
 
@@ -206,7 +209,7 @@ public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
             + "\"}";
 
     final GraphQLResponse response =
-        this.getAllTasksForAssigneeAndCandidateUsers("=assignee", "=candidateUsers", payload);
+        getAllTasksForAssigneeAndCandidateUsers("=assignee", "=candidateUsers", payload);
     final String taskId = response.get("$.data.tasks[0].id");
     final GraphQLResponse taskResponse = tester.getTaskById(taskId);
 
@@ -219,7 +222,7 @@ public class TaskAssigneeIT extends TasklistZeebeIntegrationTest {
   }
 
   public GraphQLResponse getAllTasksForAssigneeAndCandidateUsers(
-      String assignee, String candidateUsers, String payload) throws IOException {
+      final String assignee, final String candidateUsers, final String payload) throws IOException {
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
             .startEvent("start")
