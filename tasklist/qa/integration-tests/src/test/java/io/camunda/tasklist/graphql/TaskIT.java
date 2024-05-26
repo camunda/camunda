@@ -68,7 +68,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private WebApplicationContext context;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   private final UserDTO joe = buildAllAccessUserWith("joe", "Joe Doe");
   private final UserDTO jane = buildAllAccessUserWith("jane", "Jane Doe");

@@ -40,6 +40,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -53,15 +54,17 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(
+      final String alias, final int partitionId) throws IOException {
     final QueryBuilder queryBuilder =
         joinWithAnd(
             termQuery(ImportPositionIndex.ALIAS_NAME, alias),
@@ -93,7 +96,8 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
+      final List<ImportPositionEntity> positions,
+      final List<ImportPositionEntity> postImportPositions) {
     var preparedBulkRequest = prepareBulkRequest(positions);
 
     if (preparedBulkRequest.isLeft()) {

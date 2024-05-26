@@ -25,6 +25,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -32,7 +33,10 @@ public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTes
 
   @Autowired private WebApplicationContext context;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   private MockMvcHelper mockMvcHelper;
 
   @BeforeEach

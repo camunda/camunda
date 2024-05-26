@@ -22,6 +22,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,10 +34,13 @@ public class OpensearchSequenceFlowStore implements SequenceFlowStore {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
+  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
+      final Long processInstanceKey) {
     final var query =
         constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     final var searchRequestBuilder =

@@ -57,6 +57,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -86,12 +87,15 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private ListViewReader listViewReader;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   private Long initialBatchOperationMaxSize;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -106,6 +110,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     tester.deployProcess("demoProcess_v_2.bpmn");
   }
 
+  @Override
   @After
   public void after() {
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
@@ -540,7 +545,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertVariable(
-      List<VariableDto> variables, String name, String value, Boolean hasActiveOperation) {
+      final List<VariableDto> variables,
+      final String name,
+      final String value,
+      final Boolean hasActiveOperation) {
     final List<VariableDto> collect =
         variables.stream().filter(v -> v.getName().equals(name)).collect(Collectors.toList());
     assertThat(collect).hasSize(1);
@@ -597,7 +605,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(variables.get(0).getValue()).isEqualTo(varValue);
   }
 
-  protected Long getFlowNodeInstanceId(Long processInstanceKey, String activityId) {
+  protected Long getFlowNodeInstanceId(final Long processInstanceKey, final String activityId) {
     final List<FlowNodeInstanceEntity> allActivityInstances =
         tester.getAllFlowNodeInstances(processInstanceKey);
     final Optional<FlowNodeInstanceEntity> first =
@@ -671,7 +679,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private List<ProcessInstanceForListViewEntity> getProcessInstanceEntities(
-      ListViewQueryDto processInstanceQuery) {
+      final ListViewQueryDto processInstanceQuery) {
     final ListViewRequestDto request = new ListViewRequestDto(processInstanceQuery);
     return listViewReader.queryListView(request, new ListViewResponseDto());
   }
@@ -1154,7 +1162,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     return procDefinitionKey;
   }
 
-  protected Long startProcessWithDecision(String payload) {
+  protected Long startProcessWithDecision(final String payload) {
     final Long procInstanceKey =
         tester
             .startProcessInstance("invoice_decision", payload)
@@ -1180,7 +1188,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     return processInstanceKey;
   }
 
-  private ListViewResponseDto getProcessInstances(ListViewQueryDto query) throws Exception {
+  private ListViewResponseDto getProcessInstances(final ListViewQueryDto query) throws Exception {
     final ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
     final MockHttpServletRequestBuilder getProcessInstancesRequest =

@@ -59,7 +59,7 @@ public class OpenSearchHelper implements NoSqlHelper {
   @Qualifier("openSearchClient")
   private OpenSearchClient osClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   public TaskEntity getTask(String taskId) {
     try {

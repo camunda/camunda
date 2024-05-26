@@ -61,6 +61,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -78,7 +79,10 @@ public class OpenSearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchConnector.class);
 
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private ObjectMapper tasklistObjectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper tasklistObjectMapper;
 
   @Bean
   public OpenSearchClient openSearchClient() {
@@ -86,7 +90,7 @@ public class OpenSearchConnector {
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           "Error in getting health status from localhost:"
               + tasklistProperties.getOpenSearch().getPort(),
@@ -135,7 +139,7 @@ public class OpenSearchConnector {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
     return openSearchClient;
@@ -147,7 +151,7 @@ public class OpenSearchConnector {
     return createOsClient(tasklistProperties.getZeebeOpenSearch());
   }
 
-  public OpenSearchAsyncClient createAsyncOsClient(OpenSearchProperties osConfig) {
+  public OpenSearchAsyncClient createAsyncOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
@@ -190,7 +194,7 @@ public class OpenSearchConnector {
               LOGGER.info("OpenSearch cluster health: {}", response.status());
             }
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
 
@@ -202,7 +206,7 @@ public class OpenSearchConnector {
     return openSearchAsyncClient;
   }
 
-  public OpenSearchClient createOsClient(OpenSearchProperties osConfig) {
+  public OpenSearchClient createOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
       return getAwsClient(osConfig);
@@ -231,7 +235,7 @@ public class OpenSearchConnector {
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           "Error in getting health status from localhost:"
               + tasklistProperties.getOpenSearch().getPort(),
@@ -246,17 +250,17 @@ public class OpenSearchConnector {
     return openSearchClient;
   }
 
-  private HttpHost getHttpHost(OpenSearchProperties osConfig) {
+  private HttpHost getHttpHost(final OpenSearchProperties osConfig) {
     try {
       final URI uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new TasklistRuntimeException("Error in url: " + osConfig.getUrl(), e);
     }
   }
 
   private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, OpenSearchProperties osConfig) {
+      final HttpAsyncClientBuilder builder, final OpenSearchProperties osConfig) {
     if (!StringUtils.hasText(osConfig.getUsername())
         || !StringUtils.hasText(osConfig.getPassword())) {
       LOGGER.warn(
@@ -275,7 +279,7 @@ public class OpenSearchConnector {
   }
 
   private void setupSSLContext(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final SslProperties sslConfig) {
     try {
       final ClientTlsStrategyBuilder tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       tlsStrategyBuilder.setSslContext(getSSLContext(sslConfig));
@@ -289,12 +293,12 @@ public class OpenSearchConnector {
 
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private SSLContext getSSLContext(SslProperties sslConfig)
+  private SSLContext getSSLContext(final SslProperties sslConfig)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(sslConfig);
     final TrustStrategy trustStrategy =
@@ -307,7 +311,7 @@ public class OpenSearchConnector {
     }
   }
 
-  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
+  private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -317,7 +321,7 @@ public class OpenSearchConnector {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured OpenSearch Connection!";
       throw new TasklistRuntimeException(message, e);
@@ -329,7 +333,7 @@ public class OpenSearchConnector {
     try {
       final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("opensearch-host", cert);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not load configured server certificate for the secured OpenSearch Connection!";
       throw new TasklistRuntimeException(message, e);
@@ -339,7 +343,8 @@ public class OpenSearchConnector {
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final BufferedInputStream bis =
+        new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -354,7 +359,7 @@ public class OpenSearchConnector {
   }
 
   private HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, OpenSearchProperties osConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpenSearchProperties osConfig) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
@@ -374,7 +379,7 @@ public class OpenSearchConnector {
     return builder;
   }
 
-  public boolean checkHealth(OpenSearchClient osClient) {
+  public boolean checkHealth(final OpenSearchClient osClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
@@ -386,7 +391,7 @@ public class OpenSearchConnector {
             });
   }
 
-  public boolean checkHealth(OpenSearchAsyncClient osAsyncClient) {
+  public boolean checkHealth(final OpenSearchAsyncClient osAsyncClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
@@ -430,13 +435,13 @@ public class OpenSearchConnector {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
       return false;
     }
   }
 
-  private OpenSearchAsyncClient getAwsAsyncClient(OpenSearchProperties osConfig) {
+  private OpenSearchAsyncClient getAwsAsyncClient(final OpenSearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =
@@ -450,7 +455,7 @@ public class OpenSearchConnector {
     return new OpenSearchAsyncClient(transport);
   }
 
-  private OpenSearchClient getAwsClient(OpenSearchProperties osConfig) {
+  private OpenSearchClient getAwsClient(final OpenSearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =

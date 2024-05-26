@@ -118,7 +118,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @LocalServerPort private int randomServerPort;
 

@@ -121,7 +121,7 @@ public class TasklistTester {
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired(required = false)
   private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;

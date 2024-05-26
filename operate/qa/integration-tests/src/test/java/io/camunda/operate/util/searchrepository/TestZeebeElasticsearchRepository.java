@@ -37,10 +37,13 @@ public class TestZeebeElasticsearchRepository implements TestZeebeRepository {
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public <R> List<R> scrollTerm(String index, String field, long value, Class<R> clazz) {
+  public <R> List<R> scrollTerm(
+      final String index, final String field, final long value, final Class<R> clazz) {
     final List<R> result = new ArrayList<>();
 
     final SearchRequest request =
@@ -58,7 +61,7 @@ public class TestZeebeElasticsearchRepository implements TestZeebeRepository {
     try {
       scroll(request, hitsConsumer, zeebeEsClient);
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
   }

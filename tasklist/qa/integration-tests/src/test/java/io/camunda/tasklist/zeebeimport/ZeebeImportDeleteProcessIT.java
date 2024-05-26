@@ -18,6 +18,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -26,7 +27,10 @@ public class ZeebeImportDeleteProcessIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private WebApplicationContext context;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   private MockMvcHelper mockMvcHelper;
 
   @BeforeEach

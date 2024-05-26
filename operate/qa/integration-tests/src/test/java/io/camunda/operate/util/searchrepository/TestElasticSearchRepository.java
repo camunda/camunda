@@ -73,7 +73,9 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   @Qualifier("zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public boolean isConnected() {

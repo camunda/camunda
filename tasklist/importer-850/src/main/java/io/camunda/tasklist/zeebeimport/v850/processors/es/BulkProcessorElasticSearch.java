@@ -33,6 +33,7 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -55,12 +56,15 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
   @Autowired private UserTaskZeebeRecordProcessorElasticSearch userTaskZeebeRecordProcessor;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 
   @Override
-  protected void processZeebeRecords(ImportBatch importBatchElasticSearch, BulkRequest bulkRequest)
+  protected void processZeebeRecords(
+      final ImportBatch importBatchElasticSearch, final BulkRequest bulkRequest)
       throws PersistenceException {
 
     final JavaType valueType =
@@ -77,7 +81,7 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
     LOGGER.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       switch (importValueType) {
         case PROCESS_INSTANCE:
           processInstanceZeebeRecordProcessor.processProcessInstanceRecord(record, bulkRequest);
@@ -120,7 +124,8 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
                 .record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
-  protected Class<? extends RecordValue> getRecordValueClass(ImportValueType importValueType) {
+  protected Class<? extends RecordValue> getRecordValueClass(
+      final ImportValueType importValueType) {
     switch (importValueType) {
       case PROCESS_INSTANCE:
         return ProcessInstanceRecordValueImpl.class;

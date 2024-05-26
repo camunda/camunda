@@ -35,6 +35,7 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -45,13 +46,15 @@ public class JobZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(JobZeebeRecordProcessorOpenSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private TaskTemplate taskTemplate;
 
   @Autowired private FormStore formStore;
 
-  public void processJobRecord(Record record, List<BulkOperation> operations) {
+  public void processJobRecord(final Record record, final List<BulkOperation> operations) {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
     if (recordValue.getType().equals(Protocol.USER_TASK_JOB_TYPE)) {
       if (record.getIntent() != null
@@ -62,7 +65,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     // else skip task
   }
 
-  private BulkOperation persistTask(Record record, JobRecordValueImpl recordValue) {
+  private BulkOperation persistTask(final Record record, final JobRecordValueImpl recordValue) {
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
     final TaskEntity entity =
         new TaskEntity()
@@ -124,7 +127,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     if (candidateGroups != null) {
       try {
         entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
@@ -138,7 +141,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     if (candidateUsers != null) {
       try {
         entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
-      } catch (JsonProcessingException e) {
+      } catch (final JsonProcessingException e) {
         LOGGER.warn(
             String.format(
                 "Candidate users can't be parsed from %s: %s", candidateUsers, e.getMessage()),
@@ -179,7 +182,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     return getTaskQuery(entity, intent);
   }
 
-  private BulkOperation getTaskQuery(TaskEntity entity, Intent intent) {
+  private BulkOperation getTaskQuery(final TaskEntity entity, final Intent intent) {
     LOGGER.debug("Task instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     if (intent == Intent.MIGRATED) {

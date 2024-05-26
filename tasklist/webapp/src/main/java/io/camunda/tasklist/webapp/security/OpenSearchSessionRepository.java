@@ -68,7 +68,7 @@ public class OpenSearchSessionRepository
 
   @Autowired private HttpServletRequest request;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @PostConstruct
   private void setUp() {

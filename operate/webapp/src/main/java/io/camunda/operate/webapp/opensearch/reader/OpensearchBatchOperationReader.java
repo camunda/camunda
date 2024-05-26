@@ -28,6 +28,7 @@ import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -36,12 +37,16 @@ import org.springframework.stereotype.Component;
 public class OpensearchBatchOperationReader implements BatchOperationReader {
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private UserService<?> userService;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
   public List<BatchOperationEntity> getBatchOperations(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final var searchRequestBuilder = createSearchRequest(batchOperationRequestDto);
     final List<BatchOperationEntity> batchOperationEntities =
         richOpenSearchClient
@@ -65,7 +70,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
   }
 
   private SearchRequest.Builder createSearchRequest(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final SortOptions sort1, sort2;
     final Object[] querySearchAfter;
 

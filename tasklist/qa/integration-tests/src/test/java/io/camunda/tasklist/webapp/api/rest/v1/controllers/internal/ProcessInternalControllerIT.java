@@ -54,7 +54,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private WebApplicationContext context;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
 

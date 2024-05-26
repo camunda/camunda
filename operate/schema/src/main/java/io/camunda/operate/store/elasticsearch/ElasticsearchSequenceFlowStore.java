@@ -29,6 +29,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -43,10 +44,13 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
+  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
+      final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
@@ -63,7 +67,7 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, SequenceFlowEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s",

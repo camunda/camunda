@@ -43,6 +43,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.FieldCollapse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -62,10 +63,10 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Override
-  public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
+  public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
     try {
       final FieldCollapse keyCollapse = new FieldCollapse.Builder().field(ProcessIndex.KEY).build();
       final SortOptions sortOptions =
@@ -93,13 +94,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
       }
-    } catch (IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   @Override
-  public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId) {
+  public ProcessEntity getProcessByBpmnProcessId(final String bpmnProcessId) {
     return getProcessByBpmnProcessId(bpmnProcessId, null);
   }
 
@@ -148,7 +149,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -156,7 +157,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   @Override
-  public ProcessEntity getProcess(String processId) {
+  public ProcessEntity getProcess(final String processId) {
 
     final SearchResponse<ProcessEntity> response;
     try {
@@ -176,7 +177,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -260,7 +261,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Override
   public List<ProcessEntity> getProcesses(
-      String search,
+      final String search,
       final List<String> processDefinitions,
       final String tenantId,
       final Boolean isStartedByForm) {
@@ -377,6 +378,22 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQueryWithStartedByForm);
   }
 
+  @Override
+  public List<ProcessEntity> getProcessesStartedByForm() {
+    final Query query =
+        QueryBuilders.bool()
+            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .mustNot(
+                mn ->
+                    mn.term(
+                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+            .build()
+            ._toQuery();
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query).stream()
+        .filter(ProcessEntity::isStartedByForm)
+        .toList();
+  }
+
   private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       final Query tenantQuery =
@@ -429,7 +446,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     return query;
   }
 
-  private List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(Query query) {
+  private List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(final Query query) {
     final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(processIndex.getAlias())
@@ -492,26 +509,10 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       return results;
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
-  }
-
-  @Override
-  public List<ProcessEntity> getProcessesStartedByForm() {
-    final Query query =
-        QueryBuilders.bool()
-            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-            .mustNot(
-                mn ->
-                    mn.term(
-                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
-            .build()
-            ._toQuery();
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query).stream()
-        .filter(ProcessEntity::isStartedByForm)
-        .toList();
   }
 }

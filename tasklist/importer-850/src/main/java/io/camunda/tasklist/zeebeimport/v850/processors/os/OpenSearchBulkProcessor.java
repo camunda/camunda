@@ -33,6 +33,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -55,12 +56,15 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
 
   @Autowired private UserTaskZeebeRecordProcessorOpenSearch userTaskZeebeRecordProcessor;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 
   @Override
-  protected void processZeebeRecords(ImportBatch importBatch, List<BulkOperation> operations)
+  protected void processZeebeRecords(
+      final ImportBatch importBatch, final List<BulkOperation> operations)
       throws PersistenceException {
 
     final JavaType valueType =
@@ -75,7 +79,7 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
     final ImportValueType importValueType = importBatch.getImportValueType();
 
     LOGGER.debug("Writing [{}] Zeebe records to OpenSearch", zeebeRecords.size());
-    for (Record record : zeebeRecords) {
+    for (final Record record : zeebeRecords) {
       switch (importValueType) {
         case PROCESS_INSTANCE:
           processInstanceZeebeRecordProcessor.processProcessInstanceRecord(record, operations);
@@ -119,7 +123,8 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
                 .record(currentTime - record.getTimestamp(), TimeUnit.MILLISECONDS));
   }
 
-  protected Class<? extends RecordValue> getRecordValueClass(ImportValueType importValueType) {
+  protected Class<? extends RecordValue> getRecordValueClass(
+      final ImportValueType importValueType) {
     switch (importValueType) {
       case PROCESS_INSTANCE:
         return ProcessInstanceRecordValueImpl.class;

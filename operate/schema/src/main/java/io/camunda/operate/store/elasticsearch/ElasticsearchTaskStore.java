@@ -26,6 +26,7 @@ import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +45,9 @@ public class ElasticsearchTaskStore implements TaskStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTaskStore.class);
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   public Either<IOException, TaskResponse> getTaskResponse(final String taskId) {
     try {
@@ -53,7 +56,7 @@ public class ElasticsearchTaskStore implements TaskStore {
       final var taskResponse =
           objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
       return Either.right(taskResponse);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return Either.left(e);
     }
   }
@@ -63,6 +66,7 @@ public class ElasticsearchTaskStore implements TaskStore {
     checkForFailures(taskResponse);
   }
 
+  @Override
   public List<String> getRunningReindexTasksIdsFor(final String fromIndex, final String toIndex)
       throws IOException {
     if (fromIndex == null || toIndex == null) {
@@ -76,7 +80,7 @@ public class ElasticsearchTaskStore implements TaskStore {
         .toList();
   }
 
-  private String toTaskId(TaskInfo taskInfo) {
+  private String toTaskId(final TaskInfo taskInfo) {
     return String.format("%s:%s", taskInfo.getTaskId().getNodeId(), taskInfo.getTaskId().getId());
   }
 

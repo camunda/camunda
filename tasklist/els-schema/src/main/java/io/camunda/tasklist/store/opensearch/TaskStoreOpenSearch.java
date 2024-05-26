@@ -90,7 +90,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   @Autowired private VariableStore variableStoreElasticSearch;
 

@@ -35,6 +35,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -50,11 +51,13 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public List<BatchOperationEntity> getBatchOperations(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
 
     final SearchRequest searchRequest = createSearchRequest(batchOperationRequestDto);
     final SearchResponse searchResponse;
@@ -74,7 +77,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
         Collections.reverse(batchOperationEntities);
       }
       return batchOperationEntities;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while getting page of batch operations list: %s",
@@ -84,7 +87,8 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
     }
   }
 
-  private SearchRequest createSearchRequest(BatchOperationRequestDto batchOperationRequestDto) {
+  private SearchRequest createSearchRequest(
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final QueryBuilder queryBuilder =
         termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
 

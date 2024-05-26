@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
@@ -59,11 +60,13 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private PartitionHolder partitionHolder;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
 
@@ -112,7 +115,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     assertTasksInCorrectIndex(expectedCount, endDate);
   }
 
-  private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
+  private void deployProcessWithOneFlowNode(final String processId, final String flowNodeBpmnId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -122,11 +125,13 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     tester.deployProcess(process, processId + ".bpmn").waitUntil().processIsDeployed();
   }
 
-  private void assertTasksInCorrectIndex(int tasksCount, Instant endDate) throws IOException {
+  private void assertTasksInCorrectIndex(final int tasksCount, final Instant endDate)
+      throws IOException {
     assertTaskIndex(tasksCount, endDate);
   }
 
-  private List<String> assertTaskIndex(int tasksCount, Instant endDate) throws IOException {
+  private List<String> assertTaskIndex(final int tasksCount, final Instant endDate)
+      throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
@@ -155,7 +160,10 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private void startInstancesAndCompleteTasks(
-      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+      final String processId,
+      final String flowNodeBpmnId,
+      final int count,
+      final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     for (int i = 0; i < count; i++) {

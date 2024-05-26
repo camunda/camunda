@@ -38,6 +38,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -60,32 +61,34 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   @Autowired private MigrationProperties migrationProperties;
   private String listViewIndexName;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   @Override
-  public ReindexWithQueryAndScriptPlan setSrcIndex(String srcIndex) {
+  public ReindexWithQueryAndScriptPlan setSrcIndex(final String srcIndex) {
     this.srcIndex = srcIndex;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setDstIndex(String dstIndex) {
+  public ReindexWithQueryAndScriptPlan setDstIndex(final String dstIndex) {
     this.dstIndex = dstIndex;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
+  public ReindexWithQueryAndScriptPlan setSteps(final List<Step> steps) {
     this.steps = steps;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
+  public ReindexWithQueryAndScriptPlan setListViewIndexName(final String listViewIndexName) {
     this.listViewIndexName = listViewIndexName;
     return this;
   }
@@ -151,7 +154,7 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
       if (processInstanceKeys.size() > 0) {
         reindexPart(esClient, processInstanceKeys);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }
@@ -169,7 +172,7 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
     }
   }
 
-  private void reindexPart(RestHighLevelClient esClient, Set<Long> processInstanceKeys)
+  private void reindexPart(final RestHighLevelClient esClient, final Set<Long> processInstanceKeys)
       throws MigrationException, JsonProcessingException {
     final Map<String, Tuple<String, String>> bpmnProcessIdsMap =
         getBpmnProcessIds(processInstanceKeys, esClient);
@@ -198,7 +201,8 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   }
 
   private Map<String, Tuple<String, String>> getBpmnProcessIds(
-      Set<Long> processInstanceKeys, RestHighLevelClient esClient) throws MigrationException {
+      final Set<Long> processInstanceKeys, final RestHighLevelClient esClient)
+      throws MigrationException {
     final SearchRequest searchRequest =
         new SearchRequest(listViewIndexName + "*")
             .source(
@@ -225,7 +229,7 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
           esClient,
           migrationProperties.getScrollKeepAlive());
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }

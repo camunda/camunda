@@ -120,7 +120,11 @@ public class AuthenticationIT implements AuthenticationTestable {
   @MockBean private AuthenticationController authenticationController;
   @SpyBean private Auth0Service auth0Service;
   @Autowired private BeanFactory beanFactory;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private ApplicationContext applicationContext;
 
   @MockBean
@@ -129,7 +133,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @MockBean private IndicesCheck probes;
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -152,15 +156,15 @@ public class AuthenticationIT implements AuthenticationTestable {
         5L);
   }
 
-  private static String toEncodedToken(Map map) {
+  private static String toEncodedToken(final Map map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map map) {
+  private static String toJSON(final Map map) {
     return new JSONObject(map).toString();
   }
 
@@ -472,7 +476,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         .isEqualTo("http://connectors-url");
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
@@ -484,16 +488,17 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("No permission for Operate");
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 

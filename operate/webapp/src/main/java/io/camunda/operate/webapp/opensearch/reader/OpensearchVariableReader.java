@@ -32,6 +32,7 @@ import java.util.Map;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,10 +47,13 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request) {
+  public List<VariableDto> getVariables(
+      final String processInstanceId, final VariableRequestDto request) {
     final List<VariableDto> response = queryVariables(processInstanceId, request);
 
     // query one additional instance
@@ -66,7 +70,7 @@ public class OpensearchVariableReader implements VariableReader {
   }
 
   @Override
-  public VariableDto getVariable(String id) {
+  public VariableDto getVariable(final String id) {
     final var searchRequest =
         searchRequestBuilder(variableTemplate).query(withTenantCheck(ids(id)));
     final var hits = richOpenSearchClient.doc().search(searchRequest, VariableEntity.class).hits();
@@ -78,7 +82,7 @@ public class OpensearchVariableReader implements VariableReader {
 
   @Override
   public VariableDto getVariableByName(
-      String processInstanceId, String scopeId, String variableName) {
+      final String processInstanceId, final String scopeId, final String variableName) {
     final var searchRequest =
         searchRequestBuilder(variableTemplate)
             .query(
@@ -154,12 +158,12 @@ public class OpensearchVariableReader implements VariableReader {
   }
 
   private List<VariableDto> queryVariables(
-      final String processInstanceId, VariableRequestDto variableRequest) {
+      final String processInstanceId, final VariableRequestDto variableRequest) {
     return queryVariables(processInstanceId, variableRequest, null);
   }
 
   private List<VariableDto> queryVariables(
-      final String processInstanceId, VariableRequestDto request, String varName) {
+      final String processInstanceId, final VariableRequestDto request, final String varName) {
     Long scopeKey = null;
     if (request.getScopeId() != null) {
       scopeKey = Long.valueOf(request.getScopeId());
@@ -238,7 +242,7 @@ public class OpensearchVariableReader implements VariableReader {
     }
   }
 
-  private VariableDto toVariableDto(VariableEntity variableEntity) {
+  private VariableDto toVariableDto(final VariableEntity variableEntity) {
     return VariableDto.createFrom(
         variableEntity,
         null,

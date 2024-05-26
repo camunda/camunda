@@ -36,6 +36,7 @@ import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplate;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(OpensearchCondition.class)
@@ -47,7 +48,9 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
 
   @Autowired private OpenSearchClient lowLevelOpenSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private OperateProperties properties;
 

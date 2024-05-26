@@ -47,6 +47,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -63,7 +64,10 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
 
   @Autowired private MigrationProperties migrationProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private RestHighLevelClient esClient;
 
   private Long flowNodesWithIncidentsCount;
@@ -74,26 +78,26 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   private String postImporterQueueIndexName;
 
   @Override
-  public FillPostImporterQueuePlan setListViewIndexName(String listViewIndexName) {
+  public FillPostImporterQueuePlan setListViewIndexName(final String listViewIndexName) {
     this.listViewIndexName = listViewIndexName;
     return this;
   }
 
   @Override
-  public FillPostImporterQueuePlan setIncidentsIndexName(String incidentsIndexName) {
+  public FillPostImporterQueuePlan setIncidentsIndexName(final String incidentsIndexName) {
     this.incidentsIndexName = incidentsIndexName;
     return this;
   }
 
   @Override
   public FillPostImporterQueuePlan setPostImporterQueueIndexName(
-      String postImporterQueueIndexName) {
+      final String postImporterQueueIndexName) {
     this.postImporterQueueIndexName = postImporterQueueIndexName;
     return this;
   }
 
   @Override
-  public FillPostImporterQueuePlan setSteps(List<Step> steps) {
+  public FillPostImporterQueuePlan setSteps(final List<Step> steps) {
     this.steps = steps;
     return this;
   }
@@ -137,7 +141,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
                     getIncidentEntities(incidentKeysFieldName, esClient, hits);
                 final BulkRequest bulkRequest = new BulkRequest();
                 final int[] index = {0};
-                for (IncidentEntity incident : incidents) {
+                for (final IncidentEntity incident : incidents) {
                   index[0]++;
                   final PostImporterQueueEntity entity =
                       createPostImporterQueueEntity(incident, index[0]);
@@ -153,7 +157,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
               }),
           esClient,
           migrationProperties.getScrollKeepAlive());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }
@@ -171,7 +175,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   }
 
   private List<IncidentEntity> getIncidentEntities(
-      String incidentKeysFieldName, RestHighLevelClient esClient, SearchHits hits)
+      final String incidentKeysFieldName, final RestHighLevelClient esClient, final SearchHits hits)
       throws IOException {
     final List<Long> incidentKeys =
         Arrays.stream(hits.getHits())
@@ -195,7 +199,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   }
 
   private PostImporterQueueEntity createPostImporterQueueEntity(
-      IncidentEntity incident, long index) {
+      final IncidentEntity incident, final long index) {
     return new PostImporterQueueEntity()
         .setId(String.format("%s-%s", incident.getId(), incident.getState().getZeebeIntent()))
         .setCreationTime(OffsetDateTime.now())

@@ -108,7 +108,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired @Qualifier("tasklistObjectMapper") private ObjectMapper objectMapper;
 
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
     return List.of(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
