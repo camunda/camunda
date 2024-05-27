@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.repository;
 
-import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.user.Group;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;

@@ -155,7 +155,8 @@ class UserServiceTest {
 
     userService.updateUser(
         user.id(),
-        new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password"));
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email", false), "password"));
 
     final var existingUser = userService.findUserById(user.id());
     assertFalse(existingUser.enabled());

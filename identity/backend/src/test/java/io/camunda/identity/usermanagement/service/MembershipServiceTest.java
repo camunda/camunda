@@ -9,7 +9,7 @@ package io.camunda.identity.usermanagement.service;
 
 import io.camunda.identity.user.CamundaUser;
 import io.camunda.identity.user.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.user.Group;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,8 +28,9 @@ public class MembershipServiceTest {
 
   @Test
   void addUserToGroupAdded() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
+    final var camundaUser =
+        userService.createUser(
+            new CamundaUserWithPassword(new CamundaUser("user" + UUID.randomUUID()), "password"));
     final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
 
     membershipService.addUserToGroup(camundaUser, group);

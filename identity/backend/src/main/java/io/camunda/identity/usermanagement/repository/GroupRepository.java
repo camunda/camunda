@@ -9,7 +9,7 @@ package io.camunda.identity.usermanagement.repository;
 
 import static org.springframework.security.provisioning.JdbcUserDetailsManager.DEF_FIND_GROUP_ID_SQL;
 
-import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.user.Group;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
