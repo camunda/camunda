@@ -144,7 +144,11 @@ const FieldsModal: React.FC<Props> = ({
             <>
               <ModalHeader title="Apply filters" buttonOnClick={onClose} />
               <ModalBody hasForm>
-                <form className={styles.twoColumnGrid} onSubmit={handleSubmit}>
+                <form
+                  className={styles.twoColumnGrid}
+                  onSubmit={handleSubmit}
+                  tabIndex={-1}
+                >
                   {[undefined, 'custom'].includes(values.name) ? null : (
                     <Field name="name">
                       {({input}) => (
