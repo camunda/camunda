@@ -93,6 +93,6 @@ jobs:
           payload: |
             {
               "workflow_name": "Migrate elasticsearch data",
-              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }

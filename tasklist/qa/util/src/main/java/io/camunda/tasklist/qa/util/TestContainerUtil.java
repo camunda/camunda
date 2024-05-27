@@ -17,6 +17,8 @@ import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
@@ -379,7 +381,7 @@ public class TestContainerUtil {
     if (tasklistContainer == null) {
       LOGGER.info("************ Starting Tasklist {} ************", version);
       tasklistContainer = createTasklistContainer(version, testContext);
-      startTasklistContainer(tasklistContainer, testContext);
+      startTasklistContainer(tasklistContainer, version, testContext);
       LOGGER.info("************ Tasklist started  ************");
     } else {
       throw new IllegalStateException("Tasklist is already started. Call stopTasklist first.");
@@ -389,18 +391,25 @@ public class TestContainerUtil {
 
   public GenericContainer createTasklistContainer(
       final String dockerImageName, final String version, final TestContext testContext) {
+    final int managementPort = getTasklistManagementPort(version);
+    final Integer[] exposedPorts =
+        new HashSet<>(List.of(TASKLIST_HTTP_PORT, managementPort)).toArray(Integer[]::new);
     tasklistContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-            .withExposedPorts(8080, 9600)
+            .withExposedPorts(exposedPorts)
             .withNetwork(testContext.getNetwork())
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(9600)
+                    .forPort(managementPort)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
     applyConfiguration(tasklistContainer, testContext);
     return tasklistContainer;
+  }
+
+  private int getTasklistManagementPort(final String version) {
+    return version.compareTo("8.6.0") >= 0 ? TASKLIST_MGMT_HTTP_PORT : TASKLIST_HTTP_PORT;
   }
 
   public GenericContainer createTasklistContainer(
@@ -409,13 +418,15 @@ public class TestContainerUtil {
   }
 
   public void startTasklistContainer(
-      final GenericContainer tasklistContainer, final TestContext testContext) {
+      final GenericContainer tasklistContainer,
+      final String version,
+      final TestContext testContext) {
     tasklistContainer.start();
 
     testContext.setExternalTasklistHost(tasklistContainer.getHost());
     testContext.setExternalTasklistPort(tasklistContainer.getMappedPort(TASKLIST_HTTP_PORT));
     testContext.setExternalTasklistMgmtPort(
-        tasklistContainer.getMappedPort(TASKLIST_MGMT_HTTP_PORT));
+        tasklistContainer.getMappedPort(getTasklistManagementPort(version)));
   }
 
   // for newer versions
