@@ -84,7 +84,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
               </div>
             }
             onClick={() => {
-              const customFilters = getStateLocally('customFilters')?.custom;
+              const customFilters = getStateLocally('customFilters')?.[filter];
 
               searchParams.set('sortBy', id);
               setSearchParams(searchParams);
