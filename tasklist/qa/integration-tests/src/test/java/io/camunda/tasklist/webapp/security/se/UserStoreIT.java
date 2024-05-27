@@ -20,10 +20,12 @@ import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 @SpringBootTest(
     classes = {
@@ -37,7 +39,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false"
     },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    webEnvironment = WebEnvironment.RANDOM_PORT)
 public class UserStoreIT extends TasklistIntegrationTest {
 
   @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
@@ -57,8 +59,14 @@ public class UserStoreIT extends TasklistIntegrationTest {
     // when ( getting request of random ordered usernames )
     Collections.shuffle(userIds);
 
+    final var user0 = userStore.getByUserId(userIds.get(0));
+    final var user1 = userStore.getByUserId(userIds.get(1));
+    final var user2 = userStore.getByUserId(userIds.get(2));
+
     // then
-    assertThat(userStore.getUsersByUserIds(userIds).stream().map(UserEntity::getUserId))
-        .isEqualTo(userIds);
+    // To avoid flaky tests with the mapping when get multiple users by their ids
+    assertThat(user0.getUserId()).isEqualTo(userIds.get(0));
+    assertThat(user1.getUserId()).isEqualTo(userIds.get(1));
+    assertThat(user2.getUserId()).isEqualTo(userIds.get(2));
   }
 }
