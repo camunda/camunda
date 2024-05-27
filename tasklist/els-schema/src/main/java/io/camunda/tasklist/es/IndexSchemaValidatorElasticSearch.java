@@ -225,7 +225,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     return true;
   }
 
-
   private IndexMappingDifference getDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     return getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
@@ -262,7 +261,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
       newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
     }
   }
-
 
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {

@@ -76,25 +76,25 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public IndexMapping getExpectedIndexFields(final IndexDescriptor indexDescriptor) {
-    //TODO: Implement this method
+    // TODO: Implement this method
     return null;
   }
 
   @Override
   public Map<String, IndexMapping> getIndexMappings(final String s) {
-    //TODO: Implement this method
+    // TODO: Implement this method
     return Map.of();
   }
 
   @Override
   public String getIndexPrefix() {
-    //TODO: Implement this method
+    // TODO: Implement this method
     return "";
   }
 
   @Override
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
-    //TODO: Implement this method
+    // TODO: Implement this method
   }
 
   @Override

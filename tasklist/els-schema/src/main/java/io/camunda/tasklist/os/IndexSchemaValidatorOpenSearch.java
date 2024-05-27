@@ -130,13 +130,13 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
 
   @Override
   public void validateIndexVersions() {
-    //TODO: implement in the scope of Open Search
+    // TODO: implement in the scope of Open Search
 
   }
 
   @Override
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
-    //TODO: implement in the scope of Open Search
+    // TODO: implement in the scope of Open Search
     return Map.of();
   }
 
