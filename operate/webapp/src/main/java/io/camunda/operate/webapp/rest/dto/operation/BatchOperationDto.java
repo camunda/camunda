@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class BatchOperationDto {
@@ -28,6 +29,8 @@ public class BatchOperationDto {
   private Integer instancesCount = 0;
   private Integer operationsTotalCount = 0;
   private Integer operationsFinishedCount = 0;
+  private Integer failedOperationsCount = 0;
+  private Integer completedOperationsCount = 0;
 
   /**
    * Sort values, define the position of batch operation in the list and may be used to search for
@@ -36,7 +39,7 @@ public class BatchOperationDto {
   private SortValuesWrapper[] sortValues;
 
   public static BatchOperationDto createFrom(
-      final BatchOperationEntity batchOperationEntity, ObjectMapper objectMapper) {
+      final BatchOperationEntity batchOperationEntity, final ObjectMapper objectMapper) {
     return new BatchOperationDto()
         .setId(batchOperationEntity.getId())
         .setName(batchOperationEntity.getName())
@@ -52,7 +55,7 @@ public class BatchOperationDto {
   }
 
   public static List<BatchOperationDto> createFrom(
-      List<BatchOperationEntity> batchOperationEntities, ObjectMapper objectMapper) {
+      final List<BatchOperationEntity> batchOperationEntities, final ObjectMapper objectMapper) {
     if (batchOperationEntities == null) {
       return new ArrayList<>();
     }
@@ -66,7 +69,7 @@ public class BatchOperationDto {
     return name;
   }
 
-  public BatchOperationDto setName(String name) {
+  public BatchOperationDto setName(final String name) {
     this.name = name;
     return this;
   }
@@ -75,7 +78,7 @@ public class BatchOperationDto {
     return type;
   }
 
-  public BatchOperationDto setType(OperationTypeDto type) {
+  public BatchOperationDto setType(final OperationTypeDto type) {
     this.type = type;
     return this;
   }
@@ -84,7 +87,7 @@ public class BatchOperationDto {
     return startDate;
   }
 
-  public BatchOperationDto setStartDate(OffsetDateTime startDate) {
+  public BatchOperationDto setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -93,7 +96,7 @@ public class BatchOperationDto {
     return endDate;
   }
 
-  public BatchOperationDto setEndDate(OffsetDateTime endDate) {
+  public BatchOperationDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -102,7 +105,7 @@ public class BatchOperationDto {
     return instancesCount;
   }
 
-  public BatchOperationDto setInstancesCount(Integer instancesCount) {
+  public BatchOperationDto setInstancesCount(final Integer instancesCount) {
     this.instancesCount = instancesCount;
     return this;
   }
@@ -111,7 +114,7 @@ public class BatchOperationDto {
     return operationsTotalCount;
   }
 
-  public BatchOperationDto setOperationsTotalCount(Integer operationsTotalCount) {
+  public BatchOperationDto setOperationsTotalCount(final Integer operationsTotalCount) {
     this.operationsTotalCount = operationsTotalCount;
     return this;
   }
@@ -120,8 +123,26 @@ public class BatchOperationDto {
     return operationsFinishedCount;
   }
 
-  public BatchOperationDto setOperationsFinishedCount(Integer operationsFinishedCount) {
+  public BatchOperationDto setOperationsFinishedCount(final Integer operationsFinishedCount) {
     this.operationsFinishedCount = operationsFinishedCount;
+    return this;
+  }
+
+  public Integer getFailedOperationsCount() {
+    return failedOperationsCount;
+  }
+
+  public BatchOperationDto setFailedOperationsCount(final Integer failedOperationsCount) {
+    this.failedOperationsCount = failedOperationsCount;
+    return this;
+  }
+
+  public Integer getCompletedOperationsCount() {
+    return completedOperationsCount;
+  }
+
+  public BatchOperationDto setCompletedOperationsCount(final Integer completedOperationsCount) {
+    this.completedOperationsCount = completedOperationsCount;
     return this;
   }
 
@@ -129,7 +150,7 @@ public class BatchOperationDto {
     return id;
   }
 
-  public BatchOperationDto setId(String id) {
+  public BatchOperationDto setId(final String id) {
     this.id = id;
     return this;
   }
@@ -138,7 +159,7 @@ public class BatchOperationDto {
     return sortValues;
   }
 
-  public BatchOperationDto setSortValues(SortValuesWrapper[] sortValues) {
+  public BatchOperationDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -154,12 +175,15 @@ public class BatchOperationDto {
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result =
         31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
+    result =
+        31 * result + (completedOperationsCount != null ? completedOperationsCount.hashCode() : 0);
+    result = 31 * result + (failedOperationsCount != null ? failedOperationsCount.hashCode() : 0);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -169,34 +193,34 @@ public class BatchOperationDto {
 
     final BatchOperationDto that = (BatchOperationDto) o;
 
-    if (id != null ? !id.equals(that.id) : that.id != null) {
+    if (!Objects.equals(id, that.id)) {
       return false;
     }
-    if (name != null ? !name.equals(that.name) : that.name != null) {
+    if (!Objects.equals(name, that.name)) {
       return false;
     }
     if (type != that.type) {
       return false;
     }
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null) {
+    if (!Objects.equals(startDate, that.startDate)) {
       return false;
     }
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null) {
+    if (!Objects.equals(endDate, that.endDate)) {
       return false;
     }
-    if (instancesCount != null
-        ? !instancesCount.equals(that.instancesCount)
-        : that.instancesCount != null) {
+    if (!Objects.equals(instancesCount, that.instancesCount)) {
       return false;
     }
-    if (operationsTotalCount != null
-        ? !operationsTotalCount.equals(that.operationsTotalCount)
-        : that.operationsTotalCount != null) {
+    if (!Objects.equals(operationsTotalCount, that.operationsTotalCount)) {
       return false;
     }
-    if (operationsFinishedCount != null
-        ? !operationsFinishedCount.equals(that.operationsFinishedCount)
-        : that.operationsFinishedCount != null) {
+    if (!Objects.equals(operationsFinishedCount, that.operationsFinishedCount)) {
+      return false;
+    }
+    if (!Objects.equals(failedOperationsCount, that.failedOperationsCount)) {
+      return false;
+    }
+    if (!Objects.equals(completedOperationsCount, that.completedOperationsCount)) {
       return false;
     }
     // Probably incorrect - comparing Object[] arrays with Arrays.equals
