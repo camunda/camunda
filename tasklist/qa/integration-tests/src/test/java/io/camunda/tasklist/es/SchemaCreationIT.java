@@ -9,6 +9,7 @@ package io.camunda.tasklist.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -18,10 +19,12 @@ import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +37,14 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;
 
+  @BeforeAll
+  public static void beforeClass() {
+    assumeTrue(TestUtil.isElasticSearch());
+  }
+
   @Test
   public void testIndexCreation() throws IOException {
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
@@ -80,27 +88,27 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
                     !indexDescriptor.getIndexName().equals(TasklistWebSessionIndex.INDEX_NAME))
             .collect(Collectors.toList());
 
-    for (IndexDescriptor indexDescriptor : strictMappingIndices) {
+    for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
       assertThatIndexHasDynamicMappingOf(indexDescriptor, "strict");
     }
   }
 
-  private Map<String, Object> getFieldDescriptions(IndexDescriptor indexDescriptor)
+  private Map<String, Object> getFieldDescriptions(final IndexDescriptor indexDescriptor)
       throws IOException {
     return noSqlHelper.getFieldDescription(indexDescriptor);
   }
 
-  private IndexDescriptor getIndexDescriptorBy(String name) {
+  private IndexDescriptor getIndexDescriptorBy(final String name) {
     return filter(indexDescriptors, indexDescriptor -> indexDescriptor.getIndexName().equals(name))
         .get(0);
   }
 
-  private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
+  private void assertIndexAndAlias(final String indexName, final String aliasName) throws IOException {
     assertThat(noSqlHelper.indexHasAlias(indexName, aliasName)).isTrue();
   }
 
   private void assertThatIndexHasDynamicMappingOf(
-      final IndexDescriptor indexDescriptor, String dynamicMapping) throws IOException {
+      final IndexDescriptor indexDescriptor, final String dynamicMapping) throws IOException {
     assertThat(noSqlHelper.isIndexDynamicMapping(indexDescriptor, dynamicMapping)).isTrue();
   }
 }
