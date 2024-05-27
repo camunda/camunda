@@ -33,6 +33,7 @@ public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTes
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
+
   private MockMvcHelper mockMvcHelper;
 
   @BeforeEach

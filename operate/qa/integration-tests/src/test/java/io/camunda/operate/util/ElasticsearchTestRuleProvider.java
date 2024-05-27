@@ -108,7 +108,9 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 

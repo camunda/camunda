@@ -52,6 +52,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -71,7 +72,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Autowired protected OperateProperties operateProperties;
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public void createSchema() {
