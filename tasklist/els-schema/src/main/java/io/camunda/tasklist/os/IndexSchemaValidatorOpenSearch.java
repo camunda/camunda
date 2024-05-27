@@ -182,9 +182,7 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     return newFields;
   }
 
-  @Override
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
-    private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
+  private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
     return allIndexNames.stream()
         .map(this::getVersionFromIndexName)
