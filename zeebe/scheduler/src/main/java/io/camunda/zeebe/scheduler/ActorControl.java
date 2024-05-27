@@ -91,17 +91,37 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
-    return scheduleTimer(delay, true, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, true));
   }
 
-  private TimerSubscription scheduleTimer(
-      final Duration delay, final boolean isRecurring, final Runnable runnable) {
+  /**
+   * Schedule a timer task at (or after) a timestamp.
+   *
+   * <p>The runnable is executed while the actor is in the following actor lifecycle phases: {@link
+   * * ActorLifecyclePhase#STARTED}
+   *
+   * <p>This provides no guarantees that the timer task is run at the timestamp. It's likely that
+   * the timer task is run shortly after the timestamp. We guarantee that the runnable won't run
+   * before the timestamp.
+   *
+   * @param timestamp A unix epoch timestamp in milliseconds
+   * @param runnable The runnable to run at (or after) the timestamp
+   * @return A handle to the scheduled timer task
+   */
+  public ScheduledTimer runAt(final long timestamp, final Runnable runnable) {
+    ensureCalledFromWithinActor("runAt(...)");
+    return scheduleTimerSubscription(runnable, job -> new StampedTimerSubscription(job, timestamp));
+  }
+
+  private TimerSubscription scheduleTimerSubscription(
+      final Runnable runnable, final Function<ActorJob, TimerSubscription> subscriptionFactory) {
     final ActorJob job = new ActorJob();
     job.setRunnable(runnable);
     job.onJobAddedToTask(task);
 
-    final TimerSubscription timerSubscription =
-        new TimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, isRecurring);
+    final TimerSubscription timerSubscription = subscriptionFactory.apply(job);
     job.setSubscription(timerSubscription);
 
     timerSubscription.submit();
@@ -185,7 +205,9 @@ public class ActorControl implements ConcurrencyControl {
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
-    return scheduleTimer(delay, false, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, false));
   }
 
   /**
