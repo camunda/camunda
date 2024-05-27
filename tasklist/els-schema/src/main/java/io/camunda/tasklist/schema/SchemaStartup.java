@@ -70,10 +70,6 @@ public class SchemaStartup {
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
       }
-      if (migrationProperties.isMigrationEnabled()) {
-        LOGGER.info("SchemaStartup: migrate schema.");
-        migrator.migrate();
-      }
       LOGGER.info("SchemaStartup finished.");
     } catch (final Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
