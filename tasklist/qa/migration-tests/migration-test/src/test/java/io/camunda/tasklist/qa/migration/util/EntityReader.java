@@ -39,7 +39,8 @@ public class EntityReader {
     return searchEntitiesFor(new SearchRequest(index), entityClass);
   }
 
-  public <T> List<T> searchEntitiesFor(final SearchRequest searchRequest, final Class<T> entityClass) {
+  public <T> List<T> searchEntitiesFor(
+      final SearchRequest searchRequest, final Class<T> entityClass) {
     searchRequest.source().size(1000);
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);

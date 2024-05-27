@@ -39,13 +39,14 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(
     classes = {
-        TestConfig.class,
-        ElasticsearchSchemaManager.class,
-        RetryElasticsearchClient.class,
-        ElasticsearchInternalTask.class,
-        JacksonConfig.class,
-        TestContext.class,
-    }, loader = AnnotationConfigContextLoader.class)
+      TestConfig.class,
+      ElasticsearchSchemaManager.class,
+      RetryElasticsearchClient.class,
+      ElasticsearchInternalTask.class,
+      JacksonConfig.class,
+      TestContext.class,
+    },
+    loader = AnnotationConfigContextLoader.class)
 @TestPropertySource(locations = "/test.properties")
 public abstract class AbstractMigrationTest {
 
@@ -70,7 +71,4 @@ public abstract class AbstractMigrationTest {
   protected void assumeThatProcessIsUnderTest(final String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
-
-
-
 }

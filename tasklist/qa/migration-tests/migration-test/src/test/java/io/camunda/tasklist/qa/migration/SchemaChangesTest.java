@@ -18,10 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.search.SearchHit;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +35,11 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 @Configuration
 @ComponentScan(
     basePackages = {
-        "io.camunda.tasklist.property",
-        "io.camunda.tasklist.schema.indices",
-        "io.camunda.tasklist.schema.templates",
-        "io.camunda.tasklist.qa.migration",
-        "io.camunda.tasklist.util"
+      "io.camunda.tasklist.property",
+      "io.camunda.tasklist.schema.indices",
+      "io.camunda.tasklist.schema.templates",
+      "io.camunda.tasklist.qa.migration",
+      "io.camunda.tasklist.util"
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class SchemaChangesTest extends AbstractMigrationTest {
@@ -54,7 +50,8 @@ public class SchemaChangesTest extends AbstractMigrationTest {
   public void shouldHaveAddedFields() {
     // given
 
-    // from now on, each time a new field is added to the index, a new IndexChange object should be created
+    // from now on, each time a new field is added to the index, a new IndexChange object should be
+    // created
     // this can be tested adding the index change to the expectedIndexChanges list below
     final List<IndexChange> expectedIndexChanges =
         Arrays.asList(
