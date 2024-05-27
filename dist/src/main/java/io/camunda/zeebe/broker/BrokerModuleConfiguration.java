@@ -12,13 +12,24 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
+import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -124,6 +135,56 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete temporary directory {}", workingDirectory.path());
     }
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(value = RestGatewayDisabled.class)
+  public ResponseObserverProvider responseObserverProvider() {
+    return JobActivationRequestResponseObserver::new;
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(value = RestGatewayDisabled.class)
+  public ActivateJobsHandler<JobActivationResponse> activateJobsHandler() {
+    final var handler = buildActivateJobsHandler(brokerClient);
+    final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResponse>>();
+    final var actor =
+        Actor.newActor()
+            .name("ActivateJobsHandlerRest-Broker")
+            .actorStartedHandler(handler.andThen(t -> future.complete(handler)))
+            .build();
+    actorScheduler.submitActor(actor);
+    return handler;
+  }
+
+  private ActivateJobsHandler<JobActivationResponse> buildActivateJobsHandler(
+      final BrokerClient brokerClient) {
+    if (configuration.config().getGateway().getLongPolling().isEnabled()) {
+      return buildLongPollingHandler(brokerClient);
+    } else {
+      return new RoundRobinActivateJobsHandler<>(
+          brokerClient,
+          configuration.config().getGateway().getNetwork().getMaxMessageSize().toBytes(),
+          ResponseMapper::toActivateJobsResponse,
+          RuntimeException::new);
+    }
+  }
+
+  private LongPollingActivateJobsHandler<JobActivationResponse> buildLongPollingHandler(
+      final BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.<JobActivationResponse>newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMaxMessageSize(
+            configuration.config().getGateway().getNetwork().getMaxMessageSize().toBytes())
+        .setLongPollingTimeout(configuration.config().getGateway().getLongPolling().getTimeout())
+        .setProbeTimeoutMillis(
+            configuration.config().getGateway().getLongPolling().getProbeTimeout())
+        .setMinEmptyResponses(
+            configuration.config().getGateway().getLongPolling().getMinEmptyResponses())
+        .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+        .setNoJobsReceivedExceptionProvider(RuntimeException::new)
+        .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .build();
   }
 
   @Override

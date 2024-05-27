@@ -2510,7 +2510,13 @@
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
                   <dep>io.camunda:auth-spring-boot-starter</dep>
+                  <dep>org.skyscreamer:jsonassert</dep>
+                  <dep>org.springframework:spring-webflux</dep>
                 </ignoredUnusedDeclaredDependencies>
+                <ignoredNonTestScopedDependencies>
+                  <dep>io.camunda:zeebe-cluster-config</dep>
+                  <dep>org.springframework:spring-core</dep>
+                </ignoredNonTestScopedDependencies>
               </configuration>
             </execution>
           </executions>
