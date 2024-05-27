@@ -47,6 +47,13 @@
       "enabled": false
     },
     {
+      "description": "Skip lucene major updates to avoid breaking changes.",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["com.graphql-java"],
       "matchUpdateTypes": ["major"],
