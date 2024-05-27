@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,22 +33,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ContextConfiguration;
 
-@SpringBootTest(
-    classes = {
-      TestOpenSearchSchemaManager.class,
-      TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
-      RetryOpenSearchClient.class,
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Conditional(OpenSearchCondition.class)
-@Profile("opensearch-test")
-@ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH = "/tasklist-test-opensearch.json";
@@ -62,9 +47,13 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
 
+  @BeforeAll
+  public static void beforeClass() {
+    assumeTrue(TestUtil.isOpenSearch());
+  }
+
   @BeforeEach
   public void setUp() throws Exception {
-    assumeTrue(TestUtil.isOpenSearch());
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
     assertThat(originalSchemaContent).doesNotContain("\"prop2\"");

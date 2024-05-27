@@ -21,12 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 
-@Conditional(ElasticSearchCondition.class)
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test.json";
@@ -49,9 +49,13 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
 
+  @BeforeAll
+  public static void beforeClass() {
+    assumeTrue(TestUtil.isElasticSearch());
+  }
+
   @BeforeEach
   public void setUp() throws Exception {
-    assumeTrue(TestUtil.isElasticSearch());
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
     assertThat(originalSchemaContent).doesNotContain("\"prop2\"");
