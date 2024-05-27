@@ -585,9 +585,7 @@ describe('<FormJS />', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTitle(/save current progress/i)).not.toHaveAttribute(
-        'disabled',
-      );
+      expect(screen.getByTitle(/save current progress/i)).toBeEnabled();
     });
 
     await user.click(screen.getByTitle(/save current progress/i));
