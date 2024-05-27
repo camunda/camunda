@@ -101,8 +101,8 @@ jobs:
             exit 1
           fi
 
-          # Validate approve command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'approve' ]; then
+          # Validate command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ]; then
             echo "Invalid command"
             exit 1
           fi
