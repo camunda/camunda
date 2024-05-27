@@ -8,12 +8,10 @@
 package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Map;
@@ -34,11 +32,7 @@ public class SchemaStartup {
 
   @Autowired private IndexSchemaValidator schemaValidator;
 
-  @Autowired private Migrator migrator;
-
   @Autowired private TasklistProperties tasklistProperties;
-
-  @Autowired private MigrationProperties migrationProperties;
 
   @PostConstruct
   public void initializeSchema() throws MigrationException, IOException {
@@ -69,10 +63,6 @@ public class SchemaStartup {
           LOGGER.info(
               "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
         }
-      }
-      if (migrationProperties.isMigrationEnabled()) {
-        LOGGER.info("SchemaStartup: migrate schema.");
-        migrator.migrate();
       }
       LOGGER.info("SchemaStartup finished.");
     } catch (final Exception ex) {
