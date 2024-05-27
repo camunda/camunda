@@ -6,19 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {FieldsModal} from './FieldsModal';
-import type {CustomFilters} from 'modules/custom-filters/customFiltersSchema';
+import type {NamedCustomFilters} from 'modules/custom-filters/customFiltersSchema';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {FilterNameModal} from './FilterNameModal';
 import {DeleteFilterModal} from './DeleteFilterModal';
 
-const DEFAULT_FILTER_VALUES: CustomFilters = {
+const DEFAULT_FILTER_VALUES: NamedCustomFilters = {
   assignee: 'all',
   status: 'all',
 };
 
-function getCustomFilterParams(filterId: string | undefined): CustomFilters {
+function getCustomFilterParams(
+  filterId: string | undefined,
+): NamedCustomFilters {
   const storedFilters = getStateLocally('customFilters');
 
   if (filterId === undefined || storedFilters === null) {
@@ -26,6 +28,21 @@ function getCustomFilterParams(filterId: string | undefined): CustomFilters {
   }
 
   return storedFilters[filterId] ?? DEFAULT_FILTER_VALUES;
+}
+
+function useCustomFilters(options: {isOpen: boolean; filterId?: string}) {
+  const {isOpen, filterId} = options;
+  const [customFilters, setCustomFilters] = useState<NamedCustomFilters>(
+    getCustomFilterParams(filterId),
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setCustomFilters(getCustomFilterParams(filterId));
+    }
+  }, [isOpen, filterId]);
+
+  return [customFilters, setCustomFilters] as const;
 }
 
 type Props = Omit<
@@ -43,9 +60,10 @@ const CustomFiltersModal: React.FC<Props> = ({
   onDelete,
   ...props
 }) => {
-  const [customFilters, setCustomFilters] = useState<CustomFilters>(
-    DEFAULT_FILTER_VALUES,
-  );
+  const [customFilters, setCustomFilters] = useCustomFilters({
+    isOpen,
+    filterId,
+  });
   const [currentStep, setCurrentStop] = useState<'fields' | 'name' | 'delete'>(
     'fields',
   );
@@ -54,7 +72,7 @@ const CustomFiltersModal: React.FC<Props> = ({
     <>
       <FieldsModal
         isOpen={isOpen && currentStep === 'fields'}
-        initialValues={getCustomFilterParams(filterId)}
+        initialValues={customFilters}
         onApply={(filters) => {
           storeStateLocally('customFilters', {
             ...getStateLocally('customFilters'),
@@ -68,7 +86,6 @@ const CustomFiltersModal: React.FC<Props> = ({
         }}
         onEdit={(filters) => {
           setCurrentStop('fields');
-          setCustomFilters(DEFAULT_FILTER_VALUES);
 
           if (filterId === undefined) {
             console.error('Filter ID is undefined on edit');
@@ -87,7 +104,6 @@ const CustomFiltersModal: React.FC<Props> = ({
           onSuccess(filterId!);
         }}
         onDelete={() => {
-          setCustomFilters(DEFAULT_FILTER_VALUES);
           setCurrentStop('delete');
         }}
         {...props}
@@ -104,7 +120,7 @@ const CustomFiltersModal: React.FC<Props> = ({
             },
           });
           setCurrentStop('fields');
-          setCustomFilters(DEFAULT_FILTER_VALUES);
+
           onSuccess(filterId);
         }}
         onCancel={() => setCurrentStop('fields')}
