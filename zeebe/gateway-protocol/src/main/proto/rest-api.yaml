@@ -11,17 +11,17 @@ externalDocs:
   url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
 
 servers:
-  - url: "{schema}://{host}:{port}/v1"
+  - url: "{schema}://{host}:{port}/v2"
     variables:
       host:
         default: localhost
-        description: The hostname of a Zeebe Gateway.
+        description: The hostname of the C8 REST Gateway.
       port:
         default: "8080"
-        description: The port of the Zeebe REST API server.
+        description: The port of the C8 REST API server.
       schema:
         default: http
-        description: The schema of the Zeebe REST API server.
+        description: The schema of the C8 REST API server.
 
 paths:
   /topology:
@@ -33,6 +33,28 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/TopologyResponse"
+  /jobs/activation:
+    post:
+      tags:
+        - Job
+      summary: Activate jobs
+      description: |
+        Iterate through all known partitions and activate up to the requested maximum and
+        stream them back to the client as they are activated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobActivationRequest"
+      responses:
+        '200':
+          description: The list of activated jobs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResponse"
+
   /user-tasks/{userTaskKey}/completion:
     post:
       tags:
@@ -201,12 +223,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/TopologyResponse"
-    ProblemResponse:
-      description: Response for exceptional uses cases, providing more details.
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/ProblemDetail"
 
   schemas:
     TopologyResponse:
@@ -379,6 +395,111 @@ components:
           items:
             type: string
           nullable: true
+    JobActivationRequest:
+      type: object
+      properties:
+        type:
+          description: >
+            the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+            type="payment-service" />)
+          type: string
+        worker:
+          description: the name of the worker activating the jobs, mostly used for logging purposes
+          type: string
+        timeout:
+          description: >
+            a job returned after this call will not be activated by another call until the
+            timeout (in ms) has been reached
+          type: integer
+          format: int64
+        maxJobsToActivate:
+          description: the maximum jobs to activate by this request
+          type: integer
+          format: int32
+        fetchVariable:
+          description: >
+            a list of variables to fetch as the job variables; if empty, all visible variables at
+            the time of activation for the scope of the job will be returned
+          type: array
+          items:
+            type: string
+        requestTimeout:
+          description: >
+            The request will be completed when at least one job is activated or after the
+            requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
+            If the requestTimeout < 0, long polling is disabled and the request is completed
+            immediately, even when no job is activated.
+          type: integer
+          format: int64
+        tenantIds:
+          description: a list of IDs of tenants for which to activate jobs
+          type: array
+          items:
+            type: string
+    JobActivationResponse:
+      description: The list of activated jobs
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivatedJob"
+    ActivatedJob:
+      type: object
+      properties:
+        key:
+          description: the key, a unique identifier for the job
+          type: integer
+          format: int64
+        type:
+          description: the type of the job (should match what was requested)
+          type: string
+        processInstanceKey:
+          description: the job's process instance key
+          type: integer
+          format: int64
+        bpmnProcessId:
+          description: the bpmn process ID of the job process definition
+          type: string
+        processDefinitionVersion:
+          description: the version of the job process definition
+          type: integer
+          format: int32
+        processDefinitionKey:
+          description: the key of the job process definition
+          type: integer
+          format: int64
+        elementId:
+          description: the associated task element ID
+          type: string
+        elementInstanceKey:
+          description: >
+            the unique key identifying the associated task, unique within the scope of the
+            process instance
+          type: integer
+          format: int64
+        customHeaders:
+          description: a set of custom headers defined during modelling; returned as a serialized JSON document
+          type: object
+          additionalProperties: true
+        worker:
+          description: the name of the worker which activated this job
+          type: string
+        retries:
+          description: the amount of retries left to this job (should always be positive)
+          type: integer
+          format: int32
+        deadline:
+          description: when the job can be activated again, sent as a UNIX epoch timestamp
+          type: integer
+          format: int64
+        variables:
+          description: All variables visible to the task scope, computed at activation time
+          type: object
+          additionalProperties: true
+        tenantId:
+          description: the id of the tenant that owns the job
+          type: string
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
