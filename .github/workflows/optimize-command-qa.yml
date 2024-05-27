@@ -129,7 +129,7 @@ jobs:
           value: "PM Review"
 
       - name: Assign engineering DRI
-        if: (steps.parse-args.outputs.arg1 == 'approve' || steps.parse-args.outputs.arg1 == 'reject') && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
+        if: (steps.parse-args.outputs.arg1 == 'approve'  && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))) || steps.parse-args.outputs.arg1 == 'reject'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
