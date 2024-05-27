@@ -320,6 +320,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @JsonIgnore
+  public Map<String, Object> getCustomHeadersObjectMap() {
+    return MsgPackConverter.convertToMap(customHeadersProp.getValue());
+  }
+
+  @JsonIgnore
   public DirectBuffer getTypeBuffer() {
     return typeProp.getValue();
   }
