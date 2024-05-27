@@ -49,8 +49,7 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
   }
 
   public void schedule(final TimerSubscription timer, final ActorClock now) {
-    final long deadline =
-        now.getTimeMillis() + timeUnit().convert(timer.getDeadline(), timer.getTimeUnit());
+    final long deadline = timer.getDeadline(now);
 
     final long timerId = scheduleTimer(deadline);
     timer.setTimerId(timerId);
