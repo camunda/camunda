@@ -88,23 +88,47 @@ jobs:
             exit 1
           fi
 
-          # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
-          if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
-            echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
-            exit 1
-          fi
 
-          # Check if the issue is in the correct status
-          project_status="${{ steps.issue-project.outputs.project_status }}"
-          if [ "$project_status" != 'QA Review' ]; then
-            echo "QA Review can be approved only from 'QA Review' status"
-            exit 1
-          fi
-
-          # Validate command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ]; then
+          # Validate if the command is valid
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ]; then
             echo "Invalid command"
             exit 1
+          fi
+
+          # Validate approve/reject
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] || [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'QA Review' ]; then
+              echo "QA Review can be approved only from 'QA Review' status"
+              exit 1
+            fi
+
+            # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
+              echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
+              exit 1
+            fi
+          fi
+
+          # Validate verified
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'On Hold' ]; then
+              echo "Issue can be marked as verified only from 'On Hold' status"
+              exit 1
+            fi
+
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug') }}" == "false" ]; then
+              echo "Verified command can be used only for 'type:bug' issues"
+              exit 1
+            fi
+
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:verified') }}" == "true" ]; then
+              echo "Issue is already verified"
+              exit 1
+            fi
           fi
 
       - name: Assign PM
@@ -112,7 +136,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh version
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.pm }}
@@ -133,7 +156,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh version
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
@@ -159,6 +181,32 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "In Progress"
+
+      - name: Update Status field - Ready
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'verified'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "Ready"
+
+      - name: Update QA labels
+        if: steps.parse-args.outputs.arg1 == 'verified'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:pendingVerification
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-label qa:verified
+
+      - name: Remove assignee
+        if: steps.parse-args.outputs.arg1 == 'verified'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
