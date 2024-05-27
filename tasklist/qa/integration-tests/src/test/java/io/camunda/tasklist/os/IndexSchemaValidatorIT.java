@@ -34,15 +34,15 @@ import org.springframework.test.context.ContextConfiguration;
 
 @SpringBootTest(
     classes = {
-        TestOpenSearchSchemaManager.class,
-        TestApplication.class,
-        SearchEngineHealthIndicator.class,
-        WebSecurityConfig.class,
-        OAuth2WebConfigurer.class,
-        RetryOpenSearchClient.class,
+      TestOpenSearchSchemaManager.class,
+      TestApplication.class,
+      SearchEngineHealthIndicator.class,
+      WebSecurityConfig.class,
+      OAuth2WebConfigurer.class,
+      RetryOpenSearchClient.class,
     },
     properties = {
-        TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
+      TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Conditional(OpenSearchCondition.class)

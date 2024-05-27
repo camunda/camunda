@@ -32,11 +32,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Profile;
-import org.springframework.test.context.ContextConfiguration;
 
-@Profile("opensearch-test")
 public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test-opensearch.json";

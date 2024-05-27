@@ -262,10 +262,6 @@ public class ElasticsearchHelper implements NoSqlHelper {
                 new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
             .getMappings();
     final MappingMetadata mappingMetadata = mappings.get(indexDescriptor.getFullQualifiedName());
-    if(mappingMetadata == null) {
-      LOGGER.error("Index {} does not exist", indexDescriptor.getFullQualifiedName());
-      return false;
-    }
     return mappingMetadata.getSourceAsMap().get("dynamic").equals(dynamic);
   }
 
@@ -298,7 +294,8 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public void update(final String index, final String id, final Map<String, Object> jsonMap) throws IOException {
+  public void update(final String index, final String id, final Map<String, Object> jsonMap)
+      throws IOException {
     final UpdateRequest request = new UpdateRequest().index(index).id(id).doc(jsonMap);
     esClient.update(request, RequestOptions.DEFAULT);
   }
