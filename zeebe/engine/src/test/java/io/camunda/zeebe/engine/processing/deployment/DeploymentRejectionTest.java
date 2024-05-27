@@ -202,7 +202,7 @@ public class DeploymentRejectionTest {
             """);
   }
 
-  // https://github.com/camunda/zeebe/issues/8026
+  // https://github.com/camunda/camunda/issues/8026
   @Test
   public void shouldRejectDeploymentOfSAXException() {
     // given
@@ -227,7 +227,7 @@ public class DeploymentRejectionTest {
         .contains("bpmndi:BPMNPlane");
   }
 
-  // https://github.com/camunda/zeebe/issues/9542
+  // https://github.com/camunda/camunda/issues/9542
   @Test
   public void shouldRejectDeploymentIfNoExecutableProcess() {
     // given

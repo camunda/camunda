@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 
 public class MetricIT extends TasklistZeebeIntegrationTest {
@@ -31,18 +32,20 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
   public static final String ENDPOINT = "/actuator/prometheus";
 
   @Autowired private TestRestTemplate testRestTemplate;
+  @LocalManagementPort private int managementPort;
 
   private final UserDTO joe = buildAllAccessUserWith("joe", "Joe Doe");
   private final UserDTO jane = buildAllAccessUserWith("jane", "Jane Doe");
   private final UserDTO demo = buildAllAccessUserWith(DEFAULT_USER_ID, DEFAULT_DISPLAY_NAME);
 
-  private static UserDTO buildAllAccessUserWith(String userId, String displayName) {
+  private static UserDTO buildAllAccessUserWith(final String userId, final String displayName) {
     return new UserDTO()
         .setUserId(userId)
         .setDisplayName(displayName)
         .setPermissions(List.of(Permission.WRITE));
   }
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();
@@ -161,7 +164,8 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
 
   protected List<String> metricsFor(final String key) {
     final ResponseEntity<String> prometheusResponse =
-        testRestTemplate.getForEntity(ENDPOINT, String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ENDPOINT, String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     final List<String> metricLines = List.of(prometheusResponse.getBody().split("\n"));
     return filter(

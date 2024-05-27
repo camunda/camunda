@@ -15,43 +15,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.IdentityTester;
 import io.camunda.tasklist.util.MockMvcHelper;
-import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.json.JSONException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(
-    classes = {TestApplication.class},
-    properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + "importer.jobType = testJobType"
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@DirtiesContext
-@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "tasklist", "test"})
 public class MultiTenancyIT extends IdentityTester {
 
   @Autowired private WebApplicationContext context;

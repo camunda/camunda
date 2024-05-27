@@ -120,6 +120,6 @@ jobs:
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }

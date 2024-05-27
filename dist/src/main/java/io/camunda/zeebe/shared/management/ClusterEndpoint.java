@@ -406,7 +406,7 @@ public class ClusterEndpoint {
   private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
     // Instant.MIN ("-1000000000-01-01T00:00Z") is not compliant with rfc3339 parsers
     // as year field has is not 4 digits, so we replace here with the min possible.
-    // see: https://github.com/camunda/zeebe/issues/16256
+    // see: https://github.com/camunda/camunda/issues/16256
     return timestamp.equals(Instant.MIN)
         ? MIN_PARSER_COMPLIANT_DATE
         : timestamp.atOffset(ZoneOffset.UTC);

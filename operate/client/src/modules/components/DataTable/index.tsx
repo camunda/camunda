@@ -103,10 +103,11 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
                   {rows.map((row) => {
                     if (isExpandable) {
                       const expandedContent = expandedContents?.[row.id];
+                      const {key, ...props} = getRowProps({row});
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow
-                            {...getRowProps({row})}
+                            {...props}
                             title={expandableRowTitle}
                             id={`expanded-row-${row.id}`}
                           >
@@ -126,10 +127,12 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
 
                     const isSelected = checkIsRowSelected?.(row.id) ?? false;
                     const isClickable = onRowClick !== undefined;
+                    const {key, ...props} = getRowProps({row});
 
                     return (
                       <TableRow
-                        {...getRowProps({row})}
+                        {...props}
+                        key={row.id}
                         onClick={() => {
                           onRowClick?.(row.id);
                         }}

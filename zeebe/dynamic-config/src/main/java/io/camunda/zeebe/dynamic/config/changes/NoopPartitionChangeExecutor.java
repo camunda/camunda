@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
@@ -17,7 +18,9 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
 
   @Override
   public ActorFuture<Void> join(
-      final int partitionId, final Map<MemberId, Integer> membersWithPriority) {
+      final int partitionId,
+      final Map<MemberId, Integer> membersWithPriority,
+      final DynamicPartitionConfig config) {
     return CompletableActorFuture.completed(null);
   }
 

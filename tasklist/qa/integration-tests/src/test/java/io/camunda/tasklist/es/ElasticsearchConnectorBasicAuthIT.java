@@ -46,7 +46,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {ElasticsearchConnectorBasicAuthIT.ElasticsearchStarter.class})
@@ -87,7 +86,7 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
-    public void initialize(ConfigurableApplicationContext applicationContext) {
+    public void initialize(final ConfigurableApplicationContext applicationContext) {
       elasticsearch.start();
       final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(

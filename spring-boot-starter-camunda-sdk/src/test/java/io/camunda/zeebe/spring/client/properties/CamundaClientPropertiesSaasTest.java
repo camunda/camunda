@@ -34,7 +34,7 @@ public class CamundaClientPropertiesSaasTest {
 
   @Test
   void shouldPopulateBaseUrlsForSaas() {
-    assertThat(properties.getZeebe().getGatewayUrl().toString())
+    assertThat(properties.getZeebe().getGrpcAddress().toString())
         .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io");
     assertThat(properties.getZeebe().getBaseUrl().toString())
         .isEqualTo("https://bru-2.zeebe.camunda.io/my-cluster-id");

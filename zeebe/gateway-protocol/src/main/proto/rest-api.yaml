@@ -5,7 +5,7 @@ info:
   description: API for communicating with the Zeebe cluster.
   license:
     name: Camunda License Version 1.0
-    url: https://github.com/camunda/zeebe/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
+    url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
   url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/

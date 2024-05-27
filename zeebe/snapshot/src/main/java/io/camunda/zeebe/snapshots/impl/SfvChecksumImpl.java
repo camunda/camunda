@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,6 +19,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -91,18 +93,23 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     }
   }
 
-  public void setSnapshotDirectoryComment(final String headerComment) {
-    snapshotDirectoryComment = headerComment;
+  @Override
+  public SortedMap<String, Long> getChecksums() {
+    return checksums;
   }
 
   @Override
   public String toString() {
-    return "SfvChecksum{"
+    return "SfvChecksumImpl{"
         + "combinedChecksum="
         + combinedChecksum.getValue()
         + ", checksums="
         + checksums
         + '}';
+  }
+
+  public void setSnapshotDirectoryComment(final String headerComment) {
+    snapshotDirectoryComment = headerComment;
   }
 
   @Override
@@ -155,6 +162,17 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         }
       }
     }
+  }
+
+  @Override
+  public boolean sameChecksums(final ImmutableChecksumsSFV o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null) {
+      return false;
+    }
+    return Objects.equals(checksums, o.getChecksums());
   }
 
   private static class PreDefinedImmutableChecksum implements Checksum {

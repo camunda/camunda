@@ -68,6 +68,12 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+    delegate.withRequestLimit(requestLimit);
+    return this;
+  }
+
+  @Override
   public ActorFuture<LogStream> buildAsync() {
     return delegate.buildAsync();
   }

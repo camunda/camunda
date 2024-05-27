@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.util.apps.sso;
 
-import io.camunda.tasklist.Application;
+import io.camunda.application.StandaloneTasklist;
 import io.camunda.tasklist.util.TestApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -24,7 +24,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
       @ComponentScan.Filter(
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.tasklist\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class),
+      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneTasklist.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class AuthSSOApplication extends TestApplication {}
