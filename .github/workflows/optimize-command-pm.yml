@@ -93,8 +93,18 @@ jobs:
             fi
           fi
 
+          #Validate reject command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'PM Review' ]; then
+              echo "PM Review can be rejected only from 'PM Review' status"
+              exit 1
+            fi
+          fi
+
       - name: Assign engineering DRI
-        if: steps.parse-args.outputs.arg1 == 'approve'
+        if: steps.parse-args.outputs.arg1 == 'approve' || steps.parse-args.outputs.arg1 == 'reject'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -103,7 +113,7 @@ jobs:
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
 
-      - name: Update Status field
+      - name: Update Status field - approve
         uses: github/update-project-action@main
         if: steps.parse-args.outputs.arg1 == 'approve'
         with:
@@ -113,6 +123,17 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "Ready to Complete"
+
+      - name: Update Status field - reject
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'reject'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "In Progress"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
