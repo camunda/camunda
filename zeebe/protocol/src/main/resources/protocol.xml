@@ -122,8 +122,6 @@
     <field name="intent" id="5" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="6" type="RejectionType"/>
-    <!-- populated when the client passes an operation reference to the gateway-->
-    <field name="operationReference" id="9" type="uint64" presence="optional" sinceVersion="5"/>
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND_REJECTION; UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
