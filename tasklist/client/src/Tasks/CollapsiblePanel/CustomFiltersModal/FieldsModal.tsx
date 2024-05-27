@@ -480,7 +480,14 @@ const FieldsModal: React.FC<Props> = ({
                 <Button
                   kind="ghost"
                   onClick={() => {
-                    form.reset(DEFAULT_FORM_VALUES);
+                    form.reset(
+                      values.name === undefined
+                        ? DEFAULT_FORM_VALUES
+                        : {
+                            ...DEFAULT_FORM_VALUES,
+                            name: values.name,
+                          },
+                    );
                   }}
                   type="button"
                 >
