@@ -88,20 +88,23 @@ jobs:
             exit 1
           fi
 
-          # Validate approve command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.project_status }}"
-            if [ "$project_status" != 'QA Review' ]; then
-              echo "QA Review can be approved only from 'QA Review' status"
-              exit 1
-            fi
+          # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
+          if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
+            echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
+            exit 1
+          fi
 
-            # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
-              echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
-              exit 1
-            fi
+          # Check if the issue is in the correct status
+          project_status="${{ steps.issue-project.outputs.project_status }}"
+          if [ "$project_status" != 'QA Review' ]; then
+            echo "QA Review can be approved only from 'QA Review' status"
+            exit 1
+          fi
+
+          # Validate approve command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'approve' ]; then
+            echo "Invalid command"
+            exit 1
           fi
 
       - name: Assign PM
@@ -114,7 +117,7 @@ jobs:
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.pm }}
 
-      - name: Update Status field
+      - name: Update Status field - PM Review
         uses: github/update-project-action@main
         if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic')
         with:
@@ -126,7 +129,7 @@ jobs:
           value: "PM Review"
 
       - name: Assign engineering DRI
-        if: steps.parse-args.outputs.arg1 == 'approve' && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
+        if: (steps.parse-args.outputs.arg1 == 'approve' || steps.parse-args.outputs.arg1 == 'reject') && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -135,7 +138,7 @@ jobs:
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
 
-      - name: Update Status field
+      - name: Update Status field - Ready to Complete
         uses: github/update-project-action@main
         if: steps.parse-args.outputs.arg1 == 'approve' && (contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') || contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug'))
         with:
@@ -145,6 +148,17 @@ jobs:
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
           value: "Ready to Complete"
+
+      - name: Update Status field - In Progress
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'reject'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "In Progress"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
