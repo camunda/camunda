@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeObservable, override} from 'mobx';
+import {computed, makeObservable, override} from 'mobx';
 import {ProcessXmlBase} from './processXml.base';
 
 class ProcessesXml extends ProcessXmlBase {
@@ -15,6 +15,7 @@ class ProcessesXml extends ProcessXmlBase {
 
     makeObservable(this, {
       selectableFlowNodes: override,
+      isTargetSelected: computed,
     });
   }
 
@@ -31,6 +32,10 @@ class ProcessesXml extends ProcessXmlBase {
       .map((flowNode) => {
         return {...flowNode, name: flowNode.name ?? flowNode.id};
       });
+  }
+
+  get isTargetSelected() {
+    return this.state.xml !== null;
   }
 }
 
