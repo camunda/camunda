@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,7 +60,7 @@ public final class StaticConfigurationGenerator {
         .getExporters()
         .forEach(
             (exporterId, ignore) ->
-                exporters.put(exporterId, new ExporterState(0, State.ENABLED, null)));
+                exporters.put(exporterId, new ExporterState(0, State.ENABLED, Optional.empty())));
     return new DynamicPartitionConfig(new ExportersConfig(Map.copyOf(exporters)));
   }
 
