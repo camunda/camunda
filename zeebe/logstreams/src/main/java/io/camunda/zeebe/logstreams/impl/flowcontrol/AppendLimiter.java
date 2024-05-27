@@ -18,7 +18,7 @@ public final class AppendLimiter extends AbstractLimiter<Void> {
   private AppendLimiter(final Builder<?> builder, final LogStreamMetrics metrics) {
     super(builder);
     this.metrics = metrics;
-    metrics.setInflightLimit(getLimit());
+    metrics.setAppendLimit(getLimit());
   }
 
   public static AppenderLimiterBuilder builder() {
@@ -37,7 +37,7 @@ public final class AppendLimiter extends AbstractLimiter<Void> {
   @Override
   protected void onNewLimit(final int newLimit) {
     super.onNewLimit(newLimit);
-    metrics.setInflightLimit(newLimit);
+    metrics.setAppendLimit(newLimit);
   }
 
   public static final class AppenderLimiterBuilder

@@ -28,7 +28,7 @@ final class S3BackupAuthenticationIT {
       new MinioContainer().withNetwork(NETWORK).withDomain("minio.local", BUCKET_NAME);
 
   @Test
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12433")
+  @RegressionTest("https://github.com/camunda/camunda/issues/12433")
   void shouldConnectWithoutConfiguredCredentials() {
     // given
     final var zeebe =

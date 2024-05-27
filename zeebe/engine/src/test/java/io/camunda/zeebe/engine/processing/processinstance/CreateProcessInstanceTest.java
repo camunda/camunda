@@ -294,7 +294,7 @@ public final class CreateProcessInstanceTest {
     Assertions.assertThat(process.getValue()).hasBpmnProcessId(processId).hasTenantId(tenantId);
   }
 
-  // Regression test for https://github.com/camunda/zeebe/issues/10536
+  // Regression test for https://github.com/camunda/camunda/issues/10536
   @Test
   public void shouldActivateNoneStartEventWhenEventTriggerIsAvailableInState() {
     // given

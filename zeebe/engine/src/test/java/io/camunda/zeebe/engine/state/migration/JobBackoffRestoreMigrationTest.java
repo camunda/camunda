@@ -65,7 +65,7 @@ public class JobBackoffRestoreMigrationTest {
     jobKey.wrapLong(1);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldRestoreIfBackoffColumnIsEmpty() {
     // given
@@ -84,7 +84,7 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldRestoreIfFailedJobsAreMoreThanBackoffJob() {
     // given
@@ -111,7 +111,7 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(2);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldDoNothingIfFailedJobsAreTheSameAsBackoff() {
     // given

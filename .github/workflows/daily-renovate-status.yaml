@@ -28,14 +28,14 @@ jobs:
           readarray -t prs < <( echo $renovatePrs | jq -c '.[]')
           renovateStatusString=""
           for pr in "${prs[@]}"
-          do 
+          do
             # extracting the data to create a nice message
             title=$(echo $pr | jq --raw-output '.title')
             prNumber=$(echo $pr | jq --raw-output '.number')
             createdAt=$(echo $pr | jq --raw-output '.createdAt')
             status=$(echo $pr | jq --raw-output '.mergeStateStatus')
-            
-            renovateStatusString+="\n • <https://github.com/camunda/zeebe/pull/$prNumber|PR $prNumber ($status)>: $title (created $createdAt)"
+
+            renovateStatusString+="\n • <https://github.com/camunda/camunda/pull/$prNumber|PR $prNumber ($status)>: $title (created $createdAt)"
           done
 
           echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT

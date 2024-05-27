@@ -170,14 +170,15 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (!useOnlyPosition && latestPosition != null && latestPosition.getSequence() > 0) {
         LOGGER.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
-      } else {
+      } else if (latestPosition != null) {
         LOGGER.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
+      } else {
+        LOGGER.debug("latestPosition is null, importBatch was not initialized");
+        importBatch = null;
       }
       Integer nextRunDelay = null;
-      if (importBatch == null
-          || importBatch.getHits() == null
-          || importBatch.getHits().size() == 0) {
+      if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);

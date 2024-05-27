@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -152,7 +153,14 @@ public final class TestCluster implements CloseableSilently {
         nodes().values().stream()
             .map(node -> CompletableFuture.runAsync(node::stop))
             .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(stopped).join();
+
+    try {
+      CompletableFuture.allOf(stopped).get(2, TimeUnit.MINUTES);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to shutdown cluster", e);
+      throw new RuntimeException(e);
+    }
+
     return this;
   }
 

@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {TimeStampLabel} from './index';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {act} from 'react-dom/test-utils';
+import {act} from 'react';
 
 describe('TimeStampLabel', () => {
   it('should hide/display time stamp on time stamp toggle', async () => {

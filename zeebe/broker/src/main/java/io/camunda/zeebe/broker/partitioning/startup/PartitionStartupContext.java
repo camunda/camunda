@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -31,6 +32,7 @@ public final class PartitionStartupContext {
   private final RaftPartitionFactory raftPartitionFactory;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final BrokerCfg brokerConfig;
+  private final DynamicPartitionConfig initialPartitionConfig;
 
   private Path partitionDirectory;
 
@@ -48,7 +50,8 @@ public final class PartitionStartupContext {
       final PartitionMetadata partitionMetadata,
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory,
-      final BrokerCfg brokerConfig) {
+      final BrokerCfg brokerConfig,
+      final DynamicPartitionConfig initialPartitionConfig) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -59,6 +62,7 @@ public final class PartitionStartupContext {
     this.raftPartitionFactory = raftPartitionFactory;
     this.zeebePartitionFactory = zeebePartitionFactory;
     this.brokerConfig = brokerConfig;
+    this.initialPartitionConfig = initialPartitionConfig;
   }
 
   @Override
@@ -140,5 +144,9 @@ public final class PartitionStartupContext {
   public PartitionStartupContext partitionDirectory(final Path partitionDirectory) {
     this.partitionDirectory = partitionDirectory;
     return this;
+  }
+
+  public DynamicPartitionConfig initialPartitionConfig() {
+    return initialPartitionConfig;
   }
 }

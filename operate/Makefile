@@ -8,7 +8,7 @@ env-up:
 	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
-	docker-compose -f docker-compose.opensearch.yml up -d opensearch zeebe-opensearch \
+	docker-compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
@@ -84,4 +84,6 @@ start-e2e:
 	CAMUNDA_OPERATE_IMPORTER_READERBACKOFF=0 \
 	CAMUNDA_OPERATE_IMPORTER_SCHEDULERBACKOFF=0 \
 	CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dserver.port=8081
+	SERVER_PORT=8081 \
+  MANAGEMENT_SERVER_PORT=9601 \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate"

@@ -408,7 +408,7 @@ public class ZeebeClientConfigurationProperties {
   @DeprecatedConfigurationProperty(
       replacement = "camunda.client.zeebe.base-url",
       reason = "plaintext is determined by the url protocol (http/https) now")
-  public boolean isPlaintextConnectionEnabled() {
+  public Boolean isPlaintextConnectionEnabled() {
     return security.isPlaintext();
   }
 
@@ -524,11 +524,7 @@ public class ZeebeClientConfigurationProperties {
     @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.gateway-url")
     public String getGatewayAddress() {
-      if (gatewayAddress != null) {
-        return gatewayAddress;
-      } else {
-        return DEFAULT.getGatewayAddress();
-      }
+      return gatewayAddress;
     }
 
     /**
@@ -543,11 +539,7 @@ public class ZeebeClientConfigurationProperties {
     @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
     public URI getGrpcAddress() {
-      if (grpcAddress != null) {
-        return grpcAddress;
-      } else {
-        return DEFAULT.getGrpcAddress();
-      }
+      return grpcAddress;
     }
 
     @Deprecated
@@ -558,11 +550,7 @@ public class ZeebeClientConfigurationProperties {
     @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
     public URI getRestAddress() {
-      if (restAddress != null) {
-        return restAddress;
-      } else {
-        return DEFAULT.getRestAddress();
-      }
+      return restAddress;
     }
 
     @Deprecated
@@ -805,10 +793,10 @@ public class ZeebeClientConfigurationProperties {
           + clusterId
           + '\''
           + ", clientId='"
-          + clientId
+          + "***"
           + '\''
           + ", clientSecret='"
-          + clientSecret
+          + "***"
           + '\''
           + ", region='"
           + region
@@ -1027,7 +1015,7 @@ public class ZeebeClientConfigurationProperties {
 
   public static class Security {
 
-    private boolean plaintext = DEFAULT.isPlaintextConnectionEnabled();
+    private Boolean plaintext;
     private String overrideAuthority = DEFAULT.getOverrideAuthority();
     private String certPath = DEFAULT.getCaCertificatePath();
 
@@ -1035,11 +1023,11 @@ public class ZeebeClientConfigurationProperties {
     @DeprecatedConfigurationProperty(
         replacement = "camunda.client.zeebe.base-url",
         reason = "plaintext is determined by the url protocol (http/https) now")
-    public boolean isPlaintext() {
+    public Boolean isPlaintext() {
       return plaintext;
     }
 
-    public void setPlaintext(final boolean plaintext) {
+    public void setPlaintext(final Boolean plaintext) {
       this.plaintext = plaintext;
     }
 

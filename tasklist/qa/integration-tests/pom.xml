@@ -365,12 +365,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <scope>test</scope>
@@ -427,6 +421,12 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-zeebe</artifactId>
       <scope>test</scope>
     </dependency>
 
