@@ -1,6 +1,7 @@
 package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -10,6 +11,7 @@ import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestUtil;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -49,6 +51,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   @BeforeEach
   public void setUp() throws Exception {
+    assumeTrue(TestUtil.isElasticSearch());
     indexDescriptor = createIndexDescriptor();
     originalSchemaContent = readSchemaContent();
     assertThat(originalSchemaContent).doesNotContain("\"prop2\"");
