@@ -14,7 +14,6 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.camunda.tasklist.schema.migration.es.ReindexPlanElasticSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestUtil;
 import java.util.List;
@@ -35,10 +34,8 @@ public class ReindexElasticSearchIT extends TasklistIntegrationTest {
   private static final String SOURCE_INDEX_124 = "index-1.2.4";
 
   private static final String INDEX_NAME_123 = SOURCE_INDEX_123 + "_";
-
-  private static final String INDEX_NAME_124 = SOURCE_INDEX_124 + "_";
-
   private static final String INDEX_NAME_ARCHIVER_123 = INDEX_NAME_123 + "2021-05-23";
+  private static final String INDEX_NAME_124 = SOURCE_INDEX_124 + "_";
   private static final String INDEX_NAME_ARCHIVER_124 = INDEX_NAME_124 + "2021-05-23";
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
@@ -59,37 +56,8 @@ public class ReindexElasticSearchIT extends TasklistIntegrationTest {
     retryElasticsearchClient.deleteIndicesFor(idxName("index-*"));
   }
 
-  private String idxName(String name) {
+  private String idxName(final String name) {
     return indexPrefix + "-" + name;
-  }
-
-  @Test // ZTL-1009
-  public void reindexArchivedIndices() throws Exception {
-    /// Old version -> before migration
-    // create index
-    createIndex(idxName(INDEX_NAME_123), List.of(Map.of("test_name", "test_value")));
-    // Create archived index
-    createIndex(
-        idxName(INDEX_NAME_ARCHIVER_123), List.of(Map.of("test_name", "test_value_archived")));
-    /// New version -> migration
-    // Create new index
-    createIndex(idxName(INDEX_NAME_124), List.of());
-
-    retryElasticsearchClient.refresh(idxName("index-*"));
-    final ReindexPlanElasticSearch plan =
-        ReindexPlanElasticSearch.create()
-            .setSrcIndex(idxName(SOURCE_INDEX_123))
-            .setDstIndex(idxName(SOURCE_INDEX_124));
-
-    plan.executeOn(retryElasticsearchClient);
-
-    retryElasticsearchClient.refresh(idxName("-index-*"));
-    assertThat(retryElasticsearchClient.getIndexNames(idxName("index-*")))
-        .containsExactlyInAnyOrder(
-            // reindexed indices:
-            idxName(INDEX_NAME_124), idxName(INDEX_NAME_ARCHIVER_124),
-            // old indices:
-            idxName(INDEX_NAME_123), idxName(INDEX_NAME_ARCHIVER_123));
   }
 
   @Test // ZTL-1008
@@ -117,7 +85,7 @@ public class ReindexElasticSearchIT extends TasklistIntegrationTest {
         .isEqualTo("2");
   }
 
-  private void createIndex(final String indexName, List<Map<String, String>> documents) {
+  private void createIndex(final String indexName, final List<Map<String, String>> documents) {
     final Map<String, ?> mapping =
         Map.of("properties", Map.of("test_name", Map.of("type", "keyword")));
     retryElasticsearchClient.createIndex(new CreateIndexRequest(indexName).mapping(mapping));

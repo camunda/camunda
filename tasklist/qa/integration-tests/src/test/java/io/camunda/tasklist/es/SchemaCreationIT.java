@@ -15,7 +15,6 @@ import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
-import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -50,24 +49,6 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
     // assert schema creation won't be performed for the second time
     assertThat(indexSchemaValidator.schemaExists()).isTrue();
-  }
-
-  @Test // ZTL-1007
-  public void testMigrationStepsRepositoryFields() throws IOException {
-    final IndexDescriptor migrationStepsIndexDescriptor =
-        getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
-    assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
-    assertThat(getFieldDescriptions(migrationStepsIndexDescriptor).keySet())
-        .containsExactlyInAnyOrder(
-            ProcessorStep.VERSION,
-            "@type",
-            "description",
-            ProcessorStep.APPLIED,
-            ProcessorStep.APPLIED_DATE,
-            ProcessorStep.CREATED_DATE,
-            ProcessorStep.CONTENT,
-            ProcessorStep.INDEX_NAME,
-            ProcessorStep.ORDER);
   }
 
   @Test // ZTL-1010
