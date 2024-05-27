@@ -20,7 +20,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -28,8 +29,6 @@ import org.springframework.http.MediaType;
 
 @WebMvcTest(TopologyController.class)
 public class TopologyControllerTest extends RestControllerTest {
-
-  private static final String TOPOLOGY_BASE_URL = "/v1/topology";
 
   @MockBean BrokerClient brokerClient;
   @MockBean BrokerTopologyManager topologyManager;
@@ -39,8 +38,9 @@ public class TopologyControllerTest extends RestControllerTest {
     Mockito.when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
   }
 
-  @Test
-  public void shouldGetTopology() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
+  public void shouldGetTopology(final String baseUrl) throws Exception {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -99,14 +99,15 @@ public class TopologyControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(get(TOPOLOGY_BASE_URL).accept(MediaType.APPLICATION_JSON))
+        .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(expectedResponse));
   }
 
-  @Test
-  void shouldReturnEmptyTopology() throws Exception {
+  @ParameterizedTest
+  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
+  void shouldReturnEmptyTopology(final String baseUrl) throws Exception {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -120,7 +121,7 @@ public class TopologyControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(get(TOPOLOGY_BASE_URL).accept(MediaType.APPLICATION_JSON))
+        .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(expectedResponse));
