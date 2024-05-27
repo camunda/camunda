@@ -103,7 +103,7 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: confirmDelivery.name}),
+      screen.getByRole('cell', {name: new RegExp(`^${confirmDelivery.name}`)}),
     ).toBeInTheDocument();
 
     // expect table to have 1 header + 5 content rows
