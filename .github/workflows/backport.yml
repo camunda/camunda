@@ -43,3 +43,8 @@ jobs:
 
             relates to ${issue_refs}
             original author: @${pull_author}
+
+          experimental: >
+            {
+              "conflict_resolution": "draft_commit_conflicts"
+            }
