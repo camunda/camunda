@@ -44,6 +44,12 @@ const shipArticles = {
   type: 'userTask',
 };
 
+const confirmDelivery = {
+  id: 'confirmDelivery',
+  name: 'Confirm delivery',
+  type: 'callActivity',
+};
+
 const Wrapper = ({children}: Props) => {
   processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
   processInstanceMigrationStore.enable();
@@ -74,30 +80,41 @@ describe('MigrationView/BottomPanel', () => {
 
     expect(
       await screen.findByRole('cell', {
-        name: requestForPayment.name,
+        name: new RegExp(`^${requestForPayment.name}`),
       }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: checkPayment.name}),
+      screen.getByRole('cell', {
+        name: new RegExp(`^${checkPayment.name}`),
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: shipArticles.name}),
+      screen.getByRole('cell', {
+        name: new RegExp(`^${shipArticles.name}`),
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('cell', {name: shippingSubProcess.name}),
+      screen.getByRole('cell', {
+        name: new RegExp(`^${shippingSubProcess.name}`),
+      }),
     ).toBeInTheDocument();
 
-    // expect table to have 1 header + 4 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(5);
+    expect(
+      screen.getByRole('cell', {name: new RegExp(`^${confirmDelivery.name}`)}),
+    ).toBeInTheDocument();
+
+    // expect table to have 1 header + 5 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(6);
   });
 
   it.each([
     {source: checkPayment, target: checkPayment},
     {source: shipArticles, target: shipArticles},
     {source: shippingSubProcess, target: shippingSubProcess},
+    {source: confirmDelivery, target: confirmDelivery},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -127,10 +144,16 @@ describe('MigrationView/BottomPanel', () => {
   it.each([
     {source: checkPayment, target: shipArticles},
     {source: checkPayment, target: shippingSubProcess},
+    {source: checkPayment, target: confirmDelivery},
     {source: shipArticles, target: checkPayment},
     {source: shipArticles, target: shippingSubProcess},
+    {source: shipArticles, target: confirmDelivery},
     {source: shippingSubProcess, target: checkPayment},
     {source: shippingSubProcess, target: shipArticles},
+    {source: shippingSubProcess, target: confirmDelivery},
+    {source: confirmDelivery, target: checkPayment},
+    {source: confirmDelivery, target: shipArticles},
+    {source: confirmDelivery, target: shippingSubProcess},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -158,4 +181,109 @@ describe('MigrationView/BottomPanel', () => {
       ).not.toBeInTheDocument();
     },
   );
+
+  it('should auto-map flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+
+    render(<BottomPanel />, {wrapper: Wrapper});
+
+    const comboboxCheckPayment = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${checkPayment.name}`, 'i'),
+    });
+
+    const comboboxShippingSubProcess = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${shippingSubProcess.name}`, 'i'),
+    });
+
+    const comboboxShipArticles = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${shipArticles.name}`, 'i'),
+    });
+
+    const comboboxRequestForPayment = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
+    });
+
+    screen.getByRole('button', {name: /fetch target process/i}).click();
+
+    await waitFor(() => {
+      expect(comboboxCheckPayment).toBeEnabled();
+    });
+
+    // Expect auto-mapping (same id, same bpmn type)
+    expect(comboboxCheckPayment).toHaveValue(checkPayment.id);
+
+    // Expect auto-mapping (same id, same bpmn type)
+    expect(comboboxShipArticles).toHaveValue(shipArticles.id);
+
+    // Expect no auto-mapping (flow node does not exist in target)
+    expect(comboboxShippingSubProcess).toHaveValue('');
+    expect(comboboxShippingSubProcess).toBeDisabled();
+
+    // Expect no auto-mapping (different bpmn type)
+    expect(comboboxRequestForPayment).toHaveValue('');
+  });
+
+  it('should add tags for unmapped flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+
+    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
+
+    screen.getByRole('button', {name: /fetch target process/i}).click();
+
+    const comboboxRequestForPayment = await screen.findByRole('combobox', {
+      name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
+    });
+
+    const rowCheckPayment = screen.getByRole('row', {
+      name: new RegExp(`^${checkPayment.name}`),
+    });
+
+    const rowShippingSubProcess = screen.getByRole('row', {
+      name: new RegExp(`^${shippingSubProcess.name}`),
+    });
+
+    const rowShipArticles = screen.getByRole('row', {
+      name: new RegExp(`^${shipArticles.name}`),
+    });
+
+    const rowRequestForPayment = screen.getByRole('row', {
+      name: new RegExp(`^${requestForPayment.name}`),
+    });
+
+    await waitFor(() => {
+      expect(comboboxRequestForPayment).toBeEnabled();
+    });
+
+    // expect to have no "not mapped" tag (auto-mapped)
+    expect(
+      within(rowCheckPayment).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+
+    // expect to have no "not mapped" tag (auto-mapped)
+    expect(
+      within(rowShipArticles).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+
+    // expect to have "not mapped" tag (not auto-mapped)
+    expect(
+      within(rowShippingSubProcess).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+
+    // expect to have "not mapped" tag (not auto-mapped)
+    expect(
+      within(rowRequestForPayment).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+
+    // expect tag not to be visible after selecting a target flow node
+    await user.selectOptions(comboboxRequestForPayment, checkPayment.name);
+    expect(
+      within(rowRequestForPayment).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+
+    // expect tag not to be visible after selecting a target flow node
+    await user.selectOptions(comboboxRequestForPayment, '');
+    expect(
+      within(rowRequestForPayment).getByText(/not mapped/i),
+    ).toBeInTheDocument();
+  });
 });

@@ -24,6 +24,8 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   public static final String INSTANCES_COUNT = "instancesCount";
   public static final String OPERATIONS_TOTAL_COUNT = "operationsTotalCount";
   public static final String OPERATIONS_FINISHED_COUNT = "operationsFinishedCount";
+  public static final String FAILED_OPERATIONS_COUNT = "failedOperationsCount";
+  public static final String COMPLETED_OPERATIONS_COUNT = "completedOperationsCount";
 
   @Override
   public String getIndexName() {

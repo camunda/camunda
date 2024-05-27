@@ -170,6 +170,10 @@ class ProcessInstanceMigration {
     }
   };
 
+  clearFlowNodeMapping = () => {
+    this.state.flowNodeMapping = {};
+  };
+
   setTargetProcessDefinitionKey = (
     key: State['targetProcessDefinitionKey'],
   ) => {
