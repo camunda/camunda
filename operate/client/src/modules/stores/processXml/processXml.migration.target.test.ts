@@ -51,6 +51,7 @@ describe('stores/processXml/processXml.list', () => {
       'requestForPayment',
       'shippingSubProcess',
       'shipArticles',
+      'confirmDelivery',
     ]);
   });
 });
