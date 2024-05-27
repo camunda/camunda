@@ -305,7 +305,7 @@ const CollapsiblePanel: React.FC = () => {
       <DeleteFilterModal
         data-testid="direct-delete-filter-modal"
         filterName={customFilterToDelete ?? ''}
-        isOpen={customFilterToDelete !== undefined}
+        isOpen={customFilterToDelete !== null}
         onClose={() => {
           setCustomFilterToDelete(null);
         }}
