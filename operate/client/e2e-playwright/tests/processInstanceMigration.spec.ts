@@ -43,12 +43,13 @@ test.beforeEach(async ({processesPage}) => {
   await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
 });
 
-test.describe('Process Instance Migration', () => {
+test.describe('Process Instance Migration @roundtrip', () => {
   test('Migrate Process Instances', async ({
     processesPage,
     migrationView,
     commonPage,
   }) => {
+    test.slow();
     const {bpmnProcessId, version} = initialData;
     const targetVersion = '2';
 

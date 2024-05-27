@@ -8,7 +8,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
@@ -33,13 +32,11 @@ const getWrapper = (id: string = '0') => {
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
       <UserName />
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={[`/${id}`]}>
-          <Routes>
-            <Route path="/:id" element={children} />
-          </Routes>
-        </MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={[`/${id}`]}>
+        <Routes>
+          <Route path="/:id" element={children} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 

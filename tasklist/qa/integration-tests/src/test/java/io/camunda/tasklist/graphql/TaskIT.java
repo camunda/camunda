@@ -157,6 +157,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertSorting(response);
   }
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

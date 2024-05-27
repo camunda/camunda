@@ -40,9 +40,8 @@ We use Playwright for E2E tests, which are executed on every push to any branch 
 
 To run these tests locally, follow the steps:
 
-1. In the root folder, execute `make env-up` and confirm Tasklist is running by checking `localhost:8080`.
-2. In the same root folder, execute `make start-e2e`.
-3. Lastly, inside the `client/` folder run `yarn test:e2e`.
+1. Run `make start-e2e`.
+2. Then, inside the `client/` folder run `yarn test:e2e`.
 
 ### Running visual regression tests
 

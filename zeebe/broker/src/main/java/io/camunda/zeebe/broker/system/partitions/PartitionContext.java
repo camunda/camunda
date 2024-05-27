@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -66,4 +67,8 @@ public interface PartitionContext {
   PartitionAdminAccess getAdminAccess();
 
   void setAdminAccess(PartitionAdminAccess adminAccess);
+
+  DynamicPartitionConfig getDynamicPartitionConfig();
+
+  void setDynamicPartitionConfig(DynamicPartitionConfig partitionConfig);
 }

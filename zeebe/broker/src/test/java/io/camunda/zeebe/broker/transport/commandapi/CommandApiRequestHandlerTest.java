@@ -10,13 +10,10 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.transport.backpressure.NoopRequestLimiter;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -28,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
@@ -51,7 +47,7 @@ public class CommandApiRequestHandlerTest {
   public void setup() {
     scheduler.submitActor(handler);
     logStreamWriter = mock(LogStreamWriter.class);
-    handler.addPartition(0, logStreamWriter, new NoopRequestLimiter<>());
+    handler.addPartition(0, logStreamWriter);
     scheduler.workUntilDone();
   }
 
@@ -131,35 +127,11 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldRejectCommandIfResourcesExhausted() {
-    // given
-    final RequestLimiter<Intent> limiter = mock(RequestLimiter.class);
-    when(limiter.tryAcquire(anyInt(), anyLong(), any())).thenReturn(false);
-    handler.addPartition(0, mock(LogStreamWriter.class), limiter);
-    scheduler.workUntilDone();
-
-    final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
-    request.serializeValue();
-
-    // when
-    final var responseFuture = handleRequest(request);
-
-    // then
-    assertThat(responseFuture)
-        .succeedsWithin(Duration.ofMinutes(1))
-        .matches(Either::isLeft)
-        .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode)
-        .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
-  }
-
-  @Test
   public void shouldWriteToLog() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
+    handler.addPartition(0, logWriter);
     scheduler.workUntilDone();
 
     final var request =
@@ -180,7 +152,7 @@ public class CommandApiRequestHandlerTest {
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.CLOSED));
-    handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
+    handler.addPartition(0, logWriter);
     scheduler.workUntilDone();
 
     final var request =

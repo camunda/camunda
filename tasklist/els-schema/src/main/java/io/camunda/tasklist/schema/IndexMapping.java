@@ -45,7 +45,7 @@ public class IndexMapping {
     this.dynamic = dynamic == null ? null : dynamic.toLowerCase();
     return this;
   }
-  
+
   public Set<IndexMappingProperty> getProperties() {
     return properties;
   }

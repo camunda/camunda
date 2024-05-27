@@ -242,21 +242,15 @@ const Processes: React.FC = observer(() => {
     },
     disabled: isLoading,
   } as const;
-
-  const Filter = () => {
-    return (
-      <FilterDropdown
-        items={START_FORM_FILTER_OPTIONS}
-        selected={startFormFilter}
-        onChange={(value) =>
-          updateSearchParams(searchParams, {
-            name: 'hasStartForm',
-            value: value.searchParamValue ?? '',
-          })
-        }
-      />
-    );
-  };
+  const filterDropdownProps: React.ComponentProps<typeof FilterDropdown> = {
+    items: START_FORM_FILTER_OPTIONS,
+    selected: startFormFilter,
+    onChange: (value) =>
+      debouncedNavigate(searchParams, {
+        name: 'hasStartForm',
+        value: value.searchParamValue ?? '',
+      }),
+  } as const;
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
@@ -291,7 +285,7 @@ const Processes: React.FC = observer(() => {
                     md={4}
                     lg={3}
                   >
-                    <Filter />
+                    <FilterDropdown {...filterDropdownProps} />
                   </Column>
                   <Column
                     className={styles.searchFieldWrapper}
@@ -334,7 +328,7 @@ const Processes: React.FC = observer(() => {
                     md={3}
                     lg={5}
                   >
-                    <Filter />
+                    <FilterDropdown {...filterDropdownProps} />
                   </Column>
                 </Grid>
               )}

@@ -24,12 +24,6 @@ final class CancelChangeTest {
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
           .withBrokersCount(1)
-          .withBrokerConfig(
-              b ->
-                  b.brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .build();
 
   @Test

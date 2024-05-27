@@ -20,6 +20,12 @@ logging:
   level:
     ROOT: INFO
     io.camunda.tasklist: DEBUG
-#Spring Boot Actuator endpoints to be exposed
-management.prometheus.metrics.export.enabled: true
-management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,usage-metrics
+management:
+  server:
+    port: 0 # to have a random management port different from server.port
+spring:
+  web:
+    resources:
+      static-locations: classpath:/static
+  thymeleaf:
+    prefix: classpath:/static

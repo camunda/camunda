@@ -312,7 +312,7 @@ public class NonInterruptingEventSubprocessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  /** Specifically reproduces https://github.com/camunda/zeebe/issues/7097 */
+  /** Specifically reproduces https://github.com/camunda/camunda/issues/7097 */
   @Test
   public void shouldInterruptEmbeddedSubProcess() {
     // when

@@ -75,7 +75,7 @@ services:
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
-      - 9600:9600
+      - 9601:9600
       - 8089:8080
     depends_on:
       - elasticsearch

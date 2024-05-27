@@ -28,6 +28,7 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
 
   @MockBean protected UserReader userReader;
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

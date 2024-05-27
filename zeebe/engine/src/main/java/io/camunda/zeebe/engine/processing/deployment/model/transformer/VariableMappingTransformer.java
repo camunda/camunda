@@ -154,7 +154,7 @@ public final class VariableMappingTransformer {
         final String expression;
 
         if (sourceExpression instanceof StaticExpression) {
-          // due to a regression (https://github.com/camunda/zeebe/issues/16043) all the double
+          // due to a regression (https://github.com/camunda/camunda/issues/16043) all the double
           // quotes inside the static expression must be escaped
           expression =
               String.format("\"%s\"", sourceExpression.getExpression().replaceAll("\"", "\\\\\""));

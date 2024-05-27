@@ -43,6 +43,7 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
 
   @Autowired private RestHighLevelClient esClient;
 
+  @Override
   public void createUser(String username, String firstname, String lastname) {
     final String password = username;
     final String passwordEncoded = passwordEncoder.encode(password);
@@ -62,6 +63,7 @@ public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
     LOGGER.info("Created demo user {} with password {}", username, password);
   }
 
+  @Override
   public boolean shouldCreateData() {
     try {
       final GetIndexRequest request =

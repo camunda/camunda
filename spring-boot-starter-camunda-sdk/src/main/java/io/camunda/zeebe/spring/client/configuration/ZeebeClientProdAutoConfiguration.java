@@ -24,7 +24,6 @@ import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
-import io.camunda.zeebe.spring.common.auth.Authentication;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import java.util.List;
@@ -50,7 +49,6 @@ import org.springframework.context.annotation.Bean;
   ExecutorServiceConfiguration.class,
   ZeebeActuatorConfiguration.class,
   JsonMapperConfiguration.class,
-  AuthenticationConfiguration.class
 })
 @AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
 public class ZeebeClientProdAutoConfiguration {
@@ -61,14 +59,12 @@ public class ZeebeClientProdAutoConfiguration {
   public ZeebeClientConfigurationImpl zeebeClientConfiguration(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
-      final Authentication authentication,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
     return new ZeebeClientConfigurationImpl(
         properties,
         camundaClientProperties,
-        authentication,
         jsonMapper,
         interceptors,
         zeebeClientExecutorService) {};

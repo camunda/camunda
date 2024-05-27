@@ -11,7 +11,6 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {http, HttpResponse} from 'msw';
 import {Component} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 
@@ -23,23 +22,21 @@ function createWrapper(
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-        <Link
-          to="/login"
-          state={{
-            referrer: {
-              pathname: '/1',
-              search: '?filter=unassigned',
-            },
-          }}
-        >
-          emulate redirection
-        </Link>
-        <LocationLog />
-      </MemoryRouter>
-    </MockThemeProvider>
+    <MemoryRouter initialEntries={initialEntries}>
+      {children}
+      <Link
+        to="/login"
+        state={{
+          referrer: {
+            pathname: '/1',
+            search: '?filter=unassigned',
+          },
+        }}
+      >
+        emulate redirection
+      </Link>
+      <LocationLog />
+    </MemoryRouter>
   );
   return Wrapper;
 }

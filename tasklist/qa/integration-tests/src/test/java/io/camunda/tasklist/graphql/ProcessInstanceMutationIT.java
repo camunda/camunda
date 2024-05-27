@@ -35,6 +35,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private NoSqlHelper noSqlHelper;
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();

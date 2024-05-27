@@ -217,7 +217,7 @@ public final class ProcessStateTest {
   }
 
   @Test
-  // Regression test for https://github.com/camunda/zeebe/issues/14309#issuecomment-1731052065
+  // Regression test for https://github.com/camunda/camunda/issues/14309#issuecomment-1731052065
   public void shouldStoreVersionsInCacheSeparately() {
     // given
     final var process1V1 = creatingProcessRecord(processingState, "process1").setVersion(1);
