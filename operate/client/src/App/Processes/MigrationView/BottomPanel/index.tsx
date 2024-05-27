@@ -8,8 +8,8 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {SelectItem, Stack} from '@carbon/react';
-import {ArrowRight} from '@carbon/react/icons';
+import {SelectItem, Stack, Tag} from '@carbon/react';
+
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
@@ -23,6 +23,8 @@ import {
   LeftColumn,
   IconContainer,
   Select,
+  SourceFlowNodeName,
+  ArrowRight,
 } from './styled';
 
 const BottomPanel: React.FC = observer(() => {
@@ -88,11 +90,17 @@ const BottomPanel: React.FC = observer(() => {
                     return sourceFlowNode.$type === flowNode.$type;
                   },
                 );
+
+              const isMapped = flowNodeMapping[sourceFlowNode.id] !== undefined;
+
               return {
                 id: sourceFlowNode.id,
                 sourceFlowNode: (
                   <LeftColumn>
-                    <div>{sourceFlowNode.name}</div>
+                    <SourceFlowNodeName>
+                      {sourceFlowNode.name}
+                    </SourceFlowNodeName>
+                    {!isMapped && <Tag type="blue">Not mapped</Tag>}
                     <ArrowRight />
                   </LeftColumn>
                 ),
