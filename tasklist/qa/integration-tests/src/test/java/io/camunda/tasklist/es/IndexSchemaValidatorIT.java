@@ -2,6 +2,7 @@ package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -21,7 +22,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 
+@Conditional(ElasticSearchCondition.class)
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test.json";

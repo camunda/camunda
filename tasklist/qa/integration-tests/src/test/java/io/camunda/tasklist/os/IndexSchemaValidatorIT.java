@@ -3,12 +3,18 @@ package io.camunda.tasklist.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
+import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestOpenSearchSchemaManager;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
+import io.camunda.tasklist.webapp.security.WebSecurityConfig;
+import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,7 +27,27 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Profile;
+import org.springframework.test.context.ContextConfiguration;
 
+@SpringBootTest(
+    classes = {
+        TestOpenSearchSchemaManager.class,
+        TestApplication.class,
+        SearchEngineHealthIndicator.class,
+        WebSecurityConfig.class,
+        OAuth2WebConfigurer.class,
+        RetryOpenSearchClient.class,
+    },
+    properties = {
+        TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Conditional(OpenSearchCondition.class)
+@Profile("opensearch-test")
+@ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH = "/tasklist-test-opensearch.json";
@@ -32,8 +58,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private SchemaManager schemaManager;
-
-
 
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
@@ -86,10 +110,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-             "\"properties\": {\n"
-                 + "    \"prop0\": {\n"
-                 + "      \"type\": \"keyword\"\n"
-                 + "    },",
+            "\"properties\": {\n"
+                + "    \"prop0\": {\n"
+                + "      \"type\": \"keyword\"\n"
+                + "    },",
             "\"properties\": {"));
 
     final String newSchemaContent = readSchemaContent();
@@ -125,7 +149,8 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String readSchemaContent() throws Exception {
     return new String(
-        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
+        Files.readAllBytes(
+            Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
   }
 
   private void restoreOriginalSchemaContent() throws Exception {
