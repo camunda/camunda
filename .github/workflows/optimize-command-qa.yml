@@ -90,7 +90,7 @@ jobs:
 
 
           # Validate if the command is valid
-          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ]; then
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ] && ([ "${{ steps.parse-args.outputs.arg1 }}" != 'not' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'verified' ]); then
             echo "Invalid command"
             exit 1
           fi
@@ -112,7 +112,7 @@ jobs:
           fi
 
           # Validate verified
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ]; then
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ] || [ "${{ steps.parse-args.outputs.arg1 }}" == 'not' ]; then
             # Check if the issue is in the correct status
             project_status="${{ steps.issue-project.outputs.project_status }}"
             if [ "$project_status" != 'On Hold' ]; then
@@ -125,9 +125,18 @@ jobs:
               exit 1
             fi
 
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:verified') }}" == "true" ]; then
-              echo "Issue is already verified"
-              exit 1
+            if [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:verified') }}" == "true" ]; then
+                echo "Issue is already verified"
+                exit 1
+              fi
+            fi
+
+            if [ "${{ steps.parse-args.outputs.arg1 }}" == 'not' ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notVerified') }}" == "true" ]; then
+                echo "Issue is already marked as not verified"
+                exit 1
+              fi
             fi
           fi
 
@@ -193,13 +202,28 @@ jobs:
           field: Status
           value: "Ready"
 
-      - name: Update QA labels
+      - name: Update QA labels - Verified
         if: steps.parse-args.outputs.arg1 == 'verified'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:pendingVerification
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-label qa:verified
+
+      - name: Update QA labels - Not verified
+        if: steps.parse-args.outputs.arg1 == 'not'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:pendingVerification
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-label qa:notVerified
+
+      - name: Close issue
+        if: steps.parse-args.outputs.arg1 == 'not'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue close ${{ github.event.client_payload.github.payload.issue.html_url }}
 
       - name: Remove assignee
         if: steps.parse-args.outputs.arg1 == 'verified'
