@@ -29,8 +29,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -66,7 +69,35 @@ public abstract class BaseWebConfigurer {
   }
 
   @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public SecurityFilterChain actuatorFilterChain(final HttpSecurity http) throws Exception {
+    http.securityMatchers(
+        (matchers) -> {
+          matchers
+              // all actuator endpoints
+              .requestMatchers(EndpointRequest.toAnyEndpoint())
+              // allows forwarding the failure when request failed
+              // for example when an endpoint could not be found
+              .requestMatchers("/error");
+        });
+
+    return configureActuatorSecurity(http)
+        .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
+        .build();
+  }
+
+  private HttpSecurity configureActuatorSecurity(final HttpSecurity http) throws Exception {
+    return http.csrf(CsrfConfigurer::disable)
+        .cors(CorsConfigurer::disable)
+        .logout(LogoutConfigurer::disable)
+        .formLogin(FormLoginConfigurer::disable)
+        .httpBasic(HttpBasicConfigurer::disable)
+        .anonymous(AnonymousConfigurer::disable);
+  }
+
+  @Bean
   public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+
     final var authenticationManagerBuilder =
         http.getSharedObject(AuthenticationManagerBuilder.class);
 
