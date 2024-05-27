@@ -40,7 +40,7 @@ public class RestErrorMapper {
         .map(RestErrorMapper::mapProblemToResponse);
   }
 
-  private static ProblemDetail mapErrorToProblem(
+  public static ProblemDetail mapErrorToProblem(
       final Throwable error, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
     if (error == null) {
       return null;
