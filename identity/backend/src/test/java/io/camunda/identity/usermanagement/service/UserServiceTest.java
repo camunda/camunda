@@ -13,8 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.user.CamundaUser;
+import io.camunda.identity.user.CamundaUserWithPassword;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -80,13 +81,14 @@ class UserServiceTest {
 
   @Test
   void findAllUsersReturnsAllUsers() {
+    final var count = userService.findAllUsers().size();
     userService.createUser(
         new CamundaUserWithPassword(new CamundaUser("user" + UUID.randomUUID()), "password"));
     userService.createUser(
         new CamundaUserWithPassword(new CamundaUser("user" + UUID.randomUUID()), "password"));
 
     final var users = userService.findAllUsers();
-    assertEquals(2, users.size());
+    assertEquals(2 + count, users.size());
   }
 
   @Test
@@ -152,7 +154,8 @@ class UserServiceTest {
 
     userService.updateUser(
         user.id(),
-        new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password"));
+        new CamundaUserWithPassword(
+            new CamundaUser(user.id(), username, "email", false), "password"));
 
     final var existingUser = userService.findUserById(user.id());
     assertFalse(existingUser.enabled());

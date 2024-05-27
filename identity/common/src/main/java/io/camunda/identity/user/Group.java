@@ -5,19 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.usermanagement;
+package io.camunda.identity.user;
 
-public record CamundaUser(Integer id, String username, String email, boolean enabled) {
-
-  public CamundaUser(final String username) {
-    this(username, null);
-  }
-
-  public CamundaUser(final String username, final String email) {
-    this(username, email, true);
-  }
-
-  public CamundaUser(final String username, final String email, final boolean enabled) {
-    this(null, username, email, enabled);
+public record Group(Integer id, String name) {
+  public Group(final String name) {
+    this(null, name);
   }
 }
