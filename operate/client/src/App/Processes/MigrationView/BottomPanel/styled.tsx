@@ -7,7 +7,10 @@
  */
 
 import styled from 'styled-components';
+import {supportSuccess} from '@carbon/elements';
+import {CheckmarkFilled as BaseCheckmark} from '@carbon/icons-react';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
+import {Select as BaseSelect} from '@carbon/react';
 
 const BottomSection = styled.section`
   height: 100%;
@@ -38,4 +41,26 @@ const ErrorMessageContainer = styled.div`
   height: 100%;
 `;
 
-export {BottomSection, LeftColumn, DataTable, ErrorMessageContainer};
+const CheckmarkFilled = styled(BaseCheckmark)`
+  color: ${supportSuccess};
+`;
+
+const Select = styled(BaseSelect)`
+  width: 288px;
+`;
+
+const IconContainer = styled.div`
+  > svg {
+    block-size: 100%;
+  }
+`;
+
+export {
+  BottomSection,
+  LeftColumn,
+  DataTable,
+  ErrorMessageContainer,
+  CheckmarkFilled,
+  Select,
+  IconContainer,
+};
