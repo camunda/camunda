@@ -8,7 +8,9 @@
 package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -16,6 +18,7 @@ import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestUtil;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -25,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
@@ -50,6 +55,11 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
+
+  @BeforeAll
+  public static void beforeClass() {
+    assumeTrue(TestUtil.isElasticSearch());
+  }
 
   @BeforeEach
   public void setUp() throws Exception {
