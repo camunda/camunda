@@ -67,15 +67,15 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
-          noSqlHelper.indexHasAlias(
-              indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
+              noSqlHelper.indexHasAlias(
+                  indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
           .isTrue();
       assertThat(
-          retryElasticsearchClient
-              .getIndexSettingsFor(
-                  indexDescriptor.getFullQualifiedName(),
-                  RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-              .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+              retryElasticsearchClient
+                  .getIndexSettingsFor(
+                      indexDescriptor.getFullQualifiedName(),
+                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
+                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(initialNumberOfReplicas));
     }
 
@@ -87,15 +87,15 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
-          noSqlHelper.indexHasAlias(
-              indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
+              noSqlHelper.indexHasAlias(
+                  indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
           .isTrue();
       assertThat(
-          retryElasticsearchClient
-              .getIndexSettingsFor(
-                  indexDescriptor.getFullQualifiedName(),
-                  RetryElasticsearchClient.NUMBERS_OF_REPLICA)
-              .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
+              retryElasticsearchClient
+                  .getIndexSettingsFor(
+                      indexDescriptor.getFullQualifiedName(),
+                      RetryElasticsearchClient.NUMBERS_OF_REPLICA)
+                  .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
     }
   }
