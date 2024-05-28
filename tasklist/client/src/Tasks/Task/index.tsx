@@ -84,7 +84,9 @@ const Task: React.FC = observer(() => {
       variables,
     });
 
-    const customFilters = getStateLocally('customFilters')?.custom;
+    const filter = new URLSearchParams(window.location.search).get('filter');
+    const customFilters =
+      filter === null ? null : getStateLocally('customFilters')?.[filter];
 
     tracking.track({
       eventName: 'task-completed',

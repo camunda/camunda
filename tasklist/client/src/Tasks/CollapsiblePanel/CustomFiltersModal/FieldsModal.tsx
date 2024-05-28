@@ -31,23 +31,25 @@ import {MultiTenancySelect} from 'modules/components/useMultiTenancyDropdown/Mul
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
 import {
-  type CustomFilters,
-  customFiltersSchema,
+  type NamedCustomFilters,
+  namedCustomFiltersSchema,
 } from 'modules/custom-filters/customFiltersSchema';
-import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {ProcessesSelect} from './ProcessesSelect';
 import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
 import {Modal} from 'modules/components/Modal';
 
-type FormValues = CustomFilters;
+type FormValues = NamedCustomFilters & {
+  areAdvancedFiltersEnabled: boolean;
+  action: 'apply' | 'save' | 'edit';
+};
 
-const DEFAULT_FORM_VALUES: FormValues = {
+const DEFAULT_FORM_VALUES: NamedCustomFilters = {
   assignee: 'all',
   status: 'all',
 };
 
-const ADVANCED_FILTERS: Array<keyof FormValues> = [
+const ADVANCED_FILTERS: Array<keyof NamedCustomFilters> = [
   'dueDateFrom',
   'dueDateTo',
   'followUpDateFrom',
@@ -67,12 +69,22 @@ function getDateValue(date: Date[]): Date | undefined {
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onApply: (values: FormValues) => void;
+  onApply: (values: NamedCustomFilters) => void;
+  onSave: (values: NamedCustomFilters) => void;
+  onEdit: (values: NamedCustomFilters) => void;
+  onDelete: () => void;
+  initialValues: NamedCustomFilters;
 };
 
-const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
-  const initialValues =
-    getStateLocally('customFilters')?.custom ?? DEFAULT_FORM_VALUES;
+const FieldsModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onApply,
+  onSave,
+  onEdit,
+  onDelete,
+  initialValues,
+}) => {
   const label = 'Advanced filters';
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const {data: currentUser} = useCurrentUser();
@@ -88,30 +100,37 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
       aria-label="Custom filters modal"
     >
       {isOpen ? (
-        <Form<
-          FormValues & {
-            areAdvancedFiltersEnabled: boolean;
-          }
-        >
-          onSubmit={({areAdvancedFiltersEnabled: _, ...values}) => {
-            const result = customFiltersSchema.safeParse(values);
+        <Form<FormValues>
+          onSubmit={({areAdvancedFiltersEnabled: _, action, ...values}) => {
+            const result = namedCustomFiltersSchema.safeParse(values);
 
-            if (result.success) {
-              storeStateLocally('customFilters', {custom: result.data});
+            if (!result.success) {
+              return result.error.flatten(({path, message}) => {
+                const [firstPath] = path;
+
+                if (firstPath !== 'variables') {
+                  return message;
+                }
+
+                return set({}, path[path.length - 1], message);
+              }).fieldErrors;
+            }
+
+            if (action === 'apply') {
               onApply(result.data);
-
               return;
             }
 
-            return result.error.flatten(({path, message}) => {
-              const [firstPath] = path;
+            if (action === 'save') {
+              onSave(result.data);
+              return;
+            }
 
-              if (firstPath !== 'variables') {
-                return message;
-              }
+            if (action === 'edit') {
+              onEdit(result.data);
+            }
 
-              return set({}, path[path.length - 1], message);
-            }).fieldErrors;
+            return;
           }}
           initialValues={{
             ...initialValues,
@@ -125,7 +144,24 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
             <>
               <ModalHeader title="Apply filters" buttonOnClick={onClose} />
               <ModalBody hasForm>
-                <form className={styles.twoColumnGrid} onSubmit={handleSubmit}>
+                <form
+                  className={styles.twoColumnGrid}
+                  onSubmit={handleSubmit}
+                  tabIndex={-1}
+                >
+                  {[undefined, 'custom'].includes(values.name) ? null : (
+                    <Field name="name">
+                      {({input}) => (
+                        <TextInput
+                          {...input}
+                          id={input.name}
+                          labelText="Filter name"
+                          className={styles.nameField}
+                        />
+                      )}
+                    </Field>
+                  )}
+
                   <Field name="assignee">
                     {({input}) => (
                       <RadioButtonGroup
@@ -448,18 +484,65 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply}) => {
                 <Button
                   kind="ghost"
                   onClick={() => {
-                    form.reset(DEFAULT_FORM_VALUES);
+                    form.reset(
+                      values.name === undefined
+                        ? DEFAULT_FORM_VALUES
+                        : {
+                            ...DEFAULT_FORM_VALUES,
+                            name: values.name,
+                          },
+                    );
                   }}
                   type="button"
                 >
                   Reset
                 </Button>
-                <Button kind="secondary" onClick={onClose} type="button">
-                  Cancel
-                </Button>
-                <Button kind="primary" type="submit" onClick={form.submit}>
-                  Apply
-                </Button>
+                {values.name === undefined ? (
+                  <>
+                    <Button kind="secondary" onClick={onClose} type="button">
+                      Cancel
+                    </Button>
+                    <Button
+                      kind="secondary"
+                      onClick={() => {
+                        form.change('action', 'save');
+                        form.submit();
+                      }}
+                      type="submit"
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      kind="primary"
+                      type="submit"
+                      onClick={() => {
+                        form.change('action', 'apply');
+                        form.submit();
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button kind="secondary" onClick={onDelete} type="button">
+                      Delete
+                    </Button>
+                    <Button kind="secondary" onClick={onClose} type="button">
+                      Cancel
+                    </Button>
+                    <Button
+                      kind="primary"
+                      onClick={() => {
+                        form.change('action', 'edit');
+                        form.submit();
+                      }}
+                      type="submit"
+                    >
+                      Save and apply
+                    </Button>
+                  </>
+                )}
               </ModalFooter>
             </>
           )}
