@@ -17,5 +17,5 @@ public interface ChecksumProvider {
    * @return Map containing fileName - checksums pairs, where the checksums are unsigned integers in
    *     byte array format.
    */
-  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath);
+  Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath);
 }
