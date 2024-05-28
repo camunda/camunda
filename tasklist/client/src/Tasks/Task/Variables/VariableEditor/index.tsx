@@ -177,6 +177,7 @@ const VariableEditor: React.FC<Props> = ({
                       }}
                       size="sm"
                       kind="ghost"
+                      align="top-right"
                       leaveDelayMs={100}
                     >
                       <Popup />
@@ -232,6 +233,7 @@ const VariableEditor: React.FC<Props> = ({
                               invalidText={meta.error}
                               type="text"
                               labelText={`${ordinal} variable name`}
+                              hideLabel
                               placeholder="Name"
                               autoFocus
                             />
@@ -255,6 +257,7 @@ const VariableEditor: React.FC<Props> = ({
                               id={input.name}
                               type="text"
                               labelText={`${ordinal} variable value`}
+                              hideLabel
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
                               placeholder="Value"
@@ -273,6 +276,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
+                            align="top-right"
                             leaveDelayMs={100}
                           >
                             <Popup />
@@ -284,6 +288,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
+                            align="top-right"
                             leaveDelayMs={100}
                           >
                             <Close />

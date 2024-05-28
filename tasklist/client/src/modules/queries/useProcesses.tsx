@@ -65,6 +65,7 @@ function createMockProcess(id: string): Process {
     startEventFormId: `form-id-${id}`,
     sortValues: ['1'],
     version: 1,
+    bpmnXml: null,
   };
 }
 

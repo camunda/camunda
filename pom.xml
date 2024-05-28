@@ -28,10 +28,10 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda/zeebe</url>
+    <url>https://github.com/camunda/camunda</url>
   </scm>
 
   <build>

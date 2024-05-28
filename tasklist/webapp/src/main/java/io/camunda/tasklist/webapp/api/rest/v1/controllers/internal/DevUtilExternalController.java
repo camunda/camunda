@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
-import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -42,8 +41,6 @@ public class DevUtilExternalController {
   @Autowired private SchemaManager schemaManager;
 
   @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private DataGenerator devDataGenerator;
 
   @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
@@ -84,7 +81,6 @@ public class DevUtilExternalController {
     processCache.clearCache();
     schemaManager.createSchema();
     searchEngineUserDetailsService.initializeUsers();
-    devDataGenerator.createDemoUsers();
     return ResponseEntity.ok().build();
   }
 }

@@ -11,7 +11,6 @@ import {Locator, Page} from '@playwright/test';
 class FormJSDetailsPage {
   private page: Page;
   readonly completeTaskButton: Locator;
-  readonly addVariableButton: Locator;
   readonly nameInput: Locator;
   readonly addressInput: Locator;
   readonly ageInput: Locator;

@@ -129,7 +129,7 @@
     <profile>
       <!--
         We have to skip spotbugs analysis until we fix several findings
-        See https://github.com/camunda/zeebe/issues/17598
+        See https://github.com/camunda/camunda/issues/17598
       -->
       <id>spotbugs</id>
       <build>

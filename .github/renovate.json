@@ -47,6 +47,13 @@
       "enabled": false
     },
     {
+      "description": "Skip lucene major updates to avoid breaking changes.",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["com.graphql-java"],
       "matchUpdateTypes": ["major"],
@@ -83,12 +90,13 @@
       "enabled": false
     },
     {
-      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844)",
+      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
       "matchPackagePatterns": [
         "react-router-dom",
-        "msw"
+        "msw",
+        "@carbon/react"
       ],
       "enabled": false
     },

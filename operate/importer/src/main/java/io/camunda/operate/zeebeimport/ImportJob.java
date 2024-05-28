@@ -108,8 +108,7 @@ public class ImportJob implements Callable<Boolean> {
             final Long lastSequenceFromNewImportBatch =
                 newImportBatch.getLastProcessedSequence(objectMapper);
 
-            if (newImportBatch == null
-                || newImportBatch.getHits() == null
+            if (newImportBatch.getHits() == null
                 || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
               final String message =
                   String.format(

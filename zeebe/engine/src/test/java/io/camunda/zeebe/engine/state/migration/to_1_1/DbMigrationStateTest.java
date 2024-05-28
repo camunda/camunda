@@ -119,7 +119,7 @@ public class DbMigrationStateTest {
 
   @Test
   @Disabled(
-      "Broken because of Multi-Tenancy. Needs the data migration part of https://github.com/camunda/zeebe/issues/13289")
+      "Broken because of Multi-Tenancy. Needs the data migration part of https://github.com/camunda/camunda/issues/13289")
   public void testMigrateProcessMessageSubscriptionSentTime() {
     // given database with legacy records
     final var legacySubscriptionState =

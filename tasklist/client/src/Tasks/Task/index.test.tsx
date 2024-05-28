@@ -15,7 +15,6 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -51,16 +50,14 @@ const getWrapper = (
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <QueryClientProvider client={mockClient}>
-        <MockThemeProvider>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path=":id" Component={LayoutComponent}>
-                <Route index element={children} />
-              </Route>
-            </Routes>
-            <LocationLog />
-          </MemoryRouter>
-        </MockThemeProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route path=":id" Component={LayoutComponent}>
+              <Route index element={children} />
+            </Route>
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };
@@ -98,6 +95,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -153,6 +154,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -215,6 +220,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -261,6 +270,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -313,6 +326,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -361,6 +378,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -418,6 +439,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     const {user} = render(<Component />, {
@@ -469,6 +494,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -533,6 +562,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -595,6 +628,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -662,6 +699,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 

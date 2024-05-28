@@ -38,22 +38,25 @@ const Wrapper: React.FC = () => {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<Wrapper />}>
+    <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
       <Route path="login" lazy={() => import('./Login')} />
       <Route
         path="new/:bpmnProcessId"
         lazy={() => import('./StartProcessFromForm')}
       />
       <Route path="/" lazy={() => import('./Layout')}>
-        <Route path="processes">
+        <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
           <Route index lazy={() => import('./Processes')} />
           <Route
             path=":bpmnProcessId/start"
             lazy={() => import('./Processes')}
-            ErrorBoundary={ErrorWithinLayout}
           />
         </Route>
-        <Route path="/" lazy={() => import('./Tasks')}>
+        <Route
+          path="/"
+          lazy={() => import('./Tasks')}
+          ErrorBoundary={ErrorWithinLayout}
+        >
           <Route
             index
             lazy={() => import('./Tasks/EmptyPage')}
@@ -64,10 +67,10 @@ const router = createBrowserRouter(
             lazy={() => import('./Tasks/Task/Details')}
             ErrorBoundary={ErrorWithinLayout}
           >
+            <Route index lazy={() => import('./Tasks/Task')} />
             <Route
-              index
-              lazy={() => import('./Tasks/Task')}
-              ErrorBoundary={ErrorWithinLayout}
+              path="process"
+              lazy={() => import('./Tasks/Task/ProcessView')}
             />
           </Route>
         </Route>

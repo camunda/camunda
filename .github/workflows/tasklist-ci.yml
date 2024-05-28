@@ -158,7 +158,7 @@ jobs:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
     container:
-      image: mcr.microsoft.com/playwright:v1.44.0
+      image: mcr.microsoft.com/playwright:v1.44.1
       options: --user 1001:1000
     defaults:
       run:
@@ -193,7 +193,7 @@ jobs:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
     container:
-      image: mcr.microsoft.com/playwright:v1.44.0
+      image: mcr.microsoft.com/playwright:v1.44.1
       options: --user 1001:1000
     defaults:
       run:

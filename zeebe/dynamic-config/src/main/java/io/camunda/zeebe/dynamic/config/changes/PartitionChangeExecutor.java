@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Map;
@@ -29,7 +30,10 @@ public interface PartitionChangeExecutor {
    * @param membersWithPriority priority of each replicas used of leader election
    * @return a future that completes when the partition is started and joined the replication group
    */
-  ActorFuture<Void> join(int partitionId, Map<MemberId, Integer> membersWithPriority);
+  ActorFuture<Void> join(
+      int partitionId,
+      Map<MemberId, Integer> membersWithPriority,
+      DynamicPartitionConfig partitionConfig);
 
   /**
    * The implementation of this method must remove the member from the replication group of the

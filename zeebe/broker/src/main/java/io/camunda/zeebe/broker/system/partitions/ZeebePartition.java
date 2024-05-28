@@ -56,6 +56,8 @@ public final class ZeebePartition extends Actor
   private PartitionStartupContext startupContext;
   private final PartitionAdminAccess adminAccess;
   private final PartitionTransition transition;
+  private PartitionConfigurationManager partitionConfigurationManager;
+
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
 
@@ -124,6 +126,8 @@ public final class ZeebePartition extends Actor
               transition.updateTransitionContext(transitionContext);
 
               context = transitionContext.getPartitionContext();
+              partitionConfigurationManager =
+                  new PartitionConfigurationManager(LOG, context, actor);
 
               registerListeners();
             });
@@ -506,5 +510,11 @@ public final class ZeebePartition extends Actor
 
   public ActorFuture<Role> getCurrentRole() {
     return actor.call(() -> context.getCurrentRole());
+  }
+
+  public ActorFuture<Void> disableExporter(final String exporterId) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(() -> partitionConfigurationManager.disableExporter(exporterId).onComplete(future));
+    return future;
   }
 }

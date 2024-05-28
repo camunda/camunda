@@ -7,19 +7,25 @@
  */
 
 import {Section} from '@carbon/react';
+import {Outlet, useMatch} from 'react-router-dom';
+import {CurrentUser, Process, Task} from 'modules/types';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useTask} from 'modules/queries/useTask';
+import {useProcessDefinition} from 'modules/queries/useProcessDefinition';
+import {useTaskDetailsParams, pages} from 'modules/routing';
+import {DetailsSkeleton} from './DetailsSkeleton';
+import {TabListNav} from './TabListNav';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
-import {Outlet, useMatch} from 'react-router-dom';
-import {CurrentUser, Task} from 'modules/types';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {useTask} from 'modules/queries/useTask';
-import {useTaskDetailsParams, pages} from 'modules/routing';
-import {DetailsSkeleton} from './DetailsSkeleton';
-import {TabListNav} from './TabListNav';
 
-type OutletContext = [Task, CurrentUser, () => void];
+type OutletContext = {
+  task: Task;
+  currentUser: CurrentUser;
+  refetch: () => void;
+  process: Process | undefined;
+};
 
 const Details: React.FC = () => {
   const {id} = useTaskDetailsParams();
@@ -27,19 +33,40 @@ const Details: React.FC = () => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+  const taskCompleted = task?.taskState === 'COMPLETED';
+  const {data: process, isLoading: processLoading} = useProcessDefinition(
+    task?.processDefinitionKey ?? '',
+    {
+      enabled: task !== undefined && !taskCompleted,
+    },
+  );
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
+
   const tabs = [
     {
       key: 'task',
       title: 'Task',
       label: 'Show task',
       selected: useMatch(pages.taskDetails()) !== null,
-      href: pages.taskDetails(id),
+      to: {
+        pathname: pages.taskDetails(id),
+      },
+    },
+    {
+      key: 'process',
+      title: 'Process',
+      label: 'Show associated BPMN process',
+      selected: useMatch(pages.taskDetailsProcess()) !== null,
+      to: {
+        pathname: pages.taskDetailsProcess(id),
+      },
+      visible:
+        !taskCompleted && process !== undefined && process.bpmnXml !== null,
     },
   ];
 
-  if (task === undefined || currentUser === undefined) {
+  if (task === undefined || currentUser === undefined || processLoading) {
     return <DetailsSkeleton data-testid="details-skeleton" />;
   }
 
@@ -54,7 +81,9 @@ const Details: React.FC = () => {
         />
         <TabListNav label="Task Details Navigation" items={tabs} />
         <Outlet
-          context={[task, currentUser, refetch] satisfies OutletContext}
+          context={
+            {task, currentUser, refetch, process} satisfies OutletContext
+          }
         />
       </Section>
       <Aside task={task} user={currentUser} />

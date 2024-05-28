@@ -93,11 +93,12 @@ test.describe('Operations', () => {
     await expect(page.getByTestId('operations-entry')).toHaveCount(40);
   });
 
-  test('Retry and Cancel single instance ', async ({
+  test('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
     processesPage,
     page,
   }) => {
+    test.slow();
     const instance = initialData.singleOperationInstance;
 
     // ensure page is loaded
@@ -174,11 +175,12 @@ test.describe('Operations', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Retry and cancel multiple instances ', async ({
+  test('Retry and cancel multiple instances @roundtrip', async ({
     commonPage,
     processesPage,
     page,
   }) => {
+    test.slow();
     const instances = initialData.batchOperationInstances.slice(0, 5);
 
     // ensure page is loaded

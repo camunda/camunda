@@ -31,10 +31,11 @@ import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
@@ -46,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +62,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
-  @Autowired RichOpenSearchClient richOpenSearchClient;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
@@ -77,7 +78,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(int batchSize) {
+  public List<OperationEntity> acquireOperations(final int batchSize) {
     final Query query =
         constantScore(
             or(
@@ -100,7 +101,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
-      List<Long> processInstanceKeys) {
+      final List<Long> processInstanceKeys) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final Query query =
@@ -123,7 +124,8 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(
+      final String processInstanceId) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
     final Query query =
         constantScore(and(term(PROCESS_INSTANCE_KEY, processInstanceId), usernameQuery()));
@@ -145,7 +147,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
-      Long processInstanceKey, Long scopeKey) {
+      final Long processInstanceKey, final Long scopeKey) {
     final Map<String, List<OperationEntity>> result = new HashMap<>();
     final Query query =
         constantScore(
@@ -170,7 +172,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey) {
+  public List<OperationEntity> getOperationsByProcessInstanceKey(final Long processInstanceKey) {
     final Query query =
         constantScore(
             and(
@@ -185,7 +187,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   // this query will be extended
   @Override
-  public List<BatchOperationEntity> getBatchOperations(int pageSize) {
+  public List<BatchOperationEntity> getBatchOperations(final int pageSize) {
     final Query query =
         constantScore(
             term(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername()));
@@ -199,7 +201,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public List<OperationDto> getOperationsByBatchOperationId(String batchOperationId) {
+  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(term(BATCH_OPERATION_ID, batchOperationId));
@@ -211,7 +213,10 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public List<OperationDto> getOperations(
-      OperationType operationType, String processInstanceId, String scopeId, String variableName) {
+      final OperationType operationType,
+      final String processInstanceId,
+      final String scopeId,
+      final String variableName) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(
@@ -224,5 +229,23 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
+  }
+
+  public Builder getSearchRequestByIdWithMetadata(final String batchOperationId) {
+    final Query failedOperationQuery = term(OperationTemplate.STATE, OperationState.FAILED.name());
+    final Query completedOperationQuery =
+        term(OperationTemplate.STATE, OperationState.COMPLETED.name());
+    final var searchRequestBuilder =
+        searchRequestBuilder(operationTemplate, ALL)
+            .query(term(BATCH_OPERATION_ID, batchOperationId))
+            .aggregations(
+                OperationTemplate.METADATA_AGGREGATION,
+                AggregationDSL.filtersAggregation(
+                        Map.of(
+                            BatchOperationTemplate.FAILED_OPERATIONS_COUNT, failedOperationQuery,
+                            BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
+                                completedOperationQuery))
+                    ._toAggregation());
+    return searchRequestBuilder;
   }
 }

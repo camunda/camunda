@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -27,13 +27,13 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -59,11 +59,11 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   private final TopologyManagerImpl topologyManager;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private final PartitionDistribution partitionDistribution;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final RaftPartitionFactory raftPartitionFactory;
+  private final ClusterConfigurationService clusterConfigurationService;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -79,14 +79,14 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
-      final PartitionDistribution partitionDistribution) {
+      final ClusterConfigurationService clusterConfigurationService) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
-    this.partitionDistribution = partitionDistribution;
+    this.clusterConfigurationService = clusterConfigurationService;
     // TODO: Do this as a separate step before starting the partition manager
     topologyManager = new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker);
 
@@ -118,17 +118,26 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     actorSchedulingService.submitActor(topologyManager);
     final var localMemberId = managementService.getMembershipService().getLocalMember().id();
     final var memberPartitions =
-        partitionDistribution.partitions().stream()
+        clusterConfigurationService.getPartitionDistribution().partitions().stream()
             .filter(p -> p.members().contains(localMemberId))
             .toList();
 
     healthCheckService.registerBootstrapPartitions(memberPartitions);
     for (final var partitionMetadata : memberPartitions) {
-      bootstrapPartition(partitionMetadata);
+      final var initialPartitionConfig =
+          clusterConfigurationService
+              .getInitialClusterConfiguration()
+              .members()
+              .get(localMemberId)
+              .getPartition(partitionMetadata.id().id())
+              .config();
+      bootstrapPartition(partitionMetadata, initialPartitionConfig);
     }
   }
 
-  private ActorFuture<Void> bootstrapPartition(final PartitionMetadata partitionMetadata) {
+  private ActorFuture<Void> bootstrapPartition(
+      final PartitionMetadata partitionMetadata,
+      final DynamicPartitionConfig initialPartitionConfig) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().id();
     final var context =
@@ -142,7 +151,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             partitionMetadata,
             raftPartitionFactory,
             zeebePartitionFactory,
-            brokerCfg);
+            brokerCfg,
+            initialPartitionConfig);
     final var partition = Partition.bootstrapping(context);
     partitions.put(id, partition);
 
@@ -151,7 +161,9 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     return result;
   }
 
-  private ActorFuture<Void> joinPartition(final PartitionMetadata partitionMetadata) {
+  private ActorFuture<Void> joinPartition(
+      final PartitionMetadata partitionMetadata,
+      final DynamicPartitionConfig initialPartitionConfig) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().id();
     final var context =
@@ -165,7 +177,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             partitionMetadata,
             raftPartitionFactory,
             zeebePartitionFactory,
-            brokerCfg);
+            brokerCfg,
+            initialPartitionConfig);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
@@ -256,7 +269,9 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public ActorFuture<Void> join(
-      final int partitionId, final Map<MemberId, Integer> membersWithPriority) {
+      final int partitionId,
+      final Map<MemberId, Integer> membersWithPriority,
+      final DynamicPartitionConfig partitionConfig) {
     final int targetPriority = Collections.max(membersWithPriority.values());
 
     final var members = membersWithPriority.keySet();
@@ -279,7 +294,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             targetPriority,
             primary);
 
-    return joinPartition(partitionMetadata);
+    return joinPartition(partitionMetadata, partitionConfig); // TODO
   }
 
   @Override
@@ -370,7 +385,36 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var partition = partitions.get(partitionId);
+          if (partition == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+            return;
+          }
+
+          if (partition.zeebePartition() == null) {
+            result.completeExceptionally(
+                new IllegalArgumentException(
+                    "Expected to disable exporter on partition %s, but zeebePartition is not ready"
+                        .formatted(partitionId)));
+            return;
+          }
+          LOGGER.info("Disabling exporter {} on partition {}", exporterId, partitionId);
+          concurrencyControl.runOnCompletion(
+              partition.zeebePartition().disableExporter(exporterId),
+              (ok, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                  return;
+                }
+
+                LOGGER.info("Disabled exporter {} on partition {}", exporterId, partitionId);
+                result.complete(null);
+              });
+        });
+    return result;
   }
 }

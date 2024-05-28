@@ -348,6 +348,9 @@ public final class Gateway implements CloseableSilently {
     return LongPollingActivateJobsHandler.newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
+        .setLongPollingTimeout(gatewayCfg.getLongPolling().getTimeout())
+        .setProbeTimeoutMillis(gatewayCfg.getLongPolling().getProbeTimeout())
+        .setMinEmptyResponses(gatewayCfg.getLongPolling().getMinEmptyResponses())
         .build();
   }
 

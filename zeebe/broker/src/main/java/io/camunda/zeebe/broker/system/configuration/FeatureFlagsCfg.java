@@ -38,8 +38,6 @@ public final class FeatureFlagsCfg {
   private boolean enableStraightThroughProcessingLoopDetector =
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
 
-  private boolean enableDynamicClusterTopology = DEFAULT_SETTINGS.enableDynamicClusterTopology();
-
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
   }
@@ -81,22 +79,13 @@ public final class FeatureFlagsCfg {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
-  public boolean isEnableDynamicClusterTopology() {
-    return enableDynamicClusterTopology;
-  }
-
-  public void setEnableDynamicClusterTopology(final boolean enableDynamicClusterTopology) {
-    this.enableDynamicClusterTopology = enableDynamicClusterTopology;
-  }
-
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
         enableActorMetrics,
         enableMessageTtlCheckerAsync,
         enableTimerDueDateCheckerAsync,
-        enableStraightThroughProcessingLoopDetector,
-        enableDynamicClusterTopology
+        enableStraightThroughProcessingLoopDetector
         /*, enableFoo*/ );
   }
 

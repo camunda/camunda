@@ -13,16 +13,13 @@ import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedC
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
-import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -163,15 +160,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
         .processingFilter(processingFilter)
         .listener(
-            new StreamProcessorListener() {
-              @Override
-              public void onProcessed(final TypedRecord<?> processedCommand) {
-                context.getOnProcessedListener().accept(processedCommand);
-              }
-
-              @Override
-              public void onSkipped(final LoggedEvent skippedRecord) {}
-            })
+            processedCommand ->
+                context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)

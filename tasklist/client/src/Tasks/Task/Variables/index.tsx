@@ -16,7 +16,6 @@ import {Button, InlineLoadingStatus, Heading, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Variable, CurrentUser, Task} from 'modules/types';
-import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,
@@ -34,6 +33,7 @@ import {IconButton} from './IconButton';
 import {ResetForm} from './ResetForm';
 import {FormValues} from './types';
 import styles from './styles.module.scss';
+import cn from 'classnames';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -146,7 +146,7 @@ const Variables: React.FC<Props> = ({
         hasValidationErrors,
       }) => (
         <>
-          <TaskDetailsRow className={styles.panelHeader}>
+          <div className={styles.panelHeader}>
             <Heading>Variables</Heading>
             {taskState !== 'COMPLETED' && (
               <Button
@@ -167,7 +167,7 @@ const Variables: React.FC<Props> = ({
                 Add Variable
               </Button>
             )}
-          </TaskDetailsRow>
+          </div>
           <Separator />
           <ScrollableContent>
             <form
@@ -191,7 +191,7 @@ const Variables: React.FC<Props> = ({
                       status: Pattern.union('pending', 'success'),
                     },
                     () => (
-                      <TaskDetailsRow as={Layer}>
+                      <Layer className={cn(styles.container, styles.gutter)}>
                         <C3EmptyState
                           heading="Task has no variables"
                           description={
@@ -200,7 +200,7 @@ const Variables: React.FC<Props> = ({
                               : 'Click on Add Variable'
                           }
                         />
-                      </TaskDetailsRow>
+                      </Layer>
                     ),
                   )
                   .with(
@@ -225,11 +225,9 @@ const Variables: React.FC<Props> = ({
                       },
                     ),
                     () => (
-                      <TaskDetailsRow
+                      <Layer
                         className={styles.container}
                         data-testid="variables-form-table"
-                        as={Layer}
-                        $disabledSidePadding
                       >
                         <VariableEditor
                           containerRef={formRef}
@@ -239,12 +237,12 @@ const Variables: React.FC<Props> = ({
                           variablesLoadingFullValue={variablesLoadingFullValue}
                           onEdit={(id) => setEditingVariable(id)}
                         />
-                      </TaskDetailsRow>
+                      </Layer>
                     ),
                   )
                   .otherwise(() => null)}
 
-                <DetailsFooter>
+                <div className={styles.footer}>
                   {hasEmptyNewVariable(values) && (
                     <IconButton
                       className={styles.inlineIcon}
@@ -273,7 +271,7 @@ const Variables: React.FC<Props> = ({
                       !canCompleteTask
                     }
                   />
-                </DetailsFooter>
+                </div>
               </TaskDetailsContainer>
 
               <Suspense>

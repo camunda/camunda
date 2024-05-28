@@ -7,16 +7,31 @@
  */
 
 import {createPortal} from 'react-dom';
-import {Modal as BaseModal} from '@carbon/react';
-import {CarbonTheme} from 'modules/theme/CarbonTheme';
+import {Modal as BaseModal, ComposedModal} from '@carbon/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-type Props = React.ComponentProps<typeof BaseModal>;
+type Props =
+  | (React.ComponentProps<typeof BaseModal> & {
+      variant?: 'modal';
+    })
+  | (React.ComponentProps<typeof ComposedModal> & {
+      variant?: 'composed-modal';
+    });
 
-const Modal: React.FC<Props> = ({children, ...props}) => {
+const Modal: React.FC<Props> = ({children, variant = 'modal', ...props}) => {
+  if (variant === 'composed-modal') {
+    return createPortal(
+      <ThemeProvider>
+        <ComposedModal {...props}>{children}</ComposedModal>
+      </ThemeProvider>,
+      document.body,
+    );
+  }
+
   return createPortal(
-    <CarbonTheme>
+    <ThemeProvider>
       <BaseModal {...props}>{children}</BaseModal>
-    </CarbonTheme>,
+    </ThemeProvider>,
     document.body,
   );
 };

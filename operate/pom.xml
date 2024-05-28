@@ -169,26 +169,6 @@
       </properties>
     </profile>
 
-    <profile>
-      <!--
-        We have to skip spotbugs analysis until Operate team have fixed several findings
-        See https://github.com/camunda/zeebe/issues/17331
-      -->
-      <id>spotbugs</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs-maven-plugin</artifactId>
-            <version>${plugin.version.spotbugs}</version>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <!--
       The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
       That is useful for example for creating releases. This profile is active if the skipQaBuild
