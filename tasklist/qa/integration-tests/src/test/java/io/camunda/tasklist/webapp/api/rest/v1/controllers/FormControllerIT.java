@@ -30,6 +30,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
+
   private MockMvcHelper mockMvcHelper;
 
   private boolean initializedLinkedTests = false;

@@ -120,7 +120,9 @@ public class AuthenticationIT implements AuthenticationTestable {
   @MockBean private AuthenticationController authenticationController;
   @SpyBean private Auth0Service auth0Service;
   @Autowired private BeanFactory beanFactory;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private ApplicationContext applicationContext;
 
   @MockBean

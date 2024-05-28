@@ -10,7 +10,11 @@ package io.camunda.operate.rest;
 import static io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper.createFrom;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
@@ -26,7 +30,11 @@ import org.springframework.test.web.servlet.MvcResult;
     classes = {
       TestApplicationWithNoBeans.class,
       BatchOperationRestService.class,
-      OperateProfileService.class
+      OperateProfileService.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateProperties.class
     })
 public class BatchOperationRestServiceIT extends OperateAbstractIT {
 
