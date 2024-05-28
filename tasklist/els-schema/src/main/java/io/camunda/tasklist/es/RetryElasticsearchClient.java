@@ -792,12 +792,14 @@ public class RetryElasticsearchClient {
   }
 
   public GetLifecyclePolicyResponse getLifeCyclePolicy(
-      final GetLifecyclePolicyRequest getLifecyclePolicyRequest) {
-    return executeWithGivenRetries(
-        3,
-        String.format("Get LifeCyclePolicy %s ", getLifecyclePolicyRequest.getPolicyNames()),
-        () ->
-            esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
-        null);
+      final GetLifecyclePolicyRequest getLifecyclePolicyRequest) throws IOException {
+    try{
+      return esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions);
+    } catch (final ElasticsearchException e) {
+      if (e.status().equals(RestStatus.NOT_FOUND)) {
+        return null;
+      }
+      throw e;
+    }
   }
 }

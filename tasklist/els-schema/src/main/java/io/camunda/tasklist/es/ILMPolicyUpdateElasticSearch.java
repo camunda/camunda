@@ -11,9 +11,12 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +39,7 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Override
-  public void applyIlmPolicyToAllIndices() {
+  public void applyIlmPolicyToAllIndices() throws IOException {
     final String taskListIndexWildCard =
         tasklistProperties.getElasticsearch().getIndexPrefix() + "-*";
     final String archiveTemplatePatterndNameRegex =
@@ -45,13 +48,11 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
 
-    try {
-      retryElasticsearchClient.getLifeCyclePolicy(
+    final GetLifecyclePolicyResponse policy = retryElasticsearchClient.getLifeCyclePolicy(
           new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
-    } catch (final Exception e) {
-      LOGGER.info(
-          "Not possible retrieve the policy {} after 3 retries, creating it",
-          TASKLIST_DELETE_ARCHIVED_INDICES);
+
+    if(policy == null) {
+      LOGGER.info("ILM policy not found, creating it");
       schemaManager.createIndexLifeCycles();
     }
 
