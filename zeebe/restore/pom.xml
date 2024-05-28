@@ -30,11 +30,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
@@ -108,6 +103,10 @@
             <!-- javac and maven-dependency-plugin disagree whether this is needed or not. -->
             <ignoredNonTestScopedDependency>io.camunda:zeebe-scheduler</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
+          <!-- This is transitive dependency-->
+          <ignoredUsedUndeclaredDependencies>
+            <ignoredUsedUndeclaredDependency>io.camunda:zeebe-db</ignoredUsedUndeclaredDependency>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
