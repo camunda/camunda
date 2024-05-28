@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Set;
 
 public interface IndexSchemaValidator {
-  Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor);
-
   void validate();
 
   boolean hasAnyTasklistIndices();

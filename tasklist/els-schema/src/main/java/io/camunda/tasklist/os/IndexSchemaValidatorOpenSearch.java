@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,7 +35,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
+public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil implements IndexSchemaValidator {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(IndexSchemaValidatorOpenSearch.class);
@@ -50,37 +51,14 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
   @Autowired SchemaManager schemaManager;
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
-    final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
+    final String indexPattern = String.format("%s-%s*", getIndexPrefix(tasklistProperties), index);
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryOpenSearchClient.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(), index);
+    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(tasklistProperties), index);
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
-        .collect(Collectors.toSet());
-  }
-
-  private String getIndexPrefix() {
-    return tasklistProperties.getOpenSearch().getIndexPrefix();
-  }
-
-  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final SemanticVersion currentVersion =
-        SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    final Set<String> versions = versionsForIndex(indexDescriptor);
-    return versions.stream()
-        .filter(version -> SemanticVersion.fromVersion(version).isNewerThan(currentVersion))
-        .collect(Collectors.toSet());
-  }
-
-  @Override
-  public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final SemanticVersion currentVersion =
-        SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    final Set<String> versions = versionsForIndex(indexDescriptor);
-    return versions.stream()
-        .filter(version -> currentVersion.isNewerThan(SemanticVersion.fromVersion(version)))
         .collect(Collectors.toSet());
   }
 
@@ -92,8 +70,8 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     final Set<String> errors = new HashSet<>();
     indexDescriptors.forEach(
         indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
+          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
           if (oldVersions.size() > 1) {
             errors.add(
                 String.format(
@@ -143,8 +121,8 @@ public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator {
     final Set<String> errors = new HashSet<>();
     indexDescriptors.forEach(
         indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
+          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
           if (oldVersions.size() > 1) {
             errors.add(
                 String.format(
