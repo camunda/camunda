@@ -81,7 +81,7 @@ class PartitionRestoreServiceTest {
     backupStore = new TestRestorableBackupStore();
 
     snapshotStore =
-        new FileBasedSnapshotStore(partitionId, dataDirectory, new TestChecksumProvider());
+        new FileBasedSnapshotStore(partitionId, dataDirectory, new NoopChecksumProvider());
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     backupService =
@@ -101,7 +101,7 @@ class PartitionRestoreServiceTest {
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
     restoreService =
-        new PartitionRestoreService(backupStore, raftPartition, new TestChecksumProvider());
+        new PartitionRestoreService(backupStore, raftPartition, new NoopChecksumProvider());
 
     journal =
         SegmentedJournal.builder()
