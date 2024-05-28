@@ -11,13 +11,7 @@ import zod, {ZodSchema} from 'zod';
 const TASK_OPENED_REF = zod.object({
   by: zod.enum(['user', 'auto-select']),
   position: zod.number(),
-  filter: zod.enum([
-    'all-open',
-    'unassigned',
-    'assigned-to-me',
-    'completed',
-    'custom',
-  ]),
+  filter: zod.string(),
   sorting: zod.enum(['creation', 'follow-up', 'due', 'completion']),
 });
 

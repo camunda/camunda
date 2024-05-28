@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.tabs {
-  border-top: 1px solid var(--cds-border-subtle);
-  border-bottom: 1px solid var(--cds-border-subtle);
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export {sleep};

@@ -6,7 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+@use '@carbon/layout';
+@use '@carbon/type';
+
 .panelHeader {
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--cds-spacing-02) var(--cds-spacing-05);
   border-bottom: 1px solid var(--cds-border-subtle);
+  box-sizing: border-box;
+  height: layout.to-rem(48px);
+
+  h1 {
+    @include type.type-style('heading-02');
+    color: var(--cds-text-primary);
+  }
 }

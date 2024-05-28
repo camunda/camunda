@@ -35,11 +35,13 @@ class TaskDetailsPage {
   readonly addVariableButton: Locator;
   readonly detailsPanel: Locator;
   readonly detailsHeader: Locator;
+  readonly detailsNav: Locator;
   readonly pickATaskHeader: Locator;
   readonly emptyTaskMessage: Locator;
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
+  readonly bpmnDiagram: Locator;
   readonly taskCompletionNotification: Locator;
 
   constructor(page: Page) {
@@ -52,6 +54,7 @@ class TaskDetailsPage {
       name: 'Task details right panel',
     });
     this.detailsHeader = page.getByTitle('Task details header');
+    this.detailsNav = page.getByLabel('Task Details Navigation');
     this.pickATaskHeader = page.getByRole('heading', {
       name: 'Pick a task to work on',
     });
@@ -65,13 +68,16 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
+    this.bpmnDiagram = page.getByTestId('diagram');
     this.taskCompletionNotification = page.getByText('Task completed');
   }
 
-  async goto(id: string) {
-    await this.page.goto(`/${id}`, {
-      waitUntil: 'networkidle',
-    });
+  async gotoTaskDetails(id: string) {
+    await this.page.goto(`/${id}`, {waitUntil: 'networkidle'});
+  }
+
+  async gotoTaskDetailsProcessTab(id: string) {
+    await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
   }
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {

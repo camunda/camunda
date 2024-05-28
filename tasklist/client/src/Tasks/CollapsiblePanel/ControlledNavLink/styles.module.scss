@@ -18,7 +18,11 @@
   align-items: center;
   border-left: var(--active-border-width) solid transparent;
   border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
-  padding: var(--cds-spacing-06) var(--cds-spacing-04);
+  padding: 0 var(--cds-spacing-04);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &.active:not(:focus) {
     border-left: var(--active-border-width) solid var(--cds-border-interactive);

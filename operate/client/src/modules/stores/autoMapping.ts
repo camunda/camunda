@@ -6,15 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {computed, makeObservable} from 'mobx';
+import {makeAutoObservable} from 'mobx';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 
+type State = {
+  isMappedFilterEnabled: boolean;
+};
+
+const DEFAULT_STATE: State = {
+  isMappedFilterEnabled: false,
+};
+
 class AutoMapping {
+  state: State = {...DEFAULT_STATE};
+
   constructor() {
-    makeObservable(this, {
-      autoMappableFlowNodes: computed,
-    });
+    makeAutoObservable(this, {isAutoMappable: false});
   }
 
   /**
@@ -42,6 +50,10 @@ class AutoMapping {
       });
   }
 
+  toggleMappedFilter = () => {
+    this.state.isMappedFilterEnabled = !this.state.isMappedFilterEnabled;
+  };
+
   /**
    * Returns true if the flow node with flowNodeId is auto-mappable
    */
@@ -51,6 +63,10 @@ class AutoMapping {
         return flowNodeId === id;
       }) !== undefined
     );
+  };
+
+  reset = () => {
+    this.state = {...DEFAULT_STATE};
   };
 }
 
