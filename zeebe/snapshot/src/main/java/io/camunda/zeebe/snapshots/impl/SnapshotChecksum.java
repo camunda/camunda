@@ -49,7 +49,7 @@ final class SnapshotChecksum {
     return createChecksumForSnapshot(snapshotDirectory, null);
   }
 
-  public static MutableChecksumsSFV calculateWithFullFileChecksums(
+  public static MutableChecksumsSFV calculateWithProvidedChecksums(
       final Path snapshotDirectory, final ChecksumProvider provider) throws IOException {
     return createChecksumForSnapshot(snapshotDirectory, provider);
   }
