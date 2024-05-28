@@ -389,13 +389,14 @@ public class TestContainerUtil {
 
   public GenericContainer createTasklistContainer(
       final String dockerImageName, final String version, final TestContext testContext) {
+    final int managementPort = version.compareTo("8.6.0") >= 0 ? 9600 : 8080;
     tasklistContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
             .withExposedPorts(8080, 9600)
             .withNetwork(testContext.getNetwork())
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(9600)
+                    .forPort(managementPort)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
