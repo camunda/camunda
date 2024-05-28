@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -105,7 +104,7 @@ public final class FileBasedSnapshotStore extends Actor
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
-    this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.checksumProvider = checksumProvider;
   }
 
   @Override
