@@ -18,7 +18,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
-import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -41,21 +40,12 @@ public class PartitionRestoreService {
 
   final Path rootDirectory;
   private final RaftPartition partition;
-  private final ChecksumProvider provider;
 
   public PartitionRestoreService(final BackupStore backupStore, final RaftPartition partition) {
-    this(backupStore, partition, new NoopChecksumProvider());
-  }
-
-  public PartitionRestoreService(
-      final BackupStore backupStore,
-      final RaftPartition partition,
-      final ChecksumProvider provider) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
-    this.provider = provider;
   }
 
   /**
@@ -186,8 +176,7 @@ public class PartitionRestoreService {
 
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
-        new FileBasedSnapshotStore(
-            partition.id().id(), partition.dataDirectory().toPath(), provider);
+        new FileBasedSnapshotStore(partition.id().id(), partition.dataDirectory().toPath());
 
     try {
       snapshotStore.restore(
