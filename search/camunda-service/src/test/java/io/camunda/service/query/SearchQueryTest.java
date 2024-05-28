@@ -7,8 +7,9 @@
  */
 package io.camunda.service.query;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.service.query.filter.ProcessInstanceFilter;
-import io.camunda.service.query.filter.ProcessInstanceFilterTest;
 import io.camunda.service.query.types.SearchQueryPage;
 import io.camunda.service.query.types.SearchQuerySort;
 import org.junit.jupiter.api.Test;
@@ -18,32 +19,18 @@ public class SearchQueryTest {
   @Test
   public void shouldCreateQuery() {
     // given
-
-
-    // test search
     final var searchQueryBuilder = new SearchQuery.Builder<ProcessInstanceFilter>();
-
-    // test paging
-    final var searchQueryPage = SearchQueryPage.ofSize(50);
-
-
-    // test sort -> validate mandatory fields like "field"
+    final var searchQueryPage = new SearchQueryPage.Builder().size(50).build();
     final var searchQuerySort = SearchQuerySort.of(builder -> builder.field("field").asc());
-
-
-    // test filter - mandatory -
-    final ProcessInstanceFilter filter = new ProcessInstanceFilter.Builder().build();// all
-
-
-    // test query
-    final SearchQuery<ProcessInstanceFilter> query = searchQueryBuilder.page(
-            searchQueryPage)
-        .sort(searchQuerySort)
-        .filter(filter).build();
+    final var filter = new ProcessInstanceFilter.Builder().build(); // all
 
     // when
+    final SearchQuery<ProcessInstanceFilter> query =
+        searchQueryBuilder.page(searchQueryPage).sort(searchQuerySort).filter(filter).build();
 
-    query.filter()
-
+    // when
+    assertThat(query.filter()).isEqualTo(filter);
+    assertThat(query.sort()).isEqualTo(searchQuerySort);
+    assertThat(query.page()).isEqualTo(searchQueryPage);
   }
 }

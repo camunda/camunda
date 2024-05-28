@@ -23,7 +23,7 @@ public class ProcessInstanceFilterTest {
     final var processInstanceFilter = new Builder().build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
+    assertThat(processInstanceFilter.processInstanceKeys()).isNull();
     assertThat(processInstanceFilter.index()).contains("operate-list-view-8.3.0_");
 
     assertThat(processInstanceFilter.active()).isFalse();
@@ -53,7 +53,7 @@ public class ProcessInstanceFilterTest {
             .build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).contains(1L);
+    assertThat(processInstanceFilter.processInstanceKeys()).hasSize(1).contains(1L);
     assertThat(processInstanceFilter.index()).contains("operate-list-view-8.3.0_alias");
 
     assertThat(processInstanceFilter.active()).isTrue();

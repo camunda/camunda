@@ -21,6 +21,7 @@ import io.camunda.util.DataStoreObjectBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public final class ProcessInstanceFilter extends FilterBody {
@@ -202,6 +203,27 @@ public final class ProcessInstanceFilter extends FilterBody {
     return variableFilters != null && !variableFilters.isEmpty();
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(processInstanceKeys, running, active, incidents, finished, completed,
+        canceled, retriesLeft, variableFilters);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessInstanceFilter that = (ProcessInstanceFilter) o;
+    return running == that.running && active == that.active && incidents == that.incidents
+        && finished == that.finished && completed == that.completed && canceled == that.canceled
+        && retriesLeft == that.retriesLeft && Objects.equals(processInstanceKeys,
+        that.processInstanceKeys) && Objects.equals(variableFilters, that.variableFilters);
+  }
+
   public static final class Builder implements DataStoreObjectBuilder<ProcessInstanceFilter> {
 
     private List<Long> processInstanceKeys;
@@ -215,7 +237,7 @@ public final class ProcessInstanceFilter extends FilterBody {
 
     private boolean retriesLeft;
 
-    private List<VariableValueFilter> variableFilters = new ArrayList<>();
+    private final List<VariableValueFilter> variableFilters = new ArrayList<>();
 
     public Builder processInstanceKeys(
         final Long processInstanceKey, final Long... processInstanceKeys) {
@@ -232,37 +254,37 @@ public final class ProcessInstanceFilter extends FilterBody {
     }
 
     public Builder running() {
-      this.running = true;
+      running = true;
       return this;
     }
 
     public Builder active() {
-      this.active = true;
+      active = true;
       return this;
     }
 
     public Builder incidents() {
-      this.incidents = true;
+      incidents = true;
       return this;
     }
 
     public Builder finished() {
-      this.finished = true;
+      finished = true;
       return this;
     }
 
     public Builder completed() {
-      this.completed = true;
+      completed = true;
       return this;
     }
 
     public Builder canceled() {
-      this.canceled = true;
+      canceled = true;
       return this;
     }
 
     public Builder retriesLeft() {
-      this.retriesLeft = true;
+      retriesLeft = true;
       return this;
     }
 
@@ -288,6 +310,7 @@ public final class ProcessInstanceFilter extends FilterBody {
       return variable(FilterBuilders.variable(fn));
     }
 
+    @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(this);
     }

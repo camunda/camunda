@@ -14,6 +14,7 @@ import static io.camunda.data.clients.types.DataStoreSortOptionsBuilders.toSortO
 import io.camunda.data.clients.types.DataStoreSortOptions;
 import io.camunda.data.clients.types.SortOrder;
 import io.camunda.util.DataStoreObjectBuilder;
+import java.util.Objects;
 import java.util.function.Function;
 
 public final class SearchQuerySort {
@@ -22,8 +23,8 @@ public final class SearchQuerySort {
   private final SortOrder order;
 
   private SearchQuerySort(final Builder builder) {
-    this.field = builder.field;
-    this.order = builder.order;
+    field = builder.field;
+    order = builder.order;
   }
 
   public String field() {
@@ -56,6 +57,23 @@ public final class SearchQuerySort {
       }
     }
     return null;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(field, order);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SearchQuerySort that = (SearchQuerySort) o;
+    return Objects.equals(field, that.field) && order == that.order;
   }
 
   public static final class Builder implements DataStoreObjectBuilder<SearchQuerySort> {
