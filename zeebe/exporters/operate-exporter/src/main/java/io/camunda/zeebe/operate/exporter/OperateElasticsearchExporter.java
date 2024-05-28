@@ -140,8 +140,8 @@ public class OperateElasticsearchExporter implements Exporter {
         .build();
   }
 
-  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
-    private static final List<ValueType> valueTypes2Import =
+  private static final class ElasticsearchRecordFilter implements Context.RecordFilter {
+    private static final List<ValueType> VALUE_TYPES_2_IMPORT =
         List.of(
             PROCESS
             //            DECISION,
@@ -163,7 +163,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     @Override
     public boolean acceptValue(final ValueType valueType) {
-      return valueTypes2Import.contains(valueType);
+      return VALUE_TYPES_2_IMPORT.contains(valueType);
     }
   }
 }
