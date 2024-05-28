@@ -74,11 +74,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public ScheduledTask runAt(final long timestamp, final Task task) {
-    if (alwaysAsync) {
-      return runAtAsync(timestamp, task);
-    } else {
-      return processorActorService.runAt(timestamp, task);
-    }
+    return processorActorService.runAt(timestamp, task);
   }
 
   @Override
