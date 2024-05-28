@@ -188,9 +188,7 @@ public class PartitionRestoreService {
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
-            partition.id().id(),
-            partition.dataDirectory().toPath(),
-            provider != null ? provider : new ChecksumProviderRocksDBImpl());
+            partition.id().id(), partition.dataDirectory().toPath(), provider);
 
     try {
       snapshotStore.restore(
