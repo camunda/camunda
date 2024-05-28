@@ -15,7 +15,7 @@ import io.camunda.util.DataStoreObjectBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Authentication extends FilterBase {
+public class Authentication implements FilterBase {
 
   private final String authenticatedUserId;
   private final List<String> authenticatedGroupIds;
@@ -39,6 +39,7 @@ public class Authentication extends FilterBase {
     return authenticatedTenantIds;
   }
 
+  @Override
   public DataStoreQuery toSearchQuery() {
     // TODO: handle the cases as necessary
     if (authenticatedTenantIds != null && !authenticatedTenantIds.isEmpty()) {
@@ -50,8 +51,8 @@ public class Authentication extends FilterBase {
   public static final class Builder implements DataStoreObjectBuilder<Authentication> {
 
     private String user;
-    private List<String> groups = new ArrayList<String>();
-    private List<String> tenants = new ArrayList<String>();
+    private final List<String> groups = new ArrayList<String>();
+    private final List<String> tenants = new ArrayList<String>();
 
     public Builder user(final String user) {
       this.user = user;
