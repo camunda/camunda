@@ -22,7 +22,7 @@ import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
@@ -48,7 +48,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.unit.DataSize;
 
 @WebMvcTest(JobController.class)
-public class JobControllerTest extends RestControllerTest {
+public class JobControllerLongPollingTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
@@ -326,15 +326,17 @@ public class JobControllerTest extends RestControllerTest {
     public ActivateJobsHandler<JobActivationResponse> activateJobsHandler(
         final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
       final var handler =
-          new RoundRobinActivateJobsHandler<>(
-              brokerClient,
-              DataSize.ofMegabytes(4L).toBytes(),
-              ResponseMapper::toActivateJobsResponse,
-              RuntimeException::new);
+          LongPollingActivateJobsHandler.<JobActivationResponse>newBuilder()
+              .setBrokerClient(brokerClient)
+              .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
+              .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+              .setNoJobsReceivedExceptionProvider(RuntimeException::new)
+              .setRequestCanceledExceptionProvider(reason -> new RuntimeException(reason))
+              .build();
       final var future = new CompletableFuture<>();
       final var actor =
           Actor.newActor()
-              .name("JobActivationHandler-JobControllerTest")
+              .name("JobActivationHandler-JobControllerLongPollingTest")
               .actorStartedHandler(handler.andThen(future::complete))
               .build();
       actorScheduler.submitActor(actor);
