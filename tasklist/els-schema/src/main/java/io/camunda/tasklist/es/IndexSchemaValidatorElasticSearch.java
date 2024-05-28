@@ -39,8 +39,6 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(IndexSchemaValidatorElasticSearch.class);
 
-  private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
-
   @Autowired Set<IndexDescriptor> indexDescriptors;
 
   @Autowired TasklistProperties tasklistProperties;
@@ -59,34 +57,6 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
-  }
-
-  @Override
-  public void validate() {
-    if (!hasAnyTasklistIndices()) {
-      return;
-    }
-    final Set<String> errors = new HashSet<>();
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
-          if (oldVersions.size() > 1) {
-            errors.add(
-                String.format(
-                    "More than one older version for %s (%s) found: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
-          }
-          if (!newerVersions.isEmpty()) {
-            errors.add(
-                String.format(
-                    "Newer version(s) for %s (%s) already exists: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
-          }
-        });
-    if (!errors.isEmpty()) {
-      throw new TasklistRuntimeException("Error(s) in index schema: " + String.join(";", errors));
-    }
   }
 
   @Override
@@ -155,23 +125,22 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
    * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
    *     settings
    */
+
   @Override
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
-      throws IOException {
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
-    final Map<String, IndexMapping> indexMappings =
-        schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
-      final Map<String, IndexMapping> indexMappingsGroup =
-          filterIndexMappings(indexMappings, indexDescriptor);
-      // we don't check indices that were not yet created
-      if (!indexMappingsGroup.isEmpty()) {
-        final IndexMappingDifference difference =
-            getDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
-      }
-    }
-    return newFields;
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException {
+    return validateIndexMappings(schemaManager, indexDescriptors);
+  }
+
+  @Override
+  public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return olderVersionsForIndex(indexDescriptor, versions);
+  }
+
+  @Override
+  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return newerVersionsForIndex(indexDescriptor, versions);
   }
 
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
@@ -181,14 +150,6 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toSet());
-  }
-
-  private Optional<String> getVersionFromIndexName(final String indexName) {
-    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
-    if (matcher.matches() && matcher.groupCount() > 0) {
-      return Optional.of(matcher.group(1));
-    }
-    return Optional.empty();
   }
 
   public boolean validateNumberOfReplicas(final List<String> indexes) {
@@ -205,84 +166,5 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
     return true;
   }
 
-  private IndexMappingDifference getDifference(
-      final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
-    return getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
-  }
 
-  private void validateDifferenceAndCollectNewFields(
-      final IndexDescriptor indexDescriptor,
-      final IndexMappingDifference difference,
-      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
-    if (difference == null || difference.isEqual()) {
-      LOGGER.debug(
-          String.format(
-              "Index fields are up to date. Index name: %s.", indexDescriptor.getIndexName()));
-      return;
-    }
-    LOGGER.debug(
-        String.format(
-            "Index fields differ from expected. Index name: %s. Difference: %s.",
-            indexDescriptor.getIndexName(), difference));
-    if (!difference.getEntriesDiffering().isEmpty()) {
-      final String errorMsg =
-          String.format(
-              "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-              indexDescriptor.getIndexName(), difference.getEntriesDiffering());
-      LOGGER.error(errorMsg);
-      throw new TasklistRuntimeException(errorMsg);
-    } else if (!difference.getEntriesOnlyOnRight().isEmpty()) {
-      final String message =
-          String.format(
-              "Index name: %s. Field deletion is requested, will be ignored. Fields: %s",
-              indexDescriptor.getIndexName(), difference.getEntriesOnlyOnRight());
-      LOGGER.info(message);
-    } else if (!difference.getEntriesOnlyOnLeft().isEmpty()) {
-      newFields.put(indexDescriptor, difference.getEntriesOnlyOnLeft());
-    }
-  }
-
-  private IndexMappingDifference getIndexMappingDifference(
-      final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
-    final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
-
-    IndexMappingDifference difference = null;
-    // compare every index in group
-    for (final Map.Entry<String, IndexMapping> singleIndexMapping : indexMappingsGroup.entrySet()) {
-      final IndexMappingDifference currentDifference =
-          new IndexMappingDifference.IndexMappingDifferenceBuilder()
-              .setLeft(indexMappingMustBe)
-              .setRight(singleIndexMapping.getValue())
-              .build();
-      if (!currentDifference.isEqual()) {
-        if (difference == null) {
-          difference = currentDifference;
-          // If there is a difference between the template and the existing runtime/data indices,
-          // all those indices should have the same difference. Compare based only on the
-          // differences (exclude the IndexMapping fields in the comparison)
-        } else if (!difference.checkEqualityForDifferences(currentDifference)) {
-          throw new TasklistRuntimeException(
-              "Ambiguous schema update. First bring runtime and date indices to one schema. Difference 1: "
-                  + difference
-                  + ". Difference 2: "
-                  + currentDifference);
-        }
-      }
-    }
-    return difference;
-  }
-
-  /**
-   * Leave only runtime and dated indices that correspond to the given IndexDescriptor.
-   *
-   * @param indexMappings
-   * @param indexDescriptor
-   * @return
-   */
-  private Map<String, IndexMapping> filterIndexMappings(
-      final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
-    return Maps.filterEntries(
-        indexMappings,
-        e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
-  }
 }

@@ -162,7 +162,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
     final boolean created =
         retryElasticsearchClient.createOrUpdateDocument(
             indexDescriptor.getFullQualifiedName(), "id", document);
-    System.out.println("Created: " + created);
   }
 
   private void updateSchemaContent(final String content) throws Exception {

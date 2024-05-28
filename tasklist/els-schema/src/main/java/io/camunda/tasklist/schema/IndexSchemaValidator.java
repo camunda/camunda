@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Set;
 
 public interface IndexSchemaValidator {
-  void validate();
 
   boolean hasAnyTasklistIndices();
 
@@ -23,4 +22,10 @@ public interface IndexSchemaValidator {
   void validateIndexVersions();
 
   Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException;
+
+  Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor);
+
+  Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor);
+
+
 }
