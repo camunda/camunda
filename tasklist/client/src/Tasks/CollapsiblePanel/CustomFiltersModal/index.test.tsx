@@ -7,7 +7,7 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {CustomFiltersModal} from './index';
+import {FieldsModal} from './FieldsModal';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -54,12 +54,9 @@ describe('<CustomFiltersModal />', () => {
   });
 
   it('should render filters dialog', async () => {
-    render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    render(<FieldsModal isOpen onClose={() => {}} onApply={() => {}} />, {
+      wrapper: getWrapper(),
+    });
 
     expect(
       screen.getByRole('heading', {name: /apply filters/i}),
@@ -123,7 +120,7 @@ describe('<CustomFiltersModal />', () => {
 
   it('should render user and group filters', async () => {
     const {user} = render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
+      <FieldsModal isOpen onClose={() => {}} onApply={() => {}} />,
       {
         wrapper: getWrapper(),
       },
@@ -148,7 +145,7 @@ describe('<CustomFiltersModal />', () => {
 
   it('should render advanced filters', async () => {
     const {user} = render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
+      <FieldsModal isOpen onClose={() => {}} onApply={() => {}} />,
       {
         wrapper: getWrapper(),
       },
@@ -229,7 +226,7 @@ describe('<CustomFiltersModal />', () => {
     const mockOnApply = vi.fn();
 
     const {user} = render(
-      <CustomFiltersModal isOpen onClose={mockOnClose} onApply={mockOnApply} />,
+      <FieldsModal isOpen onClose={mockOnClose} onApply={mockOnApply} />,
       {
         wrapper: getWrapper(),
       },
@@ -260,7 +257,7 @@ describe('<CustomFiltersModal />', () => {
       ),
     );
     const {user} = render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
+      <FieldsModal isOpen onClose={() => {}} onApply={() => {}} />,
       {
         wrapper: getWrapper(),
       },
@@ -294,12 +291,9 @@ describe('<CustomFiltersModal />', () => {
       },
     });
 
-    render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={() => {}} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    render(<FieldsModal isOpen onClose={() => {}} onApply={() => {}} />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() =>
       expect(screen.getByRole('combobox', {name: /process/i})).toHaveValue(
@@ -359,7 +353,7 @@ describe('<CustomFiltersModal />', () => {
     } as const;
 
     const {user} = render(
-      <CustomFiltersModal isOpen onClose={() => {}} onApply={mockOnApply} />,
+      <FieldsModal isOpen onClose={() => {}} onApply={mockOnApply} />,
       {
         wrapper: getWrapper(),
       },
