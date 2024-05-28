@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class NoopChecksumProvider implements ChecksumProvider {
   @Override
-  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
+  public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {
     return Collections.emptyMap();
   }
 }
