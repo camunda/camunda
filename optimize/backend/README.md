@@ -1,11 +1,13 @@
 # Camunda Optimize REST API
 
-The following REST API is providing backend service based on elasticsearch(ES) to perform aggregation of the 
+The following REST API is providing backend service based on elasticsearch(ES) to perform
+aggregation of the
 data that has been previously imported into elasticsearch(ES) instance\cluster.
 
-## ES Installation 
+## ES Installation
 
-please note that you have to add following configuration to your _/etc/elasticsearch/elasticsearch.yml_
+please note that you have to add following configuration to your
+_/etc/elasticsearch/elasticsearch.yml_
 
 ```
 script.engine.groovy.inline.aggs: on
@@ -13,14 +15,15 @@ script.engine.groovy.inline.aggs: on
 
 ### Enabling scripts debug logging
 
-you have to add following line to your elastic search startup jvm options, the order does not play any 
+you have to add following line to your elastic search startup jvm options, the order does not play
+any
 significant role
 
 ```
 -Djava.security.policy=file:////etc/elasticsearch/.java.policy
 ```
 
-here is how one could do that on Ubuntu 
+here is how one could do that on Ubuntu
 
 ```
 sudo vi /etc/elasticsearch/jvm.options
@@ -28,7 +31,7 @@ sudo service elasticsearch stop
 sudo service elasticsearch start
 ```
 
-content of policy file: 
+content of policy file:
 
 ```
 grant {
@@ -39,9 +42,14 @@ grant {
 after that you can add following code to your groovy script to test it
 
 ```java
-import  org.elasticsearch.common.logging.*
-logger = ESLoggerFactory.getLogger('myscript')
-logger.info("TEST")
+import org.elasticsearch.common.logging.*
+
+logger =ESLoggerFactory.
+
+getLogger('myscript')
+logger.
+
+info("TEST")
 ```
 
 ## Code Structure
@@ -90,19 +98,20 @@ time there is a file named `<Anything>RestService.java`, that is where the REST 
 Some examples are the following:
 
 * ReportRestService.java defines:
-  * `/api/report`
-  * `/api/report/{id}/evaluate`
-  etc...
+    * `/api/report`
+    * `/api/report/{id}/evaluate`
+      etc...
 * ProcessVariableRestService.java defines:
-  * `/api/variables`
-  * `/api/variables/values` etc...
+    * `/api/variables`
+    * `/api/variables/values` etc...
 
 Each endpoint has some input object. These can be:
+
 * `requestContext`, which is a web server object that carries metadata that is computed from the
-headers
+  headers
 * `<anything>RequestDto`, which is the object associated to the payload of each request
-(e.g., the endpoint `/api/report/process/single` will have an input of type
-`SingleProcessReportDefinitionRequestDto`)
+  (e.g., the endpoint `/api/report/process/single` will have an input of type
+  `SingleProcessReportDefinitionRequestDto`)
 
 Currently, the input objects, instead of being one single `*RequestDto` object, could also be a list
 of `*RequestDto` objects.
@@ -143,16 +152,18 @@ asynchronously in Optimize. The most important is the **Import Scheduler**.
 All of the core logic about imports is implemented here, and it is implemented
 with polling mechanisms. The implementation can be found starting from the class
 `AbstractImportScheduler`. The imports are run in multithreading, with each thread corresponding to
-one configuration of the tuple `(partitionType, recordType)`. 
+one configuration of the tuple `(partitionType, recordType)`.
 
 ## Run the REST API
 
-in order to run API you have to run 
+In order to run API you have to run
+
 ```
 org.camunda.optimize.Main
 ```
-class as a normal class, which will start up embedded Jetty server with listener on port 8080 and endpoints
-providing basic operations
+
+class as a normal class, which will start up embedded Jetty server with listener on port 8080 and
+endpoints providing basic operations
 
 to run from command line please execute following from root folder of the project
 
@@ -163,7 +174,8 @@ $ java -jar ./es-java/es-java-rest/target/es-java-rest-1.4.0-SNAPSHOT-jar-with-d
 
 ### Authentication
 
-The whole Optimize REST API is secured. To access it you need to authenticate, which returns a security token. Whenever you send a request you always need to provide that token in the header.
+The whole Optimize REST API is secured. To access it you need to authenticate, which returns a
+security token. Whenever you send a request you always need to provide that token in the header.
 
 In order to check if you are authenticated or not you can use following request
 
@@ -171,37 +183,40 @@ In order to check if you are authenticated or not you can use following request
 $ curl http://localhost:8080/api/authentication/test
 ```
 
-which will reply with something like 
+which will reply with something like
 
 ```html
+
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1"/>
-<title>Error 401 </title>
+  <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1"/>
+  <title>Error 401 </title>
 </head>
 <body>
 <h2>HTTP ERROR: 401</h2>
 <p>Problem accessing /api/authentication/test. Reason:
-<pre>    Unauthorized</pre></p>
-<hr /><i><small>Powered by Jetty://</small></i>
+<pre>    Unauthorized</pre>
+</p>
+<hr/>
+<i><small>Powered by Jetty://</small></i>
 </body>
 </html>
 ```
 
-since you did not provide any valid bearer token. In order to perform authentication for the first time 
-one has to send POST request with username and password to /authenticate endpoint
+since you did not provide any valid bearer token. In order to perform authentication for the first
+time one has to send POST request with username and password to /authenticate endpoint
 
 ```bash
 $ curl -XPOST http://localhost:8080/api/authentication -d '{ "username":"admin", "password": "admin"}' -H "Content-Type: application/json"
 ```
 
-which will return a Bearer token 
+which will return a Bearer token
 
 ```
 eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhZG1pbiIsImV4cCI6MTQ4Mzk2NTMyNn0.8LtTNQCygAvajH_HeXAkOCFPi20e-3KHPlC6D009HUg
 ```
 
-that can be used to access a secure endpoint 
+that can be used to access a secure endpoint
 
 ```bash
 $ curl http://localhost:8080/api/authentication/test -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJhZG1pbiIsImV4cCI6MTQ4Mzk2NTMyNn0.8LtTNQCygAvajH_HeXAkOCFPi20e-3KHPlC6D009HUg"
@@ -215,16 +230,12 @@ $ curl -XGET http://localhost:8080/api/authentication/logout -H "Content-Type: a
 
 ### Trigger data import from engine to elasticsearch
 
-Whenever you start Optimize, the import is triggered automatically. However, you can still do that manually by 
-sending the following request:
+Whenever you start Optimize, the import is triggered automatically. However, you can still do that
+manually by sending the following request:
 
 ```bash
 curl -XGET http://localhost:8080/api/import -H "Content-Type: application/json" -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.S8EUdXzC3pL5UHz11aBwx36OBlYEL02FS5GH81XFneE"
 ```
-
-The response tells you, if the import was successfully triggered.
-
-[Here](https://hq2.camunda.com/jenkins/optimize/view/All/job/camunda-optimize/job/master/lastSuccessfulBuild/artifact/backend/target/docs/apidocs/index.html) you can also find the documentation of the last successful build.
 
 ## Testing
 

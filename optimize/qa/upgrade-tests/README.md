@@ -7,7 +7,7 @@ There are two test suites:
 - A full schema and instance focused test with the profile `upgrade-es-schema-tests`
 - An Optimize entity focused test with the profile `upgrade-optimize-data`
 
-It can be run either on a prepared environment (usually Jenkins) or using an environment created by docker-compose (locally).
+It can be run either on a prepared environment or using an environment created by docker-compose (locally).
 
 ## Windows
 

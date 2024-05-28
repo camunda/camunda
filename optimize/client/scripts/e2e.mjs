@@ -32,7 +32,7 @@ function spawnWithArgs(commandString, options) {
 }
 
 if (!ciMode) {
-  // credentials for local testing, in CI we get credentials from jenkins
+  // credentials for local testing, in CI we get credentials from the environment
   process.env.BROWSERSTACK_USERNAME = 'optimize@camunda.com';
   process.env.BROWSERSTACK_ACCESS_KEY = 'QDQfPYkTYy8SQBYYt1zB';
 }

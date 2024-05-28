@@ -169,7 +169,6 @@ function createWebSocketServer(server) {
 }
 
 function addLogInTerminal(data, type, error) {
-  // to see what's going on in jenkins
   let outLog = type + ':' + data.toString();
   if (!!error) {
     console.error('  -' + outLog);

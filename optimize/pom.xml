@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.camunda.optimize</groupId>
@@ -113,7 +115,7 @@
 
   <profiles>
 
-   <!-- engine profiles-->
+    <!-- engine profiles-->
     <profile>
       <id>engine-latest</id>
       <activation>
@@ -128,7 +130,6 @@
         <!--
         Note: the below is intended for CI usage only, as part of
         engine_compatibility job.
-        See also setCamBpmSnapshotVersion() in optimize-jenkins-shared-library.
         -->
         <camunda.engine.version>${env.CAMBPM_SNAPSHOT_VERSION}</camunda.engine.version>
       </properties>
@@ -628,7 +629,8 @@
 
   <scm>
     <url>https://github.com/camunda/camunda-optimize</url>
-    <connection>scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
+    <connection>
+      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
     </connection>
     <developerConnection>
       scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
