@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
-public class TestChecksumProvider implements ChecksumProvider {
+public class NoopChecksumProvider implements ChecksumProvider {
   @Override
   public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
     return Collections.emptyMap();
