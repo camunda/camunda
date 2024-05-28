@@ -16,7 +16,6 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.operate.util.RetryOperation;
-import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -107,16 +106,16 @@ public class ElasticsearchConnector {
     }
   }
 
-  @PreDestroy
-  public void tearDown() {
-    if (elasticsearchClient != null) {
-      try {
-        elasticsearchClient._transport().close();
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
+  //  @PreDestroy
+  //  public void tearDown() {
+  //    if (elasticsearchClient != null) {
+  //      try {
+  //        elasticsearchClient._transport().close();
+  //      } catch (final IOException e) {
+  //        throw new RuntimeException(e);
+  //      }
+  //    }
+  //  }
 
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
