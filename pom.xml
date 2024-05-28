@@ -25,7 +25,7 @@
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
-    <module>search</identity>
+    <module>search</module>
   </modules>
 
   <scm>
