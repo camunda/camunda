@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
-import io.camunda.zeebe.db.ChecksumProvider;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;

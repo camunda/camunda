@@ -10,12 +10,11 @@ package io.camunda.zeebe.snapshots.impl;
 import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
 
-import io.camunda.zeebe.db.ChecksumProvider;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
@@ -38,6 +37,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -105,8 +105,7 @@ public final class FileBasedSnapshotStore extends Actor
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
-    this.checksumProvider =
-        checksumProvider != null ? checksumProvider : new ChecksumProviderRocksDBImpl();
+    this.checksumProvider = Objects.requireNonNull(checksumProvider);
   }
 
   @Override

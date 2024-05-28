@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
-import io.camunda.zeebe.db.ChecksumProvider;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;

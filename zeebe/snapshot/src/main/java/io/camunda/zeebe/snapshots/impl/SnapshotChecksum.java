@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.db.ChecksumProvider;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
