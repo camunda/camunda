@@ -793,7 +793,8 @@ public class RetryElasticsearchClient {
 
   public GetLifecyclePolicyResponse getLifeCyclePolicy(
       final GetLifecyclePolicyRequest getLifecyclePolicyRequest) {
-    return executeWithRetries(
+    return executeWithGivenRetries(
+        3,
         String.format("Get LifeCyclePolicy %s ", getLifecyclePolicyRequest.getPolicyNames()),
         () ->
             esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
