@@ -14,8 +14,7 @@ public interface ChecksumProvider {
 
   /**
    * @param snapshotPath path of snapshot to get live file checksums
-   * @return Map containing fileName - checksums pairs, where the checksums are unsigned integers in
-   *     byte array format.
+   * @return Map containing fileName - checksums pairs
    */
   Map<String, Long> getSnapshotChecksums(final Path snapshotPath);
 }
