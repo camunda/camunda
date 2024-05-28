@@ -799,7 +799,7 @@ public class RetryElasticsearchClient {
       if (e.status().equals(RestStatus.NOT_FOUND)) {
         return null;
       }
-      throw e;
+      throw new TasklistRuntimeException("Error to get lifecycle policy", e);
     }
   }
 }
