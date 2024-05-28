@@ -117,7 +117,7 @@ final class VersionCompatibilityMatrix {
       }
     }
     final var endpoint =
-        URI.create("https://api.github.com/repos/camunda/zeebe/git/matching-refs/tags/8.");
+        URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var retry =
           Retry.of(
