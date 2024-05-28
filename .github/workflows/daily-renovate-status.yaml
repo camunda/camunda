@@ -38,7 +38,15 @@ jobs:
             renovateStatusString+="\n • <https://github.com/camunda/camunda/pull/$prNumber|PR $prNumber ($status)>: $title (created $createdAt)"
           done
 
-          echo "status=${renovateStatusString}" >> $GITHUB_OUTPUT
+
+          
+          # With multiline strings the output needs to be set differently.
+          #
+          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
+          #
+          echo 'STATUS<<EOF' >> $GITHUB_OUTPUT
+          echo $renovateStatusString >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
   slack-notify:
     name: Send slack notification for Renovate PR status
     runs-on: ubuntu-latest
