@@ -13,6 +13,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -21,6 +22,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -240,6 +243,21 @@ public class FileBasedSnapshotStoreTest {
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
     assertThat(corruptSnapshot.getDirectory()).exists();
     assertThat(corruptSnapshot.getChecksumPath()).exists();
+  }
+
+  @Test
+  public void shouldUseChecksumProviderForChecksumsIfSupplied() throws IOException {
+    final Map<String, Long> badChecksums = new HashMap<>();
+    badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
+    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+
+    final var store = new FileBasedSnapshotStore(1, rootDirectory, testChecksumProvider);
+    scheduler.submitActor(store).join();
+
+    final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
+
+    final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
+    assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
 
   @Test
