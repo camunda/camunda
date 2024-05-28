@@ -14,23 +14,8 @@ import static io.camunda.data.clients.query.DataStoreQueryBuilders.term;
 import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.util.DataStoreObjectBuilder;
 
-public final class VariableValueFilter extends FilterBase {
-
-  private final String name;
-  private final Object eq;
-  private final Object gt;
-  private final Object gte;
-  private final Object lt;
-  private final Object lte;
-
-  public VariableValueFilter(final Builder builder) {
-    name = builder.name;
-    eq = builder.eq;
-    gt = builder.gt;
-    gte = builder.gte;
-    lt = builder.lt;
-    lte = builder.lte;
-  }
+public record VariableValueFilter(
+    String name, Object eq, Object gt, Object gte, Object lt, Object lte) implements FilterBase {
 
   @Override
   public DataStoreQuery toSearchQuery() {
@@ -110,7 +95,7 @@ public final class VariableValueFilter extends FilterBase {
 
     @Override
     public VariableValueFilter build() {
-      return new VariableValueFilter(this);
+      return new VariableValueFilter(name, eq, gt, gte, lt, lte);
     }
   }
 }

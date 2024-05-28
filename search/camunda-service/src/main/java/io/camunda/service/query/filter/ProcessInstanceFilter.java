@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final class ProcessInstanceFilter extends FilterBody {
+public final class ProcessInstanceFilter implements FilterBody {
 
   private final List<Long> processInstanceKeys;
 
@@ -205,8 +205,16 @@ public final class ProcessInstanceFilter extends FilterBody {
 
   @Override
   public int hashCode() {
-    return Objects.hash(processInstanceKeys, running, active, incidents, finished, completed,
-        canceled, retriesLeft, variableFilters);
+    return Objects.hash(
+        processInstanceKeys,
+        running,
+        active,
+        incidents,
+        finished,
+        completed,
+        canceled,
+        retriesLeft,
+        variableFilters);
   }
 
   @Override
@@ -218,10 +226,15 @@ public final class ProcessInstanceFilter extends FilterBody {
       return false;
     }
     final ProcessInstanceFilter that = (ProcessInstanceFilter) o;
-    return running == that.running && active == that.active && incidents == that.incidents
-        && finished == that.finished && completed == that.completed && canceled == that.canceled
-        && retriesLeft == that.retriesLeft && Objects.equals(processInstanceKeys,
-        that.processInstanceKeys) && Objects.equals(variableFilters, that.variableFilters);
+    return running == that.running
+        && active == that.active
+        && incidents == that.incidents
+        && finished == that.finished
+        && completed == that.completed
+        && canceled == that.canceled
+        && retriesLeft == that.retriesLeft
+        && Objects.equals(processInstanceKeys, that.processInstanceKeys)
+        && Objects.equals(variableFilters, that.variableFilters);
   }
 
   public static final class Builder implements DataStoreObjectBuilder<ProcessInstanceFilter> {

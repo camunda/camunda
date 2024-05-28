@@ -5,11 +5,5 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query.filter;
-
-import io.camunda.data.clients.query.DataStoreQuery;
-
-public interface FilterBase {
-
-  DataStoreQuery toSearchQuery();
+package io.camunda.service.query.filter;public class VariableValueFilterTest {
 }

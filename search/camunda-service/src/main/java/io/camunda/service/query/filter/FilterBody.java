@@ -9,7 +9,7 @@ package io.camunda.service.query.filter;
 
 import java.util.List;
 
-public abstract class FilterBody extends FilterBase {
+public interface FilterBody extends FilterBase {
 
   public abstract List<String> index();
 }
