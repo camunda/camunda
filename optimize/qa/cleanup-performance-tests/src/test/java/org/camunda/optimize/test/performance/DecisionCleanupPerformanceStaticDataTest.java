@@ -20,8 +20,8 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
-    // Note that when these tests run as a part of a GHA, data is usually imported already during the
-    // "import" stage of the job
+    // Note that when these tests run as a part of a GHA, data is usually imported
+    // already during the "import" stage of the job
     importEngineData();
   }
 
@@ -30,8 +30,8 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
     // given ttl of 0
     getCleanupConfiguration().getDecisionCleanupConfiguration().setEnabled(true);
     getCleanupConfiguration().setTtl(Period.parse("P0D"));
-    // we assert there is some data as a precondition as data is expected to be provided by the
-    // environment
+    // we assert there is some data as a precondition as data is expected to be
+    // provided by the environment
     assertThat(getDecisionInstanceCount()).isPositive();
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();

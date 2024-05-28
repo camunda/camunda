@@ -36,8 +36,8 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
   public static void setUp() {
     embeddedOptimizeExtension.setupOptimize();
     // given
-    // Note that when these tests run as a part of a GHA, data is usually imported already during the
-    // "import" stage of the job
+    // Note that when these tests run as a part of a GHA, data is usually imported already during
+    // the "import" stage of the job
     importEngineData();
   }
 

@@ -144,7 +144,7 @@ services:
       - "9600:9600"
     restart: always
     volumes:
-      - ./optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - elasticsearch
     networks:
@@ -240,7 +240,7 @@ services:
       - 8000:8000
     restart: always
     volumes:
-      - ./optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - opensearch
     networks:
