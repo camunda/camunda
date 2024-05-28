@@ -26,6 +26,4 @@ public interface IndexSchemaValidator {
   Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor);
 
   Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor);
-
-
 }

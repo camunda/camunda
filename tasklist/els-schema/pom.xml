@@ -20,6 +20,11 @@
       <artifactId>tasklist-common</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>

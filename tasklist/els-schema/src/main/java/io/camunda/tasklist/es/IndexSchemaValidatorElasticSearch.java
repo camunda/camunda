@@ -9,22 +9,16 @@ package io.camunda.tasklist.es;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
-import com.google.common.collect.Maps;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.IndexMappingDifference;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +28,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil implements IndexSchemaValidator {
+public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
+    implements IndexSchemaValidator {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(IndexSchemaValidatorElasticSearch.class);
@@ -53,7 +48,8 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
     final Set<String> indexNames = retryElasticsearchClient.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(tasklistProperties), index);
+    final String patternWithVersion =
+        String.format("%s-%s-\\d.*", getIndexPrefix(tasklistProperties), index);
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
@@ -98,8 +94,10 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
     final Set<String> errors = new HashSet<>();
     indexDescriptors.forEach(
         indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          final Set<String> oldVersions =
+              olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          final Set<String> newerVersions =
+              newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
           if (oldVersions.size() > 1) {
             errors.add(
                 String.format(
@@ -125,9 +123,9 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
    * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
    *     settings
    */
-
   @Override
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException {
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
+      throws IOException {
     return validateIndexMappings(schemaManager, indexDescriptors);
   }
 
@@ -165,6 +163,4 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil 
     }
     return true;
   }
-
-
 }

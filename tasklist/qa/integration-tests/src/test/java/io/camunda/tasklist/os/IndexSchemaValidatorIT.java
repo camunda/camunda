@@ -10,18 +10,12 @@ package io.camunda.tasklist.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.TestOpenSearchSchemaManager;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,10 +29,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Profile;
-import org.springframework.test.context.ContextConfiguration;
 
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 

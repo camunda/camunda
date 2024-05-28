@@ -148,21 +148,22 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     restoreOriginalSchemaContent();
 
-    final IndexMapping expectedIndexMapping = new IndexMapping()
-        .setIndexName(indexName)
-        .setDynamic("strict")
-        .setMetaProperties(Collections.emptyMap())
-        .setProperties(
-            Set.of(
-                new IndexMappingProperty()
-                    .setName("prop2")
-                    .setTypeDefinition(Map.of("type", "keyword")),
-                new IndexMappingProperty()
-                    .setName("prop1")
-                    .setTypeDefinition(Map.of("type", "keyword")),
-                new IndexMappingProperty()
-                    .setName("prop0")
-                    .setTypeDefinition(Map.of("type", "keyword"))));
+    final IndexMapping expectedIndexMapping =
+        new IndexMapping()
+            .setIndexName(indexName)
+            .setDynamic("strict")
+            .setMetaProperties(Collections.emptyMap())
+            .setProperties(
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("prop2")
+                        .setTypeDefinition(Map.of("type", "keyword")),
+                    new IndexMappingProperty()
+                        .setName("prop1")
+                        .setTypeDefinition(Map.of("type", "keyword")),
+                    new IndexMappingProperty()
+                        .setName("prop0")
+                        .setTypeDefinition(Map.of("type", "keyword"))));
 
     assertThat(indexMappings).contains(entry(indexName, expectedIndexMapping));
   }
