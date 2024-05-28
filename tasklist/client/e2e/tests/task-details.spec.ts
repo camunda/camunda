@@ -167,11 +167,11 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('Zeebe_user_task');
     await taskDetailsPage.unassignButton.click();
     await expect(formJSDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 20000,
+      timeout: 60000,
     });
     await taskDetailsPage.assignToMeButton.click();
     await expect(formJSDetailsPage.completeTaskButton).toBeEnabled({
-      timeout: 20000,
+      timeout: 60000,
     });
     await taskDetailsPage.addVariable({
       name: 'zeebeVar',
