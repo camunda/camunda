@@ -9,16 +9,25 @@
 import {useState} from 'react';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
-import {Button} from '@carbon/react';
+import {
+  Button,
+  ButtonSet,
+  Layer,
+  OverflowMenu,
+  OverflowMenuItem,
+  Modal,
+} from '@carbon/react';
 import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
 import cn from 'classnames';
-import {useSearchParams} from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
-import {ControlledNavLink} from './SearchParamNavLink';
+import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
-import {getStateLocally} from 'modules/utils/localStorage';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import difference from 'lodash/difference';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {usePrevious} from '@uidotdev/usehooks';
+import {CustomFiltersModal} from './CustomFiltersModal';
 
 function getCustomFilterParams(userId: string) {
   const customFilters = getStateLocally('customFilters')?.custom;
@@ -79,26 +88,49 @@ function getNavLinkSearchParam(options: {
 }
 
 const CollapsiblePanel: React.FC = () => {
+  const [isCustomFiltersModalOpen, setIsCustomFiltersModalOpen] =
+    useState(false);
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [customFilterToDelete, setCustomFilterToDelete] = useState<
+    string | null
+  >(null);
+  const wasCollapsed = usePrevious(isCollapsed);
   const {filter} = useTaskFilters();
   const [searchParams] = useSearchParams();
   const customFilters = getStateLocally('customFilters')?.custom;
   const {data} = useCurrentUser();
   const userId = data?.userId ?? '';
+  const filtersModal = (
+    <CustomFiltersModal
+      key="custom-filters-modal"
+      isOpen={isCustomFiltersModalOpen}
+      onClose={() => {
+        setIsCustomFiltersModalOpen(false);
+      }}
+      onApply={() => {
+        setIsCustomFiltersModalOpen(false);
+        navigate({
+          search: getNavLinkSearchParam({
+            currentParams: searchParams,
+            filter: 'custom',
+            userId,
+          }),
+        });
+      }}
+    />
+  );
 
   if (isCollapsed) {
     return (
-      <nav
+      <Layer
+        as="nav"
         id="task-nav-bar"
         className={cn(styles.base, styles.collapsedContainer)}
         aria-label="Filter controls"
         aria-owns="task-nav-bar-controls"
       >
-        <ul
-          id="task-nav-bar-controls"
-          role="group"
-          aria-labelledby="task-nav-bar"
-        >
+        <ul id="task-nav-bar-controls" aria-labelledby="task-nav-bar">
           <li>
             <Button
               hasIconOnly
@@ -112,122 +144,188 @@ const CollapsiblePanel: React.FC = () => {
               kind="ghost"
               aria-controls="task-nav-bar"
               aria-expanded="false"
+              autoFocus={wasCollapsed !== null && !wasCollapsed}
+              type="button"
             />
           </li>
           <li>
             <Button
               hasIconOnly
-              iconDescription="Custom filter"
+              iconDescription="Filter tasks"
               tooltipPosition="right"
-              onClick={() => {}}
+              onClick={() => {
+                setIsCustomFiltersModalOpen(true);
+              }}
               renderIcon={Filter}
               size="md"
               kind="ghost"
+              type="button"
             />
           </li>
         </ul>
-      </nav>
+        {filtersModal}
+      </Layer>
     );
   }
 
   return (
-    <nav
-      aria-labelledby="filters-title"
-      className={cn(styles.base, styles.expandedContainer)}
-      id="task-nav-bar"
-      aria-owns="filters-menu"
-    >
-      <span className={cn(styles.header, sharedStyles.panelHeader)}>
-        <h1 id="filters-title">Filters</h1>
-        <Button
-          hasIconOnly
-          iconDescription="Collapse "
-          tooltipPosition="right"
-          onClick={() => {
-            setIsCollapsed(true);
-          }}
-          renderIcon={SidePanelClose}
-          size="md"
-          kind="ghost"
-          aria-controls="task-nav-bar"
-          aria-expanded="true"
-        />
-      </span>
-      <ul id="filters-menu" aria-labelledby="task-nav-bar" role="group">
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'all-open',
-                userId,
-              }),
+    <Layer className={styles.floatingContainer}>
+      <nav
+        aria-labelledby="filters-title"
+        className={cn(styles.base, styles.expandedContainer)}
+        id="task-nav-bar"
+        aria-owns="filters-menu"
+      >
+        <span className={sharedStyles.panelHeader}>
+          <h1 id="filters-title">Filters</h1>
+          <Button
+            hasIconOnly
+            iconDescription="Collapse "
+            tooltipPosition="right"
+            onClick={() => {
+              setIsCollapsed(true);
             }}
-            isActive={filter === 'all-open'}
-          >
-            All open tasks
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'assigned-to-me',
-                userId,
-              }),
-            }}
-            isActive={filter === 'assigned-to-me'}
-          >
-            Assigned to me
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'unassigned',
-                userId,
-              }),
-            }}
-            isActive={filter === 'unassigned'}
-          >
-            Unassigned
-          </ControlledNavLink>
-        </li>
-        <li>
-          <ControlledNavLink
-            to={{
-              search: getNavLinkSearchParam({
-                currentParams: searchParams,
-                filter: 'completed',
-                userId,
-              }),
-            }}
-            isActive={filter === 'completed'}
-          >
-            Completed
-          </ControlledNavLink>
-        </li>
-        {customFilters === undefined ? null : (
+            renderIcon={SidePanelClose}
+            size="md"
+            kind="ghost"
+            aria-controls="task-nav-bar"
+            aria-expanded="true"
+            autoFocus
+          />
+        </span>
+        <ul id="filters-menu" aria-labelledby="task-nav-bar">
           <li>
             <ControlledNavLink
               to={{
                 search: getNavLinkSearchParam({
                   currentParams: searchParams,
-                  filter: 'custom',
+                  filter: 'all-open',
                   userId,
                 }),
               }}
-              isActive={filter === 'custom'}
+              isActive={filter === 'all-open'}
             >
-              Custom
+              All open tasks
             </ControlledNavLink>
           </li>
-        )}
-      </ul>
-    </nav>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'assigned-to-me',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'assigned-to-me'}
+            >
+              Assigned to me
+            </ControlledNavLink>
+          </li>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'unassigned',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'unassigned'}
+            >
+              Unassigned
+            </ControlledNavLink>
+          </li>
+          <li>
+            <ControlledNavLink
+              to={{
+                search: getNavLinkSearchParam({
+                  currentParams: searchParams,
+                  filter: 'completed',
+                  userId,
+                }),
+              }}
+              isActive={filter === 'completed'}
+            >
+              Completed
+            </ControlledNavLink>
+          </li>
+          {customFilters === undefined ? null : (
+            <li className={styles.customFilterContainer}>
+              <ControlledNavLink
+                to={{
+                  search: getNavLinkSearchParam({
+                    currentParams: searchParams,
+                    filter: 'custom',
+                    userId,
+                  }),
+                }}
+                isActive={filter === 'custom'}
+                className={styles.customFilterNav}
+              >
+                Custom
+              </ControlledNavLink>
+              <OverflowMenu
+                iconDescription="Custom filter actions"
+                size="lg"
+                className={cn(styles.overflowMenu, {
+                  [styles.selected]: filter === 'custom',
+                })}
+              >
+                <OverflowMenuItem
+                  itemText="Edit"
+                  onClick={() => {
+                    setIsCustomFiltersModalOpen(true);
+                  }}
+                />
+                <OverflowMenuItem
+                  hasDivider
+                  isDelete
+                  itemText="Delete"
+                  onClick={() => {
+                    setCustomFilterToDelete('custom');
+                  }}
+                />
+              </OverflowMenu>
+            </li>
+          )}
+          <ButtonSet>
+            <Button
+              onClick={() => {
+                setIsCustomFiltersModalOpen(true);
+              }}
+              kind="ghost"
+            >
+              New filter
+            </Button>
+          </ButtonSet>
+        </ul>
+      </nav>
+      {filtersModal}
+      <Modal
+        danger
+        open={customFilterToDelete !== null}
+        size="xs"
+        modalLabel="Delete filter"
+        modalHeading="The custom filter will be deleted."
+        primaryButtonText="Confirm deletion"
+        secondaryButtonText="Cancel"
+        onRequestClose={() => {
+          setCustomFilterToDelete(null);
+        }}
+        onRequestSubmit={() => {
+          storeStateLocally('customFilters', {});
+          navigate({
+            search: getNavLinkSearchParam({
+              currentParams: searchParams,
+              filter: 'all-open',
+              userId,
+            }),
+          });
+          setCustomFilterToDelete(null);
+        }}
+      />
+    </Layer>
   );
 };
 

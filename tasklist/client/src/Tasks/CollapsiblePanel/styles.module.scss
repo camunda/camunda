@@ -7,7 +7,7 @@
  */
 
 @use '@carbon/layout';
-@use '@carbon/type';
+@use '@carbon/grid';
 
 .base {
   height: 100%;
@@ -19,21 +19,45 @@
 
 .collapsedContainer {
   width: layout.to-rem(40px);
-  padding-top: var(--cds-spacing-04);
+  padding-top: var(--cds-spacing-02);
+}
+
+.floatingContainer {
+  width: fit-content;
+}
+
+@include grid.breakpoint-down('xlg') {
+  .floatingContainer {
+    width: layout.to-rem(40px);
+    position: relative;
+
+    .expandedContainer {
+      position: absolute;
+      z-index: 1;
+    }
+  }
 }
 
 .expandedContainer {
-  width: layout.to-rem(200px);
+  width: layout.to-rem(196px);
 }
 
-.header {
+.customFilterContainer {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
+  border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
 
-  h1 {
-    @include type.type-style('heading-02');
-    color: var(--cds-text-primary);
+  .customFilterNav {
+    flex-grow: 1;
+    border-bottom: none;
+  }
+
+  .selected,
+  &:hover .overflowMenu.selected {
+    background-color: var(--cds-background-selected);
+  }
+
+  &:hover .overflowMenu {
+    background-color: var(--cds-background-hover);
   }
 }

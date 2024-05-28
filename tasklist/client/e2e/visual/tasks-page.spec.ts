@@ -908,4 +908,48 @@ test.describe('tasks page', () => {
 
     await expect(page).toHaveScreenshot();
   });
+
+  test('expanded side panel', async ({page, taskPanelPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'customFilters',
+        JSON.stringify({
+          custom: {
+            status: 'completed',
+            assignee: 'all',
+            bpmnProcess: 'process-1',
+          },
+        }),
+      );
+    });
+    await page.route(/^.*\/v1.*$/i, mockResponses());
+
+    await taskPanelPage.goto();
+
+    await taskPanelPage.expandSidePanelButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('custom filters modal', async ({page, taskPanelPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'customFilters',
+        JSON.stringify({
+          custom: {
+            status: 'completed',
+            assignee: 'all',
+            bpmnProcess: 'process-1',
+          },
+        }),
+      );
+    });
+    await page.route(/^.*\/v1.*$/i, mockResponses());
+
+    await taskPanelPage.goto();
+
+    await taskPanelPage.addCustomFilterButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
 });
