@@ -247,17 +247,17 @@ public class FileBasedSnapshotStoreTest {
 
   @Test
   public void shouldUseChecksumProviderForChecksumsIfSupplied() throws IOException {
-    //given
+    // given
     final Map<String, Long> badChecksums = new HashMap<>();
     badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
     final var testChecksumProvider = new TestChecksumProvider(badChecksums);
 
-    //when
+    // when
     final var store = new FileBasedSnapshotStore(1, rootDirectory, testChecksumProvider);
     scheduler.submitActor(store).join();
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
-    //then
+    // then
     final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
     assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
