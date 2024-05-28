@@ -5,16 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.restore;
+package io.camunda.zeebe.snapshots;
 
-import io.camunda.zeebe.snapshots.ChecksumProvider;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Map;
 
-public class NoopChecksumProvider implements ChecksumProvider {
-  @Override
-  public Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath) {
-    return Collections.emptyMap();
-  }
+public interface ChecksumProvider {
+
+  /**
+   * @param snapshotPath path of snapshot to get live file checksums
+   * @return Map containing fileName - checksums pairs, where the checksums are unsigned integers in
+   *     byte array format.
+   */
+  Map<String, byte[]> getSnapshotChecksums(final Path snapshotPath);
 }
