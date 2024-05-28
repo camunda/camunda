@@ -165,7 +165,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public void updateFromChecksum(final Path filePath, final Long checksum) {
+  public void updateFromChecksum(final Path filePath, final long checksum) {
     final String fileName = filePath.getFileName().toString();
     checksums.put(fileName, checksum);
   }
