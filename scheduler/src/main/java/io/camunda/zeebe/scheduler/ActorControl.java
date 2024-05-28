@@ -112,7 +112,9 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runDelayed(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
-    return scheduleTimer(delay, false, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toNanos(), TimeUnit.NANOSECONDS, false));
   }
 
   /**
@@ -127,7 +129,9 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
-    return scheduleTimer(delay, true, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toNanos(), TimeUnit.NANOSECONDS, true));
   }
 
   /**
@@ -146,18 +150,6 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAt(final long timestamp, final Runnable runnable) {
     ensureCalledFromWithinActor("runAt(...)");
-    return scheduleTimer(timestamp, runnable);
-  }
-
-  private TimerSubscription scheduleTimer(
-      final Duration delay, final boolean isRecurring, final Runnable runnable) {
-    return scheduleTimerSubscription(
-        runnable,
-        job ->
-            new DelayedTimerSubscription(job, delay.toNanos(), TimeUnit.NANOSECONDS, isRecurring));
-  }
-
-  private TimerSubscription scheduleTimer(final long timestamp, final Runnable runnable) {
     return scheduleTimerSubscription(runnable, job -> new StampedTimerSubscription(job, timestamp));
   }
 
