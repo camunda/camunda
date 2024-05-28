@@ -13,8 +13,6 @@ import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -60,7 +58,7 @@ final class SnapshotChecksum {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
-      final Map<String, byte[]> fullFileChecksums =
+      final Map<String, Long> fullFileChecksums =
           provider == null
               ? Collections.emptyMap()
               : provider.getSnapshotChecksums(snapshotDirectory);
@@ -99,13 +97,11 @@ final class SnapshotChecksum {
 
   private static void updateChecksum(
       final MutableChecksumsSFV checksum,
-      final Map<String, byte[]> fullFileChecksums,
+      final Map<String, Long> fullFileChecksums,
       final Path file) {
     final String fileName = file.getFileName().toString();
     if (fullFileChecksums.containsKey(fileName)) {
-      final Integer sstChecksum =
-          ByteBuffer.wrap(fullFileChecksums.get(fileName)).order(ByteOrder.BIG_ENDIAN).getInt();
-      checksum.updateFromChecksum(file, Integer.toUnsignedLong(sstChecksum));
+      checksum.updateFromChecksum(file, fullFileChecksums.get(fileName));
     } else {
       try {
         checksum.updateFromFile(file);
