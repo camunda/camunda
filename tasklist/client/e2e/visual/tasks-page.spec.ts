@@ -1033,7 +1033,7 @@ test.describe('tasks page', () => {
   });
 
   test('expanded side panel', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem(
         'customFilters',
         JSON.stringify({
@@ -1044,7 +1044,8 @@ test.describe('tasks page', () => {
           },
         }),
       );
-    });
+    })()`);
+
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -1055,7 +1056,7 @@ test.describe('tasks page', () => {
   });
 
   test('custom filters modal', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem(
         'customFilters',
         JSON.stringify({
@@ -1066,7 +1067,8 @@ test.describe('tasks page', () => {
           },
         }),
       );
-    });
+    })()`);
+
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
