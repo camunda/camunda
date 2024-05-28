@@ -209,7 +209,7 @@ public final class FileBasedSnapshotStore extends Actor
     try {
       final var expectedChecksum = SnapshotChecksum.read(checksumPath);
       final var actualChecksum =
-          SnapshotChecksum.calculateWithFullFileChecksums(path, checksumProvider);
+          SnapshotChecksum.calculateWithProvidedChecksums(path, checksumProvider);
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
