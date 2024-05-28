@@ -71,6 +71,7 @@ public class ParametersResolver {
   private String prefix;
 
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private ProcessIndex processIndex;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private VariableTemplate variableTemplate;

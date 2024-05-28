@@ -31,9 +31,11 @@ import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
@@ -45,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -226,5 +229,23 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
+  }
+
+  public Builder getSearchRequestByIdWithMetadata(final String batchOperationId) {
+    final Query failedOperationQuery = term(OperationTemplate.STATE, OperationState.FAILED.name());
+    final Query completedOperationQuery =
+        term(OperationTemplate.STATE, OperationState.COMPLETED.name());
+    final var searchRequestBuilder =
+        searchRequestBuilder(operationTemplate, ALL)
+            .query(term(BATCH_OPERATION_ID, batchOperationId))
+            .aggregations(
+                OperationTemplate.METADATA_AGGREGATION,
+                AggregationDSL.filtersAggregation(
+                        Map.of(
+                            BatchOperationTemplate.FAILED_OPERATIONS_COUNT, failedOperationQuery,
+                            BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
+                                completedOperationQuery))
+                    ._toAggregation());
+    return searchRequestBuilder;
   }
 }

@@ -156,7 +156,7 @@ public class BackupRestoreTest {
   }
 
   private void startTasklist() {
-    testContainerUtil.startTasklistContainer(tasklistContainer, testContext);
+    testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");
     testContext.setTasklistRestClient(tasklistAPICaller.createGraphQLTestTemplate(testContext));
   }

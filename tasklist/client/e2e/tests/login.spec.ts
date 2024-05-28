@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '@/test-fixtures';
 
 test.beforeEach(async ({testSetupPage}) => {
   await testSetupPage.goToLoginPage();

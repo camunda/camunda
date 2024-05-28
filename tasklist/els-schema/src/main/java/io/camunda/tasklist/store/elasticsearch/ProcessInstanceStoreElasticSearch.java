@@ -37,6 +37,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +62,9 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
 
   @Autowired TasklistProperties tasklistProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public DeletionStatus deleteProcessInstance(final String processInstanceId) {

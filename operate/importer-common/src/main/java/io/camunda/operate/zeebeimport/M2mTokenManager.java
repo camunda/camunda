@@ -15,6 +15,7 @@ import io.camunda.operate.property.OperateProperties;
 import java.util.Date;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,7 +38,9 @@ public class M2mTokenManager {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private RestTemplateBuilder builder;
 

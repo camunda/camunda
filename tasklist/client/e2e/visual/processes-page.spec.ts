@@ -48,7 +48,7 @@ function mockResponses(
       });
     }
 
-    route.continue();
+    return route.continue();
   };
 }
 
@@ -64,9 +64,9 @@ test.describe('processes page', () => {
   });
 
   test('empty state', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/processes', {
@@ -77,10 +77,10 @@ test.describe('processes page', () => {
   });
 
   test('empty state dark theme', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
       window.localStorage.setItem('theme', '"dark"');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/processes', {
@@ -91,9 +91,9 @@ test.describe('processes page', () => {
   });
 
   test('empty search', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await page.goto('/processes?search=foo', {
@@ -104,9 +104,9 @@ test.describe('processes page', () => {
   });
 
   test('loaded processes', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    });
+    })()`);
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([
@@ -135,9 +135,9 @@ test.describe('processes page', () => {
   });
 
   test('should show a tenant dropdown', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    });
+    })()`);
     await page.route('**/client-config.js', (route) =>
       route.fulfill({
         status: 200,
@@ -187,9 +187,9 @@ test.describe('processes page', () => {
   });
 
   test('should show a start form tag', async ({page}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    });
+    })()`);
     await page.route(
       /^.*\/v1.*$/i,
       mockResponses([

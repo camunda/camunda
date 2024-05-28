@@ -52,7 +52,9 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
       Map.of(USER, KEYCLOAK_PASSWORD, USER_2, KEYCLOAK_PASSWORD_2);
   private static JwtDecoder jwtDecoder;
   @Autowired private static TestContainerUtil testContainerUtil;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
   protected static void beforeClass(final boolean multiTenancyEnabled) {

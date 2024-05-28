@@ -73,6 +73,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -87,7 +88,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames) {

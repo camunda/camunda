@@ -6,7 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, computed, makeObservable, observable, override} from 'mobx';
+import {
+  IReactionDisposer,
+  action,
+  autorun,
+  computed,
+  makeObservable,
+  observable,
+  override,
+} from 'mobx';
 import {ProcessesBase, Process} from './processes.base';
 
 type MigrationState = {
@@ -21,11 +29,13 @@ const DEFAULT_MIGRATION_STATE: MigrationState = {
 
 class Processes extends ProcessesBase {
   migrationState: MigrationState = DEFAULT_MIGRATION_STATE;
+  versionSelectDisposer: null | IReactionDisposer = null;
 
   constructor() {
     super();
     makeObservable(this, {
       migrationState: observable,
+      latestProcessVersion: computed,
       targetProcessVersions: computed,
       selectedTargetProcessId: computed,
       filteredProcesses: override,
@@ -33,6 +43,55 @@ class Processes extends ProcessesBase {
       setSelectedTargetProcess: action,
       reset: override,
     });
+  }
+
+  init = () => {
+    this.versionSelectDisposer = autorun(() => {
+      const {key} = this.getSelectedProcessDetails();
+
+      if (key !== undefined) {
+        // pre-select the same process
+        this.setSelectedTargetProcess(key);
+      }
+
+      if (this.latestProcessVersion !== undefined) {
+        // preselect the latest available version
+        this.setSelectedTargetVersion(this.latestProcessVersion);
+      }
+    });
+  };
+
+  getSourceProcessKey = () => {
+    return this.getSelectedProcessDetails().key;
+  };
+
+  /**
+   * Gets the latest available version of the source process.
+   * Returns undefined if no newer version is available.
+   */
+  get latestProcessVersion() {
+    const sourceProcess = this.getSelectedProcessDetails();
+
+    if (sourceProcess.key) {
+      const processVersions =
+        this.versionsByProcessAndTenant[sourceProcess.key];
+      if (processVersions) {
+        // sort processes by version descending
+        const sortedProcessVersions = processVersions.sort(
+          (a, b) => b.version - a.version,
+        );
+        const latestVersion = sortedProcessVersions[0]?.version;
+        // return the latest version (only if a newer version is available)
+        if (
+          (latestVersion !== undefined &&
+            latestVersion > Number(sourceProcess.version)) ??
+          latestVersion
+        ) {
+          return latestVersion;
+        }
+      }
+    }
+    return undefined;
   }
 
   get filteredProcesses() {
@@ -112,6 +171,7 @@ class Processes extends ProcessesBase {
 
   reset() {
     super.reset();
+    this.versionSelectDisposer?.();
     this.migrationState = {...DEFAULT_MIGRATION_STATE};
   }
 }

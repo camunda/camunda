@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.exception.InternalAPIException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,10 +52,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @AutoConfigureMockMvc
 public class InternalAPIErrorControllerIT {
   private static final String EXCEPTION_MESSAGE = "profile exception message";
+  @MockBean DataAggregator dataAggregator;
   @Autowired private MockMvc mockMvc;
   @MockBean private OperationReader operationReader;
   @MockBean private OperateProfileService mockProfileService;
+
   @Autowired private ObjectMapper objectMapper;
+
   private MockHttpServletRequestBuilder mockGetRequest;
 
   @Before

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "esModuleInterop": true,
+    "declaration": false,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["@types/node", "playwright"]
+  },
+  "include": ["./**/*"],
+  "exclude": ["node_modules"]
+}

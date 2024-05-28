@@ -84,7 +84,7 @@ describe('<Tasks />', () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByTitle('All open tasks')).toBeDisabled(),
+      expect(screen.getByRole('button', {name: /sort tasks/i})).toBeDisabled(),
     );
 
     expect(await screen.findByText('TASK 0')).toBeInTheDocument();

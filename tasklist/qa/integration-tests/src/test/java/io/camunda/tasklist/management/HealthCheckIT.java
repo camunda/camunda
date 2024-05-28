@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
@@ -47,7 +48,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
       TasklistProperties.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      JacksonConfig.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "test"})
