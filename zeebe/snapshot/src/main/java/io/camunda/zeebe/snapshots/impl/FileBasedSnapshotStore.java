@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
 
 import io.camunda.zeebe.db.ChecksumProvider;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -78,17 +79,16 @@ public final class FileBasedSnapshotStore extends Actor
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-  private ChecksumProvider checksumProvider;
+  private final ChecksumProvider checksumProvider;
   private final String actorName;
   private final int partitionId;
 
-  public FileBasedSnapshotStore(
-      final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
-    this(partitionId, root);
-    this.checksumProvider = checksumProvider;
+  public FileBasedSnapshotStore(final int partitionId, final Path root) {
+    this(partitionId, root, null);
   }
 
-  public FileBasedSnapshotStore(final int partitionId, final Path root) {
+  public FileBasedSnapshotStore(
+      final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
 
@@ -105,6 +105,8 @@ public final class FileBasedSnapshotStore extends Actor
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
+    this.checksumProvider =
+        checksumProvider != null ? checksumProvider : new ChecksumProviderRocksDBImpl();
   }
 
   @Override
