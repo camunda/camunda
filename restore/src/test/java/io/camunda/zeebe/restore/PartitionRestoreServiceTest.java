@@ -100,8 +100,7 @@ class PartitionRestoreServiceTest {
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
-    restoreService =
-        new PartitionRestoreService(backupStore, raftPartition, new NoopChecksumProvider());
+    restoreService = new PartitionRestoreService(backupStore, raftPartition);
 
     journal =
         SegmentedJournal.builder()
