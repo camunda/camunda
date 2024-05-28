@@ -55,6 +55,7 @@ jobs:
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
         ports:
           - 26500:26500
+          - 8089:8080
     steps:
       - name: Check out repository code
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
