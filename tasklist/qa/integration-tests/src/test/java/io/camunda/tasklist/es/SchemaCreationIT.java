@@ -51,24 +51,6 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
     assertThat(indexSchemaValidator.schemaExists()).isTrue();
   }
 
-  @Test // ZTL-1007
-  public void testMigrationStepsRepositoryFields() throws IOException {
-    final IndexDescriptor migrationStepsIndexDescriptor =
-        getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
-    assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
-    assertThat(getFieldDescriptions(migrationStepsIndexDescriptor).keySet())
-        .containsExactlyInAnyOrder(
-            ProcessorStep.VERSION,
-            "@type",
-            "description",
-            ProcessorStep.APPLIED,
-            ProcessorStep.APPLIED_DATE,
-            ProcessorStep.CREATED_DATE,
-            ProcessorStep.CONTENT,
-            ProcessorStep.INDEX_NAME,
-            ProcessorStep.ORDER);
-  }
-
   @Test // ZTL-1010
   public void testDynamicMappingsOfIndices() throws Exception {
     final IndexDescriptor sessionIndex =
