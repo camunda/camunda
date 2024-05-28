@@ -46,7 +46,7 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
    * @param filePath path to file
    * @param checksum check of file given
    */
-  void updateFromChecksum(final Path filePath, final Long checksum);
+  void updateFromChecksum(final Path filePath, final long checksum);
 
   /**
    * Returns if all file checksums match exactly.
