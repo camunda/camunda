@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '@/test-fixtures';
 import {expect} from '@playwright/test';
-import {deploy} from '../zeebeClient';
+import {deploy} from '@/utils/zeebeClient';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -16,8 +17,8 @@ test.afterAll(async ({resetData}) => {
 
 test.beforeAll(async () => {
   await deploy('./e2e/resources/user_process.bpmn');
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  await sleep(27000);
+
+  await sleep(2000);
 });
 
 test.beforeEach(async ({testSetupPage, loginPage, page}) => {

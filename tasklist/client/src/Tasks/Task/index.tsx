@@ -43,7 +43,11 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
 }
 
 const Task: React.FC = observer(() => {
-  const [task, currentUser, refetchTask] = useOutletContext<OutletContext>();
+  const {
+    task,
+    currentUser,
+    refetch: refetchTask,
+  } = useOutletContext<OutletContext>();
 
   const filters = useTaskFilters();
   const {data, refetch: refetchAllTasks} = useTasks(filters);

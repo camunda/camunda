@@ -7,8 +7,8 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
-import {createInstances, deploy} from '../zeebeClient';
+import {test} from '@/test-fixtures';
+import {createInstances, deploy} from '@/utils/zeebeClient';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -35,7 +35,7 @@ test.beforeAll(async () => {
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
-    createInstances('user_registration', 1, 2),
+    createInstances('user_registration', 1, 3),
     createInstances('user_registration_with_vars', 1, 2, {
       name: 'Jane',
       age: '50',
@@ -541,5 +541,14 @@ test.describe('task details page', () => {
 
     await expect(formJSDetailsPage.form).toContainText('Hello Jane');
     await expect(formJSDetailsPage.form).toContainText('You are 50 years old');
+  });
+
+  test('show process model', async ({taskPanelPage, taskDetailsPage}) => {
+    await taskPanelPage.openTask('User registration');
+
+    await expect(taskDetailsPage.detailsNav).toBeVisible();
+    await taskDetailsPage.detailsNav.getByText(/process/i).click();
+
+    await expect(taskDetailsPage.bpmnDiagram).toBeVisible();
   });
 });

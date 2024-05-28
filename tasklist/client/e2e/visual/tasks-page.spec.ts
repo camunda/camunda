@@ -7,8 +7,33 @@
  */
 
 import {expect, Route, Request} from '@playwright/test';
-import schema from '../resources/bigForm.json' assert {type: 'json'};
-import {test} from '../test-fixtures';
+import schema from '@/resources/bigForm.json' assert {type: 'json'};
+import {test} from '@/test-fixtures';
+
+type Task = {
+  id: string;
+  name: string;
+  taskDefinitionId: string;
+  processName: string;
+  creationDate: string;
+  followUpDate: string | null;
+  dueDate: string | null;
+  completionDate: string | null;
+  assignee: string | null;
+  taskState: string;
+  sortValues: [string, string];
+  isFirst: boolean;
+  formKey: string | null;
+  formVersion: number | null | undefined;
+  formId: string | null;
+  isFormEmbedded: boolean | null;
+  processInstanceKey: string;
+  processDefinitionKey: string;
+  candidateGroups: string[] | null;
+  candidateUsers: string[] | null;
+  tenantId: string | '<default>' | null;
+  context: string | null;
+};
 
 const MOCK_TENANTS = [
   {
@@ -21,7 +46,7 @@ const MOCK_TENANTS = [
   },
 ];
 
-const NON_FORM_TASK = {
+const NON_FORM_TASK: Task = {
   id: '2251799813687061',
   formKey: null,
   formId: null,
@@ -43,9 +68,10 @@ const NON_FORM_TASK = {
   sortValues: ['1684881752515', '4503599627371089'],
   isFirst: true,
   tenantId: null,
+  context: null,
 };
 
-const NON_FORM_TASK_EMPTY_VARIABLES = [];
+const NON_FORM_TASK_EMPTY_VARIABLES: unknown[] = [] as const;
 
 const NON_FORM_TASK_VARIABLES = [
   {
@@ -57,7 +83,7 @@ const NON_FORM_TASK_VARIABLES = [
   },
 ];
 
-const FORM_TASK = {
+const FORM_TASK: Task = {
   id: '2251799813687045',
   formKey: 'camunda-forms:bpmn:userTaskForm_1',
   formId: null,
@@ -74,15 +100,61 @@ const FORM_TASK = {
   processInstanceKey: '4503599627371425',
   dueDate: null,
   followUpDate: null,
-  candidateGroups: null,
-  candidateUsers: null,
+  candidateGroups: [],
+  candidateUsers: [],
+  sortValues: ['1684881752515', '4503599627371089'],
+  isFirst: true,
   tenantId: null,
+  context: null,
 };
 
+const BPMN_XML = `
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_11n4bz1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+  <bpmn:process id="Process_10qar8i" name="oioopiihhio" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0jqzoa5</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_0aecztp" name="A task">
+      <bpmn:incoming>Flow_0jqzoa5</bpmn:incoming>
+      <bpmn:outgoing>Flow_0f4sn94</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_0jqzoa5" sourceRef="StartEvent_1" targetRef="Activity_0aecztp" />
+    <bpmn:endEvent id="Event_0uwu5c4">
+      <bpmn:incoming>Flow_0f4sn94</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0f4sn94" sourceRef="Activity_0aecztp" targetRef="Event_0uwu5c4" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_10qar8i">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0aecztp_di" bpmnElement="Activity_0aecztp">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0uwu5c4_di" bpmnElement="Event_0uwu5c4">
+        <dc:Bounds x="432" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0jqzoa5_di" bpmnElement="Flow_0jqzoa5">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0f4sn94_di" bpmnElement="Flow_0f4sn94">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="432" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`;
+
 function mockResponses(
-  tasks: Array<unknown> = [],
-  task = NON_FORM_TASK,
+  tasks: Array<Task> = [],
+  task: Task = NON_FORM_TASK,
   variables: unknown[] = NON_FORM_TASK_EMPTY_VARIABLES,
+  bpmnXml: string | undefined = BPMN_XML,
 ): (router: Route, request: Request) => Promise<unknown> | unknown {
   return (route) => {
     if (
@@ -151,7 +223,30 @@ function mockResponses(
       });
     }
 
-    route.continue();
+    if (
+      route
+        .request()
+        .url()
+        .includes(`v1/internal/processes/${task.processDefinitionKey}`)
+    ) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          id: task.processDefinitionKey,
+          name: 'A test process',
+          bpmnProcessId: 'someProcessId',
+          version: 1,
+          startEventFormId: '123456789',
+          sortValues: ['value'],
+          bpmnXml,
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    return route.continue();
   };
 }
 
@@ -165,9 +260,9 @@ test.describe('tasks page', () => {
   });
 
   test('empty state dark theme', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('theme', '"dark"');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -179,9 +274,9 @@ test.describe('tasks page', () => {
     page,
     taskPanelPage,
   }) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem('hasCompletedTask', 'true');
-    });
+    })()`);
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -225,6 +320,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -248,6 +344,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -285,6 +382,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -308,6 +406,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -345,6 +444,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -368,6 +468,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -403,6 +504,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -426,6 +528,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -466,6 +569,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -489,6 +593,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -530,6 +635,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
         {
           id: '2251799813686256',
@@ -553,6 +659,7 @@ test.describe('tasks page', () => {
           candidateGroups: null,
           candidateUsers: null,
           context: null,
+          tenantId: '<default>',
         },
       ]),
     );
@@ -596,13 +703,14 @@ test.describe('tasks page', () => {
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
             context: null,
+            tenantId: '<default>',
           },
         ],
         NON_FORM_TASK,
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -637,6 +745,7 @@ test.describe('tasks page', () => {
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -647,7 +756,16 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
+
+    await expect(page).toHaveScreenshot();
+
+    await taskDetailsPage.addVariable({name: 'var', value: '"lorem ipsum"'});
+    await expect(page.getByText('Complete task')).toBeEnabled();
+
+    await expect(page).toHaveScreenshot();
+
+    await page.getByLabel('Open JSON code editor').nth(0).hover();
 
     await expect(page).toHaveScreenshot();
   });
@@ -679,6 +797,7 @@ test.describe('tasks page', () => {
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -688,7 +807,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -720,6 +839,7 @@ test.describe('tasks page', () => {
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -731,7 +851,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -766,6 +886,7 @@ test.describe('tasks page', () => {
             candidateGroups: ['demo group'],
             candidateUsers: ['demo'],
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -778,7 +899,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });
@@ -813,6 +934,7 @@ test.describe('tasks page', () => {
             candidateGroups: null,
             candidateUsers: null,
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -822,7 +944,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -856,6 +978,7 @@ test.describe('tasks page', () => {
             candidateGroups: null,
             candidateUsers: null,
             context: null,
+            tenantId: '<default>',
           },
         ],
         {
@@ -865,7 +988,7 @@ test.describe('tasks page', () => {
       ),
     );
 
-    await taskDetailsPage.goto(FORM_TASK.id);
+    await taskDetailsPage.gotoTaskDetails(FORM_TASK.id);
 
     await expect(page.getByText('I am a textfield*')).toBeVisible();
 
@@ -904,13 +1027,13 @@ test.describe('tasks page', () => {
       mockResponses([NON_FORM_TASK_WITH_TENANT], NON_FORM_TASK_WITH_TENANT),
     );
 
-    await taskDetailsPage.goto(NON_FORM_TASK_WITH_TENANT.id);
+    await taskDetailsPage.gotoTaskDetails(NON_FORM_TASK_WITH_TENANT.id);
 
     await expect(page).toHaveScreenshot();
   });
 
   test('expanded side panel', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem(
         'customFilters',
         JSON.stringify({
@@ -921,7 +1044,8 @@ test.describe('tasks page', () => {
           },
         }),
       );
-    });
+    })()`);
+
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
@@ -932,7 +1056,7 @@ test.describe('tasks page', () => {
   });
 
   test('custom filters modal', async ({page, taskPanelPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`(() => {
       window.localStorage.setItem(
         'customFilters',
         JSON.stringify({
@@ -943,12 +1067,21 @@ test.describe('tasks page', () => {
           },
         }),
       );
-    });
+    })()`);
+
     await page.route(/^.*\/v1.*$/i, mockResponses());
 
     await taskPanelPage.goto();
 
     await taskPanelPage.addCustomFilterButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('process view', async ({page, taskDetailsPage}) => {
+    await page.route(/^.*\/v1.*$/i, mockResponses([FORM_TASK], FORM_TASK));
+
+    await taskDetailsPage.gotoTaskDetailsProcessTab(FORM_TASK.id);
 
     await expect(page).toHaveScreenshot();
   });

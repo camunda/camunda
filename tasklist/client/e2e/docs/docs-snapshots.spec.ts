@@ -7,11 +7,11 @@
  */
 
 import {Page, expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '@/test-fixtures';
 import {sub as subTime} from 'date-fns/sub';
 import {add as addTime} from 'date-fns/add';
-import registerPassengerForm from '../resources/registerPassenger.json' assert {type: 'json'};
-import registerPassengerStartForm from '../resources/registerPassengerStartForm.json' assert {type: 'json'};
+import registerPassengerForm from '@/resources/registerPassenger.json' assert {type: 'json'};
+import registerPassengerStartForm from '@/resources/registerPassengerStartForm.json' assert {type: 'json'};
 
 const now = new Date();
 
@@ -285,9 +285,9 @@ async function mockClientConfig(page: Page) {
 test.beforeEach(async ({page}) => {
   await mockCurrentUser(page);
   await mockClientConfig(page);
-  await page.addInitScript(() => {
+  await page.addInitScript(`(() => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-  });
+  })()`);
 });
 
 test.describe('Tasklist snapshots', () => {
@@ -342,7 +342,7 @@ test.describe('Tasklist snapshots', () => {
       registerPassengerForm,
     );
 
-    await taskDetailsPage.goto('1');
+    await taskDetailsPage.gotoTaskDetails('1');
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
@@ -374,7 +374,7 @@ test.describe('Tasklist snapshots', () => {
       registerPassengerForm,
     );
 
-    await taskDetailsPage.goto('1');
+    await taskDetailsPage.gotoTaskDetails('1');
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();

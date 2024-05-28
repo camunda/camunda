@@ -6,27 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-  height: 100%;
-  width: 100%;
-  position: relative;
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-.canvas {
-  position: absolute;
-  height: 100%;
-  width: 100%;
-  left: 0;
-  top: 0;
-
-  :global {
-    .tl-highlighted-activity .djs-outline {
-      stroke-width: 2px;
-      stroke: var(--cds-link-inverse);
-    }
-
-    .bjs-powered-by {
-      display: none;
-    }
-  }
-}
+export {sleep};
