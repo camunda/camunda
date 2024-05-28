@@ -447,7 +447,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final var replicas =
         tasklistProperties
             .getOpenSearch()
-            .getNumberOfReplicasPerIndices()
+            .getNumberOfReplicasPerIndex()
             .get(indexDescriptor.getIndexName());
 
     if (shards != null || replicas != null) {

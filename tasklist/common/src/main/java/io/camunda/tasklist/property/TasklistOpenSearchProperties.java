@@ -19,7 +19,7 @@ public class TasklistOpenSearchProperties extends OpenSearchProperties {
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
   private Map<String, Integer> numberOfShardsPerIndex = Map.of();
-  private Map<String, Integer> numberOfReplicasPerIndices = Map.of();
+  private Map<String, Integer> numberOfReplicasPerIndex = Map.of();
 
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
@@ -67,11 +67,11 @@ public class TasklistOpenSearchProperties extends OpenSearchProperties {
     this.numberOfShardsPerIndex = numberOfShardsPerIndex;
   }
 
-  public Map<String, Integer> getNumberOfReplicasPerIndices() {
-    return numberOfReplicasPerIndices;
+  public Map<String, Integer> getNumberOfReplicasPerIndex() {
+    return numberOfReplicasPerIndex;
   }
 
-  public void setNumberOfReplicasPerIndices(final Map<String, Integer> numberOfReplicasPerIndices) {
-    this.numberOfReplicasPerIndices = numberOfReplicasPerIndices;
+  public void setNumberOfReplicasPerIndex(final Map<String, Integer> numberOfReplicasPerIndex) {
+    this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 }
