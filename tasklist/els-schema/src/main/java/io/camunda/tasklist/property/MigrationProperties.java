@@ -16,12 +16,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX + ".migration")
+@Deprecated(since = "8.6.0 - Used only for test purpose.", forRemoval = true)
 public class MigrationProperties {
 
   private static final int DEFAULT_REINDEX_BATCH_SIZE = 5_000;
   private static final int DEFAULT_THREADS_COUNT = 5;
-
-  private boolean migrationEnabled = true;
   private boolean deleteSrcSchema = true;
   private int threadsCount = DEFAULT_THREADS_COUNT;
 
@@ -31,29 +30,20 @@ public class MigrationProperties {
   // AUTO=0 means 1 slice per shard
   private int slices = AbstractBulkByScrollRequest.AUTO_SLICES;
 
-  public boolean isMigrationEnabled() {
-    return migrationEnabled;
-  }
-
-  public MigrationProperties setMigrationEnabled(boolean migrationEnabled) {
-    this.migrationEnabled = migrationEnabled;
-    return this;
-  }
-
-  public MigrationProperties setDeleteSrcSchema(boolean deleteSrcSchema) {
-    this.deleteSrcSchema = deleteSrcSchema;
-    return this;
-  }
-
   public boolean isDeleteSrcSchema() {
     return deleteSrcSchema;
+  }
+
+  public MigrationProperties setDeleteSrcSchema(final boolean deleteSrcSchema) {
+    this.deleteSrcSchema = deleteSrcSchema;
+    return this;
   }
 
   public int getReindexBatchSize() {
     return reindexBatchSize;
   }
 
-  public MigrationProperties setReindexBatchSize(int reindexBatchSize) {
+  public MigrationProperties setReindexBatchSize(final int reindexBatchSize) {
     if (reindexBatchSize < 1 || reindexBatchSize > 10_000) {
       throw new TasklistRuntimeException(
           String.format(
@@ -67,7 +57,7 @@ public class MigrationProperties {
     return slices;
   }
 
-  public MigrationProperties setSlices(int slices) {
+  public MigrationProperties setSlices(final int slices) {
     if (slices < 0) {
       throw new TasklistRuntimeException(
           String.format("Slices must be positive. Given was %d", slices));
@@ -80,7 +70,7 @@ public class MigrationProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 }

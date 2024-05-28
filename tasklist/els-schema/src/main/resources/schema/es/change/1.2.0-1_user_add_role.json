@@ -1,8 +1,0 @@
-{
-  "description": "Add role 'OWNER' ",
-  "@type": "processorStep",
-  "indexName": "user",
-  "version": "1.2.0",
-  "order": 1,
-  "content": "{\"append\": {\"field\": \"roles\", \"value\": [\"OWNER\"]}}"
-}
