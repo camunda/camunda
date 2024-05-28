@@ -34,7 +34,7 @@ jobs:
         run: |
           issue_url=${{ github.event.issue.html_url }}
           project_id=${{ steps.vars.outputs.project_id }}
-          gh project item-add $project_id --url $issue_url
+          gh project item-add $project_id --url $issue_url --owner ${{ github.event.repository.owner.login }}
 
       - name: Assign QA
         if: contains(github.event.issue.labels.*.name, 'type:bug')
