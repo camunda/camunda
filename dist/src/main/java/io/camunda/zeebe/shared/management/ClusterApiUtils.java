@@ -65,7 +65,7 @@ final class ClusterApiUtils {
     throw new IllegalStateException("Utility class");
   }
 
-  static ResponseEntity<Error> mapError(final Throwable error) {
+  static ResponseEntity<?> mapError(final Throwable error) {
     if (error instanceof CompletionException) {
       return mapError(error.getCause());
     }
@@ -101,6 +101,16 @@ final class ClusterApiUtils {
     } else {
       return ClusterApiUtils.mapErrorResponse(response.getLeft());
     }
+  }
+
+  static ResponseEntity<?> mapOperationResponse(
+      final Either<ErrorResponse, ClusterConfigurationChangeResponse> response,
+      final Throwable throwable) {
+    if (throwable != null) {
+      return ClusterApiUtils.mapError(throwable);
+    }
+
+    return ClusterApiUtils.mapOperationResponse(response);
   }
 
   static ResponseEntity<?> mapClusterTopologyResponse(
