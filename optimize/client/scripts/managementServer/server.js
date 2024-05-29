@@ -85,6 +85,13 @@ module.exports = function createServer(
 
     var contentType = mimeTypes[extname] || 'application/octet-stream';
 
+    filePath = fs.realpathSync(path.join(__dirname, filename));
+
+    if (!filePath.startsWith(__dirname)) {
+      response.writeHead(403, {'Content-Type': contentType});
+      response.end('Forbidden', 'utf-8');
+    }
+
     fs.readFile(filePath, function (error, content) {
       if (error) {
         if (error.code === 'ENOENT') {
