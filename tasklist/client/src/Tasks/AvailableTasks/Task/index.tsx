@@ -7,7 +7,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {NavLink, useLocation, useMatch} from 'react-router-dom';
+import {NavLink, useLocation} from 'react-router-dom';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
 import {
@@ -29,6 +29,7 @@ import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
 
 type Props = {
   taskId: TaskType['id'];
@@ -119,9 +120,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
     },
     ref,
   ) => {
-    const match = useMatch('/:id');
     const location = useLocation();
-    const isActive = match?.params?.id === taskId;
+    const isActive = useIsCurrentTaskOpen(taskId);
     const {filter, sortBy} = useTaskFilters();
     const creationDate = useMemo(
       () => formatISODateTime(creationDateString),

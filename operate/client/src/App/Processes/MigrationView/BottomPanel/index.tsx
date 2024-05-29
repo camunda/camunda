@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
-import {SelectItem, Stack, Tag} from '@carbon/react';
+import {SelectItem, Stack, Tag, Toggle} from '@carbon/react';
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
@@ -25,7 +25,10 @@ import {
   Select,
   SourceFlowNodeName,
   ArrowRight,
+  ToggleContainer,
 } from './styled';
+
+const TOGGLE_LABEL = 'Show only not mapped';
 
 const BottomPanel: React.FC = observer(() => {
   const {selectedSourceFlowNodeIds} = processInstanceMigrationStore;
@@ -39,7 +42,25 @@ const BottomPanel: React.FC = observer(() => {
     state: {flowNodeMapping},
   } = processInstanceMigrationStore;
 
-  const {autoMappableFlowNodes, isAutoMappable} = autoMappingStore;
+  const {
+    autoMappableFlowNodes,
+    isAutoMappable,
+    toggleMappedFilter,
+    state: {isMappedFilterEnabled},
+  } = autoMappingStore;
+
+  const {
+    selectableFlowNodes: selectableSourceFlowNodes,
+    hasSelectableFlowNodes: hasSelectableSourceFlowNodes,
+  } = processXmlMigrationSourceStore;
+
+  const {isTargetSelected} = processXmlMigrationTargetStore;
+
+  const selectableFilteredSourceFlowNodes = isMappedFilterEnabled
+    ? selectableSourceFlowNodes.filter(({id}) => {
+        return flowNodeMapping[id] === undefined;
+      })
+    : selectableSourceFlowNodes;
 
   // Automatically map flow nodes with same id and type in source and target diagrams
   useEffect(() => {
@@ -52,9 +73,14 @@ const BottomPanel: React.FC = observer(() => {
     });
   }, [autoMappableFlowNodes, updateFlowNodeMapping, clearFlowNodeMapping]);
 
+  useEffect(() => {
+    // reset store on unmount
+    return autoMappingStore.reset;
+  }, []);
+
   return (
     <BottomSection>
-      {!processXmlMigrationSourceStore.hasSelectableFlowNodes ? (
+      {!hasSelectableSourceFlowNodes ? (
         <ErrorMessageContainer>
           <ErrorMessage
             message="There are no mappable flow nodes"
@@ -62,35 +88,46 @@ const BottomPanel: React.FC = observer(() => {
           />
         </ErrorMessageContainer>
       ) : (
-        <DataTable
-          size="md"
-          headers={[
-            {
-              header: 'Source flow nodes',
-              key: 'sourceFlowNode',
-              width: '50%',
-            },
-            {
-              header: 'Target flow nodes',
-              key: 'targetFlowNode',
-              width: '50%',
-            },
-          ]}
-          onRowClick={(rowId) => {
-            processInstanceMigrationStore.selectSourceFlowNode(rowId);
-          }}
-          checkIsRowSelected={handleCheckIsRowSelected(
-            selectedSourceFlowNodeIds,
+        <>
+          {isTargetSelected && (
+            <ToggleContainer>
+              <Toggle
+                size="sm"
+                id="not-mapped-toggle"
+                labelA={TOGGLE_LABEL}
+                labelB={TOGGLE_LABEL}
+                onToggle={toggleMappedFilter}
+              />
+              <ArrowRight />
+            </ToggleContainer>
           )}
-          rows={processXmlMigrationSourceStore.selectableFlowNodes.map(
-            (sourceFlowNode) => {
-              const selectableFlowNodes =
+          <DataTable
+            size="md"
+            headers={[
+              {
+                header: 'Source flow nodes',
+                key: 'sourceFlowNode',
+                width: '50%',
+              },
+              {
+                header: 'Target flow nodes',
+                key: 'targetFlowNode',
+                width: '50%',
+              },
+            ]}
+            onRowClick={(rowId) => {
+              processInstanceMigrationStore.selectSourceFlowNode(rowId);
+            }}
+            checkIsRowSelected={handleCheckIsRowSelected(
+              selectedSourceFlowNodeIds,
+            )}
+            rows={selectableFilteredSourceFlowNodes.map((sourceFlowNode) => {
+              const selectableTargetFlowNodes =
                 processXmlMigrationTargetStore.selectableFlowNodes.filter(
                   (flowNode) => {
                     return sourceFlowNode.$type === flowNode.$type;
                   },
                 );
-
               const isMapped = flowNodeMapping[sourceFlowNode.id] !== undefined;
 
               return {
@@ -100,7 +137,9 @@ const BottomPanel: React.FC = observer(() => {
                     <SourceFlowNodeName>
                       {sourceFlowNode.name}
                     </SourceFlowNodeName>
-                    {!isMapped && <Tag type="blue">Not mapped</Tag>}
+                    {isTargetSelected && !isMapped && (
+                      <Tag type="blue">Not mapped</Tag>
+                    )}
                     <ArrowRight />
                   </LeftColumn>
                 ),
@@ -113,7 +152,7 @@ const BottomPanel: React.FC = observer(() => {
                       <Select
                         disabled={
                           processInstanceMigrationStore.state.currentStep ===
-                            'summary' || selectableFlowNodes.length === 0
+                            'summary' || selectableTargetFlowNodes.length === 0
                         }
                         size="sm"
                         hideLabel
@@ -127,7 +166,7 @@ const BottomPanel: React.FC = observer(() => {
                           });
                         }}
                       >
-                        {[{id: '', name: ''}, ...selectableFlowNodes].map(
+                        {[{id: '', name: ''}, ...selectableTargetFlowNodes].map(
                           ({id, name}) => {
                             return (
                               <SelectItem key={id} value={id} text={name} />
@@ -146,9 +185,9 @@ const BottomPanel: React.FC = observer(() => {
                   );
                 })(),
               };
-            },
-          )}
-        />
+            })}
+          />
+        </>
       )}
     </BottomSection>
   );

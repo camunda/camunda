@@ -68,6 +68,10 @@ const router = createBrowserRouter(
             ErrorBoundary={ErrorWithinLayout}
           >
             <Route index lazy={() => import('./Tasks/Task')} />
+            <Route
+              path="process"
+              lazy={() => import('./Tasks/Task/ProcessView')}
+            />
           </Route>
         </Route>
       </Route>

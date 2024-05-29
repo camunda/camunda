@@ -17,13 +17,6 @@
   height: 100%;
   padding-top: layout.to-rem(48px);
   box-sizing: border-box;
-
-  //should be removed when the feature IS_NEW_FILTERS_UI_ENABLED is removed
-  &.twoColumns {
-    grid-template-columns:
-      layout.to-rem(312px)
-      1fr;
-  }
 }
 
 .tasksPanel {
@@ -32,6 +25,7 @@
   max-width: layout.to-rem(312px);
   height: 100%;
   grid-template-rows: min-content 1fr min-content;
+  background-color: var(--cds-layer);
 }
 
 .detailsPanel {

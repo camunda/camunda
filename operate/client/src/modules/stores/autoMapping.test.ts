@@ -14,6 +14,10 @@ import {autoMappingStore} from './autoMapping';
 import {waitFor} from '@testing-library/react';
 
 describe('autoMappingStore', () => {
+  afterEach(() => {
+    autoMappingStore.reset();
+  });
+
   it('should provide auto mapped flow nodes', async () => {
     // Fetch migration source diagram
     mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
@@ -64,5 +68,21 @@ describe('autoMappingStore', () => {
     expect(isAutoMappable('notifyCustomer')).toBe(false);
     expect(isAutoMappable('unknownFlowNodeId')).toBe(false);
     expect(isAutoMappable('')).toBe(false);
+  });
+
+  it('should toggle mapped filter', () => {
+    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
+
+    autoMappingStore.toggleMappedFilter();
+    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(true);
+
+    autoMappingStore.toggleMappedFilter();
+    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
+
+    autoMappingStore.toggleMappedFilter();
+    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(true);
+
+    autoMappingStore.reset();
+    expect(autoMappingStore.state.isMappedFilterEnabled).toBe(false);
   });
 });

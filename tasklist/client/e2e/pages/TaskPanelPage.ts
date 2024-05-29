@@ -19,12 +19,22 @@ type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion';
 class TaskPanelPage {
   private page: Page;
   readonly availableTasks: Locator;
-  readonly filterOptions: Locator;
+  readonly expandSidePanelButton: Locator;
+  readonly collapseSidePanelButton: Locator;
+  readonly addCustomFilterButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
-    this.filterOptions = page.getByRole('combobox', {name: 'Filter options'});
+    this.expandSidePanelButton = page.getByRole('button', {
+      name: 'Expand to show filters',
+    });
+    this.collapseSidePanelButton = page.getByRole('button', {
+      name: 'Collapse',
+    });
+    this.addCustomFilterButton = page.getByRole('button', {
+      name: 'Filter tasks',
+    });
   }
 
   async goto(params?: {filter?: FilterParam; sortBy?: SortByParam}) {
@@ -50,16 +60,15 @@ class TaskPanelPage {
 
   async filterBy(
     option:
-      | 'All open'
+      | 'All open tasks'
       | 'Unassigned'
       | 'Assigned to me'
       | 'Completed'
       | 'Custom',
   ) {
-    await this.filterOptions.click();
-    await this.page.getByRole('option', {name: option}).click({
-      force: true,
-    });
+    await this.expandSidePanelButton.click();
+    await this.page.getByRole('link', {name: option, exact: true}).click();
+    await this.collapseSidePanelButton.click();
   }
 
   async scrollToLastTask(name: string) {

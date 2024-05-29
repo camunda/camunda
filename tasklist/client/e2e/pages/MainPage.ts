@@ -9,13 +9,11 @@
 import {Page, Locator} from '@playwright/test';
 
 class MainPage {
-  private page: Page;
   readonly openSettingsButton: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
 
   constructor(page: Page) {
-    this.page = page;
     this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});

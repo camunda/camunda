@@ -22,6 +22,16 @@ const BottomSection = styled.section`
   flex-direction: column;
   background-color: var(--cds-layer);
   overflow: auto;
+  position: relative;
+`;
+
+// ToggleContainer is positioned absolutely related to BottomSection
+const ToggleContainer = styled.div`
+  position: absolute;
+  right: 50%;
+  top: 9px;
+  z-index: 1;
+  padding-right: var(--cds-spacing-05);
 `;
 
 const LeftColumn = styled.div`
@@ -77,4 +87,5 @@ export {
   CheckmarkFilled,
   Select,
   IconContainer,
+  ToggleContainer,
 };

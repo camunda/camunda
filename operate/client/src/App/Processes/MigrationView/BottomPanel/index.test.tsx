@@ -286,4 +286,96 @@ describe('MigrationView/BottomPanel', () => {
       within(rowRequestForPayment).getByText(/not mapped/i),
     ).toBeInTheDocument();
   });
+
+  it('should hide mapped flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+
+    const {user} = render(<BottomPanel />, {wrapper: Wrapper});
+
+    screen.getByRole('button', {name: /fetch target process/i}).click();
+
+    // wait for target combobox to be visible
+    expect(
+      await screen.findByRole('combobox', {
+        name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
+      }),
+    ).toBeVisible();
+
+    // Expect all rows to be visible
+    expect(
+      await screen.findByRole('row', {
+        name: new RegExp(`^${requestForPayment.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${checkPayment.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${shipArticles.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${shippingSubProcess.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    // Toggle on unmapped flow nodes
+    await user.click(screen.getByLabelText(/show only not mapped/i));
+
+    // Expect the following rows to be hidden (because they're mapped)
+    expect(
+      screen.queryByRole('row', {
+        name: new RegExp(`^${checkPayment.name}`),
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('row', {
+        name: new RegExp(`^${shipArticles.name}`),
+      }),
+    ).not.toBeInTheDocument();
+
+    // Expect the following rows to be visible (because they're not mapped)
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${requestForPayment.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${shippingSubProcess.name}`),
+      }),
+    ).toBeInTheDocument();
+
+    // Toggle off unmapped flow nodes
+    await user.click(screen.getByLabelText(/show only not mapped/i));
+
+    // Expect all rows to be visible again
+    expect(
+      await screen.findByRole('row', {
+        name: new RegExp(`^${requestForPayment.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${checkPayment.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${shipArticles.name}`),
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('row', {
+        name: new RegExp(`^${shippingSubProcess.name}`),
+      }),
+    ).toBeInTheDocument();
+  });
 });

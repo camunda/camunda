@@ -10,19 +10,7 @@
 
 .modalFooter {
   display: grid;
-  grid-template-columns: 25% 25% 25% 25%;
-
-  & > :nth-child(1) {
-    grid-column-start: 1;
-  }
-
-  & > :nth-child(2) {
-    grid-column-start: 3;
-  }
-
-  & > :nth-child(3) {
-    grid-column-start: 4;
-  }
+  grid-template-columns: 40% 20% 20% 20%;
 }
 
 .twoColumnGrid {
@@ -41,6 +29,12 @@
     margin-right: calc(40px + var(--cds-spacing-03));
     justify-self: flex-end;
   }
+}
+
+.nameField {
+  width: 100%;
+  grid-column-start: span 2;
+  max-width: unset;
 }
 
 .variableGrid {

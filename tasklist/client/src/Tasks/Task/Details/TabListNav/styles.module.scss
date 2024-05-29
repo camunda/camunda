@@ -6,23 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const taskFilters = {
-  'all-open': {
-    id: 'all-open',
-    text: 'All open tasks',
-  },
-  'assigned-to-me': {
-    id: 'assigned-to-me',
-    text: 'Assigned to me',
-  },
-  unassigned: {
-    id: 'unassigned',
-    text: 'Unassigned',
-  },
-  completed: {
-    id: 'completed',
-    text: 'Completed',
-  },
-} as const;
+.tabs {
+  border-top: 1px solid var(--cds-border-subtle);
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
 
-export {taskFilters};
+:global(.cds--tabs__nav-link).hidden {
+  display: none;
+  visibility: hidden;
+}
