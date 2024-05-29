@@ -168,6 +168,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .addLifecycleListener(
             createStreamProcessorLifeCycleAware(
                 context.getCommandApiService(), context.getPartitionId()))
+        .addLifecycleListener(context.getPartitionCommandReceiver())
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)

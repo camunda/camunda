@@ -36,9 +36,14 @@ final class InterPartitionCommandReceiverImpl {
   private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
+  private boolean processingPaused = true;
 
   InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
+  }
+
+  void setProcessingPaused(final boolean processingPaused) {
+    this.processingPaused = processingPaused;
   }
 
   void handleMessage(final MemberId memberId, final byte[] message) {
@@ -53,6 +58,17 @@ final class InterPartitionCommandReceiverImpl {
           decoded.metadata.getIntent(),
           memberId,
           decoded.checkpointId);
+      return;
+    }
+
+    if (processingPaused) {
+      LOG.warn(
+          "Ignoring command {} {} from {}, checkpoint {}, processing paused",
+          decoded.metadata.getValueType(),
+          decoded.metadata.getIntent(),
+          memberId,
+          decoded.checkpointId
+      );
       return;
     }
 

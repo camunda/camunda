@@ -17,6 +17,8 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.Map;
 import org.slf4j.Logger;
 
@@ -27,7 +29,7 @@ import org.slf4j.Logger;
  * failure, are ignored. The sender is responsible for recognizing failures and retrying.
  */
 public final class InterPartitionCommandReceiverActor extends Actor
-    implements DiskSpaceUsageListener, CheckpointListener {
+    implements DiskSpaceUsageListener, CheckpointListener, StreamProcessorLifecycleAware {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final String actorName;
   private final ClusterCommunicationService communicationService;
@@ -83,6 +85,21 @@ public final class InterPartitionCommandReceiverActor extends Actor
   @Override
   public void onNewCheckpointCreated(final long checkpointId) {
     actor.run(() -> receiver.setCheckpointId(checkpointId));
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
+    receiver.setProcessingPaused(false);
+  }
+
+  @Override
+  public void onPaused() {
+    receiver.setProcessingPaused(true);
+  }
+
+  @Override
+  public void onResumed() {
+    receiver.setProcessingPaused(false);
   }
 
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
