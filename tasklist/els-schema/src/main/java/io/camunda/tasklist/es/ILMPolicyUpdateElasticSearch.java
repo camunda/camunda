@@ -14,7 +14,6 @@ import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyResponse;
 import org.elasticsearch.common.settings.Settings;
@@ -48,10 +47,11 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
 
-    final GetLifecyclePolicyResponse policy = retryElasticsearchClient.getLifeCyclePolicy(
-          new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
+    final GetLifecyclePolicyResponse policy =
+        retryElasticsearchClient.getLifeCyclePolicy(
+            new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
 
-    if(policy == null) {
+    if (policy == null) {
       LOGGER.info("ILM policy not found, creating it");
       schemaManager.createIndexLifeCycles();
     }
