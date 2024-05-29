@@ -172,7 +172,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
         uses: octokit/request-action@v2.1.9
         with:
-          route: POST /repos/camunda/zeebe/releases
+          route: POST /repos/camunda/camunda/releases
           draft: true
           name: ${{ env.TAG_VERSION }}
           tag_name: ${{ env.TAG_VERSION }}
@@ -204,8 +204,8 @@ jobs:
             if $DRY_RUN; then
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif $GITHUB_UPLOAD_RELEASE; then
-              echo "Uploading '${f}' file to zeebe repo on GitHub"
-              ./github-release upload --user camunda --repo zeebe --tag "${TAG_VERSION}" --name "${f}" --file "${f}"
+              echo "Uploading '${f}' file to camunda repo on GitHub"
+              ./github-release upload --user camunda --repo camunda --tag "${TAG_VERSION}" --name "${f}" --file "${f}"
             else
               echo "'${f}' file was created, skip upload"
             fi
@@ -298,7 +298,7 @@ jobs:
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "dry_run": "${{ inputs.dryRun }}",
               "release_version": "${{ inputs.releaseVersion }}",
               "branch": "${{ inputs.branch }}"
