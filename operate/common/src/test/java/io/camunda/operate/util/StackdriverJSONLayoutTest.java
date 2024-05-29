@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.junit.LoggerContextRule;
-import org.apache.logging.log4j.test.appender.ListAppender;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
+import org.apache.logging.log4j.core.test.junit.LoggerContextRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,7 +32,7 @@ public class StackdriverJSONLayoutTest {
 
   @Rule public LoggerContextRule loggerRule = new LoggerContextRule("log4j2.xml");
 
-  private ObjectReader jsonReader = new ObjectMapper().reader();
+  private final ObjectReader jsonReader = new ObjectMapper().reader();
 
   @Test
   public void testLayout() throws Exception {

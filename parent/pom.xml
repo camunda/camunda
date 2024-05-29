@@ -153,7 +153,6 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.log4j.testjar>2.19.0</version.log4j.testjar>
     <version.aws-java-sdk>1.12.731</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
@@ -1768,13 +1767,6 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-collections4</artifactId>
         <version>${version.commons-collections4}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-core</artifactId>
-        <version>${version.log4j.testjar}</version>
-        <type>test-jar</type>
       </dependency>
 
       <dependency>
