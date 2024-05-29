@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.opensearch.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,12 +47,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
             + tasklistProperties.getOpenSearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ISM policy to all existent indices");
-    final Response policyExists =
-        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
-    if (policyExists == null) {
-      LOGGER.info("ISM policy does not exist, creating it");
-      schemaManager.createIndexLifeCycles();
-    }
+    schemaManager.createIndexLifeCyclesIfNotExist();
     applyIlmPolicyToIndexTemplate(true);
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
 

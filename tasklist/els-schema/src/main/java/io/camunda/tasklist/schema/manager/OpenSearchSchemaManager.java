@@ -64,14 +64,18 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Override
   public void createSchema() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCycles();
+      createIndexLifeCyclesIfNotExist();
     }
     createDefaults();
     createTemplates();
     createIndices();
   }
 
-  public void createIndexLifeCycles() {
+  public void createIndexLifeCyclesIfNotExist() {
+    if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
+      LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
+      return;
+    }
     LOGGER.info("Creating ISM Policy for deleting archived indices");
 
     final Request request =
