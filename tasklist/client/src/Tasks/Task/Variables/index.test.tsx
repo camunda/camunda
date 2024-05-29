@@ -1575,7 +1575,7 @@ describe('<Variables />', () => {
     });
 
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.runOnlyPendingTimers();
     });
 
     await waitFor(() => {
