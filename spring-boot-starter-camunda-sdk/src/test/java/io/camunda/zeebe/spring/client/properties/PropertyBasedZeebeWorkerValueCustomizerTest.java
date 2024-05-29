@@ -94,6 +94,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetGeneratedName() {
     // given
     final ZeebeClientConfigurationProperties properties = properties();
+    properties.getWorker().setDefaultName("");
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
         new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
