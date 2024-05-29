@@ -201,7 +201,7 @@ public class CommandApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorData)
         .extracting(errorData -> BufferUtil.bufferAsString(errorData))
-        .isEqualTo("Failed to write client request to partition '0', because processing is paused");
+        .isEqualTo("Processing paused for partition '0'");
   }
 
   @Test
