@@ -104,6 +104,30 @@ describe('processInstanceMigration', () => {
     expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
   });
 
+  it('should clear flow node mapping', () => {
+    processInstanceMigrationStore.enable();
+
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
+
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: 'startEvent',
+      targetId: 'endEvent',
+    });
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: 'taskA',
+      targetId: 'taskB',
+    });
+
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({
+      startEvent: 'endEvent',
+      taskA: 'taskB',
+    });
+
+    processInstanceMigrationStore.clearFlowNodeMapping();
+
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
+  });
+
   it('should request batch process after confirm migration', async () => {
     processInstanceMigrationStore.enable();
 

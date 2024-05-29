@@ -16,6 +16,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -30,8 +31,9 @@ import org.springframework.test.web.servlet.MvcResult;
 public class BatchOperationRestServiceIT extends OperateAbstractIT {
 
   @MockBean private BatchOperationReader batchOperationReader;
+  @MockBean private DataAggregator dataAggregator;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   public void testGetBatchOperationWithNoPageSize() throws Exception {
@@ -76,7 +78,7 @@ public class BatchOperationRestServiceIT extends OperateAbstractIT {
     assertErrorMessageContains(mvcResult, "searchBefore must be an array of two values.");
   }
 
-  protected MvcResult postRequestThatShouldFail(Object query) throws Exception {
+  protected MvcResult postRequestThatShouldFail(final Object query) throws Exception {
     return postRequestThatShouldFail(BatchOperationRestService.BATCH_OPERATIONS_URL, query);
   }
 }

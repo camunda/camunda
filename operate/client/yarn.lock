@@ -1187,10 +1187,10 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
-"@bpmn-io/dmn-variable-resolver@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-variable-resolver/-/dmn-variable-resolver-0.5.0.tgz#8868713ac381cf6bb0e5209adbcf636d0fc63b47"
-  integrity sha512-PuMU8Iq94+koozmmlJ43oeT6FIBSWHqtuTANiiz94e3VTpAefN3TaTXYDIb70ggHBaq6rL05dseEkubwiB/wSg==
+"@bpmn-io/dmn-variable-resolver@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-variable-resolver/-/dmn-variable-resolver-0.7.0.tgz#3c42e13f2c8d95624c42508e50034c57bc1059ac"
+  integrity sha512-ssL8fch5U0q8efbrHdgSGznh5Dlk+R0MNnazCtDpyac6yqlgn/JQ/HewCjacTk4XFubbMiDbuEIESHLBsWCBxg==
 
 "@bpmn-io/element-template-icon-renderer@0.5.2":
   version "0.5.2"
@@ -1200,10 +1200,10 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@bpmn-io/feel-editor@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.3.0.tgz#6c60fc14339f2b95784c572bc2a8c6b0a388f1c2"
-  integrity sha512-FuNEICeLuRHFWM7OQ0iBMXhd/iuzitbdSQlOfr0DqswVDsVUq24vV/ZTM1UnjdPp4J2gwhMuYi6a2LaiVNzRKQ==
+"@bpmn-io/feel-editor@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.4.0.tgz#e5759db521d6e641c93f5cf89a73be19a0ec8743"
+  integrity sha512-xfkvacymlQhS45Y4HF5PKmN0O1VMp5KDzBps4JSKEfNfIFEcvpAbOwYcXSmg3nqv6s+Rdyor4lPLgwiA+bqC8Q==
   dependencies:
     "@bpmn-io/feel-lint" "^1.2.0"
     "@codemirror/autocomplete" "^6.12.0"
@@ -1275,7 +1275,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/icons-react@^11.42.0":
+"@carbon/icons-react@^11.41.0":
   version "11.42.0"
   resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.42.0.tgz#a02b5f7a728adce403b64edf98fe159e250d2e54"
   integrity sha512-tQDV9qqa3wcOgd8IIyXT/MN2ltJ1DfxsRF6H2HHsCs5I8uHQ5W+bNF9sKxdh6J+LzJAC8pNRAwLatguWpNwACg==
@@ -1305,16 +1305,16 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.58.1":
-  version "1.58.1"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.58.1.tgz#3ce948d0fdf1ae5dc978bedafe448bef6a0a6f43"
-  integrity sha512-AmQ6TV+JxqEoFAQZC1E/gj8poIfkIjnOcMOoeHmX5c+HgvOIg+dN5xl0K0Irfh+aqTn23DOzwJQGLjCe8EOf1Q==
+"@carbon/react@1.57.0":
+  version "1.57.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.57.0.tgz#a5788700a21bdf561f814d192a1e0927ca16faff"
+  integrity sha512-NjK9hgwJ8sdvUwYPcb33kTgSJ1uTLh1N5ebzEYwNxckgUePtaiv8fOBUxyLJ1hqohenVhw3/x4DiG3pzgVJi7Q==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.20.0"
-    "@carbon/icons-react" "^11.42.0"
+    "@carbon/icons-react" "^11.41.0"
     "@carbon/layout" "^11.22.0"
-    "@carbon/styles" "^1.58.0"
+    "@carbon/styles" "^1.57.0"
     "@floating-ui/react" "^0.26.0"
     "@ibm/telemetry-js" "^1.5.0"
     classnames "2.5.1"
@@ -1334,7 +1334,7 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.58.0":
+"@carbon/styles@^1.57.0":
   version "1.58.0"
   resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.58.0.tgz#102dd0e7a83f6fcc0fc531676a0eb87036136877"
   integrity sha512-Prc2eAyK9n4tW1qB/gci3hPJfc8ThO4PFHWaLYu+W1unJ9BFkLaW5rTJ/K3p91FQcBlHRA5cGNCOrEphfTMqEw==
@@ -3811,10 +3811,10 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.7.0:
-  version "17.7.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.7.0.tgz#2a89e980c9d3e49f32df4108089b3f422324d397"
-  integrity sha512-k1QwYOvqpfCQPjdHBMmmaAdAU3Fmvcgz3KoFjF3inAq0D8IvB/7gaGuWVLfToW4n35+hwcxsgue7crwT69iS9Q==
+bpmn-js@17.7.1:
+  version "17.7.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.7.1.tgz#19c22538f07ef8ba2ef7430f5aeffe2c71a984e1"
+  integrity sha512-PuEdTFqsPMykKfK8vYKMLTBINRAJZreN9NmIYYOmcYPlmIs4GkMFsMy5CWxaS2S1rkqJZSsa06J/OV5ymqgSFQ==
   dependencies:
     bpmn-moddle "^8.1.0"
     diagram-js "^14.6.0"
@@ -4987,28 +4987,28 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-boxed-expression@^16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.3.2.tgz#6f9e03d1f8b312de933050abea58fcc7dd42e4fd"
-  integrity sha512-5KAxboB0nE9OKPVQ7a87iXJW2Gp2GcVHTnMsQin90rwTIrpv2wA64hPMbi8CtOvCH1GTs82d6RY/AqgGTtu4Eg==
+dmn-js-boxed-expression@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.4.0.tgz#19d1dead0f45b81d1f0a16c9948dfc91717c4b04"
+  integrity sha512-3Ypop4u+wj2RhcZOAoYsw6h/mymvnmHqezU6KE892PoyWUbwCK52iRqLVFTQE9z83/t6KUHYA4VHTloilRlrfA==
   dependencies:
-    "@bpmn-io/dmn-variable-resolver" "^0.5.0"
+    "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.5.4"
-    dmn-js-shared "^16.3.2"
+    dmn-js-shared "^16.4.0"
     inferno "~5.6.2"
     min-dash "^4.0.0"
     min-dom "^4.0.3"
     table-js "^9.1.0"
 
-dmn-js-decision-table@^16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.3.2.tgz#216578ff7272b2778ec0e8ecdbe88e44422df24d"
-  integrity sha512-p8obSgG5/Ko0orW3Mu96thYsHWNOU9zKqkZ/xT3O/AKuayGo+CwasyJT+s00S8cd2ccUutpFDqZT0VSq9Nq3dg==
+dmn-js-decision-table@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.4.0.tgz#eca8f0c9810f796fd792c737de7c707a0e7df58c"
+  integrity sha512-L1hJWOI4vE2YLvG1VRB4aTeXK+QqjAan60hhZ29iDOFzYKSfWx9NqySamFo9uEP9fLmNJD2lPCNmC7afOTcRBg==
   dependencies:
-    "@bpmn-io/dmn-variable-resolver" "^0.5.0"
+    "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     css.escape "^1.5.1"
     diagram-js "^14.5.4"
-    dmn-js-shared "^16.3.2"
+    dmn-js-shared "^16.4.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^4.0.0"
@@ -5016,40 +5016,40 @@ dmn-js-decision-table@^16.3.2:
     selection-ranges "^3.0.2"
     table-js "^9.1.0"
 
-dmn-js-drd@^16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.3.2.tgz#b013b30f16423a8afb739cb8041addc7a024ea7f"
-  integrity sha512-JMYbQ09DeGvZsyiFTTipyqhAn0qk8MR9atXI5PvFtPBdQzkknadTbIYiyskE1lTjihrP5pZROyI8fJWQnZ+EVA==
+dmn-js-drd@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.4.0.tgz#475bc278826e1a5df134d44dbd77527f5642e92f"
+  integrity sha512-WgH7g+98saiRUQbgusAoF+mADiSb0sc9MeE4sQNEijxaTnFXl/JfyGQgXazpJ7TMcH4ZbSutVnDnACF9/mOF+g==
   dependencies:
     diagram-js "^14.5.4"
     diagram-js-direct-editing "^3.0.1"
-    dmn-js-shared "^16.3.2"
+    dmn-js-shared "^16.4.0"
     inherits-browser "^0.1.0"
     min-dash "^4.0.0"
     min-dom "^4.0.3"
     object-refs "^0.4.0"
     tiny-svg "^3.0.0"
 
-dmn-js-literal-expression@^16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.3.2.tgz#faac021eb4bf895a109e24ad2e9557df5ce8ba18"
-  integrity sha512-60ldMPNri6VeqtMJYptFfjmQsViQYye8ZmyGyontlrrzm/JGngnWzqdYOQEuWguYoSXhqE/thlfrr4Z3m7FtGg==
+dmn-js-literal-expression@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.4.0.tgz#82f6281289d142f459798b8dbf5f7036595dc528"
+  integrity sha512-GOVSSn16+C/7NSq5gn6Jreep90pKdT2B/dF+eEZFyLVodL+qb2pgfTESEEDcsruRIY14Njle6WFZdUe7KKpjFg==
   dependencies:
-    "@bpmn-io/dmn-variable-resolver" "^0.5.0"
+    "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.5.4"
-    dmn-js-shared "^16.3.2"
+    dmn-js-shared "^16.4.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^4.0.0"
     min-dom "^4.0.3"
     table-js "^9.1.0"
 
-dmn-js-shared@^16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.3.2.tgz#ac2812b5ab80d6053c772cf426eaebd0c2f7f612"
-  integrity sha512-7KKUDTvRtDwUdwCxcKCCxB6e34xVUst66YqRGtIKtiEFAmZsfzfJXds7llnlc7cjAIyzhGmWnkXMsplLzdl4EQ==
+dmn-js-shared@^16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.4.0.tgz#bca1f2815a6a94ad0c8d8a78400097f67fefe072"
+  integrity sha512-pkLZNqfUJ2JomGLxPXyB+lmzcFNrJvsA8/aiPlkOla5fLZVGRzzaY2uP7JaUdS1XFxPlMZ2HwI3punIWQVjpCw==
   dependencies:
-    "@bpmn-io/feel-editor" "^1.3.0"
+    "@bpmn-io/feel-editor" "^1.4.0"
     diagram-js "^14.5.4"
     didi "^10.2.2"
     dmn-moddle "^10.0.0"
@@ -5061,16 +5061,16 @@ dmn-js-shared@^16.3.2:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.3.2:
-  version "16.3.2"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.3.2.tgz#742745d82b5900b36255cd0e6b7b62486c080250"
-  integrity sha512-uc8Q3PCvZoXaBumhzDPRu5I57SJAoowS3Ds9WCszCjAkzQV1vFKfJ2pS7QZ1y8c8dHI+3flOxRCEoSR/WYoMgw==
+dmn-js@16.4.0:
+  version "16.4.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.4.0.tgz#11b9bd2541bb48ed1d6299ea832c1132803694bd"
+  integrity sha512-eYXjbXidL0ryg1/pFLvGy16lDnseiqg2cMjZJKdlv5h/MlMV/Xs6lMczBXp9CKpBLm/fo38Iu0TZRob5drxzTw==
   dependencies:
-    dmn-js-boxed-expression "^16.3.2"
-    dmn-js-decision-table "^16.3.2"
-    dmn-js-drd "^16.3.2"
-    dmn-js-literal-expression "^16.3.2"
-    dmn-js-shared "^16.3.2"
+    dmn-js-boxed-expression "^16.4.0"
+    dmn-js-decision-table "^16.4.0"
+    dmn-js-drd "^16.4.0"
+    dmn-js-literal-expression "^16.4.0"
+    dmn-js-shared "^16.4.0"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"

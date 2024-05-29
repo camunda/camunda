@@ -16,6 +16,7 @@ import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -33,13 +34,14 @@ public class BatchOperationRestService extends InternalAPIErrorController {
   public static final String BATCH_OPERATIONS_URL = "/api/batch-operations";
 
   @Autowired private BatchOperationReader batchOperationReader;
+  @Autowired private DataAggregator dataAggregator;
 
   @Autowired private ObjectMapper objectMapper;
 
   @Operation(summary = "Query batch operations")
   @PostMapping
   public List<BatchOperationDto> queryBatchOperations(
-      @RequestBody BatchOperationRequestDto batchOperationRequestDto) {
+      @RequestBody final BatchOperationRequestDto batchOperationRequestDto) {
     if (batchOperationRequestDto.getPageSize() == null) {
       throw new InvalidRequestException("pageSize parameter must be provided.");
     }
@@ -60,6 +62,6 @@ public class BatchOperationRestService extends InternalAPIErrorController {
 
     final List<BatchOperationEntity> batchOperations =
         batchOperationReader.getBatchOperations(batchOperationRequestDto);
-    return BatchOperationDto.createFrom(batchOperations, objectMapper);
+    return dataAggregator.enrichBatchEntitiesWithMetadata(batchOperations);
   }
 }

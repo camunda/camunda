@@ -34,14 +34,14 @@ public class UserController {
     return userService.createUser(user);
   }
 
-  @DeleteMapping("/{username}")
-  public void deleteUser(@PathVariable("username") final String username) {
-    userService.deleteUser(username);
+  @DeleteMapping("/{id}")
+  public void deleteUser(@PathVariable("id") final int id) {
+    userService.deleteUser(id);
   }
 
-  @GetMapping("/{username}")
-  public CamundaUser findUserByUsername(@PathVariable("username") final String username) {
-    return userService.findUserByUsername(username);
+  @GetMapping("/{id}")
+  public CamundaUser findUserById(@PathVariable("id") final int id) {
+    return userService.findUserById(id);
   }
 
   @GetMapping
@@ -51,7 +51,7 @@ public class UserController {
 
   @PutMapping("/{username}")
   public CamundaUser updateUser(
-      @PathVariable("username") final String username, final CamundaUserWithPassword user) {
-    return userService.updateUser(username, user);
+      @PathVariable("id") final int id, final CamundaUserWithPassword user) {
+    return userService.updateUser(id, user);
   }
 }

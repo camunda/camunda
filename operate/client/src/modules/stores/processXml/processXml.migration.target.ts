@@ -25,6 +25,7 @@ class ProcessesXml extends ProcessXmlBase {
           'bpmn:ServiceTask',
           'bpmn:UserTask',
           'bpmn:SubProcess',
+          'bpmn:CallActivity',
         ].includes(flowNode.$type);
       })
       .map((flowNode) => {

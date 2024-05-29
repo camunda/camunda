@@ -9,7 +9,7 @@ package io.camunda.identity.usermanagement.service;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.usermanagement.Group;
+import io.camunda.identity.user.Group;
 import io.camunda.identity.usermanagement.repository.MembershipRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;

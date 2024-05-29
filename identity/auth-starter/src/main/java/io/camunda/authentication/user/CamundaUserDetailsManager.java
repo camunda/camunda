@@ -8,12 +8,10 @@
 package io.camunda.authentication.user;
 
 import javax.sql.DataSource;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("auth-basic")
 public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
   public CamundaUserDetailsManager(final DataSource dataSource) {
     super(dataSource);

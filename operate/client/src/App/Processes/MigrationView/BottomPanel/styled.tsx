@@ -7,7 +7,13 @@
  */
 
 import styled from 'styled-components';
+import {supportSuccess} from '@carbon/elements';
+import {
+  CheckmarkFilled as BaseCheckmark,
+  ArrowRight as BaseArrowRight,
+} from '@carbon/icons-react';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
+import {Select as BaseSelect} from '@carbon/react';
 
 const BottomSection = styled.section`
   height: 100%;
@@ -20,8 +26,17 @@ const BottomSection = styled.section`
 
 const LeftColumn = styled.div`
   display: flex;
+  align-items: center;
   justify-content: space-between;
   color: var(--cds-text-primary);
+`;
+
+const SourceFlowNodeName = styled.div`
+  flex-grow: 1;
+`;
+
+const ArrowRight = styled(BaseArrowRight)`
+  margin-left: var(--cds-spacing-06);
 `;
 
 const DataTable = styled(BaseDataTable)`
@@ -38,4 +53,28 @@ const ErrorMessageContainer = styled.div`
   height: 100%;
 `;
 
-export {BottomSection, LeftColumn, DataTable, ErrorMessageContainer};
+const CheckmarkFilled = styled(BaseCheckmark)`
+  color: ${supportSuccess};
+`;
+
+const Select = styled(BaseSelect)`
+  width: 288px;
+`;
+
+const IconContainer = styled.div`
+  > svg {
+    block-size: 100%;
+  }
+`;
+
+export {
+  BottomSection,
+  LeftColumn,
+  SourceFlowNodeName,
+  ArrowRight,
+  DataTable,
+  ErrorMessageContainer,
+  CheckmarkFilled,
+  Select,
+  IconContainer,
+};
