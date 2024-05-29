@@ -16,6 +16,7 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.SequencedCollection;
@@ -232,12 +233,12 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @param profile the profile ID
    * @return itself for chaining
    */
-  T withAdditionalProfile(final String profile);
+  T withAdditionalProfile(final String... profile);
 
   /**
-   * @see #withAdditionalProfile(String)
+   * @see #withAdditionalProfile(String[])
    */
-  default T withAdditionalProfile(final Profile profile) {
-    return withAdditionalProfile(profile.getId());
+  default T withAdditionalProfile(final Profile... profile) {
+    return withAdditionalProfile(Arrays.stream(profile).map(Profile::getId).toArray(String[]::new));
   }
 }

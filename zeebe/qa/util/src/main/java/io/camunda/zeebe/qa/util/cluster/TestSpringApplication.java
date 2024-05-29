@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -27,7 +28,7 @@ import org.springframework.http.client.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
-  private final Class<?> springApplication;
+  private final Class<?>[] springApplication;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
@@ -35,15 +36,15 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private ConfigurableApplicationContext springContext;
 
-  public TestSpringApplication(final Class<?> springApplication) {
-    this(springApplication, new HashMap<>(), new HashMap<>(), new ArrayList<>());
+  public TestSpringApplication(final Class<?>... springApplication) {
+    this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplication);
   }
 
   private TestSpringApplication(
-      final Class<?> springApplication,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides,
-      final Collection<String> additionalProfiles) {
+      final Collection<String> additionalProfiles,
+      final Class<?>... springApplication) {
     this.springApplication = springApplication;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
@@ -108,9 +109,8 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return switch (port) {
       case REST -> restPort();
       case MONITORING -> monitoringPort();
-      default ->
-          throw new IllegalArgumentException(
-              "No known port %s; must one of MONITORING".formatted(port));
+      default -> throw new IllegalArgumentException(
+          "No known port %s; must one of MONITORING".formatted(port));
     };
   }
 
@@ -145,8 +145,8 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   @Override
-  public T withAdditionalProfile(final String profile) {
-    additionalProfiles.add(profile);
+  public T withAdditionalProfile(final String... profile) {
+    additionalProfiles.addAll(List.of(profile));
     return self();
   }
 
