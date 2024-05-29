@@ -13,7 +13,7 @@ jobs:
     with:
       identifier: camunda-helm-int
       test-enabled: true
-      caller-git-ref: master
+      caller-git-ref: main
       extra-values: |
         zeebe:
           image:
