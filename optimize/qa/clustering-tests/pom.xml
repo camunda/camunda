@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
     <version>3.14.0-SNAPSHOT</version>
   </parent>
@@ -34,7 +34,7 @@
             </goals>
             <configuration>
               <skip>${skip.docker}</skip>
-              <artifact>org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production</artifact>
+              <artifact>io.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production</artifact>
               <outputDirectory>${project.build.directory}/docker/optimize/distrib</outputDirectory>
             </configuration>
           </execution>

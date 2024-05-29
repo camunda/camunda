@@ -3,16 +3,16 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.variable.util5;
+package io.camunda.optimize.testplugin.adapter.variable.util5;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import io.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class MapObjectVariableToPrimitiveOne implements VariableImportAdapter {
 

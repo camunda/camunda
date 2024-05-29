@@ -3,11 +3,11 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.variable.util2;
+package io.camunda.optimize.testplugin.adapter.variable.util2;
 
+import io.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import io.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import java.util.List;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class SetAllValuesToFooVariableImportAdapter implements VariableImportAdapter {
 

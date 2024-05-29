@@ -3,13 +3,13 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.variable.dmn3;
+package io.camunda.optimize.testplugin.adapter.variable.dmn3;
 
+import io.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter;
+import io.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.camunda.optimize.plugin.importing.variable.DecisionInputImportAdapter;
-import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 
 public class ReturnMoreInputVariables implements DecisionInputImportAdapter {
 

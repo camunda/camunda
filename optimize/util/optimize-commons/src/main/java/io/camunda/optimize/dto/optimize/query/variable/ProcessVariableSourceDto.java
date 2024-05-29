@@ -1,0 +1,24 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
+ */
+package io.camunda.optimize.dto.optimize.query.variable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class ProcessVariableSourceDto {
+
+  private String processInstanceId;
+  private String processDefinitionKey;
+  @Builder.Default private List<String> processDefinitionVersions = new ArrayList<>();
+
+  @Builder.Default
+  private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
+}

@@ -3,10 +3,14 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.performance;
+package io.camunda.optimize.test.performance;
 
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
+import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
+import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
+import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import io.camunda.optimize.test.util.PropertyUtil;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Properties;
@@ -14,10 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;

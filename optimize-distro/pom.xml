@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
     <version>3.14.0-SNAPSHOT</version>
     <relativePath>../optimize/pom.xml</relativePath>
@@ -19,17 +19,17 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>upgrade-optimize</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-reimport-preparation</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -3,9 +3,9 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.businesskey;
+package io.camunda.optimize.testplugin.adapter.businesskey;
 
-import org.camunda.optimize.plugin.importing.businesskey.BusinessKeyImportAdapter;
+import io.camunda.optimize.plugin.importing.businesskey.BusinessKeyImportAdapter;
 
 public class SetAllToFooBusinessKeyImportAdapter implements BusinessKeyImportAdapter {
 

@@ -3,20 +3,20 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.performance;
+package io.camunda.optimize.test.performance;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
+import io.camunda.optimize.exception.OptimizeIntegrationTestException;
+import io.camunda.optimize.service.importing.zeebe.ZeebeImportScheduler;
+import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
+import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.importing.zeebe.ZeebeImportScheduler;
-import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

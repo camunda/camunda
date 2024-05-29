@@ -9,33 +9,33 @@ package com.camunda.optimize.test.upgrade
 import com.fasterxml.jackson.databind.JsonNode
 import jakarta.ws.rs.core.Response
 import lombok.SneakyThrows
-import org.camunda.optimize.OptimizeRequestExecutor
-import org.camunda.optimize.dto.optimize.ReportConstants
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
-import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
-import org.camunda.optimize.dto.optimize.query.entity.EntityType
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto
-import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
-import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
-import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient
-import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService
-import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
-import org.camunda.optimize.service.util.ProcessReportDataType
-import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
-import org.camunda.optimize.service.util.configuration.DatabaseType
-import org.camunda.optimize.test.optimize.AlertClient
-import org.camunda.optimize.test.optimize.CollectionClient
-import org.camunda.optimize.test.optimize.EntitiesClient
-import org.camunda.optimize.test.optimize.EventProcessClient
-import org.camunda.optimize.test.optimize.ReportClient
-import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
+import io.camunda.optimize.OptimizeRequestExecutor
+import io.camunda.optimize.dto.optimize.ReportConstants
+import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
+import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
+import io.camunda.optimize.dto.optimize.query.entity.EntityType
+import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
+import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto
+import io.camunda.optimize.dto.optimize.query.event.process.EventProcessState
+import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
+import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto
+import io.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
+import io.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
+import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient
+import io.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService
+import io.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
+import io.camunda.optimize.service.util.ProcessReportDataType
+import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
+import io.camunda.optimize.service.util.configuration.DatabaseType
+import io.camunda.optimize.test.optimize.AlertClient
+import io.camunda.optimize.test.optimize.CollectionClient
+import io.camunda.optimize.test.optimize.EntitiesClient
+import io.camunda.optimize.test.optimize.EventProcessClient
+import io.camunda.optimize.test.optimize.ReportClient
+import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
@@ -51,8 +51,8 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
-import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER
+import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER
 
 class PostMigrationTest {
 

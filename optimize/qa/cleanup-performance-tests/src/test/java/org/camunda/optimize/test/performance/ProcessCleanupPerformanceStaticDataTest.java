@@ -3,22 +3,22 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.performance;
+package io.camunda.optimize.test.performance;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
+import io.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
+import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import java.time.Period;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
-import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
-import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.elasticsearch.core.TimeValue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;

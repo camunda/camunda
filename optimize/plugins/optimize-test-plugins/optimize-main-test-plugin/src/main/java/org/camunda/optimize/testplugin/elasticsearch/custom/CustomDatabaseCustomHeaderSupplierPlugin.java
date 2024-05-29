@@ -3,10 +3,10 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.elasticsearch.custom;
+package io.camunda.optimize.testplugin.elasticsearch.custom;
 
-import org.camunda.optimize.plugin.elasticsearch.CustomHeader;
-import org.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
+import io.camunda.optimize.plugin.elasticsearch.CustomHeader;
+import io.camunda.optimize.plugin.elasticsearch.DatabaseCustomHeaderSupplier;
 
 public class CustomDatabaseCustomHeaderSupplierPlugin implements DatabaseCustomHeaderSupplier {
 

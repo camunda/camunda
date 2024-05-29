@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>util</artifactId>
     <version>3.14.0-SNAPSHOT</version>
   </parent>
@@ -19,7 +19,7 @@
 
     <!-- Optimize dependencies -->
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
@@ -27,7 +27,7 @@
 
     <!-- Test dependencies-->
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -83,7 +83,7 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.camunda.optimize</groupId>
+                  <groupId>io.camunda.optimize</groupId>
                   <artifactId>optimize-main-test-plugin</artifactId>
                   <version>${project.version}</version>
                   <type>jar</type>
@@ -96,7 +96,7 @@
         </executions>
         <dependencies>
           <dependency>
-            <groupId>org.camunda.optimize</groupId>
+            <groupId>io.camunda.optimize</groupId>
             <artifactId>optimize-main-test-plugin</artifactId>
             <version>${project.version}</version>
           </dependency>
@@ -184,7 +184,7 @@
               </deployer>
               <deployables>
                 <deployable>
-                  <groupId>org.camunda.optimize</groupId>
+                  <groupId>io.camunda.optimize</groupId>
                   <artifactId>engine-it-plugin</artifactId>
                   <type>war</type>
                   <properties>
@@ -198,7 +198,7 @@
       </build>
       <dependencies>
         <dependency>
-          <groupId>org.camunda.optimize</groupId>
+          <groupId>io.camunda.optimize</groupId>
           <artifactId>engine-it-plugin</artifactId>
           <scope>test</scope>
           <type>war</type>

@@ -3,11 +3,16 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.performance;
+package io.camunda.optimize.test.performance;
 
-import static org.camunda.optimize.data.generation.DataGenerationMain.getDefaultDefinitionsOfClass;
-import static org.camunda.optimize.data.generation.DataGenerationMain.parseDefinitions;
+import static io.camunda.optimize.data.generation.DataGenerationMain.getDefaultDefinitionsOfClass;
+import static io.camunda.optimize.data.generation.DataGenerationMain.parseDefinitions;
 
+import io.camunda.optimize.data.generation.DataGenerationExecutor;
+import io.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
+import io.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
+import io.camunda.optimize.data.generation.generators.impl.process.ProcessDataGenerator;
+import io.camunda.optimize.test.util.PropertyUtil;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Properties;
@@ -16,11 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.camunda.optimize.data.generation.DataGenerationExecutor;
-import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
-import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.process.ProcessDataGenerator;
-import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.Test;
 
 public class ImportPerformanceLiveLoadTest extends AbstractImportTest {

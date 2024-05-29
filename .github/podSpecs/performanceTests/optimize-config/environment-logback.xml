@@ -7,8 +7,8 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize" level="debug" />
-  <logger name="org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="warn" />
+  <logger name="io.camunda.optimize" level="debug" />
+  <logger name="io.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="warn" />
   <logger name="org.elasticsearch" level="warn" />
 
   <root level="info">

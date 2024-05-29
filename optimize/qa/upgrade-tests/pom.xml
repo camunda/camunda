@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
     <version>3.14.0-SNAPSHOT</version>
   </parent>
@@ -30,26 +30,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>upgrade-optimize</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>data-generation</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -181,6 +181,10 @@
                 <configuration>
                   <artifactItems>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>camunda-optimize</artifactId>
                       <version>${project.previousVersion}</version>
@@ -193,6 +197,10 @@
                       <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
                     </artifactItem>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>camunda-optimize</artifactId>
                       <version>${project.version}</version>
@@ -246,6 +254,10 @@
                 <configuration>
                   <artifactItems>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>camunda-optimize</artifactId>
                       <version>${project.previousVersion}</version>
@@ -258,6 +270,10 @@
                       <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
                     </artifactItem>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>camunda-optimize</artifactId>
                       <version>${project.version}</version>
@@ -281,6 +297,10 @@
                 <configuration>
                   <artifactItems>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>optimize-data-generator</artifactId>
                       <version>${project.previousVersion}</version>
@@ -291,6 +311,10 @@
                       </outputDirectory>
                     </artifactItem>
                     <artifactItem>
+                      <!--
+                        TODO: using org.camunda.optimize until the release process is steady
+                        with io.camunda.optimize. We will need to change this later.
+                      -->
                       <groupId>org.camunda.optimize</groupId>
                       <artifactId>optimize-data-generator</artifactId>
                       <version>${project.version}</version>

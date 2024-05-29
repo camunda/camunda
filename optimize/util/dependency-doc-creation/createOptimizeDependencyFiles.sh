@@ -21,7 +21,7 @@ cd ${BASEDIR}
 
 # create the back-end dependencies md file
 mvn clean install -DskipTests -Dskip.docker ${SETTINGS_COMMAND} -B --fail-at-end
-mvn exec:java -Dexec.mainClass="org.camunda.optimize.MarkDownDependencyCreator" -Dexec.args=${LICENSE_DIR} ${SETTINGS_COMMAND} -B --fail-at-end
+mvn exec:java -Dexec.mainClass="io.camunda.optimize.MarkDownDependencyCreator" -Dexec.args=${LICENSE_DIR} ${SETTINGS_COMMAND} -B --fail-at-end
 
 # create front-end dependencies md file
 cd ../../client

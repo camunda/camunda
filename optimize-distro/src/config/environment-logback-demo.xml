@@ -1,5 +1,5 @@
 <configuration>
-  <conversionRule conversionWord="sanitize" converterClass="org.camunda.optimize.util.LogUtil" />
+  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
   <if condition='property("JSON_LOGGING").contains("true")'>
     <then>
       <appender name="UPGRADE_JSON" class="ch.qos.logback.core.ConsoleAppender">
@@ -20,9 +20,9 @@
         </encoder>
       </appender>
       <!-- Change the log level for the upgrade here. -->
-      <logger name="org.camunda.optimize" level="info"/>
+      <logger name="io.camunda.optimize" level="info"/>
       <logger name="org.elasticsearch" level="warn"/>
-      <logger name="org.camunda.optimize.upgrade" level="info" additivity="false">
+      <logger name="io.camunda.optimize.upgrade" level="info" additivity="false">
         <appender-ref ref="UPGRADE_JSON"/>
       </logger>
       <root level="warn">
@@ -50,9 +50,9 @@
         </encoder>
       </appender>
       <!-- Change the log level for the upgrade here. -->
-      <logger name="org.camunda.optimize" level="info"/>
+      <logger name="io.camunda.optimize" level="info"/>
       <logger name="org.elasticsearch" level="warn"/>
-      <logger name="org.camunda.optimize.upgrade" level="info" additivity="false">
+      <logger name="io.camunda.optimize.upgrade" level="info" additivity="false">
         <appender-ref ref="UPGRADE"/>
       </logger>
       <root level="warn">

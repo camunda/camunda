@@ -3,14 +3,14 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.variable.util1;
+package io.camunda.optimize.testplugin.adapter.variable.util1;
 
+import io.camunda.optimize.plugin.importing.variable.PluginVariableDto;
+import io.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
-import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
 public class TakeOnlyEverySecondEntityVariableImportAdapter implements VariableImportAdapter {
 

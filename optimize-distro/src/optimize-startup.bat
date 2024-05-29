@@ -63,5 +63,5 @@ echo Starting Camunda Optimize ${project.version}...
 echo.
 
 :: start optimize
-set OPTIMIZE_CMD=%JAVA% %OPTIMIZE_JAVA_OPTS% -cp %OPTIMIZE_CLASSPATH% %DEBUG_JAVA_OPTS% %JAVA_SYSTEM_PROPERTIES% -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+set OPTIMIZE_CMD=%JAVA% %OPTIMIZE_JAVA_OPTS% -cp %OPTIMIZE_CLASSPATH% %DEBUG_JAVA_OPTS% %JAVA_SYSTEM_PROPERTIES% -Dfile.encoding=UTF-8 io.camunda.optimize.Main
 call %OPTIMIZE_CMD%

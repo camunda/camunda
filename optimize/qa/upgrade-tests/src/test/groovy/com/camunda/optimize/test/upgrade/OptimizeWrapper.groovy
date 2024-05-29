@@ -7,9 +7,9 @@ package com.camunda.optimize.test.upgrade
 
 import jakarta.ws.rs.ProcessingException
 import jakarta.ws.rs.core.Response
-import org.camunda.optimize.OptimizeRequestExecutor
-import org.camunda.optimize.test.optimize.HealthClient
-import org.camunda.optimize.test.optimize.StatusClient
+import io.camunda.optimize.OptimizeRequestExecutor
+import io.camunda.optimize.test.optimize.HealthClient
+import io.camunda.optimize.test.optimize.StatusClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

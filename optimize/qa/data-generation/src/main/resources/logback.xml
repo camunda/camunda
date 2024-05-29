@@ -1,5 +1,5 @@
 <configuration>
-  <conversionRule conversionWord="sanitize" converterClass="org.camunda.optimize.util.LogUtil" />
+  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <!-- encoders are assigned the type
          ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
@@ -8,8 +8,8 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize.data.generation" level="OFF" />
-  <logger name="org.camunda.optimize.data.generation.DataGenerationExecutor" level="INFO" />
+  <logger name="io.camunda.optimize.data.generation" level="OFF" />
+  <logger name="io.camunda.optimize.data.generation.DataGenerationExecutor" level="INFO" />
 
   <root level="info">
     <appender-ref ref="STDOUT" />

@@ -75,11 +75,11 @@
     // Ignore deps
     {
       matchDepNames: [
-        "org.camunda.optimize:optimize-data-generator",
-        "org.camunda.optimize:camunda-optimize",
-        "org.camunda.optimize:util",
-        "org.camunda.optimize:qa",
-        "org.camunda.optimize:optimize-plugin-parent",
+        "io.camunda.optimize:optimize-data-generator",
+        "io.camunda.optimize:camunda-optimize",
+        "io.camunda.optimize:util",
+        "io.camunda.optimize:qa",
+        "io.camunda.optimize:optimize-plugin-parent",
         "org.camunda.bpm.model:camunda-bpmn-model",
         "org.camunda.bpm.model:camunda-dmn-model",
         "org.camunda.bpm:camunda-engine-rest-core",

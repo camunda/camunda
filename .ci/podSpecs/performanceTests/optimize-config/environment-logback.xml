@@ -1,5 +1,5 @@
 <configuration>
-  <conversionRule conversionWord="sanitize" converterClass="org.camunda.optimize.util.LogUtil" />
+  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <!-- encoders are assigned the type
          ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
@@ -8,8 +8,8 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize" level="debug" />
-  <logger name="org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="warn" />
+  <logger name="io.camunda.optimize" level="debug" />
+  <logger name="io.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="warn" />
   <logger name="org.elasticsearch" level="warn" />
 
   <root level="info">

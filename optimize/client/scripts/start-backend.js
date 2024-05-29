@@ -124,7 +124,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `java -cp ${classPaths}  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 org.camunda.optimize.Main`,
+      `java -cp ${classPaths}  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 io.camunda.optimize.Main`,
       {
         cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
         shell: true,

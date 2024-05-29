@@ -7,10 +7,10 @@ package com.camunda.optimize.test.upgrade
 
 
 import com.google.common.collect.ImmutableMap
-import org.camunda.optimize.data.generation.DataGenerationMain
-import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation
-import org.camunda.optimize.data.generation.generators.impl.decision.DecideDishDataGenerator
-import org.camunda.optimize.data.generation.generators.impl.process.InvoiceDataFor2TenantsAndSharedDataGenerator
+import io.camunda.optimize.data.generation.DataGenerationMain
+import io.camunda.optimize.data.generation.generators.dto.DataGenerationInformation
+import io.camunda.optimize.data.generation.generators.impl.decision.DecideDishDataGenerator
+import io.camunda.optimize.data.generation.generators.impl.process.InvoiceDataFor2TenantsAndSharedDataGenerator
 
 class CamBpmDataGenerator {
   def static generate() {

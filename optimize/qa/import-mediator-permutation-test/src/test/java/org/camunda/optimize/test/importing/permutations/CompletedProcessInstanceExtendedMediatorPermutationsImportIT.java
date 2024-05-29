@@ -3,29 +3,29 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.importing.permutations;
+package io.camunda.optimize.test.importing.permutations;
 
+import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
+import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import io.camunda.optimize.service.importing.ImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
+import io.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

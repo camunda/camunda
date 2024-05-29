@@ -3,19 +3,19 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.reimport.preparation;
+package io.camunda.optimize.reimport.preparation;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
 import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
 import static org.mockserver.model.HttpRequest.request;
 
+import io.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -41,7 +41,7 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Test
   public void fixedElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
-    String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
+    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
@@ -55,7 +55,7 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Test
   public void dynamicElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
-    String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
+    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
@@ -82,8 +82,8 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   public void multipleElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
     String[] basePackages = {
-      "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
-      "org.camunda.optimize.testplugin.elasticsearch.custom"
+      "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
+      "io.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
@@ -114,7 +114,7 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
     embeddedOptimizeExtension.reloadConfiguration();
   }
 
-  @Import(org.camunda.optimize.Main.class)
+  @Import(io.camunda.optimize.Main.class)
   @TestConfiguration
   public class Configuration {
     @Bean

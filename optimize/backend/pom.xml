@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
     <version>3.14.0-SNAPSHOT</version>
   </parent>
@@ -35,13 +35,13 @@
 
     <!-- Optimize dependencies -->
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>client</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -556,7 +556,7 @@
           <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>org.camunda.optimize</groupId>
+          <groupId>io.camunda.optimize</groupId>
           <artifactId>engine-it-plugin</artifactId>
           <scope>test</scope>
           <type>war</type>
@@ -713,7 +713,7 @@
               </deployer>
               <deployables>
                 <deployable>
-                  <groupId>org.camunda.optimize</groupId>
+                  <groupId>io.camunda.optimize</groupId>
                   <artifactId>engine-it-plugin</artifactId>
                   <type>war</type>
                   <properties>
@@ -736,7 +736,7 @@
                 <configuration>
                   <artifactItems>
                     <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
+                      <groupId>io.camunda.optimize</groupId>
                       <artifactId>optimize-main-test-plugin</artifactId>
                       <version>${project.version}</version>
                       <type>jar</type>
@@ -744,7 +744,7 @@
                       <outputDirectory>${project.build.directory}/testPluginsValid</outputDirectory>
                     </artifactItem>
                     <artifactItem>
-                      <groupId>org.camunda.optimize</groupId>
+                      <groupId>io.camunda.optimize</groupId>
                       <artifactId>optimize-pluginloading-test-plugin</artifactId>
                       <version>${project.version}</version>
                       <type>jar</type>
@@ -757,12 +757,12 @@
             </executions>
             <dependencies>
               <dependency>
-                <groupId>org.camunda.optimize</groupId>
+                <groupId>io.camunda.optimize</groupId>
                 <artifactId>optimize-main-test-plugin</artifactId>
                 <version>${project.version}</version>
               </dependency>
               <dependency>
-                <groupId>org.camunda.optimize</groupId>
+                <groupId>io.camunda.optimize</groupId>
                 <artifactId>optimize-pluginloading-test-plugin</artifactId>
                 <version>${project.version}</version>
               </dependency>

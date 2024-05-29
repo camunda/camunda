@@ -3,11 +3,11 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.engine.rest;
+package io.camunda.optimize.testplugin.engine.rest;
 
+import io.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 import jakarta.ws.rs.client.ClientRequestContext;
 import java.io.IOException;
-import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
 
 public class AddCustomTokenFilter implements EngineRestFilter {
 

@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.optimize</groupId>
+    <groupId>io.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
     <version>3.14.0-SNAPSHOT</version>
   </parent>
@@ -12,7 +12,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -31,7 +31,7 @@
 
     <!-- needed for complex variable DTO only available in test path-->
     <dependency>
-      <groupId>org.camunda.optimize</groupId>
+      <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -80,7 +80,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.3.0</version>
         <configuration>
-          <mainClass>org.camunda.optimize.data.generation.DataGenerationMain</mainClass>
+          <mainClass>io.camunda.optimize.data.generation.DataGenerationMain</mainClass>
           <arguments>
             <!-- Add your arguments here. Example arguments:-->
             <!--<argument>-numberOfProcessInstances</argument>-->

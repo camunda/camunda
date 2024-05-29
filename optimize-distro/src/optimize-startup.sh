@@ -60,4 +60,4 @@ echo
 echo "Starting Camunda Optimize ${project.version}..."
 echo
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp "${OPTIMIZE_CLASSPATH}" ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 io.camunda.optimize.Main

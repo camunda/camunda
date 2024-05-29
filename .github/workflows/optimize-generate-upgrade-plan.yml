@@ -53,12 +53,12 @@ jobs:
         GITHUB_ACTOR_ID=${{ github.actor_id }}
 
         # Define Java content using a Here Document
-        cat <<EOF > optimize/upgrade/src/main/java/org/camunda/optimize/upgrade/plan/factories/Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory.java
-        package org.camunda.optimize.upgrade.plan.factories;
+        cat <<EOF > optimize/upgrade/src/main/java/io/camunda/optimize/upgrade/plan/factories/Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory.java
+        package io.camunda.optimize.upgrade.plan.factories;
 
-        import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
-        import org.camunda.optimize.upgrade.plan.UpgradePlan;
-        import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+        import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+        import io.camunda.optimize.upgrade.plan.UpgradePlan;
+        import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
         public class Upgrade${FROM_VERSION_NO_DOTS}To${TO_VERSION_NO_DOTS}PlanFactory implements UpgradePlanFactory {
 

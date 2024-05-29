@@ -3,15 +3,15 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.importing.permutations;
+package io.camunda.optimize.test.importing.permutations;
 
 import com.google.common.collect.Collections2;
+import io.camunda.optimize.service.importing.ImportMediator;
+import io.camunda.optimize.service.importing.permutations.AbstractImportMediatorPermutationsIT;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
-import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.permutations.AbstractImportMediatorPermutationsIT;
 import org.slf4j.Logger;
 
 public abstract class AbstractExtendedImportMediatorPermutationsIT

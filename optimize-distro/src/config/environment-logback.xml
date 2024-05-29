@@ -1,5 +1,5 @@
 <configuration>
-  <conversionRule conversionWord="sanitize" converterClass="org.camunda.optimize.util.LogUtil" />
+  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
   <if condition='property("JSON_LOGGING").contains("true")'>
     <then>
       <appender name="UPGRADE_JSON" class="ch.qos.logback.core.ConsoleAppender">
@@ -11,9 +11,9 @@
         </encoder>
       </appender>
       <!-- Change the log level for the upgrade here. If provided, the environment variable will take precedence -->
-      <logger name="org.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
+      <logger name="io.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
       <logger name="org.elasticsearch" level="${ES_LOG_LEVEL:-warn}"/>
-      <logger name="org.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
+      <logger name="io.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
         <appender-ref ref="UPGRADE_JSON"/>
       </logger>
       <root level="warn">
@@ -32,9 +32,9 @@
         </encoder>
       </appender>
       <!-- Change the log level for the upgrade here. If provided, the environment variable will take precedence -->
-      <logger name="org.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
+      <logger name="io.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
       <logger name="org.elasticsearch" level="${ES_LOG_LEVEL:-warn}"/>
-      <logger name="org.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
+      <logger name="io.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
         <appender-ref ref="UPGRADE"/>
       </logger>
       <root level="warn">

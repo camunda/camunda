@@ -3,12 +3,12 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.testplugin.adapter.variable.dmn4;
+package io.camunda.optimize.testplugin.adapter.variable.dmn4;
 
+import io.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
+import io.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 import java.util.List;
 import java.util.UUID;
-import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapter;
-import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 
 public class AddNewOutput implements DecisionOutputImportAdapter {
   @Override

@@ -3,19 +3,19 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.test.secured.es;
+package io.camunda.optimize.test.secured.es;
 
+import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+import static io.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-import static org.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependenciesWithAdditionalConfigLocation;
 
+import io.camunda.optimize.service.metadata.PreviousVersion;
+import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import io.camunda.optimize.upgrade.main.UpgradeProcedure;
+import io.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
+import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
+import io.camunda.optimize.util.FileReaderUtil;
 import jakarta.ws.rs.core.Response;
-import org.camunda.optimize.service.metadata.PreviousVersion;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.upgrade.main.UpgradeProcedure;
-import org.camunda.optimize.upgrade.main.UpgradeProcedureFactory;
-import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
-import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;

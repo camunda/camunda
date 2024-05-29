@@ -5,9 +5,9 @@
  */
 package com.camunda.optimize.test.upgrade
 
+import io.camunda.optimize.service.db.DatabaseConstants
 import org.apache.http.HttpHost
 import org.apache.http.client.config.RequestConfig
-import org.camunda.optimize.service.db.DatabaseConstants
 import org.elasticsearch.action.admin.cluster.repositories.delete.DeleteRepositoryRequest
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest

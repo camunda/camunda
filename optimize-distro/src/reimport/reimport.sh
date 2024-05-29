@@ -35,4 +35,4 @@ echo
 echo "Starting Camunda Optimize Reimport ${project.version}...";
 echo
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH -Dfile.encoding=UTF-8 org.camunda.optimize.reimport.preparation.ReimportPreparation
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH -Dfile.encoding=UTF-8 io.camunda.optimize.reimport.preparation.ReimportPreparation

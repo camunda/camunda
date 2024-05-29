@@ -159,7 +159,7 @@ one configuration of the tuple `(partitionType, recordType)`.
 In order to run API you have to run
 
 ```
-org.camunda.optimize.Main
+io.camunda.optimize.Main
 ```
 
 class as a normal class, which will start up embedded Jetty server with listener on port 8080 and
