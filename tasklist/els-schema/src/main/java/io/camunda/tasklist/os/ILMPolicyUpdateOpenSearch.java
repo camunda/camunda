@@ -8,7 +8,6 @@
 package io.camunda.tasklist.os;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
@@ -33,7 +32,7 @@ import org.springframework.stereotype.Component;
 public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
-  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateOpenSearch.class);
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
@@ -121,7 +120,10 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
           final String requiredPolicyId = applyPolicy ? TASKLIST_DELETE_ARCHIVED_INDICES : null;
 
           if (isPolicyAlreadyApplied(existingSettings, requiredPolicyId)) {
-            LOGGER.info("ISM policy already applied to index template {}", templateName);
+            LOGGER.info(
+                "ISM policy already {} index template {}",
+                applyPolicy ? "applied to" : "removed from",
+                templateName);
             continue;
           }
 
