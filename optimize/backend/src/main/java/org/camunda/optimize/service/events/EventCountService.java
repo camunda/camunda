@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,7 +62,7 @@ public class EventCountService {
       final EventSequenceCountReaderFactory eventSequenceCountReaderFactory) {
     this.camundaEventService = camundaEventService;
     this.eventProcessService = eventProcessService;
-    this.eventSequenceCountReader =
+    eventSequenceCountReader =
         eventSequenceCountReaderFactory.createEventSequenceCountReader(
             EXTERNAL_EVENTS_INDEX_SUFFIX);
   }
@@ -111,7 +112,10 @@ public class EventCountService {
             .filter(
                 source ->
                     sequenceCountIndexSuffixes.contains(
-                        source.getConfiguration().getProcessDefinitionKey()))
+                        source
+                            .getConfiguration()
+                            .getProcessDefinitionKey()
+                            .toLowerCase(Locale.ENGLISH)))
             .collect(Collectors.toList());
     if (camundaSources.size() != sourcesWithSequenceIndex.size()) {
       log.debug(
@@ -120,7 +124,10 @@ public class EventCountService {
               .filter(
                   source ->
                       !sequenceCountIndexSuffixes.contains(
-                          source.getConfiguration().getProcessDefinitionKey()))
+                          source
+                              .getConfiguration()
+                              .getProcessDefinitionKey()
+                              .toLowerCase(Locale.ENGLISH)))
               .map(source -> source.getConfiguration().getProcessDefinitionKey())
               .collect(Collectors.toList()));
     }
