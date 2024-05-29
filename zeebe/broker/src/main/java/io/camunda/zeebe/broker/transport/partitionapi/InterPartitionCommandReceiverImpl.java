@@ -67,8 +67,7 @@ final class InterPartitionCommandReceiverImpl {
           decoded.metadata.getValueType(),
           decoded.metadata.getIntent(),
           memberId,
-          decoded.checkpointId
-      );
+          decoded.checkpointId);
       return;
     }
 
