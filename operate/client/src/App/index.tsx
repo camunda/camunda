@@ -25,7 +25,6 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
-import {C3AppTeaserPage} from '@camunda/camunda-composite-components';
 import {C3Provider} from './C3Provider';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
@@ -103,18 +102,6 @@ const App: React.FC = () => {
               <Route
                 path={Paths.decisionInstance()}
                 element={<CarbonDecisionInstance />}
-              />
-              <Route
-                path="/org/:orgId/appTeaser/operate"
-                element={<C3AppTeaserPage appName="operate" />}
-              />
-              <Route
-                path="/org/:orgId/appTeaser/optimize"
-                element={<C3AppTeaserPage appName="optimize" />}
-              />
-              <Route
-                path="/org/:orgId/appTeaser/tasklist"
-                element={<C3AppTeaserPage appName="tasklist" />}
               />
             </Route>
           </Routes>

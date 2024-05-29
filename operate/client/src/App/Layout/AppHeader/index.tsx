@@ -19,6 +19,9 @@ import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
 import {InlineLink} from './styled';
 
 const AppHeader: React.FC = observer(() => {
+  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const IS_ENTERPRISE = window.clientConfig?.isEnterprise === true;
+
   const {currentPage} = useCurrentPage();
   const {displayName, canLogout, userId, salesPlanType, roles} =
     authenticationStore.state;
@@ -31,6 +34,18 @@ const AppHeader: React.FC = observer(() => {
 
   return (
     <C3Navigation
+      notificationSideBar={IS_SAAS ? {} : undefined}
+      appBar={{
+        ariaLabel: 'App Panel',
+        isOpen: false,
+        elementClicked: (app) => {
+          tracking.track({
+            eventName: 'app-switcher-item-clicked',
+            app,
+          });
+        },
+        appTeaserRouteProps: IS_SAAS ? {} : undefined,
+      }}
       app={{
         ariaLabel: 'Camunda Operate',
         name: 'Operate',
@@ -97,8 +112,7 @@ const AppHeader: React.FC = observer(() => {
           },
         ],
         tags:
-          window.clientConfig?.isEnterprise === true ||
-          window.clientConfig?.organizationId
+          IS_ENTERPRISE || IS_SAAS
             ? []
             : [
                 {
@@ -131,30 +145,6 @@ const AppHeader: React.FC = observer(() => {
                   },
                 },
               ],
-      }}
-      appBar={{
-        ariaLabel: 'App Panel',
-        isOpen: false,
-        appTeaserRouteProps: window.clientConfig?.organizationId
-          ? {
-              operate: {
-                to: `/org/${window.clientConfig?.organizationId}/appTeaser/operate`,
-              },
-              optimize: {
-                to: `/org/${window.clientConfig?.organizationId}/appTeaser/optimize`,
-              },
-              tasklist: {
-                to: `/org/${window.clientConfig?.organizationId}/appTeaser/tasklist`,
-              },
-            }
-          : undefined,
-        ...(!window.clientConfig?.organizationId && {elements: []}),
-        elementClicked: (app) => {
-          tracking.track({
-            eventName: 'app-switcher-item-clicked',
-            app,
-          });
-        },
       }}
       infoSideBar={{
         isOpen: false,
