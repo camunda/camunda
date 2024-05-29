@@ -146,6 +146,65 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
+  public void shouldReturnNormalErrorMessageIfProcessingPausedOnDifferentPartition() {
+    // given
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.FULL));
+    handler.addPartition(0, logWriter);
+    handler.onRecovered(0);
+    handler.onPaused(1);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorData)
+        .extracting(errorData -> BufferUtil.bufferAsString(errorData))
+        .isEqualTo(
+            "Failed to write client request to partition '0', because the writer buffer is full.");
+  }
+
+  @Test
+  public void shouldReturnProcessingPausedIfPartitionPausedAndBackPressure() {
+    // given
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.FULL));
+    handler.addPartition(0, logWriter);
+    handler.onRecovered(0);
+    handler.onPaused(0);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    final var responseFuture = handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorData)
+        .extracting(errorData -> BufferUtil.bufferAsString(errorData))
+        .isEqualTo("Failed to write client request to partition '0', because processing is paused");
+  }
+
+  @Test
   public void shouldReturnPartitionLeaderMismatchWhenWriterClosed() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
