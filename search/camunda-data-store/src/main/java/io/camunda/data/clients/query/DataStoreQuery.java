@@ -10,21 +10,7 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreQuery {
-
-  private final DataStoreQueryVariant queryVariant;
-
-  private DataStoreQuery(final Builder builder) {
-    this(builder.queryVariant);
-  }
-
-  public DataStoreQuery(final DataStoreQueryVariant queryVariant) {
-    this.queryVariant = queryVariant;
-  }
-
-  public DataStoreQueryVariant queryVariant() {
-    return queryVariant;
-  }
+public final record DataStoreQuery(DataStoreQueryVariant queryVariant) {
 
   public static DataStoreQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreQuery>> fn) {
@@ -169,7 +155,7 @@ public final class DataStoreQuery {
 
     @Override
     public DataStoreQuery build() {
-      return new DataStoreQuery(this);
+      return new DataStoreQuery(queryVariant);
     }
   }
 }

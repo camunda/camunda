@@ -10,29 +10,14 @@ package io.camunda.data.clients.query;
 import static io.camunda.util.DataStoreCollectionUtil.listAdd;
 import static io.camunda.util.DataStoreCollectionUtil.listAddAll;
 
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public final class DataStoreTermsQuery implements DataStoreQueryVariant {
-
-  private final String field;
-  private final List<DataStoreFieldValue> values;
-
-  private DataStoreTermsQuery(final Builder builder) {
-    field = builder.field;
-    values = builder.values;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public List<DataStoreFieldValue> values() {
-    return values;
-  }
+public final record DataStoreTermsQuery(String field, List<DataStoreTypedValue> values)
+    implements DataStoreQueryVariant {
 
   public static DataStoreTermsQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreTermsQuery>> fn) {
@@ -42,7 +27,7 @@ public final class DataStoreTermsQuery implements DataStoreQueryVariant {
   public static final class Builder implements DataStoreObjectBuilder<DataStoreTermsQuery> {
 
     private String field;
-    private List<DataStoreFieldValue> values;
+    private List<DataStoreTypedValue> values;
 
     public Builder field(final String value) {
       field = value;
@@ -51,7 +36,7 @@ public final class DataStoreTermsQuery implements DataStoreQueryVariant {
 
     public Builder stringTerms(final List<String> values) {
       this.values =
-          listAddAll(this.values, DataStoreFieldValue.of(values, DataStoreFieldValue::of));
+          listAddAll(this.values, DataStoreTypedValue.of(values, DataStoreTypedValue::of));
       return this;
     }
 
@@ -61,7 +46,7 @@ public final class DataStoreTermsQuery implements DataStoreQueryVariant {
 
     public Builder intTerms(final List<Integer> values) {
       this.values =
-          listAddAll(this.values, DataStoreFieldValue.of(values, DataStoreFieldValue::of));
+          listAddAll(this.values, DataStoreTypedValue.of(values, DataStoreTypedValue::of));
       return this;
     }
 
@@ -71,7 +56,7 @@ public final class DataStoreTermsQuery implements DataStoreQueryVariant {
 
     public Builder longTerms(final List<Long> values) {
       this.values =
-          listAddAll(this.values, DataStoreFieldValue.of(values, DataStoreFieldValue::of));
+          listAddAll(this.values, DataStoreTypedValue.of(values, DataStoreTypedValue::of));
       return this;
     }
 
@@ -81,7 +66,7 @@ public final class DataStoreTermsQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreTermsQuery build() {
-      return new DataStoreTermsQuery(this);
+      return new DataStoreTermsQuery(field, values);
     }
   }
 }

@@ -16,12 +16,14 @@ import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 public final class WildcardQueryTransformer
     extends OpensearchTransformer<DataStoreWildcardQuery, WildcardQuery> {
 
-  public WildcardQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public WildcardQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public WildcardQuery apply(final DataStoreWildcardQuery value) {
-    return QueryBuilders.wildcard().field(value.field()).value(value.value()).build();
+    final var field = value.field();
+    final var fieldValue = value.value();
+    return QueryBuilders.wildcard().field(field).value(fieldValue).build();
   }
 }

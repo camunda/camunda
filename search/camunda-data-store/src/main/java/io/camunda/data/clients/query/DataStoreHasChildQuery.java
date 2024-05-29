@@ -10,23 +10,8 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreHasChildQuery implements DataStoreQueryVariant {
-
-  private final DataStoreQuery query;
-  private final String type;
-
-  private DataStoreHasChildQuery(final Builder builder) {
-    query = builder.query;
-    type = builder.type;
-  }
-
-  public DataStoreQuery query() {
-    return query;
-  }
-
-  public String type() {
-    return type;
-  }
+public final record DataStoreHasChildQuery(DataStoreQuery query, String type)
+    implements DataStoreQueryVariant {
 
   static DataStoreHasChildQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreHasChildQuery>> fn) {
@@ -54,7 +39,7 @@ public final class DataStoreHasChildQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreHasChildQuery build() {
-      return new DataStoreHasChildQuery(this);
+      return new DataStoreHasChildQuery(query, type);
     }
   }
 }

@@ -14,7 +14,7 @@ import io.camunda.service.query.types.SearchQueryPage;
 import io.camunda.service.query.types.SearchQuerySort;
 import org.junit.jupiter.api.Test;
 
-public class SearchQueryTest {
+public class SearchQueryBuilderTest {
 
   @Test
   public void shouldCreateQuery() {

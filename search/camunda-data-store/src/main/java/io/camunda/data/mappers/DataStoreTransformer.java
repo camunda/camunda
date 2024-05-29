@@ -10,6 +10,7 @@ package io.camunda.data.mappers;
 public interface DataStoreTransformer<T, R> {
 
   default R apply(T value) {
-    throw new IllegalArgumentException("Not supported transformer for value of type " + value.getClass().toString());
+    throw new IllegalArgumentException(
+        "Not supported transformer for value of type " + value.getClass().toString());
   }
 }

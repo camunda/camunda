@@ -15,12 +15,14 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class PrefixQueryTransformer
     extends QueryVariantTransformer<DataStorePrefixQuery, PrefixQuery> {
 
-  public PrefixQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public PrefixQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public PrefixQuery apply(final DataStorePrefixQuery value) {
-    return QueryBuilders.prefix().field(value.field()).value(value.value()).build();
+    final var field = value.field();
+    final var fieldValue = value.value();
+    return QueryBuilders.prefix().field(field).value(fieldValue).build();
   }
 }

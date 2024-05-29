@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
 import io.camunda.data.clients.query.DataStoreTermsQuery;
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.transformers.ElasticsearchTransformers;
 import java.util.List;
 
@@ -31,7 +31,7 @@ public final class TermsQueryTransformer
     return QueryBuilders.terms().field(field).terms(termsQueryField).build();
   }
 
-  private <T> TermsQueryField of(final List<DataStoreFieldValue> values) {
+  private <T> TermsQueryField of(final List<DataStoreTypedValue> values) {
     final var transformer = getFieldValueTransformer();
     final var fieldValues = values.stream().map(transformer::apply).toList();
     return TermsQueryField.of(f -> f.value(fieldValues));

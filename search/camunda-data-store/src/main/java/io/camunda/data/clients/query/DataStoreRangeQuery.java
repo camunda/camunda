@@ -10,53 +10,9 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreRangeQuery implements DataStoreQueryVariant {
-
-  private final String field;
-  private final Object gt;
-  private final Object gte;
-  private final Object lt;
-  private final Object lte;
-  private final String from;
-  private final String to;
-
-  private DataStoreRangeQuery(final Builder builder) {
-    field = builder.field;
-    gt = builder.gt;
-    gte = builder.gte;
-    lt = builder.lt;
-    lte = builder.lte;
-    from = builder.from;
-    to = builder.to;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public Object gt() {
-    return gt;
-  }
-
-  public Object gte() {
-    return gte;
-  }
-
-  public Object lt() {
-    return lt;
-  }
-
-  public Object lte() {
-    return lte;
-  }
-
-  public String from() {
-    return from;
-  }
-
-  public String to() {
-    return to;
-  }
+public final record DataStoreRangeQuery(
+    String field, Object gt, Object gte, Object lt, Object lte, String from, String to)
+    implements DataStoreQueryVariant {
 
   static DataStoreRangeQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreRangeQuery>> fn) {
@@ -110,7 +66,7 @@ public final class DataStoreRangeQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreRangeQuery build() {
-      return new DataStoreRangeQuery(this);
+      return new DataStoreRangeQuery(field, gt, gte, lt, lte, from, to);
     }
   }
 }

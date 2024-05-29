@@ -15,8 +15,8 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class MatchNoneQueryTransformer
     extends QueryVariantTransformer<DataStoreMatchNoneQuery, MatchNoneQuery> {
 
-  public MatchNoneQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public MatchNoneQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override

@@ -15,12 +15,13 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class ExistsQueryTransformer
     extends QueryVariantTransformer<DataStoreExistsQuery, ExistsQuery> {
 
-  public ExistsQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public ExistsQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public ExistsQuery apply(final DataStoreExistsQuery value) {
-    return QueryBuilders.exists().field(value.field()).build();
+    final var field = value.field();
+    return QueryBuilders.exists().field(field).build();
   }
 }

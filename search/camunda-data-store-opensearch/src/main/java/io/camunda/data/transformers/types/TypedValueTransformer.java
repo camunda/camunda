@@ -7,15 +7,15 @@
  */
 package io.camunda.data.transformers.types;
 
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.mappers.DataStoreTransformer;
 import org.opensearch.client.opensearch._types.FieldValue;
 
-public class FieldValueTransformer
-    implements DataStoreTransformer<DataStoreFieldValue, FieldValue> {
+public class TypedValueTransformer
+    implements DataStoreTransformer<DataStoreTypedValue, FieldValue> {
 
   @Override
-  public FieldValue apply(final DataStoreFieldValue value) {
+  public FieldValue apply(final DataStoreTypedValue value) {
     if (value.isString()) {
       return FieldValue.of(value.stringValue());
     } else if (value.isInteger()) {

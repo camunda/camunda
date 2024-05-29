@@ -38,7 +38,7 @@ public class QueryTransformer extends ElasticsearchTransformer<DataStoreQuery, Q
   }
 
   public <T extends DataStoreQueryVariant, R extends QueryVariant>
-      DataStoreTransformer<T, R> getQueryVariantTransformer(final Class cls) {
+      DataStoreTransformer<T, R> getQueryVariantTransformer(final Class<?> cls) {
     return getTransformer(cls);
   }
 }

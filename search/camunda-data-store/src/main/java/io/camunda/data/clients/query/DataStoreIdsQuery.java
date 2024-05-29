@@ -14,17 +14,7 @@ import io.camunda.util.DataStoreObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public final class DataStoreIdsQuery implements DataStoreQueryVariant {
-
-  private final List<String> values;
-
-  private DataStoreIdsQuery(final Builder builder) {
-    values = builder.values;
-  }
-
-  public List<String> values() {
-    return values;
-  }
+public final record DataStoreIdsQuery(List<String> values) implements DataStoreQueryVariant {
 
   static DataStoreIdsQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreIdsQuery>> fn) {
@@ -47,7 +37,7 @@ public final class DataStoreIdsQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreIdsQuery build() {
-      return new DataStoreIdsQuery(this);
+      return new DataStoreIdsQuery(values);
     }
   }
 }

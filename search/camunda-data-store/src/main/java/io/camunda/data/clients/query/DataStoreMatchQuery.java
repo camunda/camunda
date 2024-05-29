@@ -10,29 +10,8 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreMatchQuery implements DataStoreQueryVariant {
-
-  private final String field;
-  private final String query;
-  private final String operator;
-
-  private DataStoreMatchQuery(final Builder builder) {
-    field = builder.field;
-    query = builder.query;
-    operator = builder.operator;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public String query() {
-    return query;
-  }
-
-  public String operator() {
-    return operator;
-  }
+public final record DataStoreMatchQuery(String field, String query, String operator)
+    implements DataStoreQueryVariant {
 
   static DataStoreMatchQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreMatchQuery>> fn) {
@@ -62,7 +41,7 @@ public final class DataStoreMatchQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreMatchQuery build() {
-      return new DataStoreMatchQuery(this);
+      return new DataStoreMatchQuery(field, query, operator);
     }
   }
 }

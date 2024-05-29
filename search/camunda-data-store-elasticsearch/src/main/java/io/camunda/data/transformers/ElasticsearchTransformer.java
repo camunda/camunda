@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.data.clients.sort.DataStoreSortOptions;
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.mappers.DataStoreTransformer;
 
 public abstract class ElasticsearchTransformer<T, R> implements DataStoreTransformer<T, R> {
@@ -23,7 +23,7 @@ public abstract class ElasticsearchTransformer<T, R> implements DataStoreTransfo
     this.transformers = transformers;
   }
 
-  protected <T, R> DataStoreTransformer<T, R> getTransformer(final Class cls) {
+  protected <T, R> DataStoreTransformer<T, R> getTransformer(final Class<?> cls) {
     return (DataStoreTransformer<T, R>) transformers.getTransformer(cls);
   }
 
@@ -31,8 +31,8 @@ public abstract class ElasticsearchTransformer<T, R> implements DataStoreTransfo
     return getTransformer(DataStoreQuery.class);
   }
 
-  protected DataStoreTransformer<DataStoreFieldValue, FieldValue> getFieldValueTransformer() {
-    return getTransformer(DataStoreFieldValue.class);
+  protected DataStoreTransformer<DataStoreTypedValue, FieldValue> getFieldValueTransformer() {
+    return getTransformer(DataStoreTypedValue.class);
   }
 
   protected DataStoreTransformer<DataStoreSortOptions, SortOptions> getSortOptionsTransformer() {

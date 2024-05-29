@@ -9,11 +9,128 @@ package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.data.clients.query.DataStoreBoolQuery;
+import io.camunda.data.clients.query.DataStoreHasChildQuery;
+import io.camunda.data.clients.query.DataStoreTermQuery;
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.query.SearchQuery;
 import io.camunda.service.query.filter.ProcessInstanceFilter.Builder;
+import io.camunda.service.util.StubbedDataStoreClient;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ProcessInstanceFilterTest {
+public final class ProcessInstanceFilterTest {
+
+  private ProcessInstanceServices services;
+  private StubbedDataStoreClient client;
+
+  @BeforeEach
+  public void before() {
+    client = new StubbedDataStoreClient();
+    new ProcessInstanceSearchQueryStub().registerWith(client);
+    services = new ProcessInstanceServices(client);
+  }
+
+  @Test
+  public void shouldQueryOnlyByProcessInstances() {
+    // given
+    final var filter = FilterBuilders.processInstance((f) -> f);
+    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryVariant();
+    assertThat((queryVariant))
+        .isInstanceOfSatisfying(
+            DataStoreTermQuery.class,
+            (t) -> {
+              assertThat(t.field()).isEqualTo("joinRelation");
+              assertThat(t.value().stringValue()).isEqualTo("processInstance");
+            });
+  }
+
+  @Test
+  public void shouldQueryByProcessInstanceKey() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance((f) -> f.processInstanceKeys(4503599627370497L));
+    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryVariant();
+    assertThat(queryVariant).isInstanceOf(DataStoreBoolQuery.class);
+    assertThat(((DataStoreBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertThat(((DataStoreBoolQuery) queryVariant).must().get(0).queryVariant())
+        .isInstanceOfSatisfying(
+            DataStoreTermQuery.class,
+            (t) -> {
+              assertThat(t.field()).isEqualTo("joinRelation");
+              assertThat(t.value().stringValue()).isEqualTo("processInstance");
+            });
+
+    assertThat(((DataStoreBoolQuery) queryVariant).must().get(1).queryVariant())
+        .isInstanceOfSatisfying(
+            DataStoreTermQuery.class,
+            (t) -> {
+              assertThat(t.field()).isEqualTo("processInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(4503599627370497L);
+            });
+  }
+
+  @Test
+  public void shouldQueryByVariableValues() {
+    // given
+    final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
+    final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
+    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    final var queryVariant = searchRequest.query().queryVariant();
+    assertThat(queryVariant).isInstanceOf(DataStoreBoolQuery.class);
+    assertThat(((DataStoreBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertThat(((DataStoreBoolQuery) queryVariant).must().get(0).queryVariant())
+        .isInstanceOfSatisfying(
+            DataStoreTermQuery.class,
+            (t) -> {
+              assertThat(t.field()).isEqualTo("joinRelation");
+              assertThat(t.value().stringValue()).isEqualTo("processInstance");
+            });
+
+    assertThat(((DataStoreBoolQuery) queryVariant).must().get(1).queryVariant())
+        .isInstanceOf(DataStoreHasChildQuery.class);
+  }
+
+  @Test
+  public void shouldReturnProcessInstance() {
+    // given
+    final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
+    final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
+    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+
+    // when
+    final var response = services.search(searchQuery);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.total()).isEqualTo(1);
+  }
 
   @Test
   public void shouldCreateDefaultFilter() {

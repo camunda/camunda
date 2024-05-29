@@ -10,21 +10,7 @@ package io.camunda.data.clients.sort;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreFieldSort {
-
-  private final String field;
-  private final SortOrder order;
-  private final String missing;
-
-  private DataStoreFieldSort(final Builder builder) {
-    field = builder.field;
-    order = builder.order;
-    missing = builder.missing;
-  }
-
-  public String field() {
-    return field;
-  }
+public final record DataStoreFieldSort(String field, SortOrder order, String missing) {
 
   public boolean asc() {
     return SortOrder.ASC == order;
@@ -32,14 +18,6 @@ public final class DataStoreFieldSort {
 
   public boolean desc() {
     return SortOrder.DESC == order;
-  }
-
-  public SortOrder order() {
-    return order;
-  }
-
-  public String missing() {
-    return missing;
   }
 
   public static DataStoreFieldSort of(
@@ -84,7 +62,7 @@ public final class DataStoreFieldSort {
 
     @Override
     public DataStoreFieldSort build() {
-      return new DataStoreFieldSort(this);
+      return new DataStoreFieldSort(field, order, missing);
     }
   }
 }

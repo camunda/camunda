@@ -10,23 +10,8 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreWildcardQuery implements DataStoreQueryVariant {
-
-  private final String field;
-  private final String value;
-
-  private DataStoreWildcardQuery(final Builder builder) {
-    field = builder.field;
-    value = builder.value;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public String value() {
-    return value;
-  }
+public final record DataStoreWildcardQuery(String field, String value)
+    implements DataStoreQueryVariant {
 
   static DataStoreWildcardQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreWildcardQuery>> fn) {
@@ -50,7 +35,7 @@ public final class DataStoreWildcardQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreWildcardQuery build() {
-      return new DataStoreWildcardQuery(this);
+      return new DataStoreWildcardQuery(field, value);
     }
   }
 }

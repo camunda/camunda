@@ -8,8 +8,11 @@
 package io.camunda.data.transformers.query;
 
 import io.camunda.data.clients.query.DataStoreBoolQuery;
+import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.data.transformers.OpensearchTransformers;
+import java.util.List;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
 public class BoolQueryTransformer extends QueryVariantTransformer<DataStoreBoolQuery, BoolQuery> {
@@ -21,31 +24,32 @@ public class BoolQueryTransformer extends QueryVariantTransformer<DataStoreBoolQ
   @Override
   public BoolQuery apply(final DataStoreBoolQuery value) {
     final var builder = QueryBuilders.bool();
-
     final var filter = value.filter();
-    if (filter != null && !filter.isEmpty()) {
-      final var transformedFilter = filter.stream().map(queryTransformer::apply).toList();
-      builder.filter(transformedFilter);
-    }
-
     final var must = value.must();
-    if (must != null && !must.isEmpty()) {
-      final var transformedMust = must.stream().map(queryTransformer::apply).toList();
-      builder.must(transformedMust);
-    }
-
     final var should = value.should();
-    if (should != null && !should.isEmpty()) {
-      final var transformedShould = should.stream().map(queryTransformer::apply).toList();
-      builder.should(transformedShould);
+    final var mustNot = value.mustNot();
+
+    if (filter != null && !filter.isEmpty()) {
+      builder.filter(of(filter));
     }
 
-    final var mustNot = value.mustNot();
+    if (must != null && !must.isEmpty()) {
+      builder.must(of(must));
+    }
+
+    if (should != null && !should.isEmpty()) {
+      builder.should(of(should));
+    }
+
     if (mustNot != null && !mustNot.isEmpty()) {
-      final var transformedMustNot = mustNot.stream().map(queryTransformer::apply).toList();
-      builder.mustNot(transformedMustNot);
+      builder.mustNot(of(mustNot));
     }
 
     return builder.build();
+  }
+
+  private List<Query> of(final List<DataStoreQuery> values) {
+    final var transformer = getQueryTransformer();
+    return values.stream().map(transformer::apply).toList();
   }
 }

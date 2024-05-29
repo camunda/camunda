@@ -10,17 +10,7 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreExistsQuery implements DataStoreQueryVariant {
-
-  private final String field;
-
-  private DataStoreExistsQuery(final Builder builder) {
-    field = builder.field;
-  }
-
-  public String field() {
-    return field;
-  }
+public final record DataStoreExistsQuery(String field) implements DataStoreQueryVariant {
 
   static DataStoreExistsQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreExistsQuery>> fn) {
@@ -38,7 +28,7 @@ public final class DataStoreExistsQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreExistsQuery build() {
-      return new DataStoreExistsQuery(this);
+      return new DataStoreExistsQuery(field);
     }
   }
 }

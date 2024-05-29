@@ -17,8 +17,8 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 
 public class QueryTransformer extends OpensearchTransformer<DataStoreQuery, Query> {
 
-  public QueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public QueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
@@ -29,14 +29,16 @@ public class QueryTransformer extends OpensearchTransformer<DataStoreQuery, Quer
       return null;
     }
 
-    final var mapper = getQueryVariantMapper(variant.getClass());
-    final var query = mapper.apply(variant)._toQuery();
+    final var variantCls = variant.getClass();
+    final var transformer = getQueryVariantTransformer(variantCls);
+    final var transformedQueryVariant = transformer.apply(variant);
+    final var query = transformedQueryVariant._toQuery();
 
     return query;
   }
 
   public <T extends DataStoreQueryVariant, R extends QueryVariant>
-      DataStoreTransformer<T, R> getQueryVariantMapper(final Class cls) {
-    return mappers.getMapper(cls);
+      DataStoreTransformer<T, R> getQueryVariantTransformer(final Class<?> cls) {
+    return getTransformer(cls);
   }
 }

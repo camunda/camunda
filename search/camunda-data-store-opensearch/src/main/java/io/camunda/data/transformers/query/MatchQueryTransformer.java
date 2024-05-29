@@ -17,16 +17,17 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class MatchQueryTransformer
     extends QueryVariantTransformer<DataStoreMatchQuery, MatchQuery> {
 
-  public MatchQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public MatchQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public MatchQuery apply(final DataStoreMatchQuery value) {
-    return QueryBuilders.match()
-        .field(value.field())
-        .query(FieldValue.of(value.query()))
-        .operator(Operator.valueOf(value.operator()))
-        .build();
+    final var field = value.field();
+    final var query = value.query();
+    final var queryAsFieldValue = FieldValue.of(query);
+    final var operator = Operator.valueOf(value.operator());
+
+    return QueryBuilders.match().field(field).query(queryAsFieldValue).operator(operator).build();
   }
 }

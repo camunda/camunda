@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.data.transformers.core.search;
+package io.camunda.data.transformers.search;
 
 import io.camunda.data.clients.core.search.DataStoreSearchHit;
 import io.camunda.data.transformers.OpensearchTransformer;
@@ -15,18 +15,13 @@ import org.opensearch.client.opensearch.core.search.Hit;
 
 public class SearchHitTransformer<T> extends OpensearchTransformer<Hit<T>, DataStoreSearchHit<T>> {
 
-  public SearchHitTransformer(OpensearchTransformers mappers) {
-    super(mappers);
+  public SearchHitTransformer(OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public DataStoreSearchHit<T> apply(Hit<T> value) {
-    final Object[] sortValues;
-    if (value.sort() != null && !value.sort().isEmpty()) {
-      sortValues = toArray(value.sort());
-    } else {
-      sortValues = null;
-    }
+    final Object[] sortValues = toArray(value.sort());
 
     return new DataStoreSearchHit.Builder<T>()
         .id(value.id())
@@ -41,6 +36,10 @@ public class SearchHitTransformer<T> extends OpensearchTransformer<Hit<T>, DataS
   }
 
   private Object[] toArray(final List<String> values) {
-    return values.toArray();
+    if (values != null && !values.isEmpty()) {
+      return values.toArray();
+    } else {
+      return null;
+    }
   }
 }

@@ -8,16 +8,34 @@
 package io.camunda.data.transformers;
 
 import io.camunda.data.clients.query.DataStoreQuery;
+import io.camunda.data.clients.sort.DataStoreSortOptions;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.mappers.DataStoreTransformer;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public abstract class OpensearchTransformer<T, R> implements DataStoreTransformer<T, R> {
 
-  protected final OpensearchTransformers mappers;
-  protected final DataStoreTransformer<DataStoreQuery, Query> queryTransformer;
+  protected final OpensearchTransformers transformers;
 
-  public OpensearchTransformer(final OpensearchTransformers mappers) {
-    this.mappers = mappers;
-    queryTransformer = mappers.getMapper(DataStoreQuery.class);
+  public OpensearchTransformer(final OpensearchTransformers transformers) {
+    this.transformers = transformers;
+  }
+
+  protected <T, R> DataStoreTransformer<T, R> getTransformer(final Class<?> cls) {
+    return (DataStoreTransformer<T, R>) transformers.getTransformer(cls);
+  }
+
+  protected DataStoreTransformer<DataStoreQuery, Query> getQueryTransformer() {
+    return getTransformer(DataStoreQuery.class);
+  }
+
+  protected DataStoreTransformer<DataStoreTypedValue, FieldValue> getFieldValueTransformer() {
+    return getTransformer(DataStoreTypedValue.class);
+  }
+
+  protected DataStoreTransformer<DataStoreSortOptions, SortOptions> getSortOptionsTransformer() {
+    return getTransformer(DataStoreSortOptions.class);
   }
 }

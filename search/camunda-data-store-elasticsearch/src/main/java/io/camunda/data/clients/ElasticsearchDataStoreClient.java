@@ -15,7 +15,7 @@ import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
 import io.camunda.data.mappers.DataStoreTransformer;
 import io.camunda.data.transformers.ElasticsearchTransformers;
-import io.camunda.data.transformers.core.SearchResponseTransformer;
+import io.camunda.data.transformers.search.SearchResponseTransformer;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 

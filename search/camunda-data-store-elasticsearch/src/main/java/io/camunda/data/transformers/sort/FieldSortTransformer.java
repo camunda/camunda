@@ -30,12 +30,13 @@ public final class FieldSortTransformer
   }
 
   private SortOrder toSortOrder(final DataStoreFieldSort value) {
-    if (value.asc()) {
-      return SortOrder.Asc;
-    } else if (value.desc()) {
-      return SortOrder.Desc;
-    } else {
-      return null;
+    if (value != null) {
+      if (value.asc()) {
+        return SortOrder.Asc;
+      } else if (value.desc()) {
+        return SortOrder.Desc;
+      }
     }
+    return null;
   }
 }

@@ -14,35 +14,12 @@ import io.camunda.util.DataStoreObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public final class DataStoreBoolQuery implements DataStoreQueryVariant {
-
-  private final List<DataStoreQuery> filter;
-  private final List<DataStoreQuery> must;
-  private final List<DataStoreQuery> mustNot;
-  private final List<DataStoreQuery> should;
-
-  private DataStoreBoolQuery(final Builder builder) {
-    filter = builder.filter;
-    must = builder.must;
-    mustNot = builder.mustNot;
-    should = builder.should;
-  }
-
-  public List<DataStoreQuery> filter() {
-    return filter;
-  }
-
-  public List<DataStoreQuery> must() {
-    return must;
-  }
-
-  public List<DataStoreQuery> mustNot() {
-    return mustNot;
-  }
-
-  public List<DataStoreQuery> should() {
-    return should;
-  }
+public final record DataStoreBoolQuery(
+    List<DataStoreQuery> filter,
+    List<DataStoreQuery> must,
+    List<DataStoreQuery> mustNot,
+    List<DataStoreQuery> should)
+    implements DataStoreQueryVariant {
 
   static DataStoreBoolQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreBoolQuery>> fn) {
@@ -118,7 +95,7 @@ public final class DataStoreBoolQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStoreBoolQuery build() {
-      return new DataStoreBoolQuery(this);
+      return new DataStoreBoolQuery(filter, must, mustNot, should);
     }
   }
 }

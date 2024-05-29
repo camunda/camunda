@@ -17,22 +17,26 @@ import org.opensearch.client.opensearch._types.SortOrder;
 public final class FieldSortTransformer
     extends OpensearchTransformer<DataStoreFieldSort, FieldSort> {
 
-  public FieldSortTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public FieldSortTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public FieldSort apply(final DataStoreFieldSort value) {
-    return SortOptionsBuilders.field().field(value.field()).order(toSortOrder(value)).build();
+    final var field = value.field();
+    final var order = toSortOrder(value);
+
+    return SortOptionsBuilders.field().field(field).order(order).build();
   }
 
   private SortOrder toSortOrder(final DataStoreFieldSort value) {
-    if (value.asc()) {
-      return SortOrder.Asc;
-    } else if (value.desc()) {
-      return SortOrder.Desc;
-    } else {
-      return null;
+    if (value != null) {
+      if (value.asc()) {
+        return SortOrder.Asc;
+      } else if (value.desc()) {
+        return SortOrder.Desc;
+      }
     }
+    return null;
   }
 }

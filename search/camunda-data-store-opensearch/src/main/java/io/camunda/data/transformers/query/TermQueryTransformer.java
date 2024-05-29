@@ -14,15 +14,17 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 
 public class TermQueryTransformer extends QueryVariantTransformer<DataStoreTermQuery, TermQuery> {
 
-  public TermQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public TermQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public TermQuery apply(final DataStoreTermQuery value) {
-    return QueryBuilders.term()
-        .field(value.field())
-        .value(fieldValueTransformer.apply(value.value()))
-        .build();
+    final var field = value.field();
+    final var transformer = getFieldValueTransformer();
+    final var fieldValue = value.value();
+    final var tranformedFieldValue = transformer.apply(fieldValue);
+
+    return QueryBuilders.term().field(field).value(tranformedFieldValue).build();
   }
 }

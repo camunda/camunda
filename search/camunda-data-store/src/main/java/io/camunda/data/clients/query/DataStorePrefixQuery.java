@@ -10,23 +10,8 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStorePrefixQuery implements DataStoreQueryVariant {
-
-  private final String field;
-  private final String value;
-
-  private DataStorePrefixQuery(final Builder builder) {
-    field = builder.field;
-    value = builder.value;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public String value() {
-    return value;
-  }
+public final record DataStorePrefixQuery(String field, String value)
+    implements DataStoreQueryVariant {
 
   static DataStorePrefixQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStorePrefixQuery>> fn) {
@@ -50,7 +35,7 @@ public final class DataStorePrefixQuery implements DataStoreQueryVariant {
 
     @Override
     public DataStorePrefixQuery build() {
-      return new DataStorePrefixQuery(this);
+      return new DataStorePrefixQuery(field, value);
     }
   }
 }

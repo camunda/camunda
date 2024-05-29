@@ -17,23 +17,7 @@ import io.camunda.util.DataStoreObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final class SearchQuerySort {
-
-  private final String field;
-  private final SortOrder order;
-
-  private SearchQuerySort(final Builder builder) {
-    field = builder.field;
-    order = builder.order;
-  }
-
-  public String field() {
-    return field;
-  }
-
-  public String order() {
-    return order();
-  }
+public final record SearchQuerySort(String field, SortOrder order) {
 
   public boolean asc() {
     return order != null && order == SortOrder.ASC;
@@ -108,7 +92,7 @@ public final class SearchQuerySort {
 
     @Override
     public SearchQuerySort build() {
-      return new SearchQuerySort(this);
+      return new SearchQuerySort(field, order);
     }
   }
 }

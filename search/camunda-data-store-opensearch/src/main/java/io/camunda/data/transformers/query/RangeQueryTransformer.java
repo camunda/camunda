@@ -16,20 +16,28 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 public final class RangeQueryTransformer
     extends QueryVariantTransformer<DataStoreRangeQuery, RangeQuery> {
 
-  public RangeQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public RangeQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public RangeQuery apply(final DataStoreRangeQuery value) {
+    final var field = value.field();
+    final var from = value.from();
+    final var to = value.to();
+
     return QueryBuilders.range()
-        .field(value.field())
-        .gt(JsonData.of(value.gt()))
-        .gte(JsonData.of(value.gt()))
-        .lt(JsonData.of(value.gt()))
-        .lte(JsonData.of(value.gt()))
-        .from(JsonData.of(value.from()))
-        .from(JsonData.of(value.to()))
+        .field(field)
+        .gt(of(value.gt()))
+        .gte(of(value.gte()))
+        .lt(of(value.lt()))
+        .lte(of(value.lte()))
+        .from(of(from))
+        .to(of(to))
         .build();
+  }
+
+  private <T> JsonData of(T value) {
+    return JsonData.of(value);
   }
 }

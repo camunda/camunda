@@ -15,16 +15,20 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class ConstantScoreQueryTransformer
     extends QueryVariantTransformer<DataStoreConstantScoreQuery, ConstantScoreQuery> {
 
-  public ConstantScoreQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public ConstantScoreQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public ConstantScoreQuery apply(final DataStoreConstantScoreQuery value) {
-    final var query = queryTransformer.apply(value.query());
+    final var transformer = getQueryTransformer();
+    final var dataStoreQuery = value.query();
+    final var query = transformer.apply(dataStoreQuery);
+
     if (query != null) {
       return QueryBuilders.constantScore().filter(query).build();
     }
+
     return null;
   }
 }

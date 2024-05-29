@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.data.transformers.core.search;
+package io.camunda.data.transformers.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -23,12 +23,7 @@ public class SearchHitTransformer<T>
 
   @Override
   public DataStoreSearchHit<T> apply(Hit<T> value) {
-    final Object[] sortValues;
-    if (value.sort() != null && !value.sort().isEmpty()) {
-      sortValues = toArray(value.sort());
-    } else {
-      sortValues = null;
-    }
+    final Object[] sortValues = toArray(value.sort());
 
     return new DataStoreSearchHit.Builder<T>()
         .id(value.id())
@@ -43,6 +38,10 @@ public class SearchHitTransformer<T>
   }
 
   private Object[] toArray(final List<FieldValue> values) {
-    return values.stream().map(FieldValue::_get).toArray();
+    if (values != null && !values.isEmpty()) {
+      return values.stream().map(FieldValue::_get).toArray();
+    } else {
+      return null;
+    }
   }
 }

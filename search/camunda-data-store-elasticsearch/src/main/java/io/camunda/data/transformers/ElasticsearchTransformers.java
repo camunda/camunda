@@ -23,9 +23,8 @@ import io.camunda.data.clients.query.DataStoreTermQuery;
 import io.camunda.data.clients.query.DataStoreTermsQuery;
 import io.camunda.data.clients.sort.DataStoreFieldSort;
 import io.camunda.data.clients.sort.DataStoreSortOptions;
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.mappers.DataStoreTransformer;
-import io.camunda.data.transformers.core.SearchRequestTransformer;
 import io.camunda.data.transformers.query.BoolQueryTransformer;
 import io.camunda.data.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.data.transformers.query.ExistsQueryTransformer;
@@ -39,27 +38,27 @@ import io.camunda.data.transformers.query.QueryTransformer;
 import io.camunda.data.transformers.query.RangeQueryTransformer;
 import io.camunda.data.transformers.query.TermQueryTransformer;
 import io.camunda.data.transformers.query.TermsQueryTransformer;
+import io.camunda.data.transformers.search.SearchRequestTransformer;
 import io.camunda.data.transformers.sort.FieldSortTransformer;
 import io.camunda.data.transformers.sort.SortOptionsTransformer;
-import io.camunda.data.transformers.types.FieldValueTransformer;
+import io.camunda.data.transformers.types.TypedValueTransformer;
 import java.util.HashMap;
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes"})
 public final class ElasticsearchTransformers {
 
-  private final Map<Class, DataStoreTransformer<?, ?>> transformers;
+  private final Map<Class<?>, DataStoreTransformer<?, ?>> transformers;
 
   public ElasticsearchTransformers() {
     transformers = new HashMap<>();
     initializeTransformers(this);
   }
 
-  public <T, R> DataStoreTransformer<T, R> getTransformer(final Class cls) {
+  public <T, R> DataStoreTransformer<T, R> getTransformer(final Class<?> cls) {
     return (DataStoreTransformer<T, R>) transformers.get(cls);
   }
 
-  private void put(final Class cls, final DataStoreTransformer mapper) {
+  private void put(final Class<?> cls, final DataStoreTransformer<?, ?> mapper) {
     transformers.put(cls, mapper);
   }
 
@@ -87,6 +86,6 @@ public final class ElasticsearchTransformers {
     mappers.put(DataStoreFieldSort.class, new FieldSortTransformer(mappers));
 
     // types
-    mappers.put(DataStoreFieldValue.class, new FieldValueTransformer());
+    mappers.put(DataStoreTypedValue.class, new TypedValueTransformer());
   }
 }

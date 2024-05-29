@@ -23,9 +23,8 @@ import io.camunda.data.clients.query.DataStoreTermQuery;
 import io.camunda.data.clients.query.DataStoreTermsQuery;
 import io.camunda.data.clients.sort.DataStoreFieldSort;
 import io.camunda.data.clients.sort.DataStoreSortOptions;
-import io.camunda.data.clients.types.DataStoreFieldValue;
+import io.camunda.data.clients.types.DataStoreTypedValue;
 import io.camunda.data.mappers.DataStoreTransformer;
-import io.camunda.data.transformers.core.SearchRequestTransformer;
 import io.camunda.data.transformers.query.BoolQueryTransformer;
 import io.camunda.data.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.data.transformers.query.ExistsQueryTransformer;
@@ -39,33 +38,31 @@ import io.camunda.data.transformers.query.QueryTransformer;
 import io.camunda.data.transformers.query.RangeQueryTransformer;
 import io.camunda.data.transformers.query.TermQueryTransformer;
 import io.camunda.data.transformers.query.TermsQueryTransformer;
+import io.camunda.data.transformers.search.SearchRequestTransformer;
 import io.camunda.data.transformers.sort.FieldSortTransformer;
 import io.camunda.data.transformers.sort.SortOptionsTransformer;
-import io.camunda.data.transformers.types.FieldValueTransformer;
+import io.camunda.data.transformers.types.TypedValueTransformer;
 import java.util.HashMap;
 import java.util.Map;
 
-@SuppressWarnings({"rawtypes"})
 public final class OpensearchTransformers {
 
-  private static final DataStoreTransformer NOOP_MAPPER = new DataStoreTransformer() {};
-
-  private final Map<Class, DataStoreTransformer<?, ?>> mappers;
+  private final Map<Class<?>, DataStoreTransformer<?, ?>> transformers;
 
   public OpensearchTransformers() {
-    mappers = new HashMap<>();
-    addMappers(this);
+    transformers = new HashMap<>();
+    initializeMappers(this);
   }
 
-  public <T, R> DataStoreTransformer<T, R> getMapper(final Class cls) {
-    return (DataStoreTransformer<T, R>) mappers.getOrDefault(cls, NOOP_MAPPER);
+  public <T, R> DataStoreTransformer<T, R> getTransformer(final Class<?> cls) {
+    return (DataStoreTransformer<T, R>) transformers.get(cls);
   }
 
-  private void put(final Class cls, final DataStoreTransformer mapper) {
-    mappers.put(cls, mapper);
+  private void put(final Class<?> cls, final DataStoreTransformer<?, ?> mapper) {
+    transformers.put(cls, mapper);
   }
 
-  public static void addMappers(final OpensearchTransformers mappers) {
+  private static void initializeMappers(final OpensearchTransformers mappers) {
     // requests
     mappers.put(DataStoreSearchRequest.class, new SearchRequestTransformer(mappers));
 
@@ -89,6 +86,6 @@ public final class OpensearchTransformers {
     mappers.put(DataStoreFieldSort.class, new FieldSortTransformer(mappers));
 
     // types
-    mappers.put(DataStoreFieldValue.class, new FieldValueTransformer());
+    mappers.put(DataStoreTypedValue.class, new TypedValueTransformer());
   }
 }

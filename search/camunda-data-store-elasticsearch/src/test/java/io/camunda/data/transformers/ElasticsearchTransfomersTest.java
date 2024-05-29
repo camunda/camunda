@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.mappers.DataStoreTransformer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ElasticsearchTransfomersTest {
 

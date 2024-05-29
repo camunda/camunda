@@ -15,12 +15,13 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class IdsQueryTransformer
     extends QueryVariantTransformer<DataStoreIdsQuery, IdsQuery> {
 
-  public IdsQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public IdsQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public IdsQuery apply(final DataStoreIdsQuery value) {
-    return QueryBuilders.ids().values(value.values()).build();
+    final var values = value.values();
+    return QueryBuilders.ids().values(values).build();
   }
 }

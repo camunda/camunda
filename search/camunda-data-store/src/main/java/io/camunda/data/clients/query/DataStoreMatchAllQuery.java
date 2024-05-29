@@ -9,9 +9,7 @@ package io.camunda.data.clients.query;
 
 import io.camunda.util.DataStoreObjectBuilder;
 
-public final class DataStoreMatchAllQuery implements DataStoreQueryVariant {
-
-  private DataStoreMatchAllQuery() {}
+public final record DataStoreMatchAllQuery() implements DataStoreQueryVariant {
 
   public static final class Builder implements DataStoreObjectBuilder<DataStoreMatchAllQuery> {
 

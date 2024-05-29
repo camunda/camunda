@@ -10,17 +10,7 @@ package io.camunda.data.clients.sort;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class DataStoreSortOptions {
-
-  private final DataStoreFieldSort field;
-
-  private DataStoreSortOptions(final Builder builder) {
-    field = builder.field;
-  }
-
-  public DataStoreFieldSort field() {
-    return field;
-  }
+public final record DataStoreSortOptions(DataStoreFieldSort field) {
 
   public static DataStoreSortOptions of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreSortOptions>> fn) {
@@ -43,7 +33,7 @@ public final class DataStoreSortOptions {
 
     @Override
     public DataStoreSortOptions build() {
-      return new DataStoreSortOptions(this);
+      return new DataStoreSortOptions(field);
     }
   }
 }

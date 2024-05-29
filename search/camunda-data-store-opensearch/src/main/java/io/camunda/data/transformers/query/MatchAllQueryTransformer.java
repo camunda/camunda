@@ -15,8 +15,8 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class MatchAllQueryTransformer
     extends QueryVariantTransformer<DataStoreMatchAllQuery, MatchAllQuery> {
 
-  public MatchAllQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public MatchAllQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override

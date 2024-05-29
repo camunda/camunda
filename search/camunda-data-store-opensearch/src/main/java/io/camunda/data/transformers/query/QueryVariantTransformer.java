@@ -8,21 +8,16 @@
 package io.camunda.data.transformers.query;
 
 import io.camunda.data.clients.query.DataStoreQueryVariant;
-import io.camunda.data.clients.types.DataStoreFieldValue;
 import io.camunda.data.mappers.DataStoreTransformer;
 import io.camunda.data.transformers.OpensearchTransformer;
 import io.camunda.data.transformers.OpensearchTransformers;
-import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 
 public abstract class QueryVariantTransformer<
         T extends DataStoreQueryVariant, R extends QueryVariant>
     extends OpensearchTransformer<T, R> implements DataStoreTransformer<T, R> {
 
-  protected final DataStoreTransformer<DataStoreFieldValue, FieldValue> fieldValueTransformer;
-
-  public QueryVariantTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
-    fieldValueTransformer = mappers.getMapper(DataStoreFieldValue.class);
+  public QueryVariantTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 }

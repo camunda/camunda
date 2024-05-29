@@ -18,15 +18,20 @@ import org.opensearch.client.opensearch._types.SortOptions;
 public final class SortOptionsTransformer
     extends OpensearchTransformer<DataStoreSortOptions, SortOptions> {
 
-  protected final DataStoreTransformer<DataStoreFieldSort, FieldSort> fieldSortTransformer;
-
-  public SortOptionsTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
-    fieldSortTransformer = mappers.getMapper(DataStoreFieldSort.class);
+  public SortOptionsTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public SortOptions apply(final DataStoreSortOptions value) {
-    return new SortOptions.Builder().field(fieldSortTransformer.apply(value.field())).build();
+    final var transformer = getFieldSortTransformer();
+    final var field = value.field();
+    final var transformedField = transformer.apply(field);
+
+    return new SortOptions.Builder().field(transformedField).build();
+  }
+
+  protected DataStoreTransformer<DataStoreFieldSort, FieldSort> getFieldSortTransformer() {
+    return transformers.getTransformer(DataStoreFieldSort.class);
   }
 }

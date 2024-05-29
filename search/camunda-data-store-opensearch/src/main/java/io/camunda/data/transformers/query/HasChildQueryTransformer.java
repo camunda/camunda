@@ -16,17 +16,17 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 public final class HasChildQueryTransformer
     extends QueryVariantTransformer<DataStoreHasChildQuery, HasChildQuery> {
 
-  public HasChildQueryTransformer(final OpensearchTransformers mappers) {
-    super(mappers);
+  public HasChildQueryTransformer(final OpensearchTransformers transformers) {
+    super(transformers);
   }
 
   @Override
   public HasChildQuery apply(final DataStoreHasChildQuery value) {
-    final var query = queryTransformer.apply(value.query());
-    return QueryBuilders.hasChild()
-        .type(value.type())
-        .query(query)
-        .scoreMode(ChildScoreMode.None)
-        .build();
+    final var transformer = getQueryTransformer();
+    final var dataStoreQuery = value.query();
+    final var query = transformer.apply(dataStoreQuery);
+    final var type = value.type();
+
+    return QueryBuilders.hasChild().type(type).query(query).scoreMode(ChildScoreMode.None).build();
   }
 }
