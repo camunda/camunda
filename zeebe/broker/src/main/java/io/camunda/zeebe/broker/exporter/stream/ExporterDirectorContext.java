@@ -122,5 +122,5 @@ public final class ExporterDirectorContext {
      * positions and stores them in the state. This mode is used on the follower side.
      */
     PASSIVE
-  }
+  };
 }

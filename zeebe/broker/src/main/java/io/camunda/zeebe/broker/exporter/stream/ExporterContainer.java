@@ -75,6 +75,14 @@ final class ExporterContainer implements Controller {
     }
   }
 
+  void initMetadata(final long metadataVersion, final String initializeFrom) {
+    if (initializeFrom != null) {
+      final DirectBuffer metadata = exportersState.getExporterMetadata(initializeFrom);
+      final long otherPosition = exportersState.getPosition(initializeFrom);
+      exportersState.initializeExporterState(getId(), otherPosition, metadata, metadataVersion);
+    }
+  }
+
   void openExporter() {
     LOG.debug("Open exporter with id '{}'", getId());
     ThreadContextUtil.runWithClassLoader(

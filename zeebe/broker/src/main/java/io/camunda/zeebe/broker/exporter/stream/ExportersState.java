@@ -52,6 +52,23 @@ public final class ExportersState {
     exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
   }
 
+  public void initializeExporterState(
+      final String exporterId,
+      final long position,
+      final DirectBuffer metadata,
+      final long metadataVersion) {
+    this.exporterId.wrapString(exporterId);
+    final var exporterStateEntry = new ExporterStateEntry();
+    exporterStateEntry
+        .setPosition(position)
+        .setMetadata(metadata)
+        .setMetadataVersion(metadataVersion);
+    if (metadata != null) {
+      exporterStateEntry.setMetadata(metadata);
+    }
+    exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+  }
+
   public long getPosition(final String exporterId) {
     return findExporterStateEntry(exporterId)
         .map(ExporterStateEntry::getPosition)
