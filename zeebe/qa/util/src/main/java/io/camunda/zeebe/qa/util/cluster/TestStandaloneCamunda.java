@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.services.CamundaServicesConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -60,7 +61,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final OperateProperties operateProperties;
 
   public TestStandaloneCamunda() {
-    super(BrokerModuleConfiguration.class, OperateModuleConfiguration.class);
+    super(
+        BrokerModuleConfiguration.class,
+        OperateModuleConfiguration.class,
+        CamundaServicesConfiguration.class);
 
     brokerProperties = new BrokerProperties();
 
@@ -86,8 +90,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda start() {
     esContainer.start();
 
-    final String esURL = esContainer.getHttpHostAddress();
+    final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
     operateProperties.getElasticsearch().setUrl(esURL);
+    operateProperties.getZeebeElasticsearch().setUrl(esURL);
 
     return super.start();
   }
