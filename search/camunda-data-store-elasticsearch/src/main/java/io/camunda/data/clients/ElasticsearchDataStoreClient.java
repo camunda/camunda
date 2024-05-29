@@ -10,44 +10,40 @@ package io.camunda.data.clients;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import io.camunda.data.clients.core.DataStoreClientBase;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
-import io.camunda.data.clients.core.ElasticsearchRequestBuilders;
-import io.camunda.data.clients.core.ElasticsearchSearchRequest;
-import io.camunda.data.clients.core.ElasticsearchSearchResponse;
-import io.camunda.data.clients.query.ElasticsearchQueryBuilders;
-import io.camunda.data.clients.types.ElasticsearchSortOptionsBuilders;
-import io.camunda.util.DataStoreObjectBuilder;
+import io.camunda.data.mappers.DataStoreTransformer;
+import io.camunda.data.transformers.ElasticsearchTransformers;
+import io.camunda.data.transformers.core.SearchResponseTransformer;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.util.function.Function;
 
-public class ElasticsearchDataStoreClient extends DataStoreClientBase implements DataStoreClient {
-
-  private static final ElasticsearchQueryBuilders BUILDERS_DELEGATE =
-      new ElasticsearchQueryBuilders();
-  private static final ElasticsearchRequestBuilders REQUEST_DELEGATE =
-      new ElasticsearchRequestBuilders();
-  private static final ElasticsearchSortOptionsBuilders SORT_OPTIONS_DELEGATE =
-      new ElasticsearchSortOptionsBuilders();
+public class ElasticsearchDataStoreClient implements DataStoreClient {
 
   private final ElasticsearchClient client;
+  private final ElasticsearchTransformers transformers;
 
   public ElasticsearchDataStoreClient(final ElasticsearchClient client) {
-    super(BUILDERS_DELEGATE, REQUEST_DELEGATE, SORT_OPTIONS_DELEGATE);
+    this(client, new ElasticsearchTransformers());
+  }
+
+  public ElasticsearchDataStoreClient(final ElasticsearchClient client, final ElasticsearchTransformers transformer) {
     this.client = client;
+    this.transformers = new ElasticsearchTransformers();
   }
 
   @Override
   public <T> Either<Exception, DataStoreSearchResponse<T>> search(
       final DataStoreSearchRequest searchRequest, final Class<T> documentClass) {
-    final var request = (SearchRequest) searchRequest.get();
-
     try {
-      final var rawSearchResponse = client.search(request, documentClass);
-      final var searchResponse = ElasticsearchSearchResponse.from(rawSearchResponse);
-      return Either.right(searchResponse);
+      final var requestTransformer = getSearchRequestTransformer();
+      final var request = requestTransformer.apply(searchRequest);
+      final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
+      final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
+      final DataStoreSearchResponse<T> response =
+          searchResponseTransformer.apply(rawSearchResponse);
+      return Either.right(response);
     } catch (final IOException ioe) {
       return Either.left(ioe);
     } catch (final ElasticsearchException e) {
@@ -55,11 +51,12 @@ public class ElasticsearchDataStoreClient extends DataStoreClientBase implements
     }
   }
 
-  @Override
-  public <T> Either<Exception, DataStoreSearchResponse<T>> search(
-      final Function<DataStoreSearchRequest.Builder, DataStoreObjectBuilder<DataStoreSearchRequest>>
-          fn,
-      final Class<T> documentClass) {
-    return search(fn.apply(new ElasticsearchSearchRequest.Builder()).build(), documentClass);
+  private DataStoreTransformer<DataStoreSearchRequest, SearchRequest> getSearchRequestTransformer() {
+    return transformers.getTransformer(DataStoreSearchRequest.class);
   }
+
+  private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
+    return new SearchResponseTransformer<>(transformers);
+  }
+  
 }

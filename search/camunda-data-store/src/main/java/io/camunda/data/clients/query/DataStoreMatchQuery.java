@@ -10,19 +10,59 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreMatchQuery extends DataStoreQueryVariant {
+public final class DataStoreMatchQuery implements DataStoreQueryVariant {
+
+  private final String field;
+  private final String query;
+  private final String operator;
+
+  private DataStoreMatchQuery(final Builder builder) {
+    field = builder.field;
+    query = builder.query;
+    operator = builder.operator;
+  }
+
+  public String field() {
+    return field;
+  }
+
+  public String query() {
+    return query;
+  }
+
+  public String operator() {
+    return operator;
+  }
 
   static DataStoreMatchQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreMatchQuery>> fn) {
     return DataStoreQueryBuilders.match(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreMatchQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreMatchQuery> {
 
-    Builder field(final String value);
+    private String field;
+    private String query;
+    private String operator;
 
-    Builder query(final String query);
+    public Builder field(final String value) {
+      field = value;
+      return this;
+    }
 
-    Builder operator(final String value);
+    public Builder query(final String value) {
+      query = value;
+      return this;
+    }
+
+    public Builder operator(final String value) {
+      operator = value;
+      return this;
+    }
+
+    @Override
+    public DataStoreMatchQuery build() {
+      return new DataStoreMatchQuery(this);
+    }
   }
 }

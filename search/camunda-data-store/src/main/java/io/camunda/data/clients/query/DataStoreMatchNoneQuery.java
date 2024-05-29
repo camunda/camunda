@@ -8,14 +8,16 @@
 package io.camunda.data.clients.query;
 
 import io.camunda.util.DataStoreObjectBuilder;
-import java.util.function.Function;
 
-public interface DataStoreMatchNoneQuery extends DataStoreQueryVariant {
+public final class DataStoreMatchNoneQuery implements DataStoreQueryVariant {
 
-  static DataStoreMatchNoneQuery of(
-      final Function<Builder, DataStoreObjectBuilder<DataStoreMatchNoneQuery>> fn) {
-    return DataStoreQueryBuilders.matchNone(fn);
+  private DataStoreMatchNoneQuery() {}
+
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreMatchNoneQuery> {
+
+    @Override
+    public DataStoreMatchNoneQuery build() {
+      return new DataStoreMatchNoneQuery();
+    }
   }
-
-  public interface Builder extends DataStoreObjectBuilder<DataStoreMatchNoneQuery> {}
 }

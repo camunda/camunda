@@ -7,12 +7,12 @@
  */
 package io.camunda.service.query.types;
 
-import static io.camunda.data.clients.types.DataStoreSortOptionsBuilders.reverseOrder;
-import static io.camunda.data.clients.types.DataStoreSortOptionsBuilders.sortOptions;
-import static io.camunda.data.clients.types.DataStoreSortOptionsBuilders.toSortOrder;
+import static io.camunda.data.clients.sort.DataStoreSortOptionsBuilders.reverseOrder;
+import static io.camunda.data.clients.sort.DataStoreSortOptionsBuilders.sortOptions;
+import static io.camunda.data.clients.sort.DataStoreSortOptionsBuilders.toSortOrder;
 
-import io.camunda.data.clients.types.DataStoreSortOptions;
-import io.camunda.data.clients.types.SortOrder;
+import io.camunda.data.clients.sort.DataStoreSortOptions;
+import io.camunda.data.clients.sort.SortOrder;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;

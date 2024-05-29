@@ -7,21 +7,47 @@
  */
 package io.camunda.data.clients.query;
 
+import static io.camunda.util.DataStoreCollectionUtil.listAdd;
+import static io.camunda.util.DataStoreCollectionUtil.listAddAll;
+
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public interface DataStoreIdsQuery extends DataStoreQueryVariant {
+public final class DataStoreIdsQuery implements DataStoreQueryVariant {
+
+  private final List<String> values;
+
+  private DataStoreIdsQuery(final Builder builder) {
+    values = builder.values;
+  }
+
+  public List<String> values() {
+    return values;
+  }
 
   static DataStoreIdsQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreIdsQuery>> fn) {
     return DataStoreQueryBuilders.ids(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreIdsQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreIdsQuery> {
 
-    Builder values(final List<String> list);
+    private List<String> values;
 
-    Builder values(final String value, final String... values);
+    public Builder values(final List<String> values) {
+      this.values = listAddAll(this.values, values);
+      return this;
+    }
+
+    public Builder values(final String value, final String... values) {
+      this.values = listAdd(this.values, value, values);
+      return this;
+    }
+
+    @Override
+    public DataStoreIdsQuery build() {
+      return new DataStoreIdsQuery(this);
+    }
   }
 }

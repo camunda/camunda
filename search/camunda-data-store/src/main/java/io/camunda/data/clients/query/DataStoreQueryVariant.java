@@ -9,5 +9,7 @@ package io.camunda.data.clients.query;
 
 public interface DataStoreQueryVariant {
 
-  DataStoreQuery toQuery();
+  default DataStoreQuery toQuery() {
+    return new DataStoreQuery(this);
+  }
 }

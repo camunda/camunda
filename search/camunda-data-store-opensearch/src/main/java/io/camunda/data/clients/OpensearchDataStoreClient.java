@@ -7,45 +7,42 @@
  */
 package io.camunda.data.clients;
 
-import io.camunda.data.clients.core.DataStoreClientBase;
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
-import io.camunda.data.clients.core.OpensearchRequestBuilders;
-import io.camunda.data.clients.core.OpensearchSearchRequest;
-import io.camunda.data.clients.core.OpensearchSearchResponse;
-import io.camunda.data.clients.query.OpensearchQueryBuilders;
-import io.camunda.data.clients.types.OpensearchSortOptionsBuilders;
-import io.camunda.util.DataStoreObjectBuilder;
+import io.camunda.data.mappers.DataStoreTransformer;
+import io.camunda.data.transformers.OpensearchTransformers;
+import io.camunda.data.transformers.core.SearchResponseTransformer;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 
-public class OpensearchDataStoreClient extends DataStoreClientBase implements DataStoreClient {
-
-  private static final OpensearchQueryBuilders BUILDERS_DELEGATE = new OpensearchQueryBuilders();
-  private static final OpensearchRequestBuilders REQUEST_DELEGATE = new OpensearchRequestBuilders();
-  private static final OpensearchSortOptionsBuilders SORT_OPTIONS_DELEGATE =
-      new OpensearchSortOptionsBuilders();
+public class OpensearchDataStoreClient implements DataStoreClient {
 
   private final OpenSearchClient client;
+  private final OpensearchTransformers mappers;
+
+  private final DataStoreTransformer<DataStoreSearchRequest, SearchRequest>
+      searchRequestTransformer;
 
   public OpensearchDataStoreClient(final OpenSearchClient client) {
-    super(BUILDERS_DELEGATE, REQUEST_DELEGATE, SORT_OPTIONS_DELEGATE);
     this.client = client;
+    this.mappers = new OpensearchTransformers();
+    this.searchRequestTransformer = mappers.getMapper(DataStoreSearchRequest.class);
   }
 
   @Override
   public <T> Either<Exception, DataStoreSearchResponse<T>> search(
       final DataStoreSearchRequest searchRequest, final Class<T> documentClass) {
-    final var request = (SearchRequest) searchRequest.get();
-
     try {
-      final var rawSearchResponse = client.search(request, documentClass);
-      final var searchResponse = OpensearchSearchResponse.from(rawSearchResponse);
-      return Either.right(searchResponse);
+      final var request = searchRequestTransformer.apply(searchRequest);
+      final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
+      final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
+      final DataStoreSearchResponse<T> response =
+          searchResponseTransformer.apply(rawSearchResponse);
+      return Either.right(response);
     } catch (final IOException ioe) {
       return Either.left(ioe);
     } catch (final OpenSearchException e) {
@@ -53,11 +50,7 @@ public class OpensearchDataStoreClient extends DataStoreClientBase implements Da
     }
   }
 
-  @Override
-  public <T> Either<Exception, DataStoreSearchResponse<T>> search(
-      final Function<DataStoreSearchRequest.Builder, DataStoreObjectBuilder<DataStoreSearchRequest>>
-          fn,
-      final Class<T> documentClass) {
-    return search(fn.apply(new OpensearchSearchRequest.Builder()).build(), documentClass);
+  private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
+    return new SearchResponseTransformer<T>(mappers);
   }
 }

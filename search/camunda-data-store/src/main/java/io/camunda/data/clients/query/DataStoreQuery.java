@@ -10,89 +10,166 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreQuery {
+public final class DataStoreQuery {
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreQuery> {
+  private final DataStoreQueryVariant queryVariant;
 
-    Builder bool(final DataStoreBoolQuery query);
+  private DataStoreQuery(final Builder builder) {
+    this(builder.queryVariant);
+  }
 
-    Builder bool(
-        final Function<DataStoreBoolQuery.Builder, DataStoreObjectBuilder<DataStoreBoolQuery>> fn);
+  public DataStoreQuery(final DataStoreQueryVariant queryVariant) {
+    this.queryVariant = queryVariant;
+  }
 
-    Builder constantScore(final DataStoreConstantScoreQuery query);
+  public DataStoreQueryVariant queryVariant() {
+    return queryVariant;
+  }
 
-    Builder constantScore(
+  public static DataStoreQuery of(
+      final Function<Builder, DataStoreObjectBuilder<DataStoreQuery>> fn) {
+    return DataStoreQueryBuilders.query(fn);
+  }
+
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreQuery> {
+
+    private DataStoreQueryVariant queryVariant;
+
+    public Builder bool(final DataStoreBoolQuery query) {
+      queryVariant = query;
+      return this;
+    }
+
+    public Builder bool(
+        final Function<DataStoreBoolQuery.Builder, DataStoreObjectBuilder<DataStoreBoolQuery>> fn) {
+      return bool(DataStoreQueryBuilders.bool(fn));
+    }
+
+    public Builder constantScore(final DataStoreConstantScoreQuery query) {
+      queryVariant = query;
+      return this;
+    }
+
+    public Builder constantScore(
         final Function<
                 DataStoreConstantScoreQuery.Builder,
                 DataStoreObjectBuilder<DataStoreConstantScoreQuery>>
-            fn);
+            fn) {
+      return constantScore(DataStoreQueryBuilders.constantScore(fn));
+    }
 
-    Builder exists(final DataStoreExistsQuery query);
+    public Builder exists(final DataStoreExistsQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder exists(
+    public Builder exists(
         final Function<DataStoreExistsQuery.Builder, DataStoreObjectBuilder<DataStoreExistsQuery>>
-            fn);
+            fn) {
+      return exists(DataStoreQueryBuilders.exists(fn));
+    }
 
-    Builder hasChild(final DataStoreHasChildQuery query);
+    public Builder hasChild(final DataStoreHasChildQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder hasChild(
+    public Builder hasChild(
         final Function<
                 DataStoreHasChildQuery.Builder, DataStoreObjectBuilder<DataStoreHasChildQuery>>
-            fn);
+            fn) {
+      return hasChild(DataStoreQueryBuilders.hasChild(fn));
+    }
 
-    Builder ids(final DataStoreIdsQuery query);
+    public Builder ids(final DataStoreIdsQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder ids(
-        final Function<DataStoreIdsQuery.Builder, DataStoreObjectBuilder<DataStoreIdsQuery>> fn);
+    public Builder ids(
+        final Function<DataStoreIdsQuery.Builder, DataStoreObjectBuilder<DataStoreIdsQuery>> fn) {
+      return ids(DataStoreQueryBuilders.ids(fn));
+    }
 
-    Builder match(final DataStoreMatchQuery query);
+    public Builder match(final DataStoreMatchQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder match(
+    public Builder match(
         final Function<DataStoreMatchQuery.Builder, DataStoreObjectBuilder<DataStoreMatchQuery>>
-            fn);
+            fn) {
+      return match(DataStoreQueryBuilders.match(fn));
+    }
 
-    Builder matchAll(final DataStoreMatchAllQuery query);
+    public Builder matchAll() {
+      queryVariant = new DataStoreMatchAllQuery.Builder().build();
+      return this;
+    }
 
-    Builder matchAll(
-        final Function<
-                DataStoreMatchAllQuery.Builder, DataStoreObjectBuilder<DataStoreMatchAllQuery>>
-            fn);
+    public Builder matchNone(final DataStoreMatchNoneQuery query) {
+      queryVariant = new DataStoreMatchNoneQuery.Builder().build();
+      return this;
+    }
 
-    Builder matchNone(final DataStoreMatchNoneQuery query);
+    public Builder prefix(final DataStorePrefixQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder matchNone(
-        final Function<
-                DataStoreMatchNoneQuery.Builder, DataStoreObjectBuilder<DataStoreMatchNoneQuery>>
-            fn);
-
-    Builder prefix(final DataStorePrefixQuery query);
-
-    Builder prefix(
+    public Builder prefix(
         final Function<DataStorePrefixQuery.Builder, DataStoreObjectBuilder<DataStorePrefixQuery>>
-            fn);
+            fn) {
+      return prefix(DataStoreQueryBuilders.prefix(fn));
+    }
 
-    Builder range(final DataStoreRangeQuery query);
+    public Builder range(final DataStoreRangeQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder range(
+    public Builder range(
         final Function<DataStoreRangeQuery.Builder, DataStoreObjectBuilder<DataStoreRangeQuery>>
-            fn);
+            fn) {
+      return range(DataStoreQueryBuilders.range(fn));
+    }
 
-    Builder term(final DataStoreTermQuery query);
+    public Builder term(final DataStoreTermQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder term(
-        final Function<DataStoreTermQuery.Builder, DataStoreObjectBuilder<DataStoreTermQuery>> fn);
+    public Builder term(
+        final Function<DataStoreTermQuery.Builder, DataStoreObjectBuilder<DataStoreTermQuery>> fn) {
+      return term(DataStoreQueryBuilders.term(fn));
+    }
 
-    Builder terms(final DataStoreTermsQuery query);
+    public Builder terms(final DataStoreTermsQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder terms(
+    public Builder terms(
         final Function<DataStoreTermsQuery.Builder, DataStoreObjectBuilder<DataStoreTermsQuery>>
-            fn);
+            fn) {
+      return terms(DataStoreQueryBuilders.terms(fn));
+    }
 
-    Builder wildcard(final DataStoreWildcardQuery query);
+    public Builder wildcard(final DataStoreWildcardQuery query) {
+      queryVariant = query;
+      return this;
+    }
 
-    Builder wildcard(
+    public Builder wildcard(
         final Function<
                 DataStoreWildcardQuery.Builder, DataStoreObjectBuilder<DataStoreWildcardQuery>>
-            fn);
+            fn) {
+      return wildcard(DataStoreQueryBuilders.wildcard(fn));
+    }
+
+    @Override
+    public DataStoreQuery build() {
+      return new DataStoreQuery(this);
+    }
   }
 }

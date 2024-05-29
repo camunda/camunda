@@ -8,14 +8,16 @@
 package io.camunda.data.clients.query;
 
 import io.camunda.util.DataStoreObjectBuilder;
-import java.util.function.Function;
 
-public interface DataStoreMatchAllQuery extends DataStoreQueryVariant {
+public final class DataStoreMatchAllQuery implements DataStoreQueryVariant {
 
-  static DataStoreMatchAllQuery of(
-      final Function<Builder, DataStoreObjectBuilder<DataStoreMatchAllQuery>> fn) {
-    return DataStoreQueryBuilders.matchAll(fn);
+  private DataStoreMatchAllQuery() {}
+
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreMatchAllQuery> {
+
+    @Override
+    public DataStoreMatchAllQuery build() {
+      return new DataStoreMatchAllQuery();
+    }
   }
-
-  public interface Builder extends DataStoreObjectBuilder<DataStoreMatchAllQuery> {}
 }

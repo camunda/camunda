@@ -10,15 +10,35 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreExistsQuery extends DataStoreQueryVariant {
+public final class DataStoreExistsQuery implements DataStoreQueryVariant {
+
+  private final String field;
+
+  private DataStoreExistsQuery(final Builder builder) {
+    field = builder.field;
+  }
+
+  public String field() {
+    return field;
+  }
 
   static DataStoreExistsQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreExistsQuery>> fn) {
     return DataStoreQueryBuilders.exists(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreExistsQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreExistsQuery> {
 
-    Builder field(final String value);
+    private String field;
+
+    public Builder field(final String value) {
+      field = value;
+      return this;
+    }
+
+    @Override
+    public DataStoreExistsQuery build() {
+      return new DataStoreExistsQuery(this);
+    }
   }
 }

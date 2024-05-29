@@ -10,18 +10,40 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreConstantScoreQuery extends DataStoreQueryVariant {
+public final class DataStoreConstantScoreQuery implements DataStoreQueryVariant {
+
+  private DataStoreQuery query;
+
+  private DataStoreConstantScoreQuery(final Builder builder) {
+    query = builder.query;
+  }
+
+  public DataStoreQuery query() {
+    return query;
+  }
 
   static DataStoreConstantScoreQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreConstantScoreQuery>> fn) {
     return DataStoreQueryBuilders.constantScore(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreConstantScoreQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreConstantScoreQuery> {
 
-    Builder filter(final DataStoreQuery query);
+    private DataStoreQuery query;
 
-    Builder filter(
-        final Function<DataStoreQuery.Builder, DataStoreObjectBuilder<DataStoreQuery>> fn);
+    public Builder filter(final DataStoreQuery query) {
+      this.query = query;
+      return this;
+    }
+
+    public Builder filter(
+        final Function<DataStoreQuery.Builder, DataStoreObjectBuilder<DataStoreQuery>> fn) {
+      return filter(DataStoreQueryBuilders.query(fn));
+    }
+
+    @Override
+    public DataStoreConstantScoreQuery build() {
+      return new DataStoreConstantScoreQuery(this);
+    }
   }
 }

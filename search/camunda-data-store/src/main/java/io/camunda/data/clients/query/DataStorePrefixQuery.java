@@ -10,17 +10,47 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStorePrefixQuery extends DataStoreQueryVariant {
+public final class DataStorePrefixQuery implements DataStoreQueryVariant {
+
+  private final String field;
+  private final String value;
+
+  private DataStorePrefixQuery(final Builder builder) {
+    field = builder.field;
+    value = builder.value;
+  }
+
+  public String field() {
+    return field;
+  }
+
+  public String value() {
+    return value;
+  }
 
   static DataStorePrefixQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStorePrefixQuery>> fn) {
     return DataStoreQueryBuilders.prefix(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStorePrefixQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStorePrefixQuery> {
 
-    Builder field(final String value);
+    private String field;
+    private String value;
 
-    Builder value(final String value);
+    public Builder field(final String value) {
+      field = value;
+      return this;
+    }
+
+    public Builder value(final String value) {
+      this.value = value;
+      return this;
+    }
+
+    @Override
+    public DataStorePrefixQuery build() {
+      return new DataStorePrefixQuery(this);
+    }
   }
 }

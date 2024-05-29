@@ -7,27 +7,18 @@
  */
 package io.camunda.data.clients.core;
 
-import io.camunda.data.clients.util.DataStoreRequestBuildersDelegate;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
 public final class DataStoreRequestBuilders {
 
-  private static DataStoreRequestBuildersDelegate requestBuilders;
-
-  private DataStoreRequestBuilders() {}
-
-  public static void setRequestBuilders(final DataStoreRequestBuildersDelegate requestBuilders) {
-    DataStoreRequestBuilders.requestBuilders = requestBuilders;
-  }
-
   public static DataStoreSearchRequest.Builder searchRequest() {
-    return requestBuilders.searchRequest();
+    return new DataStoreSearchRequest.Builder();
   }
 
   public static DataStoreSearchRequest searchRequest(
       final Function<DataStoreSearchRequest.Builder, DataStoreObjectBuilder<DataStoreSearchRequest>>
           fn) {
-    return requestBuilders.searchRequest(fn);
+    return fn.apply(searchRequest()).build();
   }
 }

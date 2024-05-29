@@ -9,40 +9,113 @@ package io.camunda.data.clients.core.search;
 
 import io.camunda.util.DataStoreObjectBuilder;
 
-public interface DataStoreSearchHit<T> {
+public final class DataStoreSearchHit<T> {
 
-  public String id();
+  private final String id;
+  private final String index;
+  private final String shard;
+  private final String routing;
+  private final Long seqNo;
+  private final Long version;
+  private final T source;
+  private final Object[] sortValues;
 
-  public String index();
+  public DataStoreSearchHit(final Builder<T> builder) {
+    this.id = builder.id;
+    this.index = builder.index;
+    this.shard = builder.shard;
+    this.routing = builder.routing;
+    this.seqNo = builder.seqNo;
+    this.version = builder.version;
+    this.source = builder.source;
+    this.sortValues = builder.sortValues;
+  }
 
-  public String shard();
+  public String id() {
+    return id;
+  }
 
-  public String routing();
+  public String index() {
+    return index;
+  }
 
-  public T source();
+  public String shard() {
+    return shard;
+  }
 
-  public Long seqNo();
+  public String routing() {
+    return routing;
+  }
 
-  public Long version();
+  public T source() {
+    return source;
+  }
 
-  public Object[] sortValues();
+  public Long seqNo() {
+    return seqNo;
+  }
 
-  public interface Builder<T> extends DataStoreObjectBuilder<DataStoreSearchHit<T>> {
+  public Long version() {
+    return version;
+  }
 
-    Builder<T> id(final String id);
+  public Object[] sortValues() {
+    return sortValues;
+  }
 
-    Builder<T> index(final String index);
+  public static final class Builder<T> implements DataStoreObjectBuilder<DataStoreSearchHit<T>> {
 
-    Builder<T> shard(final String shard);
+    private String id;
+    private String index;
+    private String shard;
+    private String routing;
+    private Long seqNo;
+    private Long version;
+    private T source;
+    private Object[] sortValues;
 
-    Builder<T> routing(final String routing);
+    public Builder<T> id(final String id) {
+      this.id = id;
+      return this;
+    }
 
-    Builder<T> source(final T source);
+    public Builder<T> index(final String index) {
+      this.index = index;
+      return this;
+    }
 
-    Builder<T> seqNo(final Long seqNo);
+    public Builder<T> shard(final String shard) {
+      this.shard = shard;
+      return this;
+    }
 
-    Builder<T> version(final Long version);
+    public Builder<T> routing(final String routing) {
+      this.routing = routing;
+      return this;
+    }
 
-    Builder<T> sortValues(final Object[] sortValues);
+    public Builder<T> source(final T source) {
+      this.source = source;
+      return this;
+    }
+
+    public Builder<T> seqNo(final Long seqNo) {
+      this.seqNo = seqNo;
+      return this;
+    }
+
+    public Builder<T> version(final Long version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder<T> sortValues(final Object[] sortValues) {
+      this.sortValues = sortValues;
+      return this;
+    }
+
+    public DataStoreSearchHit<T> build() {
+      return new DataStoreSearchHit<T>(this);
+    }
   }
 }

@@ -10,27 +10,107 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreRangeQuery extends DataStoreQueryVariant {
+public final class DataStoreRangeQuery implements DataStoreQueryVariant {
+
+  private final String field;
+  private final Object gt;
+  private final Object gte;
+  private final Object lt;
+  private final Object lte;
+  private final String from;
+  private final String to;
+
+  private DataStoreRangeQuery(final Builder builder) {
+    field = builder.field;
+    gt = builder.gt;
+    gte = builder.gte;
+    lt = builder.lt;
+    lte = builder.lte;
+    from = builder.from;
+    to = builder.to;
+  }
+
+  public String field() {
+    return field;
+  }
+
+  public Object gt() {
+    return gt;
+  }
+
+  public Object gte() {
+    return gte;
+  }
+
+  public Object lt() {
+    return lt;
+  }
+
+  public Object lte() {
+    return lte;
+  }
+
+  public String from() {
+    return from;
+  }
+
+  public String to() {
+    return to;
+  }
 
   static DataStoreRangeQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreRangeQuery>> fn) {
     return DataStoreQueryBuilders.range(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreRangeQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreRangeQuery> {
 
-    Builder field(final String field);
+    private String field;
+    private Object gt;
+    private Object gte;
+    private Object lt;
+    private Object lte;
+    private String from;
+    private String to;
 
-    <V> Builder gt(final V value);
+    public Builder field(final String field) {
+      this.field = field;
+      return this;
+    }
 
-    <V> Builder gte(final V value);
+    public Builder gt(final Object value) {
+      gt = value;
+      return this;
+    }
 
-    <V> Builder lt(final V value);
+    public Builder gte(final Object value) {
+      gte = value;
+      return this;
+    }
 
-    <V> Builder lte(final V value);
+    public Builder lt(final Object value) {
+      lt = lte;
+      return this;
+    }
 
-    Builder from(final String value);
+    public Builder lte(final Object value) {
+      lte = value;
+      return this;
+    }
 
-    Builder to(final String to);
+    public Builder from(final String value) {
+      from = value;
+      return this;
+    }
+
+    public Builder to(final String value) {
+      to = value;
+      return this;
+    }
+
+    @Override
+    public DataStoreRangeQuery build() {
+      return new DataStoreRangeQuery(this);
+    }
   }
 }

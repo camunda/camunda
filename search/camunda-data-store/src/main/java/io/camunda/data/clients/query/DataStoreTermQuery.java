@@ -7,30 +7,83 @@
  */
 package io.camunda.data.clients.query;
 
+import io.camunda.data.clients.types.DataStoreFieldValue;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreTermQuery extends DataStoreQueryVariant {
+public final class DataStoreTermQuery implements DataStoreQueryVariant {
+
+  private final String field;
+  private final DataStoreFieldValue value;
+  private final Boolean caseInsensitive;
+
+  private DataStoreTermQuery(final Builder builder) {
+    field = builder.field;
+    value = builder.value;
+    caseInsensitive = builder.caseInsensitive;
+  }
+
+  public String field() {
+    return field;
+  }
+
+  public DataStoreFieldValue value() {
+    return value;
+  }
+
+  public Boolean caseSensitive() {
+    return caseInsensitive;
+  }
 
   static DataStoreTermQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreTermQuery>> fn) {
     return DataStoreQueryBuilders.term(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreTermQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreTermQuery> {
 
-    Builder field(final String field);
+    private String field;
+    private DataStoreFieldValue value;
+    private Boolean caseInsensitive;
 
-    Builder value(final String value);
+    public Builder field(final String value) {
+      field = value;
+      return this;
+    }
 
-    Builder value(final int value);
+    public Builder value(final String value) {
+      this.value = DataStoreFieldValue.of(value);
+      return this;
+    }
 
-    Builder value(final long value);
+    public Builder value(final int value) {
+      this.value = DataStoreFieldValue.of(value);
+      return this;
+    }
 
-    Builder value(final double value);
+    public Builder value(final long value) {
+      this.value = DataStoreFieldValue.of(value);
+      return this;
+    }
 
-    Builder value(final boolean value);
+    public Builder value(final double value) {
+      this.value = DataStoreFieldValue.of(value);
+      return this;
+    }
 
-    Builder caseInsensitive(final Boolean value);
+    public Builder value(final boolean value) {
+      this.value = DataStoreFieldValue.of(value);
+      return this;
+    }
+
+    public Builder caseInsensitive(final Boolean value) {
+      caseInsensitive = value;
+      return this;
+    }
+
+    @Override
+    public DataStoreTermQuery build() {
+      return new DataStoreTermQuery(this);
+    }
   }
 }

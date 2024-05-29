@@ -10,20 +10,51 @@ package io.camunda.data.clients.query;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public interface DataStoreHasChildQuery extends DataStoreQueryVariant {
+public final class DataStoreHasChildQuery implements DataStoreQueryVariant {
+
+  private final DataStoreQuery query;
+  private final String type;
+
+  private DataStoreHasChildQuery(final Builder builder) {
+    query = builder.query;
+    type = builder.type;
+  }
+
+  public DataStoreQuery query() {
+    return query;
+  }
+
+  public String type() {
+    return type;
+  }
 
   static DataStoreHasChildQuery of(
       final Function<Builder, DataStoreObjectBuilder<DataStoreHasChildQuery>> fn) {
     return DataStoreQueryBuilders.hasChild(fn);
   }
 
-  public interface Builder extends DataStoreObjectBuilder<DataStoreHasChildQuery> {
+  public static final class Builder implements DataStoreObjectBuilder<DataStoreHasChildQuery> {
 
-    Builder query(final DataStoreQuery query);
+    private DataStoreQuery query;
+    private String type;
 
-    Builder query(
-        final Function<DataStoreQuery.Builder, DataStoreObjectBuilder<DataStoreQuery>> fn);
+    public Builder query(final DataStoreQuery query) {
+      this.query = query;
+      return this;
+    }
 
-    Builder type(final String value);
+    public Builder query(
+        final Function<DataStoreQuery.Builder, DataStoreObjectBuilder<DataStoreQuery>> fn) {
+      return query(DataStoreQueryBuilders.query(fn));
+    }
+
+    public Builder type(final String value) {
+      return this;
+    }
+
+    @Override
+    public DataStoreHasChildQuery build() {
+      return new DataStoreHasChildQuery(this);
+    }
   }
 }

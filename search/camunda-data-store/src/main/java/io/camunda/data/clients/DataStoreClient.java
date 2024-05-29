@@ -7,6 +7,7 @@
  */
 package io.camunda.data.clients;
 
+import io.camunda.data.clients.core.DataStoreRequestBuilders;
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
 import io.camunda.util.DataStoreObjectBuilder;
@@ -18,8 +19,10 @@ public interface DataStoreClient {
   <T> Either<Exception, DataStoreSearchResponse<T>> search(
       final DataStoreSearchRequest searchRequest, final Class<T> documentClass);
 
-  <T> Either<Exception, DataStoreSearchResponse<T>> search(
+  default <T> Either<Exception, DataStoreSearchResponse<T>> search(
       final Function<DataStoreSearchRequest.Builder, DataStoreObjectBuilder<DataStoreSearchRequest>>
           fn,
-      final Class<T> documentClass);
+      final Class<T> documentClass) {
+    return search(DataStoreRequestBuilders.searchRequest(fn), documentClass);
+  }
 }
