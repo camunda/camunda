@@ -78,20 +78,20 @@ public class GroupServiceTest {
   }
 
   @Test
-  void nonExistingGroupUpdateGroupThrowsException() {
+  void nonExistingGroupRenameGroupThrowsException() {
     final var groupName = "gr" + UUID.randomUUID();
 
     assertThrows(
-        RuntimeException.class, () -> groupService.updateGroup(groupName, new Group(groupName)));
+        RuntimeException.class, () -> groupService.renameGroup(groupName, new Group(groupName)));
   }
 
   @Test
-  void existingGroupUpdateGroupUpdated() {
+  void existingGroupRenameGroupUpdated() {
     final var groupName = "gr" + UUID.randomUUID();
     final var newGroupName = "newGr" + UUID.randomUUID();
     groupService.createGroup(new Group(groupName));
 
-    groupService.updateGroup(groupName, new Group(newGroupName));
+    groupService.renameGroup(groupName, new Group(newGroupName));
 
     final var group = groupService.findGroupByName(newGroupName);
     assertNotNull(group);

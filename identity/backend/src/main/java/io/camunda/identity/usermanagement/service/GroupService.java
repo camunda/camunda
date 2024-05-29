@@ -12,7 +12,9 @@ import io.camunda.identity.user.Group;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class GroupService {
@@ -30,21 +32,47 @@ public class GroupService {
     return groupRepository.findAllGroups();
   }
 
-  public Group findGroupByName(final String group) {
-    return groupRepository.findGroup(group);
+  public Group findGroupByName(final String groupName) {
+    final Group group = groupRepository.findGroupByName(groupName);
+    if (group.id() == null) {
+      throw new RuntimeException("group.notFound");
+    }
+    return group;
+  }
+
+  public Group findGroupById(final Integer groupId) {
+    final Group group = groupRepository.findGroupById(groupId);
+    if (group.id() == null) {
+      throw new RuntimeException("group.notFound");
+    }
+    return group;
   }
 
   public Group createGroup(final Group group) {
     userDetailsManager.createGroup(group.name(), Collections.emptyList());
-    return groupRepository.findGroup(group.name());
+    return groupRepository.findGroupByName(group.name());
   }
 
   public void deleteGroup(final Group group) {
     userDetailsManager.deleteGroup(group.name());
   }
 
-  public Group updateGroup(final String name, final Group group) {
+  public void deleteGroupById(final Integer groupId) {
+    groupRepository.deleteGroupById(groupId);
+  }
+
+  public Group renameGroup(final String name, final Group group) {
     userDetailsManager.renameGroup(name, group.name());
-    return groupRepository.findGroup(group.name());
+    return findGroupByName(group.name());
+  }
+
+  public Group renameGroup(final Integer groupId, final Group group) {
+    if (group.id() == null || !Objects.equals(groupId, group.id())) {
+      throw new RuntimeException("group.notFound");
+    }
+    if (!StringUtils.hasText(group.name())) {
+      throw new RuntimeException("group.name.empty");
+    }
+    return renameGroup(group.name(), group);
   }
 }
