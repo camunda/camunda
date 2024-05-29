@@ -92,7 +92,16 @@ public class SearchQueryRequestMapper {
       final SearchQuerySortRequest sorting) {
     if (sorting != null) {
       return Either.right(
-          SearchQuerySort.of((s) -> s.field(sorting.getField()).order(sorting.getOrder())));
+          SearchQuerySort.of(
+              (s) -> {
+                if (sorting.getField() != null) {
+                  sorting.field(sorting.getField());
+                }
+                if (sorting.getOrder() != null) {
+                  s.order(sorting.getOrder());
+                }
+                return s;
+              }));
     }
 
     return Either.right(null);
