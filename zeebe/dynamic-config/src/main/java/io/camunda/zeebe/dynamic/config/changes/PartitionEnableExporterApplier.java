@@ -96,7 +96,10 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     final var partitionHasExporter = exportersInPartition.containsKey(exporterId);
 
     if (partitionHasExporter) {
-      // Increment by one when re-enabling the exporter
+      // Increment by one when re-enabling the exporter so that the ExporterDirector can verify
+      // whether the runtime state has the latest state. This is useful when the operation is
+      // retried or if there was restart without a snapshot after a sequence of disable, enable
+      // operations.
       metadataVersionToUpdate = exportersInPartition.get(exporterId).metadataVersion() + 1;
     } else {
       metadataVersionToUpdate = 1;
