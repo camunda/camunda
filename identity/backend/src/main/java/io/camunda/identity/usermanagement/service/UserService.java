@@ -14,6 +14,7 @@ import io.camunda.identity.usermanagement.repository.UserRepository;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,8 +40,7 @@ public class UserService {
   public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
     try {
       final UserDetails userDetails =
-          org.springframework.security.core.userdetails.User.withUsername(
-                  userWithCredential.user().username())
+          User.withUsername(userWithCredential.user().username())
               .password(userWithCredential.password())
               .passwordEncoder(passwordEncoder::encode)
               .disabled(!userWithCredential.user().enabled())
@@ -95,7 +95,7 @@ public class UserService {
           userDetailsManager.loadUserByUsername(existingUser.username());
 
       final UserDetails userDetails =
-          org.springframework.security.core.userdetails.User.withUsername(existingUser.username())
+          User.withUsername(existingUser.username())
               .password(user.password())
               .passwordEncoder(passwordEncoder::encode)
               .authorities(existingUserDetail.getAuthorities())
