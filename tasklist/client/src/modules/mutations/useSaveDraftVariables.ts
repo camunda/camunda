@@ -13,7 +13,7 @@ import {Variable} from 'modules/types';
 
 function useSaveDraftVariables(taskId: string) {
   return useMutation<
-    unknown,
+    void,
     RequestError | Error,
     Pick<Variable, 'name' | 'value'>[]
   >({
