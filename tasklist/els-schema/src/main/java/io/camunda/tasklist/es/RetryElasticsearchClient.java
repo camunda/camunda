@@ -748,7 +748,18 @@ public class RetryElasticsearchClient {
       if (predicate != null) {
         retryPolicy.handleResultIf(predicate);
       }
-      return Failsafe.with(retryPolicy).get(operation);
+      return Failsafe.with(retryPolicy)
+          .get(
+              () -> {
+                try {
+                  return operation.get();
+                } catch (final ElasticsearchException e) {
+                  if (e.status().equals(RestStatus.NOT_FOUND)) {
+                    return null;
+                  }
+                  throw e;
+                }
+              });
     } catch (final Exception e) {
       throw new TasklistRuntimeException(
           "Couldn't execute operation "
@@ -794,7 +805,7 @@ public class RetryElasticsearchClient {
   public GetLifecyclePolicyResponse getLifeCyclePolicy(
       final GetLifecyclePolicyRequest getLifecyclePolicyRequest) {
     return executeWithRetries(
-        String.format("Get LifeCyclePolicy %s ", getLifecyclePolicyRequest.getPolicyNames()),
+        String.format("Get LifeCyclePolicy %s", getLifecyclePolicyRequest.getPolicyNames()),
         () ->
             esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
         null);
