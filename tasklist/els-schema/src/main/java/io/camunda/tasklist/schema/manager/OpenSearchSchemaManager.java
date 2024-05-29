@@ -75,7 +75,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     LOGGER.info("Creating ISM Policy for deleting archived indices");
 
     final Request request =
-        new Request("PUT", "_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
+        new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
     final JSONObject requestJson = new JSONObject();
     final JSONArray statesJson = new JSONArray();
     final JSONObject openState = new JSONObject();
