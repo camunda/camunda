@@ -53,18 +53,13 @@ public class RESTApiTest {
             .latestVersion()
             .send()
             .join();
-    // given
-    //
-    // 1. Elastic - Testcontainer?
-    // 2. Broker - Exporter - Importer - Gateway -> Single Application?
-    //
-    // 5. Deployment of process model
-    // 6. Create instance
 
     // when
+    // Query REST API
     final URI restAddress = testStandaloneCamunda.restAddress();
     final HttpClient httpClient = HttpClient.newHttpClient();
 
+    // then
     Awaitility.await("should receive data from ES")
         .untilAsserted(
             () -> {
@@ -75,7 +70,7 @@ public class RESTApiTest {
                       .POST(
                           HttpRequest.BodyPublishers.ofString(
                               String.format(
-                                  "{\"filter\":{\"key\":%d}}",
+                                  "{\"filter\":{\"key\":%d}, \"sort\":{}}",
                                   processInstanceEvent.getProcessInstanceKey())))
                       .build();
 
@@ -91,13 +86,5 @@ public class RESTApiTest {
                               + response.statusCode())
                   .isEqualTo(200);
             });
-
-    // when
-    // Query REST API
-    // HTTP client? Java client?
-
-    // then
-    // Query result is expected - found process instance X
-
   }
 }
