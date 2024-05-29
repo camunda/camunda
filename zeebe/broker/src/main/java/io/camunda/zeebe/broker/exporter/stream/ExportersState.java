@@ -59,10 +59,7 @@ public final class ExportersState {
       final long metadataVersion) {
     this.exporterId.wrapString(exporterId);
     final var exporterStateEntry = new ExporterStateEntry();
-    exporterStateEntry
-        .setPosition(position)
-        .setMetadata(metadata)
-        .setMetadataVersion(metadataVersion);
+    exporterStateEntry.setPosition(position).setMetadataVersion(metadataVersion);
     if (metadata != null) {
       exporterStateEntry.setMetadata(metadata);
     }
@@ -79,6 +76,12 @@ public final class ExportersState {
     return findExporterStateEntry(exporterId)
         .map(ExporterStateEntry::getMetadata)
         .orElse(METADATA_NOT_FOUND);
+  }
+
+  public long getMetadataVersion(final String exporterId) {
+    return findExporterStateEntry(exporterId)
+        .map(ExporterStateEntry::getMetadataVersion)
+        .orElse(0L);
   }
 
   private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {

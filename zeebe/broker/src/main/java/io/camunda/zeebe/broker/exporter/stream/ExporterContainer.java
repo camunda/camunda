@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -43,8 +44,13 @@ final class ExporterContainer implements Controller {
   private ExportersState exportersState;
   private ExporterMetrics metrics;
   private ActorControl actor;
+  private final ExporterInitializationInfo initializationInfo;
 
-  ExporterContainer(final ExporterDescriptor descriptor, final int partitionId) {
+  ExporterContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final ExporterInitializationInfo initializationInfo) {
+    this.initializationInfo = initializationInfo;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
@@ -67,7 +73,7 @@ final class ExporterContainer implements Controller {
     }
   }
 
-  void initPosition() {
+  private void initPosition() {
     position = exportersState.getPosition(getId());
     lastUnacknowledgedPosition = position;
     if (position == ExportersState.VALUE_NOT_FOUND) {
@@ -75,12 +81,26 @@ final class ExporterContainer implements Controller {
     }
   }
 
-  void initMetadata(final long metadataVersion, final String initializeFrom) {
+  void initMetadata() {
+    final var curMetadata = exportersState.getMetadataVersion(getId());
+    final long metadataVersion = initializationInfo.metadataVersion();
+    if (metadataVersion <= curMetadata) {
+      // metadata is already up-to-date. Just update the in-memory position
+      initPosition();
+      return;
+    }
+
+    final var initializeFrom = initializationInfo.initializeFrom();
     if (initializeFrom != null) {
       final DirectBuffer metadata = exportersState.getExporterMetadata(initializeFrom);
       final long otherPosition = exportersState.getPosition(initializeFrom);
       exportersState.initializeExporterState(getId(), otherPosition, metadata, metadataVersion);
+    } else {
+      // No need to initialize metadata, just set the version and initialize the position
+      exportersState.initializeExporterState(getId(), -1L, null, metadataVersion);
     }
+    // read position to in-memory
+    initPosition();
   }
 
   void openExporter() {

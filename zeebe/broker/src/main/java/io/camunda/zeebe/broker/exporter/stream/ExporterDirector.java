@@ -93,7 +93,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     partitionId = logStream.getPartitionId();
     containers =
         context.getDescriptors().entrySet().stream()
-            .map(descriptorEntry -> new ExporterContainer(descriptorEntry.getKey(), partitionId))
+            .map(
+                descriptorEntry ->
+                    new ExporterContainer(
+                        descriptorEntry.getKey(), partitionId, descriptorEntry.getValue()))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
@@ -260,7 +263,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final long metadataVersion,
       final String initializeFrom,
       final ExporterDescriptor descriptor) {
-    final ExporterContainer container = new ExporterContainer(descriptor, partitionId);
+    final ExporterContainer container =
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            new ExporterInitializationInfo(metadataVersion, initializeFrom));
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -268,10 +275,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       LOG.error("Failed to configure exporter '{}'", exporterId, e);
       LangUtil.rethrowUnchecked(e);
     }
-    // initializes metadata in the runtime state
-    container.initMetadata(metadataVersion, initializeFrom);
-    // initialized position in memory
-    container.initPosition();
+    // initializes metadata and position in the runtime state
+    container.initMetadata();
     container.openExporter();
     containers.add(container);
     LOG.info("Exporter '{}' is enabled.", exporterId);
@@ -457,7 +462,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     // start reading
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initMetadata();
       container.openExporter();
     }
 
@@ -482,7 +487,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startPassiveExportingMode() {
     // Only initialize the positions, do not open and start exporting
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initMetadata();
     }
 
     if (state.hasExporters()) {
