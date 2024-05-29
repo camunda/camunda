@@ -117,7 +117,7 @@
     <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
-    <version.commons-compress>1.26.1</version.commons-compress>
+    <version.commons-compress>1.26.2</version.commons-compress>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <version.checkstyle>10.15.0</version.checkstyle>
