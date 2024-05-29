@@ -22,7 +22,7 @@ public final class PrefixQueryTransformer
   @Override
   public PrefixQuery apply(final DataStorePrefixQuery value) {
     final var field = value.field();
-    final var fieldValue= value.value();
+    final var fieldValue = value.value();
     return QueryBuilders.prefix().field(field).value(fieldValue).build();
   }
 }

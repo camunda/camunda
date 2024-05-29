@@ -25,9 +25,6 @@ public class TermQueryTransformer extends QueryVariantTransformer<DataStoreTermQ
     final var fieldValue = value.value();
     final var tranformedFieldValue = transformer.apply(fieldValue);
 
-    return QueryBuilders.term()
-        .field(field)
-        .value(tranformedFieldValue)
-        .build();
+    return QueryBuilders.term().field(field).value(tranformedFieldValue).build();
   }
 }

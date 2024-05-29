@@ -28,7 +28,8 @@ public class ElasticsearchDataStoreClient implements DataStoreClient {
     this(client, new ElasticsearchTransformers());
   }
 
-  public ElasticsearchDataStoreClient(final ElasticsearchClient client, final ElasticsearchTransformers transformer) {
+  public ElasticsearchDataStoreClient(
+      final ElasticsearchClient client, final ElasticsearchTransformers transformer) {
     this.client = client;
     this.transformers = new ElasticsearchTransformers();
   }
@@ -51,12 +52,12 @@ public class ElasticsearchDataStoreClient implements DataStoreClient {
     }
   }
 
-  private DataStoreTransformer<DataStoreSearchRequest, SearchRequest> getSearchRequestTransformer() {
+  private DataStoreTransformer<DataStoreSearchRequest, SearchRequest>
+      getSearchRequestTransformer() {
     return transformers.getTransformer(DataStoreSearchRequest.class);
   }
 
   private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
     return new SearchResponseTransformer<>(transformers);
   }
-  
 }

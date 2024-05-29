@@ -7,12 +7,9 @@
  */
 package io.camunda.data.transformers.query;
 
-import java.util.List;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import io.camunda.data.clients.query.DataStoreBoolQuery;
-import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.data.transformers.ElasticsearchTransformers;
 
 public class BoolQueryTransformer extends QueryVariantTransformer<DataStoreBoolQuery, BoolQuery> {

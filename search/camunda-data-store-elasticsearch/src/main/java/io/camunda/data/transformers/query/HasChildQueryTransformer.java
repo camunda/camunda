@@ -27,10 +27,6 @@ public final class HasChildQueryTransformer
     final var query = transformer.apply(dataStoreQuery);
     final var type = value.type();
 
-    return QueryBuilders.hasChild()
-        .type(type)
-        .query(query)
-        .scoreMode(ChildScoreMode.None)
-        .build();
+    return QueryBuilders.hasChild().type(type).query(query).scoreMode(ChildScoreMode.None).build();
   }
 }

@@ -31,5 +31,4 @@ public class FieldValueTransformer
     }
     return null;
   }
-
 }
