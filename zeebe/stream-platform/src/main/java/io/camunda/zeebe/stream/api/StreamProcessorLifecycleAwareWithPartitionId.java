@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAwareWithPartitionId;
+public interface StreamProcessorLifecycleAwareWithPartitionId {
+  void onRecovered(final int partitionId);
 
-public interface CommandApiService extends StreamProcessorLifecycleAwareWithPartitionId {
+  void onPaused(final int partitionId);
 
-  CommandResponseWriter newCommandResponseWriter();
+  void onResumed(final int partitionId);
 }
