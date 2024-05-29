@@ -149,7 +149,8 @@ class ExporterDirectorPartitionTransitionStepTest {
     exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
 
     // then
-    assertThat(capturedContext.get().getDescriptors().stream().map(ExporterDescriptor::getId))
+    assertThat(
+            capturedContext.get().getDescriptors().keySet().stream().map(ExporterDescriptor::getId))
         .containsExactly(enabledExporterId);
   }
 

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -107,6 +109,13 @@ public final class ExporterRule implements TestRule {
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
 
+    final var descriptorsWithInitializationInfo =
+        exporterDescriptors.stream()
+            .collect(
+                Collectors.toMap(
+                    descriptor -> descriptor,
+                    descriptor -> new ExporterInitializationInfo(0, null)));
+
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
@@ -116,7 +125,7 @@ public final class ExporterRule implements TestRule {
             .exporterMode(exporterMode)
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
-            .descriptors(exporterDescriptors)
+            .descriptors(descriptorsWithInitializationInfo)
             .positionsToSkipFilter(positionsToSkipFilter);
 
     director = new ExporterDirector(context, phase);

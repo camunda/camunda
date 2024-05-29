@@ -8,12 +8,13 @@
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.stream.api.EventFilter;
 import java.time.Duration;
-import java.util.Collection;
+import java.util.Map;
 
 public final class ExporterDirectorContext {
 
@@ -22,7 +23,7 @@ public final class ExporterDirectorContext {
   private int id;
   private String name;
   private LogStream logStream;
-  private Collection<ExporterDescriptor> descriptors;
+  private Map<ExporterDescriptor, ExporterInitializationInfo> descriptors;
   private ZeebeDb zeebeDb;
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
@@ -41,7 +42,7 @@ public final class ExporterDirectorContext {
     return logStream;
   }
 
-  public Collection<ExporterDescriptor> getDescriptors() {
+  public Map<ExporterDescriptor, ExporterInitializationInfo> getDescriptors() {
     return descriptors;
   }
 
@@ -80,7 +81,8 @@ public final class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext descriptors(final Collection<ExporterDescriptor> descriptors) {
+  public ExporterDirectorContext descriptors(
+      final Map<ExporterDescriptor, ExporterInitializationInfo> descriptors) {
     this.descriptors = descriptors;
     return this;
   }
