@@ -7,9 +7,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const shell = require('shelljs');
 const url = require('url');
 const toPairs = require('lodash/toPairs');
-const {execFileSync} = require('child_process');
 
 const licenseChecker = path.resolve(__dirname, '..', 'node_modules', '.bin', 'license-checker');
 const depJsonFile = path.resolve(__dirname, '..', 'dependencies.json');
@@ -17,9 +17,7 @@ const depMdFile = path.resolve(__dirname, '..', 'frontend-dependencies.md');
 
 const npmLinkPrefix = 'https://www.npmjs.com/package/';
 
-const args = ['--out', depJsonFile, '--production', '--json', '--relativeLicensePath'];
-
-execFileSync(licenseChecker, args, {stdio: 'inherit'});
+shell.exec(`${licenseChecker} --out ${depJsonFile} --production --json --relativeLicensePath`);
 
 const dependencies = JSON.parse(fs.readFileSync(depJsonFile));
 

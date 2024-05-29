@@ -113,6 +113,7 @@
     "prettier": "^3.2.4",
     "react-scripts": "5.0.1",
     "sass": "^1.77.1",
+    "shelljs": "^0.8.5",
     "styled-components": "^6.1.9",
     "testcafe": "^3.3.0",
     "testcafe-browser-provider-browserstack": "^1.15.1",
