@@ -17,11 +17,17 @@ package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
+import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
+import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +53,18 @@ public class ZeebeClientProdAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 
   @Bean
-  public ZeebeClientConfiguration zeebeClientConfiguration() {
-    return new ZeebeClientConfigurationSpringImpl();
+  public ZeebeClientConfigurationSpringImpl zeebeClientConfiguration(
+      final ZeebeClientConfigurationProperties properties,
+      final CommonConfigurationProperties commonConfigurationProperties,
+      final JsonMapper jsonMapper,
+      final List<ClientInterceptor> interceptors,
+      final ZeebeClientExecutorService zeebeClientExecutorService) {
+    return new ZeebeClientConfigurationSpringImpl(
+        properties,
+        commonConfigurationProperties,
+        jsonMapper,
+        interceptors,
+        zeebeClientExecutorService) {};
   }
 
   @Bean(destroyMethod = "close")

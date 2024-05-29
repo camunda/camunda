@@ -53,8 +53,8 @@ public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
   }
 
   @Test
-  public void hasNoWorkerName() {
-    assertThat(properties.getDefaultJobWorkerName()).isNull();
+  public void hasDefaultWorkerName() {
+    assertThat(properties.getDefaultJobWorkerName()).isEqualTo("default");
   }
 
   @Test
