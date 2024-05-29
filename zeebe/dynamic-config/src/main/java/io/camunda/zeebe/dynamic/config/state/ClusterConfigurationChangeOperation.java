@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * An operation that changes the configuration. The operation could be a member join or leave a
@@ -93,6 +94,18 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param exporterId id of the exporter to disable
      */
     record PartitionDisableExporterOperation(MemberId memberId, int partitionId, String exporterId)
+        implements PartitionChangeOperation {}
+
+    /**
+     * Operation to enable an exporter on a partition in the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition which enables the exporter
+     * @param exporterId id of the exporter to enable
+     * @param initializeFrom id of the exporter to initialize the metadata from
+     */
+    record PartitionEnableExporterOperation(
+        MemberId memberId, int partitionId, String exporterId, Optional<String> initializeFrom)
         implements PartitionChangeOperation {}
   }
 }

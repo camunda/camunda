@@ -36,7 +36,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -199,9 +201,15 @@ public class ProtoBufSerializer
   }
 
   private ExporterState decodeExporterState(final Topology.ExporterState value) {
+    final Optional<String> initializeFrom =
+        value.hasInitializedFrom() ? Optional.of(value.getInitializedFrom()) : Optional.empty();
     return switch (value.getState()) {
-      case ENABLED -> new ExporterState(ExporterState.State.ENABLED);
-      case DISABLED -> new ExporterState(ExporterState.State.DISABLED);
+      case ENABLED ->
+          new ExporterState(
+              value.getMetadataVersion(), ExporterState.State.ENABLED, initializeFrom);
+      case DISABLED ->
+          new ExporterState(
+              value.getMetadataVersion(), ExporterState.State.DISABLED, initializeFrom);
       case UNRECOGNIZED, ENABLED_DISBALED_UNKNOWN ->
           throw new IllegalStateException("Unknown exporter state " + value.getState());
     };
@@ -254,7 +262,12 @@ public class ProtoBufSerializer
           case ENABLED -> Topology.EnabledDisabledState.ENABLED;
           case DISABLED -> Topology.EnabledDisabledState.DISABLED;
         };
-    return Topology.ExporterState.newBuilder().setState(state).build();
+    final var builder =
+        Topology.ExporterState.newBuilder()
+            .setState(state)
+            .setMetadataVersion(value.metadataVersion());
+    value.initializedFrom().ifPresent(builder::setInitializedFrom);
+    return builder.build();
   }
 
   private Topology.State toSerializedState(final MemberState.State state) {
@@ -378,11 +391,26 @@ public class ProtoBufSerializer
                   .setPartitionId(disableExporterOperation.partitionId())
                   .setExporterId(disableExporterOperation.exporterId())
                   .build());
+      case final PartitionEnableExporterOperation enableExporterOperation ->
+          builder.setPartitionEnableExporter(
+              encodeEnabledExporterOperation(enableExporterOperation));
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
     }
     return builder.build();
+  }
+
+  private Topology.PartitionEnableExporterOperation encodeEnabledExporterOperation(
+      final PartitionChangeOperation.PartitionEnableExporterOperation enableExporterOperation) {
+    final var enableExporterOperationBuilder =
+        Topology.PartitionEnableExporterOperation.newBuilder()
+            .setPartitionId(enableExporterOperation.partitionId())
+            .setExporterId(enableExporterOperation.exporterId());
+    enableExporterOperation
+        .initializeFrom()
+        .ifPresent(enableExporterOperationBuilder::setInitializeFrom);
+    return enableExporterOperationBuilder.build();
   }
 
   private Topology.CompletedTopologyChangeOperation encodeCompletedOperation(
@@ -398,16 +426,12 @@ public class ProtoBufSerializer
   }
 
   private ClusterChangePlan decodeChangePlan(final Topology.ClusterChangePlan clusterChangePlan) {
-
-    final var version = clusterChangePlan.getVersion();
     final var pendingOperations =
-        clusterChangePlan.getPendingOperationsList().stream()
-            .map(this::decodeOperation)
-            .collect(Collectors.toList());
+        clusterChangePlan.getPendingOperationsList().stream().map(this::decodeOperation).toList();
     final var completedOperations =
         clusterChangePlan.getCompletedOperationsList().stream()
             .map(this::decodeCompletedOperation)
-            .collect(Collectors.toList());
+            .toList();
 
     return new ClusterChangePlan(
         clusterChangePlan.getId(),
@@ -468,6 +492,17 @@ public class ProtoBufSerializer
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionDisableExporter().getPartitionId(),
           topologyChangeOperation.getPartitionDisableExporter().getExporterId());
+    } else if (topologyChangeOperation.hasPartitionEnableExporter()) {
+      final var enableExporterOperation = topologyChangeOperation.getPartitionEnableExporter();
+      final Optional<String> initializeFrom =
+          enableExporterOperation.hasInitializeFrom()
+              ? Optional.of(enableExporterOperation.getInitializeFrom())
+              : Optional.empty();
+      return new PartitionEnableExporterOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          enableExporterOperation.getPartitionId(),
+          enableExporterOperation.getExporterId(),
+          initializeFrom);
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -766,7 +801,7 @@ public class ProtoBufSerializer
         decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
         topologyChangeResponse.getPlannedChangesList().stream()
             .map(this::decodeOperation)
-            .collect(Collectors.toList()));
+            .toList());
   }
 
   private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {

@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class PartitionDisableExporterApplierTest {
+final class PartitionEnableExporterApplierTest {
 
   private final PartitionChangeExecutor partitionChangeExecutor =
       mock(PartitionChangeExecutor.class);
@@ -36,12 +36,22 @@ final class PartitionDisableExporterApplierTest {
   private final int partitionId = 2;
   private final MemberId localMemberId = MemberId.from("3");
 
-  private final PartitionDisableExporterApplier applier =
-      new PartitionDisableExporterApplier(
-          partitionId, localMemberId, exporterId, partitionChangeExecutor);
+  private final PartitionEnableExporterApplier applier =
+      new PartitionEnableExporterApplier(
+          partitionId, localMemberId, exporterId, Optional.of("other"), partitionChangeExecutor);
+  private final ClusterConfiguration clusterConfigWithPartition =
+      ClusterConfiguration.init()
+          .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+          .updateMember(
+              localMemberId,
+              m ->
+                  m.addPartition(
+                      partitionId,
+                      PartitionState.active(
+                          1, new DynamicPartitionConfig(new ExportersConfig(Map.of())))));
 
   @Test
-  void shouldFailInitIfMemberDoesNotExist() {
+  void shouldRejectWhenMemberDoesNotExist() {
     // given
     final var clusterConfiguration = ClusterConfiguration.init();
 
@@ -56,7 +66,7 @@ final class PartitionDisableExporterApplierTest {
   }
 
   @Test
-  void shouldFailInitIfPartitionDoesNotExist() {
+  void shouldRejectWhenPartitionDoesNotExist() {
     // given
     final var clusterConfiguration =
         ClusterConfiguration.init()
@@ -73,14 +83,28 @@ final class PartitionDisableExporterApplierTest {
   }
 
   @Test
-  void shouldFailInitIfExporterDoesNotExist() {
+  void shouldFailIfOtherExporterDoesNotExist() {
+    // when
+    final var result = applier.initMemberState(clusterConfigWithPartition);
+
+    // then
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not have exporter 'other'");
+  }
+
+  @Test
+  void shouldFailIfOtherExporterIsDisabled() {
     // given
+    final var configWithDisabledExporter =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of("other", new ExporterState(0, State.DISABLED, Optional.empty()))));
     final var clusterConfiguration =
-        ClusterConfiguration.init()
-            .addMember(
-                localMemberId,
-                MemberState.initializeAsActive(
-                    Map.of(partitionId, PartitionState.active(1, DynamicPartitionConfig.init()))));
+        clusterConfigWithPartition.updateMember(
+            localMemberId,
+            m -> m.updatePartition(partitionId, p -> p.updateConfig(configWithDisabledExporter)));
 
     // when
     final var result = applier.initMemberState(clusterConfiguration);
@@ -89,22 +113,22 @@ final class PartitionDisableExporterApplierTest {
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("does not have the exporter 'exporterA'");
+        .hasMessageContaining("the exporter 'other' is disabled");
   }
 
   @Test
-  void shouldNotChangeStateInInit() {
+  void shouldNotChangeStateOnInit() {
     // given
-    final var configWithExporter =
+    final var configWithOtherExporter =
         new DynamicPartitionConfig(
             new ExportersConfig(
-                Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
+                Map.of("other", new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(
                 localMemberId,
                 MemberState.initializeAsActive(
-                    Map.of(partitionId, PartitionState.active(1, configWithExporter))));
+                    Map.of(partitionId, PartitionState.active(1, configWithOtherExporter))));
 
     // when
     final var result = applier.initMemberState(clusterConfiguration);
@@ -117,8 +141,7 @@ final class PartitionDisableExporterApplierTest {
 
   @Test
   void shouldFailFutureIfApplyFailed() {
-    // given
-    when(partitionChangeExecutor.disableExporter(partitionId, exporterId))
+    when(partitionChangeExecutor.enableExporter(partitionId, exporterId, 0, "other"))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
 
@@ -133,33 +156,33 @@ final class PartitionDisableExporterApplierTest {
   }
 
   @Test
-  void shouldCompleteFutureAndUpdateStateIfApplySucceeds() {
+  void shouldUpdateStateAndMetadataVersionIfApplySucceeded() {
     // given
-    final var exporterState = new ExporterState(1, State.ENABLED, Optional.empty());
-    final var exporterConfig = new ExportersConfig(Map.of(exporterId, exporterState));
-    final var partitionConfig = new DynamicPartitionConfig(exporterConfig);
-    final var memberState =
-        MemberState.initializeAsActive(
-            Map.of(partitionId, PartitionState.active(1, partitionConfig)));
-
-    when(partitionChangeExecutor.disableExporter(partitionId, exporterId))
+    when(partitionChangeExecutor.enableExporter(partitionId, exporterId, 1, "other"))
         .thenReturn(CompletableActorFuture.completed(null));
+
+    final var configWithOtherExporter =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of("other", new ExporterState(1, State.ENABLED, Optional.empty()))));
+    final var clusterConfiguration =
+        ClusterConfiguration.init()
+            .addMember(
+                localMemberId,
+                MemberState.initializeAsActive(
+                    Map.of(partitionId, PartitionState.active(1, configWithOtherExporter))));
+    applier.initMemberState(clusterConfiguration);
 
     // when
     final var result = applier.applyOperation();
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-
-    final var updatedState = result.join().apply(memberState);
-    assertThat(
-            updatedState
-                .getPartition(partitionId)
-                .config()
-                .exporting()
-                .exporters()
-                .get(exporterId)
-                .state())
-        .isEqualTo(State.DISABLED);
+    final var updatedState = result.join().apply(clusterConfiguration.getMember(localMemberId));
+    final ExporterState updatedExporterState =
+        updatedState.getPartition(partitionId).config().exporting().exporters().get(exporterId);
+    assertThat(updatedExporterState.state()).isEqualTo(State.ENABLED);
+    assertThat(updatedExporterState.metadataVersion()).isEqualTo(1);
+    assertThat(updatedExporterState.initializedFrom()).contains("other");
   }
 }
