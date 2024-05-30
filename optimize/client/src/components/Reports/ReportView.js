@@ -9,7 +9,7 @@ import React, {useRef, useState} from 'react';
 import {Link, Redirect, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
-import {Edit, Share, TrashCan} from '@carbon/icons-react';
+import {Download, Edit, Share, TrashCan} from '@carbon/icons-react';
 
 import {
   ShareEntity,
@@ -145,6 +145,7 @@ export default function ReportView({report, error, loadReport}) {
               <DownloadButton
                 kind="ghost"
                 iconDescription={t('report.downloadCSV')}
+                renderIcon={Download}
                 hasIconOnly
                 href={constructCSVDownloadLink()}
                 totalCount={calculateTotalEntries(report)}
