@@ -196,8 +196,6 @@ jobs:
           -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Normalize artifact name
-        run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
