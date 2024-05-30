@@ -144,6 +144,7 @@
     <field name="partitionId" id="1" type="uint16"/>
     <field name="key" id="2" type="uint64"/>
     <field name="valueType" id="3" type="ValueType"/>
+    <data name="authorization" id="4" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="ExecuteGetResponse" id="33">
