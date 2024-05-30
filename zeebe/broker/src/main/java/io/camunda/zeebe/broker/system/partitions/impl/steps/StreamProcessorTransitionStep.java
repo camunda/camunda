@@ -20,7 +20,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAwareWithPartitionId;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -166,32 +165,26 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             processedCommand ->
                 context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
         .addLifecycleListener(
-            createStreamProcessorLifeCycleAware(
-                context.getCommandApiService(), context.getPartitionId()))
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
+                context.getCommandApiService().onRecovered(context.getPartitionId());
+              }
+
+              @Override
+              public void onPaused() {
+                context.getCommandApiService().onPaused(context.getPartitionId());
+              }
+
+              @Override
+              public void onResumed() {
+                context.getCommandApiService().onResumed(context.getPartitionId());
+              }
+            })
         .addLifecycleListener(context.getPartitionCommandReceiver())
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)
         .build();
-  }
-
-  private static StreamProcessorLifecycleAware createStreamProcessorLifeCycleAware(
-      final StreamProcessorLifecycleAwareWithPartitionId service, final int partitionId) {
-    return new StreamProcessorLifecycleAware() {
-      @Override
-      public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
-        service.onRecovered(partitionId);
-      }
-
-      @Override
-      public void onPaused() {
-        service.onPaused(partitionId);
-      }
-
-      @Override
-      public void onResumed() {
-        service.onResumed(partitionId);
-      }
-    };
   }
 }
