@@ -10,13 +10,12 @@ import {useMemo, useRef, useState} from 'react';
 import {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
-import {Data} from '@bpmn-io/form-js-viewer/dist/types/types';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {InlineLoadingStatus} from '@carbon/react';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {useSaveButton} from 'modules/hooks/useSaveButton';
 import {notificationsStore} from 'modules/stores/notifications';
-import {FormManager} from 'modules/formManager';
+import {FormManager, type FormJSData} from 'modules/formManager';
 import {
   ScrollableContent,
   TaskDetailsContainer,
@@ -60,10 +59,14 @@ function extractVariablesFromFormSchema(
   }
 }
 
-function formatFormDataToVariables(data: Data) {
-  return Object.keys(data).map((key) => ({
+function formatFormDataToVariables(data: FormJSData | null) {
+  if (data === null) {
+    return [];
+  }
+
+  return Object.entries(data).map(([key, value]) => ({
     name: key,
-    value: JSON.stringify(data[key]),
+    value: JSON.stringify(value),
   }));
 }
 
@@ -128,6 +131,9 @@ const FormJS: React.FC<Props> = ({
     hasFetchedVariables;
   const {removeFormReference} = useRemoveFormReference(task);
   const {save, savingState} = useSaveButton(task.id);
+  const [formVariables, setFormVariables] = useState<
+    Array<{name: string; value: string}>
+  >([]);
 
   return (
     <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
@@ -181,6 +187,9 @@ const FormJS: React.FC<Props> = ({
                   onValidationError={() => {
                     setSubmissionState('inactive');
                   }}
+                  onChange={({data}) => {
+                    setFormVariables(formatFormDataToVariables(data));
+                  }}
                 />
               ),
             )
@@ -192,13 +201,7 @@ const FormJS: React.FC<Props> = ({
               <SaveDraftButton
                 savingState={savingState}
                 onClick={() => {
-                  save(
-                    formatFormDataToVariables(
-                      formManagerRef.current
-                        ?.get('form')
-                        ._getSubmitData() as Data,
-                    ),
-                  );
+                  save(formVariables);
                 }}
                 isHidden={!canCompleteTask}
                 isDisabled={savingState === 'active' || !canCompleteTask}

@@ -33,6 +33,7 @@ class FormManager {
   #schema: string | null = null;
   #onSubmit: (result: {errors: Errors; data: FormJSData}) => void = () => {};
   #data: FormJSData | null = null;
+  #onChange: (payload: {data: FormJSData | null}) => void = () => {};
 
   render = async (options: {
     schema: string;
@@ -40,13 +41,21 @@ class FormManager {
     onSubmit: (result: {errors: Errors; data: FormJSData}) => void;
     onImportError?: () => void;
     container: HTMLElement;
+    onChange?: (payload: {data: FormJSData | null}) => void;
   }) => {
-    const {schema, data, onSubmit, onImportError, container} = options;
+    const {schema, data, onSubmit, onImportError, container, onChange} =
+      options;
 
     if (this.#onSubmit !== onSubmit) {
       this.#form.off('submit', this.#onSubmit);
       this.#onSubmit = onSubmit;
       this.#form.on('submit', this.#onSubmit);
+    }
+
+    if (onChange !== undefined && this.#onChange !== onChange) {
+      this.#form.off('changed', this.#onChange);
+      this.#onChange = onChange;
+      this.#form.on('changed', this.#onChange);
     }
 
     if (
@@ -89,4 +98,4 @@ class FormManager {
   };
 }
 
-export {FormManager};
+export {FormManager, type FormJSData};

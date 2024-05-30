@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {Layer} from '@carbon/react';
 import {Variable} from 'modules/types';
-import {FormManager} from 'modules/formManager';
+import {FormManager, type FormJSData} from 'modules/formManager';
 import {mergeVariables} from './mergeVariables';
 import {ValidationMessage} from './ValidationMessage';
 import {getFieldLabels} from './getFieldLabels';
@@ -30,6 +30,7 @@ type Props = {
   onSubmitError?: (error: unknown) => void;
   onSubmitSuccess?: () => void;
   onValidationError?: () => void;
+  onChange?: (payload: {data: FormJSData | null}) => void;
 };
 
 function htmlDomId(
@@ -101,6 +102,7 @@ const FormJSRenderer: React.FC<Props> = ({
   onSubmitError,
   onSubmitSuccess,
   onValidationError,
+  onChange,
 }) => {
   const formManagerRef = useRef<FormManager>(new FormManager());
   const formContainerRef = useRef<HTMLDivElement | null>(null);
@@ -127,6 +129,7 @@ const FormJSRenderer: React.FC<Props> = ({
           schema,
           data,
           onImportError,
+          onChange,
           onSubmit: async ({data: newData, errors}) => {
             onSubmitStart?.();
             setInvalidFields(undefined);
@@ -165,6 +168,7 @@ const FormJSRenderer: React.FC<Props> = ({
 
     render();
   }, [
+    onChange,
     schema,
     handleSubmit,
     onRender,
