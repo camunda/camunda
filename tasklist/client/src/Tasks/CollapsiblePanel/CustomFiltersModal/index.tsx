@@ -64,7 +64,7 @@ const CustomFiltersModal: React.FC<Props> = ({
     isOpen,
     filterId,
   });
-  const [currentStep, setCurrentStop] = useState<'fields' | 'name' | 'delete'>(
+  const [currentStep, setCurrentStep] = useState<'fields' | 'name' | 'delete'>(
     'fields',
   );
 
@@ -82,10 +82,10 @@ const CustomFiltersModal: React.FC<Props> = ({
         }}
         onSave={(filters) => {
           setCustomFilters(filters);
-          setCurrentStop('name');
+          setCurrentStep('name');
         }}
         onEdit={(filters) => {
-          setCurrentStop('fields');
+          setCurrentStep('fields');
 
           if (filterId === undefined) {
             console.error('Filter ID is undefined on edit');
@@ -104,7 +104,7 @@ const CustomFiltersModal: React.FC<Props> = ({
           onSuccess(filterId!);
         }}
         onDelete={() => {
-          setCurrentStop('delete');
+          setCurrentStep('delete');
         }}
         {...props}
       />
@@ -119,15 +119,15 @@ const CustomFiltersModal: React.FC<Props> = ({
               name: filterName,
             },
           });
-          setCurrentStop('fields');
+          setCurrentStep('fields');
 
           onSuccess(filterId);
         }}
-        onCancel={() => setCurrentStop('fields')}
+        onCancel={() => setCurrentStep('fields')}
       />
       <DeleteFilterModal
         isOpen={isOpen && currentStep === 'delete'}
-        onClose={() => setCurrentStop('fields')}
+        onClose={() => setCurrentStep('fields')}
         onDelete={() => {
           storeStateLocally(
             'customFilters',
@@ -137,7 +137,7 @@ const CustomFiltersModal: React.FC<Props> = ({
               ),
             ),
           );
-          setCurrentStop('fields');
+          setCurrentStep('fields');
           onDelete();
         }}
         filterName={filterId ?? ''}
