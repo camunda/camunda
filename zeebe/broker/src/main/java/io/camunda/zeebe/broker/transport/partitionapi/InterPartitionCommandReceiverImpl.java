@@ -62,7 +62,7 @@ final class InterPartitionCommandReceiverImpl {
     }
 
     if (processingPaused) {
-      LOG.warn(
+      LOG.debug(
           "Ignoring command {} {} from {}, checkpoint {}, processing paused",
           decoded.metadata.getValueType(),
           decoded.metadata.getIntent(),

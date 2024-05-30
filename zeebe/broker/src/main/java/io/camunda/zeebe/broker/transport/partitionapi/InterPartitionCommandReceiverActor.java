@@ -89,17 +89,17 @@ public final class InterPartitionCommandReceiverActor extends Actor
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
-    receiver.setProcessingPaused(false);
+    actor.run(() -> receiver.setProcessingPaused(false));
   }
 
   @Override
   public void onPaused() {
-    receiver.setProcessingPaused(true);
+    actor.run(() -> receiver.setProcessingPaused(true));
   }
 
   @Override
   public void onResumed() {
-    receiver.setProcessingPaused(false);
+    actor.run(() -> receiver.setProcessingPaused(false));
   }
 
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
