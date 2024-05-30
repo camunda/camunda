@@ -58,10 +58,7 @@ public class UserRepository {
         .get(0);
   }
 
-  public void updateProfile(final CamundaUser user) {
-    final var id =
-        jdbcTemplate.queryForObject(
-            DEF_USER_ID_QUERY, new Object[] {user.username()}, Integer.class);
+  public void updateProfile(final Integer id, final CamundaUser user) {
     jdbcTemplate.update(
         DEF_PROFILE_UPDATE,
         (ps) -> {

@@ -87,7 +87,7 @@ public class UserService {
         throw new RuntimeException("user.notFound");
       }
       final CamundaUser existingUser = userRepository.loadUserById(id);
-      if (existingUser == null || !existingUser.username().equals(user.user().username())) {
+      if (existingUser == null) {
         throw new RuntimeException("user.notFound");
       }
 
@@ -102,7 +102,7 @@ public class UserService {
               .disabled(!user.user().enabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      userRepository.updateProfile(user.user());
+      userRepository.updateProfile(id, user.user());
       return userRepository.loadUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
