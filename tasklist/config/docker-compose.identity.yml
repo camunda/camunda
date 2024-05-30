@@ -225,8 +225,8 @@ services:
     environment:
       - SERVER_PORT=8082
       - CAMUNDA_TASKLIST_DATABASE=opensearch
-      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-opensearch:8080
       - CAMUNDA_TASKLIST_OPENSEARCH_URL=http://opensearch:9200
       - CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL=http://opensearch:9200
       - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
@@ -240,6 +240,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://keycloak:8080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
+      - CAMUNDA_TASKLIST_ARCHIVER_ILMENABLED=true
     ports:
       - 8082:8082
     networks:
