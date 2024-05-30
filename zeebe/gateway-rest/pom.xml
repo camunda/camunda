@@ -252,6 +252,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- required due to ArchUnit presence -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
