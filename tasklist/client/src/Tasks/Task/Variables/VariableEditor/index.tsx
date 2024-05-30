@@ -93,7 +93,6 @@ const VariableEditor: React.FC<Props> = ({
           <StructuredListCell className={styles.listCell} head>
             Value
           </StructuredListCell>
-          <StructuredListCell className={styles.listCell} head />
         </StructuredListRow>
       </StructuredListHead>
       <StructuredListBody>
@@ -181,7 +180,7 @@ const VariableEditor: React.FC<Props> = ({
                       }}
                       size="sm"
                       kind="ghost"
-                      align="top-right"
+                      align="top-end"
                       leaveDelayMs={100}
                     >
                       <Popup />
@@ -280,7 +279,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Popup />
@@ -292,7 +291,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Close />
