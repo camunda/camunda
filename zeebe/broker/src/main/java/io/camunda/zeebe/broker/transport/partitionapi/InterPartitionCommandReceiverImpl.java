@@ -36,7 +36,7 @@ final class InterPartitionCommandReceiverImpl {
   private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
-  private boolean processingPaused = true;
+  private boolean processingPaused = false;
 
   InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
