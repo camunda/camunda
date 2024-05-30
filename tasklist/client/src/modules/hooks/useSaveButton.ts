@@ -15,15 +15,17 @@ import {tracking} from 'modules/tracking';
 function useSaveButton(taskId: string, messageTimeoutMs = 5000) {
   const [savingState, setSavingState] =
     useState<InlineLoadingStatus>('inactive');
-  const {mutate: saveDraft} = useSaveDraftVariables(taskId);
+  const {mutateAsync: saveDraft} = useSaveDraftVariables(taskId);
 
-  function save(variables: Pick<Variable, 'name' | 'value'>[]) {
+  async function save(variables: Pick<Variable, 'name' | 'value'>[]) {
     setSavingState('active');
     tracking.track({eventName: 'task-manual-save'});
-    saveDraft(variables, {
-      onError: () => setSavingState('error'),
-      onSuccess: () => setSavingState('finished'),
-    });
+    try {
+      await saveDraft(variables);
+      setSavingState('finished');
+    } catch {
+      setSavingState('error');
+    }
   }
 
   const saveTimeout = useRef<NodeJS.Timeout | null>();

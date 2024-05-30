@@ -118,6 +118,7 @@ const Variables: React.FC<Props> = ({
     fetchFullVariable,
     variablesLoadingFullValue,
     status,
+    refetch: refetchVariables,
   } = useAllVariables(
     {
       taskId: task.id,
@@ -283,8 +284,11 @@ const Variables: React.FC<Props> = ({
 
                       <SaveDraftButton
                         savingState={savingState}
-                        onClick={() => {
-                          save(extractVariablesFromFormState(form.getState()));
+                        onClick={async () => {
+                          await save(
+                            extractVariablesFromFormState(form.getState()),
+                          );
+                          refetchVariables();
                         }}
                         isHidden={!canCompleteTask}
                         isDisabled={
