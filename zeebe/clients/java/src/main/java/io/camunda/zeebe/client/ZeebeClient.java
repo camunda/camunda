@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.zeebe.client.api.command.GetUserTaskRequestStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
@@ -566,4 +567,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
+
+  @ExperimentalApi("You better watch out!")
+  GetUserTaskRequestStep1 newGetUserTask(long userTaskKey);
 }

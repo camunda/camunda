@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.GetUserTaskRequestStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
+import io.camunda.zeebe.client.impl.command.GetUserTaskRequestImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
@@ -466,6 +468,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public GetUserTaskRequestStep1 newGetUserTask(final long userTaskKey) {
+    return new GetUserTaskRequestImpl(
+        asyncStub,
+        jsonMapper,
+        userTaskKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest) {};
   }
 
   private JobClient newJobClient() {
