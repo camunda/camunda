@@ -20,6 +20,7 @@ public enum RequestType {
   // Supported request types
   COMMAND("command"),
   QUERY("query"),
+  GET("get"),
   ADMIN("admin"),
 
   BACKUP("backup"),
