@@ -61,6 +61,6 @@ public class GroupControllerURA {
 
   @PutMapping("/{groupId}")
   public Group updateGroup(@PathVariable final Integer groupId, @RequestBody final Group group) {
-    return groupService.renameGroup(groupId, group);
+    return groupService.renameGroupById(groupId, group);
   }
 }

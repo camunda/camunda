@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.identity.user.Group;
+import java.util.Random;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.test.annotation.DirtiesContext.ClassMode;
 @SpringBootTest
 @DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 public class GroupServiceTest {
+
   @Autowired private GroupService groupService;
 
   @Test
@@ -54,10 +56,22 @@ public class GroupServiceTest {
   }
 
   @Test
+  void existingGroupDeleteGroupByIdDeleted() {
+    final var groupName = "gr" + UUID.randomUUID();
+    final var groupId = groupService.createGroup(new Group(groupName)).id();
+
+    groupService.deleteGroupById(groupId);
+
+    assertThrows(RuntimeException.class, () -> groupService.findGroupById(groupId));
+  }
+
+  @Test
   void nonExistingGroupDeleteGroupException() {
     final var groupName = "gr" + UUID.randomUUID();
+    final int randId = new Random().nextInt();
 
     assertThrows(RuntimeException.class, () -> groupService.deleteGroup(new Group(groupName)));
+    assertThrows(RuntimeException.class, () -> groupService.deleteGroupById(randId));
   }
 
   @Test
@@ -65,6 +79,13 @@ public class GroupServiceTest {
     final var groupName = "gr" + UUID.randomUUID();
 
     assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
+  }
+
+  @Test
+  void nonExistingGroupFindGroupByIdThrowsException() {
+    final int randId = new Random().nextInt();
+
+    assertThrows(RuntimeException.class, () -> groupService.findGroupById(randId));
   }
 
   @Test
@@ -83,6 +104,8 @@ public class GroupServiceTest {
 
     assertThrows(
         RuntimeException.class, () -> groupService.renameGroup(groupName, new Group(groupName)));
+    assertThrows(
+        RuntimeException.class, () -> groupService.renameGroupById(999, new Group(999, groupName)));
   }
 
   @Test
@@ -95,5 +118,18 @@ public class GroupServiceTest {
 
     final var group = groupService.findGroupByName(newGroupName);
     assertNotNull(group);
+  }
+
+  @Test
+  void existingGroupRenameGroupByIdUpdated() {
+    final var groupName = "gr" + UUID.randomUUID();
+    final var newGroupName = "newGr" + UUID.randomUUID();
+    final Integer id = groupService.createGroup(new Group(groupName)).id();
+
+    groupService.renameGroupById(id, new Group(1, newGroupName));
+
+    final var group = groupService.findGroupById(id);
+    assertNotNull(group);
+    assertEquals(newGroupName, group.name());
   }
 }

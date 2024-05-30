@@ -95,8 +95,8 @@ class UserServiceTest {
   void nonExistingUserUpdateUserThrowsException() {
     final var username = "user" + UUID.randomUUID();
     final var user =
-        new CamundaUserWithPassword(new CamundaUser(0, username, "email", false), "password");
-    assertThrows(RuntimeException.class, () -> userService.updateUser(0, user));
+        new CamundaUserWithPassword(new CamundaUser(11, username, "email", false), "password");
+    assertThrows(RuntimeException.class, () -> userService.updateUser(11, user));
   }
 
   @Test

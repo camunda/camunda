@@ -43,10 +43,13 @@ public class GroupRepository {
             DEF_FIND_GROUP_BY_ID_SQL,
             new Object[] {groupId},
             (rs, rowNum) -> new Group(rs.getInt(1), rs.getString(2)))
-        .get(0);
+        .getFirst();
   }
 
   public void deleteGroupById(final Integer groupId) {
-    jdbcTemplate.update(DEF_DELETE_GROUP_BY_ID_SQL, groupId);
+    final int numUpdatedRows = jdbcTemplate.update(DEF_DELETE_GROUP_BY_ID_SQL, groupId);
+    if (numUpdatedRows != 1) {
+      throw new RuntimeException("group.notFound");
+    }
   }
 }

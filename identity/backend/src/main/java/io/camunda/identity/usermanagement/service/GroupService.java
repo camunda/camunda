@@ -66,7 +66,7 @@ public class GroupService {
     return findGroupByName(group.name());
   }
 
-  public Group renameGroup(final Integer groupId, final Group group) {
+  public Group renameGroupById(final Integer groupId, final Group group) {
     if (group.id() == null || !Objects.equals(groupId, group.id())) {
       throw new RuntimeException("group.notFound");
     }
