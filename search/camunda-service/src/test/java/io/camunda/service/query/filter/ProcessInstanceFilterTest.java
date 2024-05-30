@@ -13,8 +13,8 @@ import io.camunda.data.clients.query.DataStoreBoolQuery;
 import io.camunda.data.clients.query.DataStoreHasChildQuery;
 import io.camunda.data.clients.query.DataStoreTermQuery;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.query.SearchQuery;
 import io.camunda.service.query.filter.ProcessInstanceFilter.Builder;
+import io.camunda.service.query.search.SearchQueryBase;
 import io.camunda.service.util.StubbedDataStoreClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ public final class ProcessInstanceFilterTest {
   public void shouldQueryOnlyByProcessInstances() {
     // given
     final var filter = FilterBuilders.processInstance((f) -> f);
-    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
 
     // when
     services.search(searchQuery);
@@ -59,7 +59,7 @@ public final class ProcessInstanceFilterTest {
     // given
     final var filter =
         FilterBuilders.processInstance((f) -> f.processInstanceKeys(4503599627370497L));
-    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
 
     // when
     services.search(searchQuery);
@@ -93,7 +93,7 @@ public final class ProcessInstanceFilterTest {
     // given
     final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
     final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
-    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
 
     // when
     services.search(searchQuery);
@@ -122,7 +122,7 @@ public final class ProcessInstanceFilterTest {
     // given
     final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
     final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
-    final SearchQuery<ProcessInstanceFilter> searchQuery = SearchQuery.of((b) -> b.filter(filter));
+    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
 
     // when
     final var response = services.search(searchQuery);

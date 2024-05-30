@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query.types;
+package io.camunda.service.query.page;
 
 import static io.camunda.data.clients.sort.DataStoreSortOptionsBuilders.sortOptions;
 
@@ -14,7 +14,12 @@ import io.camunda.data.clients.sort.SortOrder;
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public class SearchQueryPage {
+public final class SearchQueryPage {
+
+  private static final DataStoreSortOptions SORT_BY_KEY_ASC = sortOptions("key", SortOrder.ASC);
+  private static final DataStoreSortOptions SORT_BY_KEY_DESC = sortOptions("key", SortOrder.DESC);
+
+  public static final SearchQueryPage DEFAULT_PAGE = of((b) -> b);
 
   private final Integer from;
   private final Integer size;
@@ -78,11 +83,11 @@ public class SearchQueryPage {
     return null;
   }
 
-  public DataStoreSortOptions toSort() {
+  public DataStoreSortOptions toSortOptions() {
     if (isNextPage()) {
-      return sortOptions("key", SortOrder.ASC);
+      return SORT_BY_KEY_ASC;
     } else {
-      return sortOptions("key", SortOrder.DESC);
+      return SORT_BY_KEY_DESC;
     }
   }
 

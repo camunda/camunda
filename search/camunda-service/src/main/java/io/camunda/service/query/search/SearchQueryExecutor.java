@@ -5,13 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query;
+package io.camunda.service.query.search;
 
 import io.camunda.data.clients.DataStoreClient;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
 import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.service.auth.Authentication;
 import io.camunda.service.query.filter.FilterBody;
+import io.camunda.service.query.sort.SortOption;
 import io.camunda.zeebe.util.Either;
 
 public class SearchQueryExecutor {
@@ -25,8 +26,8 @@ public class SearchQueryExecutor {
     this.authentication = authentication;
   }
 
-  public <T extends FilterBody, R> SearchQueryResult<R> search(
-      final SearchQuery<T> query, final Class<R> documentClass) {
+  public <T extends FilterBody, S extends SortOption, R> SearchQueryResult<R> search(
+      final SearchQueryBase<T, S> query, final Class<R> documentClass) {
     final var authQuery = getAuthenticationQueryIfPresent();
     final var response = searchWithAuthenticationQuery(query, documentClass, authQuery);
     return response.fold(
@@ -43,9 +44,9 @@ public class SearchQueryExecutor {
     return null;
   }
 
-  private <T extends FilterBody, R>
+  private <T extends FilterBody, S extends SortOption, R>
       Either<Exception, DataStoreSearchResponse<R>> searchWithAuthenticationQuery(
-          final SearchQuery<T> query,
+          final SearchQueryBase<T, S> query,
           final Class<R> documentClass,
           final DataStoreQuery authQuery) {
     final var searchRequest = query.toSearchRequest(authQuery);

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.query.SearchQueryResult;
+import io.camunda.service.query.search.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstance;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.util.Either;

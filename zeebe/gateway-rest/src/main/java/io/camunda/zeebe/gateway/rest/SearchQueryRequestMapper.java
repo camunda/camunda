@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.service.query.SearchQuery;
 import io.camunda.service.query.filter.FilterBuilders;
 import io.camunda.service.query.filter.ProcessInstanceFilter;
 import io.camunda.service.query.filter.VariableValueFilter;
-import io.camunda.service.query.types.SearchQueryPage;
-import io.camunda.service.query.types.SearchQuerySort;
+import io.camunda.service.query.page.SearchQueryPage;
+import io.camunda.service.query.search.ProcessInstanceSearchQuery;
+import io.camunda.service.query.search.SearchQueryBuilders;
+import io.camunda.service.query.sort.ProcessInstanceSort;
+import io.camunda.service.query.sort.SortOptionBuilders;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
@@ -22,13 +24,17 @@ import org.springframework.http.ProblemDetail;
 
 public class SearchQueryRequestMapper {
 
-  public static Either<ProblemDetail, SearchQuery<ProcessInstanceFilter>> toProcessInstanceQuery(
+  public static Either<ProblemDetail, ProcessInstanceSearchQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
     final var page = toSearchQueryPage(request.getPage()).get();
     final var sorting = toSearchQuerySort(request.getSort()).get();
     final var processInstanceFilter = toProcessInstanceFilter(request.getFilter()).get();
-    return Either.right(
-        SearchQuery.of((s) -> s.page(page).sort(sorting).filter(processInstanceFilter)));
+    return Either.right(SearchQueryBuilders
+        .processInstanceSearchQuery()
+        .page(page)
+        .filter(processInstanceFilter)
+        .sort(sorting)
+        .build());
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
@@ -88,20 +94,33 @@ public class SearchQueryRequestMapper {
     return Either.right(null);
   }
 
-  public static Either<ProblemDetail, SearchQuerySort> toSearchQuerySort(
+  public static Either<ProblemDetail, ProcessInstanceSort> toSearchQuerySort(
       final SearchQuerySortRequest sorting) {
     if (sorting != null) {
-      return Either.right(
-          SearchQuerySort.of(
-              (s) -> {
-                if (sorting.getField() != null) {
-                  s.field(sorting.getField());
-                }
-                if (sorting.getOrder() != null) {
-                  s.order(sorting.getOrder());
-                }
-                return s;
-              }));
+      final var builder = SortOptionBuilders.processInstanceSort();
+
+      final var field = sorting.getField();
+      final var order = sorting.getOrder();
+
+      if ("processInstanceKey".equals(field)) {
+        builder.processInstanceKey();
+      } else if ("startDate".equals(field)) {
+        builder.startDate();
+      } else if ("endDate".equals(field)) {
+        builder.endDate();
+      } else {
+        throw new RuntimeException("unkown sortBy " + field);
+      }
+
+      if ("asc".equalsIgnoreCase(order)) {
+        builder.asc();
+      } else if ("desc".equalsIgnoreCase(order)) {
+        builder.desc();
+      } else {
+        throw new RuntimeException("unkown sortOrder " + order);
+      }
+
+      return Either.right(builder.build());
     }
 
     return Either.right(null);

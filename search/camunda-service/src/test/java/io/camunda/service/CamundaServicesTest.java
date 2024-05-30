@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.data.clients.DataStoreClient;
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.core.DataStoreSearchResponse;
-import io.camunda.service.query.SearchQueryResult;
 import io.camunda.service.query.filter.FilterBuilders;
+import io.camunda.service.query.search.SearchQueryResult;
 import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.Test;
 

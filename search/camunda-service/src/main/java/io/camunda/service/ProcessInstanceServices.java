@@ -10,14 +10,11 @@ package io.camunda.service;
 import io.camunda.data.clients.DataStoreClient;
 import io.camunda.service.auth.Authentication;
 import io.camunda.service.entities.ProcessInstanceEntity;
-import io.camunda.service.query.SearchQuery;
-import io.camunda.service.query.SearchQueryResult;
-import io.camunda.service.query.core.SearchQueryService;
-import io.camunda.service.query.filter.ProcessInstanceFilter;
-import io.camunda.util.DataStoreObjectBuilder;
-import java.util.function.Function;
+import io.camunda.service.query.SearchQueryService;
+import io.camunda.service.query.search.ProcessInstanceSearchQuery;
+import io.camunda.service.query.search.SearchQueryResult;
 
-public final class ProcessInstanceServices extends SearchQueryService<ProcessInstanceServices> {
+public final class ProcessInstanceServices extends SearchQueryService<ProcessInstanceServices, ProcessInstanceSearchQuery, ProcessInstanceEntity> {
 
   public ProcessInstanceServices(final DataStoreClient dataStoreClient) {
     this(dataStoreClient, null);
@@ -33,16 +30,9 @@ public final class ProcessInstanceServices extends SearchQueryService<ProcessIns
     return new ProcessInstanceServices(dataStoreClient, authentication);
   }
 
-  public SearchQueryResult<ProcessInstanceEntity> search(
-      final SearchQuery<ProcessInstanceFilter> query) {
+  @Override
+  public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceSearchQuery query) {
     return executor.search(query, ProcessInstanceEntity.class);
   }
 
-  public SearchQueryResult<ProcessInstanceEntity> search(
-      final Function<
-              SearchQuery.Builder<ProcessInstanceFilter>,
-              DataStoreObjectBuilder<SearchQuery<ProcessInstanceFilter>>>
-          fn) {
-    return search(SearchQuery.of(fn));
-  }
 }

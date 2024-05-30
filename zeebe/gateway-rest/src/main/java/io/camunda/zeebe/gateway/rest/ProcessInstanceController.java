@@ -8,8 +8,9 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.query.SearchQuery;
 import io.camunda.service.query.filter.ProcessInstanceFilter;
+import io.camunda.service.query.search.SearchQueryBase;
+import io.camunda.service.query.sort.ProcessInstanceSort;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ public class ProcessInstanceController {
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
-      final SearchQuery<ProcessInstanceFilter> query) {
+      final SearchQueryBase<ProcessInstanceFilter, ProcessInstanceSort> query) {
     final var tenantIds = TenantAttributeHolder.tenantIds();
     final var result =
         processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
