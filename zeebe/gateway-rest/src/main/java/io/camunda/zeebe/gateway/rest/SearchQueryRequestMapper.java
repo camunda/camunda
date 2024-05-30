@@ -95,7 +95,7 @@ public class SearchQueryRequestMapper {
           SearchQuerySort.of(
               (s) -> {
                 if (sorting.getField() != null) {
-                  sorting.field(sorting.getField());
+                  s.field(sorting.getField());
                 }
                 if (sorting.getOrder() != null) {
                   s.order(sorting.getOrder());

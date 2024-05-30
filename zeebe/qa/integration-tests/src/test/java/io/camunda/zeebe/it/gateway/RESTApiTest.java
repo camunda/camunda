@@ -70,10 +70,9 @@ public class RESTApiTest {
                       .POST(
                           HttpRequest.BodyPublishers.ofString(
                               String.format(
-                                  "{\"filter\":{\"key\":%d}, \"sort\":{}}",
+                                  "{\"filter\":{\"key\":%d}, \"sort\":{\"field\":\"endDate\",\"order\":\"ASC\"},\"page\":{\"form\":0,\"size\":20}}",
                                   processInstanceEvent.getProcessInstanceKey())))
                       .build();
-
               final HttpResponse<String> response =
                   httpClient.send(request, BodyHandlers.ofString());
 
