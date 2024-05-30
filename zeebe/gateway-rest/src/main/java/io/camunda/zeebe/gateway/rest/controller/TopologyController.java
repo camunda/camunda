@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -15,13 +15,16 @@ import io.camunda.zeebe.gateway.protocol.rest.Partition;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
+import io.camunda.zeebe.gateway.rest.Loggers;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @ZeebeRestController
+@RequestMapping(path = {"/v1", "/v2"})
 public final class TopologyController {
   private final BrokerClient client;
 

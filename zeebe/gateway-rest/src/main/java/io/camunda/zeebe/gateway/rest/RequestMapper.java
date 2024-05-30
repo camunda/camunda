@@ -11,9 +11,11 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +40,9 @@ import org.springframework.http.ProblemDetail;
 
 public class RequestMapper {
 
-  private static final String ERROR_MESSAGE_EMPTY_ASSIGNEE = "No assignee provided";
+  private static final String ERROR_MESSAGE_EMPTY_ATTRIBUTE = "No %s provided";
+  private static final String ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE =
+      "The value for %s is '%s' but must be %s";
   private static final String ERROR_MESSAGE_DATE_PARSING =
       "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
   private static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
@@ -118,12 +123,38 @@ public class RequestMapper {
     return Either.right(brokerRequest);
   }
 
+  public static Either<ProblemDetail, BrokerActivateJobsRequest> toJobsActivationRequest(
+      final JobActivationRequest activationRequest) {
+
+    final var validationErrorResponse = validateJobActivationRequest(activationRequest);
+    if (validationErrorResponse.isPresent()) {
+      return Either.left(validationErrorResponse.get());
+    }
+
+    final var brokerRequest =
+        new BrokerActivateJobsRequest(activationRequest.getType())
+            .setMaxJobsToActivate(activationRequest.getMaxJobsToActivate())
+            .setTenantIds(
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds))
+            .setTimeout(activationRequest.getTimeout())
+            .setWorker(getStringOrEmpty(activationRequest, JobActivationRequest::getWorker))
+            .setVariables(
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable));
+
+    final String authorizationToken = getAuthorizationToken();
+    brokerRequest.setAuthorization(authorizationToken);
+
+    return Either.right(brokerRequest);
+  }
+
   private static Optional<ProblemDetail> validateAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest) {
     if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
       final ProblemDetail problemDetail =
           RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, ERROR_MESSAGE_EMPTY_ASSIGNEE, INVALID_ARGUMENT.name());
+              HttpStatus.BAD_REQUEST,
+              ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("assignee"),
+              INVALID_ARGUMENT.name());
       return Optional.of(problemDetail);
     }
     return Optional.empty();
@@ -147,6 +178,34 @@ public class RequestMapper {
     return Optional.of(
         RestErrorMapper.createProblemDetail(
             HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
+  }
+
+  private static Optional<ProblemDetail> validateJobActivationRequest(
+      final JobActivationRequest activationRequest) {
+    final List<String> violations = new ArrayList<>();
+    if (activationRequest.getType() == null || activationRequest.getType().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
+    }
+    if (activationRequest.getTimeout() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));
+    } else if (activationRequest.getTimeout() < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "timeout", activationRequest.getTimeout(), "greater than 0"));
+    }
+    if (activationRequest.getMaxJobsToActivate() == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("maxJobsToActivate"));
+    } else if (activationRequest.getMaxJobsToActivate() < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "maxJobsToActivate", activationRequest.getTimeout(), "greater than 0"));
+    }
+    if (violations.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        RestErrorMapper.createProblemDetail(
+            HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
   }
 
   private static void validateDate(
@@ -214,5 +273,11 @@ public class RequestMapper {
       final R request, final Function<R, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
+  }
+
+  private static <R> List<String> getStringListOrEmpty(
+      final R request, final Function<R, List<String>> valueExtractor) {
+    final List<String> value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? Collections.emptyList() : value;
   }
 }
