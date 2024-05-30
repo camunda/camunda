@@ -8,9 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.agrona.LangUtil.rethrowUnchecked;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
@@ -54,9 +52,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
-import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -64,10 +60,9 @@ import io.grpc.Context;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.StringUtils;
 
-public final class RequestMapper {
+public final class RequestMapper extends RequestUtil {
 
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
   private static boolean isMultiTenancyEnabled = false;
@@ -285,35 +280,6 @@ public final class RequestMapper {
         .setTenantIds(tenantIds);
 
     return jobActivationProperties;
-  }
-
-  public static DirectBuffer ensureJsonSet(final String value) {
-    if (value == null || value.trim().isEmpty()) {
-      return DocumentValue.EMPTY_DOCUMENT;
-    } else {
-      try {
-        return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
-      } catch (final RuntimeException e) {
-        final var cause = e.getCause();
-        if (cause instanceof final JsonParseException parseException) {
-
-          final var descriptiveException =
-              new JsonParseException(
-                  parseException.getProcessor(),
-                  "Invalid JSON value: " + value,
-                  parseException.getLocation(),
-                  cause);
-
-          rethrowUnchecked(descriptiveException);
-          return DocumentValue.EMPTY_DOCUMENT; // bogus return statement
-        } else if (cause instanceof IllegalArgumentException) {
-          rethrowUnchecked(cause);
-          return DocumentValue.EMPTY_DOCUMENT;
-        } else {
-          throw e;
-        }
-      }
-    }
   }
 
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {
