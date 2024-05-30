@@ -6,6 +6,9 @@ jobs:
   optimize-eng-command:
     name: QA Command
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Create URL to the run output
         id: vars
