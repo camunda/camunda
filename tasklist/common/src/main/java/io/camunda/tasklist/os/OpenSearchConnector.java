@@ -106,12 +106,7 @@ public class OpenSearchConnector {
 
   @Bean
   public RestClient opensearchRestClient() {
-    final var originalHttpHost = getHttpHost(tasklistProperties.getOpenSearch());
-    final org.apache.http.HttpHost httpHost =
-        new org.apache.http.HttpHost(
-            originalHttpHost.getHostName(),
-            originalHttpHost.getPort(),
-            originalHttpHost.getSchemeName());
+    final var httpHost = getHttpHost(tasklistProperties.getOpenSearch());
     return RestClient.builder(httpHost)
         .setHttpClientConfigCallback(
             b -> configureApacheHttpClient(b, tasklistProperties.getOpenSearch()))
@@ -120,12 +115,7 @@ public class OpenSearchConnector {
 
   @Bean
   public RestClient opensearchZeebeRestClient() {
-    final var originalHttpHost = getHttpHost(tasklistProperties.getZeebeOpenSearch());
-    final org.apache.http.HttpHost httpHost =
-        new org.apache.http.HttpHost(
-            originalHttpHost.getHostName(),
-            originalHttpHost.getPort(),
-            originalHttpHost.getSchemeName());
+    final var httpHost = getHttpHost(tasklistProperties.getZeebeOpenSearch());
     return RestClient.builder(httpHost)
         .setHttpClientConfigCallback(
             b -> configureApacheHttpClient(b, tasklistProperties.getZeebeOpenSearch()))
