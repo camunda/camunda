@@ -16,30 +16,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.stereotype.Component;
 
-@Controller
-public class ForwardErrorController {
+@Component
+public class WebappsRequestForwardManager {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(WebappsRequestForwardManager.class);
 
   private static final String LOGIN_RESOURCE = "/api/login";
   private static final String REQUESTED_URL = "requestedUrl";
 
   @Autowired private WebappsProperties webappsProperties;
 
-  @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**/{regex:[\\w-]+}"})
-  public String forwardToOperate(final HttpServletRequest request) {
-    return forward(request, "operate");
-  }
-
-  @RequestMapping(value = {"/tasklist/{regex:[\\w-]+}", "/tasklist/**/{regex:[\\w-]+}"})
-  public String forwardToTasklist(final HttpServletRequest request) {
-    return forward(request, "tasklist");
-  }
-
-  private String forward(final HttpServletRequest request, final String app) {
+  public String forward(final HttpServletRequest request, final String app) {
     if (webappsProperties.loginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request);
     } else {

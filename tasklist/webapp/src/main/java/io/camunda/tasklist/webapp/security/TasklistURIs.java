@@ -16,7 +16,7 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 public final class TasklistURIs {
 
-  public static final String ROOT_URL = "/";
+  public static final String ROOT_URL = "/tasklist";
   public static final String ROOT = ROOT_URL;
   public static final String ERROR_URL = "/error";
   public static final String GRAPHQL_URL = "/graphql";

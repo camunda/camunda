@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebe.PartitionHolder;
-import io.camunda.webapps.WebappsModuleConfiguration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +24,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplication.class, WebappsModuleConfiguration.class},
+    classes = TestApplication.class,
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",

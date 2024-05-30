@@ -13,6 +13,7 @@ import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
 @ComponentScan(
@@ -47,6 +49,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           value = TasklistModuleConfiguration.class)
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(WebappsModuleConfiguration.class)
 public class ModulesTestApplication {
 
   public static void main(final String[] args) throws Exception {

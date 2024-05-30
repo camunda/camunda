@@ -16,6 +16,9 @@ camunda.tasklist:
     readerBackoff: 0
     schedulerBackoff: 0
     startLoadingDataOnStartup: false
+camunda.webapps:
+  enabled: true
+  default-app: operate
 logging:
   level:
     ROOT: INFO
@@ -29,3 +32,6 @@ spring:
       static-locations: classpath:/test-static/tasklist/
   thymeleaf:
     prefix: classpath:/test-static/
+---
+spring.config.activate.on-profile: identity-auth, sso-auth
+camunda.webapps.login-delegated: true
