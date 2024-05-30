@@ -249,25 +249,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(
-        () ->
-            addExporter(
-                exporterId,
-                initializationInfo.metadataVersion(),
-                initializationInfo.initializeFrom(),
-                descriptor));
+    return actor.call(() -> addExporter(exporterId, initializationInfo, descriptor));
   }
 
   private void addExporter(
       final String exporterId,
-      final long metadataVersion,
-      final String initializeFrom,
+      final ExporterInitializationInfo initializationInfo,
       final ExporterDescriptor descriptor) {
     final ExporterContainer container =
-        new ExporterContainer(
-            descriptor,
-            partitionId,
-            new ExporterInitializationInfo(metadataVersion, initializeFrom));
+        new ExporterContainer(descriptor, partitionId, initializationInfo);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
