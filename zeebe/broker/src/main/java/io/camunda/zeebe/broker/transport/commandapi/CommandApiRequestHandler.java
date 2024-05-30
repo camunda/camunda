@@ -21,8 +21,9 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
+import java.util.Map;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -32,7 +33,7 @@ final class CommandApiRequestHandler
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private boolean isDiskSpaceAvailable = true;
-  private boolean processingPaused = true;
+  private final Map<Integer, Boolean> processingPaused = new HashMap<>();
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -49,16 +50,16 @@ final class CommandApiRequestHandler
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
   }
 
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    processingPaused = false;
+  public void onRecovered(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
   }
 
-  public void onPaused() {
-    processingPaused = true;
+  public void onPaused(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, true));
   }
 
-  public void onResumed() {
-    processingPaused = false;
+  public void onResumed(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
