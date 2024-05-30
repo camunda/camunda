@@ -32,11 +32,7 @@ import {ResetForm} from './ResetForm';
 import {FormValues} from './types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {
-  SaveButton,
-  SuccessMessage as SaveSuccessMessage,
-  FailedMessage as SaveFailedMessage,
-} from 'modules/components/SaveButton';
+import {SaveButton} from 'modules/components/SaveButton';
 import {FormState} from 'final-form';
 import {createVariableFieldName} from './createVariableFieldName';
 import {useSaveButton} from 'modules/hooks/useSaveButton';
@@ -269,62 +265,60 @@ const Variables: React.FC<Props> = ({
                   )
                   .otherwise(() => null)}
 
-                <DetailsFooter
-                  className={cn(styles.actionBar, styles.footer)}
-                  status={
-                    savingState === 'finished' ? (
-                      <SaveSuccessMessage />
-                    ) : savingState === 'error' ? (
-                      <SaveFailedMessage />
-                    ) : undefined
-                  }
-                >
-                  {hasEmptyNewVariable(values) && (
-                    <IconButton
-                      className={styles.inlineIcon}
-                      label="You first have to fill all fields"
-                      align="top"
+                <SaveButton status={savingState}>
+                  {({SaveDraftButton, Status}) => (
+                    <DetailsFooter
+                      className={cn(styles.actionBar, styles.footer)}
+                      status={<Status />}
                     >
-                      <Information size={20} />
-                    </IconButton>
+                      {hasEmptyNewVariable(values) && (
+                        <IconButton
+                          className={styles.inlineIcon}
+                          label="You first have to fill all fields"
+                          align="top"
+                        >
+                          <Information size={20} />
+                        </IconButton>
+                      )}
+
+                      <SaveDraftButton
+                        savingState={savingState}
+                        onClick={() => {
+                          save(extractVariablesFromFormState(form.getState()));
+                        }}
+                        isHidden={!canCompleteTask}
+                        isDisabled={
+                          !dirty ||
+                          savingState === 'active' ||
+                          submitting ||
+                          hasValidationErrors ||
+                          validating ||
+                          hasEmptyNewVariable(values) ||
+                          !canCompleteTask
+                        }
+                      />
+
+                      <CompleteTaskButton
+                        submissionState={submissionState}
+                        onSuccess={() => {
+                          setSubmissionState('inactive');
+                          onSubmitSuccess();
+                        }}
+                        onError={() => {
+                          setSubmissionState('inactive');
+                        }}
+                        isHidden={taskState === 'COMPLETED'}
+                        isDisabled={
+                          submitting ||
+                          hasValidationErrors ||
+                          validating ||
+                          hasEmptyNewVariable(values) ||
+                          !canCompleteTask
+                        }
+                      />
+                    </DetailsFooter>
                   )}
-
-                  <SaveButton
-                    savingState={savingState}
-                    onClick={() => {
-                      save(extractVariablesFromFormState(form.getState()));
-                    }}
-                    isHidden={!canCompleteTask}
-                    isDisabled={
-                      !dirty ||
-                      savingState === 'active' ||
-                      submitting ||
-                      hasValidationErrors ||
-                      validating ||
-                      hasEmptyNewVariable(values) ||
-                      !canCompleteTask
-                    }
-                  />
-
-                  <CompleteTaskButton
-                    submissionState={submissionState}
-                    onSuccess={() => {
-                      setSubmissionState('inactive');
-                      onSubmitSuccess();
-                    }}
-                    onError={() => {
-                      setSubmissionState('inactive');
-                    }}
-                    isHidden={taskState === 'COMPLETED'}
-                    isDisabled={
-                      submitting ||
-                      hasValidationErrors ||
-                      validating ||
-                      hasEmptyNewVariable(values) ||
-                      !canCompleteTask
-                    }
-                  />
-                </DetailsFooter>
+                </SaveButton>
               </TaskDetailsContainer>
 
               <Suspense>

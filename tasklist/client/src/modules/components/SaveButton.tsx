@@ -18,7 +18,7 @@ type Props = {
   savingState: InlineLoadingStatus;
 };
 
-const SaveButton: React.FC<Props> = ({
+const SaveDraftButton: React.FC<Props> = ({
   isDisabled,
   isHidden,
   savingState,
@@ -52,17 +52,52 @@ const SaveButton: React.FC<Props> = ({
 };
 
 const SuccessMessage: React.FC = () => (
-  <div className={styles.savedMessage} aria-label="Save Status">
+  <div className={styles.savedMessage} aria-label="Save Status" role="status">
     <Checkmark />
     <span>Saved</span>
   </div>
 );
 
 const FailedMessage: React.FC = () => (
-  <div className={styles.saveErrorMessage} aria-label="Save Status">
+  <div
+    className={styles.saveErrorMessage}
+    aria-label="Save Status"
+    role="status"
+  >
     <Error />
     <span>Unable to save the task. Please try again.</span>
   </div>
 );
 
-export {SaveButton, SuccessMessage, FailedMessage};
+const EmptyMessage: React.FC = () => <div />;
+
+type SaveButtonV2Props = {
+  status: InlineLoadingStatus;
+  children: (props: {
+    Status: React.FC;
+    SaveDraftButton: typeof SaveDraftButton;
+  }) => React.ReactNode;
+};
+
+const SaveButton: React.FC<SaveButtonV2Props> = ({children, status}) => {
+  if (status === 'finished') {
+    return children({
+      Status: SuccessMessage,
+      SaveDraftButton,
+    });
+  }
+
+  if (status === 'error') {
+    return children({
+      Status: FailedMessage,
+      SaveDraftButton,
+    });
+  }
+
+  return children({
+    Status: EmptyMessage,
+    SaveDraftButton,
+  });
+};
+
+export {SaveButton};

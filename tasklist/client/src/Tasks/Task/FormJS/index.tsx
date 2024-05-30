@@ -28,11 +28,7 @@ import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 import {Pattern, match} from 'ts-pattern';
 import {CompleteTaskButton} from 'modules/components/CompleteTaskButton';
-import {
-  SaveButton,
-  SuccessMessage as SaveSuccessMessage,
-  FailedMessage as SaveFailedMessage,
-} from 'modules/components/SaveButton';
+import {SaveButton} from 'modules/components/SaveButton';
 import styles from './styles.module.scss';
 
 function formatVariablesToFormData(variables: Variable[]) {
@@ -190,45 +186,42 @@ const FormJS: React.FC<Props> = ({
             )
             .otherwise(() => null)}
         </TaskDetailsRow>
-        <DetailsFooter
-          className={styles.buttons}
-          status={
-            savingState === 'finished' ? (
-              <SaveSuccessMessage />
-            ) : savingState === 'error' ? (
-              <SaveFailedMessage />
-            ) : undefined
-          }
-        >
-          <SaveButton
-            savingState={savingState}
-            onClick={() => {
-              save(
-                formatFormDataToVariables(
-                  formManagerRef.current?.get('form')._getSubmitData() as Data,
-                ),
-              );
-            }}
-            isHidden={!canCompleteTask}
-            isDisabled={savingState === 'active' || !canCompleteTask}
-          />
-          <CompleteTaskButton
-            submissionState={submissionState}
-            onClick={() => {
-              setSubmissionState('active');
-              formManagerRef.current?.submit();
-            }}
-            onSuccess={() => {
-              onSubmitSuccess();
-              setSubmissionState('inactive');
-            }}
-            onError={() => {
-              setSubmissionState('inactive');
-            }}
-            isHidden={taskState === 'COMPLETED'}
-            isDisabled={!canCompleteTask}
-          />
-        </DetailsFooter>
+        <SaveButton status={savingState}>
+          {({SaveDraftButton, Status}) => (
+            <DetailsFooter className={styles.buttons} status={<Status />}>
+              <SaveDraftButton
+                savingState={savingState}
+                onClick={() => {
+                  save(
+                    formatFormDataToVariables(
+                      formManagerRef.current
+                        ?.get('form')
+                        ._getSubmitData() as Data,
+                    ),
+                  );
+                }}
+                isHidden={!canCompleteTask}
+                isDisabled={savingState === 'active' || !canCompleteTask}
+              />
+              <CompleteTaskButton
+                submissionState={submissionState}
+                onClick={() => {
+                  setSubmissionState('active');
+                  formManagerRef.current?.submit();
+                }}
+                onSuccess={() => {
+                  onSubmitSuccess();
+                  setSubmissionState('inactive');
+                }}
+                onError={() => {
+                  setSubmissionState('inactive');
+                }}
+                isHidden={taskState === 'COMPLETED'}
+                isDisabled={!canCompleteTask}
+              />
+            </DetailsFooter>
+          )}
+        </SaveButton>
       </TaskDetailsContainer>
     </ScrollableContent>
   );
