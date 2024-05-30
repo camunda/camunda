@@ -45,6 +45,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerTopologyCancelHandler();
     registerForceScaleDownHandler();
     registerDisableExporterHandler();
+    registerEnableExporterHandler();
   }
 
   @Override
@@ -149,6 +150,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.DISABLE_EXPORTER.topic(),
         serializer::decodeExporterDisableRequest,
         request -> mapResponse(clusterConfigurationManagementApi.disableExporter(request)),
+        this::encodeResponse);
+  }
+
+  private void registerEnableExporterHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.ENABLE_EXPORTER.topic(),
+        serializer::decodeExporterEnableRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.enableExporter(request)),
         this::encodeResponse);
   }
 
