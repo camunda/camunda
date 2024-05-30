@@ -22,10 +22,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @ZeebeRestController
-@RequestMapping("/v2")
 public class JobController {
 
   private final ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
