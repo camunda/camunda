@@ -25,6 +25,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.elasticsearch.client.RestClient;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -88,6 +89,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     esContainer.start();
 
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
+
+    final ExporterCfg exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
+    exporterCfg.setArgs(Map.of("url", esURL)); // new ElasticsearchExporterConfiguration();
+    brokerProperties.getExporters().put("elasticsearch", exporterCfg);
+
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
 
