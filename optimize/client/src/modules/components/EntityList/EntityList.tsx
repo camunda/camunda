@@ -62,7 +62,6 @@ interface ObjectColumn {
   name: string;
   key: string;
   defaultOrder?: SortingOrder;
-  hidden?: boolean;
 }
 
 type Column = ReactNode | ObjectColumn;
@@ -149,8 +148,7 @@ export default function EntityList({
     disabled: !row.actions?.length,
   });
 
-  const visibleHeaders = headers.filter((header) => !isObjectHeader(header) || !header.hidden);
-  const dataTableHeaders = visibleHeaders.map(mapHeaderToDataTableHeader);
+  const dataTableHeaders = headers.map(mapHeaderToDataTableHeader);
   const dataTableRows = rows.map(mapRowToDataTableRow);
   const hasLessThanThreeActions = rows.every(({actions}) => !actions || actions.length <= 2);
   const objectHeaders = headers.filter(isObjectHeader);
@@ -259,37 +257,34 @@ export default function EntityList({
                   <TableRow>
                     {/* @ts-ignore */}
                     {bulkActions && <TableSelectAll {...getSelectionProps()} />}
-                    {formattedHeaders.map((header, idx) => {
-                      const visibleHeader = visibleHeaders[idx];
+                    {formattedHeaders.map((formattedHeader, idx) => {
+                      const header = headers[idx];
                       const isHeaderSortable =
-                        !!visibleHeader &&
-                        typeof visibleHeader === 'object' &&
-                        'key' in visibleHeader &&
-                        !!visibleHeader.key;
+                        !!header && typeof header === 'object' && 'key' in header && !!header.key;
 
                       return (
                         // @ts-ignore
                         <TableHeader
                           {...getHeaderProps({
-                            header,
+                            header: formattedHeader,
                             isSortable: isHeaderSortable,
                             onClick: () => {
-                              if (isObjectHeader(visibleHeader)) {
-                                if (visibleHeader.key === sorting?.key) {
+                              if (isObjectHeader(header)) {
+                                if (header.key === sorting?.key) {
                                   const {key, order} =
-                                    getNextSorting(sorting, visibleHeader.defaultOrder) || {};
+                                    getNextSorting(sorting, header.defaultOrder) || {};
                                   onChange?.(key, order);
                                 } else {
-                                  onChange?.(visibleHeader.key, visibleHeader.defaultOrder);
+                                  onChange?.(header.key, header.defaultOrder);
                                 }
                               }
                             },
                           })}
-                          isSortHeader={header.key === sorting?.key}
+                          isSortHeader={formattedHeader.key === sorting?.key}
                           sortDirection={sorting?.order?.toUpperCase()}
                           className="tableHeader"
                         >
-                          {header.header}
+                          {formattedHeader.header}
                         </TableHeader>
                       );
                     })}

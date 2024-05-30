@@ -266,12 +266,6 @@ export class Collection extends Component {
                   sorting={sorting}
                   onChange={this.loadEntities}
                   headers={[
-                    {
-                      name: t('common.entity.type'),
-                      key: 'entityType',
-                      defaultOrder: 'asc',
-                      hidden: true,
-                    },
                     {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
                     t('common.description'),
                     t('home.contents'),

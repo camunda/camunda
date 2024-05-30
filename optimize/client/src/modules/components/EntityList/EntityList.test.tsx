@@ -100,23 +100,6 @@ it('should disable sorting if there are no sortable object headers', () => {
   expect(node.find(DataTable).prop('isSortable')).toBe(false);
 });
 
-it('should not show a header entry for column entries that are hidden', () => {
-  const node = shallow(
-    <EntityList
-      {...props}
-      headers={[
-        'Name',
-        {key: 'hiddenColumn', name: 'hidden column', hidden: true},
-        'Another Column',
-      ]}
-    />
-  );
-
-  const dataTable = node.find(DataTable).dive();
-  expect(dataTable.find(TableHeader).at(0).text()).toBe('Name');
-  expect(dataTable.find(TableHeader).at(1).text()).toBe('Another Column');
-});
-
 it('should indicate which column is sorted', () => {
   const node = shallow(
     <EntityList
