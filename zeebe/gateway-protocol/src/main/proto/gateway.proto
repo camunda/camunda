@@ -90,7 +90,7 @@ message CancelProcessInstanceRequest {
   // CreateProcessInstanceResponse)
   int64 processInstanceKey = 1;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 2;
+  optional uint64 operationReference = 2;
 }
 
 message CancelProcessInstanceResponse {
@@ -128,7 +128,7 @@ message CreateProcessInstanceRequest {
   string tenantId = 6;
 
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 7;
+  optional uint64 operationReference = 7;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -487,7 +487,7 @@ message ResolveIncidentRequest {
   // the unique ID of the incident to resolve
   int64 incidentKey = 1;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 2;
+  optional uint64 operationReference = 2;
 }
 
 message ResolveIncidentResponse {
@@ -551,7 +551,7 @@ message UpdateJobRetriesRequest {
   // the new amount of retries for the job; must be positive
   int32 retries = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 3;
+  optional uint64 operationReference = 3;
 }
 
 message UpdateJobRetriesResponse {
@@ -563,7 +563,7 @@ message UpdateJobTimeoutRequest {
   // the duration of the new timeout in ms, starting from the current moment
   int64 timeout = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 3;
+  optional uint64 operationReference = 3;
 }
 
 message UpdateJobTimeoutResponse {
@@ -586,7 +586,7 @@ message SetVariablesRequest {
   // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
   bool local = 3;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 4;
+  optional uint64 operationReference = 4;
 }
 
 message SetVariablesResponse {
@@ -603,7 +603,7 @@ message ModifyProcessInstanceRequest {
   // instructions describing which elements should be terminated
   repeated TerminateInstruction terminateInstructions = 3;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 4;
+  optional uint64 operationReference = 4;
 
   message ActivateInstruction {
     // the id of the element that should be activated
@@ -644,7 +644,7 @@ message MigrateProcessInstanceRequest {
   // the migration plan that defines target process and element mappings
   MigrationPlan migrationPlan = 2;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 3;
+  optional uint64 operationReference = 3;
 
   message MigrationPlan {
     // the key of process definition to migrate the process instance to
@@ -670,7 +670,7 @@ message DeleteResourceRequest {
   // of a process definition, the key of a decision requirements definition or the key of a form.
   int64 resourceKey = 1;
   // a reference key chosen by the user and will be part of all records resulted from this operation
-  optional int64 operationReference = 2;
+  optional uint64 operationReference = 2;
 }
 
 message DeleteResourceResponse {
