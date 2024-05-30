@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
+import io.camunda.zeebe.gateway.grpc.ErrorMappingStreamObserver;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
@@ -47,6 +48,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.GetEntityRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.GetEntityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -419,6 +422,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toBroadcastSignalRequest,
         ResponseMapper::toBroadcastSignalResponse,
+        responseObserver);
+  }
+
+  public void getEntity(
+      final GetEntityRequest request,
+      final ErrorMappingStreamObserver<GetEntityResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toGetEntityRequest,
+        ResponseMapper::toGetEntityResponse,
         responseObserver);
   }
 

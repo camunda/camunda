@@ -31,6 +31,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionInpu
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionOutput;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.GetEntityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MatchedDecisionRule;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -394,6 +396,10 @@ public final class ResponseMapper {
         .setKey(key)
         .setTenantId(brokerResponse.getTenantId())
         .build();
+  }
+
+  public static GetEntityResponse toGetEntityResponse(final long key, final RecordValue entity) {
+    return GetEntityResponse.newBuilder().setFound(entity != null).build();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {

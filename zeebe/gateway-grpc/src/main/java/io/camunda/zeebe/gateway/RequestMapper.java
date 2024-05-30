@@ -41,6 +41,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.GetEntityRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
@@ -52,9 +53,11 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
+import io.camunda.zeebe.gateway.query.impl.BrokerExecuteGetUserTask;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Context;
 import java.util.List;
@@ -263,6 +266,15 @@ public final class RequestMapper extends RequestUtil {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
+  }
+
+  public static BrokerExecuteGetUserTask toGetEntityRequest(final GetEntityRequest grpcRequest) {
+    final var request = new BrokerExecuteGetUserTask();
+    request.setKey(grpcRequest.getKey());
+    request.setPartitionId(1);
+    request.setValueType(ValueType.USER_TASK);
+    request.setAuthorization("I don't care yet");
+    return request;
   }
 
   public static JobActivationProperties toJobActivationProperties(

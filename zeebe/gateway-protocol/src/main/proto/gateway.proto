@@ -675,6 +675,15 @@ message BroadcastSignalResponse {
   string tenantId = 2;
 }
 
+message GetEntityRequest {
+  // the unique ID of the signal that was broadcasted.
+  int64 key = 1;
+}
+
+message GetEntityResponse {
+  bool found = 1;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -991,6 +1000,10 @@ service Gateway {
     Broadcasts a signal.
    */
   rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
+
+  }
+
+  rpc GetEntity (GetEntityRequest) returns (GetEntityResponse) {
 
   }
 }
