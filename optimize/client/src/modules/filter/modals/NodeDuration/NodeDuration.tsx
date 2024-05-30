@@ -7,7 +7,7 @@
 
 import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, InlineNotification, Stack} from '@carbon/react';
+import {Button, InlineNotification} from '@carbon/react';
 
 import {
   Modal,
@@ -199,7 +199,7 @@ export class NodeDuration extends Component<
     }
 
     return (
-      <Modal isOverflowVisible size="lg" open onClose={close} className="NodeDuration">
+      <Modal size="lg" open onClose={close} className="NodeDuration">
         <Modal.Header title={t('common.filter.types.flowNodeDuration')} />
         <Modal.Content className="contentContainer">
           <FilterSingleDefinitionSelection
@@ -210,16 +210,14 @@ export class NodeDuration extends Component<
           {loading ? (
             <Loading />
           ) : (
-            <Stack gap={4}>
-              <div className="diagramContainer">
-                <BPMNDiagram xml={xml}>
-                  <ClickBehavior
-                    onClick={({id}) => this.updateFocus(id)}
-                    selectedNodes={activeNodes}
-                  />
-                  <TargetValueBadge values={values} />
-                </BPMNDiagram>
-              </div>
+            <>
+              <BPMNDiagram xml={xml}>
+                <ClickBehavior
+                  onClick={({id}) => this.updateFocus(id)}
+                  selectedNodes={activeNodes}
+                />
+                <TargetValueBadge values={values} />
+              </BPMNDiagram>
               <NodesTable
                 focus={focus}
                 updateFocus={this.updateFocus}
@@ -234,7 +232,7 @@ export class NodeDuration extends Component<
                   subtitle={t('report.heatTarget.invalidValue').toString()}
                 />
               )}
-            </Stack>
+            </>
           )}
         </Modal.Content>
         <Modal.Footer>
