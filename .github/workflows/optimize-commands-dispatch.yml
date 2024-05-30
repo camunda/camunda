@@ -28,5 +28,6 @@ jobs:
           commands: |
             assign
             eng
+            help
             pm
             qa
