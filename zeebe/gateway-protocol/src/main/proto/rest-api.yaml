@@ -459,14 +459,14 @@ components:
           type: integer
           format: int64
         bpmnProcessId:
-          description: the bpmn process ID of the job process definition
+          description: the bpmn process ID of the job's process definition
           type: string
         processDefinitionVersion:
-          description: the version of the job process definition
+          description: the version of the job's process definition
           type: integer
           format: int32
         processDefinitionKey:
-          description: the key of the job process definition
+          description: the key of the job's process definition
           type: integer
           format: int64
         elementId:
