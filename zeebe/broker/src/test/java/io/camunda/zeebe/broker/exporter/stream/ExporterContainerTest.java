@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.file.Path;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -525,6 +528,152 @@ final class ExporterContainerTest {
       // call is enqueued in queue and will be run after the previous call
       // when we await the call we can be sure that the previous call is also done
       runtime.getActor().getActorControl().call(() -> null).join();
+    }
+  }
+
+  @Nested
+  class WithInitializationInfo {
+    private static final String OTHER_EXPORTER_ID = "otherExporter";
+    private ExporterDescriptor descriptor;
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
+      runtime = new ExporterContainerRuntime(storagePath);
+
+      descriptor =
+          runtime.getRepository().load(EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldInitializeWithGivenMetadataVersion() throws Exception {
+      // given
+      exporterContainer =
+          runtime.newContainer(descriptor, PARTITION_ID, new ExporterInitializationInfo(10, null));
+
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition())
+          .describedAs("Position is initialized")
+          .isEqualTo(-1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition())
+          .describedAs("LastUnacknowledgedPosition is initialized")
+          .isEqualTo(-1);
+      assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
+          .describedAs("MetadataVersion is initialized")
+          .isEqualTo(10);
+    }
+
+    @Test
+    void shouldReInitializeWithGivenMetadataVersion() throws Exception {
+      // given
+      runtime.getState().setExporterState(EXPORTER_ID, 5, null);
+      exporterContainer =
+          runtime.newContainer(descriptor, PARTITION_ID, new ExporterInitializationInfo(10, null));
+
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition())
+          .describedAs("Position is initialized")
+          .isEqualTo(-1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition())
+          .describedAs("LastUnacknowledgedPosition is initialized")
+          .isEqualTo(-1);
+      assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
+          .describedAs("MetadataVersion is initialized")
+          .isEqualTo(10);
+    }
+
+    @Test
+    void shouldInitializeWithGivenExporterMetadata() throws Exception {
+      // given
+      final var metadata = BufferUtil.wrapString("other-metadata");
+      runtime.getState().setExporterState(OTHER_EXPORTER_ID, 5, metadata);
+      exporterContainer =
+          runtime.newContainer(
+              descriptor, PARTITION_ID, new ExporterInitializationInfo(1, OTHER_EXPORTER_ID));
+
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition())
+          .describedAs("Position is initialized")
+          .isEqualTo(5);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition())
+          .describedAs("LastUnacknowledgedPosition is initialized")
+          .isEqualTo(5);
+      assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
+          .describedAs("MetadataVersion is initialized")
+          .isEqualTo(1);
+      assertThat(BufferUtil.bufferAsString(runtime.getState().getExporterMetadata(EXPORTER_ID)))
+          .describedAs("Metadata is initialized from the other exporter")
+          .isEqualTo("other-metadata");
+    }
+
+    @Test
+    void shouldReInitializeWithGivenExporterMetadata() throws Exception {
+      // given
+      final var metadata = BufferUtil.wrapString("other-metadata");
+      runtime.getState().setExporterState(OTHER_EXPORTER_ID, 5, metadata);
+      runtime.getState().initializeExporterState(EXPORTER_ID, 1, null, 2);
+      exporterContainer =
+          runtime.newContainer(
+              descriptor, PARTITION_ID, new ExporterInitializationInfo(3, OTHER_EXPORTER_ID));
+
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition())
+          .describedAs("Position is initialized")
+          .isEqualTo(5);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition())
+          .describedAs("LastUnacknowledgedPosition is initialized")
+          .isEqualTo(5);
+      assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
+          .describedAs("MetadataVersion is initialized")
+          .isEqualTo(3);
+      assertThat(BufferUtil.bufferAsString(runtime.getState().getExporterMetadata(EXPORTER_ID)))
+          .describedAs("Metadata is initialized from the other exporter")
+          .isEqualTo("other-metadata");
+    }
+
+    @Test
+    void shouldNotOverwriteMetadataVersion() throws Exception {
+      // given
+      exporterContainer =
+          runtime.newContainer(descriptor, PARTITION_ID, new ExporterInitializationInfo(3, null));
+
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(15);
+
+      // then
+
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  assertThat(exporterContainer.getPosition())
+                      .describedAs("Position is updated")
+                      .isEqualTo(15));
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(15);
+      assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
+          .describedAs("MetadataVersion is not changed")
+          .isEqualTo(3);
     }
   }
 }
