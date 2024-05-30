@@ -150,41 +150,52 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var processingFilter =
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
-    return StreamProcessor.builder()
-        .logStream(context.getLogStream())
-        .actorSchedulingService(context.getActorSchedulingService())
-        .zeebeDb(context.getZeebeDb())
-        .recordProcessors(recordProcessors)
-        .nodeId(context.getNodeId())
-        .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
-        .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
-        .setEnableAsyncScheduledTasks(
-            context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
-        .processingFilter(processingFilter)
-        .listener(
-            processedCommand ->
-                context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
-        .addLifecycleListener(
-            new StreamProcessorLifecycleAware() {
-              @Override
-              public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
-                context.getCommandApiService().onRecovered(context.getPartitionId());
-              }
+    final var builder =
+        StreamProcessor.builder()
+            .logStream(context.getLogStream())
+            .actorSchedulingService(context.getActorSchedulingService())
+            .zeebeDb(context.getZeebeDb())
+            .recordProcessors(recordProcessors)
+            .nodeId(context.getNodeId())
+            .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
+            .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
+            .setEnableAsyncScheduledTasks(
+                context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
+            .processingFilter(processingFilter)
+            .listener(
+                processedCommand ->
+                    context
+                        .getLogStream()
+                        .getFlowControl()
+                        .onProcessed(processedCommand.getPosition()))
+            .streamProcessorMode(streamProcessorMode)
+            .partitionCommandSender(context.getPartitionCommandSender())
+            .scheduledCommandCache(scheduledCommandCache);
 
-              @Override
-              public void onPaused() {
-                context.getCommandApiService().onPaused(context.getPartitionId());
-              }
+    if (context.getPartitionCommandReceiver() != null) {
+      builder.addLifecycleListener(context.getPartitionCommandReceiver());
+    }
 
-              @Override
-              public void onResumed() {
-                context.getCommandApiService().onResumed(context.getPartitionId());
-              }
-            })
-        .addLifecycleListener(context.getPartitionCommandReceiver())
-        .streamProcessorMode(streamProcessorMode)
-        .partitionCommandSender(context.getPartitionCommandSender())
-        .scheduledCommandCache(scheduledCommandCache)
-        .build();
+    if (context.getCommandApiService() != null) {
+      builder.addLifecycleListener(
+          new StreamProcessorLifecycleAware() {
+            @Override
+            public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
+              context.getCommandApiService().onRecovered(context.getPartitionId());
+            }
+
+            @Override
+            public void onPaused() {
+              context.getCommandApiService().onPaused(context.getPartitionId());
+            }
+
+            @Override
+            public void onResumed() {
+              context.getCommandApiService().onResumed(context.getPartitionId());
+            }
+          });
+    }
+
+    return builder.build();
   }
 }
