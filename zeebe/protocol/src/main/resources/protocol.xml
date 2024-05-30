@@ -65,6 +65,11 @@
       <validValue name="COMMAND_REJECTION">2</validValue>
     </enum>
 
+    <enum name="ResponseType" encodingType="uint8">
+      <validValue name="OK">0</validValue>
+      <validValue name="ERROR">1</validValue>
+    </enum>
+
     <enum name="RejectionType" encodingType="uint8">
       <validValue name="INVALID_ARGUMENT">0</validValue>
       <validValue name="NOT_FOUND">1</validValue>
@@ -135,6 +140,25 @@
     <data name="bpmnProcessId" id="1" type="varDataEncoding"/>
   </sbe:message>
 
+  <sbe:message name="ExecuteGetRequest" id="32">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="key" id="2" type="uint64"/>
+    <field name="valueType" id="3" type="ValueType"/>
+  </sbe:message>
+
+  <sbe:message name="ExecuteGetResponse" id="33">
+    <field name="partitionId" id="1" type="uint16"/>
+    <field name="key" id="2" type="uint64"/>
+    <field name="responseType" id="3" type="ResponseType"/>
+    <!-- value type is usually request.ValueType but can also be ERROR if responseType is ERROR -->
+    <field name="valueType" id="4" type="ValueType"/>
+    <field name="intent" id="5" type="uint8"/>
+    <!-- populated when responseType is ERROR -->
+    <field name="rejectionType" id="6" type="RejectionType"/>
+    <data name="value" id="7" type="varDataEncoding"/>
+    <!-- populated when responseType is ERROR; UTF-8-encoded String -->
+    <data name="rejectionReason" id="8" type="varDataEncoding"/>
+  </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
 
