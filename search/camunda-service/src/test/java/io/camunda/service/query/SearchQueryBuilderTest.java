@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.service.query.filter.ProcessInstanceFilter;
 import io.camunda.service.query.page.SearchQueryPage;
-import io.camunda.service.query.search.SearchQueryBase;
-import io.camunda.service.query.types.SearchQuerySort;
+import io.camunda.service.query.search.ProcessInstanceQuery;
+import io.camunda.service.query.sort.ProcessInstanceSort;
 import org.junit.jupiter.api.Test;
 
 public class SearchQueryBuilderTest {
@@ -20,13 +20,13 @@ public class SearchQueryBuilderTest {
   @Test
   public void shouldCreateQuery() {
     // given
-    final var searchQueryBuilder = new SearchQueryBase.Builder<ProcessInstanceFilter>();
+    final var searchQueryBuilder = new ProcessInstanceQuery.Builder();
     final var searchQueryPage = new SearchQueryPage.Builder().size(50).build();
-    final var searchQuerySort = SearchQuerySort.of(builder -> builder.field("field").asc());
+    final var searchQuerySort = ProcessInstanceSort.of(builder -> builder.startDate().asc());
     final var filter = new ProcessInstanceFilter.Builder().build(); // all
 
     // when
-    final SearchQueryBase<ProcessInstanceFilter> query =
+    final ProcessInstanceQuery query =
         searchQueryBuilder.page(searchQueryPage).sort(searchQuerySort).filter(filter).build();
 
     // when

@@ -16,10 +16,9 @@ import java.util.function.Function;
 
 public final class SearchQueryPage {
 
+  public static final SearchQueryPage DEFAULT_PAGE = of((b) -> b);
   private static final DataStoreSortOptions SORT_BY_KEY_ASC = sortOptions("key", SortOrder.ASC);
   private static final DataStoreSortOptions SORT_BY_KEY_DESC = sortOptions("key", SortOrder.DESC);
-
-  public static final SearchQueryPage DEFAULT_PAGE = of((b) -> b);
 
   private final Integer from;
   private final Integer size;
@@ -28,7 +27,7 @@ public final class SearchQueryPage {
   private final Object[] searchBefore;
   private final Object[] searchBeforeOrEqual;
 
-  public SearchQueryPage(final Builder builder) {
+  private SearchQueryPage(final Builder builder) {
     from = builder.from;
     size = builder.size;
     searchAfter = builder.searchAfter;
@@ -93,7 +92,7 @@ public final class SearchQueryPage {
 
   public static SearchQueryPage of(
       final Function<Builder, DataStoreObjectBuilder<SearchQueryPage>> fn) {
-    return fn.apply(new Builder()).build();
+    return SearchQueryPageBuilders.page(fn);
   }
 
   public static final class Builder implements DataStoreObjectBuilder<SearchQueryPage> {

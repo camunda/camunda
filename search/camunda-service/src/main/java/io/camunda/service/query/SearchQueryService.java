@@ -14,7 +14,9 @@ import io.camunda.service.query.search.SearchQueryBase;
 import io.camunda.service.query.search.SearchQueryExecutor;
 import io.camunda.service.query.search.SearchQueryResult;
 
-public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase<?, ?>, D> extends ApiServices<T> {
+public abstract class SearchQueryService<
+        T extends ApiServices<T>, Q extends SearchQueryBase<?, ?>, D>
+    extends ApiServices<T> {
 
   protected final SearchQueryExecutor executor;
 
@@ -25,5 +27,4 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   }
 
   public abstract SearchQueryResult<D> search(final Q query);
-  
 }

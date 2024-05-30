@@ -9,12 +9,15 @@ package io.camunda.service.query.search;
 
 import static io.camunda.data.clients.core.DataStoreRequestBuilders.searchRequest;
 import static io.camunda.data.clients.query.DataStoreQueryBuilders.and;
+
 import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.query.DataStoreQuery;
 import io.camunda.service.query.filter.FilterBody;
 import io.camunda.service.query.page.SearchQueryPage;
+import io.camunda.service.query.page.SearchQueryPageBuilders;
 import io.camunda.service.query.sort.SortOption;
 import io.camunda.util.DataStoreObjectBuilder;
+import java.util.function.Function;
 
 public abstract class SearchQueryBase<T extends FilterBody, S extends SortOption> {
 
@@ -46,11 +49,7 @@ public abstract class SearchQueryBase<T extends FilterBody, S extends SortOption
 
   public DataStoreSearchRequest toSearchRequest(final DataStoreQuery queryToInject) {
     final var indices = filter.index();
-    final var builder =
-        searchRequest()
-        .index(indices)
-        .from(page.from())
-        .size(page.size());
+    final var builder = searchRequest().index(indices).from(page.from()).size(page.size());
 
     final var query = filter.toSearchQuery();
     if (query != null) {
@@ -84,10 +83,13 @@ public abstract class SearchQueryBase<T extends FilterBody, S extends SortOption
     }
   }
 
-  public static abstract class Builder<T extends FilterBody, S extends SortOption, BuilderT extends Builder<T, S, BuilderT>>
-      implements DataStoreObjectBuilder<SearchQueryBase<T, S>> {
+  public abstract static class Builder<
+          T extends FilterBody,
+          S extends SortOption,
+          Q extends SearchQueryBase<T, S>,
+          BuilderT extends Builder<T, S, Q, BuilderT>>
+      implements DataStoreObjectBuilder<Q> {
 
-    protected T filter;
     protected S sort;
     protected SearchQueryPage page;
 
@@ -97,10 +99,7 @@ public abstract class SearchQueryBase<T extends FilterBody, S extends SortOption
 
     protected abstract BuilderT self();
 
-    public BuilderT filter(final T filter) {
-      this.filter = filter;
-      return self();
-    }
+    public abstract BuilderT filter(final T filter);
 
     public BuilderT sort(final S sort) {
       this.sort = sort;
@@ -110,6 +109,11 @@ public abstract class SearchQueryBase<T extends FilterBody, S extends SortOption
     public BuilderT page(final SearchQueryPage page) {
       this.page = page;
       return self();
+    }
+
+    public BuilderT page(
+        final Function<SearchQueryPage.Builder, DataStoreObjectBuilder<SearchQueryPage>> fn) {
+      return page(SearchQueryPageBuilders.page(fn));
     }
   }
 }

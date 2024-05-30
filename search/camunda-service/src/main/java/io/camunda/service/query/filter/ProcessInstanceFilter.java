@@ -27,7 +27,7 @@ import java.util.function.Function;
 public final class ProcessInstanceFilter implements FilterBody {
 
   public static final ProcessInstanceFilter EMPTY_FILTER = FilterBuilders.processInstance().build();
-  
+
   private final List<Long> processInstanceKeys;
 
   private final boolean running;

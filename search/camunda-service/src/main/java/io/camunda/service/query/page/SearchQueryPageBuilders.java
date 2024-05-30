@@ -5,20 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query.search;
+package io.camunda.service.query.page;
 
 import io.camunda.util.DataStoreObjectBuilder;
 import java.util.function.Function;
 
-public final class SearchQueryBuilders {
+public final class SearchQueryPageBuilders {
 
-  public static ProcessInstanceQuery.Builder processInstanceSearchQuery() {
-    return new ProcessInstanceQuery.Builder();
+  public static SearchQueryPage.Builder page() {
+    return new SearchQueryPage.Builder();
   }
 
-  public static ProcessInstanceQuery processInstanceSearchQuery(
-      final Function<ProcessInstanceQuery.Builder, DataStoreObjectBuilder<ProcessInstanceQuery>>
-          fn) {
-    return fn.apply(processInstanceSearchQuery()).build();
+  public static SearchQueryPage page(
+      final Function<SearchQueryPage.Builder, DataStoreObjectBuilder<SearchQueryPage>> fn) {
+    return fn.apply(page()).build();
   }
 }

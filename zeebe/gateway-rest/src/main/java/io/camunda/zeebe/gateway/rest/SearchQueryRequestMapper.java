@@ -11,7 +11,7 @@ import io.camunda.service.query.filter.FilterBuilders;
 import io.camunda.service.query.filter.ProcessInstanceFilter;
 import io.camunda.service.query.filter.VariableValueFilter;
 import io.camunda.service.query.page.SearchQueryPage;
-import io.camunda.service.query.search.ProcessInstanceSearchQuery;
+import io.camunda.service.query.search.ProcessInstanceQuery;
 import io.camunda.service.query.search.SearchQueryBuilders;
 import io.camunda.service.query.sort.ProcessInstanceSort;
 import io.camunda.service.query.sort.SortOptionBuilders;
@@ -24,17 +24,17 @@ import org.springframework.http.ProblemDetail;
 
 public class SearchQueryRequestMapper {
 
-  public static Either<ProblemDetail, ProcessInstanceSearchQuery> toProcessInstanceQuery(
+  public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
     final var page = toSearchQueryPage(request.getPage()).get();
     final var sorting = toSearchQuerySort(request.getSort()).get();
     final var processInstanceFilter = toProcessInstanceFilter(request.getFilter()).get();
-    return Either.right(SearchQueryBuilders
-        .processInstanceSearchQuery()
-        .page(page)
-        .filter(processInstanceFilter)
-        .sort(sorting)
-        .build());
+    return Either.right(
+        SearchQueryBuilders.processInstanceSearchQuery()
+            .page(page)
+            .filter(processInstanceFilter)
+            .sort(sorting)
+            .build());
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
@@ -97,7 +97,7 @@ public class SearchQueryRequestMapper {
   public static Either<ProblemDetail, ProcessInstanceSort> toSearchQuerySort(
       final SearchQuerySortRequest sorting) {
     if (sorting != null) {
-      final var builder = SortOptionBuilders.processInstanceSort();
+      final var builder = SortOptionBuilders.processInstance();
 
       final var field = sorting.getField();
       final var order = sorting.getOrder();

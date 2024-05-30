@@ -48,7 +48,7 @@ public class CamundaServicesTest {
             .search(
                 (b) ->
                     b.filter(filter)
-                        .sort((s) -> s.field("endDate").asc())
+                        .sort((s) -> s.endDate().asc())
                         .page((p) -> p.from(0).size(20)));
 
     // then
@@ -84,7 +84,7 @@ public class CamundaServicesTest {
             .search(
                 (b) ->
                     b.filter(filter)
-                        .sort((s) -> s.field("endDate").asc())
+                        .sort((s) -> s.endDate().asc())
                         .page((p) -> p.from(0).size(20)));
 
     // then
@@ -120,7 +120,7 @@ public class CamundaServicesTest {
             .search(
                 (b) ->
                     b.filter(filter)
-                        .sort((s) -> s.field("endDate").asc())
+                        .sort((s) -> s.endDate().asc())
                         .page((p) -> p.from(0).size(20)));
 
     // then - response is error

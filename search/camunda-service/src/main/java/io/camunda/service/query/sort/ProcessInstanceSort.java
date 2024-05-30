@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.service.query.sort;
 
 import io.camunda.data.clients.sort.DataStoreSortOptions;
@@ -17,7 +24,8 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
     return null;
   }
 
-  public static ProcessInstanceSort of(final Function<Builder, DataStoreObjectBuilder<ProcessInstanceSort>> fn) {
+  public static ProcessInstanceSort of(
+      final Function<Builder, DataStoreObjectBuilder<ProcessInstanceSort>> fn) {
     return SortOptionBuilders.processInstance(fn);
   }
 
@@ -42,21 +50,21 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
     }
 
     private Builder order(final SortOrder order) {
-      if (currentOrdering == null) {
+      if (currentOrdering != null) {
         final var field = currentOrdering.field();
         final var newOrdering = new FieldSorting(field, SortOrder.ASC);
         orderings.add(newOrdering);
         currentOrdering = null;
       }
-      // else if not set, then it's noop
+      // else if not set, then noop
 
       return this;
     }
-    
+
     public Builder asc() {
       return order(SortOrder.ASC);
     }
-    
+
     public Builder desc() {
       return order(SortOrder.DESC);
     }

@@ -9,12 +9,17 @@ package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.data.clients.core.DataStoreSearchRequest;
 import io.camunda.data.clients.query.DataStoreBoolQuery;
 import io.camunda.data.clients.query.DataStoreHasChildQuery;
+import io.camunda.data.clients.query.DataStoreQueryVariant;
 import io.camunda.data.clients.query.DataStoreTermQuery;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.query.filter.ProcessInstanceFilter.Builder;
-import io.camunda.service.query.search.SearchQueryBase;
+import io.camunda.service.query.search.ProcessInstanceQuery;
+import io.camunda.service.query.search.SearchQueryBuilders;
+import io.camunda.service.query.search.SearchQueryResult;
 import io.camunda.service.util.StubbedDataStoreClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,17 +39,38 @@ public final class ProcessInstanceFilterTest {
 
   @Test
   public void shouldQueryOnlyByProcessInstances() {
+    // configure services
+
+    // a) create stubbed data store client
+    final StubbedDataStoreClient client = new StubbedDataStoreClient();
+
+    // b) register request handler (stub) that returns a response
+    // based on what needs to be tested
+    final ProcessInstanceSearchQueryStub queryStub = new ProcessInstanceSearchQueryStub();
+    queryStub.registerWith(client);
+
+    // c) create services by using the stubbed client
+    final ProcessInstanceServices services = new ProcessInstanceServices(client);
+
     // given
-    final var filter = FilterBuilders.processInstance((f) -> f);
-    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
+    final ProcessInstanceQuery searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery().build();
 
     // when
-    services.search(searchQuery);
+    final SearchQueryResult<ProcessInstanceEntity> searchQueryResult = services.search(searchQuery);
 
     // then
-    final var searchRequest = client.getSingleSearchRequest();
 
-    final var queryVariant = searchRequest.query().queryVariant();
+    // Assert: Transformation from ProcessInstanceQuery to DataStoreSearchRequest
+
+    // a) verify search request
+    // The stubbed client collects all received search requests
+    // that can be used for assertions
+    final DataStoreSearchRequest searchRequest = client.getSingleSearchRequest();
+
+    // b) verify that the search request has been constructed properly
+    // depending on the actual search query
+    final DataStoreQueryVariant queryVariant = searchRequest.query().queryVariant();
     assertThat((queryVariant))
         .isInstanceOfSatisfying(
             DataStoreTermQuery.class,
@@ -55,11 +81,48 @@ public final class ProcessInstanceFilterTest {
   }
 
   @Test
+  public void shouldReturnProcessInstance() {
+    // configure services
+
+    // a) create stubbed data store client
+    final StubbedDataStoreClient client = new StubbedDataStoreClient();
+
+    // b) register request handler (stub) that returns a response
+    // based on what needs to be tested
+    final ProcessInstanceSearchQueryStub queryStub = new ProcessInstanceSearchQueryStub();
+    queryStub.registerWith(client);
+
+    // c) create services by using the stubbed client
+    final ProcessInstanceServices services = new ProcessInstanceServices(client);
+
+    // given
+    final ProcessInstanceQuery searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery().build();
+
+    // when
+    final SearchQueryResult<ProcessInstanceEntity> searchQueryResult = services.search(searchQuery);
+
+    // then
+
+    // Assert: Transformation from DataStoreSearchResponse to
+    // SearchQueryResult<ProcessInstanceEntity>
+
+    // a) verify search query result
+    assertThat(searchQueryResult.total()).isEqualTo(1);
+    assertThat(searchQueryResult.items()).hasSize(1);
+
+    // b) assert items
+    final ProcessInstanceEntity item = searchQueryResult.items().get(0);
+    assertThat(item.getKey()).isEqualTo(1234L);
+  }
+
+  @Test
   public void shouldQueryByProcessInstanceKey() {
     // given
-    final var filter =
+    final var processInstanceFilter =
         FilterBuilders.processInstance((f) -> f.processInstanceKeys(4503599627370497L));
-    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
+    final var searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery((q) -> q.filter(processInstanceFilter));
 
     // when
     services.search(searchQuery);
@@ -93,7 +156,7 @@ public final class ProcessInstanceFilterTest {
     // given
     final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
     final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
-    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
+    final var searchQuery = SearchQueryBuilders.processInstanceSearchQuery((b) -> b.filter(filter));
 
     // when
     services.search(searchQuery);
@@ -115,21 +178,6 @@ public final class ProcessInstanceFilterTest {
 
     assertThat(((DataStoreBoolQuery) queryVariant).must().get(1).queryVariant())
         .isInstanceOf(DataStoreHasChildQuery.class);
-  }
-
-  @Test
-  public void shouldReturnProcessInstance() {
-    // given
-    final var variableFilter = FilterBuilders.variable((v) -> v.name("foo").gt(123));
-    final var filter = FilterBuilders.processInstance((f) -> f.variable(variableFilter));
-    final SearchQueryBase<ProcessInstanceFilter> searchQuery = SearchQueryBase.of((b) -> b.filter(filter));
-
-    // when
-    final var response = services.search(searchQuery);
-
-    // then
-    assertThat(response).isNotNull();
-    assertThat(response.total()).isEqualTo(1);
   }
 
   @Test
