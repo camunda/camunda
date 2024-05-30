@@ -40,12 +40,12 @@ public class GroupControllerURA {
 
   @DeleteMapping("/{groupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroup(@PathVariable("groupId") final Integer groupId) {
+  public void deleteGroup(@PathVariable final Integer groupId) {
     groupService.deleteGroupById(groupId);
   }
 
   @GetMapping("/{groupId}")
-  public Group findGroupById(@PathVariable("groupId") final Integer groupId) {
+  public Group findGroupById(@PathVariable final Integer groupId) {
     return groupService.findGroupById(groupId);
   }
 
@@ -60,7 +60,7 @@ public class GroupControllerURA {
   }
 
   @PutMapping("/{groupId}")
-  public Group updateGroup(@PathVariable("groupId") final Integer groupId, final Group group) {
+  public Group updateGroup(@PathVariable final Integer groupId, @RequestBody final Group group) {
     return groupService.renameGroup(groupId, group);
   }
 }

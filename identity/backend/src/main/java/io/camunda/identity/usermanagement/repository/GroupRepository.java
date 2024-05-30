@@ -17,7 +17,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class GroupRepository {
   public static final String DEF_FIND_ALL_GROUPS_SQL = "select id, group_name from groups";
-  public static final String DEF_FIND_GROUP_BY_ID_SQL = "select * from groups where id = ?";
+  public static final String DEF_FIND_GROUP_BY_ID_SQL =
+      "select id, group_name from groups where id = ?";
   public static final String DEF_DELETE_GROUP_BY_ID_SQL = "delete from groups where id = ?";
 
   private final JdbcTemplate jdbcTemplate;
@@ -37,7 +38,12 @@ public class GroupRepository {
   }
 
   public Group findGroupById(final Integer groupId) {
-    return jdbcTemplate.queryForObject(DEF_FIND_GROUP_BY_ID_SQL, Group.class, groupId);
+    return jdbcTemplate
+        .query(
+            DEF_FIND_GROUP_BY_ID_SQL,
+            new Object[] {groupId},
+            (rs, rowNum) -> new Group(rs.getInt(1), rs.getString(2)))
+        .get(0);
   }
 
   public void deleteGroupById(final Integer groupId) {

@@ -61,8 +61,8 @@ public class GroupService {
     groupRepository.deleteGroupById(groupId);
   }
 
-  public Group renameGroup(final String name, final Group group) {
-    userDetailsManager.renameGroup(name, group.name());
+  public Group renameGroup(final String oldName, final Group group) {
+    userDetailsManager.renameGroup(oldName, group.name());
     return findGroupByName(group.name());
   }
 
@@ -73,6 +73,7 @@ public class GroupService {
     if (!StringUtils.hasText(group.name())) {
       throw new RuntimeException("group.name.empty");
     }
-    return renameGroup(group.name(), group);
+    final Group existingGroup = findGroupById(groupId);
+    return renameGroup(existingGroup.name(), group);
   }
 }
