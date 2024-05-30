@@ -176,7 +176,7 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldReturnProcessingPausedIfPartitionPausedAndBackPressure() {
+  public void shouldReturnProcessingPausedIfPartitionPaused() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
