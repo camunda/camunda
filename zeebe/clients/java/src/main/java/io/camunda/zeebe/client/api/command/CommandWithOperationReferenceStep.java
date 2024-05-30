@@ -18,9 +18,9 @@ package io.camunda.zeebe.client.api.command;
 public interface CommandWithOperationReferenceStep<T> {
 
   /**
-   * @param operationReference a reference key sent from the client to correlate the operation with
-   *     its result records
-   * @return the builder for this command with the tenant specified
+   * @param operationReference a reference key chosen by the user and will be part of all records
+   *     resulted from this operation
+   * @return the builder for this command with the operation reference specified
    * @since 8.6
    */
   T operationReference(long operationReference);
