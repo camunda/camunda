@@ -7,9 +7,11 @@
     gap: spacing.$spacing-05;
   }
 
-  .Table {
-    max-height: 30%;
+  .BPMNDiagram {
+    min-height: 300px;
+  }
 
+  .Table {
     .selection {
       display: flex;
       min-width: 0;
