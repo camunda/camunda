@@ -768,7 +768,7 @@ test.describe('tasks page', () => {
 
     await page.getByLabel('Open JSON code editor').nth(0).hover();
 
-    await expect(page.getByText('Variables')).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Variables'})).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
