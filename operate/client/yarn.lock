@@ -3811,19 +3811,19 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.8.0:
-  version "17.8.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.0.tgz#d63cdfa985fd85d34c242fe2bb448190bdc6b757"
-  integrity sha512-pzTvruggT2x4s5XaMsqBmVsllwPmDvpSpr+iowM4mNO030rA2kOClO78Bw6lYXyLFA9tdTU6zdpt7scT00lnXQ==
+bpmn-js@17.8.1:
+  version "17.8.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.1.tgz#83e7b05e2c7053fc0ef99e975c6b7e461b09daed"
+  integrity sha512-IKcnSBCCzZiTlEevNVGj9UoWksS0nFRw82aABdePY/V2/ZmE7e3Z+5Qgz1jqgC8hUf/NSUegqlIZvoaTq195Yw==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.7.0"
+    diagram-js "^14.7.1"
     diagram-js-direct-editing "^3.0.1"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
     min-dash "^4.1.1"
-    min-dom "^4.0.3"
-    tiny-svg "^3.0.0"
+    min-dom "^4.2.1"
+    tiny-svg "^3.1.2"
 
 bpmn-moddle@9.0.1:
   version "9.0.1"
@@ -4935,10 +4935,10 @@ diagram-js@^14.5.4:
     path-intersection "^3.0.0"
     tiny-svg "^3.0.1"
 
-diagram-js@^14.7.0:
-  version "14.7.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.7.0.tgz#b9df803439b4ba275742c179000aee9c82fe37e4"
-  integrity sha512-0PygsETf///R+OhUpzmmJ0xP1p46Crom+B/DLJgheGC6mZJkIljE8lPxvQa4hghbIfSn2SBlikDmU7YioMgLzg==
+diagram-js@^14.7.1:
+  version "14.7.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.7.1.tgz#aa5e84b001ce0cb90084f8834b5097eb3a6b7472"
+  integrity sha512-XSWuB35iRuKPUVdYdArJb7OimI1oGj61M/7AtyfyS9uwlW//Z7edm4/yNbEUA4MEGhHJZbzg3wLexB1g2N/RmA==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.3"
     clsx "^2.1.0"
@@ -8685,6 +8685,15 @@ min-dom@^4.0.2, min-dom@^4.0.3, min-dom@^4.1.0:
     domify "^1.4.1"
     min-dash "^4.0.0"
 
+min-dom@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-4.2.1.tgz#7154cd30f48bd81222e1d55eef437be9ca9f505e"
+  integrity sha512-TMoL8SEEIhUWYgkj7XMSgxmwSyGI+4fP2KFFGnN3FbHfbGHVdsLYSz8LoIsgPhz4dWRmLvxWWSMgzZMJW5sZuA==
+  dependencies:
+    component-event "^0.2.1"
+    domify "^1.4.1"
+    min-dash "^4.2.1"
+
 min-indent@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/min-indent/-/min-indent-1.0.1.tgz#a63f681673b30571fbe8bc25686ae746eefa9869"
@@ -11879,6 +11888,11 @@ tiny-svg@^3.0.0, tiny-svg@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-3.0.1.tgz#1cb79297b87abbc921396064098cbd08c3c34ea6"
   integrity sha512-P8T4iwiW1t95vpHVHqrD36Brn7TqFYCPSHIWk9WLJtYK1X4aDd+5cgqcAADIWSjf1/i5idKnpCh9mim8hEdRBg==
+
+tiny-svg@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-3.1.2.tgz#bb033527497ba68f647cdb29bf6a35af56cfc2d1"
+  integrity sha512-qvNlv/4N48HqbNpwAhzQ9HKHlBUKgA4091x+aVfsrRXHIcQ9NA3W6ZYwdmYAIdwT+vfAAksrc9L/3RQBj5KwPw==
 
 tmp@^0.0.33:
   version "0.0.33"
