@@ -24,6 +24,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -38,433 +39,6 @@ final class ExporterContainerTest {
   private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
   private ExporterContainer exporterContainer;
-
-  @BeforeEach
-  void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
-    runtime = new ExporterContainerRuntime(storagePath);
-
-    final var descriptor =
-        runtime.getRepository().load(EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
-    exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
-    exporter = (FakeExporter) exporterContainer.getExporter();
-  }
-
-  @Test
-  void shouldConfigureExporter() throws Exception {
-    // given
-
-    // when
-    exporterContainer.configureExporter();
-
-    // then
-    assertThat(exporter.getContext()).isNotNull();
-    assertThat(exporter.getContext().getLogger()).isNotNull();
-    assertThat(exporter.getContext().getConfiguration()).isNotNull();
-    assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
-    assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(exporter.getContext().getConfiguration().getArguments())
-        .isEqualTo(Map.of("key", "value"));
-  }
-
-  @Test
-  void shouldOpenExporter() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    // when
-    exporterContainer.openExporter();
-
-    // then
-    assertThat(exporter.getController()).isNotNull();
-    assertThat(exporter.getController()).isEqualTo(exporterContainer);
-  }
-
-  @Test
-  void shouldInitPositionToDefaultIfNotExistInState() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    // when
-    exporterContainer.initMetadata();
-
-    // then
-    assertThat(exporterContainer.getPosition()).isEqualTo(-1);
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1);
-  }
-
-  @Test
-  void shouldInitPositionWithStateValues() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
-
-    // when
-    exporterContainer.initMetadata();
-
-    // then
-    assertThat(exporterContainer.getPosition()).isEqualTo(0xCAFE);
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(0xCAFE);
-  }
-
-  @Test
-  void shouldNotExportWhenRecordPositionIsSmaller() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
-    exporterContainer.initMetadata();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-
-    // when
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNull();
-  }
-
-  @Test
-  void shouldUpdateUnacknowledgedPositionOnExport() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-
-    // when
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNotNull();
-    assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isZero();
-  }
-
-  @Test
-  void shouldUpdateUnacknowledgedPositionMultipleTimes() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // when
-    final var secondRecord = mock(TypedRecord.class);
-    when(secondRecord.getPosition()).thenReturn(2L);
-    exporterContainer.exportRecord(recordMetadata, secondRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNotNull();
-    assertThat(exporter.getRecord()).isEqualTo(secondRecord);
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
-    assertThat(exporterContainer.getPosition()).isZero();
-  }
-
-  @Test
-  void shouldUpdateExporterPosition() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-    exporterContainer.openExporter();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // when
-    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
-    awaitPreviousCall();
-
-    // then
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(1);
-    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(1);
-  }
-
-  @Test
-  void shouldNotUpdateExporterPositionToSmallerValue() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-    exporterContainer.openExporter();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // when
-    exporterContainer.updateLastExportedRecordPosition(-1);
-    awaitPreviousCall();
-
-    // then
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isZero();
-    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isZero();
-  }
-
-  @Test
-  void shouldNotUpdateExporterPositionInDifferentOrder() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-    exporterContainer.openExporter();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-    when(mockedRecord.getPosition()).thenReturn(2L);
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // when
-    exporterContainer.updateLastExportedRecordPosition(2);
-    exporterContainer.updateLastExportedRecordPosition(1);
-    awaitPreviousCall();
-
-    // then
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
-    assertThat(exporterContainer.getPosition()).isEqualTo(2);
-    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(2);
-  }
-
-  @Test
-  void shouldNotUpdateExporterPositionIfSoftPaused() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-    exporterContainer.openExporter();
-    exporterContainer.softPauseExporter();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // when
-    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
-    awaitPreviousCall();
-
-    // then
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isZero();
-  }
-
-  @Test
-  void shouldUpdatePositionWhenResumedAfterSoftPaused() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-    exporterContainer.openExporter();
-    exporterContainer.softPauseExporter();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final byte[] metadata = "metadata".getBytes();
-    final var recordMetadata = new RecordMetadata().requestId(1L);
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition(), metadata);
-    awaitPreviousCall();
-
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isZero();
-    assertThat(exporterContainer.readMetadata()).isNotPresent();
-
-    // when
-    exporterContainer.undoSoftPauseExporter();
-    awaitPreviousCall();
-
-    // then
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(1);
-    assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
-  }
-
-  @Test
-  void shouldUpdatePositionsWhenRecordIsFiltered() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    exporter.getContext().setFilter(new AlwaysRejectingFilter());
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-
-    // when
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNull();
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
-    assertThat(exporterContainer.getPosition()).isEqualTo(1);
-  }
-
-  @Test
-  void shouldUpdatePositionsWhenRecordIsFilteredAndPositionsAreEqual() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    final var mockedRecord = mock(TypedRecord.class);
-    when(mockedRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-    exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
-    awaitPreviousCall();
-
-    // when
-    exporter.getContext().setFilter(new AlwaysRejectingFilter());
-    when(mockedRecord.getPosition()).thenReturn(2L);
-    exporterContainer.exportRecord(recordMetadata, mockedRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNotNull();
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldNotUpdatePositionsWhenRecordIsFilteredAndLastEventWasUnacknowledged()
-      throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    final var firstRecord = mock(TypedRecord.class);
-    when(firstRecord.getPosition()).thenReturn(1L);
-    final var recordMetadata = new RecordMetadata();
-    exporterContainer.exportRecord(recordMetadata, firstRecord);
-
-    // when
-    final var secondRecord = mock(TypedRecord.class);
-    when(secondRecord.getPosition()).thenReturn(2L);
-    exporter.getContext().setFilter(new AlwaysRejectingFilter());
-    exporterContainer.exportRecord(recordMetadata, secondRecord);
-
-    // then
-    assertThat(exporter.getRecord()).isNotNull();
-    assertThat(exporter.getRecord()).isEqualTo(firstRecord);
-    assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
-    assertThat(exporterContainer.getPosition()).isZero();
-  }
-
-  @Test
-  void shouldCloseExporter() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-    runtime.getState().setPosition(EXPORTER_ID, 0);
-    exporterContainer.initMetadata();
-
-    // when
-    exporterContainer.close();
-
-    // then
-    assertThat(exporter.isClosed()).isTrue();
-  }
-
-  @Test
-  void shouldReturnEmptyMetadataIfNotExistInState() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    // when
-    final var metadata = exporterContainer.readMetadata();
-
-    // then
-    assertThat(metadata).isNotPresent();
-  }
-
-  @Test
-  void shouldReadMetadataFromState() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    final var metadata = "metadata".getBytes();
-    runtime.getState().setExporterState(EXPORTER_ID, 10, BufferUtil.wrapArray(metadata));
-
-    // when
-    final var readMetadata = exporterContainer.readMetadata();
-
-    // then
-    assertThat(readMetadata).isPresent().hasValue(metadata);
-  }
-
-  @Test
-  void shouldStoreMetadataInState() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    // when
-    final var metadata = "metadata".getBytes();
-    exporterContainer.updateLastExportedRecordPosition(10, metadata);
-    awaitPreviousCall();
-
-    // then
-    final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
-    assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadata));
-  }
-
-  @Test
-  void shouldNotUpdateMetadataInStateIfPositionIsSmaller() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    final var metadataBefore = "m1".getBytes();
-    exporterContainer.updateLastExportedRecordPosition(20, metadataBefore);
-    awaitPreviousCall();
-
-    // when
-    final var metadataUpdated = "m2".getBytes();
-    exporterContainer.updateLastExportedRecordPosition(10, metadataUpdated);
-    awaitPreviousCall();
-
-    // then
-    final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
-    assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadataBefore));
-  }
-
-  @Test
-  void shouldStoreAndReadMetadata() throws Exception {
-    // given
-    exporterContainer.configureExporter();
-
-    final var metadata = "metadata".getBytes();
-
-    // when
-    exporterContainer.updateLastExportedRecordPosition(10, metadata);
-    awaitPreviousCall();
-
-    final var readMetadata = exporterContainer.readMetadata();
-
-    // then
-    assertThat(readMetadata).isPresent().hasValue(metadata);
-  }
-
-  private void awaitPreviousCall() {
-    // call is enqueued in queue and will be run after the previous call
-    // when we await the call we can be sure that the previous call is also done
-    runtime.getActor().getActorControl().call(() -> null).join();
-  }
 
   public static final class FakeExporter implements Exporter {
 
@@ -520,6 +94,437 @@ final class ExporterContainerTest {
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return false;
+    }
+  }
+
+  @Nested
+  class WithDefaultInitialization {
+
+    @BeforeEach
+    void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
+      runtime = new ExporterContainerRuntime(storagePath);
+
+      final var descriptor =
+          runtime.getRepository().load(EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
+      exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
+      exporter = (FakeExporter) exporterContainer.getExporter();
+    }
+
+    @Test
+    void shouldConfigureExporter() throws Exception {
+      // given
+
+      // when
+      exporterContainer.configureExporter();
+
+      // then
+      assertThat(exporter.getContext()).isNotNull();
+      assertThat(exporter.getContext().getLogger()).isNotNull();
+      assertThat(exporter.getContext().getConfiguration()).isNotNull();
+      assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
+      assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID);
+      assertThat(exporter.getContext().getConfiguration().getArguments())
+          .isEqualTo(Map.of("key", "value"));
+    }
+
+    @Test
+    void shouldOpenExporter() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.openExporter();
+
+      // then
+      assertThat(exporter.getController()).isNotNull();
+      assertThat(exporter.getController()).isEqualTo(exporterContainer);
+    }
+
+    @Test
+    void shouldInitPositionToDefaultIfNotExistInState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition()).isEqualTo(-1);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(-1);
+    }
+
+    @Test
+    void shouldInitPositionWithStateValues() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
+
+      // when
+      exporterContainer.initMetadata();
+
+      // then
+      assertThat(exporterContainer.getPosition()).isEqualTo(0xCAFE);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(0xCAFE);
+    }
+
+    @Test
+    void shouldNotExportWhenRecordPositionIsSmaller() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
+      exporterContainer.initMetadata();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+    }
+
+    @Test
+    void shouldUpdateUnacknowledgedPositionOnExport() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNotNull();
+      assertThat(exporter.getRecord()).isEqualTo(mockedRecord);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isZero();
+    }
+
+    @Test
+    void shouldUpdateUnacknowledgedPositionMultipleTimes() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // when
+      final var secondRecord = mock(TypedRecord.class);
+      when(secondRecord.getPosition()).thenReturn(2L);
+      exporterContainer.exportRecord(recordMetadata, secondRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNotNull();
+      assertThat(exporter.getRecord()).isEqualTo(secondRecord);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
+      assertThat(exporterContainer.getPosition()).isZero();
+    }
+
+    @Test
+    void shouldUpdateExporterPosition() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(1);
+    }
+
+    @Test
+    void shouldNotUpdateExporterPositionToSmallerValue() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(-1);
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isZero();
+    }
+
+    @Test
+    void shouldNotUpdateExporterPositionInDifferentOrder() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+      when(mockedRecord.getPosition()).thenReturn(2L);
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(2);
+      exporterContainer.updateLastExportedRecordPosition(1);
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
+      assertThat(exporterContainer.getPosition()).isEqualTo(2);
+      assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotUpdateExporterPositionIfSoftPaused() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+      exporterContainer.softPauseExporter();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isZero();
+    }
+
+    @Test
+    void shouldUpdatePositionWhenResumedAfterSoftPaused() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter();
+      exporterContainer.softPauseExporter();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final byte[] metadata = "metadata".getBytes();
+      final var recordMetadata = new RecordMetadata().requestId(1L);
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition(), metadata);
+      awaitPreviousCall();
+
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isZero();
+      assertThat(exporterContainer.readMetadata()).isNotPresent();
+
+      // when
+      exporterContainer.undoSoftPauseExporter();
+      awaitPreviousCall();
+
+      // then
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+      assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
+    }
+
+    @Test
+    void shouldUpdatePositionsWhenRecordIsFiltered() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      exporter.getContext().setFilter(new AlwaysRejectingFilter());
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNull();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isZero();
+      assertThat(exporterContainer.getPosition()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldUpdatePositionsWhenRecordIsFilteredAndPositionsAreEqual() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+      exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
+      awaitPreviousCall();
+
+      // when
+      exporter.getContext().setFilter(new AlwaysRejectingFilter());
+      when(mockedRecord.getPosition()).thenReturn(2L);
+      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNotNull();
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotUpdatePositionsWhenRecordIsFilteredAndLastEventWasUnacknowledged()
+        throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      final var firstRecord = mock(TypedRecord.class);
+      when(firstRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+      exporterContainer.exportRecord(recordMetadata, firstRecord);
+
+      // when
+      final var secondRecord = mock(TypedRecord.class);
+      when(secondRecord.getPosition()).thenReturn(2L);
+      exporter.getContext().setFilter(new AlwaysRejectingFilter());
+      exporterContainer.exportRecord(recordMetadata, secondRecord);
+
+      // then
+      assertThat(exporter.getRecord()).isNotNull();
+      assertThat(exporter.getRecord()).isEqualTo(firstRecord);
+      assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
+      assertThat(exporterContainer.getPosition()).isZero();
+    }
+
+    @Test
+    void shouldCloseExporter() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+
+      // when
+      exporterContainer.close();
+
+      // then
+      assertThat(exporter.isClosed()).isTrue();
+    }
+
+    @Test
+    void shouldReturnEmptyMetadataIfNotExistInState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      // when
+      final var metadata = exporterContainer.readMetadata();
+
+      // then
+      assertThat(metadata).isNotPresent();
+    }
+
+    @Test
+    void shouldReadMetadataFromState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      final var metadata = "metadata".getBytes();
+      runtime.getState().setExporterState(EXPORTER_ID, 10, BufferUtil.wrapArray(metadata));
+
+      // when
+      final var readMetadata = exporterContainer.readMetadata();
+
+      // then
+      assertThat(readMetadata).isPresent().hasValue(metadata);
+    }
+
+    @Test
+    void shouldStoreMetadataInState() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      // when
+      final var metadata = "metadata".getBytes();
+      exporterContainer.updateLastExportedRecordPosition(10, metadata);
+      awaitPreviousCall();
+
+      // then
+      final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
+      assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadata));
+    }
+
+    @Test
+    void shouldNotUpdateMetadataInStateIfPositionIsSmaller() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      final var metadataBefore = "m1".getBytes();
+      exporterContainer.updateLastExportedRecordPosition(20, metadataBefore);
+      awaitPreviousCall();
+
+      // when
+      final var metadataUpdated = "m2".getBytes();
+      exporterContainer.updateLastExportedRecordPosition(10, metadataUpdated);
+      awaitPreviousCall();
+
+      // then
+      final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
+      assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadataBefore));
+    }
+
+    @Test
+    void shouldStoreAndReadMetadata() throws Exception {
+      // given
+      exporterContainer.configureExporter();
+
+      final var metadata = "metadata".getBytes();
+
+      // when
+      exporterContainer.updateLastExportedRecordPosition(10, metadata);
+      awaitPreviousCall();
+
+      final var readMetadata = exporterContainer.readMetadata();
+
+      // then
+      assertThat(readMetadata).isPresent().hasValue(metadata);
+    }
+
+    private void awaitPreviousCall() {
+      // call is enqueued in queue and will be run after the previous call
+      // when we await the call we can be sure that the previous call is also done
+      runtime.getActor().getActorControl().call(() -> null).join();
     }
   }
 }
