@@ -185,7 +185,7 @@ jobs:
           project_number: ${{ steps.vars.outputs.project_id }}
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
-          value: "QA Review"
+          value: ${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && 'Ready to Complete'  || 'QA Review'}}
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4

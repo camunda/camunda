@@ -90,7 +90,10 @@ jobs:
 
 
           # Validate if the command is valid
-          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] && [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ] && ([ "${{ steps.parse-args.outputs.arg1 }}" != 'not' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'verified' ]); then
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ] &&
+             ([ "${{ steps.parse-args.outputs.arg1 }}" != 'not' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'verified' ]); then
             echo "Invalid command"
             exit 1
           fi
@@ -105,7 +108,9 @@ jobs:
             fi
 
             # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] && [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
               echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
               exit 1
             fi
@@ -137,6 +142,17 @@ jobs:
                 echo "Issue is already marked as not verified"
                 exit 1
               fi
+            fi
+          fi
+
+          # Validate skip
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] || [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
+              echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
+              exit 1
             fi
           fi
 
@@ -217,6 +233,26 @@ jobs:
         run: |
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:pendingVerification
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-label qa:notVerified
+
+      - name: Update QA labels - Skip
+        if: steps.parse-args.outputs.arg1 == 'skip'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:pendingVerification
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-label qa:verified
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-label qa:notNeeded
+
+      - name: Update Status field - Skip
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'skip' && steps.issue-project.outputs.project_status == 'QA Review'
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: ${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') && 'PM Review' || 'Ready to Complete'}}
 
       - name: Close issue
         if: steps.parse-args.outputs.arg1 == 'not'
