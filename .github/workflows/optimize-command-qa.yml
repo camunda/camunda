@@ -72,7 +72,13 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -ex
-          ENGINEERING_DRI=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body' | grep -oP 'Engineering DRI: @\K\w+')
+          TEMP_FILE=$(mktemp)
+
+          gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body' > $TEMP_FILE
+          ENGINEERING_DRI=$(grep -oP 'Engineering DRI: \K\w+' "$TEMP_FILE")
+
+          rm "$TEMP_FILE"
+
           echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
 
       - name: Validate inputs
