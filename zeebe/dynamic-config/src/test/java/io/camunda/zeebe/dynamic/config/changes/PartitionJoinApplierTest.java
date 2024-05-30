@@ -28,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
@@ -222,7 +223,10 @@ final class PartitionJoinApplierTest {
     // given
     final var config =
         new DynamicPartitionConfig(
-            new ExportersConfig(Map.of("expA", new ExporterState(ExporterState.State.ENABLED))));
+            new ExportersConfig(
+                Map.of(
+                    "expA",
+                    new ExporterState(1, ExporterState.State.ENABLED, Optional.of("expB")))));
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))

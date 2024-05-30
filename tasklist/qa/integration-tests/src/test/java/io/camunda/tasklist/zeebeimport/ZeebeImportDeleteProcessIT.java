@@ -27,6 +27,7 @@ public class ZeebeImportDeleteProcessIT extends TasklistZeebeIntegrationTest {
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
+
   private MockMvcHelper mockMvcHelper;
 
   @BeforeEach

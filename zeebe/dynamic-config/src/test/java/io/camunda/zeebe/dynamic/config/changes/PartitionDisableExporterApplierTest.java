@@ -23,6 +23,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -96,7 +97,8 @@ final class PartitionDisableExporterApplierTest {
     // given
     final var configWithExporter =
         new DynamicPartitionConfig(
-            new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
+            new ExportersConfig(
+                Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(
@@ -133,7 +135,7 @@ final class PartitionDisableExporterApplierTest {
   @Test
   void shouldCompleteFutureAndUpdateStateIfApplySucceeds() {
     // given
-    final var exporterState = new ExporterState(State.ENABLED);
+    final var exporterState = new ExporterState(1, State.ENABLED, Optional.empty());
     final var exporterConfig = new ExportersConfig(Map.of(exporterId, exporterState));
     final var partitionConfig = new DynamicPartitionConfig(exporterConfig);
     final var memberState =

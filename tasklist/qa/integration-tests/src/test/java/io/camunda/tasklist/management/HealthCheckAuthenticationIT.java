@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
@@ -51,7 +52,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
       TasklistProperties.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      JacksonConfig.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})

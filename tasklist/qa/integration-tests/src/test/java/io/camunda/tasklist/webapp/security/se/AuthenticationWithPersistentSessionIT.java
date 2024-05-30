@@ -51,6 +51,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Autowired private PasswordEncoder encoder;
+
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private UserStore userStore;

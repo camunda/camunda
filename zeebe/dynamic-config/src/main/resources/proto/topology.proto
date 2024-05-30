@@ -39,6 +39,8 @@ message ExportersConfig{
 
 message ExporterState {
   EnabledDisabledState state = 1;
+  int64 metadataVersion = 2;
+  optional string initializedFrom = 3;
 }
 
 message ClusterChangePlan {
@@ -48,7 +50,6 @@ message ClusterChangePlan {
   google.protobuf.Timestamp startedAt = 4;
   repeated CompletedTopologyChangeOperation completedOperations = 5;
   repeated TopologyChangeOperation pendingOperations = 6;
-
 }
 
 message CompletedChange {
@@ -69,6 +70,7 @@ message TopologyChangeOperation {
     PartitionForceReconfigureOperation partitionForceReconfigure = 7;
     MemberRemoveOperation memberRemove = 8;
     PartitionDisableExporterOperation partitionDisableExporter = 9;
+    PartitionEnableExporterOperation partitionEnableExporter = 10;
   }
 }
 
@@ -99,6 +101,12 @@ message PartitionForceReconfigureOperation {
 message PartitionDisableExporterOperation {
   int32 partitionId = 1;
   string exporterId = 2;
+}
+
+message PartitionEnableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+  optional string initializeFrom = 3;
 }
 
 message MemberJoinOperation {}

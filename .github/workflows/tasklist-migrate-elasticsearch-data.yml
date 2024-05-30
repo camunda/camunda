@@ -69,7 +69,7 @@ jobs:
       # Tests: run migration tests
       - name: Run migration tests
         run: |
-          mvn -B -pl tasklist/qa/migration-tests -DskipTests=false -DskipChecks verify
+          mvn -B -f tasklist/qa/migration-tests -DskipTests=false -DskipChecks verify
 
       # Reports: publish test results
       - name: Publish Test Results
@@ -93,6 +93,6 @@ jobs:
           payload: |
             {
               "workflow_name": "Migrate elasticsearch data",
-              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }

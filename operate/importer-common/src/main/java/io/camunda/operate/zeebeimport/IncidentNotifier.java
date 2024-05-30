@@ -56,7 +56,9 @@ public class IncidentNotifier {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private M2mTokenManager m2mTokenManager;
 

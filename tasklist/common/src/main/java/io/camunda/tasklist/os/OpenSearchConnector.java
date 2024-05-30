@@ -61,6 +61,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -78,7 +79,10 @@ public class OpenSearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchConnector.class);
 
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private ObjectMapper tasklistObjectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper tasklistObjectMapper;
 
   @Bean
   public OpenSearchClient openSearchClient() {

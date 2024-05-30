@@ -67,6 +67,7 @@ public class DataMultiplicator implements CommandLineRunner {
               SequenceFlowTemplate.class, SequenceFlowEntity.class,
               VariableTemplate.class, VariableEntity.class,
               IncidentTemplate.class, IncidentEntity.class);
+
   @Autowired private ObjectMapper objectMapper;
 
   public static void main(final String[] args) {

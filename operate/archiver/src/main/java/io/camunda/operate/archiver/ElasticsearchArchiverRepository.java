@@ -83,7 +83,10 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
   @Autowired private OperateProperties operateProperties;
   @Autowired private Metrics metrics;
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   private ArchiveBatch createArchiveBatch(
       final SearchResponse searchResponse,

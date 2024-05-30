@@ -11,8 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -106,7 +104,6 @@ final class PartitionDisableExporterApplier implements MemberOperationApplier {
 
   private DynamicPartitionConfig disableExporter(
       final DynamicPartitionConfig config, final String exporterId) {
-    return config.updateExporting(
-        exporting -> exporting.updateExporter(exporterId, new ExporterState(State.DISABLED)));
+    return config.updateExporting(exporting -> exporting.disableExporter(exporterId));
   }
 }

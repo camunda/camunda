@@ -90,7 +90,7 @@ describe('<Tasks />', () => {
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
   });
 
-  it.skip('should render tasks', async () => {
+  it('should render tasks', async () => {
     render(
       <AvailableTasks
         loading={false}
@@ -113,7 +113,7 @@ describe('<Tasks />', () => {
       withinFirstTask.getByText(firstTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByTitle('Created on 28th of May at 10:11'),
+      withinFirstTask.getByTitle('Created on 28th of May, 2023 at 10:11'),
     ).toBeInTheDocument();
     expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
@@ -122,7 +122,7 @@ describe('<Tasks />', () => {
       withinSecondTask.getByText(secondTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByTitle('Created on 29th of May at 13:14'),
+      withinSecondTask.getByTitle('Created on 29th of May, 2023 at 13:14'),
     ).toBeInTheDocument();
     expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });

@@ -37,6 +37,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 // TODO This class was used on the recover of aliases (I'm keeping it here for one release just in
 // case - This should be removed on 8.5 -- notice that is not enabled with @Component and is not
@@ -54,7 +55,9 @@ public class CUSTOMCopyProcessesFromOptimize {
 
   @Autowired private FormIndex formIndex;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public void copyProcesses() {
     String scrollId = null;
