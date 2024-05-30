@@ -9,7 +9,6 @@
 #   VERSION - required; the semantic version, e.g. 3.9.0 or 3.9.0-alpha1
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
-#   ARCHITECTURE - required; the architecture (e.g. amd64, arm64) for which the image was built
 #   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.20.0)
 # Arguments:
 #   1 - Docker image names to be checked (no limit on number of images, each is checked separately)
@@ -41,11 +40,6 @@ if [ -z "${DATE}" ]; then
   exit 1
 fi
 
-if [ -z "${ARCHITECTURE}" ]; then
-  echo >&2 "No ARCHITECTURE was given; make sure to pass a valid platform, it must be one of arm64 or amd64"
-  exit 1
-fi
-
 if [ -z "${BASE_IMAGE}" ]; then
   echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.20.0"
   exit 1
@@ -57,14 +51,15 @@ if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
   exit 1
 fi
 
-echo "Checking for architecture ${ARCHITECTURE}"
-digestForArchitecture=$(echo "${baseImageInfo}" | jq '.manifests[] | select(.platform.architecture == "'"${ARCHITECTURE}"'") |
-.digest')
-
-# Removing leading and trailing quotes
-digestForArchitecture="${digestForArchitecture%\"}"
-digestForArchitecture="${digestForArchitecture#\"}"
-echo "Expected base image digest from ${BASE_IMAGE} for ${ARCHITECTURE} is: ${digestForArchitecture}"
+DIGEST_REGEX="BASE_SHA=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../optimize.Dockerfile")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILENAME)"
+    exit 1
+fi
 
 imageName="${1}"
 # Iterate through all the images passed as parameter
@@ -87,16 +82,16 @@ for imageName in "$@"; do
     exit 1
   fi
 
-  # Generate the expected labels files with the dynamic properties substituted
-  labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
-  expectedLabels=$(
-    jq --sort-keys -n \
-      --arg VERSION "${VERSION}" \
-      --arg REVISION "${REVISION}" \
-      --arg DATE "${DATE}" \
-      --arg BASEDIGEST "${digestForArchitecture}" \
-      "$(cat "${labelsGoldenFile}")"
-  )
+    # Generate the expected labels files with the dynamic properties substituted
+    labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
+    expectedLabels=$(
+      jq --sort-keys -n \
+        --arg VERSION "${VERSION}" \
+        --arg REVISION "${REVISION}" \
+        --arg DATE "${DATE}" \
+        --arg BASEDIGEST "${DIGEST}" \
+        "$(cat "${labelsGoldenFile}")"
+    )
 
   # Compare and output
   if ! diff <(echo "${expectedLabels}") <(echo "${actualLabels}"); then

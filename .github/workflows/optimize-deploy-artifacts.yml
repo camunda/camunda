@@ -68,8 +68,8 @@ jobs:
       with:
         parameters: install -DskipTests -Dskip.docker
     - name: Build Docker Image
-      run: ./.github/scripts/build-docker-images.sh
-    # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifacts on success
+      run: ./.github/scripts/build-docker-image.sh
+    # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
     # It uses the previously created docker image before it was pushed
     - name: Start Smoketest
       uses: ./.github/actions/compose
@@ -86,7 +86,7 @@ jobs:
         # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
         # exposed there on port 8080.
     - name: Execute health check and push docker image
-      uses: ./.github/actions/execute-healthcheck-and-push-images
+      uses: ./.github/actions/execute-healthcheck-and-push-image
       with:
         version: ${{ env.VERSION }}
         date: ${{ env.DATE }}

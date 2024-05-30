@@ -208,7 +208,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          .github/scripts/build-release-docker-images.sh
+          .github/scripts/build-release-docker-image.sh
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
@@ -227,7 +227,7 @@ jobs:
             # exposed there on port 8080.
 
       - name: Execute health check and push docker image
-        uses: ./.github/actions/execute-healthcheck-and-push-images
+        uses: ./.github/actions/execute-healthcheck-and-push-image
         with:
           version: ${{ env.VERSION }}
           date: ${{ env.DATE }}

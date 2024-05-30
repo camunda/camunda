@@ -27,7 +27,7 @@ jobs:
             "maintenance/3.13",
             "maintenance/3.12",
             "maintenance/3.11",
-            "maintenance/3.10",
+            "maintenance/3.10"
           ]
     runs-on: ubuntu-latest
     steps:
@@ -86,64 +86,45 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: Login to Harbor docker registery
+      - name: Login to Harbor docker registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
       - name: Build local image for testing
-        run: ./.github/scripts/build-docker-images.sh
+        run: ./.github/scripts/build-docker-image.sh
 
-      - name: Get image ids for amd and arm platforms
+      - name: Get image id
         run: |
           images=$(docker image ls -q)
 
           for image in ${images[@]}; do
               if [[ $(docker inspect $image | grep org.opencontainers.image.title) =~ "Camunda Optimize" ]]; then
-                  if [[ $(docker inspect $image | grep Architecture) =~ "arm" ]]; then
-                      echo "arm_image=$image" >> "$GITHUB_ENV"
-                  else
-                      echo "amd_image=$image" >> "$GITHUB_ENV"
-                  fi
+                  echo "imageId=$image" >> "$GITHUB_ENV"
               fi
           done
 
-          echo $amd_image $arm_image
+          echo $imageId
 
-      - name: Run Trivy vulnerability scanner AMD
+      - name: Run Trivy vulnerability scanner
         if: always()
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.amd_image }}
+          image-ref: ${{ env.imageId }}
           exit-code: "1"
           ignore-unfixed: true
           hide-progress: true
           severity: "CRITICAL,HIGH"
           format: table
-          output: ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
-          trivyignores: ".github/workflows/.trivyignore"
-
-      - name: Run Trivy vulnerability scanner ARM
-        if: always()
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.arm_image }}
-          exit-code: "1"
-          ignore-unfixed: true
-          hide-progress: true
-          severity: "CRITICAL,HIGH"
-          format: table
-          output: ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
+          output: ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
           trivyignores: ".github/workflows/.trivyignore"
 
       - name: Print Test Results
         if: always()
         run: |
           echo "${{ steps.pom-info.outputs.project_version }} Platform: AMD"
-          cat ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
-          echo "${{ steps.pom-info.outputs.project_version }} Platform: ARM"
-          cat ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
+          cat ${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
 
       - name: Upload Test Results
         if: always()
@@ -151,8 +132,7 @@ jobs:
         with:
           name: trivy-test-results-${{ steps.pom-info.outputs.project_version }}
           path: |
-            **/${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
-            **/${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
+            **/${{ steps.pom-info.outputs.project_version }}-trivy-log.txt
           retention-days: 7
           if-no-files-found: ignore
 

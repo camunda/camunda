@@ -1,24 +1,8 @@
 ARG BASE_IMAGE_NAME="alpine:3.20.0"
-ARG BASE_IMAGE_SHA_AMD64="sha256:216266c86fc4dcef5619930bd394245824c2af52fd21ba7c6fa0e618657d4c3b"
-ARG BASE_IMAGE_SHA_ARM64="sha256:1c3b93ed450e26eac89b471d6d140e2f99488f489739b8b8ea5e8202dd086f82"
+ARG BASE_SHA="sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd"
 
-# Building prod image amd64
-FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_AMD64} as prod-amd64
-
-# leave unset to use the default value at the top of the file
-ARG BASE_IMAGE_SHA_AMD64
-ARG BASE_SHA="${BASE_IMAGE_SHA_AMD64}"
-
-# Building prod image arm64
-FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_ARM64} as prod-arm64
-
-# leave unset to use the default value at the top of the file
-ARG BASE_IMAGE_SHA_ARM64
-ARG BASE_SHA="${BASE_IMAGE_SHA_ARM64}"
-
-# Building builder image
-# hadolint ignore=DL3006
-FROM ${BASE_IMAGE_NAME} as builder
+FROM ${BASE_IMAGE_NAME}@${BASE_SHA} as base
+WORKDIR /
 
 ARG VERSION=""
 ARG DISTRO=production
@@ -39,10 +23,7 @@ COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
-# The value of TARGETARCH is provided by the build command from docker and based on that value, prod-amd64 or
-# prod-arm64 will be built as defined above
-# hadolint ignore=DL3006
-FROM prod-${TARGETARCH}
+FROM base
 
 ARG VERSION=""
 ARG DATE=""
@@ -99,4 +80,4 @@ USER 1001:1001
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./optimize.sh"]
 
-COPY --chown=1001:1001 --from=builder /tmp/build .
+COPY --chown=1001:1001 --from=base /tmp/build .

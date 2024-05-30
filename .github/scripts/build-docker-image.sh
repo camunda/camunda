@@ -26,30 +26,14 @@ if [ "${CI}" = "true" ]; then
     echo "tag_arguments=$tag_arguments" >>"$GITHUB_ENV"
 fi
 
-# Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
-# able to perform the checks before pushing
-# First arm64
 docker buildx build \
     ${tag_arguments} \
     --build-arg VERSION="${VERSION}" \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
-    --platform linux/arm64 \
     --provenance false \
     --load \
-    -f optimize.Dockerfile .
-export ARCHITECTURE=arm64
-./optimize/docker/test/verify.sh "${tags[@]}"
+    -f optimize.Dockerfile \
+    .
 
-# Now amd64
-docker buildx build \
-    ${tag_arguments} \
-    --build-arg VERSION="${VERSION}" \
-    --build-arg DATE="${DATE}" \
-    --build-arg REVISION="${REVISION}" \
-    --platform linux/amd64 \
-    --provenance false \
-    --load \
-    -f optimize.Dockerfile .
-export ARCHITECTURE=amd64
 ./optimize/docker/test/verify.sh "${tags[@]}"

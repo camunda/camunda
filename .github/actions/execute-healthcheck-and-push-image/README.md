@@ -21,7 +21,7 @@ A requirement for the usage for this action is that the Optimize container runs 
 steps:
   - uses: actions/checkout@v3
   - name: Execute health check and push docker image
-    uses: ./.github/actions/execute-healthcheck-and-push-images
+    uses: ./.github/actions/execute-healthcheck-and-push-image
     with:
       version: ${{ env.VERSION }}
       date: ${{ env.DATE }}

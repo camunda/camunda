@@ -1,4 +1,4 @@
-name: Execute Optimize health and deploy images
+name: Execute Optimize health and deploy image
 description: |
   This is an action which executes a smoketest against an Optimize docker image and if successful it deploys this image to a registry.
 inputs:
