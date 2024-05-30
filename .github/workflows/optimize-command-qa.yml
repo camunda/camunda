@@ -74,8 +74,6 @@ jobs:
           set -ex
 
           ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
-          # We cut here the first 20 lines of the issue body to avoid issues with passing too long text to grep
-          ISSUE_DESCRIPTION=$(head -n 20 <<< "$ISSUE_DESCRIPTION")
           ENGINEERING_DRI=$(grep -oP 'Engineering DRI: \K\w+' <<< "$ISSUE_DESCRIPTION" || true)
 
           echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
