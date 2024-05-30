@@ -16,10 +16,10 @@ import {
   bulkDeleteAllItems,
 } from '../utils';
 
-// import * as Report from '../tests/ProcessReport.elements.js';
-// import * as Filter from '../tests/Filter.elements.js';
-import * as e from '../tests/Homepage.elements.js';
-import * as Common from '../tests/Common.elements.js';
+// import * as Report from './ProcessReport.elements.js';
+// import * as Filter from './Filter.elements.js';
+import * as e from './Homepage.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Homepage')
   .page(config.endpoint)

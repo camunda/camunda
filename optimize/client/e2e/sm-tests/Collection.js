@@ -10,10 +10,10 @@ import config from '../config';
 import {login, save, getUser, createNewDashboard, addEditEntityDescription} from '../utils';
 // import {Selector} from 'testcafe';
 
-import * as Common from '../tests/Common.elements.js';
-import * as e from '../tests/Collection.elements.js';
-// import * as Report from '../tests/ProcessReport.elements.js';
-// import * as Filter from '../tests/Filter.elements.js';
+import * as Common from './Common.elements.js';
+import * as e from './Collection.elements.js';
+// import * as Report from './ProcessReport.elements.js';
+// import * as Filter from './Filter.elements.js';
 
 fixture('Collection')
   .page(config.endpoint)
@@ -107,10 +107,10 @@ test('user permissions', async (t) => {
   const managerName = await e.userName(await Common.listItem('user')).textContent;
 
   await t.click(e.addButton);
-  await t.typeText(Common.usersTypeahead, 'Abse1978', {replace: true});
-  await t.click(Common.carbonOption('Abse1978').nth(1));
+  await t.typeText(Common.usersTypeahead, 'abse1978', {replace: true});
+  await t.click(Common.carbonOption('abse1978').nth(1));
   // test the selection removal from the options
-  await t.click(Common.carbonOption('Abse1978').nth(1));
+  await t.click(Common.carbonOption('abse1978').nth(1));
   await t.typeText(Common.usersTypeahead, 'demo', {replace: true});
   await t.click(Common.carbonOption('demo').nth(1)).pressKey('tab');
   await t.click(e.carbonRoleOption('Editor'));
@@ -133,8 +133,6 @@ test('user permissions', async (t) => {
 
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, username, {replace: true});
-  // We have no way of knowing the exact name of the user on the list, so we just wait and select the first option
-  await t.wait(1500);
   await t.click(Common.carbonOption(username).nth(1));
   await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);

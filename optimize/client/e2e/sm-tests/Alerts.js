@@ -9,9 +9,9 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Alert from '../tests/Alerts.elements.js';
-import * as Collection from '../tests/Collection.elements.js';
-import * as Common from '../tests/Common.elements.js';
+import * as Alert from './Alerts.elements.js';
+import * as Collection from './Collection.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Alerts')
   .page(config.endpoint)

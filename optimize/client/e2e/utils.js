@@ -6,11 +6,10 @@
  */
 
 import {Selector} from 'testcafe';
-
-import config from './config';
-import * as Homepage from './tests/Homepage.elements.js';
-import * as Common from './tests/Common.elements.js';
-import * as Report from './tests/ProcessReport.elements.js';
+import {loadUsers} from './users.js';
+import * as Homepage from './sm-tests/Homepage.elements.js';
+import * as Common from './sm-tests/Common.elements.js';
+import * as Report from './sm-tests/ProcessReport.elements.js';
 
 let instanceCount = {
   Chrome: 0,
@@ -19,7 +18,11 @@ let instanceCount = {
   'Microsoft Edge': 0,
 };
 
+let users = {};
+
 export async function login(t, userHandle = 'user1') {
+  users = await loadUsers();
+
   const user = getUser(t, userHandle);
 
   t.ctx.users = t.ctx.users || [];
@@ -30,7 +33,7 @@ export async function login(t, userHandle = 'user1') {
   await t
     .maximizeWindow()
     .typeText('input[name="username"]', user.username)
-    .typeText('input[name="password"]', user.password)
+    .typeText('input[name="password"]', user.username)
     .click('[type="submit"]');
 }
 
@@ -42,17 +45,12 @@ export function getUser(t, userHandle) {
     browserConnection.userId = instanceCount[name]++;
   }
 
-  return config.users[name][browserConnection.userId][userHandle];
+  return users[name][browserConnection.userId][userHandle];
 }
 
 export async function createNewReport(t) {
   await t.click(Common.createNewButton);
-  if (process.env.CONTEXT === 'sm') {
-    await t.click(Common.menuOption('Report'));
-  } else {
-    await t.hover(Common.newReportOption);
-    await t.click(Common.submenuOption('Process report'));
-  }
+  await t.click(Common.menuOption('Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);

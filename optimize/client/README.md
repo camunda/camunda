@@ -51,12 +51,11 @@ Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault
 yarn run start-backend
 ```
 
-The above command will run Optimize in Camunda Platform 7 mode.
-if you want to run Optimize in cloud or self managed mode, use one of the following:
+The above command will run Optimize in self managed mode.
+if you want to run Optimize in cloud mode, use the following command:
 
 ```bash
 yarn run start-backend-cloud
-yarn run start-backend-sm
 ```
 > **Tip:**
   Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.

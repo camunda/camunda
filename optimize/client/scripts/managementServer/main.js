@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a proprietary license.
+ * See the License.txt file for more information. You may not use this file
+ * except in compliance with the proprietary license.
+ */
+
 let currentlyActive = document.querySelector('#backend');
 let currentlyActiveButton = document.querySelector('.tabs .buttons .active');
 
@@ -16,10 +23,6 @@ for (let i = 0; i < buttons.length; i++) {
   buttons[i].addEventListener('click', onClickHandler);
 }
 
-document
-  .getElementById('generateDataButton')
-  .addEventListener('click', () => fetch('api/generateNewData'));
-
 const socket = new WebSocket('ws://' + window.location.host);
 
 socket.onmessage = function (evt) {
@@ -32,12 +35,10 @@ socket.onmessage = function (evt) {
   if (content.type === 'docker') {
     let subType = entry.textContent.split('|')[0].trim();
 
-    if (['cambpm', 'elasticsearch', 'zeebe'].includes(subType)) {
+    if (['elasticsearch', 'zeebe', 'keycloak', 'identity'].includes(subType)) {
       logContainer = document.querySelector('#' + subType);
       const regex = new RegExp(subType + '\\s*\\|\\s', 'g');
       entry.textContent = entry.textContent.replace(regex, '');
-    } else {
-      logContainer = document.querySelector('#cambpm');
     }
   } else {
     logContainer = document.querySelector('#' + content.type);

@@ -82,7 +82,7 @@ jobs:
       - name: Start back-end
         working-directory: ./optimize/client
         run: |
-          yarn run start-backend-sm ci &> ./build/backendLogs.log &
+          yarn run start-backend ci &> ./build/backendLogs.log &
 
       - name: Start front-end
         working-directory: ./optimize/client

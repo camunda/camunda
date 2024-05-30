@@ -8,9 +8,9 @@
 import config from '../config';
 import * as u from '../utils';
 
+import * as Common from '../sm-tests/Common.elements.js';
+import * as Collection from '../sm-tests/Collection.elements.js';
 import * as e from './smokeTest.elements.js';
-import * as Common from '../tests/Common.elements.js';
-import * as Collection from '../tests/Collection.elements.js';
 
 fixture('Smoke test').page(config.collectionsEndpoint);
 

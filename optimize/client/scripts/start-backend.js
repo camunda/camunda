@@ -12,8 +12,6 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const xml2js = require('xml2js');
 
-const users = require('../demo-data/users.json');
-const license = require('./license');
 const createServer = require('./managementServer/server.js');
 
 // argument to determine if we are in CI mode
@@ -22,37 +20,24 @@ if (!ciMode) {
   require('dotenv').config();
 }
 
-let mode = 'platform';
+let mode = 'self-managed';
 if (process.argv.indexOf('cloud') > -1) {
   mode = 'cloud';
 }
-if (process.argv.indexOf('self-managed') > -1) {
-  mode = 'self-managed';
-}
 
 // if we are in ci mode we assume data generation is already complete
-let platformDataGenerationComplete = ciMode;
-let eventIngestionComplete = false;
 
 let backendProcess;
 let buildBackendProcess;
 let dockerProcess;
-let dataGeneratorProcess;
 
 let backendVersion;
 let elasticSearchVersion;
-let cambpmVersion;
 let zeebeVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
   OPTIMIZE_SUPER_USER_IDS: '[demo]',
-};
-
-const platformEnv = {
-  OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED: 'true',
-  OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED: 'true',
-  OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS: `[${users.join(',')},demo]`,
 };
 
 const cloudEnv = {
@@ -96,16 +81,9 @@ const selfManagedEnv = {
     'http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs',
 };
 
-const server = createServer(
-  {showLogsInTerminal: ciMode},
-  {generateData, isDataGenerationCompleted, restartBackend}
-);
+const server = createServer({showLogsInTerminal: ciMode}, {restartBackend});
 
-setVersionInfo()
-  .then(setupEnvironment)
-  .then(startBackend)
-  .then(setLicense)
-  .then(() => mode === 'platform' && Promise.all([ingestEventData()]));
+setVersionInfo().then(setupEnvironment).then(startBackend);
 
 function startBackend() {
   return new Promise((resolve, reject) => {
@@ -118,7 +96,6 @@ function startBackend() {
     ].join(pathSep);
 
     const engineEnv = {
-      platform: platformEnv,
       cloud: cloudEnv,
       'self-managed': selfManagedEnv,
     };
@@ -168,7 +145,7 @@ async function setupEnvironment() {
   }
 
   await Promise.all([
-    startDocker().then(() => mode === 'platform' && loadPlatformDemoData()),
+    startDocker(),
     buildBackend().catch(() => {
       console.log('Optimize build interrupted');
     }),
@@ -198,81 +175,18 @@ function buildBackend() {
   });
 }
 
-async function setLicense() {
-  await fetch('http://localhost:8090/api/license/validate-and-store', {
-    method: 'POST',
-    body: license,
-  });
-}
-
-function loadPlatformDemoData() {
-  return new Promise(async (resolve) => {
-    await downloadFile('gs://optimize-data/optimize_data-e2e.sqlc', 'databaseDumps/dump.sqlc');
-
-    dataGeneratorProcess = spawnWithArgs(
-      'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
-    );
-
-    dataGeneratorProcess.stdout.on('data', (data) => {
-      server.addLog(data.toString(), 'dataGenerator');
-    });
-
-    dataGeneratorProcess.stderr.on('data', (data) => {
-      server.addLog(data.toString(), 'dataGenerator', true);
-    });
-
-    dataGeneratorProcess.on('exit', () => {
-      platformDataGenerationComplete = true;
-      dataGeneratorProcess = null;
-      resolve();
-      spawnWithArgs('rm -rf databaseDumps/', {shell: true});
-    });
-  });
-}
-
-function generateData() {
-  dataGeneratorProcess = runScript('generate-data');
-
-  dataGeneratorProcess.on('exit', () => {
-    dataGeneratorProcess = null;
-  });
-}
-
-function ingestEventData() {
-  const eventIngestProcess = runScript('ingest-event-data');
-
-  eventIngestProcess.on('exit', () => {
-    eventIngestionComplete = true;
-  });
-}
-
-function downloadFile(downloadUrl, filePath) {
-  return new Promise(async (resolve) => {
-    const downloadFile = spawnWithArgs(`gsutil -q cp ${downloadUrl} ${filePath}`, {shell: true});
-    downloadFile.on('close', () => {
-      resolve();
-    });
-  });
-}
-
 function startDocker() {
   if (dockerProcess) {
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
-    // this directory should be mounted by docker, on Linux this results in root bering the owner of that directory
-    // we create it with the current user to ensure we have write permissions
-    if (!fs.existsSync('databaseDumps')) {
-      fs.mkdirSync('databaseDumps');
-    }
     dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color', {
       cwd: path.resolve(__dirname, '..'),
       shell: true,
       env: {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
-        CAMBPM_VERSION: cambpmVersion,
         ZEEBE_VERSION: zeebeVersion,
         COMPOSE_PROFILES: mode,
       },
@@ -284,11 +198,8 @@ function startDocker() {
     process.on('SIGINT', stopDocker);
     process.on('SIGTERM', stopDocker);
 
-    // wait for the engine/zeebe rest endpoint to be up before resolving the promise
-    serverCheck(
-      mode === 'platform' ? 'http://localhost:8080' : 'http://localhost:9600/ready',
-      resolve
-    );
+    // wait for the zeebe rest endpoint to be up before resolving the promise
+    serverCheck('http://localhost:9600/ready', resolve);
   });
 }
 
@@ -303,16 +214,11 @@ function setVersionInfo() {
         backendVersion = data.project.version;
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch8.test.version'];
-        cambpmVersion = properties['camunda.engine.version'];
         zeebeVersion = properties['zeebe.version'];
         resolve();
       });
     });
   });
-}
-
-function isDataGenerationCompleted() {
-  return platformDataGenerationComplete && eventIngestionComplete;
 }
 
 function stopDocker() {
@@ -339,18 +245,6 @@ function serverCheck(url, onComplete) {
     }
     onComplete();
   }, 1000);
-}
-
-function runScript(scriptName) {
-  const startedProcess = spawnWithArgs('node scripts/' + scriptName);
-
-  startedProcess.stdout.on('data', (data) => server.addLog(data, 'dataGenerator'));
-  startedProcess.stderr.on('data', (data) => server.addLog(data, 'dataGenerator', true));
-
-  process.on('SIGINT', () => startedProcess.kill('SIGINT'));
-  process.on('SIGTERM', () => startedProcess.kill('SIGTERM'));
-
-  return startedProcess;
 }
 
 function spawnWithArgs(commandString, options) {

@@ -10,8 +10,8 @@ import config from '../config';
 import * as u from '../utils';
 // import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
-import * as e from '../tests/ProcessReport.elements.js';
-import * as Common from '../tests/Common.elements.js';
+import * as e from './ProcessReport.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('Process report')
   .page(config.endpoint)

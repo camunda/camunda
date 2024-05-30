@@ -9,9 +9,9 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Report from '../tests/ProcessReport.elements.js';
-import * as Filter from '../tests/Filter.elements.js';
-import * as Common from '../tests/Common.elements';
+import * as Report from './ProcessReport.elements.js';
+import * as Filter from './Filter.elements.js';
+import * as Common from './Common.elements';
 
 fixture('Process report filter')
   .page(config.endpoint)

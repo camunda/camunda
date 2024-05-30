@@ -8,7 +8,7 @@
 import config from '../config';
 import {cleanEntities} from '../setup';
 import {login, save} from '../utils';
-import * as Common from '../tests/Common.elements.js';
+import * as Common from './Common.elements.js';
 
 fixture('German Optimize')
   .page(config.endpoint)

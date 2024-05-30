@@ -11,65 +11,16 @@ const opn = require('opn');
 const ansiHTML = require('ansi-html');
 const path = require('path');
 const fs = require('fs');
-const fetch = require('node-fetch');
 
-module.exports = function createServer(
-  {showLogsInTerminal},
-  {generateData, isDataGenerationCompleted, restartBackend}
-) {
+module.exports = function createServer({showLogsInTerminal}, {restartBackend}) {
   let addLog;
 
   const server = http.createServer(async (request, response) => {
-    if (request.url === '/api/dataGenerationComplete') {
-      response.writeHead(200, {'Content-Type': 'text/plain'});
-      response.end(isDataGenerationCompleted().toString(), 'utf-8');
-      return;
-    }
-
-    if (request.url === '/api/importCompleted') {
-      try {
-        const resp = await fetch('http://localhost:8090/api/status');
-        const status = await resp.json();
-        const {engineStatus, connectedToElasticsearch} = status;
-
-        if (
-          connectedToElasticsearch &&
-          engineStatus['camunda-bpm'] &&
-          engineStatus['camunda-bpm'].isConnected &&
-          !engineStatus['camunda-bpm'].isImporting
-        ) {
-          response.writeHead(200, {'Content-Type': 'text/plain'});
-          response.end('Done importing', 'utf-8');
-        } else {
-          response.statusCode = 102;
-          response.end('import is still running', 'utf-8');
-        }
-      } catch (err) {
-        response.statusCode = 102;
-        response.end('import is still running', 'utf-8');
-      }
-
-      return;
-    }
-
     if (request.url === '/api/restartBackend') {
       addLog('--------- BACKEND RESTART INITIATED ---------', 'backend');
       restartBackend();
       response.statusCode = 200;
       response.end('Restarting Optimize backend...', 'utf-8');
-      return;
-    }
-
-    if (request.url === '/api/generateNewData') {
-      if (!isDataGenerationCompleted()) {
-        response.statusCode = 102;
-        response.end('Data is currently being generated', 'utf-8');
-        return;
-      }
-      addLog('--------- DATA GENERATION INITIATED ---------', 'dataGenerator');
-      generateData();
-      response.statusCode = 200;
-      response.end('Data generation initiated', 'utf-8');
       return;
     }
 
@@ -142,7 +93,6 @@ function createWebSocketServer(server) {
   const logs = {
     backend: [],
     docker: [],
-    dataGenerator: [],
   };
 
   const wss = new WebSocket.Server({server});
@@ -152,7 +102,6 @@ function createWebSocketServer(server) {
 
       logs.backend.slice(-200).forEach((log) => ws.send(JSON.stringify(log)));
       logs.docker.slice(-400).forEach((log) => ws.send(JSON.stringify(log)));
-      logs.dataGenerator.forEach((log) => ws.send(JSON.stringify(log)));
 
       ws.on('close', function close() {
         connectedSockets.splice(connectedSockets.indexOf(ws), 1);
