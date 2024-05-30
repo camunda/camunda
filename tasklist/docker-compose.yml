@@ -113,13 +113,14 @@ services:
     environment:
       - camunda.tasklist.opensearch.url=http://opensearch:9200
       - camunda.tasklist.zeebeOpensearch.url=http://opensearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe-opensearch:26500
       #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
       - camunda.tasklist.database=opensearch
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-opensearch:8080
+      - camunda.tasklist.archiver.ilmEnabled=true
     depends_on:
       - opensearch
       - zeebe-opensearch
