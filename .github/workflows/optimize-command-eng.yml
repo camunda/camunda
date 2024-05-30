@@ -14,6 +14,7 @@ jobs:
             echo "project_id=101"
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             echo "qa_engineer=RobertDorlan"
+            echo "pm=toco-cam"
           } >> "$GITHUB_OUTPUT"
 
       - name: Generate a GitHub token
@@ -146,7 +147,8 @@ jobs:
           value: "Eng Review"
 
       - name: Assign engineering DRI
-        if: steps.parse-args.outputs.arg1 == 'reject'
+        if: steps.parse-args.outputs.arg1 == 'reject' ||
+          (steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && !contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic'))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -176,16 +178,37 @@ jobs:
           sleep 2  # avoiding
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
 
-      - name: Update Status field
+      - name: Assign PM
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh version
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+          sleep 2  # avoiding
+          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.pm }}
+
+      - name: Update Status field - qa not needed
         uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'approve'
+        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded')
         with:
           github_token: ${{ steps.github-token.outputs.token }}
           organization: ${{ github.event.client_payload.github.payload.organization.login }}
           project_number: ${{ steps.vars.outputs.project_id }}
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
-          value: ${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && 'Ready to Complete'  || 'QA Review'}}
+          value: ${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') && 'PM Review'  || 'Ready to Complete'}}
+
+      - name: Update Status field - qa not needed
+        uses: github/update-project-action@main
+        if: steps.parse-args.outputs.arg1 == 'approve' && !contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded')
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "QA Review"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
