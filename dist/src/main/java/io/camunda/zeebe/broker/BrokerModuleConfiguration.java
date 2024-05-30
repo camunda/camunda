@@ -16,7 +16,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -138,13 +137,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   }
 
   @Bean
-  @ConditionalOnMissingBean(value = RestGatewayDisabled.class)
+  @ConditionalOnRestGatewayEnabled
   public ResponseObserverProvider responseObserverProvider() {
     return JobActivationRequestResponseObserver::new;
   }
 
   @Bean
-  @ConditionalOnMissingBean(value = RestGatewayDisabled.class)
+  @ConditionalOnRestGatewayEnabled
   public ActivateJobsHandler<JobActivationResponse> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
     final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResponse>>();
