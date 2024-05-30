@@ -72,12 +72,9 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -ex
-          TEMP_FILE=$(mktemp)
 
-          gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body' > $TEMP_FILE
-          ENGINEERING_DRI=$(grep -oP 'Engineering DRI: \K\w+' "$TEMP_FILE")
-
-          rm "$TEMP_FILE"
+          # We cut here the first 20 lines of the issue body to avoid issues with passing too long text to grep
+          ENGINEERING_DRI=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body' | head -n 20 | grep -oP 'Engineering DRI: \K\w+')
 
           echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
 
