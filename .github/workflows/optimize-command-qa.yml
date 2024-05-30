@@ -75,10 +75,6 @@ jobs:
       - name: Validate inputs
         run: |
           # General checks
-          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
-            echo "Issue has no Engineering DRI"
-            exit 1
-          fi
           if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
             echo "No command provided"
             exit 1
@@ -101,6 +97,10 @@ jobs:
 
           # Validate approve/reject
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] || [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+              echo "Issue has no Engineering DRI"
+              exit 1
+            fi
             # Check if the issue is in the correct status
             project_status="${{ steps.issue-project.outputs.project_status }}"
             if [ "$project_status" != 'QA Review' ]; then
