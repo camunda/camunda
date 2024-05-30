@@ -9,16 +9,13 @@ package io.camunda.application;
 
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringBootConfiguration;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneTasklist {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneTasklist.class);
 
   public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -38,7 +35,7 @@ public class StandaloneTasklist {
             .addCommandLineProperties(true)
             .initializers(
                 new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
-            .listeners(new io.camunda.application.listeners.ApplicationErrorListener())
+            .listeners(new ApplicationErrorListener())
             .build(args);
 
     standaloneTasklistApplication.run(args);
