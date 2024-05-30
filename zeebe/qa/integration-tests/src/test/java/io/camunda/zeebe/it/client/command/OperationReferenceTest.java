@@ -16,7 +16,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -81,10 +80,8 @@ public class OperationReferenceTest {
             .limit(1)
             .getFirst();
 
-    final ProcessInstanceRecordStream followUpRecords =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withSourceRecordPosition(cancelCommand.getPosition());
+    final var followUpRecords =
+        RecordingExporter.records().withSourceRecordPosition(cancelCommand.getPosition());
 
     assertThat(followUpRecords)
         .hasSizeGreaterThan(0)
