@@ -39,15 +39,15 @@ public class UserControllerURA {
     return userService.createUser(user);
   }
 
-  @DeleteMapping("/{userId}")
+  @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteUser(@PathVariable final Integer userId) {
-    userService.deleteUser(userId);
+  public void deleteUser(@PathVariable final Integer id) {
+    userService.deleteUser(id);
   }
 
-  @GetMapping("/{userId}")
-  public CamundaUser findUserByUsername(@PathVariable final Integer userId) {
-    return userService.findUserById(userId);
+  @GetMapping("/{id}")
+  public CamundaUser findUserByUsername(@PathVariable final Integer id) {
+    return userService.findUserById(id);
   }
 
   @PostMapping("/search")
@@ -60,9 +60,9 @@ public class UserControllerURA {
     return responseDto;
   }
 
-  @PutMapping("/{userId}")
+  @PutMapping("/{id}")
   public CamundaUser updateUser(
-      @PathVariable final Integer userId, @RequestBody final CamundaUserWithPassword user) {
-    return userService.updateUser(userId, user);
+      @PathVariable final Integer id, @RequestBody final CamundaUserWithPassword user) {
+    return userService.updateUser(id, user);
   }
 }

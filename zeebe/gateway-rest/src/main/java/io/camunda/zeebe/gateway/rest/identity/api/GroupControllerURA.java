@@ -38,15 +38,15 @@ public class GroupControllerURA {
     return groupService.createGroup(group);
   }
 
-  @DeleteMapping("/{groupId}")
+  @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroup(@PathVariable final Integer groupId) {
-    groupService.deleteGroupById(groupId);
+  public void deleteGroup(@PathVariable final Integer id) {
+    groupService.deleteGroupById(id);
   }
 
-  @GetMapping("/{groupId}")
-  public Group findGroupById(@PathVariable final Integer groupId) {
-    return groupService.findGroupById(groupId);
+  @GetMapping("/{id}")
+  public Group findGroupById(@PathVariable final Integer id) {
+    return groupService.findGroupById(id);
   }
 
   @PostMapping("/search")
@@ -59,8 +59,8 @@ public class GroupControllerURA {
     return responseDto;
   }
 
-  @PutMapping("/{groupId}")
-  public Group updateGroup(@PathVariable final Integer groupId, @RequestBody final Group group) {
-    return groupService.renameGroupById(groupId, group);
+  @PutMapping("/{id}")
+  public Group updateGroup(@PathVariable final Integer id, @RequestBody final Group group) {
+    return groupService.renameGroupById(id, group);
   }
 }
