@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
@@ -61,7 +62,9 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     if (enableMessageTtlCheckerAsync) {
       scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
     } else {
-      scheduleService.runDelayed(messagesTtlCheckerInterval, timeToLiveChecker);
+      scheduleService.runAt(
+          ActorClock.currentTimeMillis() + messagesTtlCheckerInterval.toMillis(),
+          timeToLiveChecker);
     }
   }
 
