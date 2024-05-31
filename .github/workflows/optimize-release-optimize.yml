@@ -161,14 +161,14 @@ jobs:
           branch: ${{ env.BRANCH }}
 
       - name: Login to prod Harbor docker registry
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
           password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
 
       - name: Login to docker hub
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
