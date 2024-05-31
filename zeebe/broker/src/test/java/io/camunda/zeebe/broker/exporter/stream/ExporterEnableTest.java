@@ -116,6 +116,52 @@ public class ExporterEnableTest {
         .isEqualTo(2);
   }
 
+  @Test
+  public void shouldReEnableExporterWithLatestMetadata() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords()).hasSize(1));
+
+    final var descriptor = createExporter(EXPORTER_ID_2, Collections.singletonMap("x", 1));
+    rule.getDirector()
+        .enableExporter(EXPORTER_ID_2, new ExporterInitializationInfo(1, EXPORTER_ID_1), descriptor)
+        .join();
+    rule.writeEvent(JobIntent.COMPLETED, new JobRecord());
+
+    // when
+    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+    rule.writeEvent(JobIntent.COMPLETED, new JobRecord());
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords()).hasSize(3));
+
+    final var reEnabledDescriptor = createExporter(EXPORTER_ID_2, Collections.singletonMap("x", 1));
+    rule.getDirector()
+        .enableExporter(
+            EXPORTER_ID_2, new ExporterInitializationInfo(2, EXPORTER_ID_1), reEnabledDescriptor)
+        .join();
+    rule.writeEvent(JobIntent.CREATED, new JobRecord());
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords()).hasSize(4));
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(EXPORTER_ID_2).getExportedRecords())
+                    .hasSize(1)
+                    .first()
+                    .extracting(Record::getIntent)
+                    .isEqualTo(JobIntent.CREATED));
+    assertThat(exporters.get(EXPORTER_ID_2).metadata())
+        .describedAs("Exporter 2 restarts with the metadata of exporter 1")
+        .isEqualTo(4);
+  }
+
   private void waitUntilExportersHaveSeenTheExpectedRecords() {
     Awaitility.await()
         .untilAsserted(
