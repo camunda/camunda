@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -362,6 +363,31 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(new PartitionDisableExporterOperation(id0, 1, exporterId));
+  }
+
+  @Test
+  void shouldEnableExporter() {
+    // given
+    final String exporterId = "exporterId";
+    final var request =
+        new ClusterConfigurationManagementRequest.ExporterEnableRequest(
+            exporterId, Optional.empty(), false);
+    final var partitionConfigWithExporter =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(exporterId, new ExporterState(1, State.DISABLED, Optional.empty()))));
+    final var configurationWithExporter =
+        initialTopology.updateMember(
+            id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+    recordingCoordinator.setCurrentTopology(configurationWithExporter);
+
+    // when
+    final var changeStatus = clientApi.enableExporter(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(
+            new PartitionEnableExporterOperation(id0, 1, exporterId, Optional.empty()));
   }
 
   @Test
