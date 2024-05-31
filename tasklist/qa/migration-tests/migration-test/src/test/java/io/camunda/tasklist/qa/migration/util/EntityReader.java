@@ -18,14 +18,15 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHit;
 
 public class EntityReader {
 
-  private RestHighLevelClient esClient;
+  private final RestHighLevelClient esClient;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public EntityReader(RestHighLevelClient esClient) {
+  public EntityReader(final RestHighLevelClient esClient) {
     this.esClient = esClient;
     init();
   }
@@ -34,16 +35,26 @@ public class EntityReader {
     objectMapper.registerModule(new JavaTimeModule());
   }
 
-  public <T> List<T> getEntitiesFor(String index, Class<T> entityClass) {
+  public <T> List<T> getEntitiesFor(final String index, final Class<T> entityClass) {
     return searchEntitiesFor(new SearchRequest(index), entityClass);
   }
 
-  public <T> List<T> searchEntitiesFor(SearchRequest searchRequest, Class<T> entityClass) {
+  public <T> List<T> searchEntitiesFor(
+      final SearchRequest searchRequest, final Class<T> entityClass) {
     searchRequest.source().size(1000);
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return mapSearchHits(searchResponse.getHits().getHits(), objectMapper, entityClass);
-    } catch (IOException e) {
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  public List<SearchHit> searchDocumentsFor(final SearchRequest searchRequest) {
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return List.of(searchResponse.getHits().getHits());
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
