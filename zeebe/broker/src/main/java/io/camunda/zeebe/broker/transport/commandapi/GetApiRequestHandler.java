@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.partitioning.PartitionGetAccess;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -15,17 +17,37 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteGetRequestDecoder;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.RequestType;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import org.slf4j.Logger;
 
-final class GetApiRequestHandler
+public final class GetApiRequestHandler
     extends AsyncApiRequestHandler<GetApiRequestReader, GetApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  private boolean isDiskSpaceAvailable = true;
+  private final AtomixServerTransport transport;
+  private final PartitionGetAccess getAccess;
+  private final RaftPartition raftPartition;
 
-  GetApiRequestHandler() {
+  public GetApiRequestHandler(
+      final AtomixServerTransport transport,
+      final PartitionGetAccess getAccess,
+      final RaftPartition raftPartition) {
     super(GetApiRequestReader::new, GetApiResponseWriter::new);
+    this.transport = transport;
+    this.getAccess = getAccess;
+    this.raftPartition = raftPartition;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    transport.subscribe(raftPartition.id().id(), RequestType.GET, this);
+  }
+
+  @Override
+  protected void onActorClosing() {
+    transport.unsubscribe(raftPartition.id().id(), RequestType.GET);
   }
 
   @Override
@@ -46,12 +68,7 @@ final class GetApiRequestHandler
       final GetApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
 
-    if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
-    }
-
     final var request = requestReader.getMessageDecoder();
-
     final var valueType = request.valueType();
     final var metadata = requestReader.metadata();
 
@@ -60,7 +77,7 @@ final class GetApiRequestHandler
     metadata.valueType(valueType);
 
     try {
-      return getEntity(request.key(), metadata, errorWriter, partitionId)
+      return getEntity(request.key(), metadata, errorWriter, partitionId, responseWriter)
           .map(b -> responseWriter)
           .mapLeft(failure -> errorWriter);
 
@@ -76,8 +93,9 @@ final class GetApiRequestHandler
       final long key,
       final RecordMetadata metadata,
       final ErrorResponseWriter errorWriter,
-      final int partitionId) {
-    if (key != ExecuteGetRequestDecoder.keyNullValue()) {
+      final int partitionId,
+      final GetApiResponseWriter responseWriter) {
+    if (key == ExecuteGetRequestDecoder.keyNullValue()) {
       return Either.left(
           errorWriter.errorCode(ErrorCode.MALFORMED_REQUEST).errorMessage("No key provided"));
     }
@@ -85,18 +103,9 @@ final class GetApiRequestHandler
     // todo: retrieve entity from state
     // todo: respond found entity
 
-    return Either.right(true);
-  }
-
-  void onDiskSpaceNotAvailable() {
-    actor.submit(
-        () -> {
-          isDiskSpaceAvailable = false;
-          LOG.debug("Broker is out of disk space. All client requests will be rejected");
-        });
-  }
-
-  void onDiskSpaceAvailable() {
-    actor.submit(() -> isDiskSpaceAvailable = true);
+    return Either.left(
+        errorWriter
+            .errorCode(ErrorCode.INTERNAL_ERROR)
+            .errorMessage("you need to implement regular response writing still"));
   }
 }

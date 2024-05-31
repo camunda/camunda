@@ -20,12 +20,14 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionGetAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.GetApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -155,6 +157,22 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {}
+
+  @Override
+  public GetApiRequestHandler getGetApiService() {
+    return null;
+  }
+
+  @Override
+  public void setGetApiRequestHandler(final GetApiRequestHandler handler) {}
+
+  @Override
+  public PartitionGetAccess getGetAccess() {
+    return null;
+  }
+
+  @Override
+  public void setGetAccess(final PartitionGetAccess getAccess) {}
 
   @Override
   public DynamicPartitionConfig getDynamicPartitionConfig() {

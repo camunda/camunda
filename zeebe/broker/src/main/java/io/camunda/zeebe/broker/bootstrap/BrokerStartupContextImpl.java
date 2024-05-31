@@ -28,7 +28,6 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
-import io.camunda.zeebe.broker.transport.commandapi.GetApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -58,7 +57,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private AtomixServerTransport gatewayBrokerTransport;
   private ManagedMessagingService commandApiMessagingService;
   private CommandApiServiceImpl commandApiService;
-  private GetApiServiceImpl getApiService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
   private PartitionManagerImpl partitionManager;
@@ -205,16 +203,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setCommandApiService(final CommandApiServiceImpl commandApiService) {
     this.commandApiService = commandApiService;
-  }
-
-  @Override
-  public GetApiServiceImpl getGetApiService() {
-    return getApiService;
-  }
-
-  @Override
-  public void setGetApiService(final GetApiServiceImpl getApiService) {
-    this.getApiService = getApiService;
   }
 
   @Override

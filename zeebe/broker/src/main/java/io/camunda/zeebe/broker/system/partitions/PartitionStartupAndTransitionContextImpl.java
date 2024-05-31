@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.PartitionGetAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.GetApiRequestHandler;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -98,8 +100,12 @@ public class PartitionStartupAndTransitionContextImpl
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
   private BackupStore backupStore;
+
   private AdminApiRequestHandler adminApiService;
+  private GetApiRequestHandler getApiService;
+
   private PartitionAdminAccess adminAccess;
+  private PartitionGetAccess getAccess;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -381,6 +387,26 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {
     this.adminAccess = adminAccess;
+  }
+
+  @Override
+  public GetApiRequestHandler getGetApiService() {
+    return getApiService;
+  }
+
+  @Override
+  public void setGetApiRequestHandler(final GetApiRequestHandler handler) {
+    getApiService = handler;
+  }
+
+  @Override
+  public PartitionGetAccess getGetAccess() {
+    return getAccess;
+  }
+
+  @Override
+  public void setGetAccess(final PartitionGetAccess getAccess) {
+    this.getAccess = getAccess;
   }
 
   @Override

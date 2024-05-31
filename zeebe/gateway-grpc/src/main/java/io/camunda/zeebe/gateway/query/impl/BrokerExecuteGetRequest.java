@@ -80,12 +80,12 @@ public abstract class BrokerExecuteGetRequest<T> extends BrokerRequest<T> {
 
   @Override
   public String getType() {
-    return "Query#" + request.getValueType();
+    return "Get#" + request.getValueType();
   }
 
   @Override
   public RequestType getRequestType() {
-    return RequestType.QUERY;
+    return RequestType.GET;
   }
 
   @Override
