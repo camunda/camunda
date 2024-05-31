@@ -214,7 +214,7 @@ jobs:
           field: Status
           value: "In Progress"
 
-      - name: Update Status field - Ready
+      - name: Update Status field - Inbox
         uses: github/update-project-action@main
         if: steps.parse-args.outputs.arg1 == 'verified'
         with:
@@ -223,7 +223,7 @@ jobs:
           project_number: ${{ steps.vars.outputs.project_id }}
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
-          value: "Ready"
+          value: "Inbox"
 
       - name: Update QA labels - Verified
         if: steps.parse-args.outputs.arg1 == 'verified'
