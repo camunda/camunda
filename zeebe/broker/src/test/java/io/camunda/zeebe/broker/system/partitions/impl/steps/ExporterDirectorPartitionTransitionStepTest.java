@@ -34,6 +34,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -220,9 +221,9 @@ class ExporterDirectorPartitionTransitionStepTest {
         new ExportersConfig(
             Map.of(
                 exporterOne,
-                new ExporterState(exporterOneState),
+                new ExporterState(0, exporterOneState, Optional.empty()),
                 exporterTwo,
-                new ExporterState(exporterTwoState))));
+                new ExporterState(0, exporterTwoState, Optional.empty()))));
   }
 
   private void initializeContext(final Role currentRole) {

@@ -38,6 +38,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-grpc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-restore</artifactId>
     </dependency>
 
@@ -281,7 +286,7 @@
 
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
+      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
 
     <dependency>
@@ -604,7 +609,7 @@
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
@@ -646,7 +651,17 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/cluster-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+            </configuration>
+          </execution>
+          <execution>
+            <id>exporter</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>

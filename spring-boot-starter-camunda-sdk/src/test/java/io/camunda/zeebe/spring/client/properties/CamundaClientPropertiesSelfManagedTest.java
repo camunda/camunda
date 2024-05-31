@@ -24,14 +24,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
-    properties = "camunda.client.mode=oidc")
+    properties = "camunda.client.mode=self-managed")
 public class CamundaClientPropertiesSelfManagedTest {
   @Autowired CamundaClientProperties properties;
 
   @Test
-  void shouldLoadDefaultsOidc() {
-    assertThat(properties.getMode()).isEqualTo(ClientMode.oidc);
-    assertThat(properties.getZeebe().getGatewayUrl().toString())
+  void shouldLoadDefaultsSelfManaged() {
+    assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
+    assertThat(properties.getZeebe().getGrpcAddress().toString())
         .isEqualTo("http://localhost:26500");
     assertThat(properties.getZeebe().getBaseUrl().toString()).isEqualTo("http://localhost:8086");
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);

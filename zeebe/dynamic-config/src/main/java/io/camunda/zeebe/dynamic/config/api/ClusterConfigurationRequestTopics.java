@@ -17,7 +17,8 @@ public enum ClusterConfigurationRequestTopics {
   QUERY_TOPOLOGY("topology-query"),
   CANCEL_CHANGE("topology-change-cancel"),
   FORCE_SCALE_DOWN("topology-force-scale-down"),
-  DISABLE_EXPORTER("topology-exporter-disable");
+  DISABLE_EXPORTER("topology-exporter-disable"),
+  ENABLE_EXPORTER("topology-exporter-enable");
   private final String topic;
 
   ClusterConfigurationRequestTopics(final String topic) {

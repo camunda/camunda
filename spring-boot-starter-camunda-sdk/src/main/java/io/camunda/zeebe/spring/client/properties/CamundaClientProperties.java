@@ -90,7 +90,7 @@ public class CamundaClientProperties {
   }
 
   public enum ClientMode {
-    oidc,
+    selfManaged,
     saas
   }
 }

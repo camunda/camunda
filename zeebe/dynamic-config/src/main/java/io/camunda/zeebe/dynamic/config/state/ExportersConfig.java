@@ -8,7 +8,9 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Represents configuration or state of exporting in a partition that can be updated during runtime.
@@ -21,7 +23,7 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
     return new ExportersConfig(Map.of());
   }
 
-  public ExportersConfig updateExporter(
+  private ExportersConfig updateExporter(
       final String exporterName, final ExporterState exporterState) {
     final var newExporters =
         ImmutableMap.<String, ExporterState>builder()
@@ -29,5 +31,26 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             .put(exporterName, exporterState)
             .buildKeepingLast(); // choose last one if there are duplicate keys
     return new ExportersConfig(newExporters);
+  }
+
+  public ExportersConfig disableExporter(final String exporterName) {
+    return updateExporter(
+        exporterName,
+        new ExporterState(
+            exporters.get(exporterName).metadataVersion(),
+            ExporterState.State.DISABLED,
+            Optional.empty()));
+  }
+
+  public ExportersConfig enableExporter(final String exporterName, final String initializeFrom) {
+    final var newMetadataVersion =
+        exporters.containsKey(exporterName) ? exporters.get(exporterName).metadataVersion() + 1 : 1;
+    return updateExporter(
+        exporterName,
+        new ExporterState(newMetadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
+  }
+
+  public ExportersConfig enableExporter(final String exporterName) {
+    return enableExporter(exporterName, null);
   }
 }

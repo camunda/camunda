@@ -45,6 +45,9 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
+  record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {
 
     @Override

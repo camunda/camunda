@@ -72,4 +72,10 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the exporter is disabled
    */
   ActorFuture<Void> disableExporter(final int partitionId, final String exporterId);
+
+  ActorFuture<Void> enableExporter(
+      int partitionId, String exporterId, long metadataVersionToUpdate);
+
+  ActorFuture<Void> enableExporter(
+      int partitionId, String exporterId, long metadataVersionToUpdate, String initializeFrom);
 }

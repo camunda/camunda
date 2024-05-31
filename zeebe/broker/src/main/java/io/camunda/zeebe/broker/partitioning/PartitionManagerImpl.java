@@ -34,6 +34,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -416,5 +417,22 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
               });
         });
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> enableExporter(
+      final int partitionId, final String exporterId, final long metadataVersionToUpdate) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("Not implemented"));
+  }
+
+  @Override
+  public ActorFuture<Void> enableExporter(
+      final int partitionId,
+      final String exporterId,
+      final long metadataVersionToUpdate,
+      final String initializeFrom) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("Not implemented"));
   }
 }
