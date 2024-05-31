@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
+import java.util.Map;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -31,6 +33,7 @@ final class CommandApiRequestHandler
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private boolean isDiskSpaceAvailable = true;
+  private final Map<Integer, Boolean> processingPaused = new HashMap<>();
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -45,6 +48,18 @@ final class CommandApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     return CompletableActorFuture.completed(
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  public void onRecovered(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
+  }
+
+  public void onPaused(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, true));
+  }
+
+  public void onResumed(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
@@ -66,6 +81,11 @@ final class CommandApiRequestHandler
 
     if (!isDiskSpaceAvailable) {
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
+    }
+
+    if (processingPaused.containsKey(partitionId) && processingPaused.get(partitionId)) {
+      return Either.left(
+          errorWriter.internalError("Processing paused for partition '%s'", partitionId));
     }
 
     final var command = reader.getMessageDecoder();
