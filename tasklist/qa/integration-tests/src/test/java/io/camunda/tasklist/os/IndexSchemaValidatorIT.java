@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.es;
+package io.camunda.tasklist.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -13,9 +13,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestUtil;
 import java.lang.reflect.Field;
@@ -34,29 +32,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test.json";
+  private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH = "/tasklist-test-opensearch.json";
   private static final String INDEX_NAME = "test";
 
   @Autowired private TasklistProperties tasklistProperties;
-
   @Autowired private List<IndexDescriptor> indexDescriptors;
-
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
-
+  @Autowired private RetryOpenSearchClient retryOpenSearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
-
-  @Autowired private NoSqlHelper noSqlHelper;
-
   @Autowired private SchemaManager schemaManager;
-
-  @Autowired private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   private String originalSchemaContent;
   private IndexDescriptor indexDescriptor;
 
   @BeforeAll
   public static void beforeClass() {
-    assumeTrue(TestUtil.isElasticSearch());
+    assumeTrue(TestUtil.isOpenSearch());
   }
 
   @BeforeEach
@@ -69,7 +59,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   @AfterEach
   public void tearDown() throws Exception {
     restoreOriginalSchemaContent();
-    retryElasticsearchClient.deleteIndicesFor(getFullIndexName());
+    retryOpenSearchClient.deleteIndicesFor(getFullIndexName());
   }
 
   @Test
@@ -106,10 +96,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-            "    \"properties\": {\n"
-                + "      \"prop0\": {\n"
-                + "        \"type\": \"keyword\"\n"
-                + "      },",
+            "\"properties\": {\n"
+                + "    \"prop0\": {\n"
+                + "      \"type\": \"keyword\"\n"
+                + "    },",
             "\"properties\": {"));
 
     final String newSchemaContent = readSchemaContent();
@@ -133,7 +123,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
       @Override
       public String getSchemaClasspathFilename() {
-        return ORIGINAL_SCHEMA_PATH;
+        return ORIGINAL_SCHEMA_PATH_OPENSEARCH;
       }
 
       @Override
@@ -145,12 +135,13 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private String readSchemaContent() throws Exception {
     return new String(
-        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
+        Files.readAllBytes(
+            Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI())));
   }
 
   private void restoreOriginalSchemaContent() throws Exception {
     Files.write(
-        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI()),
         originalSchemaContent.getBytes(),
         StandardOpenOption.TRUNCATE_EXISTING);
   }
@@ -158,13 +149,14 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   private void createDocument(final String key, final String value) throws Exception {
     final Map<String, Object> document = Map.of(key, value);
     final boolean created =
-        retryElasticsearchClient.createOrUpdateDocument(
+        retryOpenSearchClient.createOrUpdateDocument(
             indexDescriptor.getFullQualifiedName(), "id", document);
+    System.out.println("Created: " + created);
   }
 
   private void updateSchemaContent(final String content) throws Exception {
     Files.write(
-        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH_OPENSEARCH).toURI()),
         content.getBytes(),
         StandardOpenOption.TRUNCATE_EXISTING);
   }

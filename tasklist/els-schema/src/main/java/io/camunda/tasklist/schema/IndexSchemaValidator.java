@@ -9,13 +9,11 @@ package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
 public interface IndexSchemaValidator {
-  Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor);
-
-  void validate();
 
   boolean hasAnyTasklistIndices();
 
@@ -23,5 +21,9 @@ public interface IndexSchemaValidator {
 
   void validateIndexVersions();
 
-  Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings();
+  Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException;
+
+  Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor);
+
+  Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor);
 }
