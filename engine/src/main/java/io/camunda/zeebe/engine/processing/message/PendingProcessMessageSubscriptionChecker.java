@@ -67,7 +67,12 @@ public final class PendingProcessMessageSubscriptionChecker
 
   private void rescheduleTimer() {
     if (schouldRescheduleTimer) {
-      scheduleService.runDelayed(SUBSCRIPTION_CHECK_INTERVAL, this::checkPendingSubscriptions);
+      scheduleService.runAt(
+          ActorClock.currentTimeMillis() + SUBSCRIPTION_CHECK_INTERVAL.toMillis(),
+          taskResultBuilder -> {
+            checkPendingSubscriptions();
+            return taskResultBuilder.build();
+          });
     }
   }
 

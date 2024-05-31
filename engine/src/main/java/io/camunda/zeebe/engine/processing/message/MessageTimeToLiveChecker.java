@@ -107,7 +107,7 @@ public final class MessageTimeToLiveChecker implements Task {
     if (enableMessageTtlCheckerAsync) {
       scheduleService.runDelayedAsync(idleInterval, this);
     } else {
-      scheduleService.runDelayed(idleInterval, this);
+      scheduleService.runAt(ActorClock.currentTimeMillis() + idleInterval.toMillis(), this);
     }
   }
 }
