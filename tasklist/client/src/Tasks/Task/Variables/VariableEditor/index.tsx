@@ -210,6 +210,9 @@ const VariableEditor: React.FC<Props> = ({
                     'value',
                   );
                   const ordinal = variableIndexToOrdinal(index);
+                  const variablePayload = variables.find(
+                    ({name}) => name === fields.value[index]?.name,
+                  );
 
                   return (
                     <StructuredListRow key={variable}>
@@ -248,22 +251,38 @@ const VariableEditor: React.FC<Props> = ({
                       >
                         <DelayedErrorField
                           name={valueFieldName}
-                          validate={validateValueComplete}
+                          validate={
+                            variablePayload?.draft?.isValueTruncated
+                              ? () => undefined
+                              : validateValueComplete
+                          }
                           addExtraDelay={Boolean(
                             dirtyFields[nameFieldName] &&
                               !dirtyFields[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
-                            <TextInput
+                            <LoadingTextarea
                               {...input}
                               id={input.name}
+                              invalidText={meta.error}
+                              isLoading={variablesLoadingFullValue.includes(
+                                variablePayload?.id ?? '',
+                              )}
+                              onFocus={(event) => {
+                                if (
+                                  variablePayload !== undefined &&
+                                  variablePayload.draft?.isValueTruncated
+                                ) {
+                                  fetchFullVariable(variablePayload.id);
+                                }
+                                input.onFocus(event);
+                              }}
+                              isActive={meta.active}
                               type="text"
                               labelText={`${ordinal} variable value`}
-                              hideLabel
-                              invalid={meta.error !== undefined}
-                              invalidText={meta.error}
                               placeholder="Value"
+                              hideLabel
                             />
                           )}
                         </DelayedErrorField>
@@ -275,6 +294,13 @@ const VariableEditor: React.FC<Props> = ({
                           <IconButton
                             label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
                             onClick={() => {
+                              if (
+                                variablePayload !== undefined &&
+                                variablePayload.draft?.isValueTruncated
+                              ) {
+                                fetchFullVariable(variablePayload.id);
+                              }
+
                               onEdit(valueFieldName);
                             }}
                             size="sm"
