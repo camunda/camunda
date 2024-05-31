@@ -30,6 +30,7 @@ import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 public class JobTimeoutCheckerTest {
   public static final int NUMBER_OF_ACTIVE_JOBS = 10;
@@ -92,7 +93,7 @@ public class JobTimeoutCheckerTest {
     inOrder.verify(mockTaskResultBuilder).build();
     verifyNoMoreInteractions(mockTaskResultBuilder);
 
-    verify(mockScheduleService, times(1)).runDelayed(eq(pollingInterval), any(Task.class));
+    verify(mockScheduleService, times(1)).runAt(anyLong(), any(Task.class));
   }
 
   @Test
@@ -118,7 +119,7 @@ public class JobTimeoutCheckerTest {
     inOrder.verify(mockTaskResultBuilder).build();
     verifyNoMoreInteractions(mockTaskResultBuilder);
 
-    verify(mockScheduleService, times(1)).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService, times(1)).runAt(anyLong(), any(Task.class));
 
     /* TEST verify next execute will start where left off */
 
@@ -159,6 +160,6 @@ public class JobTimeoutCheckerTest {
 
     verifyNoMoreInteractions(mockTaskResultBuilder);
 
-    verify(mockScheduleService, times(1)).runDelayed(eq(Duration.ZERO), any(Task.class));
+    verify(mockScheduleService, times(1)).runAt(anyLong(), ArgumentMatchers.<Task>any());
   }
 }
