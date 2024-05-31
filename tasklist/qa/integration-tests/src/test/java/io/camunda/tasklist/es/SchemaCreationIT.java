@@ -103,7 +103,8 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
         .get(0);
   }
 
-  private void assertIndexAndAlias(final String indexName, final String aliasName) throws IOException {
+  private void assertIndexAndAlias(final String indexName, final String aliasName)
+      throws IOException {
     assertThat(noSqlHelper.indexHasAlias(indexName, aliasName)).isTrue();
   }
 
