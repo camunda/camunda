@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ExporterEnableDisableTest {
+public class ExporterDisableTest {
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
 

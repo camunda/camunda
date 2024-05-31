@@ -122,7 +122,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.40.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.25.62</version.awssdk>
+    <version.awssdk>2.25.63</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -212,7 +212,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
-    <plugin.version.shade>3.5.3</plugin.version.shade>
+    <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.5.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.2.5</plugin.version.surefire>

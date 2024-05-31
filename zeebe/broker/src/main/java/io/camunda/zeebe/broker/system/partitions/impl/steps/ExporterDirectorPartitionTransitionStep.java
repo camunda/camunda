@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
@@ -26,6 +27,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class ExporterDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -102,8 +105,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
   private ActorFuture<Void> openExporter(
       final PartitionTransitionContext context, final Role targetRole) {
-    final Collection<ExporterDescriptor> exporterDescriptors =
-        getEnabledExporterDescriptors(context);
+    final var exporterDescriptors = getEnabledExporterDescriptors(context);
     final var exporterFilter =
         SkipPositionsFilter.of(
             context.getBrokerCfg() != null
@@ -153,25 +155,41 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   }
 
   private void disableExportersIfConfigChanged(
-      final Collection<ExporterDescriptor> startedExporters,
+      final Map<ExporterDescriptor, ExporterInitializationInfo> startedExporters,
       final PartitionTransitionContext context) {
     final var currentEnabledExporters = getEnabledExporterDescriptors(context);
 
-    for (final var exporter : startedExporters) {
-      if (!currentEnabledExporters.contains(exporter)) {
+    for (final var exporter : startedExporters.keySet()) {
+      if (!currentEnabledExporters.containsKey(exporter)) {
         context.getExporterDirector().disableExporter(exporter.getId());
       }
     }
     // TODO: Enable newly enabled exporters when the functionality is added
   }
 
-  private static Collection<ExporterDescriptor> getEnabledExporterDescriptors(
+  private static Map<ExporterDescriptor, ExporterInitializationInfo> getEnabledExporterDescriptors(
       final PartitionTransitionContext context) {
     final Collection<ExporterDescriptor> exporterDescriptors = context.getExportedDescriptors();
     final var exporterConfig = context.getDynamicPartitionConfig().exporting().exporters();
     return exporterDescriptors.stream()
         .filter(exporterDescriptor -> isEnabled(exporterConfig, exporterDescriptor))
-        .toList();
+        .collect(
+            Collectors.toMap(
+                Function.identity(),
+                descriptor -> getInitializationInfo(descriptor, exporterConfig)));
+  }
+
+  private static ExporterInitializationInfo getInitializationInfo(
+      final ExporterDescriptor descriptor, final Map<String, ExporterState> exportersConfig) {
+    if (exportersConfig.containsKey(descriptor.getId())) {
+      final ExporterState config = exportersConfig.get(descriptor.getId());
+      return new ExporterInitializationInfo(
+          config.metadataVersion(), config.initializedFrom().orElse(null));
+    }
+
+    // TODO: This case won't happen after https://github.com/camunda/zeebe/issues/18296 and we
+    // handle the default behaviour for newly added exporters.
+    return new ExporterInitializationInfo(0, null);
   }
 
   private static boolean isEnabled(

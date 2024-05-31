@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -599,6 +600,18 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeExporterEnableRequest(final ExporterEnableRequest exporterEnableRequest) {
+    final var builder =
+        Requests.ExporterEnableRequest.newBuilder()
+            .setExporterId(exporterEnableRequest.exporterId())
+            .setDryRun(exporterEnableRequest.dryRun());
+
+    exporterEnableRequest.initializeFrom().ifPresent(builder::setInitializeFrom);
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -701,6 +714,21 @@ public class ProtoBufSerializer
       final var exporterDisableRequest = Requests.ExporterDisableRequest.parseFrom(encodedRequest);
       return new ExporterDisableRequest(
           exporterDisableRequest.getExporterId(), exporterDisableRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ExporterEnableRequest decodeExporterEnableRequest(final byte[] encodedRequest) {
+    try {
+      final var exporterEnableRequest = Requests.ExporterEnableRequest.parseFrom(encodedRequest);
+      final Optional<String> initializeFrom =
+          exporterEnableRequest.hasInitializeFrom()
+              ? Optional.of(exporterEnableRequest.getInitializeFrom())
+              : Optional.empty();
+      return new ExporterEnableRequest(
+          exporterEnableRequest.getExporterId(), initializeFrom, exporterEnableRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
