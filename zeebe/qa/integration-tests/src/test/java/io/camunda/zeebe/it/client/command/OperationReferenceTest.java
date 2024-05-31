@@ -93,4 +93,48 @@ public class OperationReferenceTest {
         .describedAs("Should contain client operationReference")
         .allMatch(r -> r.getOperationReference() == OPERATION_REFERENCE);
   }
+
+  @Test
+  void shouldHaveNegativeOneAsOperationReferenceIfNotSpecifiedInCommand() {
+    // Given
+    final ZeebeResourcesHelper helper = new ZeebeResourcesHelper(client);
+    final var modelInstance = helper.createSingleJobModelInstance("test", c -> {});
+    final long processDefinitionKey = helper.deployProcess(modelInstance);
+    final long processInstanceKey = helper.createProcessInstance(processDefinitionKey);
+
+    // When
+    client.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    // Then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
+                .withRecordKey(processInstanceKey)
+                .limit(1)
+                .getFirst()
+                .getOperationReference())
+        .describedAs("Should contain -1 operationReference")
+        .isEqualTo(-1);
+  }
+
+  @Test
+  void shouldAcceptNegativeOneAsOperationReference() {
+    // Given
+    final ZeebeResourcesHelper helper = new ZeebeResourcesHelper(client);
+    final var modelInstance = helper.createSingleJobModelInstance("test", c -> {});
+    final long processDefinitionKey = helper.deployProcess(modelInstance);
+    final long processInstanceKey = helper.createProcessInstance(processDefinitionKey);
+
+    // When
+    client.newCancelInstanceCommand(processInstanceKey).operationReference(-1).send().join();
+
+    // Then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
+                .withRecordKey(processInstanceKey)
+                .limit(1)
+                .getFirst()
+                .getOperationReference())
+        .describedAs("Should contain client operationReference")
+        .isEqualTo(-1);
+  }
 }
