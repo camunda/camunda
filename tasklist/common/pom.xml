@@ -118,6 +118,16 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sdk-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.acm19</groupId>
+      <artifactId>aws-request-signing-apache-interceptor</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
     </dependency>

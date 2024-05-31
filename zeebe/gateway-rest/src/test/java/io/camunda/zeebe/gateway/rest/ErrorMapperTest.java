@@ -13,8 +13,13 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.rest.TopologyControllerTest.TestTopologyApplication;
+import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperApplication;
+import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
+import io.camunda.zeebe.gateway.rest.controller.UserTaskController;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
@@ -26,9 +31,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -36,7 +44,11 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
 @SpringBootTest(
-    classes = {TestTopologyApplication.class, TopologyController.class},
+    classes = {
+      TestErrorMapperApplication.class,
+      TestErrorMapperConfiguration.class,
+      UserTaskController.class
+    },
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class ErrorMapperTest {
 
@@ -219,5 +231,48 @@ public class ErrorMapperTest {
         .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldThrowExceptionWithRequestBodyMissing() throws Exception {
+    // given
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST, "Required request body is missing");
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/assignment"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+
+    Mockito.verifyNoInteractions(brokerClient);
+  }
+
+  @SpringBootApplication
+  static class TestErrorMapperApplication {
+    // required to provide the web server context
+  }
+
+  @TestConfiguration
+  static class TestErrorMapperConfiguration {
+
+    @Bean
+    public ActivateJobsHandler<JobActivationResponse> handler() {
+      return Mockito.mock(ActivateJobsHandler.class);
+    }
+
+    @Bean
+    public ResponseObserverProvider responseObserverProvider() {
+      return Mockito.mock(ResponseObserverProvider.class);
+    }
   }
 }
