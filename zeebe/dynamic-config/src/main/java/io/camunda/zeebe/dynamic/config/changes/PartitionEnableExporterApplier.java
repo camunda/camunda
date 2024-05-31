@@ -95,6 +95,14 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
 
     final var partitionHasExporter = exportersInPartition.containsKey(exporterId);
 
+    if (partitionHasExporter && exportersInPartition.get(exporterId).state() == State.ENABLED) {
+      return Either.left(
+          new IllegalStateException(
+              String.format(
+                  "Expected to enable exporter, but the exporter '%s' is already enabled",
+                  exporterId)));
+    }
+
     if (partitionHasExporter) {
       // Increment by one when re-enabling the exporter so that the ExporterDirector can verify
       // whether the runtime state has the latest state. This is useful when the operation is
