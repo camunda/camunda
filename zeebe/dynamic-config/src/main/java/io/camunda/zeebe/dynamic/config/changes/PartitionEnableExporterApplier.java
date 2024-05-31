@@ -141,7 +141,9 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     return config.updateExporting(
         c ->
             initializeFrom
-                .map(otherExporterId -> c.enableExporter(exporterId, otherExporterId))
-                .orElse(c.enableExporter(exporterId)));
+                .map(
+                    otherExporterId ->
+                        c.enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
+                .orElse(c.enableExporter(exporterId, metadataVersionToUpdate)));
   }
 }
