@@ -8,6 +8,9 @@ on:
       release_type:
         description: "Release type"
         required: true
+      release_alpha_number:
+        description: "Release alpha number"
+        required: false
 
 jobs:
   create_release_branch:
@@ -49,6 +52,7 @@ jobs:
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release_type}}
           RELEASE_VERSION: ${{ github.event.inputs.release_version}}
+          RELEASE_ALPHA_NUMBER: ${{ github.event.inputs.release_alpha_number}}
 
       - name: Create release branch
         run: ./.github/scripts/create-release-branch.sh
