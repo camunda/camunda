@@ -23,7 +23,7 @@ jobs:
             }
           variables: |
             owner: "camunda"
-            repo: "zeebe"
+            repo: "camunda"
             issue: ${{ github.event.issue.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
