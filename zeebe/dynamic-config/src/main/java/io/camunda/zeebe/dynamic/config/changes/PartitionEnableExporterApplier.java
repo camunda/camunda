@@ -113,14 +113,8 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     final var result = new CompletableActorFuture<UnaryOperator<MemberState>>();
 
     final ActorFuture<Void> enableFuture =
-        initializeFrom
-            .map(
-                otherExporterId ->
-                    partitionChangeExecutor.enableExporter(
-                        partitionId, exporterId, metadataVersionToUpdate, otherExporterId))
-            .orElse(
-                partitionChangeExecutor.enableExporter(
-                    partitionId, exporterId, metadataVersionToUpdate));
+        partitionChangeExecutor.enableExporter(
+            partitionId, exporterId, metadataVersionToUpdate, initializeFrom.orElse(null));
 
     enableFuture.onComplete(
         (nothing, error) -> {

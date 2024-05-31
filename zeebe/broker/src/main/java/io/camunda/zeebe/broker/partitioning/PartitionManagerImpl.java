@@ -420,12 +420,6 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public ActorFuture<Void> enableExporter(
-      final int partitionId, final String exporterId, final long metadataVersionToUpdate) {
-    return enableExporter(partitionId, exporterId, metadataVersionToUpdate, null);
-  }
-
-  @Override
-  public ActorFuture<Void> enableExporter(
       final int partitionId,
       final String exporterId,
       final long metadataVersion,
