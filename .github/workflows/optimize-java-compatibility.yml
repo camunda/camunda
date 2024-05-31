@@ -166,7 +166,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/backend,upgrade,optimize/qa/data-generation,optimize/qa/optimize-data-generator -am -Pengine-latest
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/backend,optimize/upgrade,optimize/qa/data-generation,optimize/qa/optimize-data-generator -am -Pengine-latest
       - name: Verify optimize/qa/upgrade-tests
         uses: ./.github/actions/run-maven
         with:
