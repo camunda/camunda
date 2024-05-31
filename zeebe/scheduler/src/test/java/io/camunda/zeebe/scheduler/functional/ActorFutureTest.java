@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -775,6 +776,86 @@ public final class ActorFutureTest {
 
     // then
     assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo("expected");
+  }
+
+  @Test
+  public void shouldChainThenApply() {
+    // given
+    final var future = new CompletableActorFuture<Integer>();
+    final var chained = future.thenApply(value -> value + 1, Runnable::run);
+
+    // when
+    future.complete(1);
+
+    // then
+    assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldShortCircuitThenApplyOnFailure() {
+    // given
+    final var future = new CompletableActorFuture<Integer>();
+    final var called = new AtomicBoolean(false);
+    final var failure = new RuntimeException("foo");
+    final var chained =
+        future.thenApply(
+            value -> {
+              called.set(true);
+              return value;
+            },
+            Runnable::run);
+
+    // when
+    future.completeExceptionally(failure);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .havingCause()
+        .isSameAs(failure);
+    assertThat(called).isFalse();
+  }
+
+  @Test
+  public void shouldChainAndCompleteIntermediateFuturesOnApply() {
+    // given
+    final var original = new CompletableActorFuture<Integer>();
+    final var firstElement = original.thenApply(value -> value + 1, Runnable::run);
+    final var secondElement = firstElement.thenApply(value -> value + 1, Runnable::run);
+
+    // when
+    original.complete(1);
+
+    // then
+    assertThat(firstElement).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(2);
+    assertThat(secondElement).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldApplyOnExecutor() {
+    // given
+    final var future = new CompletableActorFuture<Integer>();
+    final var onExecutor = new AtomicBoolean(false);
+    final var calledOnExecutor = new AtomicBoolean(false);
+    final var chained =
+        future.thenApply(
+            value -> {
+              calledOnExecutor.set(onExecutor.get());
+              return value + 1;
+            },
+            task -> {
+              onExecutor.set(true);
+              task.run();
+              onExecutor.set(false);
+            });
+
+    // when
+    future.complete(1);
+
+    // then
+    assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(2);
+    assertThat(calledOnExecutor).isTrue();
   }
 
   private static final class BlockedCallActor extends Actor {
