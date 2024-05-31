@@ -54,7 +54,7 @@ const SaveDraftButton: React.FC<Props> = ({
 const SuccessMessage: React.FC = () => (
   <div className={styles.savedMessage} aria-label="Save Status" role="status">
     <Checkmark />
-    <span>Saved</span>
+    <span className={styles.message}>Saved</span>
   </div>
 );
 
@@ -65,7 +65,9 @@ const FailedMessage: React.FC = () => (
     role="status"
   >
     <Error />
-    <span>Unable to save the task. Please try again.</span>
+    <span className={styles.message}>
+      Unable to save the task. Please try again.
+    </span>
   </div>
 );
 
