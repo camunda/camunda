@@ -352,6 +352,8 @@ public class OpensearchBackupRepository implements BackupRepository {
       final List<OpenSearchSnapshotInfo> snapshots, final Integer expectedSnapshotsCount) {
     final var firstSnapshot = snapshots.get(0);
     final var startTimeInMilliseconds = firstSnapshot.getStartTimeInMillis();
+    final var lastSnapshot = snapshots.get(snapshots.size() - 1);
+    final var endTimeInMilliseconds = lastSnapshot.getStartTimeInMillis();
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(OpenSearchSnapshotInfo::getState).allMatch(SUCCESS::equals)) {
       return BackupStateDto.COMPLETED;
@@ -362,7 +364,8 @@ public class OpensearchBackupRepository implements BackupRepository {
     } else if (snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(STARTED::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      if (isIncompleteCheckTimedOut(operateProperties, startTimeInMilliseconds)) {
+      if (isIncompleteCheckTimedOut(
+          operateProperties, startTimeInMilliseconds, endTimeInMilliseconds)) {
         return BackupStateDto.INCOMPLETE;
       } else {
         return BackupStateDto.IN_PROGRESS;

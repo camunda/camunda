@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
-import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
@@ -178,7 +177,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final List<SnapshotInfo> snapshots =
           response.getSnapshots().stream()
               .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
-              .collect(toList());
+              .toList();
 
       final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
@@ -316,10 +315,12 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final var firstSnapshot = snapshots.get(0);
+    final var lastSnapshot = snapshots.get(snapshots.size() - 1);
     final Metadata metadata =
         objectMapper.convertValue(firstSnapshot.userMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     final long startTimeInMilliseconds = firstSnapshot.startTime();
+    final long endTimeInMilliseconds = lastSnapshot.endTime();
 
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch(SUCCESS::equals)) {
@@ -333,7 +334,8 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      if (isIncompleteCheckTimedOut(operateProperties, startTimeInMilliseconds)) {
+      if (isIncompleteCheckTimedOut(
+          operateProperties, startTimeInMilliseconds, endTimeInMilliseconds)) {
         response.setState(BackupStateDto.INCOMPLETE);
       } else {
         response.setState(BackupStateDto.IN_PROGRESS);
