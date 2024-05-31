@@ -858,6 +858,40 @@ public final class ActorFutureTest {
     assertThat(calledOnExecutor).isTrue();
   }
 
+  @Test
+  public void shouldShortCircuitMiddleOfChain() {
+    // given
+    final var original = new CompletableActorFuture<Integer>();
+    final var failure = new RuntimeException("foo");
+    final var firstElement = original.thenApply(value -> value + 1, Runnable::run);
+    final var secondElement =
+        firstElement.<Integer>thenApply(
+            value -> {
+              throw failure;
+            },
+            Runnable::run);
+    final var thirdElement = secondElement.thenApply(value -> value + 1, Runnable::run);
+
+    // when
+    original.complete(1);
+
+    // then
+    assertThat(original).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(1);
+    assertThat(firstElement).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(2);
+    assertThat(secondElement)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .isInstanceOf(ExecutionException.class)
+        .havingRootCause()
+        .isSameAs(failure);
+    assertThat(thirdElement)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .isInstanceOf(ExecutionException.class)
+        .havingRootCause()
+        .isSameAs(failure);
+  }
+
   private static final class BlockedCallActor extends Actor {
     public void waitOnFuture() {
       actor.call(
