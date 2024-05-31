@@ -81,17 +81,24 @@ class ElasticsearchBackupRepositoryTest {
     final var snapshotClient = mock(SnapshotClient.class);
     final var firstSnapshotInfo = mock(SnapshotInfo.class);
     final var snapshotResponse = mock(GetSnapshotsResponse.class);
+    final var lastSnapshotInfo = mock(SnapshotInfo.class);
 
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
-    // Set up Snapshot details
+    // Set up first Snapshot details
     when(firstSnapshotInfo.userMetadata())
         .thenReturn(objectMapper.convertValue(new Metadata().setPartCount(3), Map.class));
     when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
     when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(firstSnapshotInfo.startTime()).thenReturn(23L);
+
+    // Set up last Snapshot details
+    when(lastSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
+    when(lastSnapshotInfo.endTime()).thenReturn(23L + 6 * 60);
+    when(lastSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
 
     // Set up Snapshot response
-    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo));
+    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
     when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
 
     // Test

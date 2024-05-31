@@ -285,9 +285,15 @@ class OpensearchBackupRepositoryTest {
         new OpenSearchSnapshotInfo()
             .setUuid("uuid")
             .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(0L);
+            .setStartTimeInMillis(17L);
+    final var lastSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(17L + 6 * 60);
     when(openSearchSnapshotOperations.get(any()))
-        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
