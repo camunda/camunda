@@ -222,8 +222,7 @@ public class OpenSearchSchemaManager
   public void deleteOptimizeIndex(
       final OptimizeOpenSearchClient dbClient,
       final IndexMappingCreator<IndexSettings.Builder> mapping) {
-    // TODO?
-    throw new NotImplementedException("Not implemented in OpenSearch");
+    dbClient.deleteIndex(mapping.getIndexName());
   }
 
   @Override

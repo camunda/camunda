@@ -52,7 +52,8 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
     final QueryBuilder query = termsQuery(EventTraceStateIndex.TRACE_ID, traceIds);
     SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -87,7 +88,8 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
                     boolQuery().must(containsStartEventQuery).must(containsEndEventQuery),
                     ScoreFunctionBuilders.randomFunction()))
             .size(maxResultsSize);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
@@ -108,7 +110,8 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
         new SearchSourceBuilder()
             .query(boolQuery().must(termsQuery(EventTraceStateIndex.TRACE_ID, traceIds)))
             .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
     SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
@@ -140,13 +143,5 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
               nestedQuery(EVENT_TRACE, containsEventQuery, ScoreMode.None));
         });
     return containStartEventQuery;
-  }
-
-  private String getEventTraceNestedField(final String searchFieldName) {
-    return EVENT_TRACE + "." + searchFieldName;
-  }
-
-  private String getIndexName() {
-    return EventTraceStateIndex.constructIndexName(indexKey);
   }
 }

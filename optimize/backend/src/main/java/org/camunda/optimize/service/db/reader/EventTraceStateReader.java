@@ -5,9 +5,12 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import static org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
+
 import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 
 public interface EventTraceStateReader {
 
@@ -19,4 +22,12 @@ public interface EventTraceStateReader {
       final int maxResultsSize);
 
   List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds);
+
+  default String getEventTraceNestedField(final String searchFieldName) {
+    return EVENT_TRACE + "." + searchFieldName;
+  }
+
+  default String getIndexName(String indexKey) {
+    return EventTraceStateIndex.constructIndexName(indexKey);
+  }
 }

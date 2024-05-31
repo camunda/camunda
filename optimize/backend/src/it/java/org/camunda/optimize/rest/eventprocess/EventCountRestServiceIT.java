@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.eventprocess;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
@@ -50,6 +51,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.events.EventCountService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,6 +59,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
   @RegisterExtension

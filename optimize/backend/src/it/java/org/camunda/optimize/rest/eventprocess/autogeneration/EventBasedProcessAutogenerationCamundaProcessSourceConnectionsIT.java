@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess.autogeneration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessStartEventTypeDto;
 
@@ -25,10 +26,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessAutogenerationCamundaProcessSourceConnectionsIT
     extends AbstractEventProcessAutogenerationIT {
 

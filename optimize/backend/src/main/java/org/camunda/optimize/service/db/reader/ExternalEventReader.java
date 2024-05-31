@@ -5,59 +5,69 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
-import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
-import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
-import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
-import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
-
-import com.google.common.collect.ImmutableMap;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.springframework.stereotype.Component;
 
-public interface ExternalEventReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class ExternalEventReader {
 
-  String MIN_AGG = "min";
-  String MAX_AGG = "max";
-  String KEYWORD_ANALYZER = "keyword";
+  private EventRepository eventRepository;
 
-  Map<String, String> sortableFieldLookup =
-      ImmutableMap.of(
-          EventDto.Fields.group.toLowerCase(Locale.ENGLISH), GROUP,
-          EventDto.Fields.source.toLowerCase(Locale.ENGLISH), SOURCE,
-          EventDto.Fields.eventName.toLowerCase(Locale.ENGLISH), EVENT_NAME,
-          EventDto.Fields.traceId.toLowerCase(Locale.ENGLISH), TRACE_ID,
-          EventDto.Fields.timestamp.toLowerCase(Locale.ENGLISH), TIMESTAMP);
+  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+    log.debug("Fetching events that where ingested after {}", ingestTimestamp);
+    return eventRepository.getEventsIngestedAfter(ingestTimestamp, limit);
+  }
 
-  String EVENT_GROUP_AGG = "eventGroupAggregation";
-  String LOWERCASE_GROUP_AGG = "lowercaseGroupAggregation";
-  String GROUP_COMPOSITE_AGG = "compositeAggregation";
+  public List<EventDto> getEventsIngestedAfterForGroups(
+      final Long ingestTimestamp, final int limit, final List<String> groups) {
+    log.debug(
+        "Fetching events that where ingested after {} for groups {}", ingestTimestamp, groups);
+    return eventRepository.getEventsIngestedAfterForGroups(ingestTimestamp, limit, groups);
+  }
 
-  List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit);
+  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+    log.debug("Fetching events that where ingested at {}", ingestTimestamp);
+    return eventRepository.getEventsIngestedAt(ingestTimestamp);
+  }
 
-  List<EventDto> getEventsIngestedAfterForGroups(
-      final Long ingestTimestamp, final int limit, final List<String> groups);
+  public List<EventDto> getEventsIngestedAtForGroups(
+      final Long ingestTimestamp, final List<String> groups) {
+    log.debug("Fetching events that where ingested at {} for groups {}", ingestTimestamp, groups);
+    return eventRepository.getEventsIngestedAtForGroups(ingestTimestamp, groups);
+  }
 
-  List<EventDto> getEventsIngestedAt(final Long ingestTimestamp);
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
+    log.debug("Fetching min and max timestamp for ingested external events");
+    return eventRepository.getMinAndMaxIngestedTimestamps();
+  }
 
-  List<EventDto> getEventsIngestedAtForGroups(
-      final Long ingestTimestamp, final List<String> groups);
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
+      getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
+    log.debug("Fetching min and max timestamp for ingested external events in groups: {}", groups);
+    return eventRepository.getMinAndMaxIngestedTimestampsForGroups(groups);
+  }
 
-  Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps();
+  public Page<DeletableEventDto> getEventsForRequest(
+      final EventSearchRequestDto eventSearchRequestDto) {
+    log.debug("Fetching events using search criteria {}", eventSearchRequestDto);
+    return eventRepository.getEventsForRequest(eventSearchRequestDto);
+  }
 
-  Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForGroups(
-      final List<String> groups);
-
-  Page<DeletableEventDto> getEventsForRequest(final EventSearchRequestDto eventSearchRequestDto);
-
-  List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto);
+  public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
+    log.debug("Fetching event groups using search criteria {}", eventGroupRequestDto);
+    return eventRepository.getEventGroups(eventGroupRequestDto);
+  }
 }

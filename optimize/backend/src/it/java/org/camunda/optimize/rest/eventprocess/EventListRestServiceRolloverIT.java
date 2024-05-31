@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
 
@@ -17,8 +18,10 @@ import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventListRestServiceRolloverIT extends AbstractEventRestServiceRolloverIT {
 
   @Test

@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
 import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
@@ -41,6 +42,7 @@ import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -50,6 +52,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.slf4j.event.Level;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   private static String simpleDiagramXml;
@@ -200,7 +203,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void eventProcessMappingsSkippedOnBulkDelete_ifEsFailsToDeleteReportsUsingMapping() {
+  public void eventProcessMappingsSkippedOnBulkDelete_IfDatabaseFailsToDeleteReportsUsingMapping() {
     EventProcessMappingDto eventProcessMappingDto =
         createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessDefinitionKey1 =
@@ -269,7 +272,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void bulkDeleteEventProcessMappings_skipsDeletionIfEsFailsToDeletePublishState() {
+  public void bulkDeleteEventProcessMappings_skipsDeletionIfDatabaseFailsToDeletePublishState() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
         createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
@@ -300,6 +303,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertGetMappingRequestStatusCode(
         eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessDefinitionKey1)).isNotEmpty();
     assertGetMappingRequestStatusCode(
         eventProcessDefinitionKey2, Response.Status.NOT_FOUND.getStatusCode());
@@ -310,7 +314,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void bulkDeleteEventProcessMapping_skipsDeletionIfEsFailsToDeleteMappingAsScopeEntry() {
+  public void
+      bulkDeleteEventProcessMapping_skipsDeletionIfDatabaseFailsToDeleteMappingAsScopeEntry() {
     // given
     EventProcessMappingDto eventProcessMappingDto =
         createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();

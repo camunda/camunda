@@ -7,15 +7,35 @@ package org.camunda.optimize.service.db.reader;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.springframework.stereotype.Component;
 
-public interface EventProcessPublishStateReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class EventProcessPublishStateReader {
 
-  Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
-      final String eventProcessMappingId);
+  private final EventRepository eventRepository;
 
-  List<EventProcessPublishStateDto> getAllEventProcessPublishStates();
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
+      final String eventProcessMappingId) {
+    log.debug(
+        "Fetching event process publish state with eventProcessMappingId [{}].",
+        eventProcessMappingId);
+    return eventRepository.getEventProcessPublishStateByEventProcessId(eventProcessMappingId);
+  }
 
-  List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(
-      final boolean deleted);
+  public List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
+    return getAllEventProcessPublishStatesWithDeletedState(false);
+  }
+
+  public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(
+      final boolean deleted) {
+    log.debug(
+        "Fetching all available event process publish states with deleted state [{}].", deleted);
+    return eventRepository.getAllEventProcessPublishStatesWithDeletedState(deleted);
+  }
 }

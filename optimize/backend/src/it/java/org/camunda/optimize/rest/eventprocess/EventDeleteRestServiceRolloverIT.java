@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
@@ -17,8 +18,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRolloverIT {
 
   @Test

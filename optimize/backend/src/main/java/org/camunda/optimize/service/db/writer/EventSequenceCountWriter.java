@@ -7,9 +7,14 @@ package org.camunda.optimize.service.db.writer;
 
 import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 
 public interface EventSequenceCountWriter {
 
   void updateEventSequenceCountsWithAdjustments(
       final List<EventSequenceCountDto> eventSequenceCountDtos);
+
+  default String getIndexName(final String indexKey) {
+    return EventSequenceCountIndex.constructIndexName(indexKey);
+  }
 }

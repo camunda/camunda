@@ -85,7 +85,13 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public boolean indexExists(String unprefixedIndex) {
     String index = applyIndexPrefix(unprefixedIndex);
     return safe(
-        () -> openSearchClient.indices().exists(r -> r.index(getIndexAliasFor(index))).value(),
+        // allowNoIndices must be set to false, otherwise index names containing wildcards will
+        // always return true
+        () ->
+            openSearchClient
+                .indices()
+                .exists(r -> r.index(getIndexAliasFor(index)).allowNoIndices(false))
+                .value(),
         e -> defaultIndexErrorMessage(index));
   }
 

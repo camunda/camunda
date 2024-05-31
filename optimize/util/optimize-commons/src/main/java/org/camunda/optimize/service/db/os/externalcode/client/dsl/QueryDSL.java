@@ -18,6 +18,7 @@ import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
@@ -142,6 +143,10 @@ public interface QueryDSL {
     return match(field, value, operator, FieldValue::of);
   }
 
+  static Query match(String field, String value) {
+    return match(field, value, Operator.And);
+  }
+
   static Query matchAll() {
     return new MatchAllQuery.Builder().build().toQuery();
   }
@@ -160,6 +165,12 @@ public interface QueryDSL {
 
   static Query or(final Query... queries) {
     return BoolQuery.of(q -> q.should(nonNull(queries))).toQuery();
+  }
+
+  static Query or(final String minimumShouldMatch, final Query... queries) {
+    BoolQuery.Builder builder =
+        new Builder().should(nonNull(queries)).minimumShouldMatch(minimumShouldMatch);
+    return builder.build().toQuery();
   }
 
   static Query prefix(final String field, final String value) {

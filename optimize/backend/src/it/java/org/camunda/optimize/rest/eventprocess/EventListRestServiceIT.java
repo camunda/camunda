@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
@@ -27,12 +28,14 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventListRestServiceIT extends AbstractEventRestServiceIT {
 
   private static final String GROUP = DeletableEventDto.Fields.group;

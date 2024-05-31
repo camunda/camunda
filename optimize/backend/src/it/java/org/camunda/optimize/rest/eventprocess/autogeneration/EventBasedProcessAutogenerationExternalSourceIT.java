@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.eventprocess.autogeneration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForNode;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
@@ -32,8 +33,10 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessAutogenerationExternalSourceIT
     extends AbstractEventProcessAutogenerationIT {
 

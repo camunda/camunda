@@ -57,6 +57,9 @@ import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -65,7 +68,6 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.repository.TestIndexRepository;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.core.TimeValue;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -222,8 +224,7 @@ public abstract class DatabaseTestService {
       final List<IdentityDto> identityDtos,
       final ScriptData scriptData);
 
-  public abstract Map<String, List<AliasMetadata>>
-      getEventProcessInstanceIndicesWithAliasesFromDatabase();
+  public abstract Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase();
 
   public abstract Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(
       final String processMappingId);
@@ -384,4 +385,10 @@ public abstract class DatabaseTestService {
       String entityIndex, String processInstanceField, TimeValue scrollKeepAlive);
 
   public abstract Integer getVariableInstanceCount(String variableName);
+
+  public abstract EventProcessInstanceIndex getEventInstanceIndex(String indexId);
+
+  public abstract EventIndex getEventIndex();
+
+  public abstract VariableUpdateInstanceIndex getVariableUpdateInstanceIndex();
 }

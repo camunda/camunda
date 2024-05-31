@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
@@ -32,10 +33,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEven
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessRestServiceEventSourceIT extends AbstractEventProcessIT {
 
   private final String PROCESS_DEF_KEY_1 = "aProcessDefinitionKey_1";

@@ -6,9 +6,34 @@
 package org.camunda.optimize.service.db.repository;
 
 import java.util.List;
+import org.camunda.optimize.service.util.PeriodicAction;
+import org.slf4j.Logger;
 
 public interface TaskRepository {
   record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
 
   List<TaskProgressInfo> tasksProgress(final String action);
+
+  default void executeWithTaskMonitoring(String action, Runnable runnable, Logger log) {
+    final PeriodicAction progressReporter =
+        new PeriodicAction(
+            getClass().getName(),
+            () ->
+                tasksProgress(action)
+                    .forEach(
+                        tasksProgressInfo ->
+                            log.info(
+                                "Current {} BulkByScrollTaskTask progress: {}%, total: {}, done: {}",
+                                action,
+                                tasksProgressInfo.progress(),
+                                tasksProgressInfo.totalCount(),
+                                tasksProgressInfo.processedCount())));
+
+    try {
+      progressReporter.start();
+      runnable.run();
+    } finally {
+      progressReporter.stop();
+    }
+  }
 }

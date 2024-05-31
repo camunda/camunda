@@ -668,11 +668,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void update(final String indexName, final String entityId, final ScriptData script) {
 
-    final Script scr =
-        QueryDSL.scriptFromJsonData(
-            script.scriptString(),
-            script.params().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, JsonData::of)));
+    final Script scr = QueryDSL.script(script.scriptString(), script.params());
 
     final UpdateRequest.Builder<Void, Void> updateReqBuilder =
         new UpdateRequest.Builder<Void, Void>()

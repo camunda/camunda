@@ -7,16 +7,35 @@ package org.camunda.optimize.service.db.reader;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.springframework.stereotype.Component;
 
-public interface EventProcessMappingReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class EventProcessMappingReader {
+  EventRepository eventRepository;
 
-  Optional<EventProcessMappingDto> getEventProcessMapping(final String eventProcessMappingId);
+  public Optional<EventProcessMappingDto> getEventProcessMapping(
+      final String eventProcessMappingId) {
+    log.debug("Fetching event-based process with id [{}].", eventProcessMappingId);
+    return eventRepository.getEventProcessMapping(eventProcessMappingId);
+  }
 
-  List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml();
+  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
+    log.debug("Fetching all available event-based processes.");
+    return eventRepository.getAllEventProcessMappingsOmitXml();
+  }
 
-  List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(
-      final String eventProcessMappingId);
+  public List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(
+      final String eventProcessMappingId) {
+    log.debug(
+        "Fetching event process roles for event process mapping id [{}].", eventProcessMappingId);
+    return eventRepository.getEventProcessRoles(eventProcessMappingId);
+  }
 }

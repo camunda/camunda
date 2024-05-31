@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
@@ -21,14 +22,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
   @Test
@@ -554,8 +556,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
                 "/"
                     + embeddedOptimizeExtension
                         .getIndexNameService()
-                        // TODO don't use ES coupling here, to be dealt with OPT-7246
-                        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES())
+                        .getOptimizeIndexNameWithVersionWithoutSuffix(
+                            databaseIntegrationTestExtension.getEventIndex())
                     + ".*/_delete_by_query")
             .withMethod(POST);
     dbMockServer.when(requestMatcher, Times.once()).error(error().withDropConnection(true));
@@ -602,8 +604,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
                 "/"
                     + embeddedOptimizeExtension
                         .getIndexNameService()
-                        // TODO don't use ES coupling here, to be dealt with OPT-7246
-                        .getOptimizeIndexNameWithVersionWithoutSuffix(new EventIndexES())
+                        .getOptimizeIndexNameWithVersionWithoutSuffix(
+                            databaseIntegrationTestExtension.getEventIndex())
                     + ".*/_delete_by_query")
             .withMethod(POST);
     dbMockServer.when(requestMatcher, Times.once()).error(error().withDropConnection(true));

@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanc
 import org.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import org.camunda.optimize.service.db.repository.Repository;
 import org.camunda.optimize.service.db.repository.TaskRepository;
-import org.camunda.optimize.service.util.PeriodicAction;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -40,9 +39,10 @@ public class EventProcessInstanceWriter {
         String.format("event process instances in index %s that ended before %s", index, endDate);
     log.info("Performing cleanup on {}", deletedItemIdentifier);
 
-    executeWithTaskMonitoring(
+    taskRepository.executeWithTaskMonitoring(
         repository.getDeleteByQueryActionName(),
-        () -> processInstanceRepository.deleteEndedBefore(index, endDate, deletedItemIdentifier));
+        () -> processInstanceRepository.deleteEndedBefore(index, endDate, deletedItemIdentifier),
+        log);
 
     log.info("Finished cleanup on {}", deletedItemIdentifier);
   }
@@ -53,11 +53,12 @@ public class EventProcessInstanceWriter {
         String.format("event process variables in index %s that ended before %s", index, endDate);
     log.info("Performing cleanup on {}", updateItem);
 
-    executeWithTaskMonitoring(
+    taskRepository.executeWithTaskMonitoring(
         repository.getUpdateByQueryActionName(),
         () ->
             processInstanceRepository.deleteVariablesOfInstancesThatEndedBefore(
-                index, endDate, updateItem));
+                index, endDate, updateItem),
+        log);
 
     log.info("Finished cleanup on {}", updateItem);
   }
@@ -68,29 +69,5 @@ public class EventProcessInstanceWriter {
         String.format("%d event process instance events by ID", eventIdsToDelete.size());
     processInstanceRepository.deleteEventsWithIdsInFromAllInstances(
         index, eventIdsToDelete, updateItem);
-  }
-
-  private void executeWithTaskMonitoring(String action, Runnable runnable) {
-    final PeriodicAction progressReporter =
-        new PeriodicAction(
-            getClass().getName(),
-            () ->
-                taskRepository
-                    .tasksProgress(action)
-                    .forEach(
-                        tasksProgressInfo ->
-                            log.info(
-                                "Current {} BulkByScrollTaskTask progress: {}%, total: {}, done: {}",
-                                action,
-                                tasksProgressInfo.progress(),
-                                tasksProgressInfo.totalCount(),
-                                tasksProgressInfo.processedCount())));
-
-    try {
-      progressReporter.start();
-      runnable.run();
-    } finally {
-      progressReporter.stop();
-    }
   }
 }

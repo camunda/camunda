@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
@@ -21,8 +22,10 @@ import java.util.Collections;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
 
   private static String simpleDiagramXml;

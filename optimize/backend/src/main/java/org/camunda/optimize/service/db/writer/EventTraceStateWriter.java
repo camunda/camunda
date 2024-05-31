@@ -7,8 +7,22 @@ package org.camunda.optimize.service.db.writer;
 
 import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 
 public interface EventTraceStateWriter {
 
   void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos);
+
+  default String updateScript() {
+    return """
+              for (def tracedEvent : params.eventTrace) {
+                  ctx._source.eventTrace.removeIf(event -> event.eventId.equals(tracedEvent.eventId));
+              }
+              ctx._source.eventTrace.addAll(params.eventTrace);
+            """;
+  }
+
+  default String getIndexName(String indexKey) {
+    return EventTraceStateIndex.constructIndexName(indexKey);
+  }
 }

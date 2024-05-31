@@ -34,6 +34,6 @@ public class CorrelatedCamundaProcessInstanceReaderOS
   public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
       final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
     log.debug("Functionality not implemented for OpenSearch");
-    return null;
+    return new ArrayList<>();
   }
 }

@@ -13,7 +13,6 @@ import java.util.List;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -39,7 +38,8 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
     embeddedOptimizeExtension
         .getDatabaseSchemaManager()
         .createOrUpdateOptimizeIndex(
-            embeddedOptimizeExtension.getOptimizeDatabaseClient(), new EventIndexES());
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            databaseIntegrationTestExtension.getEventIndex());
     embeddedOptimizeExtension
         .getConfigurationService()
         .getEventIndexRolloverConfiguration()

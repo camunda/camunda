@@ -27,8 +27,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -40,19 +38,19 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
   private static final RandomStringGenerator KEY_GENERATOR =
       new RandomStringGenerator.Builder().withinRange('a', 'z').build();
 
-  // TODO decouple these tests from elastic search dependency, to be dealt with OPT-7225
   protected void cleanUpEventIndices() {
     databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
     embeddedOptimizeExtension
         .getDatabaseSchemaManager()
         .createOrUpdateOptimizeIndex(
-            embeddedOptimizeExtension.getOptimizeDatabaseClient(), new EventIndexES());
+            embeddedOptimizeExtension.getOptimizeDatabaseClient(),
+            databaseIntegrationTestExtension.getEventIndex());
     embeddedOptimizeExtension
         .getDatabaseSchemaManager()
         .createOrUpdateOptimizeIndex(
             embeddedOptimizeExtension.getOptimizeDatabaseClient(),
-            new VariableUpdateInstanceIndexES());
+            databaseIntegrationTestExtension.getVariableUpdateInstanceIndex());
   }
 
   protected void configureHigherProcessSpecificTtl(final String processDefinitionKey) {

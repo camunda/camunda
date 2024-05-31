@@ -73,7 +73,7 @@ import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
@@ -87,6 +87,7 @@ import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
@@ -95,6 +96,8 @@ import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
@@ -697,7 +700,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   @SneakyThrows
-  public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+  public Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
     final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
     final OptimizeIndexNameService indexNameService = esClient.getIndexNameService();
     final GetIndexResponse getIndexResponse =
@@ -710,7 +713,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                             EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
                         + "*"),
                 esClient.requestOptions());
-    return getIndexResponse.getAliases();
+    return getIndexResponse.getAliases().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry ->
+                    entry.getValue().stream()
+                        .map(AliasMetadata::alias)
+                        .collect(Collectors.toSet())));
   }
 
   @Override
@@ -741,7 +751,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           getObjectMapper()
               .readValue(
                   searchResponse.getHits().getAt(0).getSourceAsString(),
-                  EsEventProcessPublishStateDto.class)
+                  DbEventProcessPublishStateDto.class)
               .toEventProcessPublishStateDto();
     }
     return Optional.ofNullable(result);
@@ -1097,6 +1107,21 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
             ScoreMode.None);
     return getVariableInstanceCountForAllProcessInstances(query);
+  }
+
+  @Override
+  public EventProcessInstanceIndex getEventInstanceIndex(String indexId) {
+    return new EventProcessInstanceIndexES(indexId);
+  }
+
+  @Override
+  public EventIndex getEventIndex() {
+    return new EventIndexES();
+  }
+
+  @Override
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return new VariableUpdateInstanceIndexES();
   }
 
   private void initEsClient() {

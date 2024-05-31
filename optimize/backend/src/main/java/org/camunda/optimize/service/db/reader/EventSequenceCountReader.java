@@ -5,6 +5,11 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
+import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
@@ -25,10 +30,7 @@ public interface EventSequenceCountReader {
   List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
       final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents);
 
-  List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
-      final String searchTerm);
-
-  List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
+  List<EventCountResponseDto> getEventCountsForSearchTerm(
       final List<String> groups, final String searchTerm);
 
   List<EventCountResponseDto> getEventCountsForCamundaSources(
@@ -40,4 +42,26 @@ public interface EventSequenceCountReader {
       final EventTypeDto firstEventTypeDto, final EventTypeDto secondEventTypeDto);
 
   List<EventSequenceCountDto> getAllSequenceCounts();
+
+  default String getIndexName(final String indexKey) {
+    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
+  }
+
+  default String getNgramSearchField(final String searchFieldName) {
+    return getNestedField(SOURCE_EVENT, searchFieldName) + "." + N_GRAM_FIELD;
+  }
+
+  default String getNestedField(final String property, final String searchFieldName) {
+    return property + "." + searchFieldName;
+  }
+
+  default List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
+      final String searchTerm) {
+    return getEventCountsForSearchTerm(Collections.emptyList(), searchTerm);
+  }
+
+  default List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
+      final List<String> groups, final String searchTerm) {
+    return getEventCountsForSearchTerm(groups, searchTerm);
+  }
 }

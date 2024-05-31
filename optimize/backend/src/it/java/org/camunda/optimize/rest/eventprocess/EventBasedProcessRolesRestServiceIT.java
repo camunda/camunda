@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
@@ -33,8 +34,10 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT {
 
   private static final String USER_KERMIT = "kermit";
@@ -117,7 +120,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
         eventProcessClient
             .createGetEventProcessMappingRolesRequest(expectedId)
             .withUserAuthentication(USER_KERMIT, USER_KERMIT)
-            .execute(new TypeReference<List<EventProcessRoleResponseDto>>() {});
+            .execute(new TypeReference<>() {});
 
     // then
     assertThat(roles).hasSize(1);

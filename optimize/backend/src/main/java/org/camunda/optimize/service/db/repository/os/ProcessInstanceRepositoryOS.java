@@ -184,6 +184,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
             UpdateOperation.<ProcessInstanceDto>of(
                     operation ->
                         operation
+                            .scriptedUpsert(true)
                             .index(indexNameService.getOptimizeIndexAliasForIndex(index))
                             .id(dto.getProcessInstanceId())
                             .script(scriptBuilder.apply(dto))
@@ -299,7 +300,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
             e ->
                 format(
                     "Could not clear scroll for class [%s], since Opensearch was unable to perform the action!",
-                    this.getClass().getSimpleName()));
+                    getClass().getSimpleName()));
         pageResult.setPagingState(null);
       }
 
@@ -312,8 +313,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       }
       throw e;
     } catch (IOException e) {
-      String reason =
-          format("Could not close scroll for class [%s].", this.getClass().getSimpleName());
+      String reason = format("Could not close scroll for class [%s].", getClass().getSimpleName());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

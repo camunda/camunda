@@ -11,6 +11,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIE
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIn
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
@@ -82,15 +84,30 @@ public class MappingRepositoryOS implements MappingRepository {
             .script(updateScript)
             .refresh(Refresh.True)
             .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    final UpdateResponse<Void> response =
-        osClient.update(
-            requestBuilder,
-            format("There was a problem updating the event-based process [%s].", id));
+    try {
+      final UpdateResponse<Void> response =
+          osClient.update(
+              requestBuilder,
+              format("There was a problem updating the event-based process [%s].", id));
 
-    if (!Result.Updated.equals(response.result())) {
-      String errorMessage = format("Could not update event-based process [%s] in Opensearch.", id);
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
+      if (!Result.Updated.equals(response.result())) {
+        String errorMessage =
+            format("Could not update event-based process [%s] in Opensearch.", id);
+        log.error(errorMessage);
+        throw new OptimizeRuntimeException(errorMessage);
+      }
+    } catch (OpenSearchException e) {
+      String errorMessage =
+          String.format(
+              "Was not able to update event-based process with id [%s]. Event-based process does not exist!",
+              id);
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    } catch (Exception e) {
+      final String errorMessage =
+          String.format("There was a problem updating the event-based process [%s].", id);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 

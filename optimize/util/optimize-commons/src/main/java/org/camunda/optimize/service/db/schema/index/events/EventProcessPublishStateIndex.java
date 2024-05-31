@@ -11,8 +11,8 @@ import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FO
 import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
@@ -21,20 +21,20 @@ public abstract class EventProcessPublishStateIndex<TBuilder>
 
   public static final int VERSION = 4;
 
-  public static final String ID = EsEventProcessPublishStateDto.Fields.id;
+  public static final String ID = DbEventProcessPublishStateDto.Fields.id;
   public static final String PROCESS_MAPPING_ID =
-      EsEventProcessPublishStateDto.Fields.processMappingId;
-  public static final String NAME = EsEventProcessPublishStateDto.Fields.name;
+      DbEventProcessPublishStateDto.Fields.processMappingId;
+  public static final String NAME = DbEventProcessPublishStateDto.Fields.name;
   public static final String PUBLISH_DATE_TIME =
-      EsEventProcessPublishStateDto.Fields.publishDateTime;
-  public static final String STATE = EsEventProcessPublishStateDto.Fields.state;
+      DbEventProcessPublishStateDto.Fields.publishDateTime;
+  public static final String STATE = DbEventProcessPublishStateDto.Fields.state;
   public static final String PUBLISH_PROGRESS =
-      EsEventProcessPublishStateDto.Fields.publishProgress;
-  public static final String DELETED = EsEventProcessPublishStateDto.Fields.deleted;
-  public static final String XML = EsEventProcessPublishStateDto.Fields.xml;
-  public static final String MAPPINGS = EsEventProcessPublishStateDto.Fields.mappings;
+      DbEventProcessPublishStateDto.Fields.publishProgress;
+  public static final String DELETED = DbEventProcessPublishStateDto.Fields.deleted;
+  public static final String XML = DbEventProcessPublishStateDto.Fields.xml;
+  public static final String MAPPINGS = DbEventProcessPublishStateDto.Fields.mappings;
   public static final String EVENT_IMPORT_SOURCES =
-      EsEventProcessPublishStateDto.Fields.eventImportSources;
+      DbEventProcessPublishStateDto.Fields.eventImportSources;
 
   public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
   public static final String START = EsEventMappingDto.Fields.start;
