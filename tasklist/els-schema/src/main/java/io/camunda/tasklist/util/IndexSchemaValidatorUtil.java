@@ -7,8 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.zeebe.client.impl.Loggers.LOGGER;
-
 import com.google.common.collect.Maps;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -26,8 +24,12 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public abstract class IndexSchemaValidatorUtil {
+public class IndexSchemaValidatorUtil {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidatorUtil.class);
 
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
 
