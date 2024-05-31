@@ -19,15 +19,17 @@ public class MembershipService {
   private final CamundaUserDetailsManager userDetailsManager;
 
   private final UserService userService;
-
+  private final GroupService groupService;
   private final MembershipRepository membershipRepository;
 
   public MembershipService(
       final CamundaUserDetailsManager userDetailsManager,
       final UserService userService,
+      final GroupService groupService,
       final MembershipRepository membershipRepository) {
     this.userDetailsManager = userDetailsManager;
     this.userService = userService;
+    this.groupService = groupService;
     this.membershipRepository = membershipRepository;
   }
 
@@ -35,14 +37,31 @@ public class MembershipService {
     userDetailsManager.addUserToGroup(user.username(), group.name());
   }
 
+  public void addUserToGroup(final Integer userId, final Integer groupId) {
+    final CamundaUser user = userService.findUserById(userId);
+    final Group group = groupService.findGroupById(groupId);
+    addUserToGroup(user, group);
+  }
+
   public void removeUserFromGroup(final CamundaUser user, final Group group) {
     userDetailsManager.removeUserFromGroup(user.username(), group.name());
   }
 
-  public List<CamundaUser> getMembers(final Group group) {
+  public void removeUserFromGroup(final Integer userId, final Integer groupId) {
+    final CamundaUser user = userService.findUserById(userId);
+    final Group group = groupService.findGroupById(groupId);
+    removeUserFromGroup(user, group);
+  }
+
+  public List<CamundaUser> getUsersOfGroup(final Group group) {
     return userDetailsManager.findUsersInGroup(group.name()).stream()
         .map(userService::findUserByUsername)
         .toList();
+  }
+
+  public List<CamundaUser> getUsersOfGroup(final Integer groupId) {
+    final Group group = groupService.findGroupById(groupId);
+    return getUsersOfGroup(group);
   }
 
   public List<Group> getUserGroups(final CamundaUser user) {

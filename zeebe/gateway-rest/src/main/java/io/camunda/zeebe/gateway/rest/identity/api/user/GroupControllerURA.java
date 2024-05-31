@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.identity.api;
+package io.camunda.zeebe.gateway.rest.identity.api.user;
 
+import io.camunda.identity.user.CamundaUser;
 import io.camunda.identity.user.Group;
 import io.camunda.identity.usermanagement.service.GroupService;
+import io.camunda.identity.usermanagement.service.MembershipService;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchResponseDto;
 import java.util.List;
@@ -27,9 +29,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v2/groups")
 public class GroupControllerURA {
   private final GroupService groupService;
+  private final MembershipService membershipService;
 
-  public GroupControllerURA(final GroupService groupService) {
+  public GroupControllerURA(
+      final GroupService groupService, final MembershipService membershipService) {
     this.groupService = groupService;
+    this.membershipService = membershipService;
   }
 
   @PostMapping
@@ -40,13 +45,13 @@ public class GroupControllerURA {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroup(@PathVariable final Integer id) {
-    groupService.deleteGroupById(id);
+  public void deleteGroup(@PathVariable(name = "id") final Integer groupId) {
+    groupService.deleteGroupById(groupId);
   }
 
   @GetMapping("/{id}")
-  public Group findGroupById(@PathVariable final Integer id) {
-    return groupService.findGroupById(id);
+  public Group findGroupById(@PathVariable(name = "id") final Integer groupId) {
+    return groupService.findGroupById(groupId);
   }
 
   @PostMapping("/search")
@@ -60,7 +65,34 @@ public class GroupControllerURA {
   }
 
   @PutMapping("/{id}")
-  public Group updateGroup(@PathVariable final Integer id, @RequestBody final Group group) {
-    return groupService.renameGroupById(id, group);
+  public Group updateGroup(
+      @PathVariable(name = "id") final Integer groupId, @RequestBody final Group group) {
+    return groupService.renameGroupById(groupId, group);
+  }
+
+  @PostMapping("/{id}/users")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void assignUserToGroup(
+      @PathVariable(name = "id") final Integer groupId,
+      @RequestBody final AssignUserToGroupRequest assignRequest) {
+    membershipService.addUserToGroup(assignRequest.userId(), groupId);
+  }
+
+  @DeleteMapping("/{id}/users/{userId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void removeUserFromGroup(
+      @PathVariable(name = "id") final Integer groupId, @PathVariable final Integer userId) {
+    membershipService.removeUserFromGroup(userId, groupId);
+  }
+
+  @PostMapping("/{id}/users/search")
+  public SearchResponseDto<CamundaUser> findAllUsersOfGroup(
+      @PathVariable(name = "id") final Integer groupId,
+      @RequestBody final SearchRequestDto searchRequestDto) {
+    final SearchResponseDto<CamundaUser> responseDto = new SearchResponseDto<>();
+    final List<CamundaUser> allUsers = membershipService.getUsersOfGroup(groupId);
+    responseDto.setItems(allUsers);
+
+    return responseDto;
   }
 }
