@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -38,17 +40,25 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
-  private long operationReference;
+  private final long operationReference;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
+    this(predicate, operationReferenceNullValue());
+  }
+
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate, final long operationReference) {
     mutableRecordBatch = new RecordBatch(predicate);
+    this.operationReference = operationReference;
   }
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
-    metadata.operationReference(operationReference);
+    if (operationReference != operationReferenceNullValue()) {
+      metadata.operationReference(operationReference);
+    }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
@@ -117,11 +127,6 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
-  }
-
-  public ProcessingResultBuilder withOperationReference(final long operationReference) {
-    this.operationReference = operationReference;
-    return this;
   }
 
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
