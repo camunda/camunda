@@ -81,25 +81,28 @@ final class ExporterContainer implements Controller {
     }
   }
 
-  void initMetadata() {
-    final var curMetadata = exportersState.getMetadataVersion(getId());
-    final long metadataVersion = initializationInfo.metadataVersion();
-    if (metadataVersion <= curMetadata) {
-      // metadata is already up-to-date. Just update the in-memory position
-      initPosition();
-      return;
-    }
-
+  private void initExporterState() {
     final var initializeFrom = initializationInfo.initializeFrom();
     if (initializeFrom != null) {
-      final DirectBuffer metadata = exportersState.getExporterMetadata(initializeFrom);
-      final long otherPosition = exportersState.getPosition(initializeFrom);
-      exportersState.initializeExporterState(getId(), otherPosition, metadata, metadataVersion);
+      final var metadata = exportersState.getExporterMetadata(initializeFrom);
+      final var otherPosition = exportersState.getPosition(initializeFrom);
+      exportersState.initializeExporterState(
+          getId(), otherPosition, metadata, initializationInfo.metadataVersion());
     } else {
       // No need to initialize metadata, just set the version and initialize the position
-      exportersState.initializeExporterState(getId(), -1L, null, metadataVersion);
+      exportersState.initializeExporterState(
+          getId(), -1L, null, initializationInfo.metadataVersion());
     }
-    // read position to in-memory
+  }
+
+  void initMetadata() {
+    final var curMetadata = exportersState.getMetadataVersion(getId());
+    final var metadataVersion = initializationInfo.metadataVersion();
+
+    if (metadataVersion > curMetadata) {
+      initExporterState();
+    }
+
     initPosition();
   }
 
