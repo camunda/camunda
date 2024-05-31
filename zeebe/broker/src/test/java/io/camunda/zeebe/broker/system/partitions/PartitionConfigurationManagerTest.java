@@ -40,7 +40,10 @@ final class PartitionConfigurationManagerTest {
     partitionTransitionContext = new TestPartitionTransitionContext();
     partitionConfigurationManager =
         new PartitionConfigurationManager(
-            LOGGER, partitionTransitionContext, testConcurrencyControl);
+            LOGGER,
+            partitionTransitionContext,
+            partitionTransitionContext.getExportedDescriptors(),
+            testConcurrencyControl);
   }
 
   @Nested
