@@ -81,7 +81,12 @@ public class OperationReferenceTest {
             .getFirst();
 
     final var followUpRecords =
-        RecordingExporter.records().withSourceRecordPosition(cancelCommand.getPosition());
+        RecordingExporter.records()
+            .withSourceRecordPosition(cancelCommand.getPosition())
+            .limit(
+                r ->
+                    r.getKey() == processInstanceKey
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED);
 
     assertThat(followUpRecords)
         .hasSizeGreaterThan(0)
