@@ -43,13 +43,12 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
-    final String indexPattern = String.format("%s-%s*", getIndexPrefix(tasklistProperties), index);
+    final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryElasticsearchClient.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion =
-        String.format("%s-%s-\\d.*", getIndexPrefix(tasklistProperties), index);
+    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(), index);
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
@@ -126,7 +125,7 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
   @Override
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
       throws IOException {
-    return validateIndexMappings(schemaManager, indexDescriptors);
+    return validateIndexMappings(indexDescriptors);
   }
 
   @Override

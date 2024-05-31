@@ -26,20 +26,27 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
+// TO-DO: This class will replace after a refactor of retryElasticsearchClient  and
+// retryOpenSearchClient
+// For while is placed on Util, but after the refactor on Spring Cleaning will be moved to a
+// validator package
+// Refactor Issue: https://github.com/camunda/team-hto/issues/626
 public class IndexSchemaValidatorUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidatorUtil.class);
-
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
+  @Autowired TasklistProperties tasklistProperties;
+  @Autowired SchemaManager schemaManager;
 
-  public static String getIndexPrefix(final TasklistProperties tasklistProperties) {
+  public String getIndexPrefix() {
     return TasklistProperties.OPEN_SEARCH.equals(tasklistProperties.getDatabaseType())
         ? tasklistProperties.getOpenSearch().getIndexPrefix()
         : tasklistProperties.getElasticsearch().getIndexPrefix();
   }
 
-  public static Set<String> newerVersionsForIndex(
+  public Set<String> newerVersionsForIndex(
       final IndexDescriptor indexDescriptor, final Set<String> versions) {
     final SemanticVersion currentVersion =
         SemanticVersion.fromVersion(indexDescriptor.getVersion());
@@ -48,7 +55,7 @@ public class IndexSchemaValidatorUtil {
         .collect(Collectors.toSet());
   }
 
-  public static Set<String> olderVersionsForIndex(
+  public Set<String> olderVersionsForIndex(
       final IndexDescriptor indexDescriptor, final Set<String> versions) {
     final SemanticVersion currentVersion =
         SemanticVersion.fromVersion(indexDescriptor.getVersion());
@@ -65,14 +72,14 @@ public class IndexSchemaValidatorUtil {
     return Optional.empty();
   }
 
-  public static Map<String, IndexMapping> filterIndexMappings(
+  public Map<String, IndexMapping> filterIndexMappings(
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
     return Maps.filterEntries(
         indexMappings,
         e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
   }
 
-  public static void validateDifferenceAndCollectNewFields(
+  public void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
       final IndexMappingDifference difference,
       final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
@@ -108,8 +115,7 @@ public class IndexSchemaValidatorUtil {
   }
 
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings(
-      final SchemaManager schemaManager, final Set<IndexDescriptor> indexDescriptors)
-      throws IOException {
+      final Set<IndexDescriptor> indexDescriptors) throws IOException {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
@@ -119,7 +125,7 @@ public class IndexSchemaValidatorUtil {
       // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
         final IndexMappingDifference difference =
-            getDifference(indexDescriptor, indexMappingsGroup, schemaManager);
+            getDifference(indexDescriptor, indexMappingsGroup);
         validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
       }
     }
@@ -127,16 +133,12 @@ public class IndexSchemaValidatorUtil {
   }
 
   private IndexMappingDifference getDifference(
-      final IndexDescriptor indexDescriptor,
-      final Map<String, IndexMapping> indexMappingsGroup,
-      final SchemaManager schemaManager) {
-    return getIndexMappingDifference(indexDescriptor, indexMappingsGroup, schemaManager);
+      final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
+    return getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
   }
 
   private IndexMappingDifference getIndexMappingDifference(
-      final IndexDescriptor indexDescriptor,
-      final Map<String, IndexMapping> indexMappingsGroup,
-      final SchemaManager schemaManager) {
+      final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
     final IndexMapping indexMappingMustBe = schemaManager.getExpectedIndexFields(indexDescriptor);
 
     IndexMappingDifference difference = null;
