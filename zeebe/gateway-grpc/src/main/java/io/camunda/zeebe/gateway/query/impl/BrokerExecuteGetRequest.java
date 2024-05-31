@@ -11,7 +11,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteGetRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteGetResponse;
-import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;
+import io.camunda.zeebe.protocol.record.ExecuteGetResponseDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -23,7 +23,7 @@ public abstract class BrokerExecuteGetRequest<T> extends BrokerRequest<T> {
   private final ExecuteGetResponse response = new ExecuteGetResponse();
 
   public BrokerExecuteGetRequest() {
-    super(ExecuteQueryResponseDecoder.SCHEMA_ID, ExecuteQueryResponseDecoder.TEMPLATE_ID);
+    super(ExecuteGetResponseDecoder.SCHEMA_ID, ExecuteGetResponseDecoder.TEMPLATE_ID);
   }
 
   public void setKey(final long key) {
@@ -97,4 +97,10 @@ public abstract class BrokerExecuteGetRequest<T> extends BrokerRequest<T> {
   public void write(final MutableDirectBuffer buffer, final int offset) {
     request.write(buffer, offset);
   }
+  //
+  //  @Override
+  //  protected boolean isValidResponse(final DirectBuffer buffer) {
+  //    headerDecoder.wrap(buffer, 0);
+  //    return headerDecoder.schemaId() == schemaId && headerDecoder.templateId() == templateId;
+  //  }
 }

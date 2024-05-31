@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.api.response;
 
 public interface GetUserTaskResponse {
 
+  boolean isFound();
+
   /**
    * @return the record encoded as JSON
    */

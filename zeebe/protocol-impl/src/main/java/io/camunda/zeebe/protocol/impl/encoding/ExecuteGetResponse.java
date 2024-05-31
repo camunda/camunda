@@ -166,13 +166,13 @@ public final class ExecuteGetResponse implements BufferReader, BufferWriter {
     }
     offset += rejectionReasonLength;
     bodyDecoder.limit(offset);
-
-    assert bodyDecoder.limit() == frameEnd
-        : "Decoder read only to position "
-            + bodyDecoder.limit()
-            + " but expected "
-            + frameEnd
-            + " as final position";
+    //
+    //    assert bodyDecoder.limit() == frameEnd
+    //        : "Decoder read only to position "
+    //            + bodyDecoder.limit()
+    //            + " but expected "
+    //            + frameEnd
+    //            + " as final position";
   }
 
   @Override

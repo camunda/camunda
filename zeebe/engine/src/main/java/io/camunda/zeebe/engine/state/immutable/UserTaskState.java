@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Map;
 
 public interface UserTaskState {
@@ -34,6 +36,18 @@ public interface UserTaskState {
 
     LifecycleState(final byte value) {
       this.value = value;
+    }
+
+    public Intent toIntent() {
+      return switch (this) {
+        case NOT_FOUND -> UserTaskIntent.UNKNOWN;
+        case CREATING -> UserTaskIntent.CREATING;
+        case CREATED -> UserTaskIntent.CREATED;
+        case COMPLETING -> UserTaskIntent.COMPLETING;
+        case CANCELING -> UserTaskIntent.CANCELING;
+        case ASSIGNING -> UserTaskIntent.ASSIGNING;
+        case UPDATING -> UserTaskIntent.UPDATING;
+      };
     }
   }
 }

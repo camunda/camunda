@@ -76,6 +76,9 @@ public final class ZeebePartition extends Actor
     startupProcess = new StartupProcess<>(LOG, startupSteps);
 
     transitionContext.setAdminAccess(adminAccess);
+    transitionContext.setGetAccess(
+        new ZeebePartitionGetAccess(
+            actor, getPartitionId(), transitionContext.getPartitionGetControl()));
     transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 

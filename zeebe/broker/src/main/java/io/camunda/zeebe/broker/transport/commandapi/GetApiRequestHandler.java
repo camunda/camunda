@@ -12,14 +12,16 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionGetAccess;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ExecuteGetRequestDecoder;
+import io.camunda.zeebe.protocol.record.ResponseType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.slf4j.Logger;
 
 public final class GetApiRequestHandler
@@ -57,16 +59,6 @@ public final class GetApiRequestHandler
       final GetApiRequestReader requestReader,
       final GetApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    return CompletableActorFuture.completed(
-        handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
-  }
-
-  private Either<ErrorResponseWriter, GetApiResponseWriter> handle(
-      final int partitionId,
-      final long requestId,
-      final GetApiRequestReader requestReader,
-      final GetApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
 
     final var request = requestReader.getMessageDecoder();
     final var valueType = request.valueType();
@@ -76,36 +68,39 @@ public final class GetApiRequestHandler
     metadata.requestStreamId(partitionId);
     metadata.valueType(valueType);
 
-    try {
-      return getEntity(request.key(), metadata, errorWriter, partitionId, responseWriter)
-          .map(b -> responseWriter)
-          .mapLeft(failure -> errorWriter);
-
-    } catch (final Exception error) {
-      final String errorMessage =
-          "Failed to write client request to partition '%d', %s".formatted(partitionId, error);
-      LOG.error(errorMessage);
-      return Either.left(errorWriter.internalError(errorMessage));
-    }
-  }
-
-  private Either<ErrorResponseWriter, Boolean> getEntity(
-      final long key,
-      final RecordMetadata metadata,
-      final ErrorResponseWriter errorWriter,
-      final int partitionId,
-      final GetApiResponseWriter responseWriter) {
+    final long key = request.key();
     if (key == ExecuteGetRequestDecoder.keyNullValue()) {
-      return Either.left(
-          errorWriter.errorCode(ErrorCode.MALFORMED_REQUEST).errorMessage("No key provided"));
+      return CompletableActorFuture.completed(
+          Either.left(
+              errorWriter.errorCode(ErrorCode.MALFORMED_REQUEST).errorMessage("No key provided")));
     }
 
-    // todo: retrieve entity from state
-    // todo: respond found entity
-
-    return Either.left(
-        errorWriter
-            .errorCode(ErrorCode.INTERNAL_ERROR)
-            .errorMessage("you need to implement regular response writing still"));
+    final var result =
+        new CompletableActorFuture<Either<ErrorResponseWriter, GetApiResponseWriter>>();
+    getAccess
+        .getEntity(key, metadata)
+        .onComplete(
+            (entity, throwable) -> {
+              if (throwable != null) {
+                // todo: map throwable to error code
+                // todo: don't return a left, but return a right with rejection message set
+                result.complete(
+                    Either.left(
+                        errorWriter
+                            .errorCode(ErrorCode.INTERNAL_ERROR)
+                            .errorMessage(throwable.getMessage())));
+              } else {
+                responseWriter
+                    .partitionId(partitionId)
+                    .key(key)
+                    .responseType(ResponseType.OK)
+                    .valueType(ValueType.USER_TASK)
+                    .intent(entity.getIntent())
+                    // todo: see if there's a way without copying the buffer
+                    .value(BufferUtil.createCopy(entity.getValue()));
+                result.complete(Either.right(responseWriter));
+              }
+            });
+    return result;
   }
 }

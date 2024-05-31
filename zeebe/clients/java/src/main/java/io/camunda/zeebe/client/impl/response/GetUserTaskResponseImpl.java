@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.response.FailJobResponse;
 import io.camunda.zeebe.client.api.response.GetUserTaskResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
@@ -25,9 +24,15 @@ public class GetUserTaskResponseImpl implements GetUserTaskResponse {
   private final boolean found;
   private final JsonMapper jsonMapper;
 
-  public GetUserTaskResponseImpl(final JsonMapper jsonMapper, final GatewayOuterClass.GetEntityResponse response) {
+  public GetUserTaskResponseImpl(
+      final JsonMapper jsonMapper, final GatewayOuterClass.GetEntityResponse response) {
     this.jsonMapper = jsonMapper;
     found = response.getFound();
+  }
+
+  @Override
+  public boolean isFound() {
+    return found;
   }
 
   @Override

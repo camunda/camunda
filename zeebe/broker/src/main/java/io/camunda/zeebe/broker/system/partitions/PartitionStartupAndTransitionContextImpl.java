@@ -156,6 +156,16 @@ public class PartitionStartupAndTransitionContextImpl
         () -> logStream);
   }
 
+  public PartitionGetControl getPartitionGetControl() {
+    return new PartitionGetControlImpl(
+        () -> getPartitionContext().getStreamProcessor(),
+        () -> getPartitionContext().getExporterDirector(),
+        () -> snapshotDirector,
+        () -> partitionProcessingState,
+        () -> zeebeDb,
+        () -> logStream);
+  }
+
   @Override
   public int getPartitionId() {
     return partitionId;

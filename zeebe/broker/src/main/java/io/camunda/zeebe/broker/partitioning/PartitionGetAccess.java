@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Optional;
 
 public interface PartitionGetAccess {
   Optional<PartitionGetAccess> forPartition(int partitionId);
 
-  ActorFuture<RecordValue> getEntity(long key);
+  ActorFuture<Record<? extends UnifiedRecordValue>> getEntity(
+      long key, final RecordMetadata metadata);
 }
