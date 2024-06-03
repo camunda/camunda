@@ -853,6 +853,54 @@ final class ActorFutureTest {
   }
 
   @Test
+  void shouldShortCircuitMiddleOfChainWithActor() {
+    // given
+    final var original = new CompletableActorFuture<Integer>();
+    final var testActor = new TestActor();
+    final var failure = new RuntimeException("foo");
+    final AtomicReference<ActorFuture<Integer>> firstElement = new AtomicReference<>();
+    final AtomicReference<ActorFuture<Integer>> secondElement = new AtomicReference<>();
+    final AtomicReference<ActorFuture<Integer>> thirdElement = new AtomicReference<>();
+    schedulerRule.submitActor(testActor);
+    schedulerRule.workUntilDone();
+
+    testActor.run(
+        () -> {
+          firstElement.set(original.thenApply(value -> value + 1, testActor));
+          secondElement.set(
+              firstElement
+                  .get()
+                  .thenApply(
+                      value -> {
+                        throw failure;
+                      },
+                      testActor));
+          thirdElement.set(secondElement.get().thenApply(value -> value + 1, testActor));
+        });
+    schedulerRule.workUntilDone();
+
+    // when
+    original.complete(1);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(original).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(1);
+    assertThat(firstElement.get()).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(2);
+    assertThat(secondElement.get())
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .isInstanceOf(ExecutionException.class)
+        .havingRootCause()
+        .isSameAs(failure);
+    assertThat(thirdElement.get())
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .isInstanceOf(ExecutionException.class)
+        .havingRootCause()
+        .isSameAs(failure);
+  }
+
+  @Test
   void shouldShortCircuitMiddleOfChain() {
     // given
     final var original = new CompletableActorFuture<Integer>();
