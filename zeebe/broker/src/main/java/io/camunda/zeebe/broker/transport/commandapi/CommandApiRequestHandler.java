@@ -83,7 +83,7 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
-    if (processingPaused.containsKey(partitionId) && processingPaused.get(partitionId)) {
+    if (processingPaused.getOrDefault(partitionId, false)) {
       return Either.left(
           errorWriter.internalError("Processing paused for partition '%s'", partitionId));
     }
