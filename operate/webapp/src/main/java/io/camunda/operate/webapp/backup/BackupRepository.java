@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.backup;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
+import java.time.Instant;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,12 @@ public interface BackupRepository {
       final long startTimeInMilliseconds,
       final long endTimeInMilliseconds) {
     try {
+      final var now = Instant.now().toEpochMilli();
+      final var timeout = operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
+      // if is no end time available we just check start time with now
+      if (now - startTimeInMilliseconds > timeout && endTimeInMilliseconds <= 0) {
+        return true;
+      }
       final long timeOutInSeconds =
           operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
       return (endTimeInMilliseconds - startTimeInMilliseconds) > timeOutInSeconds;
