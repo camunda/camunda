@@ -52,6 +52,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
     final var messageState = scheduledTaskStateFactory.get().getMessageState();
+    final var timestamp = ActorClock.currentTimeMillis() + messagesTtlCheckerInterval.toMillis();
     final var timeToLiveChecker =
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
@@ -60,11 +61,9 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
             scheduleService,
             messageState);
     if (enableMessageTtlCheckerAsync) {
-      scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
+      scheduleService.runAtAsync(timestamp, timeToLiveChecker);
     } else {
-      scheduleService.runAt(
-          ActorClock.currentTimeMillis() + messagesTtlCheckerInterval.toMillis(),
-          timeToLiveChecker);
+      scheduleService.runAt(timestamp, timeToLiveChecker);
     }
   }
 
