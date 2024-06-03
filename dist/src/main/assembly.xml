@@ -29,13 +29,7 @@
       <outputDirectory>/</outputDirectory>
     </file>
     <file>
-      <source>${maven.multiModuleProjectDirectory}/dist/OPERATE_README.txt</source>
-      <filtered>true</filtered>
-      <lineEnding>keep</lineEnding>
-      <outputDirectory>/</outputDirectory>
-    </file>
-    <file>
-      <source>${maven.multiModuleProjectDirectory}/dist/TASKLIST_README.txt</source>
+      <source>${maven.multiModuleProjectDirectory}/dist/README.txt</source>
       <filtered>true</filtered>
       <lineEnding>keep</lineEnding>
       <outputDirectory>/</outputDirectory>
