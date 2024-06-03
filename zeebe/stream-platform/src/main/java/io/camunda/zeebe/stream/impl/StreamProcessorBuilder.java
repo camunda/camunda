@@ -97,8 +97,10 @@ public final class StreamProcessorBuilder {
     return Collections.unmodifiableList(lifecycleListeners);
   }
 
-  public void addLifecycleListener(final StreamProcessorLifecycleAware lifecycleAware) {
+  public StreamProcessorBuilder addLifecycleListener(
+      final StreamProcessorLifecycleAware lifecycleAware) {
     lifecycleListeners.add(lifecycleAware);
+    return this;
   }
 
   public ZeebeDb getZeebeDb() {
