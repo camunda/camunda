@@ -37,32 +37,12 @@ const MigrateAction: React.FC = observer(() => {
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
-  const isChildProcess = (() => {
-    if (processInstancesSelectionStore.state.isAllChecked) {
-      return processInstancesStore.state.processInstances.some(
-        ({parentInstanceId}) => parentInstanceId !== null,
-      );
-    }
-
-    return processInstancesSelectionStore.state.selectedProcessInstanceIds.some(
-      (processInstanceId) => {
-        const instance = processInstancesStore.state.processInstances.find(
-          ({id}) => {
-            return id === processInstanceId;
-          },
-        );
-        return !isNil(instance?.parentInstanceId);
-      },
-    );
-  })();
-
   const hasXmlError = processXmlStore.state.status === 'error';
 
   const isDisabled =
     batchModificationStore.state.isEnabled ||
     !isVersionSelected ||
     !hasSelectedRunningInstances ||
-    isChildProcess ||
     hasXmlError;
 
   const getTooltipText = () => {
@@ -76,10 +56,6 @@ const MigrateAction: React.FC = observer(() => {
 
     if (!hasSelectedRunningInstances) {
       return 'You can only migrate instances in active or incident state.';
-    }
-
-    if (isChildProcess) {
-      return 'You can only migrate instances which are not called by a parent process';
     }
   };
 
