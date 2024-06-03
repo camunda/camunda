@@ -33,7 +33,7 @@ class TaskPanelPage {
       name: 'Collapse',
     });
     this.addCustomFilterButton = page.getByRole('button', {
-      name: 'Filter tasks',
+      name: 'New filter',
     });
   }
 

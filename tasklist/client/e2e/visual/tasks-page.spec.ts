@@ -1073,6 +1073,7 @@ test.describe('tasks page', () => {
 
     await taskPanelPage.goto();
 
+    await taskPanelPage.expandSidePanelButton.click();
     await taskPanelPage.addCustomFilterButton.click();
 
     await expect(page).toHaveScreenshot();
