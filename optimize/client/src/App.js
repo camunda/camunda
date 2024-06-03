@@ -17,8 +17,6 @@ import {
   Events,
   Process,
   Sharing,
-  License,
-  WithLicense,
   Logout,
   Processes,
   ProcessReport,
@@ -89,33 +87,30 @@ export default function App({error}) {
       <TranslationProvider>
         <Theme>
           <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
-            <WithLicense>
-              <div className="Root-container">
-                <ErrorBoundary>
-                  <UserProvider>
-                    <DocsProvider>
-                      <Switch>
-                        <PrivateRoute exact path="/" component={Processes} />
-                        <PrivateRoute path="/analysis" component={Analysis} />
-                        <PrivateRoute exact path="/events/processes" component={Events} />
-                        <PrivateRoute path="/events/ingested" component={Events} />
-                        <Route exact path="/share/:type/:id" component={Sharing} />
-                        <PrivateRoute
-                          path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
-                          render={renderEntity}
-                        />
-                        <PrivateRoute exact path="/collections" component={Home} />
-                        <Route path="/license" component={License} />
-                        <Route path="/logout" component={Logout} />
-                        <PrivateRoute path="*" component={ErrorPage} />
-                      </Switch>
-                    </DocsProvider>
-                    <Tracking />
-                    <Onboarding />
-                  </UserProvider>
-                </ErrorBoundary>
-              </div>
-            </WithLicense>
+            <div className="Root-container">
+              <ErrorBoundary>
+                <UserProvider>
+                  <DocsProvider>
+                    <Switch>
+                      <PrivateRoute exact path="/" component={Processes} />
+                      <PrivateRoute path="/analysis" component={Analysis} />
+                      <PrivateRoute exact path="/events/processes" component={Events} />
+                      <PrivateRoute path="/events/ingested" component={Events} />
+                      <Route exact path="/share/:type/:id" component={Sharing} />
+                      <PrivateRoute
+                        path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
+                        render={renderEntity}
+                      />
+                      <PrivateRoute exact path="/collections" component={Home} />
+                      <Route path="/logout" component={Logout} />
+                      <PrivateRoute path="*" component={ErrorPage} />
+                    </Switch>
+                  </DocsProvider>
+                  <Tracking />
+                  <Onboarding />
+                </UserProvider>
+              </ErrorBoundary>
+            </div>
             <SaveGuard />
             <Prompt />
           </Router>

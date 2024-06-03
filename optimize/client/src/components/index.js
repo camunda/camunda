@@ -14,6 +14,5 @@ export {Dashboard} from './Dashboards';
 export {Report} from './Reports';
 export {Sharing} from './Sharing';
 export {Home, Collection} from './Home';
-export {License, WithLicense} from './License';
 export {default as Logout} from './Logout';
 export {Processes, ProcessReport} from './Processes';
