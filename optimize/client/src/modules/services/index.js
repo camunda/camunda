@@ -54,10 +54,4 @@ export function capitalize(string) {
 export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
-
-export {
-  createOutstandingRequestPromise,
-  redoOutstandingRequests,
-  resetOutstandingRequests,
-} from './outstandingRequestsService';
 export {loadDefinitions} from './loadDefinitions';
