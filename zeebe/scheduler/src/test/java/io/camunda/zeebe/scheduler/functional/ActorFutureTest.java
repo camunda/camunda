@@ -163,11 +163,7 @@ final class ActorFutureTest {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            actor.runOnCompletion(
-                futures,
-                t -> {
-                  invocations.add(t);
-                });
+            actor.runOnCompletion(futures, invocations::add);
           }
         };
 
@@ -190,7 +186,7 @@ final class ActorFutureTest {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            actor.runOnCompletion(Arrays.asList(future1, future2), t -> invocations.add(t));
+            actor.runOnCompletion(Arrays.asList(future1, future2), invocations::add);
           }
         };
 
@@ -212,7 +208,7 @@ final class ActorFutureTest {
 
     // then
     assertThat(invocations).hasSize(1);
-    assertThat(invocations.get(0).getMessage()).isEqualTo("bar");
+    assertThat(invocations.getFirst().getMessage()).isEqualTo("bar");
   }
 
   @Test
@@ -319,7 +315,7 @@ final class ActorFutureTest {
   @Test
   void shouldReturnCompletedExceptionallyFuture() {
     // given
-    final RuntimeException result = new RuntimeException("Something bad happend!");
+    final RuntimeException result = new RuntimeException("Something bad happened!");
 
     // when
     final CompletableActorFuture<Object> completed =
@@ -329,7 +325,7 @@ final class ActorFutureTest {
     assertThat(completed).isDone();
     assertThat(completed.isCompletedExceptionally()).isTrue();
 
-    assertThatThrownBy(() -> completed.join()).hasMessageContaining("Something bad happend!");
+    assertThatThrownBy(completed::join).hasMessageContaining("Something bad happened!");
   }
 
   @Test
@@ -384,7 +380,7 @@ final class ActorFutureTest {
 
     // then
     final AbstractThrowableAssert<?, ? extends Throwable> thrownBy =
-        assertThatThrownBy(() -> future.join());
+        assertThatThrownBy(future::join);
     thrownBy.isInstanceOf(ExecutionException.class);
     thrownBy.hasCause(throwable);
   }
@@ -438,9 +434,7 @@ final class ActorFutureTest {
     }.start();
 
     // expect
-    assertThatThrownBy(() -> future.get())
-        .isInstanceOf(ExecutionException.class)
-        .hasMessage("moep");
+    assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class).hasMessage("moep");
   }
 
   @Test
