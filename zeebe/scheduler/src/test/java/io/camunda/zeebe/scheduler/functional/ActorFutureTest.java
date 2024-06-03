@@ -37,7 +37,7 @@ final class ActorFutureTest {
   final ControlledActorSchedulerExtension schedulerRule = new ControlledActorSchedulerExtension();
 
   @Test
-  public void shouldInvokeCallbackOnFutureCompletion() {
+  void shouldInvokeCallbackOnFutureCompletion() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
@@ -74,7 +74,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnBlockPhaseForFutureCompletion() {
+  void shouldInvokeCallbackOnBlockPhaseForFutureCompletion() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
@@ -108,7 +108,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnAllFutureCompletedSuccessfully() {
+  void shouldInvokeCallbackOnAllFutureCompletedSuccessfully() {
     // given
     final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
     final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
@@ -153,7 +153,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnEmptyFutureList() {
+  void shouldInvokeCallbackOnEmptyFutureList() {
     // given
     final List<ActorFuture<Void>> futures = Collections.emptyList();
 
@@ -179,7 +179,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnAllFutureCompletedExceptionally() {
+  void shouldInvokeCallbackOnAllFutureCompletedExceptionally() {
     // given
     final CompletableActorFuture<String> future1 = new CompletableActorFuture<>();
     final CompletableActorFuture<String> future2 = new CompletableActorFuture<>();
@@ -216,7 +216,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldNotBlockExecutionWhenRegisteredOnFuture() {
+  void shouldNotBlockExecutionWhenRegisteredOnFuture() {
     // given
     final BlockedCallActor actor = new BlockedCallActor();
     schedulerRule.submitActor(actor);
@@ -233,7 +233,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldNotBlockExecutionOnRunOnCompletion() {
+  void shouldNotBlockExecutionOnRunOnCompletion() {
     // given
     final BlockedCallActorWithRunOnCompletion actor = new BlockedCallActorWithRunOnCompletion();
     schedulerRule.submitActor(actor);
@@ -250,7 +250,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnCompletedFuture() {
+  void shouldInvokeCallbackOnCompletedFuture() {
     // given
     final AtomicReference<String> futureResult = new AtomicReference<>();
 
@@ -271,7 +271,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnBlockPhaseForCompletedFuture() {
+  void shouldInvokeCallbackOnBlockPhaseForCompletedFuture() {
     // given
     final AtomicReference<String> futureResult = new AtomicReference<>();
 
@@ -292,7 +292,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldReturnCompletedFutureWithNullValue() {
+  void shouldReturnCompletedFutureWithNullValue() {
     // given
 
     // when
@@ -304,7 +304,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldReturnCompletedFuture() {
+  void shouldReturnCompletedFuture() {
     // given
     final Object result = new Object();
 
@@ -317,7 +317,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldReturnCompletedExceptionallyFuture() {
+  void shouldReturnCompletedExceptionallyFuture() {
     // given
     final RuntimeException result = new RuntimeException("Something bad happend!");
 
@@ -333,7 +333,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbacksAfterCloseIsCalled() {
+  void shouldInvokeCallbacksAfterCloseIsCalled() {
     // given
     final CompletableActorFuture<Object> f1 = new CompletableActorFuture<>();
     final CompletableActorFuture<Object> f2 = new CompletableActorFuture<>();
@@ -374,7 +374,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void joinShouldThrowExecutionException() {
+  void joinShouldThrowExecutionException() {
     // given
     final CompletableActorFuture<Object> future = new CompletableActorFuture<>();
     final RuntimeException throwable = new RuntimeException();
@@ -390,7 +390,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldCompleteFutureAndWaitOnNonActorThread() throws Exception {
+  void shouldCompleteFutureAndWaitOnNonActorThread() throws Exception {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
 
@@ -417,7 +417,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldCompleteFutureExceptionallyAndWaitOnNonActorThread() {
+  void shouldCompleteFutureExceptionallyAndWaitOnNonActorThread() {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
 
@@ -444,7 +444,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldReturnValueOnNonActorThread() throws Exception {
+  void shouldReturnValueOnNonActorThread() throws Exception {
     // given
     final CompletableActorFuture<String> future = CompletableActorFuture.completed("value");
 
@@ -456,7 +456,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnNonActorThread() {
+  void shouldThrowExceptionOnNonActorThread() {
     // given
     final CompletableActorFuture<String> future =
         CompletableActorFuture.completedExceptionally(new IllegalArgumentException("moep"));
@@ -468,7 +468,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldThrowTimeoutOnNonActorThread() {
+  void shouldThrowTimeoutOnNonActorThread() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
 
@@ -479,7 +479,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldFailToStaticallyCreateExceptionallyCompletedFutureWithNull() {
+  void shouldFailToStaticallyCreateExceptionallyCompletedFutureWithNull() {
     // when
     final RuntimeException result = null;
 
@@ -490,7 +490,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldFailToExceptionallyCompleteFutureWithNull() {
+  void shouldFailToExceptionallyCompleteFutureWithNull() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final RuntimeException result = null;
@@ -502,7 +502,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldFailToExceptionallyCompleteFutureWithNullAndMessage() {
+  void shouldFailToExceptionallyCompleteFutureWithNullAndMessage() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final RuntimeException result = null;
@@ -515,7 +515,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldRunOnComplete() {
+  void shouldRunOnComplete() {
     // given
     final ActorB actorB = new ActorB();
     schedulerRule.submitActor(actorB);
@@ -532,7 +532,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnFutureCompletionIfCallerIsNotActor() {
+  void shouldInvokeCallbackOnFutureCompletionIfCallerIsNotActor() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
@@ -556,7 +556,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnFutureCompletionOnProvidedExecutor() {
+  void shouldInvokeCallbackOnFutureCompletionOnProvidedExecutor() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
@@ -588,7 +588,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnFutureCompletionExceptionIfCallerIsNotActor() {
+  void shouldInvokeCallbackOnFutureCompletionExceptionIfCallerIsNotActor() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
@@ -614,7 +614,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackOnFutureCompletionErrorOnProvidedExecutor() {
+  void shouldInvokeCallbackOnFutureCompletionErrorOnProvidedExecutor() {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
@@ -648,7 +648,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackAddedAfterCompletionIfCallerIsNonActor() {
+  void shouldInvokeCallbackAddedAfterCompletionIfCallerIsNonActor() {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicInteger futureResult = new AtomicInteger();
@@ -680,7 +680,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldInvokeCallbackAddedAfterCompletionErrorIfCallerIsNonActor() {
+  void shouldInvokeCallbackAddedAfterCompletionErrorIfCallerIsNonActor() {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> futureResult = new AtomicReference<>();
@@ -715,7 +715,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldChainWithAndThen() {
+  void shouldChainWithAndThen() {
     // given
     final AtomicInteger executorCount = new AtomicInteger(0);
     final Executor decoratedExecutor =
@@ -750,7 +750,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void andThenChainPropagatesInitialException() {
+  void andThenChainPropagatesInitialException() {
     // given
     final var future1 = new CompletableActorFuture<>();
     final var future2 = new CompletableActorFuture<>();
@@ -768,7 +768,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void andThenChainPropagatesValue() {
+  void andThenChainPropagatesValue() {
     // given
     final var chained =
         CompletableActorFuture.completed("expected")
@@ -779,7 +779,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldChainThenApply() {
+  void shouldChainThenApply() {
     // given
     final var future = new CompletableActorFuture<Integer>();
     final var chained = future.thenApply(value -> value + 1, Runnable::run);
@@ -792,7 +792,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldShortCircuitThenApplyOnFailure() {
+  void shouldShortCircuitThenApplyOnFailure() {
     // given
     final var future = new CompletableActorFuture<Integer>();
     final var called = new AtomicBoolean(false);
@@ -818,7 +818,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldChainAndCompleteIntermediateFuturesOnApply() {
+  void shouldChainAndCompleteIntermediateFuturesOnApply() {
     // given
     final var original = new CompletableActorFuture<Integer>();
     final var firstElement = original.thenApply(value -> value + 1, Runnable::run);
@@ -833,7 +833,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldApplyOnExecutor() {
+  void shouldApplyOnExecutor() {
     // given
     final var future = new CompletableActorFuture<Integer>();
     final var onExecutor = new AtomicBoolean(false);
@@ -859,7 +859,7 @@ final class ActorFutureTest {
   }
 
   @Test
-  public void shouldShortCircuitMiddleOfChain() {
+  void shouldShortCircuitMiddleOfChain() {
     // given
     final var original = new CompletableActorFuture<Integer>();
     final var failure = new RuntimeException("foo");
