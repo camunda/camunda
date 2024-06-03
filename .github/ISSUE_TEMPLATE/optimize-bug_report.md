@@ -42,6 +42,9 @@ assignees: ''
 
 ## Bug Lifecycle
 
+For managing the issue lifecycle, please use the workflow commands. You can see the available
+commands by writing `/help` as a comment on this issue.
+
 ### QA Verification
 
 Is this bug reproducible?
@@ -50,13 +53,7 @@ Is this bug reproducible?
     - [ ] The bug description is clear
     - [ ] The steps to reproduce are clear
     - [ ] The environments observed are correct and complete
-    - [ ] The `qa:pendingVerification` label has been removed
-    - [ ] The `qa:verified` label has been added
-    - [ ] The issue has been moved to "Inbox" status
 - [ ] No
-    - [ ] The `qa:pendingVerification` label has been removed
-    - [ ] The `qa:notVerified` label has been added
-    - [ ] The issue has been closed with a sufficient explanation in a comment
 
 ### Review
 
@@ -67,9 +64,6 @@ Is this bug reproducible?
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
-When all the resources are available, please assign an Engineering reviewer and move this issue to
-"Eng Review" status.
-
 #### Engineering Review
 
 - [ ] All code targeting the main branch has been reviewed by at least one Engineer
@@ -77,18 +71,10 @@ When all the resources are available, please assign an Engineering reviewer and 
 - [ ] If the API has changed, the API documentation is updated
 - [ ] All other PRs (docs, controller etc.) in the breakdown have been approved
 
-When all stages are complete, please move the issue to the "QA Review" status and assign the QA
-Engineer. If any stages are incomplete, please move it back to "In Progress" and assign the
-Engineering DRI.
-
 #### QA Review
 
 - [ ] The change is implemented as described on all target environments/versions/modes
 - [ ] The documentation changes are as expected
-
-When all stages are complete, please move the issue to "Ready to Complete" status and assign it to
-the Engineering DRI. If any stages are incomplete, please move it back to "In Progress", assign the
-Engineering DRI and let the author know via a comment explaining the reasons why.
 
 ### Completion
 

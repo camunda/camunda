@@ -27,6 +27,9 @@ assignees: ''
 
 ## Epic Lifecycle
 
+For managing the issue lifecycle, please use the workflow commands. You can see the available
+commands by writing `/help` as a comment on this issue.
+
 ### Review
 
 #### Review Resources
@@ -36,9 +39,6 @@ assignees: ''
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
-When all the resources are available, please assign an Engineering reviewer and move this issue to
-"Eng Review" status.
-
 #### Engineering Review
 
 - [ ] All code targeting the main branch has been reviewed by at least one Engineer
@@ -46,28 +46,16 @@ When all the resources are available, please assign an Engineering reviewer and 
 - [ ] If the API has changed, the API documentation is updated
 - [ ] All other PRs (docs, controller etc.) in the breakdown have been approved
 
-When all stages are complete, please move the issue to the "QA Review" status and assign the QA
-Engineer. If any stages are incomplete, please move it back to "In Progress" and assign the
-Engineering DRI.
-
 #### QA Review
 
 - [ ] The change is implemented as described on all target environments/versions/modes
 - [ ] The documentation changes are as expected
-
-When all stages are complete, please move the issue to "PM Review" status and assign to the PM. If
-any stages are incomplete, please move it back to "In Progress" and assign it to the Engineering
-DRI.
 
 #### PM Review
 
 - [ ] The changes satisfy the requirements for the described epic
 - [ ] The documentation sufficiently describes the new/changed behaviour
 - [ ] Test data is available in order to demo this change, if necessary
-
-When all stages are complete, please move the issue to "Ready to Complete" status and assign the
-issue to the Engineering DRI. If any stages are incomplete, please move it back to "In Progress",
-assign the Engineering DRI, and explain in a comment explaining the reasons why.
 
 ### Completion
 
