@@ -42,10 +42,6 @@ class LoginPage {
     await this.fillPassword(password);
     await this.clickLoginButton();
   }
-
-  async navigateToURL(url: string) {
-    await this.page.goto(url);
-  }
 }
 
 export {LoginPage};

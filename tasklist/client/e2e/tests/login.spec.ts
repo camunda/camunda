@@ -24,8 +24,7 @@ test.describe.parallel('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('../tasklist'); //Root URL, we need to do this because baseURL contains a slash at the end as expected by playwright
-    // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
+    await expect(page).toHaveURL('/tasklist');
   });
 
   test('have no a11y violations', async ({makeAxeBuilder}) => {
@@ -45,7 +44,7 @@ test.describe.parallel('login page', () => {
       password: 'wrong',
     });
 
-    await expect(page).toHaveURL('./login');
+    await expect(page).toHaveURL('/tasklist/login');
     await expect(loginPage.errorMessage).toContainText(
       'Username and password do not match',
     );
@@ -58,16 +57,16 @@ test.describe.parallel('login page', () => {
 
   test('block form submission with empty fields', async ({loginPage, page}) => {
     await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('./login');
+    await expect(page).toHaveURL('/tasklist/login');
 
     await loginPage.fillUsername('demo');
     await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('./login');
+    await expect(page).toHaveURL('/tasklist/login');
 
     await loginPage.fillUsername(' ');
     await loginPage.fillPassword('demo');
     await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('./login');
+    await expect(page).toHaveURL('/tasklist/login');
   });
 
   test('log out redirect', async ({loginPage, mainPage, page}) => {
@@ -75,10 +74,10 @@ test.describe.parallel('login page', () => {
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('../tasklist');
+    await expect(page).toHaveURL('/tasklist');
 
     await mainPage.logout();
-    await expect(page).toHaveURL('./login');
+    await expect(page).toHaveURL('/tasklist/login');
   });
 
   test('persistency of a session', async ({loginPage, page}) => {
@@ -87,9 +86,9 @@ test.describe.parallel('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('../tasklist');
+    await expect(page).toHaveURL('/tasklist');
     await page.reload();
-    await expect(page).toHaveURL('../tasklist');
+    await expect(page).toHaveURL('/tasklist');
   });
 
   test('redirect to the correct URL after login', async ({
@@ -97,29 +96,29 @@ test.describe.parallel('login page', () => {
     mainPage,
     page,
   }) => {
-    await loginPage.navigateToURL('./123');
+    await page.goto('/tasklist/123');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('./123');
+    await expect(page).toHaveURL('/tasklist/123');
 
     await mainPage.logout();
 
-    await loginPage.navigateToURL('../tasklist?filter=unassigned');
+    await page.goto('/tasklist?filter=unassigned');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('../tasklist?filter=unassigned');
+    await expect(page).toHaveURL('/tasklist?filter=unassigned');
 
     await mainPage.logout();
 
-    await loginPage.navigateToURL('./123?filter=unassigned');
+    await page.goto('/tasklist/123?filter=unassigned');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('./123?filter=unassigned');
+    await expect(page).toHaveURL('/tasklist/123?filter=unassigned');
   });
 });
