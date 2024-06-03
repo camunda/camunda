@@ -507,10 +507,6 @@
               <mainClass>io.camunda.application.StandaloneOperate</mainClass>
             </program>
             <program>
-              <id>migrate</id>
-              <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
-            </program>
-            <program>
               <id>tasklist</id>
               <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
