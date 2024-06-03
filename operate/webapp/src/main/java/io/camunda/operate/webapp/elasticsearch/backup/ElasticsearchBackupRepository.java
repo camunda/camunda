@@ -61,6 +61,7 @@ import org.elasticsearch.transport.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -72,7 +73,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       "type=repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public void deleteSnapshot(String repositoryName, String snapshotName) {

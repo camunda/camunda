@@ -14,7 +14,12 @@
 }
 
 .container {
+  width: 100%;
   padding: 0 0 var(--cds-spacing-05) 0;
+
+  &.gutter {
+    padding: 0 var(--cds-spacing-05) var(--cds-spacing-05) var(--cds-spacing-05);
+  }
 }
 
 .inlineIcon {
@@ -25,5 +30,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
   min-height: layout.to-rem(32px);
+  padding: 0 var(--cds-spacing-05);
+}
+
+.footer {
+  width: 100%;
+  background-color: var(--cds-background);
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
 }

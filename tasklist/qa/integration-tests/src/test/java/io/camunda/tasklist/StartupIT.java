@@ -74,7 +74,7 @@ public class StartupIT {
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
 
-    testContainerUtil.startTasklistContainer(tasklistContainer, testContext);
+    testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");
 
     // when

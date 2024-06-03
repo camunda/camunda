@@ -75,7 +75,9 @@ public class OpenSearchTestExtension
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   @Autowired private SchemaManager schemaManager;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 

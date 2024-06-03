@@ -118,6 +118,16 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sdk-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.github.acm19</groupId>
+      <artifactId>aws-request-signing-apache-interceptor</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
     </dependency>
@@ -239,8 +249,7 @@
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <type>test-jar</type>
+      <artifactId>log4j-core-test</artifactId>
       <scope>test</scope>
     </dependency>
 

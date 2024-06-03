@@ -26,6 +26,7 @@ const MigrationView: React.FC = observer(() => {
   }, []);
 
   useEffect(() => {
+    processesStore.init();
     processesStore.fetchProcesses();
 
     return () => {

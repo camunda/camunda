@@ -31,8 +31,8 @@ import io.camunda.zeebe.spring.client.properties.PropertiesUtil;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
 import jakarta.annotation.PostConstruct;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -314,7 +314,7 @@ public class ZeebeClientConfigurationImpl
 
   private CredentialsProvider credentialsProvider() {
     final ClientMode clientMode = camundaClientProperties.getMode();
-    if (ClientMode.oidc.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
+    if (ClientMode.selfManaged.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
       return CredentialsProvider.newCredentialsProviderBuilder()
           .clientId(camundaClientProperties.getAuth().getClientId())
           .clientSecret(camundaClientProperties.getAuth().getClientSecret())
@@ -326,20 +326,31 @@ public class ZeebeClientConfigurationImpl
   }
 
   private String composeGatewayAddress() {
-    final URL gatewayUrl = camundaClientProperties.getZeebe().getGatewayUrl();
+    final URI gatewayUrl = camundaClientProperties.getZeebe().getGrpcAddress();
     final int port = gatewayUrl.getPort();
-    final int defaultPort = gatewayUrl.getDefaultPort();
     final String host = gatewayUrl.getHost();
 
+    // port is set
     if (port != -1) {
       return composeAddressWithPort(host, port, "Gateway port is set");
-    } else if (defaultPort != -1) {
-      return composeAddressWithPort(host, defaultPort, "Gateway port has default");
-    } else {
-      // do not use any port
-      LOG.debug("Gateway cannot be determined, address will be '{}'", host);
-      return host;
     }
+
+    // port is not set, attempting to use default
+    int defaultPort;
+    try {
+      defaultPort = gatewayUrl.toURL().getDefaultPort();
+    } catch (final MalformedURLException e) {
+      LOG.warn("Invalid gateway url: {}", gatewayUrl);
+      // could not get a default port, setting it to -1 and moving to the next statement
+      defaultPort = -1;
+    }
+    if (defaultPort != -1) {
+      return composeAddressWithPort(host, defaultPort, "Gateway port has default");
+    }
+
+    // do not use any port
+    LOG.debug("Gateway cannot be determined, address will be '{}'", host);
+    return host;
   }
 
   private String composeAddressWithPort(
@@ -350,7 +361,7 @@ public class ZeebeClientConfigurationImpl
   }
 
   private boolean composePlaintext() {
-    final String protocol = camundaClientProperties.getZeebe().getGatewayUrl().getProtocol();
+    final String protocol = camundaClientProperties.getZeebe().getGrpcAddress().getScheme();
     return switch (protocol) {
       case "http" -> true;
       case "https" -> false;

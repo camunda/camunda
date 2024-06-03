@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 final class PartitionConfigurationManagerTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(PartitionConfigurationManagerTest.class);
-
   private final TestConcurrencyControl testConcurrencyControl = new TestConcurrencyControl();
   private TestPartitionTransitionContext partitionTransitionContext;
   private PartitionConfigurationManager partitionConfigurationManager;
@@ -46,13 +46,14 @@ final class PartitionConfigurationManagerTest {
   @Nested
   final class ExporterDisable {
     private final String exporterId = "exporterA";
+    private final DynamicPartitionConfig partitionConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(
+                Map.of(exporterId, new ExporterState(0, State.ENABLED, Optional.empty()))));
 
     @Test
     void shouldDisableExporterAndUpdateConfigInContext() {
       // given
-      final var partitionConfig =
-          new DynamicPartitionConfig(
-              new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
       when(mockExporterDirector.disableExporter(exporterId))
@@ -78,9 +79,6 @@ final class PartitionConfigurationManagerTest {
     @Test
     void shouldUpdateConfigInContextWhenExporterDirectorIsNotAvailable() {
       // given
-      final var partitionConfig =
-          new DynamicPartitionConfig(
-              new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
 
       // when
@@ -101,9 +99,6 @@ final class PartitionConfigurationManagerTest {
     @Test
     void shouldFailFutureIfDisablingExporterFailed() {
       // given
-      final var partitionConfig =
-          new DynamicPartitionConfig(
-              new ExportersConfig(Map.of(exporterId, new ExporterState(State.ENABLED))));
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
       when(mockExporterDirector.disableExporter(exporterId))

@@ -43,7 +43,11 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
 }
 
 const Task: React.FC = observer(() => {
-  const [task, currentUser, refetchTask] = useOutletContext<OutletContext>();
+  const {
+    task,
+    currentUser,
+    refetch: refetchTask,
+  } = useOutletContext<OutletContext>();
 
   const filters = useTaskFilters();
   const {data, refetch: refetchAllTasks} = useTasks(filters);
@@ -84,7 +88,9 @@ const Task: React.FC = observer(() => {
       variables,
     });
 
-    const customFilters = getStateLocally('customFilters')?.custom;
+    const filter = new URLSearchParams(window.location.search).get('filter');
+    const customFilters =
+      filter === null ? null : getStateLocally('customFilters')?.[filter];
 
     tracking.track({
       eventName: 'task-completed',

@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -36,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -163,6 +166,21 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldEncodeAndDecodeExporterEnableRequest() {
+    // given
+    final var exporterEnableRequest =
+        new ExporterEnableRequest("expId", Optional.of("expId2"), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterEnableRequest(exporterEnableRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterEnableRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
+  }
+
+  @Test
   void shouldEncodeAndDecodeTopologyChangeResponse() {
     // given
     final var topologyChangeResponse =
@@ -202,7 +220,8 @@ final class ProtoBufSerializerTest {
         topologyWithCompletedClusterChangePlan(),
         topologyWithClusterChangePlanWithMemberOperations(),
         topologyWithExporterState(),
-        topologyWithExporterDisableOperation());
+        topologyWithExporterDisableOperation(),
+        topologyWithExporterEnableOperation());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -313,9 +332,9 @@ final class ProtoBufSerializerTest {
             new ExportersConfig(
                 Map.of(
                     "expA",
-                    new ExporterState(State.ENABLED),
+                    new ExporterState(10, State.ENABLED, Optional.of("expB")),
                     "expB",
-                    new ExporterState(State.DISABLED))));
+                    new ExporterState(5, State.DISABLED, Optional.empty()))));
     return ClusterConfiguration.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .updateMember(
@@ -329,5 +348,17 @@ final class ProtoBufSerializerTest {
     return topologyWithExporterState()
         .startConfigurationChange(
             List.of(new PartitionDisableExporterOperation(MemberId.from("1"), 1, "expA")));
+  }
+
+  private static ClusterConfiguration topologyWithExporterEnableOperation() {
+    return topologyWithExporterState()
+        .startConfigurationChange(
+            List.of(
+                // with initialize from another exporter
+                new PartitionEnableExporterOperation(
+                    MemberId.from("1"), 1, "expA", Optional.of("expB")),
+                // without initialize from another exporter
+                new PartitionEnableExporterOperation(
+                    MemberId.from("1"), 1, "expA", Optional.empty())));
   }
 }

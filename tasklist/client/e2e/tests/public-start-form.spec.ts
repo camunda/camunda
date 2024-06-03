@@ -7,8 +7,8 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
-import * as zeebeClient from '../zeebeClient';
+import {test} from '@/test-fixtures';
+import * as zeebeClient from '@/utils/zeebeClient';
 
 test.describe('public start process', () => {
   test('should submit form', async ({makeAxeBuilder, publicFormsPage}) => {

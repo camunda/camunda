@@ -42,6 +42,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +55,10 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
   @Autowired private MetricIndex index;
   @Autowired private RestHighLevelClient esClient;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public void registerTaskCompleteEvent(TaskEntity task) {

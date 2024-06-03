@@ -289,4 +289,40 @@ describe('processes.migration store', () => {
     ]);
     window.clientConfig = undefined;
   });
+
+  it('should pre-set target process version', async () => {
+    // given: demoProcess version 1 as source process
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: '?active=true&incidents=true&process=demoProcess&version=1',
+    }));
+
+    // when initializing processesStore
+    processesStore.init();
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await processesStore.fetchProcesses();
+
+    // then expect demoProcess version 3 to be pre-selected
+    expect(processesStore.selectedTargetProcessId).toBe('demoProcess3');
+    expect(processesStore.latestProcessVersion).toEqual(3);
+  });
+
+  it('should not pre-set target process version', async () => {
+    // given: demoProcess version 3 (latest version) as source process
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: '?active=true&incidents=true&process=demoProcess&version=3',
+    }));
+
+    // when initializing processesStore
+    processesStore.init();
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await processesStore.fetchProcesses();
+
+    // then expect no target version to be selected
+    expect(processesStore.selectedTargetProcessId).toBe(undefined);
+    expect(processesStore.latestProcessVersion).toEqual(undefined);
+  });
 });

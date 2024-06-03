@@ -7,8 +7,8 @@
  */
 
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from '../zeebeClient';
-import {test} from '../test-fixtures';
+import {deploy, createInstances} from '@/utils/zeebeClient';
+import {test} from '@/test-fixtures';
 
 test.beforeAll(async () => {
   await Promise.all([
@@ -55,7 +55,7 @@ test.describe('task panel page', () => {
 
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
 
-    await taskPanelPage.filterBy('All open');
+    await taskPanelPage.filterBy('All open tasks');
     await expect(page).toHaveURL(/\?filter=all-open/);
 
     await page.reload();

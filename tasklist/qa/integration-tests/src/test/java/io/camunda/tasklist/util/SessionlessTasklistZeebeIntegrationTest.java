@@ -68,6 +68,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Autowired private ProcessService processService;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
+
   @Autowired private ObjectMapper objectMapper;
 
   private HttpClient httpClient = HttpClient.newHttpClient();

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {customFiltersSchema} from 'modules/custom-filters/customFiltersSchema';
+import {namedCustomFiltersSchema} from 'modules/custom-filters/customFiltersSchema';
 import {z} from 'zod';
 
 const validators = {
@@ -16,9 +16,7 @@ const validators = {
   hasConsentedToStartProcess: z.boolean(),
   theme: z.enum(['light', 'dark', 'system']),
   autoSelectNextTask: z.boolean(),
-  customFilters: z.object({
-    custom: customFiltersSchema,
-  }),
+  customFilters: z.record(z.string(), namedCustomFiltersSchema),
 } as const;
 
 type Validators = typeof validators;

@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -74,6 +75,13 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               disableExporterOperation.partitionId(),
               disableExporterOperation.memberId(),
               disableExporterOperation.exporterId(),
+              partitionChangeExecutor);
+      case final PartitionEnableExporterOperation enableExporterOperation ->
+          new PartitionEnableExporterApplier(
+              enableExporterOperation.partitionId(),
+              enableExporterOperation.memberId(),
+              enableExporterOperation.exporterId(),
+              enableExporterOperation.initializeFrom(),
               partitionChangeExecutor);
       case null, default -> new FailingApplier(operation);
     };

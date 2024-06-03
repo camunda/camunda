@@ -625,13 +625,13 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public Response getLifecyclePolicy(final String policyName) {
+  public Optional<Response> getLifecyclePolicy(final String policyName) {
     final Request request = new Request("GET", "/_plugins/_ism/policies/" + policyName);
     try {
-      return opensearchRestClient.performRequest(request);
+      return Optional.ofNullable(opensearchRestClient.performRequest(request));
     } catch (final ResponseException e) {
       if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
-        return null;
+        return Optional.empty();
       } else {
         throw new TasklistRuntimeException("Communication error with OpenSearch", e);
       }

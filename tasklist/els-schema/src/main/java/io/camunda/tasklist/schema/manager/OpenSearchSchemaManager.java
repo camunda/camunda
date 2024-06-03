@@ -87,7 +87,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Override
   public void createSchema() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCycles();
+      createIndexLifeCyclesIfNotExist();
     }
     createDefaults();
     createTemplates();
@@ -275,11 +275,15 @@ public class OpenSearchSchemaManager implements SchemaManager {
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
-  public void createIndexLifeCycles() {
+  public void createIndexLifeCyclesIfNotExist() {
+    if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
+      LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
+      return;
+    }
     LOGGER.info("Creating ISM Policy for deleting archived indices");
 
     final Request request =
-        new Request("PUT", "_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
+        new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
     final JSONObject requestJson = new JSONObject();
     final JSONArray statesJson = new JSONArray();
     final JSONObject openState = new JSONObject();

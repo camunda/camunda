@@ -16,6 +16,7 @@ import {TaskPanelPage} from './pages/TaskPanelPage';
 import {PublicFormsPage} from './pages/PublicFormsPage';
 import {ProcessesPage} from './pages/ProcessesPage';
 import {FormJSDetailsPage} from './pages/FormJSDetailsPage';
+import {sleep} from '@/utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -50,6 +51,8 @@ const test = base.extend<PlaywrightFixtures>({
       await fetch(`${baseURL}/v1/external/devUtil/recreateData`, {
         method: 'POST',
       });
+
+      await sleep(1000);
     });
   },
   testSetupPage: async ({page}, use) => {

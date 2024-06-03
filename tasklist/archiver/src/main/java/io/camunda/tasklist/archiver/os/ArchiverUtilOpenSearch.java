@@ -50,25 +50,7 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
 
   @Autowired private OpenSearchAsyncClient osClient;
 
-  public void setIndexLifeCycle(final String destinationIndexName) {
-    if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      try {
-        final Request request = new Request("POST", "_plugins/_ism/add/" + destinationIndexName);
-
-        final JSONObject requestJson = new JSONObject();
-        requestJson.put("policy_id", OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES);
-        request.setJsonEntity(requestJson.toString());
-        final Response response = opensearchRestClient.performRequest(request);
-      } catch (IOException e) {
-        LOGGER.warn(
-            "Could not set ILM policy {} for index {}: {}",
-            OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES,
-            destinationIndexName,
-            e.getMessage());
-      }
-    }
-  }
-
+  @Override
   public CompletableFuture<Long> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -104,6 +86,7 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
     return deleteFuture;
   }
 
+  @Override
   public CompletableFuture<Long> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -141,6 +124,26 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
             });
 
     return reindexFuture;
+  }
+
+  @Override
+  public void setIndexLifeCycle(final String destinationIndexName) {
+    if (tasklistProperties.getArchiver().isIlmEnabled()) {
+      try {
+        final Request request = new Request("POST", "/_plugins/_ism/add/" + destinationIndexName);
+
+        final JSONObject requestJson = new JSONObject();
+        requestJson.put("policy_id", OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES);
+        request.setJsonEntity(requestJson.toString());
+        final Response response = opensearchRestClient.performRequest(request);
+      } catch (final IOException e) {
+        LOGGER.warn(
+            "Could not set ILM policy {} for index {}: {}",
+            OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES,
+            destinationIndexName,
+            e.getMessage());
+      }
+    }
   }
 
   private CompletableFuture<ReindexResponse> sendReindexRequest(

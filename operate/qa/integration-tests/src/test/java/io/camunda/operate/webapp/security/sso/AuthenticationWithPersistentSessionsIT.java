@@ -27,9 +27,12 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -112,7 +115,10 @@ import org.springframework.web.client.RestTemplate;
       ElasticsearchSessionRepository.class,
       OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
-      OpensearchConnector.class
+      OpensearchConnector.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
