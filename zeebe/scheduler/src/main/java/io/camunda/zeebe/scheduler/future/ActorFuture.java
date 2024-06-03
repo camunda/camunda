@@ -8,7 +8,9 @@
 package io.camunda.zeebe.scheduler.future;
 
 import io.camunda.zeebe.scheduler.ActorTask;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -127,6 +129,39 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
   <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
 
   /**
+   * Similar to {@link #andThen(Function, Executor)}, but with better integration into the scheduler
+   * module. While it creates an intermediate future for chaining, it will respect the concurrency
+   * control's lifecycle. If, for example, it's closed, it will simply throw an exception on call.
+   *
+   * @param next function to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   * @param <U> the type of the new future
+   */
+  default <U> ActorFuture<U> andThen(
+      final Function<V, ActorFuture<U>> next, final ConcurrencyControl executor) {
+    final ActorFuture<U> result = executor.createFuture();
+    executor.runOnCompletion(
+        this,
+        (thisResult, thisError) -> {
+          if (thisError != null) {
+            result.completeExceptionally(thisError);
+            return;
+          }
+
+          try {
+            executor.runOnCompletion(next.apply(thisResult), result);
+          } catch (final Exception e) {
+            result.completeExceptionally(new CompletionException(e));
+          }
+        });
+
+    return result;
+  }
+
+  /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
    * result of this future, allowing you to change types on the fly.
    *
@@ -143,4 +178,37 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param <U> the type of the new future
    */
   <U> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
+
+  /**
+   * Similar to {@link #thenApply(Function, Executor)}, but with better integration into the
+   * scheduler module. While it creates an intermediate future for chaining, it will respect the
+   * concurrency control's lifecycle. If, for example, it's closed, it will simply throw an
+   * exception on call.
+   *
+   * @param next function to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   * @param <U> the type of the new future
+   */
+  default <U> ActorFuture<U> thenApply(
+      final Function<V, U> next, final ConcurrencyControl executor) {
+    final ActorFuture<U> nextFuture = executor.createFuture();
+    executor.runOnCompletion(
+        this,
+        (result, error) -> {
+          if (error != null) {
+            nextFuture.completeExceptionally(error);
+            return;
+          }
+
+          try {
+            nextFuture.complete(next.apply(result));
+          } catch (final Exception e) {
+            nextFuture.completeExceptionally(new CompletionException(e));
+          }
+        });
+    return nextFuture;
+  }
 }

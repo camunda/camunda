@@ -14,7 +14,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,12 +29,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.assertj.core.api.AbstractThrowableAssert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-public final class ActorFutureTest {
-  @Rule
-  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+final class ActorFutureTest {
+  @RegisterExtension
+  final ControlledActorSchedulerExtension schedulerRule = new ControlledActorSchedulerExtension();
 
   @Test
   public void shouldInvokeCallbackOnFutureCompletion() {
