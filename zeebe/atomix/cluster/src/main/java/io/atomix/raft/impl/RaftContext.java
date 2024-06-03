@@ -873,6 +873,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @param firstCommitIndex The first commit index.
    */
   public void setFirstCommitIndex(final long firstCommitIndex) {
+    if (firstCommitIndex == 0) {
+      return;
+    }
     if (this.firstCommitIndex == 0) {
       this.firstCommitIndex = firstCommitIndex;
       log.info(
