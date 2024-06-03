@@ -63,11 +63,8 @@
     <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
 
     <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
-    <commons-codec.version>1.16.0</commons-codec.version>
-    <commons-lang3.version>3.13.0</commons-lang3.version>
     <snakeyaml.version>2.2</snakeyaml.version>
-    <mockito.version>5.5.0</mockito.version>
-    <netty.version>4.1.100.Final</netty.version>
+    <commons-lang3.version>3.14.0</commons-lang3.version>
 
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.5.1</version.zeebe>
@@ -117,7 +114,7 @@
     <version.nimbus-jose-jwt>9.37.3</version.nimbus-jose-jwt>
     <version.keycloak>23.0.7</version.keycloak>
     <version.jna>5.14.0</version.jna>
-    <version.commons-compress>1.26.1</version.commons-compress>
+    <version.commons-compress>1.26.2</version.commons-compress>
 
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <version.checkstyle>10.15.0</version.checkstyle>
