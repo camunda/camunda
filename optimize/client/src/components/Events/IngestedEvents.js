@@ -120,6 +120,8 @@ export default function IngestedEvents() {
     });
   }
 
+  const batchActionHidden = selected.length === 0;
+
   return (
     <div className="IngestedEvents">
       <PageTitle pageName={t('events.ingested.label')} />
@@ -144,15 +146,17 @@ export default function IngestedEvents() {
                 onClear={() => setQuery('')}
               />
               <TableBatchActions
-                shouldShowBatchActions={selected.length > 0}
+                shouldShowBatchActions={!batchActionHidden}
                 totalSelected={selected.length}
                 translateWithId={(id, args) => t('common.' + id, args)}
                 onCancel={() => setSelected([])}
+                tabIndex={batchActionHidden ? -1 : 0}
               >
                 <TableBatchAction
-                  disabled={maxDeletionReached}
+                  disabled={maxDeletionReached || batchActionHidden}
                   onClick={() => setDeleting(true)}
                   renderIcon={TrashCan}
+                  tabIndex={batchActionHidden ? -1 : 0}
                 >
                   {t('common.delete')}
                 </TableBatchAction>

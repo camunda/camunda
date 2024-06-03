@@ -128,11 +128,12 @@ exports[`should match snapshot 1`] = `
           <TableBatchActions
             onCancel={[Function]}
             shouldShowBatchActions={false}
+            tabIndex={-1}
             totalSelected={0}
             translateWithId={[Function]}
           >
             <TableBatchAction
-              disabled={false}
+              disabled={true}
               onClick={[Function]}
               renderIcon={
                 Object {
@@ -143,6 +144,7 @@ exports[`should match snapshot 1`] = `
                   "render": [Function],
                 }
               }
+              tabIndex={-1}
             >
               Delete
             </TableBatchAction>
