@@ -12,7 +12,6 @@ import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstancesStore} from 'modules/stores/processInstances';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
@@ -22,7 +21,6 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem, Modal} from './styled';
-import isNil from 'lodash/isNil';
 import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 
