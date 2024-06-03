@@ -45,7 +45,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     this.directory = directory;
     chunks = collectChunks(directory);
     totalCount = chunks.size();
-    chunksView = chunks;
+    chunksView = new TreeSet<>(chunks);
     chunkIdView = new CharSequenceView();
 
     snapshotChecksum = checksum;
@@ -62,13 +62,18 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   }
 
   @Override
+  public void reset() {
+    chunksView = new TreeSet<>(chunks);
+  }
+
+  @Override
   public void seek(final ByteBuffer id) {
     if (id == null) {
       return;
     }
 
     final var path = decodeChunkId(id);
-    chunksView = chunks.tailSet(path, true);
+    chunksView = new TreeSet<>(chunks.tailSet(path, true));
   }
 
   @Override
