@@ -17,7 +17,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
@@ -107,9 +106,40 @@ class ElasticsearchBackupRepositoryTest {
   }
 
   @Test
+  void shouldReturnBackupStateIncompleteIfLastSnapshotHasNoEndtimeYet() throws IOException {
+    final var snapshotClient = mock(SnapshotClient.class);
+    final var firstSnapshotInfo = mock(SnapshotInfo.class);
+    final var snapshotResponse = mock(GetSnapshotsResponse.class);
+    final var lastSnapshotInfo = mock(SnapshotInfo.class);
+
+    // Set up Snapshot client
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    // Set up first Snapshot details
+    when(firstSnapshotInfo.userMetadata())
+        .thenReturn(objectMapper.convertValue(new Metadata().setPartCount(3), Map.class));
+    when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
+    when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(firstSnapshotInfo.startTime()).thenReturn(23L);
+
+    // Set up last Snapshot details
+    when(lastSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
+    // when(lastSnapshotInfo.endTime()).thenReturn(0L);
+    when(lastSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+
+    // Set up Snapshot response
+    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
+    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+  }
+
+  @Test
   void shouldReturnBackupStateProgress() throws IOException {
     final var snapshotClient = mock(SnapshotClient.class);
     final var firstSnapshotInfo = mock(SnapshotInfo.class);
+    final var lastSnapshotInfo = mock(SnapshotInfo.class);
     final var snapshotResponse = mock(GetSnapshotsResponse.class);
 
     // Set up Snapshot client
@@ -117,12 +147,17 @@ class ElasticsearchBackupRepositoryTest {
     // Set up Snapshot details
     when(firstSnapshotInfo.userMetadata())
         .thenReturn(objectMapper.convertValue(new Metadata().setPartCount(3), Map.class));
-    when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
+    when(firstSnapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId("first-snapshot-name", "uuid-first"));
+    when(lastSnapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId("last-snapshot-name", "uuid-last"));
     when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
-    when(firstSnapshotInfo.startTime()).thenReturn(Instant.now().toEpochMilli());
+    when(lastSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(firstSnapshotInfo.startTime()).thenReturn(5L);
+    when(lastSnapshotInfo.endTime()).thenReturn(10L);
 
     // Set up Snapshot response
-    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo));
+    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
     when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
 
     // Test
