@@ -35,8 +35,10 @@ import org.springframework.context.annotation.Profile;
 @Import(JacksonConfig.class)
 @Profile("!test")
 
-//The class will be used to run the schema migration process
-@Deprecated(since = "The class is deprecated and will be removed in the future. Only used for testing purposes.")
+// The class will be used to run the schema migration process
+@Deprecated(
+    since =
+        "The class is deprecated and will be removed in the future. Only used for testing purposes.")
 public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMigration.class);

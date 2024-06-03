@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
