@@ -6,10 +6,35 @@ on:
 
 
 jobs:
+
+  import_secrets:
+    name: Import secrets
+    runs-on: ubuntu-latest
+    outputs:
+      secret_docker_username_dockerhub: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+      secret_docker_password_dockerhub: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      secret_docker_username_camunda: ${{ steps.secrets.outputs.NEXUS_USR }}
+      secret_docker_password_camunda: ${{ steps.secrets.outputs.NEXUS_PSW }}
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR ;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW ;
+            secret/data/github.com/organizations/camunda NEXUS_USR ;
+            secret/data/github.com/organizations/camunda NEXUS_PSW
+
   helm-deploy:
     name: Helm chart Integration Tests
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@helm-chart-manua-secret-inputs
     secrets: inherit
+    needs: import_secrets
     with:
       identifier: camunda-helm-int
       test-enabled: true
@@ -24,3 +49,7 @@ jobs:
         tasklist:
           image:
             tag: SNAPSHOT
+      secret_docker_username_dockerhub: ${{ needs.import_secrets.outputs.secret_docker_username_dockerhub }}
+      secret_docker_password_dockerhub: ${{ needs.import_secrets.outputs.secret_docker_password_dockerhub }}
+      secret_docker_username_camunda: ${{ needs.import_secrets.outputs.secret_docker_username_camunda }}
+      secret_docker_password_camunda: ${{ needs.import_secrets.outputs.secret_docker_password_camunda }}
