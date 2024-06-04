@@ -37,6 +37,7 @@ import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,9 +47,13 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverUtilOpenSearch.class);
 
-  @Autowired protected RestClient opensearchRestClient;
+  @Autowired
+  @Qualifier("tasklistOpensearchRestClient")
+  private RestClient opensearchRestClient;
 
-  @Autowired private OpenSearchAsyncClient osClient;
+  @Autowired
+  @Qualifier("tasklistOpenSearchAsyncClient")
+  private OpenSearchAsyncClient osClient;
 
   @Override
   public CompletableFuture<Long> deleteDocuments(

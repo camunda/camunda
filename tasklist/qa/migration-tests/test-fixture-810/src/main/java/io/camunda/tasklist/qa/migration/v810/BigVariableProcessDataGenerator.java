@@ -31,6 +31,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** It is considered that Zeebe and Elasticsearch are running. */
@@ -50,7 +51,9 @@ public class BigVariableProcessDataGenerator {
    */
   private ZeebeClient zeebeClient;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   private final Random random = new Random();
 

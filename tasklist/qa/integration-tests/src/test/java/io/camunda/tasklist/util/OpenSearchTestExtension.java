@@ -63,17 +63,17 @@ public class OpenSearchTestExtension
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
   @Autowired
-  @Qualifier("openSearchClient")
-  protected OpenSearchClient osClient;
+  @Qualifier("tasklistOpenSearchClient")
+  private OpenSearchClient osClient;
 
   @Autowired
-  @Qualifier("zeebeOsClient")
-  protected OpenSearchClient zeebeOsClient;
+  @Qualifier("tasklistZeebeOsClient")
+  private OpenSearchClient zeebeOsClient;
 
-  @Autowired protected TasklistProperties tasklistProperties;
-  @Autowired protected ZeebeImporter zeebeImporter;
-  @Autowired protected RecordsReaderHolder recordsReaderHolder;
-  protected boolean failed = false;
+  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private ZeebeImporter zeebeImporter;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
+  private boolean failed = false;
   @Autowired private SchemaManager schemaManager;
 
   @Autowired private ObjectMapper objectMapper;

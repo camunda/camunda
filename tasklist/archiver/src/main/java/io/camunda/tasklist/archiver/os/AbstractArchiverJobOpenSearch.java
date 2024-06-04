@@ -15,10 +15,13 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public abstract class AbstractArchiverJobOpenSearch extends AbstractArchiverJob {
 
-  @Autowired private OpenSearchAsyncClient osAsyncClient;
+  @Autowired
+  @Qualifier("tasklistOpenSearchAsyncClient")
+  private OpenSearchAsyncClient osAsyncClient;
 
   public AbstractArchiverJobOpenSearch(List<Integer> partitionIds) {
     super(partitionIds);

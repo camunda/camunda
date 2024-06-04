@@ -39,6 +39,7 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -64,7 +65,9 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private OpenSearchAsyncClient openSearchAsyncClient;
+  @Autowired
+  @Qualifier("tasklistOpenSearchAsyncClient")
+  private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Autowired private Metrics metrics;
 

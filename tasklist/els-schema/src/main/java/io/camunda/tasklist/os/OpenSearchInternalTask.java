@@ -18,6 +18,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.Status;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -46,7 +47,9 @@ public class OpenSearchInternalTask {
   public static final int MAX_TASKS_ENTRIES = 2_000;
   public static final String ID = "id";
 
-  @Autowired private OpenSearchClient openSearchClient;
+  @Autowired
+  @Qualifier("tasklistOpenSearchClient")
+  private OpenSearchClient openSearchClient;
 
   public void checkForErrorsOrFailures(final GetTasksResponse tasks) throws IOException {
     if (tasks != null) {

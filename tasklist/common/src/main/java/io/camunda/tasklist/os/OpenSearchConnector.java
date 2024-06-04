@@ -90,7 +90,7 @@ public class OpenSearchConnector {
   private ObjectMapper tasklistObjectMapper;
 
   @Bean
-  public OpenSearchClient openSearchClient() {
+  public OpenSearchClient tasklistOpenSearchClient() {
     final OpenSearchClient openSearchClient = createOsClient(tasklistProperties.getOpenSearch());
     try {
       final HealthResponse response = openSearchClient.cluster().health();
@@ -105,7 +105,13 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public RestClient opensearchRestClient() {
+  public OpenSearchClient tasklistZeebeOsClient() {
+    System.setProperty("es.set.netty.runtime.available.processors", "false");
+    return createOsClient(tasklistProperties.getZeebeOpenSearch());
+  }
+
+  @Bean
+  public RestClient tasklistOpensearchRestClient() {
     final var httpHost = getHttpHost(tasklistProperties.getOpenSearch());
     return RestClient.builder(httpHost)
         .setHttpClientConfigCallback(
@@ -114,16 +120,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public RestClient opensearchZeebeRestClient() {
-    final var httpHost = getHttpHost(tasklistProperties.getZeebeOpenSearch());
-    return RestClient.builder(httpHost)
-        .setHttpClientConfigCallback(
-            b -> configureApacheHttpClient(b, tasklistProperties.getZeebeOpenSearch()))
-        .build();
-  }
-
-  @Bean
-  public OpenSearchAsyncClient openSearchAsyncClient() {
+  public OpenSearchAsyncClient tasklistOpenSearchAsyncClient() {
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(tasklistProperties.getOpenSearch());
     final CompletableFuture<HealthResponse> healthResponse;
@@ -146,13 +143,7 @@ public class OpenSearchConnector {
     return openSearchClient;
   }
 
-  @Bean("zeebeOsClient")
-  public OpenSearchClient zeebeOsClient() {
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createOsClient(tasklistProperties.getZeebeOpenSearch());
-  }
-
-  public OpenSearchAsyncClient createAsyncOsClient(final OpenSearchProperties osConfig) {
+  private OpenSearchAsyncClient createAsyncOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
@@ -207,7 +198,7 @@ public class OpenSearchConnector {
     return openSearchAsyncClient;
   }
 
-  public OpenSearchClient createOsClient(final OpenSearchProperties osConfig) {
+  private OpenSearchClient createOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
     if (isAws()) {
       return getAwsClient(osConfig);

@@ -33,10 +33,10 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorOpenSearch.class);
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOpenSearchClient")
   @Autowired
   private OpenSearchClient osClient;
 
