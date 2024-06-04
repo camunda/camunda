@@ -7,6 +7,13 @@ jobs:
     name: Dispatch Command
     runs-on: ubuntu-latest
     steps:
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Generate a GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
@@ -31,3 +38,12 @@ jobs:
             help
             pm
             qa
+
+      - name: Update comment in case of failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          body: |
+            > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+          reactions: confused
