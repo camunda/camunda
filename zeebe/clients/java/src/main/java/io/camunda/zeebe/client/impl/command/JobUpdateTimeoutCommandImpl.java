@@ -93,4 +93,10 @@ public class JobUpdateTimeoutCommandImpl
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobTimeout(request, streamObserver);
   }
+
+  @Override
+  public UpdateTimeoutJobCommandStep2 operationReference(final long operationReference) {
+    builder.setOperationReference(operationReference);
+    return this;
+  }
 }
