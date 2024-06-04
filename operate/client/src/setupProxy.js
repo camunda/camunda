@@ -19,4 +19,8 @@ module.exports = function (app) {
       pathRewrite: {'^/client-config.js': '/operate/client-config.js'},
     }),
   );
+  // redirect http://localhost:3000 to http://localhost:3000/operate
+  app.get('/', ({res}) => {
+    res.redirect('/operate');
+  });
 };
