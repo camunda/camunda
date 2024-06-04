@@ -634,9 +634,12 @@
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
+            <dependency>io.camunda:identity-backend</dependency>
+            <dependency>io.camunda:identity-common</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
