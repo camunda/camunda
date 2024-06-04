@@ -141,6 +141,10 @@ public class EngineLargeStatePerformanceTest {
     final var assertResult = testCase.run();
 
     // then
+<<<<<<< HEAD:zeebe/engine/src/test/java/io/camunda/zeebe/engine/perf/EngineLargeStatePerformanceTest.java
     assertResult.isAtLeast(referenceScore, 0.25);
+=======
+    assertResult.isAtLeast(referenceScore, 0.15);
+>>>>>>> 3f0cf018 (test: only allow performance improvements):engine/src/test/java/io/camunda/zeebe/engine/perf/EngineLargeStatePerformanceTest.java
   }
 }
