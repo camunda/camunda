@@ -9,4 +9,4 @@ Prerequisites:
 3. Start Elasticsearch by running ELASTICSEARCH_HOME/bin/elasticsearch (or ELASTICSEARCH_HOME\bin\elasticsearch.bat on Windows)
 
 Start Camunda:
-1. Run bin/camunda (or bin\operate.bat on Windows)
+1. Run bin/camunda (or bin\camunda.bat on Windows)
