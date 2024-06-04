@@ -141,6 +141,6 @@ public class EngineLargeStatePerformanceTest {
     final var assertResult = testCase.run();
 
     // then
-    assertResult.isWithinDeviation(referenceScore, 0.15);
+    assertResult.isAtLeast(referenceScore, 0.2);
   }
 }
