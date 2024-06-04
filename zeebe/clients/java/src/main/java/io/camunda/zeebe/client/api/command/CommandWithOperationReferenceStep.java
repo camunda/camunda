@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.command;
 public interface CommandWithOperationReferenceStep<T> {
 
   /**
+   * Set the Operation Reference.
+   *
+   * <p>This is a key chosen by the user and will be part of all records resulted from this
+   * operation
+   *
    * @param operationReference a reference key chosen by the user and will be part of all records
    *     resulted from this operation
    * @return the builder for this command with the operation reference specified
