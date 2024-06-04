@@ -136,6 +136,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>identity-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-backend</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
     </dependency>
 
@@ -323,6 +333,11 @@
           <artifactId>tomcat-annotations-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
 
     <dependency>

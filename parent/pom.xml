@@ -901,6 +901,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>identity-backend</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
       </dependency>

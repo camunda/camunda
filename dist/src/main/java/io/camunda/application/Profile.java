@@ -18,6 +18,7 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
+  IDENTITY("identity"),
 
   // environment profiles
   TEST("test"),

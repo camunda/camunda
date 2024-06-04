@@ -12,6 +12,7 @@ import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_P
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
@@ -35,6 +36,7 @@ public class StandaloneCamunda {
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                IdentityModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
                 GatewayModuleConfiguration.class)
