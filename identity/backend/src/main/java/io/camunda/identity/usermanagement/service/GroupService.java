@@ -8,7 +8,7 @@
 package io.camunda.identity.usermanagement.service;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
-import io.camunda.identity.user.Group;
+import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
@@ -26,25 +26,28 @@ public class GroupService {
     this.groupRepository = groupRepository;
   }
 
-  public List<Group> findAllGroups() {
-    return groupRepository.findAllGroups();
+  public List<CamundaGroup> findAllGroups() {
+    return groupRepository.findAll().stream()
+        .map(group -> new CamundaGroup(group.getId(), group.getName()))
+        .toList();
   }
 
-  public Group findGroupByName(final String group) {
-    return groupRepository.findGroup(group);
+  public CamundaGroup findGroupByName(final String groupName) {
+    final var group = groupRepository.findByName(groupName);
+    return new CamundaGroup(group.getId(), group.getName());
   }
 
-  public Group createGroup(final Group group) {
+  public CamundaGroup createGroup(final CamundaGroup group) {
     userDetailsManager.createGroup(group.name(), Collections.emptyList());
-    return groupRepository.findGroup(group.name());
+    return findGroupByName(group.name());
   }
 
-  public void deleteGroup(final Group group) {
+  public void deleteGroup(final CamundaGroup group) {
     userDetailsManager.deleteGroup(group.name());
   }
 
-  public Group updateGroup(final String name, final Group group) {
+  public CamundaGroup updateGroup(final String name, final CamundaGroup group) {
     userDetailsManager.renameGroup(name, group.name());
-    return groupRepository.findGroup(group.name());
+    return findGroupByName(group.name());
   }
 }

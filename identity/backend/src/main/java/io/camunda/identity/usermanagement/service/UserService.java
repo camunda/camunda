@@ -8,8 +8,9 @@
 package io.camunda.identity.usermanagement.service;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.CamundaUser;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.model.Profile;
 import io.camunda.identity.usermanagement.repository.UserRepository;
 import java.util.List;
 import java.util.Objects;
@@ -40,40 +41,41 @@ public class UserService {
   public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
     try {
       final UserDetails userDetails =
-          User.withUsername(userWithCredential.user().username())
-              .password(userWithCredential.password())
+          User.withUsername(userWithCredential.getUsername())
+              .password(userWithCredential.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .disabled(!userWithCredential.user().enabled())
+              .disabled(!userWithCredential.isEnabled())
               .roles("DEFAULT_USER")
               .build();
       userDetailsManager.createUser(userDetails);
-      userRepository.createProfile(userWithCredential.user());
-      return userRepository.loadUser(userWithCredential.user().username());
+      final var createdUser = userRepository.loadUser(userDetails.getUsername());
+      userRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
+      return userRepository.loadUser(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
   }
 
   @Transactional
-  public void deleteUser(final int id) {
+  public void deleteUser(final Long id) {
     final CamundaUser user = findUserById(id);
-    userDetailsManager.deleteUser(user.username());
+    userDetailsManager.deleteUser(user.getUsername());
   }
 
-  public CamundaUser findUserById(final Integer id) {
-    try {
-      return userRepository.loadUserById(id);
-    } catch (final UsernameNotFoundException e) {
+  public CamundaUser findUserById(final Long id) {
+    final var user = userRepository.loadUserById(id);
+    if (user == null) {
       throw new RuntimeException("user.notFound");
     }
+    return user;
   }
 
   public CamundaUser findUserByUsername(final String username) {
-    try {
-      return userRepository.loadUser(username);
-    } catch (final UsernameNotFoundException e) {
+    final var user = userRepository.loadUser(username);
+    if (user == null) {
       throw new RuntimeException("user.notFound");
     }
+    return user;
   }
 
   public List<CamundaUser> findAllUsers() {
@@ -81,28 +83,28 @@ public class UserService {
   }
 
   @Transactional
-  public CamundaUser updateUser(final Integer id, final CamundaUserWithPassword user) {
+  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
     try {
-      if (!Objects.equals(id, user.user().id())) {
+      if (!Objects.equals(id, user.getId())) {
         throw new RuntimeException("user.notFound");
       }
       final CamundaUser existingUser = userRepository.loadUserById(id);
-      if (existingUser == null || !existingUser.username().equals(user.user().username())) {
+      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
       final UserDetails existingUserDetail =
-          userDetailsManager.loadUserByUsername(existingUser.username());
+          userDetailsManager.loadUserByUsername(existingUser.getUsername());
 
       final UserDetails userDetails =
-          User.withUsername(existingUser.username())
-              .password(user.password())
+          User.withUsername(existingUser.getUsername())
+              .password(user.getPassword())
               .passwordEncoder(passwordEncoder::encode)
               .authorities(existingUserDetail.getAuthorities())
-              .disabled(!user.user().enabled())
+              .disabled(!user.isEnabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      userRepository.updateProfile(user.user());
+      userRepository.save(new Profile(existingUser.getId(), user.getEmail()));
       return userRepository.loadUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");

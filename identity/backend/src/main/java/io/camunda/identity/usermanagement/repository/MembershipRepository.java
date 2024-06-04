@@ -7,28 +7,21 @@
  */
 package io.camunda.identity.usermanagement.repository;
 
-import io.camunda.identity.user.Group;
+import io.camunda.identity.usermanagement.CamundaGroup;
+import io.camunda.identity.usermanagement.model.Membership;
 import java.util.List;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class MembershipRepository {
-  public static final String DEF_USERS_GROUPS_QUERY =
-      "select g.id, g.group_name"
-          + " from groups g, group_members gm"
-          + " where gm.username = ? and g.id = gm.group_id";
+public interface MembershipRepository extends JpaRepository<Membership, Long> {
 
-  private final JdbcTemplate jdbcTemplate;
-
-  public MembershipRepository(final JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
-  }
-
-  public List<Group> loadUserGroups(final String username) {
-    return jdbcTemplate.query(
-        DEF_USERS_GROUPS_QUERY,
-        new String[] {username},
-        (rs, rowNum) -> new Group(rs.getInt(1), rs.getString(2)));
-  }
+  @Query(
+      value =
+          "select new io.camunda.identity.usermanagement.CamundaGroup(gm.group.id, gm.group.name)"
+              + " from Membership gm"
+              + " where gm.username = :username")
+  List<CamundaGroup> loadUserGroups(@Param("username") final String username);
 }
