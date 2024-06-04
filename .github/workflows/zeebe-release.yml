@@ -209,32 +209,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-      - name: Create Artifact Checksums
-        id: checksum
-        run: |
-          for filename in *; do
-            checksumFile="${filename}.sha1sum"
-            sha1sum "${filename}" > "${checksumFile}"
-            sha1sumResult=$?
-            if [ ! -f "${checksumFile}" ]; then
-              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
-              exit 1
-            fi
-          done
-      - name: Determine if Pre-Release
-        id: pre-release
-        run: |
-          shopt -s nocasematch # set matching to case insensitive
-          PRE_RELEASE=false
-          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
-            PRE_RELEASE=true
-          fi
-          shopt -u nocasematch # reset it
-          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
@@ -300,12 +274,40 @@ jobs:
 
           # To show the changelog also as step summary
           echo "$changelog" >> $GITHUB_STEP_SUMMARY
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ inputs.releaseVersion }}
+          path: release-artifacts
+      - name: Create Artifact Checksums
+        id: checksum
+        working-directory: ./release-artifacts
+        run: |
+          for filename in *; do
+            checksumFile="${filename}.sha1sum"
+            sha1sum "${filename}" > "${checksumFile}"
+            sha1sumResult=$?
+            if [ ! -f "${checksumFile}" ]; then
+              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+              exit 1
+            fi
+          done
+      - name: Determine if Pre-Release
+        id: pre-release
+        run: |
+          shopt -s nocasematch # set matching to case insensitive
+          PRE_RELEASE=false
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+            PRE_RELEASE=true
+          fi
+          shopt -u nocasematch # reset it
+          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
       - name: Create Github release
         uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
         with:
           name: ${{ inputs.releaseVersion }}
-          artifacts: "*"
+          artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
           body: ${{ steps.gen-changelog.outputs.changelog }}
