@@ -8,9 +8,12 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -23,7 +26,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequestMapping(value = TasklistURIs.START_PUBLIC_PROCESS)
-public class PublicProcessController {
+public class PublicProcessController extends ApiErrorController {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(PublicProcessController.class);
 
   @Autowired private ProcessStore processStore;
 
@@ -32,13 +37,18 @@ public class PublicProcessController {
       final Model model, @PathVariable final String bpmnProcessId, final HttpServletRequest req) {
     final ModelAndView modelAndView = new ModelAndView("forward:/tasklist/index.html");
     modelAndView.setStatus(HttpStatus.OK);
-    final ProcessEntity processEntity = processStore.getProcessByBpmnProcessId(bpmnProcessId);
-    final String title =
-        processEntity.getName() != null
-            ? processEntity.getName()
-            : processEntity.getBpmnProcessId();
+    try {
+      final ProcessEntity processEntity = processStore.getProcessByBpmnProcessId(bpmnProcessId);
+      final String title =
+          processEntity.getName() != null
+              ? processEntity.getName()
+              : processEntity.getBpmnProcessId();
 
-    modelAndView.addObject("title", title);
+      modelAndView.addObject("title", title);
+    } catch (final NotFoundException ex) {
+      LOGGER.warn("Could not find process with id {}", bpmnProcessId);
+      LOGGER.debug("StackTrace:", ex);
+    }
     modelAndView.addObject("ogImage", getAbsolutePathOfImage(req));
     modelAndView.addObject("ogUrl", req.getRequestURL().toString());
 
