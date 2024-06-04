@@ -12,7 +12,7 @@
   <name>Tasklist Importer 850</name>
 
   <properties>
-    <version.zeebe>8.5.0</version.zeebe>
+    <version.zeebe>8.5.2</version.zeebe>
   </properties>
 
   <dependencies>
@@ -37,6 +37,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
+      <version>${version.zeebe}</version>
     </dependency>
 
     <!-- SPRING -->
