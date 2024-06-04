@@ -40,8 +40,7 @@ public class TestRaftProtocolFactory {
    * @return a new test server protocol
    */
   public TestRaftServerProtocol newServerProtocol(final MemberId memberId) {
-    final TestRaftServerProtocol spyProtocol =
-        spy(new TestRaftServerProtocol(memberId, servers, context));
+    final TestRaftServerProtocol spyProtocol = spy(new TestRaftServerProtocol(memberId, servers));
     servers.put(memberId, spyProtocol);
     return spyProtocol;
   }

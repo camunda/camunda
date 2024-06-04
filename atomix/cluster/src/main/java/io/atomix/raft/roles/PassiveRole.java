@@ -216,19 +216,6 @@ public class PassiveRole extends InactiveRole {
       // When all chunks of the snapshot is received the log will be reset. Hence notify the
       // listeners in advance so that they can close all consumers of the log.
       raft.notifySnapshotReplicationStarted();
-    } else {
-      // fail the request if this is not the expected next chunk
-      if (!isExpectedChunk(request.chunkId())) {
-        abortPendingSnapshots();
-        return CompletableFuture.completedFuture(
-            logResponse(
-                InstallResponse.builder()
-                    .withStatus(RaftResponse.Status.ERROR)
-                    .withError(
-                        RaftError.Type.ILLEGAL_MEMBER_STATE,
-                        "Snapshot chunk is received out of order")
-                    .build()));
-      }
     }
 
     try {
@@ -419,10 +406,6 @@ public class PassiveRole extends InactiveRole {
 
   private void setNextExpected(final ByteBuffer nextChunkId) {
     nextPendingSnapshotChunkId = nextChunkId;
-  }
-
-  private boolean isExpectedChunk(final ByteBuffer chunkId) {
-    return nextPendingSnapshotChunkId == null || nextPendingSnapshotChunkId.equals(chunkId);
   }
 
   private void abortPendingSnapshots() {
