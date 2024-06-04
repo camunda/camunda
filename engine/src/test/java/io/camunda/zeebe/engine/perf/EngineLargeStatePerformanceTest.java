@@ -141,6 +141,10 @@ public class EngineLargeStatePerformanceTest {
     final var assertResult = testCase.run();
 
     // then
+<<<<<<< HEAD
     assertResult.isAtLeast(referenceScore, 0.25);
+=======
+    assertResult.isAtLeast(referenceScore, 0.15);
+>>>>>>> 3f0cf01 (test: only allow performance improvements)
   }
 }
