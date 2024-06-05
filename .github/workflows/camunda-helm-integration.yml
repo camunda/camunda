@@ -23,11 +23,8 @@ jobs:
         tasklist:
           image:
             tag: SNAPSHOT
-      secret-vault-secretId: ${{ secrets.VAULT_SECRET_ID }}
-      secret-vault-address: ${{ secrets.VAULT_ADDR }}
-      secret-vault-roleId: ${{ secrets.VAULT_ROLE_ID }}
       vault-secret-mapping: |
-        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
-        secret/data/github.com/organizations/camunda NEXUS_USR;
-        secret/data/github.com/organizations/camunda NEXUS_PSW;
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
+        secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
+        secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
+        secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
