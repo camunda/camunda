@@ -37,25 +37,19 @@ public final record SearchFieldSort(String field, SortOrder order, String missin
     }
 
     public Builder asc() {
-      order = SortOrder.ASC;
-      return this;
+      return order(SortOrder.ASC);
     }
 
     public Builder desc() {
-      order = SortOrder.DESC;
+      return order(SortOrder.DESC);
+    }
+
+    public Builder order(final SortOrder order) {
+      this.order = order;
       return this;
     }
 
-    public Builder order(SortOrder order) {
-      if (order == SortOrder.ASC) {
-        return asc();
-      } else if (order == SortOrder.DESC) {
-        return desc();
-      }
-      throw new RuntimeException("something went wrong");
-    }
-
-    public Builder missing(String value) {
+    public Builder missing(final String value) {
       missing = value;
       return this;
     }
