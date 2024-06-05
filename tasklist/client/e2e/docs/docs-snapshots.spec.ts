@@ -10,8 +10,10 @@ import {Page, expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {sub as subTime} from 'date-fns/sub';
 import {add as addTime} from 'date-fns/add';
-import registerPassengerForm from '@/resources/registerPassenger.json' assert {type: 'json'};
-import registerPassengerStartForm from '@/resources/registerPassengerStartForm.json' assert {type: 'json'};
+import registerPassengerForm from '@/resources/registerPassenger.json' assert {type:
+  'json'};
+import registerPassengerStartForm from '@/resources/registerPassengerStartForm.json' assert {type:
+  'json'};
 
 const now = new Date();
 
@@ -479,7 +481,8 @@ test.describe('Tasklist snapshots', () => {
     await mockTaskSearch(page, MOCK_TASKLIST);
 
     await taskPanelPage.goto();
-    await page.getByLabel('Custom filter').click();
+    await taskPanelPage.expandSidePanelButton.click();
+    await taskPanelPage.addCustomFilterButton.click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();

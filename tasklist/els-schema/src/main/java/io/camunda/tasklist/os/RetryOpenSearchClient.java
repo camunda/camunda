@@ -241,10 +241,14 @@ public class RetryOpenSearchClient {
   }
 
   public boolean createTemplate(final PutIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return openSearchClient.indices().putIndexTemplate(request).acknowledged();
           }
           return true;
@@ -687,5 +691,14 @@ public class RetryOpenSearchClient {
     final Request request = new Request("PUT", "/_index_template/" + templateName);
     request.setJsonEntity(updateJson);
     opensearchRestClient.performRequest(request);
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        "PutMapping " + request.index(),
+        () -> {
+          openSearchClient.indices().putMapping(request);
+          return true;
+        });
   }
 }

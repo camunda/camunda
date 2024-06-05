@@ -17,7 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -154,7 +156,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
         .nodeId(context.getNodeId())
-        .commandResponseWriter(context.getCommandResponseWriter())
+        .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
@@ -162,6 +164,23 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .listener(
             processedCommand ->
                 context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
+        .addLifecycleListener(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
+                context.getCommandApiService().onRecovered(context.getPartitionId());
+              }
+
+              @Override
+              public void onPaused() {
+                context.getCommandApiService().onPaused(context.getPartitionId());
+              }
+
+              @Override
+              public void onResumed() {
+                context.getCommandApiService().onResumed(context.getPartitionId());
+              }
+            })
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)
