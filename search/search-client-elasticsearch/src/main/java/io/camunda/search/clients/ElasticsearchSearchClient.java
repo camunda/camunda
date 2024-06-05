@@ -29,9 +29,9 @@ public final class ElasticsearchSearchClient implements CamundaSearchClient {
   }
 
   public ElasticsearchSearchClient(
-      final ElasticsearchClient client, final ElasticsearchTransformers transformer) {
+      final ElasticsearchClient client, final ElasticsearchTransformers transformers) {
     this.client = client;
-    this.transformers = new ElasticsearchTransformers();
+    this.transformers = transformers;
   }
 
   @Override
