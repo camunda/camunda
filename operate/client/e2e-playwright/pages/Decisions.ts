@@ -86,7 +86,7 @@ export class Decisions {
     }
 
     await this.page.goto(
-      `/operate${Paths.decisions()}?${convertToQueryString(searchParams)}`,
+      `.${Paths.decisions()}?${convertToQueryString(searchParams)}`,
       options,
     );
   }

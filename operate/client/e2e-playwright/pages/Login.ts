@@ -45,6 +45,6 @@ export class Login {
   }
 
   async navigateToLogin() {
-    await this.page.goto(`/operate${Paths.login()}`);
+    await this.page.goto('.' + Paths.login());
   }
 }

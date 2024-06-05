@@ -26,7 +26,7 @@ const getPort = () => {
 
 const getBasePath = () => {
   return IS_E2E ? '/operate/' : '';
-};
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
