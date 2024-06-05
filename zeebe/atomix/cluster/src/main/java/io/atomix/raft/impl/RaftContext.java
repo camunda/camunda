@@ -874,6 +874,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setFirstCommitIndex(final long firstCommitIndex) {
     if (this.firstCommitIndex == 0) {
+      if (firstCommitIndex == 0) {
+        return;
+      }
       this.firstCommitIndex = firstCommitIndex;
       log.info(
           "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",
