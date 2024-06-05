@@ -16,7 +16,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends JpaRepository<Profile, Long> {
+public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
