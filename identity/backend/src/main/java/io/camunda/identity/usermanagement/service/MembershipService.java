@@ -8,8 +8,8 @@
 package io.camunda.identity.usermanagement.service;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.Group;
+import io.camunda.identity.usermanagement.CamundaGroup;
+import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.repository.MembershipRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -33,10 +33,12 @@ public class MembershipService {
     this.membershipRepository = membershipRepository;
   }
 
-  public void addUserToGroup(final CamundaUser user, final Group group) {
-    userDetailsManager.addUserToGroup(user.username(), group.name());
+  public void addUserToGroup(final CamundaUser user, final CamundaGroup group) {
+    userDetailsManager.addUserToGroup(user.getUsername(), group.name());
   }
 
+  public void removeUserFromGroup(final CamundaUser user, final CamundaGroup group) {
+    userDetailsManager.removeUserFromGroup(user.getUsername(), group.name());
   public void addUserToGroup(final Integer userId, final Integer groupId) {
     final CamundaUser user = userService.findUserById(userId);
     final Group group = groupService.findGroupById(groupId);
@@ -47,6 +49,7 @@ public class MembershipService {
     userDetailsManager.removeUserFromGroup(user.username(), group.name());
   }
 
+  public List<CamundaUser> getMembers(final CamundaGroup group) {
   public void removeUserFromGroup(final Integer userId, final Integer groupId) {
     final CamundaUser user = userService.findUserById(userId);
     final Group group = groupService.findGroupById(groupId);
@@ -59,6 +62,8 @@ public class MembershipService {
         .toList();
   }
 
+  public List<CamundaGroup> getUserGroups(final CamundaUser user) {
+    return membershipRepository.loadUserGroups(user.getUsername());
   public List<CamundaUser> getUsersOfGroup(final Integer groupId) {
     final Group group = groupService.findGroupById(groupId);
     return getUsersOfGroup(group);

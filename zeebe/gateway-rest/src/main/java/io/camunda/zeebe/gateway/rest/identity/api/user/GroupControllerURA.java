@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.identity.api.user;
 
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.Group;
+import io.camunda.identity.usermanagement.CamundaGroup;
+import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.service.GroupService;
 import io.camunda.identity.usermanagement.service.MembershipService;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchRequestDto;
@@ -39,7 +39,7 @@ public class GroupControllerURA {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public Group createGroup(@RequestBody final Group group) {
+  public CamundaGroup createGroup(@RequestBody final CamundaGroup group) {
     return groupService.createGroup(group);
   }
 
@@ -50,23 +50,23 @@ public class GroupControllerURA {
   }
 
   @GetMapping("/{id}")
-  public Group findGroupById(@PathVariable(name = "id") final Integer groupId) {
+  public CamundaGroup findGroupById(@PathVariable(name = "id") final Integer groupId) {
     return groupService.findGroupById(groupId);
   }
 
   @PostMapping("/search")
-  public SearchResponseDto<Group> findAllGroups(
+  public SearchResponseDto<CamundaGroup> findAllGroups(
       @RequestBody final SearchRequestDto searchRequestDto) {
-    final SearchResponseDto<Group> responseDto = new SearchResponseDto<>();
-    final List<Group> allGroups = groupService.findAllGroups();
+    final SearchResponseDto<CamundaGroup> responseDto = new SearchResponseDto<>();
+    final List<CamundaGroup> allGroups = groupService.findAllGroups();
     responseDto.setItems(allGroups);
 
     return responseDto;
   }
 
   @PutMapping("/{id}")
-  public Group updateGroup(
-      @PathVariable(name = "id") final Integer groupId, @RequestBody final Group group) {
+  public CamundaGroup updateGroup(
+      @PathVariable(name = "id") final Integer groupId, @RequestBody final CamundaGroup group) {
     return groupService.renameGroupById(groupId, group);
   }
 

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.identity.api.user;
 
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.CamundaUser;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchResponseDto;

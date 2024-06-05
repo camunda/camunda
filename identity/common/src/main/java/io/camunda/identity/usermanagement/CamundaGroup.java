@@ -5,6 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.user;
+package io.camunda.identity.usermanagement;
 
-public record CamundaUserWithPassword(CamundaUser user, String password) {}
+public record CamundaGroup(Long id, String name) {
+  public CamundaGroup(final String name) {
+    this(null, name);
+  }
+}
