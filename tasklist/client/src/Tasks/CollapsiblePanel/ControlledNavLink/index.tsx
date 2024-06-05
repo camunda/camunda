@@ -10,10 +10,14 @@ import {NavLink, Path} from 'react-router-dom';
 import cn from 'classnames';
 import styles from './styles.module.scss';
 
-type Props = Omit<React.ComponentProps<typeof NavLink>, 'to' | 'className'> & {
+type Props = Omit<
+  React.ComponentProps<typeof NavLink>,
+  'to' | 'className' | 'children'
+> & {
   to: Partial<Path>;
   className?: string;
   isActive: boolean;
+  children: string;
 };
 
 const ControlledNavLink: React.FC<Props> = ({
@@ -38,6 +42,7 @@ const ControlledNavLink: React.FC<Props> = ({
           className,
         )
       }
+      title={children.length > 17 ? children : undefined}
     >
       {children}
     </NavLink>
