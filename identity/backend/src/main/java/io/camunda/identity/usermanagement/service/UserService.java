@@ -48,9 +48,9 @@ public class UserService {
               .roles("DEFAULT_USER")
               .build();
       userDetailsManager.createUser(userDetails);
-      final var createdUser = userProfileRepository.loadUser(userDetails.getUsername());
+      final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
       userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
-      return userProfileRepository.loadUser(userWithCredential.getUsername());
+      return userProfileRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
@@ -62,7 +62,7 @@ public class UserService {
   }
 
   public CamundaUser findUserById(final Long id) {
-    final var user = userProfileRepository.loadUserById(id);
+    final var user = userProfileRepository.findUserById(id);
     if (user == null) {
       throw new RuntimeException("user.notFound");
     }
@@ -70,15 +70,19 @@ public class UserService {
   }
 
   public CamundaUser findUserByUsername(final String username) {
-    final var user = userProfileRepository.loadUser(username);
+    final var user = userProfileRepository.findByUsername(username);
     if (user == null) {
       throw new RuntimeException("user.notFound");
     }
     return user;
   }
 
+  public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
+    return userProfileRepository.findAllByUsernameIn(usernames);
+  }
+
   public List<CamundaUser> findAllUsers() {
-    return userProfileRepository.loadUsers();
+    return userProfileRepository.findAllUsers();
   }
 
   public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
@@ -86,7 +90,7 @@ public class UserService {
       if (!Objects.equals(id, user.getId())) {
         throw new RuntimeException("user.notFound");
       }
-      final CamundaUser existingUser = userProfileRepository.loadUserById(id);
+      final CamundaUser existingUser = userProfileRepository.findUserById(id);
       if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
@@ -103,7 +107,7 @@ public class UserService {
               .build();
       userDetailsManager.updateUser(userDetails);
       userProfileRepository.save(new Profile(existingUser.getId(), user.getEmail()));
-      return userProfileRepository.loadUserById(id);
+      return userProfileRepository.findUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
