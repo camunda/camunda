@@ -69,18 +69,11 @@ jobs:
             exit 1
           fi
 
-          # Validate if the command is valid
-          if [ "${{ steps.parse-args.outputs.arg1 }}" != "assign" ]; then
-            echo "Invalid command provided"
-            exit 1
-          fi
 
           # Validate 'assign' command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'assign' ]; then
-            if [ -z "${{ steps.parse-args.outputs.assignee }}" ]; then
-              echo "No assignee provided"
-              exit 1
-            fi
+          if [ -z "${{ steps.parse-args.outputs.assignee }}" ]; then
+            echo "No assignee provided"
+            exit 1
           fi
 
       - name: Replace assignee
