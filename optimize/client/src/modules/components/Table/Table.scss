@@ -144,6 +144,13 @@
         &.noOverflow {
           overflow: visible;
         }
+
+        .cds--list-box,
+        .Popover,
+        .Select,
+        .MenuDropdown {
+          block-size: 100%;
+        }
       }
     }
   }
