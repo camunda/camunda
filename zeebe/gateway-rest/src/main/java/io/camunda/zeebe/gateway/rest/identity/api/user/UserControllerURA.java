@@ -41,12 +41,12 @@ public class UserControllerURA {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteUser(@PathVariable final Integer id) {
+  public void deleteUser(@PathVariable final Long id) {
     userService.deleteUser(id);
   }
 
   @GetMapping("/{id}")
-  public CamundaUser findUserByUsername(@PathVariable final Integer id) {
+  public CamundaUser findUserByUsername(@PathVariable final Long id) {
     return userService.findUserById(id);
   }
 
@@ -62,7 +62,7 @@ public class UserControllerURA {
 
   @PutMapping("/{id}")
   public CamundaUser updateUser(
-      @PathVariable final Integer id, @RequestBody final CamundaUserWithPassword user) {
+      @PathVariable final Long id, @RequestBody final CamundaUserWithPassword user) {
     return userService.updateUser(id, user);
   }
 }

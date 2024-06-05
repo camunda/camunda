@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.identity.CamundaSpringBootTest;
 import io.camunda.identity.usermanagement.CamundaGroup;
+import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,19 +36,19 @@ public class MembershipServiceTest {
     membershipService.addUserToGroup(camundaUserWithPassword, group);
 
     assertTrue(membershipService.getUsersOfGroup(group).contains(createdUser));
-    assertTrue(membershipService.getUserGroups(camundaUser).contains(group));
+    assertTrue(membershipService.getUserGroups(camundaUserWithPassword).contains(group));
   }
 
   @Test
   void addUserToGroupUsingIdsAdded() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    final var createdUser =
-        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
-    final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
+    final var camundaUserWithPassword =
+        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
+    final var createdUser = userService.createUser(camundaUserWithPassword);
+    final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
-    membershipService.addUserToGroup(createdUser.id(), group.id());
+    membershipService.addUserToGroupByIds(createdUser.getId(), group.id());
 
-    assertTrue(membershipService.getUsersOfGroup(group.id()).contains(createdUser));
+    assertTrue(membershipService.getUsersOfGroupById(group.id()).contains(createdUser));
     assertTrue(membershipService.getUserGroups(camundaUserWithPassword).contains(group));
   }
 
@@ -66,15 +67,15 @@ public class MembershipServiceTest {
 
   @Test
   void duplicateUserAddUserToGroupUsingIdsThrowsException() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    final CamundaUser createdUser =
-        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
-    final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
+    final var camundaUserWithPassword =
+        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
+    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
-    membershipService.addUserToGroup(createdUser.id(), group.id());
+    membershipService.addUserToGroupByIds(createdUser.getId(), group.id());
     assertThrows(
         RuntimeException.class,
-        () -> membershipService.addUserToGroup(createdUser.id(), group.id()));
+        () -> membershipService.addUserToGroupByIds(createdUser.getId(), group.id()));
   }
 
   @Test
@@ -91,39 +92,39 @@ public class MembershipServiceTest {
 
   @Test
   void nonExistingGroupAddUserToGroupUsingIdsThrowsException() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    final CamundaUser createdUser =
-        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
-    final var group = new Group("group" + UUID.randomUUID());
+    final var camundaUserWithPassword =
+        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
+    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final var group = new CamundaGroup("group" + UUID.randomUUID());
 
     assertThrows(
         RuntimeException.class,
-        () -> membershipService.addUserToGroup(createdUser.id(), group.id()));
+        () -> membershipService.addUserToGroupByIds(createdUser.getId(), group.id()));
   }
 
   @Test
   void nonExistingMemberRemoveUserFromGroupNoOp() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-
     userService.createUser(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     membershipService.removeUserFromGroup(camundaUserWithPassword, group);
 
-    assertFalse(membershipService.getUsersOfGroup(group).contains(camundaUser));
+    assertFalse(membershipService.getUsersOfGroup(group).contains(camundaUserWithPassword));
   }
 
   @Test
   void nonExistingMemberRemoveUserFromGroupUsingIdsNoOp() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    final CamundaUser createdUser =
-        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
-    final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
+    final var camundaUserWithPassword =
+        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
+    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
-    membershipService.removeUserFromGroup(createdUser.id(), group.id());
+    membershipService.removeUserFromGroupByIds(createdUser.getId(), group.id());
 
-    assertFalse(membershipService.getUsersOfGroup(group.id()).contains(camundaUserWithPassword));
+    assertFalse(
+        membershipService.getUsersOfGroupById(group.id()).contains(camundaUserWithPassword));
   }
 
   @Test
@@ -136,21 +137,22 @@ public class MembershipServiceTest {
 
     membershipService.removeUserFromGroup(camundaUserWithPassword, group);
 
-    assertFalse(membershipService.getMembers(group).contains(camundaUserWithPassword));
+    assertFalse(membershipService.getUsersOfGroup(group).contains(camundaUserWithPassword));
     assertFalse(membershipService.getUserGroups(camundaUserWithPassword).contains(group));
   }
 
   @Test
   void existingMemberRemoveUserFromGroupUsingIdsRemoved() {
-    final var camundaUser = new CamundaUser("user" + UUID.randomUUID());
-    final CamundaUser createdUser =
-        userService.createUser(new CamundaUserWithPassword(camundaUser, "password"));
-    final var group = groupService.createGroup(new Group("group" + UUID.randomUUID()));
-    membershipService.addUserToGroup(camundaUser, group);
+    final var camundaUserWithPassword =
+        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
+    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
+    membershipService.addUserToGroup(camundaUserWithPassword, group);
 
-    membershipService.removeUserFromGroup(createdUser.id(), group.id());
+    membershipService.removeUserFromGroupByIds(createdUser.getId(), group.id());
 
-    assertFalse(membershipService.getUsersOfGroup(group.id()).contains(camundaUser));
-    assertFalse(membershipService.getUserGroups(camundaUser).contains(group));
+    assertFalse(
+        membershipService.getUsersOfGroupById(group.id()).contains(camundaUserWithPassword));
+    assertFalse(membershipService.getUserGroups(camundaUserWithPassword).contains(group));
   }
 }

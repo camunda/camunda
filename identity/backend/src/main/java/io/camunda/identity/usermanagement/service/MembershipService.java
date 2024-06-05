@@ -13,8 +13,10 @@ import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.repository.MembershipRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class MembershipService {
   private final CamundaUserDetailsManager userDetailsManager;
 
@@ -37,39 +39,34 @@ public class MembershipService {
     userDetailsManager.addUserToGroup(user.getUsername(), group.name());
   }
 
-  public void removeUserFromGroup(final CamundaUser user, final CamundaGroup group) {
-    userDetailsManager.removeUserFromGroup(user.getUsername(), group.name());
-  public void addUserToGroup(final Integer userId, final Integer groupId) {
+  public void addUserToGroupByIds(final Long userId, final Long groupId) {
     final CamundaUser user = userService.findUserById(userId);
-    final Group group = groupService.findGroupById(groupId);
+    final CamundaGroup group = groupService.findGroupById(groupId);
     addUserToGroup(user, group);
   }
 
-  public void removeUserFromGroup(final CamundaUser user, final Group group) {
-    userDetailsManager.removeUserFromGroup(user.username(), group.name());
+  public void removeUserFromGroup(final CamundaUser user, final CamundaGroup group) {
+    userDetailsManager.removeUserFromGroup(user.getUsername(), group.name());
   }
 
-  public List<CamundaUser> getMembers(final CamundaGroup group) {
-  public void removeUserFromGroup(final Integer userId, final Integer groupId) {
+  public void removeUserFromGroupByIds(final Long userId, final Long groupId) {
     final CamundaUser user = userService.findUserById(userId);
-    final Group group = groupService.findGroupById(groupId);
+    final CamundaGroup group = groupService.findGroupById(groupId);
     removeUserFromGroup(user, group);
   }
 
-  public List<CamundaUser> getUsersOfGroup(final Group group) {
+  public List<CamundaUser> getUsersOfGroup(final CamundaGroup group) {
     return userDetailsManager.findUsersInGroup(group.name()).stream()
         .map(userService::findUserByUsername)
         .toList();
   }
 
-  public List<CamundaGroup> getUserGroups(final CamundaUser user) {
-    return membershipRepository.loadUserGroups(user.getUsername());
-  public List<CamundaUser> getUsersOfGroup(final Integer groupId) {
-    final Group group = groupService.findGroupById(groupId);
+  public List<CamundaUser> getUsersOfGroupById(final Long groupId) {
+    final CamundaGroup group = groupService.findGroupById(groupId);
     return getUsersOfGroup(group);
   }
 
-  public List<Group> getUserGroups(final CamundaUser user) {
-    return membershipRepository.loadUserGroups(user.username());
+  public List<CamundaGroup> getUserGroups(final CamundaUser user) {
+    return membershipRepository.loadUserGroups(user.getUsername());
   }
 }

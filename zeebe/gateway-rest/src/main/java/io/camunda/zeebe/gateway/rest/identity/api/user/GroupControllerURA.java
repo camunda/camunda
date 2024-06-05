@@ -45,12 +45,12 @@ public class GroupControllerURA {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroup(@PathVariable(name = "id") final Integer groupId) {
+  public void deleteGroup(@PathVariable(name = "id") final Long groupId) {
     groupService.deleteGroupById(groupId);
   }
 
   @GetMapping("/{id}")
-  public CamundaGroup findGroupById(@PathVariable(name = "id") final Integer groupId) {
+  public CamundaGroup findGroupById(@PathVariable(name = "id") final Long groupId) {
     return groupService.findGroupById(groupId);
   }
 
@@ -66,31 +66,31 @@ public class GroupControllerURA {
 
   @PutMapping("/{id}")
   public CamundaGroup updateGroup(
-      @PathVariable(name = "id") final Integer groupId, @RequestBody final CamundaGroup group) {
+      @PathVariable(name = "id") final Long groupId, @RequestBody final CamundaGroup group) {
     return groupService.renameGroupById(groupId, group);
   }
 
   @PostMapping("/{id}/users")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void assignUserToGroup(
-      @PathVariable(name = "id") final Integer groupId,
+      @PathVariable(name = "id") final Long groupId,
       @RequestBody final AssignUserToGroupRequest assignRequest) {
-    membershipService.addUserToGroup(assignRequest.userId(), groupId);
+    membershipService.addUserToGroupByIds(assignRequest.userId(), groupId);
   }
 
   @DeleteMapping("/{id}/users/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void removeUserFromGroup(
-      @PathVariable(name = "id") final Integer groupId, @PathVariable final Integer userId) {
-    membershipService.removeUserFromGroup(userId, groupId);
+      @PathVariable(name = "id") final Long groupId, @PathVariable final Long userId) {
+    membershipService.removeUserFromGroupByIds(userId, groupId);
   }
 
   @PostMapping("/{id}/users/search")
   public SearchResponseDto<CamundaUser> findAllUsersOfGroup(
-      @PathVariable(name = "id") final Integer groupId,
+      @PathVariable(name = "id") final Long groupId,
       @RequestBody final SearchRequestDto searchRequestDto) {
     final SearchResponseDto<CamundaUser> responseDto = new SearchResponseDto<>();
-    final List<CamundaUser> allUsers = membershipService.getUsersOfGroup(groupId);
+    final List<CamundaUser> allUsers = membershipService.getUsersOfGroupById(groupId);
     responseDto.setItems(allUsers);
 
     return responseDto;

@@ -11,6 +11,5 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record AssignUserToGroupRequest(
-    @NotBlank(message = "userId.invalid") @Size(max = 255, message = "userId.invalid")
-        Integer userId,
+    @NotBlank(message = "userId.invalid") @Size(max = 255, message = "userId.invalid") Long userId,
     String organizationId) {}
