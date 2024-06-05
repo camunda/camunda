@@ -16,14 +16,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends JpaRepository<Profile, Long> {
+public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
           select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id""")
-  List<CamundaUser> loadUsers();
+  List<CamundaUser> findAllUsers();
 
   @Query(
       """
@@ -32,7 +32,7 @@ public interface UserRepository extends JpaRepository<Profile, Long> {
           left join Profile profiles on users.id = profiles.id
           where username = :username
           """)
-  CamundaUser loadUser(@Param("username") final String username);
+  CamundaUser findByUsername(@Param("username") final String username);
 
   @Query(
       """
@@ -41,5 +41,14 @@ public interface UserRepository extends JpaRepository<Profile, Long> {
           left join Profile profiles on users.id = profiles.id
           where users.id = :id
           """)
-  CamundaUser loadUserById(@Param("id") final Long id);
+  CamundaUser findUserById(@Param("id") final Long id);
+
+  @Query(
+      """
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
+          from User users \
+          left join Profile profiles on users.id = profiles.id
+          where users.username in (:usernames)
+          """)
+  List<CamundaUser> findAllByUsernameIn(@Param("usernames") List<String> usernames);
 }

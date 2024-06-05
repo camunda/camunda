@@ -16,7 +16,7 @@ spring:
   jpa:
    generate-ddl: false
    hibernate:
-    ddl-auto: none
+    ddl-auto: validate
 management:
   server:
     port: 8082

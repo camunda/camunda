@@ -56,9 +56,7 @@ public class MembershipService {
   }
 
   public List<CamundaUser> getUsersOfGroup(final CamundaGroup group) {
-    return userDetailsManager.findUsersInGroup(group.name()).stream()
-        .map(userService::findUserByUsername)
-        .toList();
+    return userService.findUsersByUsernameIn(userDetailsManager.findUsersInGroup(group.name()));
   }
 
   public List<CamundaUser> getUsersOfGroupById(final Long groupId) {
