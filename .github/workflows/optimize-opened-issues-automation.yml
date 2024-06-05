@@ -41,9 +41,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
-          gh version
           gh issue edit ${{ github.event.issue.html_url }} --remove-assignee ""
-          sleep 2  # avoiding
+          sleep 2  # avoiding race condition between two commands
           gh issue edit ${{ github.event.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
 
       - name: Update Status field - On Hold

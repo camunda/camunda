@@ -50,46 +50,44 @@ jobs:
       - name: Get issue project
         id: issue-project
         env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          issue_url=${{ github.event.client_payload.github.payload.issue.html_url }}
-          project_id=${{ steps.vars.outputs.project_id }}
-          project_owner=${{ github.event.client_payload.github.payload.organization.login }}
-
-          project_title=$(gh project view $project_id --owner $project_owner --format json --jq '.title')
-          issue_projects=$(gh issue view $issue_url --json "projectItems" --jq '.projectItems')
-          issue_project=$(echo $issue_projects | jq --arg title "$project_title" '.[] | select(.title == $title)')
-          project_status=$(echo "$issue_project" | jq -r '.status.name')
-
-          echo "project_title=${project_title}" >> "$GITHUB_OUTPUT"
-          echo "project_status=${project_status}" >> "$GITHUB_OUTPUT"
+        run: .github/scripts/get-issue-project-data.sh
 
       - name: Get Engineering DRI
         id: get-engineering-dri
         env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          ISSUE_DESCRIPTION=$(gh issue view ${{ github.event.client_payload.github.payload.issue.html_url }} --json body --jq '.body')
-          ENGINEERING_DRI=$(echo "$ISSUE_DESCRIPTION" | grep -oP 'Engineering DRI: @\K\w+')
-          echo "engineering_dri=${ENGINEERING_DRI}" >> "$GITHUB_OUTPUT"
+        run: .github/scripts/get-issue-engineering-dri.sh
 
       - name: Validate inputs
         run: |
           # General checks
-          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
-            echo "Issue has no Engineering DRI"
-            exit 1
-          fi
           if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
             echo "No command provided"
             exit 1
           fi
-          if [ -z "${{ steps.issue-project.outputs.project_title }}" ]; then
-            echo "Issue not in the correct project"
+          if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+            echo "Issue has no Engineering DRI"
+            exit 1
+          fi
+          if [ "${{ steps.issue-project.outputs.is_in_project }}" != "true" ]; then
+            echo "Issue is not part of the '${{ steps.issue-project.outputs.project_title }}' project"
             exit 1
           fi
 
-          # Validate review command
+          # Validate if the command is valid
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'review' ]; then
+            echo "Invalid command. See `/help` for more information"
+            exit 1
+          fi
+
+          # Validate 'review' command
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
             # Check if reviewer is provided
             if [ -z "${{ steps.parse-args.outputs.reviewer }}" ]; then
@@ -105,110 +103,87 @@ jobs:
             fi
           fi
 
-          # Validate approve command
+          # Validate 'approve'/'reject' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] ||
+             [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            project_status="${{ steps.issue-project.outputs.project_status }}"
+            if [ "$project_status" != 'Eng Review' ]; then
+              echo "Eng Review can be approved/rejected only from 'Eng Review' status"
+              exit 1
+            fi
+          fi
+
+      - name: Get new assignee
+        id: assignee
+        run: |
+          new_assignee=""
+          remove_assignee=true
+
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.project_status }}"
-            if [ "$project_status" != 'Eng Review' ]; then
-              echo "Eng Review can be approved only from 'Eng Review' status"
-              exit 1
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]; then
+                new_assignee="${{ steps.vars.outputs.pm }}"
+              else
+                new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
+              fi
+            else
+              new_assignee="${{ steps.vars.outputs.qa_engineer }}"
             fi
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            new_assignee="${{ steps.parse-args.outputs.reviewer }}"
           fi
 
-          # Validate reject command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
-            # Check if the issue is in the correct status
-            project_status="${{ steps.issue-project.outputs.project_status }}"
-            if [ "$project_status" != 'Eng Review' ]; then
-              echo "Eng Review can be rejected only from 'Eng Review' status"
-              exit 1
-            fi
+          echo "new_assignee=${new_assignee}" >> "$GITHUB_OUTPUT"
+          echo "remove_assignee=${remove_assignee}" >> "$GITHUB_OUTPUT"
+
+      - name: Assign new assignee
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.assignee.outputs.remove_assignee }}" == "true" ]; then
+            gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+            sleep 2  # avoiding race condition between two commands
           fi
 
-      - name: Assign reviewer
-        if: steps.parse-args.outputs.arg1 == 'review'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh version
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
-          sleep 2  # avoiding race condition between two commands
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.parse-args.outputs.reviewer }}
+          if [ -n "${{ steps.assignee.outputs.new_assignee }}" ]; then
+            gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.assignee.outputs.new_assignee }}
+          fi
 
-      - name: Update Status field
+      - name: Gen new status
+        id: status
+        run: |
+          new_status=""
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]; then
+                new_status="PM Review"
+              else
+                new_status="Ready to Complete"
+              fi
+            else
+              new_status="QA Review"
+            fi
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            new_status="In Progress"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            new_status="Eng Review"
+          fi
+
+          echo "new_status=${new_status}" >> "$GITHUB_OUTPUT"
+
+      - name: Assign new status
+        if: steps.status.outputs.new_status != ''
         uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'review'
         with:
           github_token: ${{ steps.github-token.outputs.token }}
           organization: ${{ github.event.client_payload.github.payload.organization.login }}
           project_number: ${{ steps.vars.outputs.project_id }}
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
           field: Status
-          value: "Eng Review"
-
-      - name: Assign engineering DRI
-        if: steps.parse-args.outputs.arg1 == 'reject' ||
-          (steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && !contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic'))
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh version
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
-          sleep 2  # avoiding
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.get-engineering-dri.outputs.engineering_dri }}
-
-      - name: Update Status field
-        uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'reject'
-        with:
-          github_token: ${{ steps.github-token.outputs.token }}
-          organization: ${{ github.event.client_payload.github.payload.organization.login }}
-          project_number: ${{ steps.vars.outputs.project_id }}
-          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
-          field: Status
-          value: "In Progress"
-
-      - name: Assign QA
-        if: steps.parse-args.outputs.arg1 == 'approve'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh version
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
-          sleep 2  # avoiding
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.qa_engineer }}
-
-      - name: Assign PM
-        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic')
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh version
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
-          sleep 2  # avoiding
-          gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.vars.outputs.pm }}
-
-      - name: Update Status field - qa not needed
-        uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'approve' && contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded')
-        with:
-          github_token: ${{ steps.github-token.outputs.token }}
-          organization: ${{ github.event.client_payload.github.payload.organization.login }}
-          project_number: ${{ steps.vars.outputs.project_id }}
-          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
-          field: Status
-          value: ${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') && 'PM Review'  || 'Ready to Complete'}}
-
-      - name: Update Status field - qa not needed
-        uses: github/update-project-action@main
-        if: steps.parse-args.outputs.arg1 == 'approve' && !contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded')
-        with:
-          github_token: ${{ steps.github-token.outputs.token }}
-          organization: ${{ github.event.client_payload.github.payload.organization.login }}
-          project_number: ${{ steps.vars.outputs.project_id }}
-          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
-          field: Status
-          value: "QA Review"
+          value: ${{ steps.status.outputs.new_status }}
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
@@ -217,6 +192,7 @@ jobs:
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           reactions: "+1"
+          reactions-edit-mode: replace
 
       - name: Update comment in case of failure
         if: failure()

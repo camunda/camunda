@@ -11,6 +11,7 @@ jobs:
         id: vars
         run: |
           {
+            echo "project_id=101"
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_OUTPUT"
 
@@ -32,20 +33,52 @@ jobs:
           PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
         run: echo "$PAYLOAD_CONTEXT"
 
-      - name: Add reaction
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ steps.github-token.outputs.token }}
-          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          reactions: "+1"
-
-      - name: Get assignee from the payload
+      - name: Parse args
         id: parse-args
         run: |
-          ASSIGNEE=${{ github.event.client_payload.slash_command.args.unnamed.all }}
-          ASSIGNEE="${ASSIGNEE//@/}"
-          echo "assignee=${ASSIGNEE}" >> "$GITHUB_OUTPUT"
+          ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
+          ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
+          ASSIGNEE="${ARG2//@/}"
+          {
+            echo "arg1=${ARG1}"
+            echo "arg2=${ARG2}"
+            echo "assignee=${ASSIGNEE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Get issue project
+        id: issue-project
+        env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: .github/scripts/get-issue-project-data.sh
+
+      - name: Validate inputs
+        run: |
+          # General checks
+          if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
+            echo "No command provided"
+            exit 1
+          fi
+          if [ "${{ steps.issue-project.outputs.is_in_project }}" != "true" ]; then
+            echo "Issue is not part of the '${{ steps.issue-project.outputs.project_title }}' project"
+            exit 1
+          fi
+
+          # Validate if the command is valid
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != "assign" ]; then
+            echo "Invalid command provided"
+            exit 1
+          fi
+
+          # Validate 'assign' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'assign' ]; then
+            if [ -z "${{ steps.parse-args.outputs.assignee }}" ]; then
+              echo "No assignee provided"
+              exit 1
+            fi
+          fi
 
       - name: Replace assignee
         env:
@@ -55,7 +88,6 @@ jobs:
             echo "No assignee provided"
             exit 1
           fi
-          gh version
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
           sleep 2  # avoiding race condition between two commands
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.parse-args.outputs.assignee }}
@@ -76,6 +108,15 @@ jobs:
 
           # Update the issue description
           gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --body "${ISSUE_DESCRIPTION}"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+          reactions-edit-mode: replace
 
       - name: Update comment in case of failure
         if: failure()
