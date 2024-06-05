@@ -83,7 +83,7 @@ public class TaskStoreOpenSearch implements TaskStore {
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;

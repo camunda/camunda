@@ -36,7 +36,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
   @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   @Autowired
   private OpenSearchClient osClient;
 

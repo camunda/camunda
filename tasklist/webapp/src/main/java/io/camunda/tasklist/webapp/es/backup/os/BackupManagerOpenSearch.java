@@ -75,11 +75,11 @@ public class BackupManagerOpenSearch extends BackupManager {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchAsyncClient")
+  @Qualifier("tasklistOsAsyncClient")
   private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   @Override

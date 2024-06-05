@@ -48,11 +48,11 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
   private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverUtilOpenSearch.class);
 
   @Autowired
-  @Qualifier("tasklistOpensearchRestClient")
+  @Qualifier("tasklistOsRestClient")
   private RestClient opensearchRestClient;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchAsyncClient")
+  @Qualifier("tasklistOsAsyncClient")
   private OpenSearchAsyncClient osClient;
 
   @Override

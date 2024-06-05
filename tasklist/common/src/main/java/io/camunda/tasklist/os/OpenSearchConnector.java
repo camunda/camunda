@@ -90,7 +90,7 @@ public class OpenSearchConnector {
   private ObjectMapper tasklistObjectMapper;
 
   @Bean
-  public OpenSearchClient tasklistOpenSearchClient() {
+  public OpenSearchClient tasklistOsClient() {
     final OpenSearchClient openSearchClient = createOsClient(tasklistProperties.getOpenSearch());
     try {
       final HealthResponse response = openSearchClient.cluster().health();
@@ -111,7 +111,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public RestClient tasklistOpensearchRestClient() {
+  public RestClient tasklistOsRestClient() {
     final var httpHost = getHttpHost(tasklistProperties.getOpenSearch());
     return RestClient.builder(httpHost)
         .setHttpClientConfigCallback(
@@ -120,7 +120,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
-  public OpenSearchAsyncClient tasklistOpenSearchAsyncClient() {
+  public OpenSearchAsyncClient tasklistOsAsyncClient() {
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(tasklistProperties.getOpenSearch());
     final CompletableFuture<HealthResponse> healthResponse;

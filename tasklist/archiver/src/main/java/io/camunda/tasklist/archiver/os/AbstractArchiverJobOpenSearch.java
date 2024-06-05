@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public abstract class AbstractArchiverJobOpenSearch extends AbstractArchiverJob {
 
   @Autowired
-  @Qualifier("tasklistOpenSearchAsyncClient")
+  @Qualifier("tasklistOsAsyncClient")
   private OpenSearchAsyncClient osAsyncClient;
 
   public AbstractArchiverJobOpenSearch(List<Integer> partitionIds) {

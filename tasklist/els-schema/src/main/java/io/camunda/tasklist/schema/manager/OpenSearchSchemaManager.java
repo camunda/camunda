@@ -55,7 +55,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired protected RetryOpenSearchClient retryOpenSearchClient;
 
   @Autowired
-  @Qualifier("tasklistOpensearchRestClient")
+  @Qualifier("tasklistOsRestClient")
   private RestClient opensearchRestClient;
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
@@ -63,7 +63,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   @Override

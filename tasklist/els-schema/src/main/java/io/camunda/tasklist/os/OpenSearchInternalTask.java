@@ -48,7 +48,7 @@ public class OpenSearchInternalTask {
   public static final String ID = "id";
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   public void checkForErrorsOrFailures(final GetTasksResponse tasks) throws IOException {

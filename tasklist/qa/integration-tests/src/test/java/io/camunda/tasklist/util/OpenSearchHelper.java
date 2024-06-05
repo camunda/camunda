@@ -56,7 +56,7 @@ public class OpenSearchHelper implements NoSqlHelper {
   @Autowired private VariableIndex variableIndex;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired private ObjectMapper objectMapper;

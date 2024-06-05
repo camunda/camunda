@@ -68,7 +68,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;

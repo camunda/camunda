@@ -48,7 +48,7 @@ public class UserStoreOpenSearch implements UserStore {
   @Autowired private UserIndex userIndex;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   @Override

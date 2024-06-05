@@ -66,7 +66,7 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchAsyncClient")
+  @Qualifier("tasklistOsAsyncClient")
   private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Autowired private Metrics metrics;

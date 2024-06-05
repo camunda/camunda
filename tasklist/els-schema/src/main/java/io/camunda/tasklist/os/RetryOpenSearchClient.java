@@ -76,11 +76,11 @@ public class RetryOpenSearchClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryOpenSearchClient.class);
 
   @Autowired
-  @Qualifier("tasklistOpensearchRestClient")
+  @Qualifier("tasklistOsRestClient")
   private RestClient opensearchRestClient;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;

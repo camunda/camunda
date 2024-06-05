@@ -63,7 +63,7 @@ public class OpenSearchTestExtension
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired

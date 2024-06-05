@@ -54,7 +54,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
   @Autowired private MetricIndex index;
 
   @Autowired
-  @Qualifier("tasklistOpenSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   @Override
