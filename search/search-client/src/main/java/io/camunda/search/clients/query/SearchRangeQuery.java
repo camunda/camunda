@@ -45,7 +45,7 @@ public final record SearchRangeQuery(
     }
 
     public Builder lt(final Object value) {
-      lt = lte;
+      lt = value;
       return this;
     }
 
