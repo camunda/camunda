@@ -111,7 +111,7 @@
     "node-fetch": "^2.6.7",
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
-    "prettier": "^3.2.4",
+    "prettier": "^3.3.0",
     "react-scripts": "5.0.1",
     "sass": "^1.77.1",
     "styled-components": "^6.1.9",
