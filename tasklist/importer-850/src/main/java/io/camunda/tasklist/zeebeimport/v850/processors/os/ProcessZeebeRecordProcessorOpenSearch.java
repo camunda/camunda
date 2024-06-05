@@ -121,7 +121,8 @@ public class ProcessZeebeRecordProcessorOpenSearch {
             .setKey(process.getProcessDefinitionKey())
             .setBpmnProcessId(process.getBpmnProcessId())
             .setVersion(process.getVersion())
-            .setTenantId(process.getTenantId());
+            .setTenantId(process.getTenantId())
+            .setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
 
