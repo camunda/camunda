@@ -191,12 +191,12 @@ export class Processes {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto('.' + Paths.processes());
+      await this.page.goto(`/operate${Paths.processes()}`);
       return;
     }
 
     await this.page.goto(
-      `.${Paths.processes()}?${convertToQueryString(searchParams)}`,
+      `/operate${Paths.processes()}?${convertToQueryString(searchParams)}`,
       options,
     );
   }
