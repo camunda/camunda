@@ -7,8 +7,14 @@
  */
 package io.camunda.authentication.user;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.stereotype.Component;
 
@@ -19,5 +25,45 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     super(dataSource);
     setEnableGroups(true);
     setEnableAuthorities(true);
+  }
+
+  @Override
+  protected List<UserDetails> loadUsersByUsername(final String username) {
+    return super.loadUsersByUsername(username).stream()
+        .map(u -> (UserDetails) new CamundaUserDetails(u))
+        .toList();
+  }
+
+  @Override
+  protected void addCustomAuthorities(
+      final String username, final List<GrantedAuthority> authorities) {
+    super.addCustomAuthorities(username, authorities);
+    final List<GrantedAuthority> permissions = loadRolesPrivilages(authorities);
+    authorities.addAll(permissions);
+  }
+
+  @Override
+  public CamundaUserDetails loadUserByUsername(final String username)
+      throws UsernameNotFoundException {
+    return new CamundaUserDetails(super.loadUserByUsername(username));
+  }
+
+  private List<GrantedAuthority> loadRolesPrivilages(final List<GrantedAuthority> roles) {
+    final List<GrantedAuthority> authorities = new ArrayList<>();
+    authorities.addAll(
+        roles.stream()
+            .flatMap(
+                role ->
+                    getJdbcTemplate()
+                        .query(
+                            "select p.definition from roles_permissions rp "
+                                + "join permissions p on p.id = rp.permissions_id "
+                                + " where role_authority = ? ",
+                            new String[] {role.getAuthority()},
+                            (rs, rowNum) -> new SimpleGrantedAuthority(rs.getString(1)))
+                        .stream())
+            .distinct()
+            .toList());
+    return authorities;
   }
 }

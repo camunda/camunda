@@ -21,6 +21,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @CamundaSpringBootTest
@@ -175,5 +176,27 @@ class UserServiceTest {
     final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
     assertTrue(passwordEncoder.matches(newPassword, updatedUser.getPassword()));
     assertFalse(passwordEncoder.matches(password, updatedUser.getPassword()));
+  }
+
+  @Test
+  void assignRoleToUser() {
+    final var username = "user" + UUID.randomUUID();
+    final var password = "password";
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, password));
+    userService.assignRoleToUser(user.getId(), "R1");
+    final var userDetail = camundaUserDetailsManager.loadUserByUsername(username);
+    Assertions.assertTrue(
+        userDetail.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_R1")));
+
+    userService.assignRoleToUser(user.getId(), "R2");
+    final var userDetail2 = camundaUserDetailsManager.loadUserByUsername(username);
+    Assertions.assertTrue(
+        userDetail2.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_R1")));
+    Assertions.assertTrue(
+        userDetail2.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_R2")));
+    Assertions.assertTrue(
+        userDetail2.getAuthorities().contains(new SimpleGrantedAuthority("write:*")));
+    Assertions.assertFalse(userDetail.getRoles().contains(new SimpleGrantedAuthority("write:*")));
   }
 }
