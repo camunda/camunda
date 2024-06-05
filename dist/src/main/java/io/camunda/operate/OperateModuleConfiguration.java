@@ -53,7 +53,7 @@ public class OperateModuleConfiguration {
 
   public OperateModuleConfiguration(
       @Autowired(required = false) final Broker broker,
-      @Autowired(required = false) Gateway gateway) {
+      @Autowired(required = false) final Gateway gateway) {
     this.broker = broker;
     this.gateway = gateway;
   }

@@ -11,7 +11,7 @@ public final class OperateURIs {
 
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
   public static final String X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN";
-  public static final String ROOT = "/";
+  public static final String ROOT = "/operate";
   public static final String API = "/api/**";
   public static final String PUBLIC_API = "/v*/**";
   public static final String LOGIN_RESOURCE = "/api/login";

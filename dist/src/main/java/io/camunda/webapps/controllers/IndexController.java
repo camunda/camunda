@@ -5,22 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp;
+package io.camunda.webapps.controllers;
 
+import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class IndexController {
-
   @Autowired private ServletContext context;
+  @Autowired private WebappsProperties webappsProperties;
 
   @GetMapping("/index.html")
-  public String index(Model model) {
-    model.addAttribute("contextPath", context.getContextPath() + "/");
-    return "index";
+  public String index() {
+    return "redirect:/" + webappsProperties.defaultApp();
   }
 }

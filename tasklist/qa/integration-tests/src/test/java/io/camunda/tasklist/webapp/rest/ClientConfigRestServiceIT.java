@@ -60,7 +60,7 @@ public class ClientConfigRestServiceIT {
   @Test
   public void testGetClientConfig() throws Exception {
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/tasklist/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -77,6 +77,7 @@ public class ClientConfigRestServiceIT {
                 + "\"canLogout\":true,"
                 + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/tasklist\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
