@@ -91,7 +91,7 @@ public class UserService {
         throw new RuntimeException("user.notFound");
       }
       final CamundaUser existingUser = userProfileRepository.findUserById(id);
-      if (existingUser == null) {
+      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
