@@ -37,7 +37,7 @@ public final class CollectionUtil {
       result = Objects.requireNonNull(values);
     } else {
       result = new ArrayList<>(list);
-      list.addAll(values);
+      result.addAll(values);
     }
     return result;
   }
