@@ -40,6 +40,7 @@ import io.camunda.search.transformers.query.RangeQueryTransformer;
 import io.camunda.search.transformers.query.TermQueryTransformer;
 import io.camunda.search.transformers.query.TermsQueryTransformer;
 import io.camunda.search.transformers.search.SearchRequestTransformer;
+import io.camunda.search.transformers.search.SearchResponseTransformer;
 import io.camunda.search.transformers.sort.FieldSortTransformer;
 import io.camunda.search.transformers.sort.SortOptionsTransformer;
 import io.camunda.search.transformers.types.TypedValueTransformer;
@@ -66,7 +67,7 @@ public final class ElasticsearchTransformers {
   public static void initializeTransformers(final ElasticsearchTransformers mappers) {
     // requests/response
     mappers.put(SearchQueryRequest.class, new SearchRequestTransformer(mappers));
-    mappers.put(SearchQueryResponse.class, new SearchRequestTransformer(mappers));
+    mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
     mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
 
     // queries
