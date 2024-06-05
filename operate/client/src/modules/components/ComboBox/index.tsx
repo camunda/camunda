@@ -14,7 +14,7 @@ type Item = {id: string; label: string};
 type Props = {
   id: string;
   value: string;
-  titleText: string;
+  titleText?: string;
   placeholder?: string;
   onChange: (data: {[selectedItem: string]: Item | null | undefined}) => void;
   items: Item[];
