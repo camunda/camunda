@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FieldContainer, Label} from './styled';
+import {Label} from './styled';
 import {observer} from 'mobx-react';
 import {isNil} from 'lodash';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {Dropdown} from '@carbon/react';
+import {Stack} from '@carbon/react';
+import {ComboBox} from 'modules/components/ComboBox';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const TargetProcessField: React.FC = observer(() => {
@@ -21,27 +22,25 @@ const TargetProcessField: React.FC = observer(() => {
   } = processesStore;
 
   return (
-    <FieldContainer>
-      <Label>Target</Label>
-      <Dropdown
+    <Stack orientation="horizontal" gap={5}>
+      <Label htmlFor="targetProcess">Target</Label>
+      <ComboBox
         id="targetProcess"
-        label="Select target process"
-        titleText="Target Process"
-        hideLabel
-        type="inline"
+        placeholder="Search by process name"
         items={processes.map(({id, label}) => {
           return {
             label,
             id,
           };
         })}
-        size="sm"
         onChange={({selectedItem}) => {
+          processInstanceMigrationStore.resetFlowNodeMapping();
+
           if (isNil(selectedItem)) {
+            processInstanceMigrationStore.setTargetProcessDefinitionKey(null);
+            processesStore.clearSelectedTarget();
             return;
           }
-
-          processInstanceMigrationStore.resetFlowNodeMapping();
 
           processesStore.setSelectedTargetProcess(selectedItem.id);
 
@@ -56,16 +55,9 @@ const TargetProcessField: React.FC = observer(() => {
             processesStore.selectedTargetProcessId ?? null,
           );
         }}
-        selectedItem={
-          selectedTargetProcess === null
-            ? null
-            : {
-                label: selectedTargetProcess.name,
-                id: selectedTargetProcess.key,
-              }
-        }
+        value={selectedTargetProcess?.key ?? ''}
       />
-    </FieldContainer>
+    </Stack>
   );
 });
 
