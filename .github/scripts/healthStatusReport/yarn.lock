@@ -62,10 +62,10 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@20.12.12":
-  version "20.12.12"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.12.tgz#7cbecdf902085cec634fdb362172dfe12b8f2050"
-  integrity sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==
+"@types/node@20.12.14":
+  version "20.12.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.12.14.tgz#0c5cf7ef26aedfd64b0539bba9380ed1f57dcc77"
+  integrity sha512-scnD59RpYD91xngrQQLGkE+6UrHUPzeKZWhhjBSa3HSkwjbQc38+q3RoIVEwxQGRw3M+j5hpNAM+lgV3cVormg==
   dependencies:
     undici-types "~5.26.4"
 
