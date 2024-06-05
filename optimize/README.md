@@ -29,11 +29,11 @@ optimize-distro/target ```
 
 ## Frontend
 
-Learn how to build, debug, test and more in the front-end in the [Front-End README](./optimize/client/README.md)
+Learn how to build, debug, test and more in the front-end in the [Front-End README](./client/README.md)
 
 ## Backend
 
-Learn how to build, debug, test and more in the back-end in the [Back-End README](optimize/backend/README.md)
+Learn how to build, debug, test and more in the back-end in the [Back-End README](backend/README.md)
 
 ## Development Setup
 
@@ -107,7 +107,7 @@ You can run locally integration tests using maven. The command to run the
 tests is the following:
 
 ```
-mvn -Pit,engine-latest -pl optimize/backend -am clean install
+mvn -Pit,engine-latest -pl backend -am clean install
 ```
 
 You can replace the profile `engine-latest` with the version of Camunda Platform 7 you
@@ -129,7 +129,7 @@ $ docker compose up -d
 Once the containers are running, you need to prepare the test environment:
 
 ```bash
-$ mvn pre-integration-test -Pit,engine-latest -pl optimize/backend -am -Dskip.fe.build
+$ mvn pre-integration-test -Pit,engine-latest -pl backend -am -Dskip.fe.build
 ```
 
 After this, you are free to set breakpoints in the code and debug any integration test using
