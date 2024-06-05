@@ -12,6 +12,6 @@ if [[ -z "$issue_url" ]]; then
 fi
 
 issue_description=$(gh issue view $issue_url --json body --jq '.body')
-engineering_dri=$(grep -oP 'Engineering DRI: @\K\w+' <<<"$issue_description" || '')
+engineering_dri=$(grep -oP 'Engineering DRI: @\K\w+' <<<"$issue_description" || true)
 
 echo "engineering_dri=${engineering_dri}" >>"$GITHUB_OUTPUT"
