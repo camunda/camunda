@@ -15,6 +15,8 @@
     ":enableVulnerabilityAlertsWithLabel(area/security)",
     // Groups together all Typescript deps
     "group:definitelyTyped",
+    // Pins docker digests
+    "docker:pinDigests",
   ],
   // Commit message prefix
   commitMessagePrefix: "deps:",
@@ -119,7 +121,6 @@
       matchManagers: "dockerfile",
       separateMajorMinor: true,
       separateMinorPatch: true,
-      pinDigests: true,
       prPriority: 100,
     },
     // Settings for patch versions update
