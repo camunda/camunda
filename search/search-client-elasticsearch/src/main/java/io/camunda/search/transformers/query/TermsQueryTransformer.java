@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.transformers.ElasticsearchTransformers;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class TermsQueryTransformer
     extends QueryOptionTransformer<SearchTermsQuery, TermsQuery> {
@@ -32,7 +33,7 @@ public final class TermsQueryTransformer
 
   private <T> TermsQueryField of(final List<TypedValue> values) {
     final var transformer = getFieldValueTransformer();
-    final var fieldValues = values.stream().map(transformer::apply).toList();
+    final var fieldValues = values.stream().map(transformer::apply).collect(Collectors.toList());
     return TermsQueryField.of(f -> f.value(fieldValues));
   }
 }

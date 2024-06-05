@@ -9,6 +9,7 @@ package io.camunda.search.clients.types;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final record TypedValue(ValueType type, Object value) {
 
@@ -96,6 +97,6 @@ public final record TypedValue(ValueType type, Object value) {
 
   public static <T> List<TypedValue> of(
       final List<T> values, final Function<T, TypedValue> mapper) {
-    return values.stream().map(mapper).toList();
+    return values.stream().map(mapper).collect(Collectors.toList());
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.search.transformers.ElasticsearchTransformer;
 import io.camunda.search.transformers.ElasticsearchTransformers;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class SearchRequestTransformer
     extends ElasticsearchTransformer<SearchQueryRequest, SearchRequest> {
@@ -53,10 +54,13 @@ public final class SearchRequestTransformer
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
     final var sortTransformer = getSortOptionsTransformer();
-    return values.stream().map(sortTransformer::apply).toList();
+    return values.stream().map(sortTransformer::apply).collect(Collectors.toList());
   }
 
   private List<FieldValue> of(final Object[] values) {
-    return Arrays.asList(values).stream().map(JsonData::of).map(FieldValue::of).toList();
+    return Arrays.asList(values).stream()
+        .map(JsonData::of)
+        .map(FieldValue::of)
+        .collect(Collectors.toList());
   }
 }

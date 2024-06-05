@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class CollectionUtil {
 
@@ -26,7 +27,7 @@ public final class CollectionUtil {
 
   public static <A> List<A> withoutNull(final Collection<A> items) {
     if (items != null) {
-      return items.stream().filter(Objects::nonNull).toList();
+      return items.stream().filter(Objects::nonNull).collect(Collectors.toList());
     }
     return null;
   }

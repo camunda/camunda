@@ -14,6 +14,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class SearchQueryBuilders {
 
@@ -126,7 +127,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery ids(final Collection<String> ids) {
-    return ids(ids.stream().toList());
+    return ids(ids.stream().collect(Collectors.toList()));
   }
 
   public static SearchQuery ids(final String... ids) {

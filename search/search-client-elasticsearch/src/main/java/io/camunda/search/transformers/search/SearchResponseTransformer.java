@@ -16,6 +16,7 @@ import io.camunda.search.transformers.ElasticsearchTransformer;
 import io.camunda.search.transformers.ElasticsearchTransformers;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class SearchResponseTransformer<T>
     extends ElasticsearchTransformer<SearchResponse<T>, SearchQueryResponse<T>> {
@@ -45,7 +46,7 @@ public final class SearchResponseTransformer<T>
   private List<SearchQueryHit<T>> of(final List<Hit<T>> hits) {
     if (hits != null) {
       final var hitTransformer = new SearchQueryHitTransformer<T>(transformers);
-      return hits.stream().map(hitTransformer::apply).toList();
+      return hits.stream().map(hitTransformer::apply).collect(Collectors.toList());
     }
     return new ArrayList<>();
   }
