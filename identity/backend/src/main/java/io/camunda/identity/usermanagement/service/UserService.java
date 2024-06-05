@@ -7,14 +7,18 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import io.camunda.authentication.user.CamundaUserDetails;
 import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.model.Profile;
 import io.camunda.identity.usermanagement.repository.UserProfileRepository;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -95,14 +99,14 @@ public class UserService {
         throw new RuntimeException("user.notFound");
       }
 
-      final UserDetails existingUserDetail =
+      final CamundaUserDetails existingUserDetail =
           userDetailsManager.loadUserByUsername(existingUser.getUsername());
 
       final UserDetails userDetails =
           User.withUsername(existingUser.getUsername())
               .password(user.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .authorities(existingUserDetail.getAuthorities())
+              .authorities(existingUserDetail.getRoles())
               .disabled(!user.isEnabled())
               .build();
       userDetailsManager.updateUser(userDetails);
@@ -111,5 +115,41 @@ public class UserService {
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
+  }
+
+  public void assignRoleToUser(final Long userId, final String roleName) {
+    final CamundaUser existingUser = userProfileRepository.findUserById(userId);
+    final CamundaUserDetails existingUserDetail =
+        userDetailsManager.loadUserByUsername(existingUser.getUsername());
+    final var authorities = new HashSet<GrantedAuthority>(existingUserDetail.getRoles());
+    authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+
+    final UserDetails userDetails =
+        User.withUsername(existingUser.getUsername())
+            .password(existingUserDetail.getPassword())
+            .passwordEncoder(passwordEncoder::encode)
+            .authorities(authorities)
+            .disabled(!existingUserDetail.isEnabled())
+            .build();
+    userDetailsManager.updateUser(userDetails);
+  }
+
+  public void unassignRoleFromUser(final Long userId, final String roleName) {
+
+    final CamundaUser existingUser = userProfileRepository.findUserById(userId);
+    final CamundaUserDetails existingUserDetail =
+        userDetailsManager.loadUserByUsername(existingUser.getUsername());
+    final var authorities =
+        new HashSet<GrantedAuthority>(existingUserDetail.getRoles())
+            .stream().filter(a -> !a.getAuthority().equals("ROLE_" + roleName)).toList();
+
+    final UserDetails userDetails =
+        User.withUsername(existingUser.getUsername())
+            .password(existingUserDetail.getPassword())
+            .passwordEncoder(passwordEncoder::encode)
+            .authorities(authorities)
+            .disabled(!existingUserDetail.isEnabled())
+            .build();
+    userDetailsManager.updateUser(userDetails);
   }
 }
