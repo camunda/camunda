@@ -11,6 +11,7 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.transformers.OpensearchTransformers;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
@@ -50,6 +51,6 @@ public final class BoolQueryTransformer extends QueryOptionTransformer<SearchBoo
 
   private List<Query> of(final List<SearchQuery> values) {
     final var transformer = getQueryTransformer();
-    return values.stream().map(transformer::apply).toList();
+    return values.stream().map(transformer::apply).collect(Collectors.toList());
   }
 }

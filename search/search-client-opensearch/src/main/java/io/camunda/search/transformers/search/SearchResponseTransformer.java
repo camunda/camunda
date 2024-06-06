@@ -13,6 +13,7 @@ import io.camunda.search.transformers.OpensearchTransformer;
 import io.camunda.search.transformers.OpensearchTransformers;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TotalHits;
@@ -45,7 +46,7 @@ public final class SearchResponseTransformer<T>
   private List<SearchQueryHit<T>> of(final List<Hit<T>> hits) {
     if (hits != null) {
       final var hitTransformer = new SearchQueryHitTransformer<T>(transformers);
-      return hits.stream().map(hitTransformer::apply).toList();
+      return hits.stream().map(hitTransformer::apply).collect(Collectors.toList());
     }
     return new ArrayList<>();
   }

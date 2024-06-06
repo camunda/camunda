@@ -13,6 +13,7 @@ import io.camunda.search.transformers.OpensearchTransformer;
 import io.camunda.search.transformers.OpensearchTransformers;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
@@ -51,10 +52,10 @@ public final class SearchRequestTransformer
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
     final var sortTransformer = getSortOptionsTransformer();
-    return values.stream().map(sortTransformer::apply).toList();
+    return values.stream().map(sortTransformer::apply).collect(Collectors.toList());
   }
 
   private List<String> of(final Object[] values) {
-    return Arrays.asList(values).stream().map(Object::toString).toList();
+    return Arrays.asList(values).stream().map(Object::toString).collect(Collectors.toList());
   }
 }
