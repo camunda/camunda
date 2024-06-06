@@ -47,12 +47,12 @@ CREATE TABLE IF NOT EXISTS profiles(
     , constraint fk_profile_users foreign key(id) references users(id) ON DELETE CASCADE);
 
 
-create table roles(
+CREATE TABLE IF NOT EXISTS roles(
    authority varchar(50) not null,
    description varchar(500)
 );
 
-create table permissions
+CREATE TABLE IF NOT EXISTS permissions
 (
     id uuid not null,
     audience varchar(50) not null,
@@ -60,31 +60,7 @@ create table permissions
     description varchar(50) not null
 );
 
-create table roles_permissions
-(
-    role_authority varchar(50) not null,
-    permissions_id uuid not null
-);
-
-insert into permissions values('a297baed-730f-442a-915c-10363bee38a4', 'aud', 'write:*', 'write');
-
-insert into roles_permissions values ('ROLE_R1', 'a297baed-730f-442a-915c-10363bee38a4');
-
-
-create table roles(
-   authority varchar(50) not null,
-   description varchar(500)
-);
-
-create table permissions
-(
-    id uuid not null,
-    audience varchar(50) not null,
-    definition varchar(50) not null,
-    description varchar(50) not null
-);
-
-create table roles_permissions
+CREATE TABLE IF NOT EXISTS roles_permissions
 (
     role_authority varchar(50) not null,
     permissions_id uuid not null

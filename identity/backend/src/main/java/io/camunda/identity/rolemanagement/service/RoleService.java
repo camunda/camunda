@@ -7,7 +7,6 @@
  */
 package io.camunda.identity.rolemanagement.service;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.repository.RoleRepository;
 import org.springframework.stereotype.Service;
@@ -15,17 +14,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class RoleService {
   private final RoleRepository roleRepository;
-  private final CamundaUserDetailsManager userDetailsManager;
 
-
-  public RoleService(final RoleRepository roleRepository, final CamundaUserDetailsManager userDetailsManager) {
+  public RoleService(final RoleRepository roleRepository) {
     this.roleRepository = roleRepository;
-    this.userDetailsManager = userDetailsManager;
   }
 
   public Role createRole(final Role role) {
     return roleRepository.save(role);
   }
-
-
 }
