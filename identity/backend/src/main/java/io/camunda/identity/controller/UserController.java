@@ -49,7 +49,7 @@ public class UserController {
     return userService.findAllUsers();
   }
 
-  @PutMapping("/{username}")
+  @PutMapping("/{id}")
   public CamundaUser updateUser(
       @PathVariable("id") final long id, final CamundaUserWithPassword user) {
     return userService.updateUser(id, user);

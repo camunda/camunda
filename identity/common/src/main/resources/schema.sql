@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS group_members (
     constraint uk_group_members_group_username unique(group_id , username)
 );
 
-create table profiles(id bigint primary key, email varchar(100) unique,constraint fk_profile_users foreign key(id) references users(id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS profiles(
+      id bigint primary key, email varchar(100) unique
+    , constraint fk_profile_users foreign key(id) references users(id) ON DELETE CASCADE);
 
 
