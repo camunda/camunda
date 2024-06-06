@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
@@ -22,8 +21,6 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -118,21 +115,7 @@ public class AdminApiRequestHandler
         .onComplete(
             (r, t) -> {
               if (t == null) {
-                final ObjectMapper mapper = new ObjectMapper();
-                final byte[] bytes;
-                try {
-                  bytes = mapper.writeValueAsBytes(r);
-                } catch (final JsonProcessingException e) {
-                  result.completeExceptionally(e);
-                  return;
-                }
-
-                final int payloadLength = bytes.length;
-                // the 4 bytes is for the header length
-                final byte[] bytebuffer = new byte[payloadLength + 4];
-                final MutableDirectBuffer buffer = new UnsafeBuffer(bytebuffer);
-                responseWriter.getResponseEncoder().wrap(buffer, 0);
-                responseWriter.getResponseEncoder().putPayload(bytes, 0, payloadLength);
+                responseWriter.setPayload(r.toString());
                 result.complete(Either.right(responseWriter));
 
               } else {
