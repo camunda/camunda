@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -82,6 +83,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final DistributionState distributionState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -99,6 +101,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    distributionState = processingState.getDistributionState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
@@ -357,7 +360,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         .ifLeft(
             failure -> {
               throw new ProcessInstanceMigrationPreconditionFailedException(
-                      """
+                  """
                   Expected to migrate process instance '%s' \
                   but active element with id '%s' is mapped to element with id '%s' \
                   that must be subscribed to a message catch event. %s"""
@@ -370,6 +373,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     catchEventBehavior.unsubscribeFromMessageEvents(
         elementInstance.getKey(),
         subscription -> {
+          final long distributionKey = subscription.getKey();
+          requireNoPendingMsgSubMigrationDistribution(
+              distributionState,
+              distributionKey,
+              elementId,
+              processInstanceKey,
+              subscription.getRecord().getElementId());
+
           if (subscribedMessageNames.contains(subscription.getRecord().getMessageNameBuffer())) {
             // We just subscribed to this message for this migration, we don't want to undo that
             return false;
@@ -398,8 +409,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                   .setElementId(BufferUtil.wrapString(targetCatchEventId)));
 
           final long distributionKey = processMessageSubscription.getKey();
-
-          // TODO:add hasPendingDistribution check in the state class and throw exception if pending
 
           final var messageSubscription =
               new MessageSubscriptionRecord()
