@@ -23,21 +23,40 @@ public final class RangeQueryTransformer
   @Override
   public RangeQuery apply(final SearchRangeQuery value) {
     final var field = value.field();
-    final var from = value.from();
-    final var to = value.to();
+    final var builder = QueryBuilders.range().field(field);
 
-    return QueryBuilders.range()
-        .field(field)
-        .gt(of(value.gt()))
-        .gte(of(value.gte()))
-        .lt(of(value.lt()))
-        .lte(of(value.lte()))
-        .from(of(from))
-        .to(of(to))
-        .build();
+    if (value.gt() != null) {
+      builder.gt(of(value.gt()));
+    }
+
+    if (value.gte() != null) {
+      builder.gte(of(value.gte()));
+    }
+
+    if (value.lt() != null) {
+      builder.lt(of(value.lt()));
+    }
+
+    if (value.lte() != null) {
+      builder.lte(of(value.lte()));
+    }
+
+    if (value.from() != null) {
+      builder.from(JsonData.of(value.from()));
+    }
+
+    if (value.to() != null) {
+      builder.to(JsonData.of(value.to()));
+    }
+
+    if (value.format() != null) {
+      builder.format(value.format());
+    }
+
+    return builder.build();
   }
 
-  private <T> JsonData of(T value) {
+  private <T> JsonData of(final T value) {
     return JsonData.of(value);
   }
 }
