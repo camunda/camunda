@@ -11,6 +11,10 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration;
+import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
+import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
+import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +36,13 @@ public class StandaloneTasklist {
 
     final var standaloneTasklistApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(TasklistModuleConfiguration.class, WebappsModuleConfiguration.class)
+            .sources(
+                TasklistModuleConfiguration.class,
+                WebappSecurityModuleConfiguration.class,
+                ArchiverSecurityModuleConfiguration.class,
+                ImporterSecurityModuleConfiguration.class,
+                WebappManagementModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
             .profiles(Profile.TASKLIST.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())

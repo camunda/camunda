@@ -14,6 +14,10 @@ import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
+<<<<<<< HEAD
+=======
+import io.camunda.application.sources.TasklistSecurityStubsConfiguration;
+>>>>>>> 5bc59a78fd (refactor: Tasklist part of C8 single application)
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
