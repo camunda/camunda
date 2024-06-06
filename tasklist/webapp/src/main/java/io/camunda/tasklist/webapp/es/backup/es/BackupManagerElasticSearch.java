@@ -450,7 +450,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  @Bean("backupThreadPoolExecutor")
+  @Bean("tasklistBackupThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);

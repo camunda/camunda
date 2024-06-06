@@ -48,7 +48,11 @@ public class TaskService {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
   @Autowired private UserReader userReader;
-  @Autowired private ZeebeClient zeebeClient;
+
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
+
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
 

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 public class ZeebeImporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);
@@ -32,7 +32,7 @@ public class ZeebeImporter {
   @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
-  @Qualifier("recordsReaderThreadPoolExecutor")
+  @Qualifier("tasklistRecordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
   @PostConstruct
@@ -48,9 +48,9 @@ public class ZeebeImporter {
     allRecordsReaders.forEach(recordsReader -> readersExecutor.submit(recordsReader));
   }
 
-  public int performOneRoundOfImportFor(Collection<RecordsReader> readers) {
+  public int performOneRoundOfImportFor(final Collection<RecordsReader> readers) {
     int countRecords = 0;
-    for (RecordsReader recordsReaderElasticSearch : readers) {
+    for (final RecordsReader recordsReaderElasticSearch : readers) {
       countRecords += importOneBatch(recordsReaderElasticSearch, false);
     }
     return countRecords;
@@ -60,7 +60,7 @@ public class ZeebeImporter {
     return performOneRoundOfImportFor(recordsReaderHolder.getAllRecordsReaders());
   }
 
-  public int importOneBatch(RecordsReader recordsReader, final boolean autoContinue) {
+  public int importOneBatch(final RecordsReader recordsReader, final boolean autoContinue) {
     return recordsReader.readAndScheduleNextBatch(autoContinue);
   }
 }
