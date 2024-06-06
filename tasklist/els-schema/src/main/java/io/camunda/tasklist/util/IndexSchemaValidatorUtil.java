@@ -15,7 +15,6 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexMappingDifference;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.server.session.WebSessionStore;
 
 // TO-DO: This class will replace after a refactor of retryElasticsearchClient  and
 // retryOpenSearchClient
