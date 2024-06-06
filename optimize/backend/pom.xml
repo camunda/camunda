@@ -177,6 +177,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
       <version>${identity.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-slf4j2-impl</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Jetty -->
