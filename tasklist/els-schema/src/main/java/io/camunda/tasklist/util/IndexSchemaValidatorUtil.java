@@ -37,6 +37,7 @@ public class IndexSchemaValidatorUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidatorUtil.class);
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
+  private static final String STRICT_DYNAMIC_POLICY = "strict";
   @Autowired TasklistProperties tasklistProperties;
   @Autowired SchemaManager schemaManager;
 
@@ -76,7 +77,7 @@ public class IndexSchemaValidatorUtil {
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
     return Maps.filterEntries(
         indexMappings,
-        e ->  "strict".equals(e.getValue().getDynamic()) && // filter out dynamic mappings - not supported by schema migration
+        e ->  STRICT_DYNAMIC_POLICY.equals(e.getValue().getDynamic()) && // filter out dynamic mappings - not supported by schema migration
                  e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
   }
 
