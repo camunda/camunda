@@ -71,3 +71,27 @@ insert into permissions values('a297baed-730f-442a-915c-10363bee38a4', 'aud', 'w
 insert into roles_permissions values ('ROLE_R1', 'a297baed-730f-442a-915c-10363bee38a4');
 
 
+create table roles(
+   authority varchar(50) not null,
+   description varchar(500)
+);
+
+create table permissions
+(
+    id uuid not null,
+    audience varchar(50) not null,
+    definition varchar(50) not null,
+    description varchar(50) not null
+);
+
+create table roles_permissions
+(
+    role_authority varchar(50) not null,
+    permissions_id uuid not null
+);
+
+insert into permissions values('a297baed-730f-442a-915c-10363bee38a4', 'aud', 'write:*', 'write');
+
+insert into roles_permissions values ('ROLE_R1', 'a297baed-730f-442a-915c-10363bee38a4');
+
+
