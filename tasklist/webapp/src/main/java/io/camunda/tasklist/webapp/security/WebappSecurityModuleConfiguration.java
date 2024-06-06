@@ -5,36 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist;
+package io.camunda.tasklist.webapp.security;
 
-import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration
 @ComponentScan(
-    basePackages = "io.camunda.tasklist.archiver",
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.archiver\\.security\\..*")
-    },
+    basePackages = "io.camunda.tasklist.webapp.security",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.tasklist.archiverEnabled",
+    name = "camunda.tasklist.webappEnabled",
     havingValue = "true",
     matchIfMissing = true)
-public class ArchiverModuleConfiguration {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
-
-  @PostConstruct
-  public void logModule() {
-    LOGGER.info("Starting module: archiver");
-  }
-}
+public class WebappSecurityModuleConfiguration {}

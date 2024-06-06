@@ -57,13 +57,7 @@ public class StandaloneOperate {
   }
 
   private static Map<String, Object> getWebProperties() {
-    return Map.of(
-        "server.servlet.session.cookie.name",
-        "OPERATE-SESSION",
-        // Return error messages for all endpoints by default, except for Internal API.
-        // Internal API error handling is defined in InternalAPIErrorController.
-        "server.error.include-message",
-        "always");
+    return Map.of("server.servlet.session.cookie.name", "OPERATE-SESSION");
   }
 
   public static Map<String, Object> getManagementProperties() {

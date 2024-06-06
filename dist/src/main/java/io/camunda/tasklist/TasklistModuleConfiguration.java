@@ -8,6 +8,9 @@
 package io.camunda.tasklist;
 
 import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.gateway.Gateway;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
@@ -47,4 +50,19 @@ import org.springframework.context.annotation.Profile;
       GraphQLAnnotationsAutoConfiguration.class
     })
 @Profile("tasklist")
-public class TasklistModuleConfiguration {}
+public class TasklistModuleConfiguration {
+  // if present, then it will ensure
+  // that the broker is started first
+  private final Broker broker;
+
+  // if present, then it will ensure
+  // that the gateway is started first
+  private final Gateway gateway;
+
+  public TasklistModuleConfiguration(
+      @Autowired(required = false) final Broker broker,
+      @Autowired(required = false) final Gateway gateway) {
+    this.broker = broker;
+    this.gateway = gateway;
+  }
+}
