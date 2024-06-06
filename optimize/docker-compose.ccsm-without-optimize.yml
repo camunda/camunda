@@ -1,5 +1,3 @@
-version: "3.6"
-
 # You can add the following environment variables to your CCSM config to have Optimize running in your IDE
 
 ###################################
