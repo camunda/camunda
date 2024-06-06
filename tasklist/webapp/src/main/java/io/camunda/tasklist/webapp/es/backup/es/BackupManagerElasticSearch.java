@@ -81,7 +81,9 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

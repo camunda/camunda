@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 public abstract class AbstractImportBatchProcessorOpenSearch implements ImportBatchProcessor {
 
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   @Autowired
   private OpenSearchClient osClient;
 

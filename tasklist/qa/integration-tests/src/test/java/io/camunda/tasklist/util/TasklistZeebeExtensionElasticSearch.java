@@ -34,8 +34,8 @@ import org.springframework.stereotype.Component;
 public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension {
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("tasklistZeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
 
   @Override
   public void refreshIndices(final Instant instant) {

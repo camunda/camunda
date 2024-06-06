@@ -35,7 +35,7 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportJobOpenSearch.class);
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
   public ImportJobOpenSearch(ImportBatch importBatch, ImportPositionEntity previousPosition) {
