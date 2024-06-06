@@ -7,14 +7,14 @@
  */
 package io.camunda.search.transformers.types;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
 import io.camunda.search.clients.types.TypedValue;
-import io.camunda.search.transformers.ElasticsearchTransformer;
-import io.camunda.search.transformers.ElasticsearchTransformers;
+import io.camunda.search.transformers.OpensearchTransformer;
+import io.camunda.search.transformers.OpensearchTransformers;
+import org.opensearch.client.opensearch._types.FieldValue;
 
-public final class TypedValueTransformer extends ElasticsearchTransformer<TypedValue, FieldValue> {
+public final class TypedValueTransformer extends OpensearchTransformer<TypedValue, FieldValue> {
 
-  public TypedValueTransformer(final ElasticsearchTransformers transformers) {
+  public TypedValueTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 

@@ -7,17 +7,17 @@
  */
 package io.camunda.search.transformers.query;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import io.camunda.search.clients.query.SearchMatchQuery;
-import io.camunda.search.transformers.ElasticsearchTransformers;
+import io.camunda.search.transformers.OpensearchTransformers;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Operator;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
 public final class MatchQueryTransformer
     extends QueryOptionTransformer<SearchMatchQuery, MatchQuery> {
 
-  public MatchQueryTransformer(final ElasticsearchTransformers transformers) {
+  public MatchQueryTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 

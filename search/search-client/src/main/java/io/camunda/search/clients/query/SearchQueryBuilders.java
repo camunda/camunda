@@ -10,6 +10,7 @@ package io.camunda.search.clients.query;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.withoutNull;
 
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collection;
 import java.util.List;
@@ -144,7 +145,7 @@ public final class SearchQueryBuilders {
   }
 
   public static <A> SearchQuery match(
-      final String field, final String value, final String operator) {
+      final String field, final String value, final SearchMatchQueryOperator operator) {
     return SearchMatchQuery.of((q) -> q.field(field).query(value).operator(operator))
         .toSearchQuery();
   }

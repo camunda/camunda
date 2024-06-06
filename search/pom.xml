@@ -17,6 +17,7 @@
   <modules>
     <module>search-client</module>
     <module>search-client-elasticsearch</module>
+    <module>search-client-opensearch</module>
   </modules>
 
 </project>
