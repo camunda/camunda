@@ -11,21 +11,17 @@ import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
-import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
-import co.elastic.clients.json.JsonData;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
-import jakarta.json.JsonValue;
+import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,22 +30,19 @@ import org.slf4j.LoggerFactory;
  */
 public class NewElasticsearchBatchRequest implements BatchRequest {
 
-  public static final String DEFAULT_SCRIPT_LANG = "painless";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(NewElasticsearchBatchRequest.class);
 
-  private final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
-
-  public NewElasticsearchBatchRequest(final ElasticsearchClient esClient) {
-    this(esClient, new ObjectMapper());
-  }
+  private final BulkRequest.Builder bulkRequestBuilder;
+  private final ElasticsearchScriptBuilder esScriptBuilder;
 
   public NewElasticsearchBatchRequest(
-      final ElasticsearchClient esClient, ObjectMapper objectMapper) {
+      final ElasticsearchClient esClient,
+      final BulkRequest.Builder bulkRequestBuilder,
+      final ElasticsearchScriptBuilder esScriptBuilder) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
+    this.bulkRequestBuilder = bulkRequestBuilder;
+    this.esScriptBuilder = esScriptBuilder;
   }
 
   @Override
@@ -153,7 +146,10 @@ public class NewElasticsearchBatchRequest implements BatchRequest {
         new UpdateOperation.Builder<OperateEntity, Map<String, Object>>()
             .index(index)
             .id(id)
-            .action(a -> a.script(getScriptWithParameters(script, parameters)).upsert(entity))
+            .action(
+                a ->
+                    a.script(esScriptBuilder.getScriptWithParameters(script, parameters))
+                        .upsert(entity))
             .retryOnConflict(UPDATE_RETRY_COUNT)
             .build();
     bulkRequestBuilder.operations(op -> op.update(updateOperation));
@@ -184,7 +180,10 @@ public class NewElasticsearchBatchRequest implements BatchRequest {
             .index(index)
             .id(id)
             .routing(routing)
-            .action(a -> a.script(getScriptWithParameters(script, parameters)).upsert(entity))
+            .action(
+                a ->
+                    a.script(esScriptBuilder.getScriptWithParameters(script, parameters))
+                        .upsert(entity))
             .retryOnConflict(UPDATE_RETRY_COUNT)
             .build();
     bulkRequestBuilder.operations(op -> op.update(updateOperation));
@@ -246,7 +245,7 @@ public class NewElasticsearchBatchRequest implements BatchRequest {
         new UpdateOperation.Builder<OperateEntity, Map<String, Object>>()
             .index(index)
             .id(id)
-            .action(a -> a.script(getScriptWithParameters(script, parameters)))
+            .action(a -> a.script(esScriptBuilder.getScriptWithParameters(script, parameters)))
             .retryOnConflict(UPDATE_RETRY_COUNT)
             .build();
     bulkRequestBuilder.operations(op -> op.update(updateOperation));
@@ -286,21 +285,5 @@ public class NewElasticsearchBatchRequest implements BatchRequest {
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
-  }
-
-  private static Script getScriptWithParameters(
-      final String script, final Map<String, Object> parameters) {
-    return new Script.Builder()
-        .inline(b -> b.source(script).params(jsonParams(parameters)).lang(DEFAULT_SCRIPT_LANG))
-        .build();
-  }
-
-  private static Map<String, JsonData> jsonParams(final Map<String, Object> params) {
-    return params.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> json(e.getValue())));
-  }
-
-  private static <V> JsonData json(final V value) {
-    return JsonData.of(value == null ? JsonValue.NULL : value);
   }
 }
