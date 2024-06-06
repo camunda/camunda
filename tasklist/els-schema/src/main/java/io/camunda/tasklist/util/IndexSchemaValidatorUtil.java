@@ -76,8 +76,8 @@ public class IndexSchemaValidatorUtil {
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
     return Maps.filterEntries(
         indexMappings,
-        e ->  "true".equals(e.getValue().getDynamic())) && // filter out dynamic mappings - not supported by schema migration 
-                 e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern());
+        e ->  "true".equals(e.getValue().getDynamic()) && // filter out dynamic mappings - not supported by schema migration
+                 e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
   }
 
 
