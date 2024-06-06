@@ -23,11 +23,11 @@ public class OpensearchTransfomersTest {
     final SearchQueryRequest request =
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
-    final OpensearchTransformers elasticsearchTransformers = new OpensearchTransformers();
+    final OpensearchTransformers transformers = new OpensearchTransformers();
 
     // when
     final SearchTransfomer<SearchQueryRequest, SearchRequest> transformer =
-        elasticsearchTransformers.getTransformer(SearchQueryRequest.class);
+        transformers.getTransformer(SearchQueryRequest.class);
     final SearchRequest actual = transformer.apply(request);
 
     // then
