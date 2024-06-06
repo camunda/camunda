@@ -16,6 +16,7 @@
 
   <modules>
     <module>search-client</module>
+    <module>search-client-elasticsearch</module>
   </modules>
 
 </project>
