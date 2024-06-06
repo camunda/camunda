@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(ElasticSearchCondition.class)
 public class UserStoreElasticSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreElasticSearch.class);
