@@ -33,6 +33,6 @@ public final class TypedValueTransformer extends ElasticsearchTransformer<TypedV
     } else if (value.isNull()) {
       return FieldValue.NULL;
     }
-    return null;
+    throw new IllegalArgumentException("Unsupported type for TypedValue");
   }
 }

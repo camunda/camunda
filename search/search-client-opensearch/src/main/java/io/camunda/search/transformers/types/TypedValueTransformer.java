@@ -33,6 +33,6 @@ public final class TypedValueTransformer extends OpensearchTransformer<TypedValu
     } else if (value.isNull()) {
       return FieldValue.NULL;
     }
-    return null;
+    throw new IllegalArgumentException("Unsupported type for TypedValue");
   }
 }
