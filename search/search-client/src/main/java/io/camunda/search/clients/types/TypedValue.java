@@ -99,4 +99,23 @@ public final record TypedValue(ValueType type, Object value) {
       final List<T> values, final Function<T, TypedValue> mapper) {
     return values.stream().map(mapper).collect(Collectors.toList());
   }
+
+  public static TypedValue toTypedValue(final Object value) {
+    if (value == null) {
+      return NULL;
+    } else if (value instanceof TypedValue) {
+      return (TypedValue) value;
+    } else if (String.class.isAssignableFrom(value.getClass())) {
+      return of((String) value);
+    } else if (Integer.class.isAssignableFrom(value.getClass())) {
+      return of((Integer) value);
+    } else if (Long.class.isAssignableFrom(value.getClass())) {
+      return of((Long) value);
+    } else if (Double.class.isAssignableFrom(value.getClass())) {
+      return of((Double) value);
+    } else if (Boolean.class.isAssignableFrom(value.getClass())) {
+      return of((Boolean) value);
+    }
+    throw new IllegalArgumentException("Non-supported type: " + value.getClass());
+  }
 }
