@@ -25,6 +25,8 @@ const TargetProcessField: React.FC = observer(() => {
     <Stack orientation="horizontal" gap={5}>
       <Label htmlFor="targetProcess">Target</Label>
       <ComboBox
+        aria-label="Target"
+        title="Target"
         id="targetProcess"
         placeholder="Search by process name"
         items={processes.map(({id, label}) => {
