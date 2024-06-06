@@ -14,10 +14,11 @@ import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import org.agrona.MutableDirectBuffer;
 
-public class ApiResponseWriter implements ResponseWriter {
+public final class ApiResponseWriter implements ResponseWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final AdminResponseEncoder responseEncoder = new AdminResponseEncoder();
   private final ServerResponseImpl response = new ServerResponseImpl();
+  private String payload = null;
 
   @Override
   public void tryWriteResponse(
@@ -37,9 +38,16 @@ public class ApiResponseWriter implements ResponseWriter {
     return responseEncoder;
   }
 
+  public void setPayload(final String payload) {
+    this.payload = payload;
+  }
+
   @Override
   public int getLength() {
-    return MessageHeaderEncoder.ENCODED_LENGTH + AdminResponseEncoder.BLOCK_LENGTH;
+    return MessageHeaderEncoder.ENCODED_LENGTH
+        + AdminResponseEncoder.BLOCK_LENGTH
+        + payload.getBytes().length
+        + 4;
   }
 
   @Override
@@ -55,5 +63,8 @@ public class ApiResponseWriter implements ResponseWriter {
     offset += headerEncoder.encodedLength();
 
     responseEncoder.wrap(buffer, offset);
+    if (payload != null) {
+      responseEncoder.putPayload(payload.getBytes(), 0, payload.getBytes().length);
+    }
   }
 }
