@@ -5,37 +5,40 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.commons.actor;
 
-import io.camunda.zeebe.broker.shared.BrokerConfiguration;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
+@VisibleForTesting
 public final class ActorSchedulerConfiguration {
-  private final BrokerCfg brokerCfg;
+
+  private final SchedulerConfiguration properties;
+  private final IdleStrategySupplier idleStrategySupplier;
   private final ActorClockConfiguration actorClockConfiguration;
 
   @Autowired
   public ActorSchedulerConfiguration(
-      final BrokerConfiguration config, final ActorClockConfiguration actorClockConfiguration) {
-    brokerCfg = config.config();
+      final SchedulerConfiguration properties,
+      final IdleStrategySupplier idleStrategySupplier,
+      final ActorClockConfiguration actorClockConfiguration) {
+    this.properties = properties;
+    this.idleStrategySupplier = idleStrategySupplier;
     this.actorClockConfiguration = actorClockConfiguration;
   }
 
   @Bean(destroyMethod = "close")
-  public ActorScheduler scheduler(final IdleStrategySupplier idleStrategySupplier) {
-    final ThreadsCfg cfg = brokerCfg.getThreads();
-
-    final var cpuThreads = cfg.getCpuThreadCount();
-    final var ioThreads = cfg.getIoThreadCount();
-    final var metricsEnabled = brokerCfg.getExperimental().getFeatures().isEnableActorMetrics();
+  public ActorScheduler scheduler() {
+    final var cpuThreads = properties.cpuThreads();
+    final var ioThreads = properties.ioThreads();
+    final var metricsEnabled = properties.metricsEnabled();
+    final var prefix = properties.prefix();
+    final var nodeId = properties.nodeId();
 
     final var scheduler =
         ActorScheduler.newActorScheduler()
@@ -43,10 +46,14 @@ public final class ActorSchedulerConfiguration {
             .setCpuBoundActorThreadCount(cpuThreads)
             .setIoBoundActorThreadCount(ioThreads)
             .setMetricsEnabled(metricsEnabled)
-            .setSchedulerName(String.format("Broker-%d", brokerCfg.getCluster().getNodeId()))
+            .setSchedulerName(String.format("%s-%s", prefix, nodeId))
             .setIdleStrategySupplier(idleStrategySupplier)
             .build();
     scheduler.start();
+
     return scheduler;
   }
+
+  public record SchedulerConfiguration(
+      int cpuThreads, int ioThreads, boolean metricsEnabled, String prefix, String nodeId) {}
 }

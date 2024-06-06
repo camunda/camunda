@@ -21,6 +21,9 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
+import io.camunda.commons.actor.ActorClockConfiguration;
+import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.commons.actor.ActorSchedulerConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -47,7 +50,6 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.gateway.ActorSchedulerConfiguration;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
 import io.camunda.zeebe.gateway.GatewayConfiguration;
@@ -61,8 +63,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -344,9 +344,11 @@ public class ClusteringRule extends ExternalResource {
             new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
             Version.from(VersionUtil.getVersion()));
     final var scheduler =
-        new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
-                brokerSpringConfig, actorClockConfiguration)
-            .scheduler(IdleStrategySupplier.ofDefault());
+        new io.camunda.commons.actor.ActorSchedulerConfiguration(
+                brokerSpringConfig.schedulerConfiguration(),
+                IdleStrategySupplier.ofDefault(),
+                actorClockConfiguration)
+            .scheduler();
     final var topologyManager =
         new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
     final var brokerClient =
@@ -465,13 +467,15 @@ public class ClusteringRule extends ExternalResource {
 
   private GatewayResource createGateway(final GatewayProperties gatewayCfg) {
     final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
+    final var actorConfig = config.schedulerConfiguration();
     final var clusterFactory = new GatewayClusterConfiguration();
     final var atomixCluster = clusterFactory.atomixCluster(clusterFactory.clusterConfig(config));
     atomixCluster.start().join();
 
     final ActorScheduler actorScheduler =
-        new ActorSchedulerConfiguration(gatewayCfg, actorClockConfiguration)
-            .actorScheduler(IdleStrategySupplier.ofDefault());
+        new ActorSchedulerConfiguration(
+                actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
+            .scheduler();
     final var topologyManager =
         new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
     actorScheduler.submitActor(topologyManager).join();
