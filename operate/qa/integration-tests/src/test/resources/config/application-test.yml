@@ -24,6 +24,9 @@ camunda.operate:
     readerBackoff: 0
     schedulerBackoff: 0
     startLoadingDataOnStartup: false
+camunda.webapps:
+  enabled: true
+  default-app: operate
 logging:
   level:
     ROOT: INFO
@@ -31,3 +34,12 @@ logging:
 #Spring Boot Actuator endpoints to be exposed
 management.prometheus.metrics.export.enabled: true
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
+spring:
+  web:
+    resources:
+      static-locations: classpath:/static/operate/
+  thymeleaf:
+    prefix: classpath:/static/
+---
+spring.config.activate.on-profile: identity-auth, sso-auth
+camunda.webapps.login-delegated: true

@@ -19,6 +19,7 @@ public enum Profile {
   RESTORE("restore"),
   OPERATE("operate"),
   IDENTITY("identity"),
+  TASKLIST("tasklist"),
 
   // environment profiles
   TEST("test"),
@@ -27,6 +28,7 @@ public enum Profile {
 
   // other
   IDENTITY_AUTH("identity-auth"),
+  SSO_AUTH("sso-auth"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");

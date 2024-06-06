@@ -56,7 +56,10 @@ public class UserStoreElasticSearch implements UserStore {
   private static final XContentType XCONTENT_TYPE = XContentType.JSON;
 
   @Autowired private UserIndex userIndex;
-  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

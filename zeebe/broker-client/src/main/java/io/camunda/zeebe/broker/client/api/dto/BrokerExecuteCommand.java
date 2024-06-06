@@ -132,4 +132,12 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   protected boolean isRejection() {
     return response.getRecordType() == RecordType.COMMAND_REJECTION;
   }
+
+  public long getOperationReference() {
+    return request.getOperationReference();
+  }
+
+  public void setOperationReference(final long operationReference) {
+    request.setOperationReference(operationReference);
+  }
 }

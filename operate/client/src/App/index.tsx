@@ -75,7 +75,7 @@ const App: React.FC = () => {
       <NetworkStatusWatcher />
       <HistoryRouter
         history={createBrowserHistory({window})}
-        basename={window.clientConfig?.contextPath ?? '/'}
+        basename={window.clientConfig?.baseName ?? '/'}
       >
         <RedirectDeprecatedRoutes />
         <SessionWatcher />

@@ -27,13 +27,13 @@ test.beforeEach(async ({testSetupPage, loginPage, page}) => {
     username: 'demo',
     password: 'demo',
   });
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/tasklist');
 });
 
 test.describe('process page', () => {
   test('process page navigation', async ({mainPage, page, processesPage}) => {
     await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
+    await expect(page).toHaveURL('/tasklist/processes');
     await expect(page.getByText('Start your process on demand')).toBeVisible();
     await processesPage.clickCancelButton();
     await expect(page.getByText('Welcome to Tasklist')).toBeVisible();
@@ -45,7 +45,7 @@ test.describe('process page', () => {
 
   test('process searching', async ({page, mainPage, processesPage}) => {
     await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
+    await expect(page).toHaveURL('/tasklist/processes');
     await processesPage.clickContinueButton();
 
     await processesPage.searchForProcess('fake_process');
@@ -69,7 +69,7 @@ test.describe('process page', () => {
     taskDetailsPage,
   }) => {
     await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
+    await expect(page).toHaveURL('/tasklist/processes');
     await processesPage.clickContinueButton();
 
     await processesPage.searchForProcess('User_Process');
@@ -91,7 +91,7 @@ test.describe('process page', () => {
     taskPanelPage,
   }) => {
     await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
+    await expect(page).toHaveURL('/tasklist/processes');
     await processesPage.clickContinueButton();
 
     await processesPage.searchForProcess('User_Process');

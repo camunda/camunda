@@ -86,7 +86,7 @@ public class ElasticsearchConnector {
   private ElasticsearchClient elasticsearchClient;
 
   @Bean
-  public co.elastic.clients.elasticsearch.ElasticsearchClient elasticsearchClient() {
+  public ElasticsearchClient tasklistElasticsearchClient() {
     LOGGER.debug("Creating ElasticsearchClient ...");
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
@@ -126,15 +126,15 @@ public class ElasticsearchConnector {
   }
 
   @Bean(destroyMethod = "close")
-  public RestHighLevelClient esClient() {
+  public RestHighLevelClient tasklistEsClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(tasklistProperties.getElasticsearch());
   }
 
-  @Bean(name = "zeebeEsClient", destroyMethod = "close")
-  public RestHighLevelClient zeebeEsClient() {
+  @Bean(destroyMethod = "close")
+  public RestHighLevelClient tasklistZeebeEsClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");

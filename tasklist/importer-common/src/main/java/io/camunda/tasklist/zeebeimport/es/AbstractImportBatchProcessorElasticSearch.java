@@ -16,10 +16,13 @@ import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public abstract class AbstractImportBatchProcessorElasticSearch implements ImportBatchProcessor {
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private Metrics metrics;
 

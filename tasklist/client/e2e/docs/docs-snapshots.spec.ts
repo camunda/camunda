@@ -273,6 +273,7 @@ async function mockClientConfig(page: Page) {
         "canLogout":true,
         "isLoginDelegated":false,
         "contextPath":"",
+        "baseName":"/tasklist",
         "organizationId":null,
         "clusterId":null,
         "stage":null,

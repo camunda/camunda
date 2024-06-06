@@ -16,6 +16,11 @@ module.exports = function (app) {
     createProxyMiddleware({
       target: `http://localhost:${process.env.IS_E2E ? '8081' : '8080'}`,
       pathFilter: ['/client-config.js', '/api'],
+      pathRewrite: {'^/client-config.js': '/operate/client-config.js'},
     }),
   );
+  // redirect http://localhost:3000 to http://localhost:3000/operate
+  app.get('/', ({res}) => {
+    res.redirect('/operate');
+  });
 };

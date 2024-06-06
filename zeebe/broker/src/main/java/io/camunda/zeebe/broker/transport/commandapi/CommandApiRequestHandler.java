@@ -94,6 +94,7 @@ final class CommandApiRequestHandler
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
     final var value = reader.value();
+    final long operationReference = command.operationReference();
     final var metadata = reader.metadata();
 
     metadata.requestId(requestId);
@@ -101,6 +102,7 @@ final class CommandApiRequestHandler
     metadata.recordType(RecordType.COMMAND);
     metadata.intent(intent);
     metadata.valueType(valueType);
+    metadata.operationReference(operationReference);
 
     if (logStreamWriter == null) {
       errorWriter.partitionLeaderMismatch(partitionId);

@@ -122,14 +122,14 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.40.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.25.64</version.awssdk>
+    <version.awssdk>2.25.65</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.22</version.swagger-annotations>
-    <version.checker-qual>3.43.0</version.checker-qual>
+    <version.checker-qual>3.44.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.734</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.735</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
@@ -174,7 +174,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.39.3</version.nimbus-jose-jwt>
-    <version.keycloak>24.0.4</version.keycloak>
+    <version.keycloak>24.0.5</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -199,7 +199,7 @@
     <plugin.version.build-helper>3.6.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.13.2</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.3.0</plugin.version.exec>

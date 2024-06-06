@@ -24,11 +24,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = TestApplication.class,
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
+      "camunda.webapps.enabled = true",
+      "camunda.webapps.default-app = tasklist",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({"tasklist", "test"})

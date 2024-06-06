@@ -96,6 +96,11 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
+  public long getOperationReference() {
+    return 0;
+  }
+
+  @Override
   public Record<ProcessInstanceRecord> copyOf() {
     return this;
   }

@@ -29,6 +29,7 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
@@ -42,6 +43,7 @@ import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationToken
 import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import org.assertj.core.util.DateUtil;
 import org.junit.Test;
@@ -93,7 +95,9 @@ import org.springframework.test.context.junit4.SpringRunner;
       SecurityContextWrapper.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      DatabaseInfo.class
+      DatabaseInfo.class,
+      OperateIndexController.class,
+      WebappsModuleConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
@@ -105,7 +109,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       "camunda.operate.identity.baseUrl=http://localhost:8080",
       "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
       "camunda.operate.persistentSessionsEnabled=true",
-      "spring.web.resources.add-mappings = true"
+      "spring.web.resources.add-mappings = true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})

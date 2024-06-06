@@ -107,9 +107,7 @@ test.describe('Process Instance Migration @roundtrip', () => {
       targetVersion.toString(),
     );
 
-    await migrateOperationEntry
-      .getByRole('link', {name: /6 instances/i})
-      .click();
+    await migrateOperationEntry.getByRole('link').click();
 
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
