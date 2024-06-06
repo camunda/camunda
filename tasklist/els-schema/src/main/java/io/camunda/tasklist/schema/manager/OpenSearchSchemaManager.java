@@ -61,7 +61,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
-@Component("schemaManager")
+@Component("tasklistSchemaManager")
 @Profile("!test")
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchSchemaManager implements SchemaManager {

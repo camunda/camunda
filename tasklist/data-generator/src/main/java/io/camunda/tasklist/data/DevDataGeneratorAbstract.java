@@ -34,7 +34,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
@@ -43,7 +43,9 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired private FormIndex formIndex;
 

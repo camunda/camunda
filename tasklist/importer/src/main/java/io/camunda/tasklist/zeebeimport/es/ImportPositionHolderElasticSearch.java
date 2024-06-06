@@ -40,7 +40,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(ElasticSearchCondition.class)
 public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstract
     implements ImportPositionHolder {
