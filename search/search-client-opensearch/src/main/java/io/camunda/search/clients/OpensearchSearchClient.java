@@ -25,8 +25,13 @@ public final class OpensearchSearchClient implements CamundaSearchClient {
   private final OpensearchTransformers transformers;
 
   public OpensearchSearchClient(final OpenSearchClient client) {
+    this(client, new OpensearchTransformers());
+  }
+
+  public OpensearchSearchClient(
+      final OpenSearchClient client, final OpensearchTransformers transformers) {
     this.client = client;
-    this.transformers = new OpensearchTransformers();
+    this.transformers = transformers;
   }
 
   @Override
