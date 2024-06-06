@@ -1,9 +1,12 @@
 #!/bin/sh -xeu
 
 HOST=$(hostname -i)
+ZEEBE_SET_SEED_ENV_VARS=${ZEEBE_SET_SEED_ENV_VARS:-true}
 
 if [ "$ZEEBE_STANDALONE_GATEWAY" = "true" ]; then
-    export ZEEBE_GATEWAY_NETWORK_HOST=${ZEEBE_GATEWAY_NETWORK_HOST:-${HOST}}
+    if [ "$ZEEBE_SET_SEED_ENV_VARS" = "true" ]; then
+        export ZEEBE_GATEWAY_NETWORK_HOST=${ZEEBE_GATEWAY_NETWORK_HOST:-${HOST}}
+    fi
     export ZEEBE_GATEWAY_CLUSTER_HOST=${ZEEBE_GATEWAY_CLUSTER_HOST:-${ZEEBE_GATEWAY_NETWORK_HOST}}
 
     exec /usr/local/zeebe/bin/gateway
