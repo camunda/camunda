@@ -13,6 +13,10 @@ spring:
       accept-case-insensitive-enums: true
     deserialization:
       read-unknown-enum-values-using-default-value: true
+  jpa:
+   generate-ddl: false
+   hibernate:
+    ddl-auto: validate
 management:
   server:
     port: 8082

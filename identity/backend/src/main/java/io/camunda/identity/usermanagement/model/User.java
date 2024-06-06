@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.usermanagement;
+package io.camunda.identity.usermanagement.model;
 
-public record Group(Integer id, String name) {
-  public Group(final String name) {
-    this(null, name);
-  }
-}
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "users")
+public record User(@Id Long id, String username, String password, boolean enabled) {}
