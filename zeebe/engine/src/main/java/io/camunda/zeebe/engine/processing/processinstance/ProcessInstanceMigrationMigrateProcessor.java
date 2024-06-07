@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAct
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -71,6 +73,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
@@ -84,13 +87,18 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
+  private final int currentPartitionId;
+  private final int partitionsCount;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
@@ -104,6 +112,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     distributionState = processingState.getDistributionState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    currentPartitionId = partitionId;
+    this.partitionsCount = partitionsCount;
   }
 
   @Override
@@ -420,13 +430,21 @@ public class ProcessInstanceMigrationMigrateProcessor
                   .setTenantId(processMessageSubscriptionRecord.getTenantId())
                   .setInterrupting(processMessageSubscriptionRecord.isInterrupting());
 
-          // TODO: append the command instead of distributing if it is on a same partition
-          commandDistributionBehavior.distributeCommand(
-              distributionKey,
-              ValueType.MESSAGE_SUBSCRIPTION,
-              MessageSubscriptionIntent.MIGRATE,
-              messageSubscription,
-              List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+          final var subscriptionPartitionId =
+              SubscriptionUtil.getSubscriptionPartitionId(
+                  BufferUtil.wrapString(messageSubscription.getCorrelationKey()), partitionsCount);
+
+          if (currentPartitionId == subscriptionPartitionId) {
+            commandWriter.appendFollowUpCommand(
+                distributionKey, MessageSubscriptionIntent.MIGRATE, messageSubscription);
+          } else {
+            commandDistributionBehavior.distributeCommand(
+                distributionKey,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.MIGRATE,
+                messageSubscription,
+                List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+          }
         });
   }
 

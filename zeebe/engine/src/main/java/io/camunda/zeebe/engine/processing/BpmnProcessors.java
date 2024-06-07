@@ -60,7 +60,9 @@ public final class BpmnProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -98,7 +100,9 @@ public final class BpmnProcessors {
         processingState,
         writers,
         bpmnBehaviors,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        partitionId,
+        partitionsCount);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -236,12 +240,19 @@ public final class BpmnProcessors {
       final ProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
         new ProcessInstanceMigrationMigrateProcessor(
-            writers, processingState, bpmnBehaviors, commandDistributionBehavior));
+            writers,
+            processingState,
+            bpmnBehaviors,
+            commandDistributionBehavior,
+            partitionId,
+            partitionsCount));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
