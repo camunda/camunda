@@ -10,6 +10,8 @@ import {NavLink, Path} from 'react-router-dom';
 import cn from 'classnames';
 import styles from './styles.module.scss';
 
+const ELLIPSIS_CUTOFF_LENGTH = 17;
+
 type Props = Omit<
   React.ComponentProps<typeof NavLink>,
   'to' | 'className' | 'children'
@@ -42,7 +44,7 @@ const ControlledNavLink: React.FC<Props> = ({
           className,
         )
       }
-      title={children.length > 17 ? children : undefined}
+      title={children.length > ELLIPSIS_CUTOFF_LENGTH ? children : undefined}
     >
       {children}
     </NavLink>
