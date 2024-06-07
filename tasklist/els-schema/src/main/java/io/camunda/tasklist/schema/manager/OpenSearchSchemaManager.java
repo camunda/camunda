@@ -20,6 +20,9 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
@@ -33,8 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
@@ -289,37 +290,40 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
     final Request request =
         new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
-    final JSONObject requestJson = new JSONObject();
-    final JSONArray statesJson = new JSONArray();
-    final JSONObject openState = new JSONObject();
-    final JSONArray openActions = new JSONArray();
-    final JSONObject openActionJson = new JSONObject();
-    final JSONArray transitionOpenActions = new JSONArray();
-    final JSONObject openTransition = new JSONObject();
-    final JSONObject openCondition = new JSONObject();
-    final JSONObject deleteState = new JSONObject();
-    final JSONArray actionsDelete = new JSONArray();
-    final JSONObject deleteJson = new JSONObject();
-    deleteJson.put("delete", new JSONObject());
-    actionsDelete.put(deleteJson);
-    deleteState.put("name", "delete");
+    final JsonObject requestJson = Json.createObjectBuilder().build();
+    final JsonArray statesJson = Json.createArrayBuilder().build();
+    final JsonObject openState = Json.createObjectBuilder().build();
+    final JsonArray openActions = Json.createArrayBuilder().build();
+    final JsonObject openActionJson = Json.createObjectBuilder().build();
+    final JsonArray transitionOpenActions = Json.createArrayBuilder().build();
+    final JsonObject openTransition = Json.createObjectBuilder().build();
+    final JsonObject openCondition = Json.createObjectBuilder().build();
+    final JsonObject deleteState = Json.createObjectBuilder().build();
+    final JsonArray actionsDelete = Json.createArrayBuilder().build();
+    final JsonObject deleteJson = Json.createObjectBuilder().build();
+    deleteJson.put("delete", Json.createObjectBuilder().build());
+    actionsDelete.add(deleteJson);
+    deleteState.put("name", Json.createValue("delete"));
     deleteState.put("actions", actionsDelete);
     openCondition.put(
-        "min_index_age", tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
-    openTransition.put("state_name", "delete");
+        "min_index_age",
+        Json.createValue(tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices()));
+    openTransition.put("state_name", Json.createValue("delete"));
     openTransition.put("conditions", openCondition);
-    openActionJson.put("open", new JSONObject());
-    openActions.put(openActionJson);
-    openState.put("name", "open");
+    openActionJson.put("open", Json.createObjectBuilder().build());
+    openActions.add(openActionJson);
+    openState.put("name", Json.createValue("open"));
     openState.put("actions", openActions);
-    transitionOpenActions.put(openTransition);
+    transitionOpenActions.add(openTransition);
     openState.put("transitions", transitionOpenActions);
-    statesJson.put(openState);
-    statesJson.put(deleteState);
-    final JSONObject policyJson = new JSONObject();
-    policyJson.put("policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
-    policyJson.put("description", "Policy to delete archived indices older than configuration");
-    policyJson.put("default_state", "open");
+    statesJson.add(openState);
+    statesJson.add(deleteState);
+    final JsonObject policyJson = Json.createObjectBuilder().build();
+    policyJson.put("policy_id", Json.createValue(TASKLIST_DELETE_ARCHIVED_INDICES));
+    policyJson.put(
+        "description",
+        Json.createValue("Policy to delete archived indices older than configuration"));
+    policyJson.put("default_state", Json.createValue("open"));
     policyJson.put("states", statesJson);
 
     requestJson.put("policy", policyJson);

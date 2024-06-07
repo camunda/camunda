@@ -21,9 +21,9 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import jakarta.json.JsonException;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.json.JSONException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +59,7 @@ public class MultiTenancyIT extends IdentityTester {
   }
 
   @Test
-  public void searchProcessesShouldReturnOnlyUserTenantsOwnedProcesses() throws JSONException {
+  public void searchProcessesShouldReturnOnlyUserTenantsOwnedProcesses() throws JsonException {
     createAuthorization(getUserId(0), "USER", "*", "process-definition", "START_PROCESS_INSTANCE");
     createAuthorization(getUserId(1), "USER", "*", "process-definition", "START_PROCESS_INSTANCE");
 

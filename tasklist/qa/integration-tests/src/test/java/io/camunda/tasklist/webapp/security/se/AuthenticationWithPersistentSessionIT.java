@@ -18,9 +18,9 @@ import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
+import jakarta.json.Json;
+import jakarta.json.JsonException;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -182,7 +182,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
 
   @Test
   @DirtiesContext
-  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
+  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JsonException {
     ResponseEntity<String> response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
@@ -193,7 +193,8 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     final HttpEntity<String> request =
-        new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+        new HttpEntity<>(
+            Json.createObjectBuilder().add("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",

@@ -27,7 +27,8 @@ section of your pom.
 </dependencyManagement>
 ```
 
-Once imported, you can easily add the dependencies you need to the `dependencies` section of your pom.
+Once imported, you can easily add the dependencies you need to the `dependencies` section of your
+pom.
 
 For example, you can use it to import the
 [Zeebe Java Client](https://docs.camunda.io/docs/apis-clients/java-client/).

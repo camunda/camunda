@@ -1,18 +1,19 @@
-<extensions xmlns="http://maven.apache.org/EXTENSIONS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<extensions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/EXTENSIONS/1.0.0"
   xsi:schemaLocation="http://maven.apache.org/EXTENSIONS/1.0.0 http://maven.apache.org/xsd/core-extensions-1.0.0.xsd">
   <!--
        Maven Incremental Module Builder https://github.com/khmarbaise/incremental-module-builder
        Usage: mvn -b incremental install
   -->
   <extension>
-    <groupId>com.soebes.maven.extensions</groupId>
     <artifactId>incremental-module-builder</artifactId>
+    <groupId>com.soebes.maven.extensions</groupId>
     <version>0.2.0</version>
   </extension>
 
   <extension>
-    <groupId>fr.jcgay.maven</groupId>
     <artifactId>maven-profiler</artifactId>
+    <groupId>fr.jcgay.maven</groupId>
     <version>3.2</version>
   </extension>
 </extensions>

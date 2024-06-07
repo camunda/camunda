@@ -21,10 +21,11 @@ import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.impl.util.Environment;
+import jakarta.json.Json;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
 import java.util.Collections;
 import java.util.Map;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -211,14 +212,14 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
       final String resourceKey,
       final String resourceType,
       final String permission)
-      throws JSONException {
-    final JSONObject obj = new JSONObject();
+      throws JsonException {
+    final JsonObject obj = Json.createObjectBuilder().build();
 
-    obj.put("entityId", entityId);
-    obj.put("entityType", entityType);
-    obj.put("resourceKey", resourceKey);
-    obj.put("resourceType", resourceType);
-    obj.put("permission", permission);
+    obj.put("entityId", Json.createValue(entityId));
+    obj.put("entityType", Json.createValue(entityType));
+    obj.put("resourceKey", Json.createValue(resourceKey));
+    obj.put("resourceType", Json.createValue(resourceType));
+    obj.put("permission", Json.createValue(permission));
 
     final HttpHeaders httpHeaders = new HttpHeaders();
     httpHeaders.setContentType(MediaType.APPLICATION_JSON);

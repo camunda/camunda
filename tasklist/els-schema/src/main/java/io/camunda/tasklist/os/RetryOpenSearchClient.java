@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
@@ -652,11 +651,11 @@ public class RetryOpenSearchClient {
   public Response putLifeCyclePolicy(final String indexName, final String policyName) {
     final Request request = new Request("PUT", indexName + "/_settings");
 
-    final JSONObject settings = new JSONObject();
-    final JSONObject indexSettings = new JSONObject();
+    final JsonObject settings = Json.createObjectBuilder().build();
+    final JsonObject indexSettings = Json.createObjectBuilder().build();
     indexSettings.put(
         "plugins.index_state_management.policy_id",
-        Objects.requireNonNullElse(policyName, JSONObject.NULL));
+        (JsonObject) Objects.requireNonNullElse(policyName, JsonObject.NULL));
     settings.put("index", indexSettings);
 
     request.setJsonEntity(settings.toString());

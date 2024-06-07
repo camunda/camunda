@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.IdentityTester;
+import jakarta.json.JsonException;
 import java.io.IOException;
-import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -32,7 +32,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @Test
-  public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException, JSONException {
+  public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException, JsonException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 
     final String querySimpleProcess = "simple";

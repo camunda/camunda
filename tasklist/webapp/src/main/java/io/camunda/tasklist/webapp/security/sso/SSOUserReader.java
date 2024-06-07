@@ -19,10 +19,12 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.C8ConsoleService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
@@ -87,7 +89,7 @@ public class SSOUserReader implements UserReader {
   }
 
   @Override
-  public List<UserDTO> getUsersByUsernames(List<String> usernames) {
+  public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
     return map(
         usernames, name -> new UserDTO().setDisplayName(name).setUserId(name).setApiUser(false));
   }
@@ -95,8 +97,10 @@ public class SSOUserReader implements UserReader {
   @Override
   public Optional<String> getUserToken(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
-      return Optional.of(
-          JSONObject.valueToString(((TokenAuthentication) authentication).getAccessToken()));
+      final JsonObjectBuilder builder = Json.createObjectBuilder();
+      builder.add("token", ((TokenAuthentication) authentication).getAccessToken());
+      final JsonObject jsonObject = builder.build();
+      return Optional.of(jsonObject.toString());
     } else {
       throw new UnsupportedOperationException(
           "Not supported for token class: " + authentication.getClass().getName());
