@@ -25,12 +25,11 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
   @Autowired private OperateProperties operateProperties;
 
+  private String indexPrefix;
+
   @Override
   public String getFullQualifiedName() {
-    final var indexPrefix =
-        DatabaseInfo.isOpensearch()
-            ? operateProperties.getOpensearch().getIndexPrefix()
-            : operateProperties.getElasticsearch().getIndexPrefix();
+    final var indexPrefix = getIndexPrefix();
     return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 
@@ -46,5 +45,21 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
     return String.format("%s-%s-\\d.*", operateProperties.getIndexPrefix(), getIndexName());
+  }
+
+  // FIXME clean this up when Operate exporter is converted to using Spring
+  public String getIndexPrefix() {
+    if (operateProperties != null) {
+      return DatabaseInfo.isOpensearch()
+          ? operateProperties.getOpensearch().getIndexPrefix()
+          : operateProperties.getElasticsearch().getIndexPrefix();
+    } else {
+      return indexPrefix;
+    }
+  }
+
+  public AbstractTemplateDescriptor setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+    return this;
   }
 }
