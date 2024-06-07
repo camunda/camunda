@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:24.0.4
+    image: bitnami/keycloak:24.0.5
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:
@@ -101,7 +101,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.5.1
+    image: camunda/zeebe:8.5.2
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
