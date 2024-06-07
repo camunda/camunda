@@ -772,6 +772,26 @@
         <scope>test</scope>
       </dependency>
 
+      <!-- camunda search client -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-elasticsearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-opensearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>

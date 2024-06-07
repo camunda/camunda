@@ -454,6 +454,7 @@
       </indentOptions>
     </codeStyleSettings>
     <codeStyleSettings language="Python">
+      <option name="KEEP_BLANK_LINES_IN_CODE" value="1" />
       <option name="RIGHT_MARGIN" value="80" />
       <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
       <indentOptions>

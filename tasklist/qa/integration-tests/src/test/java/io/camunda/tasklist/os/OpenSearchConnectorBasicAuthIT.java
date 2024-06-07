@@ -70,11 +70,11 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
               .withExposedPorts(9200, 9200);
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   OpenSearchClient zeebeOsClient;
 
   @BeforeAll

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
+import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
 
 public class FullAppIT extends ModuleIntegrationTest {
@@ -21,5 +22,6 @@ public class FullAppIT extends ModuleIntegrationTest {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
+    assertThat(applicationContext.getBean(TasklistIndexController.class)).isNotNull();
   }
 }

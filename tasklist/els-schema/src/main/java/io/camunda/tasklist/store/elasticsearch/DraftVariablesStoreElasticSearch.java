@@ -56,7 +56,11 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
       LoggerFactory.getLogger(DraftVariablesStoreElasticSearch.class);
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
+
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
 
   @Autowired

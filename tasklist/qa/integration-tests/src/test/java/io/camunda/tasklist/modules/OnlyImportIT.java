@@ -14,6 +14,7 @@ import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
@@ -42,5 +43,12 @@ public class OnlyImportIT extends ModuleIntegrationTest {
     assertThrows(
         NoSuchBeanDefinitionException.class,
         () -> applicationContext.getBean(ArchiverModuleConfiguration.class));
+  }
+
+  @Test
+  public void testTasklistIndexControllerIsNotPresent() {
+    assertThrows(
+        NoSuchBeanDefinitionException.class,
+        () -> applicationContext.getBean(TasklistIndexController.class));
   }
 }

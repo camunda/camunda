@@ -87,7 +87,7 @@ public class BackupServiceElasticSearchTest {
   @Mock private SnapshotClient snapshotClient;
 
   @MockBean
-  @Qualifier("esClient")
+  @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
   @SpyBean private TasklistProperties tasklistProperties;

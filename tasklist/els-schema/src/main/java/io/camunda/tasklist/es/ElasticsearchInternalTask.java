@@ -58,7 +58,9 @@ public class ElasticsearchInternalTask {
   private static final String TASKS_ENDPOINT = "_tasks";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchInternalTask.class);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

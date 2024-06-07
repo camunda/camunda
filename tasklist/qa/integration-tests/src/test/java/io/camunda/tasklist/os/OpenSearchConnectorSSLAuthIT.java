@@ -61,11 +61,11 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   OpenSearchClient zeebeOsClient;
 
   @Disabled("Can be tested manually")

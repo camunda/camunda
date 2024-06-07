@@ -86,7 +86,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.cloud.consoleUrl=https://consoleUrl",
       "camunda.tasklist.importer.startLoadingDataOnStartup = false",
-      "camunda.tasklist.archiver.rolloverEnabled = false"
+      "camunda.tasklist.archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test"})

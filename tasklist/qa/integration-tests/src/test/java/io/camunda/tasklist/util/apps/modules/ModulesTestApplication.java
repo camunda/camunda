@@ -7,12 +7,13 @@
  */
 package io.camunda.tasklist.util.apps.modules;
 
-import io.camunda.application.StandaloneTasklist;
+import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
 @ComponentScan(
@@ -42,9 +44,12 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           pattern = "io\\.camunda\\.tasklist\\.data\\..*"),
       @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.tasklist\\.it\\..*"),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
-      @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = StandaloneTasklist.class)
+      @ComponentScan.Filter(
+          type = FilterType.ASSIGNABLE_TYPE,
+          value = TasklistModuleConfiguration.class)
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(WebappsModuleConfiguration.class)
 public class ModulesTestApplication {
 
   public static void main(final String[] args) throws Exception {

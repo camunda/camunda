@@ -55,12 +55,13 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
-@Component("schemaManager")
+@Component("tasklistSchemaManager")
 @Profile("!test")
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchSchemaManager implements SchemaManager {
@@ -74,13 +75,17 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Autowired protected RetryOpenSearchClient retryOpenSearchClient;
 
-  @Autowired protected RestClient opensearchRestClient;
+  @Autowired
+  @Qualifier("tasklistOsRestClient")
+  private RestClient opensearchRestClient;
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
 
-  @Autowired private OpenSearchClient openSearchClient;
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
 
   @Autowired private ObjectMapper objectMapper;
 
