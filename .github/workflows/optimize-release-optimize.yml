@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           fetch-depth: 0
 
@@ -161,14 +161,14 @@ jobs:
           branch: ${{ env.BRANCH }}
 
       - name: Login to prod Harbor docker registry
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
         with:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
           password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
 
       - name: Login to docker hub
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
@@ -193,7 +193,7 @@ jobs:
           ee: "true"
           env: "prod"
           version: ${{ github.event.inputs.RELEASE_VERSION }}
-          artifact_file: target/checkout/distro/target/*.{tar.gz,zip}
+          artifact_file: target/checkout/optimize-distro/target/*.{tar.gz,zip}
           repo_name: "optimize"
 
       - name: Auto-update previous version
@@ -208,7 +208,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          .github/scripts/build-release-docker-images.sh
+          .github/scripts/build-release-docker-image.sh
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
@@ -227,7 +227,7 @@ jobs:
             # exposed there on port 8080.
 
       - name: Execute health check and push docker image
-        uses: ./.github/actions/execute-healthcheck-and-push-images
+        uses: ./.github/actions/execute-healthcheck-and-push-image
         with:
           version: ${{ env.VERSION }}
           date: ${{ env.DATE }}
@@ -251,7 +251,7 @@ jobs:
 
       - name: Checkout Optimize examples
         if: inputs.RELEASE_EXAMPLES == true
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
           token: ${{ steps.github-token.outputs.token }}
           repository: camunda/camunda-optimize-examples

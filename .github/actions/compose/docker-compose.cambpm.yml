@@ -19,6 +19,6 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - "../../../backend/target/cambpm_logs:/camunda/logs"
-      - "../../../backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
-      - "../../../backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
+      - "../../../optimize/backend/target/cambpm_logs:/camunda/logs"
+      - "../../../optimize/backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
+      - "../../../optimize/backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"

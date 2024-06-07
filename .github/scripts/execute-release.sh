@@ -37,4 +37,4 @@ if [[ $IS_RC == true ]]; then
 fi
 
 echo "Artifacts created:"
-ls -1 distro/target
+ls -1 optimize-distro/target

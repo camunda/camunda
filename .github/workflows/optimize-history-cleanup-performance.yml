@@ -49,7 +49,7 @@ jobs:
       NAMESPACE: optimize-history-cleanup-performance-test-${{ github.run_id }}
     steps:
       - name: Checkout
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -67,7 +67,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Get gcloud credentials
-        uses: "google-github-actions/get-gke-credentials@c02be8662df01db62234e9b9cff0765d1c1827ae" # v2
+        uses: "google-github-actions/get-gke-credentials@c544a3d7e92276d24e03a5632a53aa3913ad5d8a" # v2
         with:
           cluster_name: "camunda-ci"
           location: "europe-west1"
@@ -89,8 +89,8 @@ jobs:
       - name: Run cleanup performance test
         shell: bash
         run: |
-          mvn -pl backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install
-          mvn -Pengine-cleanup-performance -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.$NAMESPACE:5432/engine -Dengine.url=http://cambpm.$NAMESPACE:8080/engine-rest -Des.host=elasticsearch.$NAMESPACE -Dcleanup.timeout.minutes=${{ env.CLEANUP_TIMEOUT_MINUTES }}
+          mvn -pl optimize/backend -am -DskipTests -Dskip.fe.build -Dskip.docker clean install
+          mvn -Pengine-cleanup-performance -f optimize/qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.$NAMESPACE:5432/engine -Dengine.url=http://cambpm.$NAMESPACE:8080/engine-rest -Des.host=elasticsearch.$NAMESPACE -Dcleanup.timeout.minutes=${{ env.CLEANUP_TIMEOUT_MINUTES }}
 
       - name: Pull Indices
         if: always()

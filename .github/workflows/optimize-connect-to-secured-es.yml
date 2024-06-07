@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
 
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -93,12 +93,12 @@ jobs:
       - name: Build project
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl qa/connect-to-secured-es-tests -am
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/qa/connect-to-secured-es-tests -am
 
       - name: Run tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -Psecured-es-it
+          parameters: verify -Dskip.docker -Dskip.fe.build -pl optimize/qa/connect-to-secured-es-tests -Psecured-es-it
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -112,7 +112,7 @@ jobs:
         with:
           name: connect-to-secured-es-tests-logs
           path: |
-            ./backend/target/failsafe-reports/**/*.xml
+            ./optimize/backend/target/failsafe-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
 

@@ -1,5 +1,5 @@
 ---
-# A workflow to deploy/update the c7 and c8 stage environments
+# A workflow to deploy/update the c7 stage environments
 name: Optimize Deploy stage environments
 
 on:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [C7, C8]
+        env: [C7]
     timeout-minutes: 20
     steps:
     - name: Import secrets
@@ -34,7 +34,7 @@ jobs:
           secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CI_PERFORMANCE_DB_USER;
           secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CI_PERFORMANCE_DB_PASSWORD;
     - name: Checkout
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
     - name: Read pom.xml
       id: pom-info
       uses: YunaBraska/java-info-action@main
@@ -72,9 +72,8 @@ jobs:
           ${{
             fromJson(
               format(
-                '{{ "C7": "{0}", "C8": "{1}" }}',
-                '.ci/deployments-resources/argo/c7-optimize-application.yml',
-                '.ci/deployments-resources/argo/c8-optimize-application.yml'
+                '{{ "C7": "{0}" }}',
+                '.ci/deployments-resources/argo/c7-optimize-application.yml'
               )
             )[matrix.env]
           }}
@@ -82,9 +81,8 @@ jobs:
           ${{
             fromJson(
               format(
-                '{{ "C7": "{0}", "C8": "{1}" }}',
-                'optimize-',
-                'c8-optimize-'
+                '{{ "C7": "{0}" }}',
+                'optimize-'
               )
             )[matrix.env]
           }}
@@ -106,13 +104,6 @@ jobs:
           --helm-set optimize.image.tag=${{ steps.params.outputs.commit-sha }}
           --helm-set cambpm.image.tag=${{ steps.versions.outputs.cambpm }}
           --helm-set elasticsearch.image.tag=${{ steps.versions.outputs.elasticsearch }}
-        C8: >-
-          --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud/auth/realms/camunda-platform
-          --helm-set global.identity.auth.optimize.redirectUrl=https://${{ steps.params.outputs.app-name }}-c8.optimize.camunda.cloud
-          --helm-set camunda-platform.optimize.image.tag=${{ steps.params.outputs.commit-sha }}
-          --helm-set camunda-platform.identity.image.tag=${{ steps.versions.outputs.identity }}
-          --helm-set camunda-platform.zeebe.image.tag=${{ steps.versions.outputs.zeebe }}
-          --helm-set camunda-platform.zeebe-gateway.image.tag=${{ steps.versions.outputs.zeebe }}
         COMMON_ARGS: >-
           --dest-namespace optimize-${{ steps.params.outputs.app-name }}${{ matrix.env == 'C8' && '-c8' || '' }}
           --file ${{ steps.params.outputs.argocd-app-config-file }}
@@ -127,7 +118,7 @@ jobs:
           echo "args=${{ env[matrix.env] }} ${{ env.COMMON_ARGS }}"
         } >> $GITHUB_OUTPUT
       shell: bash
-    - uses: 'google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c' # v2
+    - uses: 'google-github-actions/auth@71fee32a0bb7e97b4d33d548e7d957010649d8fa' # v2
       if: matrix.env == 'C7'
       with:
         credentials_json: ${{ steps.secrets.outputs.CI_SERVICE_ACCOUNT }}
@@ -207,7 +198,7 @@ jobs:
       if: matrix.env == 'C7'
       env:
         OPTIMIZE_ENDPOINT: http://optimize.optimize-${{ steps.params.outputs.app-name }}:8090
-        OPTIMIZE_DEMO_DATA_FILE: ./client/demo-data/eventIngestionBatch.json
+        OPTIMIZE_DEMO_DATA_FILE: ./optimize/client/demo-data/eventIngestionBatch.json
       run: |
         # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
         curl \

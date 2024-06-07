@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
 
       - name: Import secrets
         id: secrets
@@ -40,7 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get health status report
-        uses: misiekhardcore/infra-report-action@04530752e217fa9b376f53656bcfb15258c8c8dc # v1.4.0
+        uses: misiekhardcore/infra-report-action@42096709b605df6eb1a5d4630dffb5350d915187 # v1.5.0
         id: get-report
         with:
           config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json

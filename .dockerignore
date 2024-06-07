@@ -1,5 +1,7 @@
 *
-!docker
+!optimize/docker
 !distro/target/*.tar.gz
 !target/checkout/distro/target/*.tar.gz
 !settings.xml
+!optimize-distro/target/*.tar.gz
+!target/checkout/optimize-distro/target/*.tar.gz

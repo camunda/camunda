@@ -51,7 +51,7 @@ mailhog:
 elasticsearch:
   image:
     repository: docker.elastic.co/elasticsearch/elasticsearch
-    tag: 8.13.2@sha256:8b4d01da83506c509c3fe8125b23ca598c02fff212b3489b7b496c3ff769eaa2
+    tag: 8.13.3@sha256:55cf51620ffd4a27b661ad9d091dc06446f7aeaf4045744d4e7ef6480d390596
   resources:
     limits:
       cpu: 4

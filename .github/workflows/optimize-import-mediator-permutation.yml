@@ -13,7 +13,7 @@ jobs:
     runs-on: gcp-core-16-default
     timeout-minutes: 80
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -45,5 +45,5 @@ jobs:
       - name: Run Maven
         shell: bash
         run: |
-          mvn install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa -am -Pengine-latest -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-          mvn -f qa/import-mediator-permutation-test/pom.xml clean verify -Pimport-mediator-permutation-test -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+          mvn install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/backend,optimize/qa -am -Pengine-latest -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+          mvn -f optimize/qa/import-mediator-permutation-test/pom.xml clean verify -Pimport-mediator-permutation-test -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
