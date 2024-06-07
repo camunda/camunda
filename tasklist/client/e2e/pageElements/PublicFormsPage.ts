@@ -25,10 +25,6 @@ class PublicFormsPage {
     });
   }
 
-  async clickSubmitButton() {
-    await this.submitButton.click();
-  }
-
   async goToPublicForm(bpmnProcessId: string) {
     await this.page.goto(`/new/${bpmnProcessId}`);
   }

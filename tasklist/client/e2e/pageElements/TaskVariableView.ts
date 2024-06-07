@@ -27,40 +27,17 @@ function cardinalToOrdinal(numberValue: number): string {
   }
 }
 
-class TaskDetailsPage {
+class TaskVariableView {
   private page: Page;
-  readonly assignToMeButton: Locator;
-  readonly unassignButton: Locator;
-  readonly assignee: Locator;
+
   readonly addVariableButton: Locator;
-  readonly detailsPanel: Locator;
-  readonly detailsHeader: Locator;
-  readonly detailsNav: Locator;
-  readonly pickATaskHeader: Locator;
-  readonly emptyTaskMessage: Locator;
   readonly variablesTable: Locator;
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
-  readonly bpmnDiagram: Locator;
-  readonly taskCompletionNotification: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
-    this.unassignButton = page.getByRole('button', {name: 'Unassign'});
-    this.assignee = page.getByTestId('assignee');
     this.addVariableButton = page.getByRole('button', {name: 'Add Variable'});
-    this.detailsPanel = this.page.getByRole('complementary', {
-      name: 'Task details right panel',
-    });
-    this.detailsHeader = page.getByTitle('Task details header');
-    this.detailsNav = page.getByLabel('Task Details Navigation');
-    this.pickATaskHeader = page.getByRole('heading', {
-      name: 'Pick a task to work on',
-    });
-    this.emptyTaskMessage = page.getByRole('heading', {
-      name: /task has no variables/i,
-    });
     this.variablesTable = page.getByTestId('variables-table');
     this.nameColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Name',
@@ -68,16 +45,6 @@ class TaskDetailsPage {
     this.valueColumnHeader = this.variablesTable.getByRole('columnheader', {
       name: 'Value',
     });
-    this.bpmnDiagram = page.getByTestId('diagram');
-    this.taskCompletionNotification = page.getByText('Task completed');
-  }
-
-  async gotoTaskDetails(id: string) {
-    await this.page.goto(`/${id}`, {waitUntil: 'networkidle'});
-  }
-
-  async gotoTaskDetailsProcessTab(id: string) {
-    await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
   }
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
@@ -106,4 +73,4 @@ class TaskDetailsPage {
     await this.getNthVariableValueInput(1).fill(value);
   }
 }
-export {TaskDetailsPage};
+export {TaskVariableView};

@@ -8,7 +8,7 @@
 
 import {Locator, Page} from '@playwright/test';
 
-class FormJSDetailsPage {
+class TaskFormView {
   private page: Page;
   readonly completeTaskButton: Locator;
   readonly nameInput: Locator;
@@ -104,4 +104,4 @@ class FormJSDetailsPage {
     return mapped;
   }
 }
-export {FormJSDetailsPage};
+export {TaskFormView};
