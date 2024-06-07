@@ -10,10 +10,12 @@ package io.camunda.zeebe.gateway.rest.identity.api.user;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
+import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.identity.api.search.SearchResponseDto;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,10 +24,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/v2/users")
+@ZeebeRestController
+@RequestMapping("/v2")
 public class UserControllerURA {
   private final UserService userService;
 
@@ -33,24 +34,32 @@ public class UserControllerURA {
     this.userService = userService;
   }
 
-  @PostMapping
+  @PostMapping(
+      path = "/users",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   public CamundaUser createUser(@RequestBody final CamundaUserWithPassword user) {
     return userService.createUser(user);
   }
 
-  @DeleteMapping("/{id}")
+  @DeleteMapping(path = "/users/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteUser(@PathVariable final Long id) {
     userService.deleteUser(id);
   }
 
-  @GetMapping("/{id}")
+  @GetMapping(
+      path = "/users/{id}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CamundaUser findUserByUsername(@PathVariable final Long id) {
     return userService.findUserById(id);
   }
 
-  @PostMapping("/search")
+  @PostMapping(
+      path = "/users/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<CamundaUser> findAllUsers(
       @RequestBody final SearchRequestDto searchRequestDto) {
     final SearchResponseDto<CamundaUser> responseDto = new SearchResponseDto<>();
@@ -60,7 +69,10 @@ public class UserControllerURA {
     return responseDto;
   }
 
-  @PutMapping("/{id}")
+  @PutMapping(
+      path = "/users/{id}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
   public CamundaUser updateUser(
       @PathVariable final Long id, @RequestBody final CamundaUserWithPassword user) {
     return userService.updateUser(id, user);
