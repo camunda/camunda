@@ -12,6 +12,7 @@ import type {NamedCustomFilters} from 'modules/custom-filters/customFiltersSchem
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {FilterNameModal} from './FilterNameModal';
 import {DeleteFilterModal} from './DeleteFilterModal';
+import {tracking} from 'modules/tracking';
 
 const DEFAULT_FILTER_VALUES: NamedCustomFilters = {
   assignee: 'all',
@@ -78,6 +79,9 @@ const CustomFiltersModal: React.FC<Props> = ({
             ...getStateLocally('customFilters'),
             custom: filters,
           });
+          tracking.track({
+            eventName: 'custom-filter-applied',
+          });
           onSuccess('custom');
         }}
         onSave={(filters) => {
@@ -101,6 +105,10 @@ const CustomFiltersModal: React.FC<Props> = ({
             },
           });
 
+          tracking.track({
+            eventName: 'custom-filter-updated',
+          });
+
           onSuccess(filterId!);
         }}
         onDelete={() => {
@@ -121,6 +129,10 @@ const CustomFiltersModal: React.FC<Props> = ({
           });
           setCurrentStep('fields');
 
+          tracking.track({
+            eventName: 'custom-filter-saved',
+          });
+
           onSuccess(filterId);
         }}
         onCancel={() => setCurrentStep('fields')}
@@ -137,6 +149,9 @@ const CustomFiltersModal: React.FC<Props> = ({
               ),
             ),
           );
+          tracking.track({
+            eventName: 'custom-filter-deleted',
+          });
           setCurrentStep('fields');
           onDelete();
         }}
