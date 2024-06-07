@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import com.google.common.collect.ImmutableMap;
 import jakarta.ws.rs.core.Response;
@@ -23,10 +24,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventGroupsRestServiceIT extends AbstractEventRestServiceIT {
 
   @Test

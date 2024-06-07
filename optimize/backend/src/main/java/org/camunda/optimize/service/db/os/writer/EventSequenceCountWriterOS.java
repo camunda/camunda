@@ -13,6 +13,9 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCount
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 
 @AllArgsConstructor
@@ -27,6 +30,37 @@ public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
   @Override
   public void updateEventSequenceCountsWithAdjustments(
       final List<EventSequenceCountDto> eventSequenceCountDtos) {
-    log.debug("Functionality not implemented for OpenSearch");
+    log.debug(
+        "Making adjustments to [{}] event sequence counts in opensearch",
+        eventSequenceCountDtos.size());
+    eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
+
+    final List<BulkOperation> bulkOperations =
+        eventSequenceCountDtos.stream()
+            .map(
+                eventSequenceCountDto ->
+                    new BulkOperation.Builder()
+                        .update(createEventSequenceCountUpsertRequest(eventSequenceCountDto))
+                        .build())
+            .toList();
+
+    if (!bulkOperations.isEmpty()) {
+      osClient.doBulkRequest(
+          BulkRequest.Builder::new, bulkOperations, getPrefixedIndexName(indexKey), false);
+    }
+  }
+
+  private UpdateOperation<EventSequenceCountDto> createEventSequenceCountUpsertRequest(
+      final EventSequenceCountDto eventSequenceCountDto) {
+    return new UpdateOperation.Builder<EventSequenceCountDto>()
+        .index(getPrefixedIndexName(indexKey))
+        .id(eventSequenceCountDto.getId())
+        .document(eventSequenceCountDto)
+        .docAsUpsert(true)
+        .build();
+  }
+
+  private String getPrefixedIndexName(String indexKey) {
+    return osClient.getIndexNameService().getOptimizeIndexAliasForIndex(getIndexName(indexKey));
   }
 }

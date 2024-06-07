@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -18,10 +19,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinit
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.test.optimize.EventProcessClient;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
   @Test
@@ -210,6 +213,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
         createSimpleEventProcessMapping(startedEventName, finishedEventName);
 
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    executeImportCycle();
     final String expectedProcessDefinitionId =
         getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
 
@@ -242,6 +246,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    executeImportCycle();
     final String expectedProcessDefinitionId =
         getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 

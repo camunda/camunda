@@ -327,6 +327,7 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
         onboardingSchedulerService); // Reinitialize the service to simulate the first start
     // when Optimize is booted
     onboardingSchedulerService.onboardNewProcesses();
+    importAllEngineEntitiesFromScratch();
 
     // When
     engineIntegrationExtension.startProcessInstance(processOne.getId());

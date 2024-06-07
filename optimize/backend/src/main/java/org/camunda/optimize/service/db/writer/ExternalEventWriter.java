@@ -7,13 +7,42 @@ package org.camunda.optimize.service.db.writer;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.camunda.optimize.service.db.repository.Repository;
+import org.camunda.optimize.service.db.repository.TaskRepository;
+import org.springframework.stereotype.Component;
 
-public interface ExternalEventWriter {
+@AllArgsConstructor
+@Slf4j
+@Component
+public class ExternalEventWriter {
 
-  void upsertEvents(final List<EventDto> eventDtos);
+  private EventRepository eventRepository;
+  private final TaskRepository taskRepository;
+  private final Repository repository;
 
-  void deleteEventsOlderThan(final OffsetDateTime timestamp);
+  public void upsertEvents(final List<EventDto> eventDtos) {
+    log.debug("Writing [{}] events to database", eventDtos.size());
+    eventRepository.upsertEvents(eventDtos);
+  }
 
-  void deleteEventsWithIdsIn(final List<String> eventIdsToDelete);
+  public void deleteEventsOlderThan(final OffsetDateTime timestamp) {
+    final String deletedItemIdentifier =
+        String.format("external events with timestamp older than %s", timestamp);
+    log.info("Deleting {}", deletedItemIdentifier);
+    taskRepository.executeWithTaskMonitoring(
+        repository.getDeleteByQueryActionName(),
+        () -> eventRepository.deleteEventsOlderThan(timestamp, deletedItemIdentifier),
+        log);
+  }
+
+  public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
+    final String deletedItemIdentifier =
+        String.format("external events with ID from list of size %s", eventIdsToDelete.size());
+    log.info("Deleting {} events by ID.", eventIdsToDelete.size());
+    eventRepository.deleteEventsWithIdsIn(eventIdsToDelete, deletedItemIdentifier);
+  }
 }

@@ -7,7 +7,9 @@ package org.camunda.optimize.service.db.repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.db.schema.ScriptData;
 
 public interface VariableRepository {
@@ -25,4 +27,7 @@ public interface VariableRepository {
 
   Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       List<String> processDefinitionKeys);
+
+  List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      Set<String> processInstanceIds);
 }

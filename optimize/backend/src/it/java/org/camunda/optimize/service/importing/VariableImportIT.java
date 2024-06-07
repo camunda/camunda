@@ -9,6 +9,7 @@ import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
@@ -58,6 +59,7 @@ import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -72,6 +74,7 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag(OPENSEARCH_PASSING)
 public class VariableImportIT extends AbstractImportIT {
 
   @RegisterExtension
@@ -86,6 +89,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void deletionOfProcessInstancesDoesNotDistortVariableInstanceImport() {
     // given
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
@@ -100,6 +104,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variableImportWorks() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
@@ -188,6 +193,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() {
     // given
     importAllEngineEntitiesFromScratch();
@@ -235,6 +241,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
@@ -669,6 +676,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variableUpdateImport() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -818,6 +826,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variableUpdatesOnSameVariableDoNotCreateSeveralVariables() {
     // given
     // @formatter:off
@@ -847,6 +856,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void onlyTheLatestVariableValueUpdateIsImported() {
     // given
     // @formatter:off
@@ -885,6 +895,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variablesForCompletedProcessInstancesAreFinalResult() {
     // given
     // @formatter:off
@@ -931,6 +942,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void oldVariableUpdatesAreOverwritten() {
     // given
     // @formatter:off
@@ -993,6 +1005,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @SneakyThrows
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void variablesWithoutDefinitionKeyCanBeImported() {
     // given
     final BpmnModelInstance processModel = getSingleServiceTaskProcess();

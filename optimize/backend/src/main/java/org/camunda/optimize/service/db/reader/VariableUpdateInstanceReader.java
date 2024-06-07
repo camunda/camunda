@@ -5,12 +5,30 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.repository.VariableRepository;
+import org.springframework.stereotype.Component;
 
-public interface VariableUpdateInstanceReader {
+@RequiredArgsConstructor
+@Component
+@Slf4j
+public class VariableUpdateInstanceReader {
 
-  List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
-      Set<String> processInstanceIds);
+  private final VariableRepository variableRepository;
+
+  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
+    log.debug(
+        "Fetching variable instance updates for [{}] process instances", processInstanceIds.size());
+
+    if (processInstanceIds.isEmpty()) {
+      return Collections.emptyList();
+    }
+    return variableRepository.getVariableInstanceUpdatesForProcessInstanceIds(processInstanceIds);
+  }
 }

@@ -11,7 +11,6 @@ import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.COUNT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.GROUP;
-import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
@@ -84,7 +83,8 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
         new SearchSourceBuilder()
             .query(buildSequencedEventsQuery(incomingEvents, outgoingEvents))
             .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -95,21 +95,6 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     }
     return ElasticsearchReaderUtil.mapHits(
         searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
-  }
-
-  @Override
-  public List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(
-      final String searchTerm) {
-    log.debug("Fetching all external event counts with searchTerm {}", searchTerm);
-    return getEventCountsForSearchTerm(Collections.emptyList(), searchTerm);
-  }
-
-  @Override
-  public List<EventCountResponseDto> getEventCountsForExternalGroupsUsingSearchTerm(
-      final List<String> groups, final String searchTerm) {
-    log.debug(
-        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
-    return getEventCountsForSearchTerm(groups, searchTerm);
   }
 
   @Override
@@ -183,7 +168,8 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
 
     SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchRequest searchRequest =
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -204,7 +190,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(matchAllQuery()).size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
-        new SearchRequest(getIndexName())
+        new SearchRequest(getIndexName(indexKey))
             .source(searchSourceBuilder)
             .scroll(
                 timeValueSeconds(
@@ -230,8 +216,11 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
         configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
-  private List<EventCountResponseDto> getEventCountsForSearchTerm(
+  @Override
+  public List<EventCountResponseDto> getEventCountsForSearchTerm(
       final List<String> groups, final String searchTerm) {
+    log.debug(
+        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     final BoolQueryBuilder query = buildCountRequestQuery(searchTerm);
     if (!CollectionUtils.isEmpty(groups)) {
@@ -242,7 +231,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     searchSourceBuilder.size(0);
 
     final SearchRequest searchRequest =
-        new SearchRequest(getIndexName()).source(searchSourceBuilder);
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
     List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
     ElasticsearchCompositeAggregationScroller.create()
         .setEsClient(esClient)
@@ -358,17 +347,5 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
         .eventName(eventName)
         .count(count)
         .build();
-  }
-
-  private String getIndexName() {
-    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
-  }
-
-  private String getNgramSearchField(final String searchFieldName) {
-    return getNestedField(SOURCE_EVENT, searchFieldName) + "." + N_GRAM_FIELD;
-  }
-
-  private String getNestedField(final String property, final String searchFieldName) {
-    return property + "." + searchFieldName;
   }
 }

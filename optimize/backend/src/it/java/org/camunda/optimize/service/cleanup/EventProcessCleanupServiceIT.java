@@ -8,6 +8,7 @@ package org.camunda.optimize.service.cleanup;
 import static java.util.stream.Collectors.groupingBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -22,8 +23,10 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
   @BeforeEach

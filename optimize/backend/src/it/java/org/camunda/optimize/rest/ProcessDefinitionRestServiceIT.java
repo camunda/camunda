@@ -43,7 +43,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     return Stream.of(EVENT_BASED, NOT_EVENT_BASED);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   @ParameterizedTest
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitions(final String processDefinitionType) {
@@ -79,7 +81,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
             });
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @Test
   public void getProcessDefinitionsReturnOnlyThoseAuthorizedToSeeAndAllEventProcessDefinitions() {
     // given
@@ -130,7 +134,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @ParameterizedTest(name = "Get {0} process definitions with XML.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionsWithXml(final String processDefinitionType) {
@@ -153,7 +159,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .isEqualTo(processDefinitionOptimizeDto.getBpmn20Xml());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @ParameterizedTest(name = "Get XML of {0} process definition.")
   @MethodSource("processDefinitionTypes")
   public void getProcessDefinitionXml(final String processDefinitionType) {
@@ -170,7 +178,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @ParameterizedTest(
       name = "Get the latest XML of {0} process definition for ALL version selection.")
   @MethodSource("processDefinitionTypes")
@@ -188,7 +198,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(expectedDto2.getBpmn20Xml());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @ParameterizedTest(
       name = "Get the latest XML of {0} process definition for LATEST version selection.")
   @MethodSource("processDefinitionTypes")
@@ -243,7 +255,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(actualXml).isEqualTo(secondTenantDefinition.getBpmn20Xml());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  // Reason for fail is that DefinitionReaderOS does not implement the equivalent
+  // createMappingFunctionForDefinitionType(typeClass) for elasticsearch
   @ParameterizedTest(name = "Get XML of {0} process definition for null tenant.")
   @MethodSource("processDefinitionTypes")
   public void getSharedProcessDefinitionXmlByTenantWithNoSpecificDefinition(

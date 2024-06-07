@@ -192,7 +192,6 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getAllEventProcessMappingsWithPartialEventSourceAuthorization() {
     final String eventProcessName = "anEventProcessName";

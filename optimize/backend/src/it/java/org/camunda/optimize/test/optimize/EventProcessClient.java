@@ -186,7 +186,7 @@ public class EventProcessClient {
   public List<EventProcessRoleResponseDto> getEventProcessMappingRoles(
       final String eventProcessMappingId) {
     return createGetEventProcessMappingRolesRequest(eventProcessMappingId)
-        .execute(new TypeReference<List<EventProcessRoleResponseDto>>() {});
+        .execute(new TypeReference<>() {});
   }
 
   public OptimizeRequestExecutor createGetEventProcessMappingRolesRequest(
@@ -213,7 +213,7 @@ public class EventProcessClient {
       final Map<String, EventMappingDto> flowNodeEventMappingsDto,
       final String name,
       final String xml) {
-    List<EventSourceEntryDto<? extends EventSourceConfigDto>> externalEventSource =
+    final List<EventSourceEntryDto<? extends EventSourceConfigDto>> externalEventSource =
         new ArrayList<>();
     externalEventSource.add(createExternalEventAllGroupsSourceEntry());
     return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
@@ -238,7 +238,7 @@ public class EventProcessClient {
       final EventMappingCleanupRequestDto cleanupRequestDto) {
     return createCleanupEventProcessMappingsRequest(cleanupRequestDto)
         // @formatter:off
-        .execute(new TypeReference<Map<String, EventMappingDto>>() {});
+        .execute(new TypeReference<>() {});
     // @formatter:on
   }
 
@@ -299,7 +299,7 @@ public class EventProcessClient {
   }
 
   public static EventMappingDto createEventMappingsDto(
-      EventTypeDto startEventDto, EventTypeDto endEventDto) {
+      final EventTypeDto startEventDto, final EventTypeDto endEventDto) {
     return EventMappingDto.builder().start(startEventDto).end(endEventDto).build();
   }
 
@@ -312,7 +312,7 @@ public class EventProcessClient {
   }
 
   public ProcessInstanceDto createEventInstanceWithEvents(
-      List<CloudEventRequestDto> eventsToInclude) {
+      final List<CloudEventRequestDto> eventsToInclude) {
     final String definitionKey = IdGenerator.getNextId();
     final String definitionVersion = "1";
     return EventProcessInstanceDto.builder()

@@ -14,7 +14,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -72,7 +71,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
     IndexRequest indexRequest = null;
     try {
       indexRequest =
-          new IndexRequest(getIndexName())
+          new IndexRequest(getIndexName(indexKey))
               .id(eventSequenceCountDto.getId())
               .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
     } catch (JsonProcessingException e) {
@@ -83,7 +82,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
     UpdateRequest updateRequest;
     updateRequest =
         new UpdateRequest()
-            .index(getIndexName())
+            .index(getIndexName(indexKey))
             .id(eventSequenceCountDto.getId())
             .script(
                 new Script(
@@ -94,9 +93,5 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
                         "adjustmentRequired", eventSequenceCountDto.getCount())))
             .upsert(indexRequest);
     return updateRequest;
-  }
-
-  private String getIndexName() {
-    return EventSequenceCountIndex.constructIndexName(indexKey);
   }
 }

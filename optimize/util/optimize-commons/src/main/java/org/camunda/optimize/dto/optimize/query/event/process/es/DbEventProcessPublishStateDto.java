@@ -27,7 +27,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 @Builder
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EsEventProcessPublishStateDto {
+public class DbEventProcessPublishStateDto {
   @EqualsAndHashCode.Include private String id;
   private String processMappingId;
   private String name;
@@ -39,9 +39,9 @@ public class EsEventProcessPublishStateDto {
   private List<EsEventMappingDto> mappings;
   private List<EventImportSourceDto> eventImportSources;
 
-  public static EsEventProcessPublishStateDto fromEventProcessPublishStateDto(
+  public static DbEventProcessPublishStateDto fromEventProcessPublishStateDto(
       final EventProcessPublishStateDto publishState) {
-    return EsEventProcessPublishStateDto.builder()
+    return DbEventProcessPublishStateDto.builder()
         .id(publishState.getId())
         .processMappingId(publishState.getProcessMappingId())
         .name(publishState.getName())
@@ -76,7 +76,7 @@ public class EsEventProcessPublishStateDto {
         .publishProgress(getPublishProgress())
         .deleted(getDeleted())
         .mappings(
-            Optional.ofNullable(this.mappings)
+            Optional.ofNullable(mappings)
                 .map(
                     mappingList ->
                         mappingList.stream()

@@ -110,7 +110,6 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getScopesForCollection_keySpecific_eventBased() {
     // given
     final String key1 = "eventBasedKey1";
@@ -146,7 +145,6 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getScopesForCollection_keySpecific_excludeUnauthorizedEventBased() {
     // given
     final String key1 = "eventBasedKey1";
@@ -642,7 +640,6 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void addScope_existingEventBased() {
     // given
     final String key1 = "eventBasedKey1";

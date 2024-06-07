@@ -53,7 +53,7 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   public OpenSearchCompositeAggregationScroller size(final int size) {
-    this.requestSize = size;
+    requestSize = size;
     return this;
   }
 
@@ -116,14 +116,22 @@ public class OpenSearchCompositeAggregationScroller {
             .after(convertedCompositeBucketConsumer)
             .build();
 
-    this.aggregations.put(
+    aggregations.put(
         pathToAggregation.get(0),
-        Aggregation.of(
-            a ->
-                a.composite(upgradedCompositeAggregation)
-                    .aggregations(currentAggregations.aggregations())));
+        getNullSafeAggregation(upgradedCompositeAggregation, currentAggregations));
 
     return compositeAggregationResult.buckets().array();
+  }
+
+  private Aggregation getNullSafeAggregation(
+      CompositeAggregation upgradedCompositeAggregation, Aggregation currentAggregations) {
+    if (currentAggregations.aggregations() != null) {
+      return Aggregation.of(
+          a ->
+              a.composite(upgradedCompositeAggregation)
+                  .aggregations(currentAggregations.aggregations()));
+    }
+    return Aggregation.of(a -> a.composite(upgradedCompositeAggregation));
   }
 
   private CompositeAggregate extractCompositeAggregationResult(
@@ -138,7 +146,7 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private Aggregation getCurrentAggregations() {
-    Map<String, Aggregation> aggCol = this.aggregations;
+    Map<String, Aggregation> aggCol = aggregations;
     Aggregation currentAggregationFromPath;
 
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
@@ -16,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
@@ -28,11 +30,12 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
   @Test
@@ -50,7 +53,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final EventProcessPublishStateDto eventProcessPublishState =
         getEventPublishStateForEventProcessMappingId(eventProcessMappingId);
 
-    final Map<String, List<AliasMetadata>> eventProcessInstanceIndicesAndAliases =
+    final Map<String, Set<String>> eventProcessInstanceIndicesAndAliases =
         getEventProcessInstanceIndicesWithAliasesFromDatabase();
     assertThat(eventProcessInstanceIndicesAndAliases)
         .hasSize(1)
@@ -59,20 +62,14 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                 eventProcessPublishState.getId()),
             aliases ->
                 assertThat(aliases)
-                    .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
                     .containsExactlyInAnyOrder(
-                        Tuple.tuple(
-                            getOptimizeIndexAliasForIndexName(
-                                new EventProcessInstanceIndexES(eventProcessPublishState.getId())
-                                    .getIndexName()),
-                            true),
-                        Tuple.tuple(
-                            getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_MULTI_ALIAS), false),
-                        Tuple.tuple(
-                            getOptimizeIndexAliasForIndexName(
-                                PROCESS_INSTANCE_INDEX_PREFIX
-                                    + eventProcessPublishState.getProcessKey()),
-                            false)));
+                        getOptimizeIndexAliasForIndexName(
+                            new EventProcessInstanceIndexES(eventProcessPublishState.getId())
+                                .getIndexName()),
+                        getOptimizeIndexAliasForIndexName(PROCESS_INSTANCE_MULTI_ALIAS),
+                        getOptimizeIndexAliasForIndexName(
+                            PROCESS_INSTANCE_INDEX_PREFIX
+                                + eventProcessPublishState.getProcessKey())));
   }
 
   @Test
@@ -140,6 +137,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final String eventProcessPublishStateId2 =
         getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 

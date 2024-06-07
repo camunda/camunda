@@ -9,6 +9,7 @@ import static org.camunda.optimize.ApplicationContextProvider.getBean;
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
@@ -47,7 +48,7 @@ import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
@@ -65,6 +66,7 @@ import org.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.events.EventIndexOS;
+import org.camunda.optimize.service.db.os.schema.index.events.EventProcessInstanceIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.events.EventSequenceCountIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import org.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
@@ -72,6 +74,8 @@ import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DatabaseHelper;
@@ -82,7 +86,6 @@ import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import org.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.core.TimeValue;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
@@ -401,9 +404,15 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllExternalEventIndices() {
     final String eventIndexAlias =
         getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndexOS());
-    final String[] eventIndices =
-        getOptimizeOpenSearchClient().getAllIndicesForAlias(eventIndexAlias).toArray(String[]::new);
-    deleteIndices(eventIndices);
+    try {
+      final String[] eventIndices =
+          getOptimizeOpenSearchClient()
+              .getAllIndicesForAlias(eventIndexAlias)
+              .toArray(String[]::new);
+      deleteIndices(eventIndices);
+    } catch (final Exception e) {
+      // Nothing to do here, this only happens if the indices do not exist in the first place
+    }
   }
 
   @SneakyThrows
@@ -539,10 +548,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
-    // TODO implement with #11121
-    throw new NotImplementedException(
-        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
+  public Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+    final OptimizeOpenSearchClient osClient = getOptimizeOpenSearchClient();
+    final OptimizeIndexNameService indexNameService = osClient.getIndexNameService();
+    try {
+      return osClient.getAliasesForIndexPattern(
+          indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+              + "*");
+    } catch (IOException e) {
+      return new HashMap<>();
+    }
   }
 
   @Override
@@ -565,11 +580,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                             .order(org.opensearch.client.opensearch._types.SortOrder.Desc)
                             .build())
                     .build());
-    final SearchResponse<EsEventProcessPublishStateDto> searchResponse =
+    final SearchResponse<DbEventProcessPublishStateDto> searchResponse =
         getOptimizeOpenSearchClient()
-            .getRichOpenSearchClient()
-            .doc()
-            .unsafeSearch(searchRequest.build(), EsEventProcessPublishStateDto.class);
+            .search(
+                searchRequest,
+                DbEventProcessPublishStateDto.class,
+                "there was an error while "
+                    + "retrieving the event process publish state from the database");
     EventProcessPublishStateDto result = null;
     if (!searchResponse.hits().hits().isEmpty()) {
       result =
@@ -848,6 +865,21 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     // TODO implement with #11121
     throw new NotImplementedException(
         "Not yet implemented for OpenSearch, will be implemented with issue #11121");
+  }
+
+  @Override
+  public EventProcessInstanceIndex getEventInstanceIndex(String indexId) {
+    return new EventProcessInstanceIndexOS(indexId);
+  }
+
+  @Override
+  public EventIndex getEventIndex() {
+    return new EventIndexOS();
+  }
+
+  @Override
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return new VariableUpdateInstanceIndexOS();
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 
 import com.google.common.collect.ImmutableMap;
@@ -27,8 +28,10 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventCountRestServiceWithSuggestionsIT extends AbstractEventRestServiceIT {
 
   @BeforeAll

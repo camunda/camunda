@@ -135,7 +135,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getEventDefinitionByTypeAndKey() {
     // given
     final DefinitionOptimizeResponseDto expectedDefinition =
@@ -273,7 +272,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions() {
     // given
     final DefinitionOptimizeResponseDto processDefinition1 =
@@ -475,7 +473,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions_multiTenant_sharedDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -521,7 +518,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -818,7 +814,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
     // given
     final DefinitionOptimizeResponseDto eventProcessDefinition1 =
@@ -1297,7 +1292,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_eventBasedProcess() {
     // given
     final DefinitionOptimizeResponseDto eventProcessDefinition1 =
@@ -1463,7 +1457,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
     // given
     createTenant(TENANT_1);
@@ -1530,7 +1523,6 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
     // given
     createTenant(TENANT_1);

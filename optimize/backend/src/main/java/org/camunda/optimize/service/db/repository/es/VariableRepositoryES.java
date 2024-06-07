@@ -5,13 +5,16 @@
  */
 package org.camunda.optimize.service.db.repository.es;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_LABEL_INDEX_NAME;
 import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.sort.SortOrder.ASC;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -20,29 +23,38 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.db.repository.VariableRepository;
 import org.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequest;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -54,12 +66,12 @@ import org.springframework.stereotype.Component;
 public class VariableRepositoryES implements VariableRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(
       final String processDefinitionKey, final List<String> processInstanceIds) {
-    final BulkRequest bulkRequest =
-        new BulkRequest().setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    final BulkRequest bulkRequest = new BulkRequest().setRefreshPolicy(IMMEDIATE);
     processInstanceIds.forEach(
         id ->
             bulkRequest.add(
@@ -128,7 +140,7 @@ public class VariableRepositoryES implements VariableRepository {
   }
 
   @Override
-  public void deleteByProcessInstanceIds(List<String> processInstanceIds) {
+  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
     final BoolQueryBuilder filterQuery =
         boolQuery()
             .filter(
@@ -171,6 +183,44 @@ public class VariableRepositoryES implements VariableRepository {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  @Override
+  public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
+
+    final BoolQueryBuilder query =
+        boolQuery()
+            .must(termsQuery(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds));
+
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(query)
+            .sort(SortBuilders.fieldSort(CamundaActivityEventIndex.TIMESTAMP).order(ASC))
+            .size(MAX_RESPONSE_SIZE_LIMIT);
+    SearchRequest searchRequest =
+        new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
+            .source(searchSourceBuilder)
+            .scroll(
+                timeValueSeconds(
+                    configurationService
+                        .getElasticSearchConfiguration()
+                        .getScrollTimeoutInSeconds()));
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+    } catch (IOException e) {
+      log.error("Was not able to retrieve variable instance updates!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve variable instance updates!", e);
+    }
+
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+        searchResponse,
+        VariableUpdateInstanceDto.class,
+        objectMapper,
+        esClient,
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
   private Optional<DefinitionVariableLabelsDto> extractDefinitionLabelsDto(

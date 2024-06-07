@@ -19,7 +19,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -70,7 +69,7 @@ public class EventTraceStateWriterES implements EventTraceStateWriter {
       final EventTraceStateDto eventTraceStateDto) {
     try {
       return new UpdateRequest()
-          .index(getIndexName())
+          .index(getIndexName(indexKey))
           .id(eventTraceStateDto.getTraceId())
           .script(createUpdateScript(eventTraceStateDto))
           .upsert(objectMapper.writeValueAsString(eventTraceStateDto), XContentType.JSON)
@@ -88,19 +87,5 @@ public class EventTraceStateWriterES implements EventTraceStateWriter {
     final Map<String, Object> params = new HashMap<>();
     params.put(EVENT_TRACE, eventTraceStateDto.getEventTrace());
     return createDefaultScriptWithSpecificDtoParams(updateScript(), params, objectMapper);
-  }
-
-  private String updateScript() {
-    return
-    // @formatter:off
-    "for (def tracedEvent : params.eventTrace) {"
-        + "ctx._source.eventTrace.removeIf(event -> event.eventId.equals(tracedEvent.eventId)) ;"
-        + "}"
-        + "ctx._source.eventTrace.addAll(params.eventTrace)";
-    // @formatter:on
-  }
-
-  private String getIndexName() {
-    return EventTraceStateIndex.constructIndexName(indexKey);
   }
 }

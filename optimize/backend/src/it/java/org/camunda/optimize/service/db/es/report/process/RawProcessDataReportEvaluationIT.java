@@ -508,7 +508,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void reportEvaluationForNoInstances() {
     // given
     final ProcessDefinitionEngineDto definition =

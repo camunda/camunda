@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
@@ -34,10 +35,12 @@ import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventProcessIT {
 
   public static final String THREE_EVENT_PROCESS_DEFINITION_KEY_1 = "threeEvents1";

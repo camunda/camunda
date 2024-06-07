@@ -7,12 +7,26 @@ package org.camunda.optimize.service.db.reader;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.springframework.stereotype.Component;
 
-public interface EventProcessDefinitionReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class EventProcessDefinitionReader {
+  private EventRepository eventRepository;
 
-  Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
-      final String eventProcessDefinitionKey);
+  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
+      final String eventProcessDefinitionKey) {
+    log.debug("Fetching event-based process definition with key [{}].", eventProcessDefinitionKey);
+    return eventRepository.getEventProcessDefinitionByKeyOmitXml(eventProcessDefinitionKey);
+  }
 
-  List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml();
+  public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
+    log.debug("Fetching all available event-based processes definitions.");
+    return eventRepository.getAllEventProcessDefinitionsOmitXml();
+  }
 }

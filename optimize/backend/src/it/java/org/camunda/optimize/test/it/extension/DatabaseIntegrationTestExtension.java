@@ -56,7 +56,10 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
+import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
@@ -64,7 +67,6 @@ import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestServic
 import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import org.camunda.optimize.test.repository.TestIndexRepository;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.core.TimeValue;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -401,7 +403,7 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.updateEventProcessRoles(eventProcessId, identityDtos);
   }
 
-  public Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+  public Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
     return databaseTestService.getEventProcessInstanceIndicesWithAliasesFromDatabase();
   }
 
@@ -545,5 +547,17 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public Integer getVariableInstanceCount(final String variableName) {
     return databaseTestService.getVariableInstanceCount(variableName);
+  }
+
+  public EventProcessInstanceIndex getEventInstanceIndex(final String indexId) {
+    return databaseTestService.getEventInstanceIndex(indexId);
+  }
+
+  public EventIndex getEventIndex() {
+    return databaseTestService.getEventIndex();
+  }
+
+  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
+    return databaseTestService.getVariableUpdateInstanceIndex();
   }
 }

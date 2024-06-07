@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -54,13 +55,13 @@ import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.Arguments;
@@ -178,7 +179,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   protected void createAndPublishEventProcessMapping(
-      final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
+      final Map<String, EventMappingDto> eventMappings, final String bpmnXml) {
     final EventProcessMappingDto eventProcessMappingDto =
         eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
             eventMappings, EVENT_PROCESS_NAME, bpmnXml);
@@ -264,8 +265,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  protected Map<String, List<AliasMetadata>>
-      getEventProcessInstanceIndicesWithAliasesFromDatabase() {
+  protected Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
     return databaseIntegrationTestExtension.getEventProcessInstanceIndicesWithAliasesFromDatabase();
   }
 
@@ -420,7 +420,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   protected ProcessInstanceEngineDto deployAndStartProcessWithVariables(
       final Map<String, Object> variables) {
-    BpmnModelInstance modelInstance =
+    final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess()
             .startEvent(BPMN_START_EVENT_ID)
             .userTask(USER_TASK_ID_ONE)
@@ -478,7 +478,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
             UUID.randomUUID().toString(),
             createTwoEventAndOneTaskActivitiesProcessDefinitionXml(),
             eventSourceEntryDtos);
-    String eventProcessMappingId =
+    final String eventProcessMappingId =
         eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
     return eventProcessMappingId;
@@ -520,7 +520,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
       final List<CloudEventRequestDto> eventsToAdd, final String indexId) {
     final ProcessInstanceDto eventInstanceContainingEvent =
         eventProcessClient.createEventInstanceWithEvents(eventsToAdd);
-    final EventProcessInstanceIndexES eventInstanceIndex = createEventInstanceIndex(indexId);
+    final EventProcessInstanceIndex eventInstanceIndex = createEventInstanceIndex(indexId);
     databaseIntegrationTestExtension.addEntryToDatabase(
         eventInstanceIndex.getIndexName(), IdGenerator.getNextId(), eventInstanceContainingEvent);
     return eventInstanceContainingEvent;
@@ -550,8 +550,9 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  protected EventProcessInstanceIndexES createEventInstanceIndex(final String indexId) {
-    final EventProcessInstanceIndexES newIndex = new EventProcessInstanceIndexES(indexId);
+  protected EventProcessInstanceIndex createEventInstanceIndex(final String indexId) {
+    final EventProcessInstanceIndex newIndex =
+        databaseIntegrationTestExtension.getEventInstanceIndex(indexId);
     final boolean indexExists =
         embeddedOptimizeExtension
             .getDatabaseSchemaManager()
@@ -886,10 +887,10 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   protected boolean eventInstanceIndexForPublishStateExists(
       final EventProcessPublishStateDto publishState) {
-    Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
+    Map<String, Set<String>> currentIndices = new HashMap<>();
     try {
       currentIndices = getEventProcessInstanceIndicesWithAliasesFromDatabase();
-    } catch (RuntimeException ex) {
+    } catch (final RuntimeException ex) {
       if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
         return false;
       }
@@ -914,5 +915,10 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
             () ->
                 new OptimizeIntegrationTestException(
                     "Could not fetch publish state for process mapping"));
+  }
+
+  protected void publishEventProcessMappingAndRefreshIndices(final String eventProcessMappingId) {
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 }

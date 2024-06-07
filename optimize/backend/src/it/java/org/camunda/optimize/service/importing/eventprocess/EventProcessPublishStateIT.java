@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType.CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
@@ -46,10 +47,12 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
   private static Stream<String> groupsToCorrelate() {
@@ -94,7 +97,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
             eventSourceEntries);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // then
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId)).isNotEmpty();
@@ -127,7 +130,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
         createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId1);
 
     // then
     assertThat(getEventProcessPublishStateDtoFromDatabase(eventProcessMappingId1)).isNotEmpty();
@@ -146,7 +149,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final String eventProcessMappingId =
         createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     executeImportCycle();
     executeImportCycle();
@@ -174,8 +177,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final String eventProcessMappingId2 =
         createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId1);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId2);
 
     executeImportCycle();
     executeImportCycle();
@@ -197,7 +200,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // then
     final EventProcessMappingResponseDto storedEventProcessMapping =
@@ -271,7 +274,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final String eventProcessMappingId =
         createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
@@ -346,7 +349,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(10));
     ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
@@ -413,7 +416,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     executeImportCycle();
     executeImportCycle();
@@ -503,7 +506,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 buildCamundaEventMapping(
                     processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)),
             Collections.singletonList(eventSource));
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
@@ -581,7 +584,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 buildCamundaEventMapping(
                     processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)),
             Collections.singletonList(eventSourceDto));
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
@@ -623,7 +626,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     executeImportCycle();
     executeImportCycle();
@@ -732,7 +735,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 buildCamundaEventMapping(
                     processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)),
             Arrays.asList(camundaEventSource, createExternalEventAllGroupsSourceEntry()));
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
@@ -828,7 +831,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 BPMN_END_EVENT_ID,
                 buildExternalEventMapping(FINISHED_EVENT, MappedEventType.END, groupToCorrelate)),
             Collections.singletonList(createExternalEventSourceEntryForGroup(groupToCorrelate)));
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
@@ -950,7 +953,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 camundaEventSource,
                 createExternalEventSourceEntryForGroup(firstGroup),
                 createExternalEventSourceEntryForGroup(secondGroup)));
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    publishEventProcessMappingAndRefreshIndices(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet, but there are two
     // import sources -

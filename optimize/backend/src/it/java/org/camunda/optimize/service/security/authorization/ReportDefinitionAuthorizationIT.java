@@ -413,7 +413,6 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.createSingleProcessReportAsUser(reportDefinitionDto, KERMIT_USER, KERMIT_USER);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getUnauthorizedEventProcessReport() {
     // given
@@ -448,7 +447,6 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void evaluateUnauthorizedEventProcessReport() {
     // given
@@ -470,8 +468,8 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateEventProcessReport() {
     // given
     databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
@@ -484,7 +482,6 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     reportClient.evaluateNumberReportById(reportId);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void updateUnauthorizedEventProcessReport() {
     // given
@@ -523,7 +520,6 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void deleteUnauthorizedEventProcessReport() {
     // given

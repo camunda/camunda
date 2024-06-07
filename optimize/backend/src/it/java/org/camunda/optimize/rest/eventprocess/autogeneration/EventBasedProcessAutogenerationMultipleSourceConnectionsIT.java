@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.eventprocess.autogeneration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
@@ -43,8 +44,10 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessAutogenerationMultipleSourceConnectionsIT
     extends AbstractEventProcessAutogenerationIT {
 
@@ -437,6 +440,7 @@ public class EventBasedProcessAutogenerationMultipleSourceConnectionsIT
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void createFromThreeSourcesWithOrder_processStartEnd_startEndEvents_external() {
     final String traceId = "tracingId";
     final CamundaEventSourceEntryDto camundaProcessSource =
@@ -528,6 +532,7 @@ public class EventBasedProcessAutogenerationMultipleSourceConnectionsIT
   }
 
   @Test
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void createFromThreeSourcesWithOrder_startEndEvents_external_processStartEnd()
       throws SQLException {
     final String traceId = "tracingId";

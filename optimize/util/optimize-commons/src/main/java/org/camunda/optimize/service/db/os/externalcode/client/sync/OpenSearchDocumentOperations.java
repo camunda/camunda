@@ -415,18 +415,20 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
-    final Long status =
-        executeWithRetries(
-            () -> {
-              final UpdateByQueryRequest request =
-                  applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
-                      .query(query)
-                      .refresh(true)
-                      .script(script)
-                      .build();
-              final UpdateByQueryResponse response = openSearchClient.updateByQuery(request);
-              return response.updated();
-            });
+    final UpdateByQueryRequest request =
+        applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
+            .query(query)
+            .refresh(true)
+            .script(script)
+            .build();
+    final UpdateByQueryResponse response;
+    Long status;
+    try {
+      response = openSearchClient.updateByQuery(request);
+      status = response.updated();
+    } catch (IOException e) {
+      status = null;
+    }
 
     if (status == null) {
       final String message = String.format("Could not update any record from the [%s]", index);
