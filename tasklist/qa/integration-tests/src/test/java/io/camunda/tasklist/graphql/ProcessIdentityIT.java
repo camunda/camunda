@@ -52,7 +52,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @Test
-  public void shouldReturnAllProcessesWithWildCard() throws IOException, JSONException {
+  public void shouldReturnAllProcessesWithWildCard() throws IOException, JsonException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
