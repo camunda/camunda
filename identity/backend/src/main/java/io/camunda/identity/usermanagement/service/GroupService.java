@@ -13,8 +13,10 @@ import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class GroupService {
   private final CamundaUserDetailsManager userDetailsManager;
 
@@ -70,6 +72,6 @@ public class GroupService {
   public CamundaGroup renameGroupById(final Long groupId, final CamundaGroup updatedGroup) {
     final CamundaGroup group = findGroupById(groupId);
     userDetailsManager.renameGroup(group.name(), updatedGroup.name());
-    return findGroupById(groupId);
+    return new CamundaGroup(groupId, updatedGroup.name());
   }
 }
