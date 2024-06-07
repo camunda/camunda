@@ -1224,12 +1224,13 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.7.1.tgz#8409ae26d907a25c52856be747384847174cd5be"
-  integrity sha512-6cfAzsIv2ZUg+GB/uuCw6zjjLV6fVdkah7scFmd2ktmUArfHCSzfVFjRuCPhP5fbss0GCZeGDuWun67tiu20nQ==
+"@camunda/camunda-composite-components@0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.8.0.tgz#53754554d6ce9f80ae624dafe1e470a97f7fc80e"
+  integrity sha512-/wBSuHD2ns2ZVdQaO3m04Y6qapQwXCrH3c8fU41+HHUX3s/bYy/K1YT1oQ/YUSAwj/hHGil+bjOz2Z62bKpNaw==
   dependencies:
     jwt-decode "4.0.0"
+    react-error-boundary "4.0.13"
     react-markdown "8.0.7"
 
 "@carbon/colors@^11.22.0":
@@ -10298,6 +10299,13 @@ react-dom@18.3.1:
   dependencies:
     loose-envify "^1.1.0"
     scheduler "^0.23.2"
+
+react-error-boundary@4.0.13:
+  version "4.0.13"
+  resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-4.0.13.tgz#80386b7b27b1131c5fbb7368b8c0d983354c7947"
+  integrity sha512-b6PwbdSv8XeOSYvjt8LpgpKrZ0yGdtZokYwkwV2wlcZbxgopHX/hgPl5VgpnoVOWd868n1hktM8Qm4b+02MiLQ==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
 
 react-error-boundary@^3.1.0:
   version "3.1.4"
