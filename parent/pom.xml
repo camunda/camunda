@@ -35,7 +35,7 @@
     <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.21.1</version.agrona>
+    <version.agrona>1.21.2</version.agrona>
     <version.assertj>3.26.0</version.assertj>
     <version.awaitility>4.2.1</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
