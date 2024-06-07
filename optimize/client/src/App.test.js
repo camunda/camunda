@@ -32,7 +32,7 @@ it('should render the last component in the url', () => {
 
   const component = node
     .find({
-      path: '/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*',
+      path: '/(report|dashboard/instant|dashboard|collection|processes/report)/*',
     })
     .prop('render')({
     location: {pathname: '/collection/cid/dashboard/did/report/rid'},
@@ -50,7 +50,7 @@ it('should render dashboar for dashboard/instant route', () => {
 
   const component = node
     .find({
-      path: '/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*',
+      path: '/(report|dashboard/instant|dashboard|collection|processes/report)/*',
     })
     .prop('render')({
     location: {pathname: '/dashboard/instant/defKey'},

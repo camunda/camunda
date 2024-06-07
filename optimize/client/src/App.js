@@ -14,8 +14,6 @@ import {
   Report,
   Dashboard,
   Analysis,
-  Events,
-  Process,
   Sharing,
   Logout,
   Processes,
@@ -40,18 +38,10 @@ export default function App({error}) {
       report: Report,
       'dashboard/instant': Dashboard,
       dashboard: Dashboard,
-      'events/processes': Process,
       'processes/report': ProcessReport,
       collection: Collection,
     };
-    const entities = [
-      'processes/report',
-      'report',
-      'dashboard/instant',
-      'dashboard',
-      'collection',
-      'events/processes',
-    ];
+    const entities = ['processes/report', 'report', 'dashboard/instant', 'dashboard', 'collection'];
     let Component, newProps, selectedEntity;
     for (let entity of entities) {
       const splitResult = props.location.pathname.split('/' + entity)[1];
@@ -94,11 +84,9 @@ export default function App({error}) {
                     <Switch>
                       <PrivateRoute exact path="/" component={Processes} />
                       <PrivateRoute path="/analysis" component={Analysis} />
-                      <PrivateRoute exact path="/events/processes" component={Events} />
-                      <PrivateRoute path="/events/ingested" component={Events} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute
-                        path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
+                        path="/(report|dashboard/instant|dashboard|collection|processes/report)/*"
                         render={renderEntity}
                       />
                       <PrivateRoute exact path="/collections" component={Home} />
