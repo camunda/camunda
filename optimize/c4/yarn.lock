@@ -3021,7 +3021,7 @@ __metadata:
     "@babel/preset-typescript": "npm:^7.24.1"
     "@carbon/icons-react": "npm:^11.41.0"
     "@carbon/react": "npm:^1.57.0"
-    "@chromatic-com/storybook": "npm:^1.3.3"
+    "@chromatic-com/storybook": "npm:^1.4.0"
     "@storybook/addon-essentials": "npm:^8.1.4"
     "@storybook/addon-interactions": "npm:^8.1.4"
     "@storybook/addon-links": "npm:^8.1.4"
@@ -3209,16 +3209,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chromatic-com/storybook@npm:^1.3.3":
-  version: 1.4.0
-  resolution: "@chromatic-com/storybook@npm:1.4.0"
+"@chromatic-com/storybook@npm:^1.4.0":
+  version: 1.5.0
+  resolution: "@chromatic-com/storybook@npm:1.5.0"
   dependencies:
-    chromatic: "npm:^11.3.2"
+    chromatic: "npm:^11.4.0"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     react-confetti: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
-  checksum: 10c0/4b4ae546358b46d1a515fb5eb7110263eda9f59062702aea3deabd27a0f1554c778a2735d26824080ed9e833890808afbd603b89cc093bda83b7de96ad4102fd
+  checksum: 10c0/e1656e2f73756db0fc1e5dbc5367485f24d5e9d0643ff5259fe32fb42441b3c250250b208cf58cf1aa0a55334e59146b0ff9b8161c2838bd6ee2a8f36ccada58
   languageName: node
   linkType: hard
 
@@ -6719,9 +6719,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromatic@npm:^11.3.2":
-  version: 11.3.2
-  resolution: "chromatic@npm:11.3.2"
+"chromatic@npm:^11.4.0":
+  version: 11.5.3
+  resolution: "chromatic@npm:11.5.3"
   peerDependencies:
     "@chromatic-com/cypress": ^0.*.* || ^1.0.0
     "@chromatic-com/playwright": ^0.*.* || ^1.0.0
@@ -6734,7 +6734,7 @@ __metadata:
     chroma: dist/bin.js
     chromatic: dist/bin.js
     chromatic-cli: dist/bin.js
-  checksum: 10c0/76a6f52ae5f43393fe6e16ec591ebe3bc6b71579b5842f5dc0100f76e29ecfc40479479db5fbb813eb29247645902c249ca8b75de50581a5d205fefd0c7f2561
+  checksum: 10c0/9cbac2061158956a444e27cfdd0a94654c5cb3cb09dca6a0482b06160597b2ae2a5570f72cbc86894b1f486fe02bad9cddc3eabc7e3678d615f44683d35acdaa
   languageName: node
   linkType: hard
 
