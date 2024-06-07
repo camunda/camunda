@@ -33,12 +33,13 @@ import org.junit.rules.Timeout;
 public class ProcessInstanceMigrationClusteredTest {
 
   private static final String MESSAGE_NAME = "message1";
+  private static final String CORRELATION_KEY = "key1";
   private static final BpmnModelInstance SOURCE_PROCESS =
       Bpmn.createExecutableProcess("sourceProcess")
           .startEvent()
           .userTask("A")
           .boundaryEvent("boundary1")
-          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression("key1"))
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_KEY))
           .endEvent()
           .moveToActivity("A")
           .endEvent()
@@ -130,7 +131,7 @@ public class ProcessInstanceMigrationClusteredTest {
 
       processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
       subscriptionPartitionId =
-          SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(MESSAGE_NAME), 3);
+          SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(CORRELATION_KEY), 3);
     }
 
     // Pause the stream processing on the partition leader for the message subscription
