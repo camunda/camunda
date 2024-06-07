@@ -74,7 +74,15 @@ module.exports = function createServer(
     }
 
     var filename = path.parse(request.url).base || 'index.html';
-    var filePath = path.join(__dirname, filename);
+    var filePath;
+
+    try {
+      filePath = fs.realpathSync(path.join(__dirname, filename));
+    } catch (error) {
+      response.writeHead(500);
+      response.end('Internal server error', 'utf-8');
+      return;
+    }
 
     var extname = String(path.extname(filePath)).toLowerCase();
     var mimeTypes = {
@@ -85,11 +93,10 @@ module.exports = function createServer(
 
     var contentType = mimeTypes[extname] || 'application/octet-stream';
 
-    filePath = fs.realpathSync(path.join(__dirname, filename));
-
     if (!filePath.startsWith(__dirname)) {
       response.writeHead(403, {'Content-Type': contentType});
       response.end('Forbidden', 'utf-8');
+      return;
     }
 
     fs.readFile(filePath, function (error, content) {
