@@ -11,18 +11,23 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final record SearchMatchQuery(String field, String query, String operator)
+public final record SearchMatchQuery(String field, String query, SearchMatchQueryOperator operator)
     implements SearchQueryOption {
 
   static SearchMatchQuery of(final Function<Builder, ObjectBuilder<SearchMatchQuery>> fn) {
     return SearchQueryBuilders.match(fn);
   }
 
+  public static enum SearchMatchQueryOperator {
+    AND,
+    OR;
+  }
+
   public static final class Builder implements ObjectBuilder<SearchMatchQuery> {
 
     private String field;
     private String query;
-    private String operator;
+    private SearchMatchQueryOperator operator;
 
     public Builder field(final String value) {
       field = value;
@@ -34,7 +39,7 @@ public final record SearchMatchQuery(String field, String query, String operator
       return this;
     }
 
-    public Builder operator(final String value) {
+    public Builder operator(final SearchMatchQueryOperator value) {
       operator = value;
       return this;
     }

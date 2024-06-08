@@ -26,7 +26,28 @@ public final class MatchQueryTransformer
     final var field = value.field();
     final var query = value.query();
     final var queryAsFieldValue = FieldValue.of(query);
-    final var operator = Operator.valueOf(value.operator());
-    return QueryBuilders.match().field(field).query(queryAsFieldValue).operator(operator).build();
+    final var operator = value.operator();
+    final var builder = QueryBuilders.match().field(field).query(queryAsFieldValue);
+
+    if (operator != null) {
+      switch (operator) {
+        case AND:
+          {
+            builder.operator(Operator.And);
+            break;
+          }
+        case OR:
+          {
+            builder.operator(Operator.Or);
+            break;
+          }
+        default:
+          {
+            break;
+          }
+      }
+    }
+
+    return builder.build();
   }
 }

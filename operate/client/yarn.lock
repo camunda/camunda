@@ -1224,12 +1224,13 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@0.7.1":
-  version "0.7.1"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.7.1.tgz#8409ae26d907a25c52856be747384847174cd5be"
-  integrity sha512-6cfAzsIv2ZUg+GB/uuCw6zjjLV6fVdkah7scFmd2ktmUArfHCSzfVFjRuCPhP5fbss0GCZeGDuWun67tiu20nQ==
+"@camunda/camunda-composite-components@0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.8.0.tgz#53754554d6ce9f80ae624dafe1e470a97f7fc80e"
+  integrity sha512-/wBSuHD2ns2ZVdQaO3m04Y6qapQwXCrH3c8fU41+HHUX3s/bYy/K1YT1oQ/YUSAwj/hHGil+bjOz2Z62bKpNaw==
   dependencies:
     jwt-decode "4.0.0"
+    react-error-boundary "4.0.13"
     react-markdown "8.0.7"
 
 "@carbon/colors@^11.22.0":
@@ -1239,14 +1240,14 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/elements@11.46.0":
-  version "11.46.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.46.0.tgz#fd4bc101198f0a3f4ecdb65d1e493ede3bf2e336"
-  integrity sha512-zFzbBFJrlE9FPdExr5Qz9GMY0XSqEOp8kuAX986boH+CfBFYKCWjafIFCIq0LMc8fJzLpf27+/CYyiWQDuSKuA==
+"@carbon/elements@11.47.0":
+  version "11.47.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.47.0.tgz#1b60bce5b53b5cbfc0860c93ff0bb458ea2b139e"
+  integrity sha512-XoCAgK4LZEXAIsS6QjqQAsst7vgvwwECIw4zHoPxMzv3Y48lWgpD2smlIKLjZ7sSFHJPeGxgesz78XGuOcM+lw==
   dependencies:
     "@carbon/colors" "^11.22.0"
     "@carbon/grid" "^11.23.0"
-    "@carbon/icons" "^11.42.0"
+    "@carbon/icons" "^11.43.0"
     "@carbon/layout" "^11.22.0"
     "@carbon/motion" "^11.18.0"
     "@carbon/themes" "^11.36.0"
@@ -1284,10 +1285,10 @@
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.42.0":
-  version "11.42.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.42.0.tgz#d6252f08943682ff6f19cb3d769023c60d0350c3"
-  integrity sha512-MUg2dE4gBSclNui+nUZaxZHUCtZldybMik/pP7ty7Fd2Eb1xfuWto08ZEK6UZZMPRkDgrlBFnWQ+QyZNQb9Log==
+"@carbon/icons@^11.43.0":
+  version "11.43.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.43.0.tgz#85787cfcf1013bc7251b07b080398496cf16b7da"
+  integrity sha512-myQbjVZYMnGlk7r7h7K7T7XGy8xxKHC2PJKIInr38KvQhPpFcawn74hSXQadhwQteQEuO+1Dzp6tt8uIFb8UmA==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -2707,10 +2708,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/lodash@4.17.4":
-  version "4.17.4"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.4.tgz#0303b64958ee070059e3a7184048a55159fe20b7"
-  integrity sha512-wYCP26ZLxaT3R39kiN2+HcJ4kTd3U1waI/cY7ivWYqFP6pW3ZNpvi6Wd6PHZx7T/t8z0vlkXMg3QYLa7DZ/IJQ==
+"@types/lodash@4.17.5":
+  version "4.17.5"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.5.tgz#e6c29b58e66995d57cd170ce3e2a61926d55ee04"
+  integrity sha512-MBIOHVZqVqgfro1euRDWX7OO0fBVUUMrN6Pwm8LQsz8cWhEpihlvR70ENj3f40j58TNxZaWv2ndSkInykNBBJw==
 
 "@types/mdast@^3.0.0":
   version "3.0.15"
@@ -2748,10 +2749,10 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@20.14.1":
-  version "20.14.1"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.1.tgz#2434dbcb1f039e31f2c0e9969da93f52cf6348f3"
-  integrity sha512-T2MzSGEu+ysB/FkWfqmhV3PLyQlowdptmmgD20C6QxsS8Fmv5SjpZ1ayXaEC0S21/h5UJ9iA6W/5vSNU5l00OA==
+"@types/node@20.14.2":
+  version "20.14.2"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.2.tgz#a5f4d2bcb4b6a87bffcaa717718c5a0f208f4a18"
+  integrity sha512-xyu6WAMVwv6AKFLB+e/7ySZVr/0zLCzOa7rSpq6jNwpqOrUbcACDWC+53d4n2QHOnDou0fbIsg8wZu/sxrnI4Q==
   dependencies:
     undici-types "~5.26.4"
 
@@ -8751,10 +8752,10 @@ mitt@^3.0.0:
   resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mixpanel-browser@2.51.0:
-  version "2.51.0"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.51.0.tgz#2df372bde0a415704beb382a244244faca9296bf"
-  integrity sha512-cNjvvhlRkSlqW1w4nxRpK5y4R3QcfhY7H/ZfvZ4jLeiBUNeeuwyQTgOAk/mYiBDOonWEdeN7h3EkL2BdqKd2Sw==
+mixpanel-browser@2.52.0:
+  version "2.52.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.52.0.tgz#f7984ef8c976ea4468ff52c9a62881c4ce21d417"
+  integrity sha512-aWrL477cOqcmgEakZUsw9ZEyrsdekGVbvHQZGFycgBtueG40DzenMD9Drhx7T/PR4agFkU/TEBPmRKoSKqkyEw==
   dependencies:
     rrweb "2.0.0-alpha.13"
 
@@ -10034,10 +10035,10 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@3.3.0:
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.0.tgz#d173ea0524a691d4c0b1181752f2b46724328cdf"
-  integrity sha512-J9odKxERhCQ10OC2yb93583f6UnYutOeiV5i0zEDS7UGTdUt0u+y8erxl3lBKvwo/JHyyoEdXjwp4dke9oyZ/g==
+prettier@3.3.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.1.tgz#e68935518dd90bb7ec4821ba970e68f8de16e1ac"
+  integrity sha512-7CAwy5dRsxs8PHXT3twixW9/OEll8MLE0VRPCJyl7CkS6VHGPSlsVaWTiASPTyGyYRyApxlaWTzwUxVNrhcwDg==
 
 pretty-bytes@^5.3.0, pretty-bytes@^5.4.1:
   version "5.6.0"
@@ -10298,6 +10299,13 @@ react-dom@18.3.1:
   dependencies:
     loose-envify "^1.1.0"
     scheduler "^0.23.2"
+
+react-error-boundary@4.0.13:
+  version "4.0.13"
+  resolved "https://registry.yarnpkg.com/react-error-boundary/-/react-error-boundary-4.0.13.tgz#80386b7b27b1131c5fbb7368b8c0d983354c7947"
+  integrity sha512-b6PwbdSv8XeOSYvjt8LpgpKrZ0yGdtZokYwkwV2wlcZbxgopHX/hgPl5VgpnoVOWd868n1hktM8Qm4b+02MiLQ==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
 
 react-error-boundary@^3.1.0:
   version "3.1.4"
