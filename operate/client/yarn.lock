@@ -8752,10 +8752,10 @@ mitt@^3.0.0:
   resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mixpanel-browser@2.51.0:
-  version "2.51.0"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.51.0.tgz#2df372bde0a415704beb382a244244faca9296bf"
-  integrity sha512-cNjvvhlRkSlqW1w4nxRpK5y4R3QcfhY7H/ZfvZ4jLeiBUNeeuwyQTgOAk/mYiBDOonWEdeN7h3EkL2BdqKd2Sw==
+mixpanel-browser@2.52.0:
+  version "2.52.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.52.0.tgz#f7984ef8c976ea4468ff52c9a62881c4ce21d417"
+  integrity sha512-aWrL477cOqcmgEakZUsw9ZEyrsdekGVbvHQZGFycgBtueG40DzenMD9Drhx7T/PR4agFkU/TEBPmRKoSKqkyEw==
   dependencies:
     rrweb "2.0.0-alpha.13"
 
