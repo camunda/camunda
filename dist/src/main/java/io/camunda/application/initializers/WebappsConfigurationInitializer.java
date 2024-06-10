@@ -46,8 +46,6 @@ public class WebappsConfigurationInitializer
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPERATE.getId());
       } else if (activeProfiles.contains(TASKLIST.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
-      } else if (activeProfiles.contains(IDENTITY.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
       }
       propertyMap.put(
           CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY,
