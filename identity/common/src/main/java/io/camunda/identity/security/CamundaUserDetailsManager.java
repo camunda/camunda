@@ -5,15 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.user;
+package io.camunda.identity.security;
 
 import javax.sql.DataSource;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("auth-basic")
 public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
   public CamundaUserDetailsManager(final DataSource dataSource) {
     super(dataSource);
