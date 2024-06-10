@@ -81,7 +81,9 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -448,7 +450,7 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
-  @Bean("backupThreadPoolExecutor")
+  @Bean("tasklistBackupThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);

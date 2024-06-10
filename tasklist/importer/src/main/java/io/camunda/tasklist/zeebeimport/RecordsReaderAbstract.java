@@ -50,11 +50,11 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   @Autowired private BeanFactory beanFactory;
 
   @Autowired
-  @Qualifier("recordsReaderThreadPoolExecutor")
+  @Qualifier("tasklistRecordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler readersExecutor;
 
   @Autowired
-  @Qualifier("importThreadPoolExecutor")
+  @Qualifier("tasklistImportThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
 
   private ImportJob pendingImportJob;

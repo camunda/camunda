@@ -34,12 +34,13 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(ElasticSearchCondition.class)
 public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstract
     implements ImportPositionHolder {
@@ -49,7 +50,9 @@ public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstr
 
   // this is the in-memory only storage
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId)
       throws IOException {

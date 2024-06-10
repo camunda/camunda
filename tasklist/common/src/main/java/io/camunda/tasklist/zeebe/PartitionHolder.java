@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,7 +36,9 @@ public class PartitionHolder {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired(required = false)
   private ApplicationShutdownService applicationShutdownService;

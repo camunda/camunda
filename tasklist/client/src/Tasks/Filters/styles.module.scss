@@ -19,8 +19,9 @@
 }
 
 .header {
-  width: 200px;
+  width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: var(--cds-spacing-03);
 }

@@ -12,4 +12,10 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 public interface CommandApiService {
 
   CommandResponseWriter newCommandResponseWriter();
+
+  void onRecovered(final int partitionId);
+
+  void onPaused(final int partitionId);
+
+  void onResumed(final int partitionId);
 }

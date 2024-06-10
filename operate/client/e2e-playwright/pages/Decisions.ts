@@ -81,12 +81,12 @@ export class Decisions {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto(Paths.decisions());
+      await this.page.goto('.' + Paths.decisions());
       return;
     }
 
     await this.page.goto(
-      `${Paths.decisions()}?${convertToQueryString(searchParams)}`,
+      `.${Paths.decisions()}?${convertToQueryString(searchParams)}`,
       options,
     );
   }

@@ -112,7 +112,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(
-            "/does-not-exist",
+            "/tasklist/does-not-exist",
             HttpMethod.GET,
             prepareRequestWithCookies(loginResponse.getHeaders()),
             String.class);

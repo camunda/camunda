@@ -67,9 +67,9 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
                   ))
           .withExposedPorts(9200);
 
-  @Autowired RestHighLevelClient esClient;
+  @Autowired RestHighLevelClient tasklistEsClient;
 
-  @Autowired RestHighLevelClient zeebeEsClient;
+  @Autowired RestHighLevelClient tasklistZeebeEsClient;
 
   @BeforeAll
   public static void beforeClass() {
@@ -78,8 +78,8 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   @Test
   public void canConnect() {
-    assertThat(esClient).isNotNull();
-    assertThat(zeebeEsClient).isNotNull();
+    assertThat(tasklistEsClient).isNotNull();
+    assertThat(tasklistZeebeEsClient).isNotNull();
   }
 
   static class ElasticsearchStarter

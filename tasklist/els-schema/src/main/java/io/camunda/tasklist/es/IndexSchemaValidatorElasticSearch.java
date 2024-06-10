@@ -12,12 +12,13 @@ import static io.camunda.tasklist.util.CollectionUtil.map;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
+import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,20 +28,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
+public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
+    implements IndexSchemaValidator {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(IndexSchemaValidatorElasticSearch.class);
-
-  private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
 
   @Autowired Set<IndexDescriptor> indexDescriptors;
 
   @Autowired TasklistProperties tasklistProperties;
 
+  @Autowired SchemaManager schemaManager;
+
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
-  private Set<String> getAllIndexNamesForIndex(String index) {
+  private Set<String> getAllIndexNamesForIndex(final String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryElasticsearchClient.getIndexNames(indexPattern);
@@ -50,74 +52,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
-  }
-
-  private String getIndexPrefix() {
-    return tasklistProperties.getElasticsearch().getIndexPrefix();
-  }
-
-  public Set<String> newerVersionsForIndex(IndexDescriptor indexDescriptor) {
-    final SemanticVersion currentVersion =
-        SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    final Set<String> versions = versionsForIndex(indexDescriptor);
-    return versions.stream()
-        .filter(version -> SemanticVersion.fromVersion(version).isNewerThan(currentVersion))
-        .collect(Collectors.toSet());
-  }
-
-  @Override
-  public Set<String> olderVersionsForIndex(IndexDescriptor indexDescriptor) {
-    final SemanticVersion currentVersion =
-        SemanticVersion.fromVersion(indexDescriptor.getVersion());
-    final Set<String> versions = versionsForIndex(indexDescriptor);
-    return versions.stream()
-        .filter(version -> currentVersion.isNewerThan(SemanticVersion.fromVersion(version)))
-        .collect(Collectors.toSet());
-  }
-
-  private Set<String> versionsForIndex(IndexDescriptor indexDescriptor) {
-    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
-    return allIndexNames.stream()
-        .map(this::getVersionFromIndexName)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toSet());
-  }
-
-  private Optional<String> getVersionFromIndexName(String indexName) {
-    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
-    if (matcher.matches() && matcher.groupCount() > 0) {
-      return Optional.of(matcher.group(1));
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public void validate() {
-    if (!hasAnyTasklistIndices()) {
-      return;
-    }
-    final Set<String> errors = new HashSet<>();
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
-          if (oldVersions.size() > 1) {
-            errors.add(
-                String.format(
-                    "More than one older version for %s (%s) found: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
-          }
-          if (!newerVersions.isEmpty()) {
-            errors.add(
-                String.format(
-                    "Newer version(s) for %s (%s) already exists: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
-          }
-        });
-    if (!errors.isEmpty()) {
-      throw new TasklistRuntimeException("Error(s) in index schema: " + String.join(";", errors));
-    }
   }
 
   @Override
@@ -145,14 +79,78 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
       return indices.containsAll(allIndexNames)
           && aliases.containsAll(allAliasesNames)
           && validateNumberOfReplicas(allIndexNames);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
     }
   }
 
+  @Override
+  public void validateIndexVersions() {
+    if (!hasAnyTasklistIndices()) {
+      return;
+    }
+    final Set<String> errors = new HashSet<>();
+    indexDescriptors.forEach(
+        indexDescriptor -> {
+          final Set<String> oldVersions =
+              olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          final Set<String> newerVersions =
+              newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
+          if (oldVersions.size() > 1) {
+            errors.add(
+                String.format(
+                    "More than one older version for %s (%s) found: %s",
+                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
+          }
+          if (!newerVersions.isEmpty()) {
+            errors.add(
+                String.format(
+                    "Newer version(s) for %s (%s) already exists: %s",
+                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
+          }
+        });
+    if (!errors.isEmpty()) {
+      throw new TasklistRuntimeException("Error(s) in index schema: " + String.join(";", errors));
+    }
+  }
+
+  /**
+   * Validates existing indices mappings against schema files defined in codebase.
+   *
+   * @return newFields map with the new field definitions per index
+   * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
+   *     settings
+   */
+  @Override
+  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
+      throws IOException {
+    return validateIndexMappings(indexDescriptors);
+  }
+
+  @Override
+  public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return olderVersionsForIndex(indexDescriptor, versions);
+  }
+
+  @Override
+  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return newerVersionsForIndex(indexDescriptor, versions);
+  }
+
+  private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
+    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    return allIndexNames.stream()
+        .map(this::getVersionFromIndexName)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toSet());
+  }
+
   public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (String index : indexes) {
+    for (final String index : indexes) {
       final Map<String, String> response =
           retryElasticsearchClient.getIndexSettingsFor(
               index, RetryElasticsearchClient.NUMBERS_OF_REPLICA);

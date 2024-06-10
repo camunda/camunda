@@ -9,14 +9,12 @@
 import {Page, Locator} from '@playwright/test';
 
 class LoginPage {
-  private page: Page;
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
   readonly errorMessage: Locator;
 
   constructor(page: Page) {
-    this.page = page;
     this.usernameInput = page.getByLabel(/^username$/i);
     this.passwordInput = page.getByLabel(/^password$/i);
     this.loginButton = page.getByRole('button', {name: 'Login'});
@@ -41,10 +39,6 @@ class LoginPage {
     await this.fillUsername(username);
     await this.fillPassword(password);
     await this.clickLoginButton();
-  }
-
-  async navigateToURL(url: string) {
-    await this.page.goto(url);
   }
 }
 

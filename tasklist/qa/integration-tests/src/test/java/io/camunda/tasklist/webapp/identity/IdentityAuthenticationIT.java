@@ -90,8 +90,7 @@ public class IdentityAuthenticationIT {
 
     final List<Tenant> tenants =
         new ObjectMapper()
-            .readValue(
-                this.getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
+            .readValue(getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
     when(this.tenants.forToken(any())).thenReturn(tenants);
 
     // when

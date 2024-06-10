@@ -60,7 +60,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   @Autowired private ProcessDefinitionDeletionProcessor processDefinitionDeletionProcessor;
 
   public void processDeploymentRecord(
-      Record<DeployedProcessImpl> record, List<BulkOperation> operations)
+      final Record<DeployedProcessImpl> record, final List<BulkOperation> operations)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final String processDefinitionKey = String.valueOf(record.getValue().getProcessDefinitionKey());
@@ -76,7 +76,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
             try {
               persistForm(
                   processDefinitionKey, formKey, schema, recordValue.getTenantId(), operations);
-            } catch (PersistenceException e) {
+            } catch (final PersistenceException e) {
               exceptions.add(e);
             }
           });
@@ -95,9 +95,9 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   }
 
   private void persistProcess(
-      Process process,
-      List<BulkOperation> operations,
-      BiConsumer<String, String> userTaskFormCollector) {
+      final Process process,
+      final List<BulkOperation> operations,
+      final BiConsumer<String, String> userTaskFormCollector) {
 
     final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
@@ -114,14 +114,15 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   }
 
   private ProcessEntity createEntity(
-      Process process, BiConsumer<String, String> userTaskFormCollector) {
+      final Process process, final BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity =
         new ProcessEntity()
             .setId(String.valueOf(process.getProcessDefinitionKey()))
             .setKey(process.getProcessDefinitionKey())
             .setBpmnProcessId(process.getBpmnProcessId())
             .setVersion(process.getVersion())
-            .setTenantId(process.getTenantId());
+            .setTenantId(process.getTenantId())
+            .setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
 
@@ -132,27 +133,24 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         processEntity::setFormKey,
-        formId -> processEntity.setFormId(formId),
+        processEntity::setFormId,
         processEntity::setStartedByForm);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));
 
     Optional.ofNullable(processEntity.getFormId())
-        .ifPresent(
-            id -> {
-              processEntity.setIsFormEmbedded(false);
-            });
+        .ifPresent(id -> processEntity.setIsFormEmbedded(false));
 
     return processEntity;
   }
 
   private void persistForm(
-      String processDefinitionKey,
-      String formKey,
-      String schema,
-      String tenantId,
-      List<BulkOperation> operations)
+      final String processDefinitionKey,
+      final String formKey,
+      final String schema,
+      final String tenantId,
+      final List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity = new FormEntity(processDefinitionKey, formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);

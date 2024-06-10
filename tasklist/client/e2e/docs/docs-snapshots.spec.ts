@@ -271,6 +271,7 @@ async function mockClientConfig(page: Page) {
         "canLogout":true,
         "isLoginDelegated":false,
         "contextPath":"",
+        "baseName":"/",
         "organizationId":null,
         "clusterId":null,
         "stage":null,
@@ -479,7 +480,8 @@ test.describe('Tasklist snapshots', () => {
     await mockTaskSearch(page, MOCK_TASKLIST);
 
     await taskPanelPage.goto();
-    await page.getByLabel('Custom filter').click();
+    await taskPanelPage.expandSidePanelButton.click();
+    await taskPanelPage.addCustomFilterButton.click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();

@@ -259,7 +259,7 @@ const FieldsModal: React.FC<Props> = ({
                         id={input.name}
                         tenantId={values.tenant}
                         disabled={!isOpen}
-                        labelText="Process"
+                        labelText="Tasks for latest process version"
                       />
                     )}
                   </Field>

@@ -23,7 +23,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
       open={isOpen}
       aria-label="Save filter"
       preventCloseOnClickOutside
-      size="xs"
+      size="sm"
     >
       {isOpen ? (
         <Form<{filterName: string}>

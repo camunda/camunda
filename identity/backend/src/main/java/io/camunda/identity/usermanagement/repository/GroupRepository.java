@@ -7,30 +7,11 @@
  */
 package io.camunda.identity.usermanagement.repository;
 
-import static org.springframework.security.provisioning.JdbcUserDetailsManager.DEF_FIND_GROUP_ID_SQL;
-
-import io.camunda.identity.usermanagement.Group;
-import java.util.List;
-import org.springframework.jdbc.core.JdbcTemplate;
+import io.camunda.identity.usermanagement.model.Group;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class GroupRepository {
-  public static final String DEF_FIND_ALL_GROUPS_SQL = "select id, group_name from groups";
-
-  private final JdbcTemplate jdbcTemplate;
-
-  public GroupRepository(final JdbcTemplate jdbcTemplate) {
-    this.jdbcTemplate = jdbcTemplate;
-  }
-
-  public List<Group> findAllGroups() {
-    return jdbcTemplate.query(
-        DEF_FIND_ALL_GROUPS_SQL, (rs, rowNum) -> new Group(rs.getInt(1), rs.getString(2)));
-  }
-
-  public Group findGroup(final String group) {
-    final Integer id = jdbcTemplate.queryForObject(DEF_FIND_GROUP_ID_SQL, Integer.class, group);
-    return new Group(id, group);
-  }
+public interface GroupRepository extends JpaRepository<Group, Long> {
+  Group findByName(String name);
 }

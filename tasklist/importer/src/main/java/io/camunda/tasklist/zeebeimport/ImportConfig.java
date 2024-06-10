@@ -19,7 +19,7 @@ public class ImportConfig {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Bean("importThreadPoolExecutor")
+  @Bean("tasklistImportThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(tasklistProperties.getImporter().getThreadsCount());
@@ -29,7 +29,7 @@ public class ImportConfig {
     return executor;
   }
 
-  @Bean("recordsReaderThreadPoolExecutor")
+  @Bean("tasklistRecordsReaderThreadPoolExecutor")
   public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
     final var executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(tasklistProperties.getImporter().getReaderThreadsCount());
@@ -38,7 +38,7 @@ public class ImportConfig {
     return executor;
   }
 
-  @Bean("importPositionUpdateThreadPoolExecutor")
+  @Bean("tasklistImportPositionUpdateThreadPoolExecutor")
   public ThreadPoolTaskScheduler getImportPositionUpdateTaskExecutor() {
     final var executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(1);

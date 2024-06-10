@@ -46,7 +46,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('<Tasks />', () => {
+describe('<AvailableTasks />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
