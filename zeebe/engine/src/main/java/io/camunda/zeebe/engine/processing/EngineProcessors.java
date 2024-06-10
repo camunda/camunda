@@ -129,7 +129,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        commandDistributionBehavior);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -140,7 +141,9 @@ public final class EngineProcessors {
             subscriptionCommandSender,
             writers,
             timerChecker,
-            commandDistributionBehavior);
+            commandDistributionBehavior,
+            partitionId,
+            partitionsCount);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -212,7 +215,9 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -221,7 +226,9 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         timerChecker,
         writers,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        partitionId,
+        partitionsCount);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -292,7 +299,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -301,7 +309,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        commandDistributionBehavior);
   }
 
   private static void addDecisionProcessors(

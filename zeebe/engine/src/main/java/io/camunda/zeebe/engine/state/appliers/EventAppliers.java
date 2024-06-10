@@ -239,6 +239,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
+    register(MessageSubscriptionIntent.MIGRATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageStartEventSubscriptionAppliers(final MutableProcessingState state) {

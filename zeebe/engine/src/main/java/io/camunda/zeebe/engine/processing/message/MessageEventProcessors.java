@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -36,7 +37,8 @@ public final class MessageEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior commandDistributionBehavior) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -93,6 +95,10 @@ public final class MessageEventProcessors {
             MessageSubscriptionIntent.DELETE,
             new MessageSubscriptionDeleteProcessor(
                 subscriptionState, subscriptionCommandSender, writers))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.MIGRATE,
+            new MessageSubscriptionMigrateProcessor(writers, commandDistributionBehavior))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,
