@@ -7,19 +7,16 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.NodeConfig;
 import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
-import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
-import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -44,11 +41,6 @@ public final class GatewayClusterConfiguration {
         .setDiscoveryConfig(discovery)
         .setMessagingConfig(messaging)
         .setProtocolConfig(membership);
-  }
-
-  @Bean(destroyMethod = "stop")
-  public AtomixCluster atomixCluster(final ClusterConfig config) {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 
   private MemberConfig memberConfig(final ClusterCfg cluster) {

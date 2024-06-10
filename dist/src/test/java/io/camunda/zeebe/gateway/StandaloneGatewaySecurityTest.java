@@ -13,6 +13,8 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.commons.actor.ActorClockConfiguration;
 import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.commons.clustering.AtomixClusterConfiguration;
+import io.camunda.commons.clustering.DynamicClusterServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
@@ -140,17 +142,17 @@ final class StandaloneGatewaySecurityTest {
     final var gatewayConfig = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
     final var schedulerConfig = gatewayConfig.schedulerConfiguration();
 
-    final var clusterConfig = new GatewayClusterConfiguration();
-    atomixCluster =
-        new GatewayClusterConfiguration().atomixCluster(clusterConfig.clusterConfig(gatewayConfig));
+    final var clusterConfig = new GatewayClusterConfiguration().clusterConfig(gatewayConfig);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(
             schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
 
     actorScheduler = actorSchedulerConfiguration.scheduler();
     final var topologyServices = new DynamicClusterServices(actorScheduler, atomixCluster);
-    final var clusterTopologyService = topologyServices.gatewayClusterTopologyService();
-    final var topologyManager = topologyServices.brokerTopologyManager(clusterTopologyService);
+    final var topologyManager = topologyServices.brokerTopologyManager();
+    topologyServices.gatewayClusterTopologyService(topologyManager);
 
     final BrokerClientComponent brokerClientComponent =
         new BrokerClientComponent(gatewayConfig, atomixCluster, actorScheduler, topologyManager);
