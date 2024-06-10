@@ -181,6 +181,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>auth-spring-boot-starter</artifactId>
     </dependency>
 

@@ -25,6 +25,7 @@
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
+    <module>webapps-common</module>
     <module>search</module>
     <module>service</module>
   </modules>
