@@ -65,7 +65,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final OperateProperties operateProperties;
 
   public TestStandaloneCamunda() {
-    super(BrokerModuleConfiguration.class, OperateModuleConfiguration.class);
+    super(
+        BrokerModuleConfiguration.class,
+        OperateModuleConfiguration.class,
+        // test overrides - to control data clean up; (and some components are not installed on
+        // Tests)
+        TestElasticsearchSchemaManager.class,
+        TestSchemaStartup.class);
 
     brokerProperties = new BrokerProperties();
 
