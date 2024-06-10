@@ -139,6 +139,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return super.createSpringBuilder();
   }
 
+  public TestRestOperateClient newOperateClient() {
+    return new TestRestOperateClient(restAddress());
+  }
+
   @Override
   public TestStandaloneCamunda self() {
     return this;
