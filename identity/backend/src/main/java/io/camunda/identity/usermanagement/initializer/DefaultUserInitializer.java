@@ -8,6 +8,7 @@
 package io.camunda.identity.usermanagement.initializer;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.config.IdentityPresets;
 import jakarta.annotation.PostConstruct;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -22,27 +23,32 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("auth-basic")
 @DependsOnDatabaseInitialization
-public class DemoUserInitializer {
-  private static final Logger LOG = LoggerFactory.getLogger(DemoUserInitializer.class);
+public class DefaultUserInitializer {
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultUserInitializer.class);
   private final CamundaUserDetailsManager userDetailsManager;
   private final PasswordEncoder passwordEncoder;
+  private final IdentityPresets identityPresets;
 
-  public DemoUserInitializer(final DataSource dataSource, final PasswordEncoder passwordEncoder) {
+  public DefaultUserInitializer(
+      final DataSource dataSource,
+      final PasswordEncoder passwordEncoder,
+      final IdentityPresets identityPresets) {
     userDetailsManager = new CamundaUserDetailsManager(dataSource);
     this.passwordEncoder = passwordEncoder;
+    this.identityPresets = identityPresets;
   }
 
   @PostConstruct
   public void setupUsers() {
-    if (userDetailsManager.userExists("demo")) {
-      LOG.info("User 'demo' already exists, skipping creation.");
+    if (userDetailsManager.userExists(identityPresets.getUser())) {
+      LOG.info("User '{}' already exists, skipping creation.", identityPresets.getUser());
       return;
     }
 
     final UserDetails user =
         User.builder()
-            .username("demo")
-            .password("demo")
+            .username(identityPresets.getUser())
+            .password(identityPresets.getPassword())
             .passwordEncoder(passwordEncoder::encode)
             .roles("DEFAULT_USER")
             .build();
