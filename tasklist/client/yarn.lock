@@ -261,15 +261,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.7":
-  version "1.8.7"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.7.tgz#bd628389be5b7364cd2044908615ae340f8b8699"
-  integrity sha512-soUKfJg9JJLfcyx8nLK2YMphz5INXWcmPLaG+MM0Ed93HWDerv49Gj6NQGXMM2TtDjYCBXI59tpzK1KmUIbLcQ==
+"@bpmn-io/form-js-carbon-styles@1.8.8":
+  version "1.8.8"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.8.tgz#27735328369cb229786a41d1de8dea7e0cc3b198"
+  integrity sha512-dGldJm08sECJsCpjAWWNZYdcAx/pQZKkiG6Vzpf1F0X8NZKb5KqEZhhW3sqjlr7q2eYSv7ffsMx93YL9PHgdng==
 
-"@bpmn-io/form-js-viewer@1.8.7":
-  version "1.8.7"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.7.tgz#35175a924c4a3f8cc028c779ace7bba2afc71d42"
-  integrity sha512-AOgvHkfCpcz3p1NUo2i+WY6hGu17vF8z+7LXiP7qf2lr7xgjJ4qFglgTwOpGY5O2eS4692GRdZqcaze6A9T5ug==
+"@bpmn-io/form-js-viewer@1.8.8":
+  version "1.8.8"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.8.tgz#37340ab0baf8ca9a12d3e63b363b2dfd96c665e7"
+  integrity sha512-sYM2oa5yclSILOcBADL+PB12ok4ThphKPxo5i/v7hB5A7hj1D4shY7ir4zbmeQZyFp6H4f1mWvU2OmyanR9Zmw==
   dependencies:
     "@carbon/grid" "^11.22.0"
     big.js "^6.2.1"
