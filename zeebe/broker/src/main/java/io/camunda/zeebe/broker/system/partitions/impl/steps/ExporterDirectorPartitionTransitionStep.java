@@ -148,13 +148,13 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             }
 
             // The config might have changed after ExporterDirector has created
-            disableExportersIfConfigChanged(exporterDescriptors, context);
+            disableOrEnableExportersIfConfigChanged(exporterDescriptors, context);
           }
         });
     return startFuture;
   }
 
-  private void disableExportersIfConfigChanged(
+  private void disableOrEnableExportersIfConfigChanged(
       final Map<ExporterDescriptor, ExporterInitializationInfo> startedExporters,
       final PartitionTransitionContext context) {
     final var currentEnabledExporters = getEnabledExporterDescriptors(context);
@@ -164,7 +164,15 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
         context.getExporterDirector().disableExporter(exporter.getId());
       }
     }
-    // TODO: Enable newly enabled exporters when the functionality is added
+
+    for (final var exporterEntry : currentEnabledExporters.entrySet()) {
+      final var exporter = exporterEntry.getKey();
+      if (!startedExporters.containsKey(exporter)) {
+        context
+            .getExporterDirector()
+            .enableExporter(exporter.getId(), exporterEntry.getValue(), exporter);
+      }
+    }
   }
 
   private static Map<ExporterDescriptor, ExporterInitializationInfo> getEnabledExporterDescriptors(

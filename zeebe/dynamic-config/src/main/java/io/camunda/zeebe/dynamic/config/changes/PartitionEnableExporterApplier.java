@@ -95,6 +95,14 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
 
     final var partitionHasExporter = exportersInPartition.containsKey(exporterId);
 
+    if (partitionHasExporter && exportersInPartition.get(exporterId).state() == State.ENABLED) {
+      return Either.left(
+          new IllegalStateException(
+              String.format(
+                  "Expected to enable exporter, but the exporter '%s' is already enabled",
+                  exporterId)));
+    }
+
     if (partitionHasExporter) {
       // Increment by one when re-enabling the exporter so that the ExporterDirector can verify
       // whether the runtime state has the latest state. This is useful when the operation is
@@ -113,14 +121,8 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     final var result = new CompletableActorFuture<UnaryOperator<MemberState>>();
 
     final ActorFuture<Void> enableFuture =
-        initializeFrom
-            .map(
-                otherExporterId ->
-                    partitionChangeExecutor.enableExporter(
-                        partitionId, exporterId, metadataVersionToUpdate, otherExporterId))
-            .orElse(
-                partitionChangeExecutor.enableExporter(
-                    partitionId, exporterId, metadataVersionToUpdate));
+        partitionChangeExecutor.enableExporter(
+            partitionId, exporterId, metadataVersionToUpdate, initializeFrom.orElse(null));
 
     enableFuture.onComplete(
         (nothing, error) -> {
@@ -141,7 +143,9 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     return config.updateExporting(
         c ->
             initializeFrom
-                .map(otherExporterId -> c.enableExporter(exporterId, otherExporterId))
-                .orElse(c.enableExporter(exporterId)));
+                .map(
+                    otherExporterId ->
+                        c.enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
+                .orElse(c.enableExporter(exporterId, metadataVersionToUpdate)));
   }
 }

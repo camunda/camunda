@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -182,6 +183,36 @@ class ExporterDirectorPartitionTransitionStepTest {
     // then
     verify(mockedExporterDirector, timeout(1000)).disableExporter(disabledExporterId);
     verify(mockedExporterDirector, never()).disableExporter(enabledExporterId);
+  }
+
+  @Test
+  void shouldEnableExporterIfConfigChangedConcurrently() {
+    // given
+    final String enabledExporterId = "expA";
+    final String reEnabledExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(enabledExporterId, State.ENABLED, reEnabledExporterId, State.DISABLED);
+
+    setExportersInContext(enabledExporterId, reEnabledExporterId, exporterConfig);
+
+    final var mockedExporterDirector = mock(ExporterDirector.class);
+    final var startingFuture = new TestActorFuture<Void>();
+    when(mockedExporterDirector.startAsync(any())).thenReturn(startingFuture);
+    final var exporterDirectorStep =
+        new ExporterDirectorPartitionTransitionStep((ctx, phase) -> mockedExporterDirector);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER);
+
+    final var updatedConfig =
+        getExporterConfig(enabledExporterId, State.ENABLED, reEnabledExporterId, State.ENABLED);
+    transitionContext.setDynamicPartitionConfig(updatedConfig);
+    startingFuture.complete(null);
+
+    // then
+    verify(mockedExporterDirector, timeout(1000))
+        .enableExporter(eq(reEnabledExporterId), any(), any());
   }
 
   private void setExportersInContext(

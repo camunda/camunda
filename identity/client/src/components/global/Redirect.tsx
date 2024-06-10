@@ -5,13 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import { FC, useEffect } from "react";
+import { useNavigate } from "react-router";
 
-import styled from 'styled-components';
-import {styles} from '@carbon/elements';
+type RedirectProps = {
+  to: string;
+};
 
-const MigrationStep = styled.div`
-  margin-left: auto;
-  ${styles.headingCompact01};
-`;
+const Redirect: FC<RedirectProps> = ({ to }) => {
+  const navigate = useNavigate();
 
-export {MigrationStep};
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [to]);
+
+  return null;
+};
+
+export default Redirect;
