@@ -46,7 +46,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
-  private static final ElasticsearchContainer esContainer =
+  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
+  private final ElasticsearchContainer esContainer =
       new ElasticsearchContainer(ELASTIC_IMAGE)
           // use JVM option files to avoid overwriting default options set by the ES container class
           .withClasspathResourceMapping(
@@ -60,7 +61,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           .withEnv("xpack.watcher.enabled", "false")
           .withEnv("xpack.ml.enabled", "false")
           .withEnv("action.destructive_requires_name", "false");
-  private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerProperties brokerProperties;
   private final OperateProperties operateProperties;
 
