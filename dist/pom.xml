@@ -196,7 +196,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>auth-spring-boot-starter</artifactId>
+      <artifactId>camunda-authentication</artifactId>
     </dependency>
 
     <dependency>

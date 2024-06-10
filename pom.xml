@@ -26,6 +26,7 @@
     <module>tasklist</module>
     <module>identity</module>
     <module>webapps-common</module>
+    <module>authentication</module>
     <module>search</module>
     <module>service</module>
   </modules>

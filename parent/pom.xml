@@ -922,7 +922,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>auth-spring-boot-starter</artifactId>
+        <artifactId>camunda-authentication</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -2540,7 +2540,7 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
-                  <dep>io.camunda:auth-spring-boot-starter</dep>
+                  <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
                 </ignoredUnusedDeclaredDependencies>

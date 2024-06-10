@@ -5,27 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity;
+package io.camunda.authentication;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 
-/**
- * Entry point for the Identity modules by using the the {@link
- * io.camunda.application.Profile#IDENTITY} profile, so that the appropriate Identity application
- * properties are applied.
- */
-@ComponentScan(
-    basePackages = {"io.camunda.identity"},
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.identity\\.starter\\..*")
-    })
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
+@ComponentScan(basePackages = {"io.camunda.authentication"})
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
 @EnableAutoConfiguration
-@Profile("identity")
-public class IdentityModuleConfiguration {}
+@Profile("auth-basic")
+public class AuthenticationModuleConfiguration {}

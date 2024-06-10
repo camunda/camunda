@@ -13,7 +13,6 @@
   <name>Identity Parent</name>
   <modules>
     <module>backend</module>
-    <module>auth-starter</module>
     <module>common</module>
   </modules>
 
