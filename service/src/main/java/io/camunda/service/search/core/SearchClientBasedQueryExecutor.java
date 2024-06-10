@@ -75,7 +75,7 @@ public final class SearchClientBasedQueryExecutor {
     return new SearchQueryResultTransformer<R>();
   }
 
-  private RuntimeException rethrowRuntimeException(final Exception e) {
-    return new RuntimeException("something went wrong", e);
+  private SearchQueryExecutionException rethrowRuntimeException(final Exception e) {
+    return new SearchQueryExecutionException("Failed to execute search query", e);
   }
 }
