@@ -46,9 +46,7 @@ import org.springframework.context.annotation.Profile;
     basePackages = {
       "io.camunda.zeebe.gateway",
       "io.camunda.zeebe.shared",
-      "io.camunda.zeebe.util.liveness",
-      "io.camunda.identity",
-      "io.camunda.authentication"
+      "io.camunda.zeebe.util.liveness"
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
 @EnableAutoConfiguration

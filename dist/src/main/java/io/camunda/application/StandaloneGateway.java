@@ -22,10 +22,7 @@ public class StandaloneGateway {
     final var standaloneGatewayApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(GatewayModuleConfiguration.class)
-            .profiles(
-                Profile.GATEWAY.getId(),
-                Profile.STANDALONE.getId(),
-                Profile.IDENTITY_AUTH_BASIC.getId())
+            .profiles(Profile.GATEWAY.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer())
             .build(args);
 
