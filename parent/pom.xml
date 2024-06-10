@@ -61,7 +61,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.1</version.identity>
+    <version.identity>8.5.2</version.identity>
     <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.10.2</version.junit>
@@ -109,7 +109,7 @@
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.172</version.classgraph>
+    <version.classgraph>4.8.173</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -118,11 +118,11 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
-    <version.zpt>8.5.1</version.zpt>
+    <version.zpt>8.5.2</version.zpt>
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.40.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.25.65</version.awssdk>
+    <version.awssdk>2.25.69</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.738</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.739</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
@@ -173,8 +173,8 @@
     <version.okio-jvm>3.9.0</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>9.39.3</version.nimbus-jose-jwt>
-    <version.keycloak>24.0.5</version.keycloak>
+    <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
+    <version.keycloak>25.0.0</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -197,7 +197,7 @@
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.6.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.4.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.6.1</plugin.version.dependency>
