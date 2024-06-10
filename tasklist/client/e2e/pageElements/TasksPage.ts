@@ -16,15 +16,39 @@ type FilterParam =
   | 'custom';
 type SortByParam = 'creation' | 'follow-up' | 'due' | 'completion';
 
-class TaskPanelPage {
+class TasksPage {
   private page: Page;
+  readonly assignToMeButton: Locator;
+  readonly unassignButton: Locator;
+  readonly assignee: Locator;
+  readonly detailsPanel: Locator;
+  readonly detailsHeader: Locator;
+  readonly detailsNav: Locator;
+  readonly pickATaskHeader: Locator;
+  readonly emptyTaskMessage: Locator;
   readonly availableTasks: Locator;
   readonly expandSidePanelButton: Locator;
   readonly collapseSidePanelButton: Locator;
   readonly addCustomFilterButton: Locator;
+  readonly bpmnDiagram: Locator;
+  readonly taskCompletionNotification: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
+    this.unassignButton = page.getByRole('button', {name: 'Unassign'});
+    this.assignee = page.getByTestId('assignee');
+    this.detailsPanel = this.page.getByRole('complementary', {
+      name: 'Task details right panel',
+    });
+    this.detailsHeader = page.getByTitle('Task details header');
+    this.detailsNav = page.getByLabel('Task Details Navigation');
+    this.pickATaskHeader = page.getByRole('heading', {
+      name: 'Pick a task to work on',
+    });
+    this.emptyTaskMessage = page.getByRole('heading', {
+      name: /task has no variables/i,
+    });
     this.availableTasks = page.getByTitle('Available tasks');
     this.expandSidePanelButton = page.getByRole('button', {
       name: 'Expand to show filters',
@@ -35,6 +59,8 @@ class TaskPanelPage {
     this.addCustomFilterButton = page.getByRole('button', {
       name: 'New filter',
     });
+    this.bpmnDiagram = page.getByTestId('diagram');
+    this.taskCompletionNotification = page.getByText('Task completed');
   }
 
   async goto(params?: {filter?: FilterParam; sortBy?: SortByParam}) {
@@ -78,6 +104,14 @@ class TaskPanelPage {
   async scrollToFirstTask(name: string) {
     await this.page.getByText(name).first().scrollIntoViewIfNeeded();
   }
+
+  async gotoTaskDetails(id: string) {
+    await this.page.goto(`/${id}`, {waitUntil: 'networkidle'});
+  }
+
+  async gotoTaskDetailsProcessTab(id: string) {
+    await this.page.goto(`/${id}/process`, {waitUntil: 'networkidle'});
+  }
 }
 
-export {TaskPanelPage};
+export {TasksPage};
