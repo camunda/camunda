@@ -123,9 +123,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
   }
 
   private static boolean isEntryValid(final LogAppendEntry entry) {
-    return entry.recordValue() != null
-        && entry.recordValue().getLength() > 0
-        && entry.recordMetadata() != null
-        && entry.recordMetadata().getLength() > 0;
+    return entry.recordValue() != null && entry.recordMetadata() != null;
   }
 }
