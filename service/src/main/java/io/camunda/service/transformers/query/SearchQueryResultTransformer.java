@@ -12,7 +12,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.transformers.ServiceTransformer;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +39,6 @@ public final class SearchQueryResultTransformer<T>
     if (values != null) {
       return values.stream().map(SearchQueryHit::source).collect(Collectors.toList());
     }
-    return new ArrayList<>();
+    return Collections.emptyList();
   }
 }
