@@ -9,9 +9,11 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -68,6 +70,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     super(
         BrokerModuleConfiguration.class,
         OperateModuleConfiguration.class,
+        WebappsModuleConfiguration.class,
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestElasticsearchSchemaManager.class,
@@ -91,7 +94,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     withBean("config", brokerProperties, BrokerProperties.class)
         .withBean("operate-config", operateProperties, OperateProperties.class)
         .withAdditionalProfile(Profile.BROKER)
-        .withAdditionalProfile(Profile.OPERATE);
+        .withAdditionalProfile(Profile.OPERATE)
+        .withAdditionalInitializer(new WebappsConfigurationInitializer());
   }
 
   @Override
