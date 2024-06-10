@@ -38,6 +38,8 @@ const TargetDiagram: React.FC = observer(() => {
   useEffect(() => {
     if (selectedTargetProcessId !== undefined) {
       processXmlStore.fetchProcessXml(selectedTargetProcessId);
+    } else {
+      processXmlStore.reset();
     }
   }, [selectedTargetProcessId]);
 
