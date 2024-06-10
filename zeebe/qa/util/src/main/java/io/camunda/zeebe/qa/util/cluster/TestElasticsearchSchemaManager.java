@@ -27,6 +27,7 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
     final String prefix = operateProperties.getElasticsearch().getIndexPrefix();
     LOGGER.info("Removing indices {}*", prefix);
     retryElasticsearchClient.deleteIndicesFor(prefix + "*");
+    LOGGER.info("Removing templates {}*", prefix);
     retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
 
