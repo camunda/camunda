@@ -2453,7 +2453,7 @@ __metadata:
     sass: "npm:1.77.4"
     styled-components: "npm:6.1.11"
     typescript: "npm:5.2.2"
-    vite: "npm:5.2.0"
+    vite: "npm:5.2.6"
   languageName: unknown
   linkType: soft
 
@@ -4375,9 +4375,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:5.2.0":
-  version: 5.2.0
-  resolution: "vite@npm:5.2.0"
+"vite@npm:5.2.6":
+  version: 5.2.6
+  resolution: "vite@npm:5.2.6"
   dependencies:
     esbuild: "npm:^0.20.1"
     fsevents: "npm:~2.3.3"
@@ -4411,7 +4411,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/c2f68481afca49db1c615d8af480422977584905ed8c0eb89340c73bebba5499c3d1487bd4f883024f562675d8dfbb65db8e97f2605da02802ef6d76c490244e
+  checksum: 10c0/9ccaa65521b738ed5d6ad9cd118584a833191d29649eaa77ccb8096a60ded2ca9014193b8b866ad76054d0c89443f7b68b578686e4e2ef83147273e7788408c2
   languageName: node
   linkType: hard
 
