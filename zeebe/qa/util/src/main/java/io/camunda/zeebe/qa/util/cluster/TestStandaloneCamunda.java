@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.SchemaManager;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -28,6 +29,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 import org.testcontainers.containers.BindMode;
@@ -39,6 +42,7 @@ import org.testcontainers.utility.DockerImageName;
 public final class TestStandaloneCamunda extends TestSpringApplication<TestStandaloneCamunda>
     implements TestGateway<TestStandaloneCamunda> {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
@@ -99,6 +103,15 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
 
     return super.start();
+  }
+
+  @Override
+  public TestStandaloneCamunda stop() {
+    // clean up ES/OS indices
+    LOGGER.info("Stopping standalone camunda test...");
+    ((TestElasticsearchSchemaManager) bean(SchemaManager.class)).deleteSchema();
+
+    return super.stop();
   }
 
   @Override
