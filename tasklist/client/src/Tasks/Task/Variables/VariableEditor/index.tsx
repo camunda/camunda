@@ -97,7 +97,7 @@ const VariableEditor: React.FC<Props> = ({
       </StructuredListHead>
       <StructuredListBody>
         {readOnly ? (
-          nonDraftVariables.map((variable) => (
+          variables.map((variable) => (
             <StructuredListRow key={variable.name}>
               <StructuredListCell
                 className={cn(styles.listCell, styles.cellName)}
@@ -109,9 +109,13 @@ const VariableEditor: React.FC<Props> = ({
               >
                 <div className={styles.scrollableOuter}>
                   <div className={styles.scrollableInner}>
-                    {variable.isValueTruncated
-                      ? `${variable.previewValue}...`
-                      : variable.value}
+                    {variable.draft
+                      ? variable.draft.isValueTruncated
+                        ? `${variable.draft.previewValue}...`
+                        : variable.draft.value
+                      : variable.isValueTruncated
+                        ? `${variable.previewValue}...`
+                        : variable.value}
                   </div>
                 </div>
               </StructuredListCell>
