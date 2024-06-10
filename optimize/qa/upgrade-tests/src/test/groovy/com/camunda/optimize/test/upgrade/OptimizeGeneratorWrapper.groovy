@@ -26,9 +26,11 @@ class OptimizeGeneratorWrapper {
     def command = ["/bin/bash", "-c", "java -cp \"./lib/\" -jar ${generatorArtifactId}-${generatorVersion}.jar"]
     def generatorProcess = command.execute(null, new File(generatorDirectory))
     generatorProcess.consumeProcessOutput(System.out, System.err)
+    log.info("Waiting for Optimize generator process...")
     generatorProcess.waitFor()
+    log.info("Done waiting for generator process.")
     if (generatorProcess.exitValue() == 0) {
-      log.info("Successfully ran Optimize Data Generator ${generatorVersion}");
+      log.info("Successfully ran Optimize Data Generator ${generatorVersion}")
     } else {
       log.error("Error output: ${generatorProcess.text}");
       throw new Exception("Failed running Optimize Data Generator ${generatorVersion}!")

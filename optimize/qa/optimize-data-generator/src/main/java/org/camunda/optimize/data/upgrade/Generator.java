@@ -10,6 +10,7 @@ import static org.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIM
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -103,8 +104,7 @@ public class Generator {
     eventProcessClient = new EventProcessClient(() -> requestExecutor);
   }
 
-  @SneakyThrows
-  public static void main(String[] args) {
+  public static void main(String[] args) throws InterruptedException, IOException {
     final Generator generator = new Generator();
     try {
       generator.ingestExternalEvents();
@@ -128,9 +128,18 @@ public class Generator {
     }
   }
 
-  @SneakyThrows
   private void shutdown() {
-    elasticsearchClient.close();
+    try {
+      log.info("Closing highlevel client.");
+      elasticsearchClient.close();
+      log.info("Closing lowlevel client.");
+      elasticsearchClient.getLowLevelClient().close();
+      log.info("Shutting down generator.");
+      System.exit(0);
+    } catch (Exception e) {
+      log.info("Exception while closing ES client", e);
+      System.exit(-1);
+    }
   }
 
   private ProcessDefinitionEngineDto getDefaultEngineProcessDefinition() {
@@ -144,19 +153,25 @@ public class Generator {
   private void generateCollectionWithAllReportsSomeDashboardsAndOneAlert(
       final ProcessDefinitionEngineDto processDefinition,
       final DecisionDefinitionEngineDto decisionDefinition) {
+    log.info(
+        "Generating new collection with reports, dashboards and one alert for processDefinition {} and decisionDefinition {}.",
+        processDefinition.getKey(),
+        decisionDefinition.getKey());
     final String collectionId = collectionClient.createNewCollection();
     addScopeToCollection(collectionId, processDefinition.getKey(), DefinitionType.PROCESS);
     addScopeToCollection(collectionId, decisionDefinition.getKey(), DefinitionType.DECISION);
 
     final List<String> engineReportIds =
         generateReportsInCollection(processDefinition, decisionDefinition, collectionId);
-    generateDashboards(engineReportIds.subList(0, 10), collectionId);
+    generateDashboard(engineReportIds.subList(0, 10), collectionId);
     // empty dashboard
     dashboardClient.createDashboard(collectionId, Collections.emptyList());
     generateAlert(processDefinition.getKey(), collectionId);
+    log.info("Collection with ID {} generated.", collectionId);
   }
 
   private void generateCollectionWithSomeReportsOnProcess(final String definitionKey) {
+    log.info("Generating collection with reports on process {}.", definitionKey);
     final String collectionId = collectionClient.createNewCollection();
     addScopeToCollection(collectionId, definitionKey, DefinitionType.PROCESS);
 
@@ -165,32 +180,38 @@ public class Generator {
     final String collectionReport2 =
         createSingleNumberReportInCollection(collectionId, definitionKey);
 
-    generateDashboards(ImmutableList.of(collectionReport1, collectionReport2), collectionId);
+    generateDashboard(ImmutableList.of(collectionReport1, collectionReport2), collectionId);
+    log.info("Collection with ID {} generated.", collectionId);
   }
 
   private void generateAlert(final String definitionKey, final String collectionId) {
+    log.info("Generate alert on definition {} in collection {}.", definitionKey, collectionId);
     final String collectionNumberReportId =
         createSingleNumberReportInCollection(collectionId, definitionKey);
     AlertCreationRequestDto alertCreation = prepareAlertCreation(collectionNumberReportId);
     alertClient.createAlert(alertCreation);
+    log.info("Done generating alert.");
   }
 
   private void addScopeToCollection(
-      final String collectionId,
-      final String processDefinitionKey,
-      final DefinitionType definitionType) {
+      final String collectionId, final String definitionKey, final DefinitionType definitionType) {
+    log.info("Adding scope for definition {} to collection {}.", definitionKey, collectionId);
     final List<String> tenants = new ArrayList<>();
     tenants.add(null);
     collectionClient.addScopeEntryToCollection(
-        collectionId, new CollectionScopeEntryDto(definitionType, processDefinitionKey, tenants));
+        collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, tenants));
+    log.info("Done adding scope to collection {}.", collectionId);
   }
 
-  private void generateDashboards(final List<String> reportIds, final String collectionId) {
+  private void generateDashboard(final List<String> reportIds, final String collectionId) {
+    log.info("Generating dashboard in collection {}.", collectionId);
     dashboardClient.createDashboard(prepareDashboard(reportIds, collectionId));
+    log.info("Done generating dashboard in collection {}.", collectionId);
   }
 
   private String createSingleNumberReportInCollection(
       final String collectionId, final String definitionKey) {
+    log.info("Creating report in collection {}.", collectionId);
     final ProcessReportDataDto reportData =
         TemplatedProcessReportDataBuilder.createReportData()
             .setProcessDefinitionKey(definitionKey)
@@ -208,6 +229,7 @@ public class Generator {
       final ProcessDefinitionEngineDto processDefinition,
       final DecisionDefinitionEngineDto decisionDefinition,
       final String collectionId) {
+    log.info("Generating reports in collection {}.", collectionId);
     final List<String> reportIds = new ArrayList<>();
 
     final ProcessReportDataDto combinableProcessBarReport =
@@ -246,7 +268,7 @@ public class Generator {
             .collect(Collectors.toList());
 
     reportIds.addAll(generatedReports);
-
+    log.info("Done generating reports in collection {}.", collectionId);
     return reportIds;
   }
 

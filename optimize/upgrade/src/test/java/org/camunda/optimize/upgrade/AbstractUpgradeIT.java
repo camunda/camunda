@@ -191,7 +191,7 @@ public abstract class AbstractUpgradeIT {
     final Settings indexSettings = createIndexSettings(indexMapping);
 
     final CreateIndexRequest request = new CreateIndexRequest(indexName);
-    request.alias(new Alias(aliasName));
+    request.alias(new Alias(aliasName).writeIndex(true));
     request.settings(indexSettings);
     request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");

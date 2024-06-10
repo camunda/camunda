@@ -32,7 +32,7 @@ on:
 jobs:
   upgrade-data-performance:
     runs-on: gcp-core-32-longrunning-big-ssd
-    timeout-minutes: ${{ inputs.upgrade_timeout || 360 }}
+    timeout-minutes: ${{ fromJson(inputs.upgrade_timeout || 360) }}
 
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -126,6 +126,7 @@ jobs:
           threads: 5
 
       - name: Pull Indices
+        if: always()
         run: |
           curl localhost:9250/_cat/indices?v
           curl localhost:9200/_cat/indices?v

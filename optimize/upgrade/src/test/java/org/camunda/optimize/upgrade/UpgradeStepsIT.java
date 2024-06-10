@@ -531,7 +531,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       throws IOException {
     final CreateIndexRequest request =
         new CreateIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1));
-    request.alias(new Alias(aliasForIndex));
+    request.alias(new Alias(aliasForIndex).writeIndex(false));
     request.mapping(TEST_INDEX_V1.getSource());
     prefixAwareClient
         .getHighLevelClient()
