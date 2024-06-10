@@ -35,22 +35,6 @@ class ProcessesPage {
     });
   }
 
-  async clickContinueButton() {
-    await this.continueButton.click();
-  }
-
-  async clickCancelButton() {
-    await this.cancelButton.click();
-  }
-
-  async clickStartProcessButton() {
-    await this.startProcessButton.click();
-  }
-
-  public async clickDocsLink() {
-    await this.docsLink.click();
-  }
-
   public async searchForProcess(process: string) {
     await this.searchProcessesInput.click();
     await this.searchProcessesInput.fill(process);

@@ -17,11 +17,11 @@ import {processStatisticsStore} from './processStatistics/processStatistics.migr
 const STEPS = {
   elementMapping: {
     stepNumber: 1,
-    stepDescription: 'Mapping elements',
+    stepDescription: 'mapping elements',
   },
   summary: {
     stepNumber: 2,
-    stepDescription: 'Confirm',
+    stepDescription: 'confirm',
   },
 };
 

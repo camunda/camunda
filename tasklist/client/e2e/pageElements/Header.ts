@@ -8,7 +8,7 @@
 
 import {Page, Locator} from '@playwright/test';
 
-class MainPage {
+class Header {
   readonly openSettingsButton: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
@@ -19,22 +19,10 @@ class MainPage {
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
   }
 
-  async clickOpenSettingsButton() {
-    await this.openSettingsButton.click();
-  }
-
-  async clickLogoutButton() {
-    await this.logoutButton.click();
-  }
-
   async logout() {
     await this.openSettingsButton.click();
-    await this.clickLogoutButton();
-  }
-
-  async clickProcessesTab() {
-    await this.processesTab.click();
+    await this.logoutButton.click();
   }
 }
 
-export {MainPage};
+export {Header};
