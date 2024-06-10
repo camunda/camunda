@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
-import io.camunda.zeebe.dynamic.config.state.ExporterState;
-import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -128,15 +126,6 @@ final class PartitionConfigurationManager {
       final String initializeFrom,
       final ExporterDescriptor descriptor,
       final ActorFuture<Void> exporterEnabled) {
-    // Do not re-enable the exporter if the operation is retried
-    final ExporterState exporterState =
-        context.getDynamicPartitionConfig().exporting().exporters().get(exporterId);
-    if (exporterState != null && exporterState.state() == State.ENABLED) {
-      logger.trace("Exporter {} is already enabled", exporterId);
-      exporterEnabled.complete(null);
-      return;
-    }
-
     final var updatedConfig =
         context
             .getDynamicPartitionConfig()
