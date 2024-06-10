@@ -5,16 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.zeebe.gateway.rest.dto.search;
 
-import {Diagrams} from './Diagrams';
-import {Section} from './styled';
+import java.util.List;
 
-const TopPanel: React.FC = () => {
-  return (
-    <Section>
-      <Diagrams />
-    </Section>
-  );
-};
+public class SearchResponseDto<T> {
+  private List<T> items;
+  private PageResponseDto page;
 
-export {TopPanel};
+  public List<T> getItems() {
+    return items;
+  }
+
+  public void setItems(final List<T> items) {
+    this.items = items;
+  }
+}

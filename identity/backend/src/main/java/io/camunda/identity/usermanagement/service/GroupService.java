@@ -13,8 +13,10 @@ import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class GroupService {
   private final CamundaUserDetailsManager camundaUserDetailsManager;
 
@@ -34,7 +36,16 @@ public class GroupService {
   }
 
   public CamundaGroup findGroupByName(final String groupName) {
-    final var group = groupRepository.findByName(groupName);
+    final var group =
+        groupRepository
+            .findByName(groupName)
+            .orElseThrow(() -> new RuntimeException("group.notFound"));
+    return new CamundaGroup(group.getId(), group.getName());
+  }
+
+  public CamundaGroup findGroupById(final Long groupId) {
+    final var group =
+        groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("group.notFound"));
     return new CamundaGroup(group.getId(), group.getName());
   }
 
@@ -47,8 +58,21 @@ public class GroupService {
     camundaUserDetailsManager.deleteGroup(group.name());
   }
 
-  public CamundaGroup updateGroup(final String name, final CamundaGroup group) {
+  public void deleteGroupById(final Long groupId) {
+    if (!groupRepository.existsById(groupId)) {
+      throw new RuntimeException("group.notFound");
+    }
+    groupRepository.deleteById(groupId);
+  }
+
+  public CamundaGroup renameGroup(final String name, final CamundaGroup group) {
     camundaUserDetailsManager.renameGroup(name, group.name());
     return findGroupByName(group.name());
+  }
+
+  public CamundaGroup renameGroupById(final Long groupId, final CamundaGroup updatedGroup) {
+    final CamundaGroup group = findGroupById(groupId);
+    camundaUserDetailsManager.renameGroup(group.name(), updatedGroup.name());
+    return new CamundaGroup(groupId, updatedGroup.name());
   }
 }

@@ -100,7 +100,7 @@ describe('MigrationView', () => {
       });
 
       expect(
-        screen.getByText('Migration Step 1 - Mapping elements'),
+        screen.getByText(/migration step 1 - mapping elements/i),
       ).toBeInTheDocument();
 
       await user.click(
@@ -164,7 +164,7 @@ describe('MigrationView', () => {
       });
 
       expect(
-        screen.getByText('Migration Step 1 - Mapping elements'),
+        screen.getByText(/migration step 1 - mapping elements/i),
       ).toBeInTheDocument();
 
       await user.click(

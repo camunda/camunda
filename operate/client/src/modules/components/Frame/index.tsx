@@ -10,7 +10,7 @@ import {FrameContainer, FrameHeader} from './styled';
 
 type FrameProps = {
   headerTitle: string;
-  isVisible: boolean;
+  isVisible?: boolean;
 };
 
 const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({
@@ -21,7 +21,7 @@ const Frame: React.FC<{frame?: FrameProps; children: React.ReactNode}> = ({
     return <>{children}</>;
   }
 
-  const {isVisible, headerTitle} = frame;
+  const {isVisible = true, headerTitle} = frame;
 
   return (
     <FrameContainer $hasBorder={isVisible} data-testid="frame-container">

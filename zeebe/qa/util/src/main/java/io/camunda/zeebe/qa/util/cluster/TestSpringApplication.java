@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -27,7 +28,7 @@ import org.springframework.http.client.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
-  private final Class<?> springApplication;
+  private final List<Class<?>> springApplications;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
@@ -35,16 +36,16 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private ConfigurableApplicationContext springContext;
 
-  public TestSpringApplication(final Class<?> springApplication) {
-    this(springApplication, new HashMap<>(), new HashMap<>(), new ArrayList<>());
+  public TestSpringApplication(final List<Class<?>> springApplications) {
+    this(springApplications, new HashMap<>(), new HashMap<>(), new ArrayList<>());
   }
 
   private TestSpringApplication(
-      final Class<?> springApplication,
+      final List<Class<?>> springApplications,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides,
       final Collection<String> additionalProfiles) {
-    this.springApplication = springApplication;
+    this.springApplications = springApplications;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
@@ -167,7 +168,7 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
             new ContextOverrideInitializer(beans, propertyOverrides),
             new HealthConfigurationInitializer())
         .profiles(additionalProfiles.toArray(String[]::new))
-        .sources(springApplication);
+        .sources(springApplications.toArray(Class[]::new));
   }
 
   @Override

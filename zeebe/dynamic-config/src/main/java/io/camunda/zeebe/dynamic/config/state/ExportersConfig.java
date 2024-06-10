@@ -42,15 +42,14 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             Optional.empty()));
   }
 
-  public ExportersConfig enableExporter(final String exporterName, final String initializeFrom) {
-    final var newMetadataVersion =
-        exporters.containsKey(exporterName) ? exporters.get(exporterName).metadataVersion() + 1 : 1;
-    return updateExporter(
-        exporterName,
-        new ExporterState(newMetadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
+  public ExportersConfig enableExporter(final String exporterName, final long metadataVersion) {
+    return enableExporter(exporterName, null, metadataVersion);
   }
 
-  public ExportersConfig enableExporter(final String exporterName) {
-    return enableExporter(exporterName, null);
+  public ExportersConfig enableExporter(
+      final String exporterName, final String initializeFrom, final long metadataVersion) {
+    return updateExporter(
+        exporterName,
+        new ExporterState(metadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
   }
 }

@@ -5,16 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.zeebe.gateway.rest.controller.usermanagement.dto;
 
-import {Diagrams} from './Diagrams';
-import {Section} from './styled';
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-const TopPanel: React.FC = () => {
-  return (
-    <Section>
-      <Diagrams />
-    </Section>
-  );
-};
-
-export {TopPanel};
+public record AssignUserToGroupRequest(
+    @NotBlank(message = "userId.invalid") @Size(max = 255, message = "userId.invalid") Long userId,
+    String organizationId) {}
