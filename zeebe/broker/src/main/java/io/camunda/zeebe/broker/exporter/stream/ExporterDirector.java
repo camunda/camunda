@@ -282,7 +282,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     container.initMetadata();
     container.openExporter();
     containers.add(container);
-    LOG.info("Exporter '{}' is enabled.", exporterId);
+    LOG.debug("Exporter '{}' is enabled.", exporterId);
   }
 
   public ActorFuture<ExporterPhase> getPhase() {

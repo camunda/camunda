@@ -402,7 +402,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
                         .formatted(partitionId)));
             return;
           }
-          LOGGER.info("Disabling exporter {} on partition {}", exporterId, partitionId);
+          LOGGER.trace("Disabling exporter {} on partition {}", exporterId, partitionId);
           concurrencyControl.runOnCompletion(
               partition.zeebePartition().disableExporter(exporterId),
               (ok, error) -> {
@@ -441,7 +441,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
                         .formatted(partitionId)));
             return;
           }
-          LOGGER.info(
+          LOGGER.trace(
               "Enabling exporter {} on partition {} with metadata version {} and initializing from {}",
               exporterId,
               partitionId,
