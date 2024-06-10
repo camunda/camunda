@@ -9,6 +9,9 @@ package io.camunda.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -18,8 +21,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 @ZeebeIntegration
 public class StandaloneCamundaTest {
@@ -59,6 +65,7 @@ public class StandaloneCamundaTest {
     final HttpClient httpClient = HttpClient.newHttpClient();
 
     Awaitility.await("should receive data from ES")
+        .timeout(Duration.ofMinutes(1))
         .untilAsserted(
             () -> {
               final HttpRequest request =
@@ -68,7 +75,7 @@ public class StandaloneCamundaTest {
                       .POST(
                           HttpRequest.BodyPublishers.ofString(
                               String.format(
-                                  "{\"filter\":{\"key\":%d}, \"sort\":{\"field\":\"endDate\",\"order\":\"ASC\"},\"page\":{\"form\":0,\"size\":20}}",
+                                  "{\"filter\":{\"key\":%d},\"sort\":[{\"field\":\"endDate\",\"order\":\"ASC\"}],\"size\":20}",
                                   processInstanceEvent.getProcessInstanceKey())))
                       .build();
               final HttpResponse<String> response =
@@ -82,6 +89,22 @@ public class StandaloneCamundaTest {
                               + " with code: "
                               + response.statusCode())
                   .isEqualTo(200);
+
+              final ObjectMapper objectMapper = new ObjectMapper();
+              final ProcessInstanceResult processInstanceResult =
+                  objectMapper.readValue(response.body(), ProcessInstanceResult.class);
+              assertThat(processInstanceResult.total)
+                  .withFailMessage("Expect to read a process instance from ES")
+                  .isGreaterThan(0);
+
+              assertThat(processInstanceResult.processInstances.getFirst().getKey())
+                  .withFailMessage("Expect to read the expected process instance from ES")
+                  .isEqualTo(processInstanceEvent.getProcessInstanceKey());
             });
   }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record ProcessInstanceResult(
+      @JsonProperty("items") List<ProcessInstance> processInstances,
+      @JsonProperty("total") long total) {}
 }
