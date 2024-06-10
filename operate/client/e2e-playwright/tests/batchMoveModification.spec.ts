@@ -43,6 +43,7 @@ test.beforeAll(async ({request}) => {
 test.describe('Process Instance Batch Modification', () => {
   test('Move Operation @roundtrip', async ({
     processesPage,
+    processesPage: {filtersPanel},
     commonPage,
     page,
   }) => {
@@ -127,12 +128,12 @@ test.describe('Process Instance Batch Modification', () => {
 
     await commonPage.collapseOperationsPanel();
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion(initialData.version.toString());
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion(initialData.version.toString());
 
     // Filter by all process instances which have been created in setup
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(processInstanceKeys);
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.processInstanceKeysFilter.fill(processInstanceKeys);
 
     // Expect the correct number of instances related to the move modification
     await expect(

@@ -46,6 +46,7 @@ test.beforeEach(async ({processesPage}) => {
 test.describe('Process Instance Migration @roundtrip', () => {
   test('Migrate Process Instances', async ({
     processesPage,
+    processesPage: {filtersPanel},
     migrationView,
     commonPage,
   }) => {
@@ -53,8 +54,8 @@ test.describe('Process Instance Migration @roundtrip', () => {
     const {bpmnProcessId, version} = initialData;
     const targetVersion = '2';
 
-    await processesPage.selectProcess(bpmnProcessId);
-    await processesPage.selectVersion(version.toString());
+    await filtersPanel.selectProcess(bpmnProcessId);
+    await filtersPanel.selectVersion(version.toString());
 
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
@@ -101,8 +102,8 @@ test.describe('Process Instance Migration @roundtrip', () => {
       migrateOperationEntry.getByRole('progressbar'),
     ).not.toBeVisible({timeout: 60000});
 
-    await expect(processesPage.processNameFilter).toHaveValue(bpmnProcessId);
-    expect(await processesPage.processVersionFilter.innerText()).toBe(
+    await expect(filtersPanel.processNameFilter).toHaveValue(bpmnProcessId);
+    expect(await filtersPanel.processVersionFilter.innerText()).toBe(
       targetVersion.toString(),
     );
 
@@ -128,11 +129,11 @@ test.describe('Process Instance Migration @roundtrip', () => {
       }),
     ).not.toBeVisible();
 
-    await processesPage.removeOptionalFilter('Operation Id');
+    await filtersPanel.removeOptionalFilter('Operation Id');
 
     // expect 4 process instances for source version
-    await processesPage.selectProcess(bpmnProcessId);
-    await processesPage.selectVersion(version.toString());
+    await filtersPanel.selectProcess(bpmnProcessId);
+    await filtersPanel.selectVersion(version.toString());
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/4 results/i);
