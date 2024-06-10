@@ -2,7 +2,6 @@ name: Operate merge queue CI
 
 on:
   merge_group: { }
-  pull_request: { }
   workflow_dispatch: { }
 
 

@@ -1,0 +1,25 @@
+name: Operate merge queue CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'dist/**'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
+
+jobs:
+  operate-ci-test-summary:
+    # Dummy job used for pull requests that do not require operate-ci
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Operate CI test summary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0

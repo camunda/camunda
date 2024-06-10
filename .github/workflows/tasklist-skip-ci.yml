@@ -1,0 +1,26 @@
+name: Tasklist merge queue CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/tasklist-*'
+      - 'bom/*'
+      - 'build-tools/**'
+      - 'dist/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'tasklist.Dockerfile'
+      - 'tasklist/**'
+
+
+jobs:
+  tasklist-ci-test-summary:
+    # Dummy job used for pull requests that do not require tasklist-ci
+    # This name is hard-coded in the branch rules; remember to update that if this name changes
+    name: Tasklist CI test summary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: exit 0
