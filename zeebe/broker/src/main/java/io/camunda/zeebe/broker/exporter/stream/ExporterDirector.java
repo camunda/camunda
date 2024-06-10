@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -82,8 +83,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
+  private ScheduledTimer exporterDistributionTimer;
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
+  // When idle, exporter director is not exporting any records because no exporters are configured.
+  // The actor is still running, but it is not actively doing any work.
+  private boolean idle;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -224,8 +229,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     LOG.debug("Exporter '{}' is removed.", exporterId);
 
     if (containers.isEmpty()) {
-      LOG.info("No exporters are configured. Closing the exporter director '{}'.", name);
-      actor.close();
+      becomeIdle();
     }
   }
 
@@ -283,6 +287,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     container.openExporter();
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
+
+    if (idle) {
+      becomeLive();
+    }
   }
 
   public ActorFuture<ExporterPhase> getPhase() {
@@ -460,10 +468,34 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.close();
   }
 
-  private void startActiveExportingMode() {
-    logStream.registerRecordAvailableListener(this);
+  private void becomeIdle() {
+    idle = true;
+    LOG.debug("No exporters are configured. Going idle.");
+    logStream.removeRecordAvailableListener(this);
+    exporterDistributionService.close();
+    if (exporterDistributionTimer != null) {
+      // closing the service do not stop the repeated timer task scheduled in this actor
+      exporterDistributionTimer.cancel();
+      exporterDistributionTimer = null;
+    }
+    if (logStreamReader != null) {
+      // We have to close it, otherwise it will prevent journal segment deletion
+      logStreamReader.close();
+      logStreamReader = null;
+    }
+  }
 
-    // start reading
+  private void becomeLive() {
+    LOG.debug("New exporters are configured. Restart exporting.");
+    if (exporterMode == ExporterMode.ACTIVE) {
+      restartActiveExportingMode();
+    } else {
+      restartPassiveExportingMode();
+    }
+    idle = false;
+  }
+
+  private void startActiveExportingMode() {
     for (final ExporterContainer container : containers) {
       container.initMetadata();
       container.openExporter();
@@ -471,20 +503,43 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     if (state.hasExporters()) {
       final long snapshotPosition = state.getLowestPosition();
-      final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-      if (failedToRecoverReader) {
-        throw new IllegalStateException(
-            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-      }
-      if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
-        actor.submit(this::readNextEvent);
-      }
-
-      actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
-
+      // start reading and exporting
+      startActiveExportingFrom(snapshotPosition);
     } else {
-      actor.close();
+      becomeIdle();
     }
+  }
+
+  private void restartActiveExportingMode() {
+    logStream
+        .newLogStreamReader()
+        .onComplete(
+            (reader, error) -> {
+              if (error == null) {
+                logStreamReader = reader;
+                startActiveExportingFrom(-1);
+              } else {
+                LOG.error(
+                    "Unexpected error when retrieving logstream reader. Failed to resume exporting.",
+                    error);
+                actor.fail(error);
+              }
+            });
+  }
+
+  private void startActiveExportingFrom(final long snapshotPosition) {
+    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
+    if (failedToRecoverReader) {
+      throw new IllegalStateException(
+          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, -1, getName()));
+    }
+    logStream.registerRecordAvailableListener(this);
+    if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
+      actor.submit(this::readNextEvent);
+    }
+
+    exporterDistributionTimer =
+        actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
   }
 
   private void startPassiveExportingMode() {
@@ -496,8 +551,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     if (state.hasExporters()) {
       exporterDistributionService.subscribeForExporterState(actor::run);
     } else {
-      actor.close();
+      becomeIdle();
     }
+  }
+
+  private void restartPassiveExportingMode() {
+    exporterDistributionService.subscribeForExporterState(actor::run);
   }
 
   private void distributeExporterState() {
@@ -539,6 +598,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private boolean shouldExport() {
     return isOpened.get()
+        && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
         && !exporterPhase.equals(ExporterPhase.PAUSED);
