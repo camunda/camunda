@@ -14,9 +14,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the Identity modules by using the the {@link
- * io.camunda.application.Profile#IDENTITY} profile, so that the appropriate Identity application
- * properties are applied.
+ * Configuration to include the Identity based services and repositories in the Camunda application.
  */
 @ComponentScan(
     basePackages = {"io.camunda.identity"},
@@ -27,5 +25,5 @@ import org.springframework.context.annotation.Profile;
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
 @EnableAutoConfiguration
-@Profile("identity")
+@Profile("!sso-auth & !ldap-auth & !identity-auth & !auth")
 public class IdentityModuleConfiguration {}
