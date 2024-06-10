@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.shared;
 
 import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -48,6 +49,12 @@ public final class BrokerConfiguration {
 
   public WorkingDirectory workingDirectory() {
     return workingDirectory;
+  }
+
+  @Bean
+  public BrokerClientTimeoutConfiguration brokerClientConfig() {
+    return new BrokerClientTimeoutConfiguration(
+        properties.getGateway().getCluster().getRequestTimeout());
   }
 
   @Bean
