@@ -125,7 +125,7 @@ public final record ProcessInstanceFilter(
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
-          processInstanceKeys,
+          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           running,
           active,
           incidents,
