@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.configuration.GatewayBasedConfiguration;
+import io.camunda.application.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.commons.actor.ActorClockConfiguration;
 import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.commons.actor.ActorSchedulerConfiguration;
@@ -17,7 +19,6 @@ import io.camunda.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.commons.clustering.DynamicClusterServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
@@ -121,10 +122,10 @@ final class StandaloneGatewaySecurityTest {
             "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
   }
 
-  private GatewayProperties createGatewayCfg() {
+  private GatewayBasedProperties createGatewayCfg() {
     final var gatewayAddress = SocketUtil.getNextAddress();
     final var clusterAddress = SocketUtil.getNextAddress();
-    final var config = new GatewayProperties();
+    final var config = new GatewayBasedProperties();
     config.setNetwork(
         new NetworkCfg().setHost(gatewayAddress.getHostName()).setPort(gatewayAddress.getPort()));
     config.setCluster(
@@ -139,12 +140,12 @@ final class StandaloneGatewaySecurityTest {
     return config;
   }
 
-  private GatewayModuleConfiguration buildGateway(final GatewayProperties gatewayCfg) {
-    final var gatewayConfig = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
+  private GatewayModuleConfiguration buildGateway(final GatewayBasedProperties gatewayCfg) {
+    final var gatewayConfig = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var schedulerConfig = gatewayConfig.schedulerConfiguration();
     final var brokerClientConfig = gatewayConfig.brokerClientConfig();
 
-    final var clusterConfig = new GatewayClusterConfiguration().clusterConfig(gatewayConfig);
+    final var clusterConfig = gatewayConfig.clusterConfig();
     final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.configuration.GatewayBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -25,6 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -35,20 +37,23 @@ import org.springframework.context.annotation.Profile;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = {
-      "io.camunda.commons",
       "io.camunda.zeebe.gateway",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.util.liveness"
+    },
+    excludeFilters = {
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.zeebe\\.gateway\\.rest\\..*")
     })
-@ConfigurationPropertiesScan(
-    basePackages = {"io.camunda.commons", "io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
 @EnableAutoConfiguration
 @Profile("gateway")
 public class GatewayModuleConfiguration implements CloseableSilently {
 
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
-  private final GatewayConfiguration configuration;
+  private final GatewayBasedConfiguration configuration;
   private final IdentityConfiguration identityConfiguration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
@@ -60,7 +65,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
 
   @Autowired
   public GatewayModuleConfiguration(
-      final GatewayConfiguration configuration,
+      final GatewayBasedConfiguration configuration,
       final IdentityConfiguration identityConfiguration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,

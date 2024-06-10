@@ -9,6 +9,7 @@ package io.camunda.application;
 
 import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
 
+import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
@@ -16,6 +17,7 @@ import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.authentication.AuthenticationModuleConfiguration;
 import io.camunda.identity.IdentityModuleConfiguration;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -43,6 +45,8 @@ public class StandaloneCamunda {
             .sources(
                 AuthenticationModuleConfiguration.class,
                 IdentityModuleConfiguration.class,
+                ApplicationModuleConfiguration.class,
+                CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
                 WebappsModuleConfiguration.class,

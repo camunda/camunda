@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway;
+package io.camunda.application.configuration;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
@@ -14,23 +14,83 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
+import io.camunda.application.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
-public final class GatewayClusterConfiguration {
+@EnableConfigurationProperties(GatewayBasedProperties.class)
+@Profile("!broker")
+public final class GatewayBasedConfiguration {
+
+  private final GatewayBasedProperties properties;
+  private final LifecycleProperties lifecycleProperties;
+
+  @Autowired
+  public GatewayBasedConfiguration(
+      final GatewayBasedProperties properties, final LifecycleProperties lifecycleProperties) {
+    this.properties = properties;
+    this.lifecycleProperties = lifecycleProperties;
+    properties.init();
+  }
+
+  public GatewayBasedProperties config() {
+    return properties;
+  }
+
+  public Duration shutdownTimeout() {
+    return lifecycleProperties.getTimeoutPerShutdownPhase();
+  }
+
   @Bean
-  public ClusterConfig clusterConfig(final GatewayConfiguration gatewayConfig) {
-    final var config = gatewayConfig.config();
-    final var cluster = config.getCluster();
+  public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
+    return new ActivateJobHandlerConfiguration(
+        "ActivateJobsHandlerRest-Gateway",
+        properties.getLongPolling(),
+        properties.getNetwork().getMaxMessageSize());
+  }
+
+  @Bean
+  public BrokerClientTimeoutConfiguration brokerClientConfig() {
+    return new BrokerClientTimeoutConfiguration(properties.getCluster().getRequestTimeout());
+  }
+
+  @Bean
+  public MultiTenancyCfg multiTenancyCfg() {
+    return properties.getMultiTenancy();
+  }
+
+  @Bean
+  public SchedulerConfiguration schedulerConfiguration() {
+    final var cpuThreads = properties.getThreads().getManagementThreads();
+    // We set ioThreads to zero as the Gateway isn't using any IO threads.
+    final var ioThreads = 0;
+    final var metricsEnabled = false;
+    final var nodeId = properties.getCluster().getMemberId();
+    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Gateway", nodeId);
+  }
+
+  @Bean
+  public ClusterConfig clusterConfig() {
+    final var cluster = properties.getCluster();
     final var name = cluster.getClusterName();
-    final var messaging = messagingConfig(config);
+    final var messaging = messagingConfig(properties);
     final var discovery = discoveryConfig(cluster.getInitialContactPoints());
     final var membership = membershipConfig(cluster.getMembership());
     final var member = memberConfig(cluster);
@@ -91,4 +151,7 @@ public final class GatewayClusterConfiguration {
     }
     return messaging;
   }
+
+  @ConfigurationProperties("zeebe.gateway")
+  public static final class GatewayBasedProperties extends GatewayCfg {}
 }

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.shared;
+package io.camunda.application.configuration;
 
 import io.camunda.application.Profile;
 import io.camunda.zeebe.broker.Loggers;
@@ -19,6 +19,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 
 @Configuration(proxyBeanMethods = false)
+@org.springframework.context.annotation.Profile(value = {"broker", "restore"})
 public record WorkingDirectoryConfiguration(Environment environment) {
 
   @Bean

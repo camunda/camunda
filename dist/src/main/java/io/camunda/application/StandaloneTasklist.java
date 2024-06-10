@@ -7,9 +7,11 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
@@ -32,7 +34,11 @@ public class StandaloneTasklist {
 
     final var standaloneTasklistApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(TasklistModuleConfiguration.class, WebappsModuleConfiguration.class)
+            .sources(
+                ApplicationModuleConfiguration.class,
+                CommonsModuleConfiguration.class,
+                TasklistModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
             .profiles(Profile.TASKLIST.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())
