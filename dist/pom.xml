@@ -142,12 +142,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-backend</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.data</groupId>
-          <artifactId>spring-data-jpa</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

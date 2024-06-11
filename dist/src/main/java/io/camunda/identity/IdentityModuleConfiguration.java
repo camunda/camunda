@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Profile;
 
 /**
  * Configuration to include the Identity based services and repositories in the Camunda application.
@@ -25,5 +24,4 @@ import org.springframework.context.annotation.Profile;
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
 @EnableAutoConfiguration
-@Profile("!sso-auth & !ldap-auth & !identity-auth & !auth")
 public class IdentityModuleConfiguration {}
