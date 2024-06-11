@@ -22,6 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -35,7 +36,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final BrokerProperties config;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class);
+    super(List.of(BrokerModuleConfiguration.class));
 
     config = new BrokerProperties();
 

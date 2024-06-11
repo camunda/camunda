@@ -7,8 +7,8 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.authentication.user.CamundaUserDetails;
-import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.security.CamundaUserDetails;
+import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.model.Profile;
@@ -29,15 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class UserService {
-  private final CamundaUserDetailsManager userDetailsManager;
+  private final CamundaUserDetailsManager camundaUserDetailsManager;
   private final UserProfileRepository userProfileRepository;
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
-      final CamundaUserDetailsManager userDetailsManager,
+      final CamundaUserDetailsManager camundaUserDetailsManager,
       final UserProfileRepository userProfileRepository,
       final PasswordEncoder passwordEncoder) {
-    this.userDetailsManager = userDetailsManager;
+    this.camundaUserDetailsManager = camundaUserDetailsManager;
     this.userProfileRepository = userProfileRepository;
     this.passwordEncoder = passwordEncoder;
   }
@@ -51,7 +51,7 @@ public class UserService {
               .disabled(!userWithCredential.isEnabled())
               .roles("DEFAULT_USER")
               .build();
-      userDetailsManager.createUser(userDetails);
+      camundaUserDetailsManager.createUser(userDetails);
       final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
       userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
       return userProfileRepository.findByUsername(userWithCredential.getUsername());
@@ -62,7 +62,7 @@ public class UserService {
 
   public void deleteUser(final Long id) {
     final CamundaUser user = findUserById(id);
-    userDetailsManager.deleteUser(user.getUsername());
+    camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
   public CamundaUser findUserById(final Long id) {
@@ -100,7 +100,7 @@ public class UserService {
       }
 
       final CamundaUserDetails existingUserDetail =
-          userDetailsManager.loadUserByUsername(existingUser.getUsername());
+          camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
 
       final UserDetails userDetails =
           User.withUsername(existingUser.getUsername())
@@ -109,7 +109,7 @@ public class UserService {
               .authorities(existingUserDetail.getRoles())
               .disabled(!user.isEnabled())
               .build();
-      userDetailsManager.updateUser(userDetails);
+      camundaUserDetailsManager.updateUser(userDetails);
       userProfileRepository.save(new Profile(existingUser.getId(), user.getEmail()));
       return userProfileRepository.findUserById(id);
     } catch (final UsernameNotFoundException e) {
@@ -120,7 +120,7 @@ public class UserService {
   public void assignRoleToUser(final Long userId, final String roleName) {
     final CamundaUser existingUser = userProfileRepository.findUserById(userId);
     final CamundaUserDetails existingUserDetail =
-        userDetailsManager.loadUserByUsername(existingUser.getUsername());
+        camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
     final var authorities = new HashSet<GrantedAuthority>(existingUserDetail.getRoles());
     authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
 
@@ -131,14 +131,14 @@ public class UserService {
             .authorities(authorities)
             .disabled(!existingUserDetail.isEnabled())
             .build();
-    userDetailsManager.updateUser(userDetails);
+    camundaUserDetailsManager.updateUser(userDetails);
   }
 
   public void unassignRoleFromUser(final Long userId, final String roleName) {
 
     final CamundaUser existingUser = userProfileRepository.findUserById(userId);
     final CamundaUserDetails existingUserDetail =
-        userDetailsManager.loadUserByUsername(existingUser.getUsername());
+        camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
     final var authorities =
         new HashSet<GrantedAuthority>(existingUserDetail.getRoles())
             .stream().filter(a -> !a.getAuthority().equals("ROLE_" + roleName)).toList();
@@ -150,6 +150,6 @@ public class UserService {
             .authorities(authorities)
             .disabled(!existingUserDetail.isEnabled())
             .build();
-    userDetailsManager.updateUser(userDetails);
+    camundaUserDetailsManager.updateUser(userDetails);
   }
 }

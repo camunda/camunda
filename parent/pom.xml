@@ -174,7 +174,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>24.0.5</version.keycloak>
+    <version.keycloak>25.0.0</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -776,6 +776,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-service</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -909,7 +915,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>auth-spring-boot-starter</artifactId>
+        <artifactId>camunda-authentication</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -921,8 +927,20 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>identity-backend</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-backend</artifactId>
+        <version>${project.version}</version>
       </dependency>
 
       <dependency>
@@ -2521,7 +2539,7 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
-                  <dep>io.camunda:auth-spring-boot-starter</dep>
+                  <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
                 </ignoredUnusedDeclaredDependencies>

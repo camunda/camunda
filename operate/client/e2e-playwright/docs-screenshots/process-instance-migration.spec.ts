@@ -135,7 +135,7 @@ test.describe('process instance migration', () => {
 
     await migrationView.selectTargetProcess('Order process');
 
-    await commonPage.addDownArrow(migrationView.targetProcessDropdown);
+    await commonPage.addDownArrow(migrationView.targetProcessComboBox);
     await commonPage.addDownArrow(migrationView.targetVersionDropdown);
 
     await page.screenshot({

@@ -36,11 +36,6 @@ describe('Target Diagram', () => {
     expect(screen.getByText('Version')).toBeInTheDocument();
     expect(
       screen.getByRole('combobox', {
-        name: /target process/i,
-      }),
-    ).toHaveTextContent(/Select target process/i);
-    expect(
-      screen.getByRole('combobox', {
         name: /target version/i,
       }),
     ).toBeDisabled();
@@ -63,14 +58,14 @@ describe('Target Diagram', () => {
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('combobox', {name: /^target$/i}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(
       screen.getByRole('combobox', {
-        name: /target process/i,
+        name: /^target$/i,
       }),
-    ).toHaveTextContent(/New demo process/i);
+    ).toHaveValue('New demo process');
     expect(
       screen.getByRole('combobox', {
         name: /target version/i,
@@ -87,7 +82,7 @@ describe('Target Diagram', () => {
 
     expect(
       screen.queryByRole('combobox', {
-        name: /target process/i,
+        name: /^target$/i,
       }),
     ).not.toBeInTheDocument();
     expect(
@@ -103,9 +98,9 @@ describe('Target Diagram', () => {
 
     expect(
       screen.getByRole('combobox', {
-        name: /target process/i,
+        name: /^target$/i,
       }),
-    ).toHaveTextContent(/New demo process/i);
+    ).toHaveValue('New demo process');
     expect(
       screen.getByRole('combobox', {
         name: /target version/i,
@@ -122,7 +117,7 @@ describe('Target Diagram', () => {
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -150,7 +145,7 @@ describe('Target Diagram', () => {
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(
@@ -168,7 +163,7 @@ describe('Target Diagram', () => {
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
     await user.click(screen.getByRole('button', {name: /map elements/i}));
 

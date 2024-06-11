@@ -71,7 +71,6 @@ test.describe('Process Instance Migration @roundtrip', () => {
     await processesPage.migrateButton.click();
     await processesPage.migrationModal.confirmButton.click();
 
-    await migrationView.selectTargetProcess('orderProcessMigration');
     await migrationView.selectTargetVersion(targetVersion);
 
     await migrationView.mapFlowNode({

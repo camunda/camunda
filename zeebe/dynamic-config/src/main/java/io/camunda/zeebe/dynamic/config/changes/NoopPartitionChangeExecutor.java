@@ -47,12 +47,6 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
 
   @Override
   public ActorFuture<Void> enableExporter(
-      final int partitionId, final String exporterId, final long metadataVersionToUpdate) {
-    return CompletableActorFuture.completed(null);
-  }
-
-  @Override
-  public ActorFuture<Void> enableExporter(
       final int partitionId,
       final String exporterId,
       final long metadataVersionToUpdate,

@@ -214,7 +214,299 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /users:
+    post:
+      tags:
+        - User
+      summary: "Create a user"
+      operationId: "createUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPassword"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+  /users/{id}:
+    delete:
+      tags:
+        - User
+      summary: "Delete a user"
+      operationId: "deleteUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "204":
+          description: "No Content"
+    get:
+      tags:
+        - User
+      summary: "Retrieve details of a user"
+      operationId: "findUserByUsername"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+    put:
+      tags:
+        - User
+      summary: "Update a user"
+      operationId: "updateUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPassword"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+  /users/search:
+    post:
+      tags:
+        - User
+      summary: "Get list of users"
+      operationId: "findAllUsers"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequestDto"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+  /groups:
+    post:
+      tags:
+        - Group
+      summary: "Create a group"
+      operationId: "createGroup"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaGroup"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+  /groups/{id}:
+    delete:
+      tags:
+        - Group
+      summary: "Delete a group"
+      operationId: "deleteGroup"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "204":
+          description: "No Content"
+    get:
+      tags:
+        - Group
+      summary: "Retrieve details of a group"
+      operationId: "findGroupById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+    put:
+      tags:
+        - Group
+      summary: "Update a group"
+      operationId: "updateGroup"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaGroup"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+  /groups/search:
+    post:
+      tags:
+        - Group
+      summary: "Get list of groups"
+      operationId: "findAllGroups"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequestDto"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaGroup"
+  /groups/{id}/users:
+    post:
+      tags:
+        - User
+      summary: "Assign a user to a group"
+      operationId: "assignUserToGroup"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignUserToGroupRequest"
+        required: true
+      responses:
+        "204":
+          description: "No Content"
+  /groups/{id}/users/{userId}:
+    delete:
+      tags:
+        - User
+      summary: "Unassign a user from a group"
+      operationId: "removeUserFromGroup"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "204":
+          description: "No Content"
+  /groups/{id}/users/search:
+    post:
+      tags:
+        - User
+      summary: "Get list of users of a group"
+      operationId: "findAllUsersOfGroup"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequestDto"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
 components:
   responses:
     TopologyResponse:
@@ -527,6 +819,81 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+    CamundaUserWithPassword:
+      type: "object"
+      properties:
+        password:
+          type: "string"
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        email:
+          type: "string"
+        enabled:
+          type: "boolean"
+    CamundaUser:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        email:
+          type: "string"
+        enabled:
+          type: "boolean"
+    FilterDto:
+      type: "object"
+      properties: { }
+    SortDto:
+      type: "object"
+      properties: { }
+    PageDto:
+      type: "object"
+      properties: { }
+    SearchRequestDto:
+      type: "object"
+      properties:
+        filter:
+          type: "object"
+          properties: { }
+        sort:
+          type: "object"
+          properties: { }
+        page:
+          type: "object"
+          properties: { }
+    SearchResponseDto:
+      type: "object"
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CamundaGroup'
+              - $ref: '#/components/schemas/CamundaUser'
+        page:
+          type: "object"
+          properties: { }
+    CamundaGroup:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+    AssignUserToGroupRequest:
+      type: "object"
+      properties:
+        userId:
+          type: "integer"
+          format: "int64"
+        organizationId:
+          type: "string"
   securitySchemes:
     bearerAuth:
       type: http

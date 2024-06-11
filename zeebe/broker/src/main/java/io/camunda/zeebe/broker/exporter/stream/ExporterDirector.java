@@ -249,7 +249,20 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(null);
     }
 
-    return actor.call(() -> addExporter(exporterId, initializationInfo, descriptor));
+    return actor.call(
+        () -> {
+          containers.stream()
+              .map(ExporterContainer::getId)
+              .filter(exporterId::equals)
+              .findFirst()
+              .ifPresentOrElse(
+                  container -> {
+                    LOG.debug(
+                        "Exporter '{}' is already enabled. Skipping the enabling operation.",
+                        exporterId);
+                  },
+                  () -> addExporter(exporterId, initializationInfo, descriptor));
+        });
   }
 
   private void addExporter(
@@ -269,7 +282,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     container.initMetadata();
     container.openExporter();
     containers.add(container);
-    LOG.info("Exporter '{}' is enabled.", exporterId);
+    LOG.debug("Exporter '{}' is enabled.", exporterId);
   }
 
   public ActorFuture<ExporterPhase> getPhase() {

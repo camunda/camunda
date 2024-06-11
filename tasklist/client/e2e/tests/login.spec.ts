@@ -9,8 +9,8 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 
-test.beforeEach(async ({testSetupPage}) => {
-  await testSetupPage.goToLoginPage();
+test.beforeEach(async ({loginPage}) => {
+  await loginPage.goto();
 });
 
 test.describe.parallel('login page', () => {
@@ -56,27 +56,27 @@ test.describe.parallel('login page', () => {
   });
 
   test('block form submission with empty fields', async ({loginPage, page}) => {
-    await loginPage.clickLoginButton();
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
 
-    await loginPage.fillUsername('demo');
-    await loginPage.clickLoginButton();
+    await loginPage.usernameInput.fill('demo');
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
 
-    await loginPage.fillUsername(' ');
-    await loginPage.fillPassword('demo');
-    await loginPage.clickLoginButton();
+    await loginPage.usernameInput.fill(' ');
+    await loginPage.passwordInput.fill('demo');
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
   });
 
-  test('log out redirect', async ({loginPage, mainPage, page}) => {
+  test('log out redirect', async ({loginPage, header, page}) => {
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
     await expect(page).toHaveURL('/tasklist');
 
-    await mainPage.logout();
+    await header.logout();
     await expect(page).toHaveURL('/tasklist/login');
   });
 
@@ -93,7 +93,7 @@ test.describe.parallel('login page', () => {
 
   test('redirect to the correct URL after login', async ({
     loginPage,
-    mainPage,
+    header,
     page,
   }) => {
     await page.goto('/tasklist/123');
@@ -103,7 +103,7 @@ test.describe.parallel('login page', () => {
     });
     await expect(page).toHaveURL('/tasklist/123');
 
-    await mainPage.logout();
+    await header.logout();
 
     await page.goto('/tasklist?filter=unassigned');
     await loginPage.login({
@@ -112,7 +112,7 @@ test.describe.parallel('login page', () => {
     });
     await expect(page).toHaveURL('/tasklist?filter=unassigned');
 
-    await mainPage.logout();
+    await header.logout();
 
     await page.goto('/tasklist/123?filter=unassigned');
     await loginPage.login({
