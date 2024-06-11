@@ -10,9 +10,11 @@ package io.camunda.zeebe.operate.exporter;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
+import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -32,6 +34,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private OperateElasticsearchExporterConfiguration configuration;
   private ElasticsearchClient client;
   private ExportBatchWriter writer;
+  private ElasticsearchScriptBuilder scriptBuilder;
 
   private long lastPosition = -1;
   private int batchSize;
@@ -56,6 +59,8 @@ public class OperateElasticsearchExporter implements Exporter {
     client = createClient();
 
     writer = createBatchWriter();
+
+    scriptBuilder = new ElasticsearchScriptBuilder();
 
     scheduleDelayedFlush();
     log.info("Exporter opened");
@@ -117,7 +122,8 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private void flush() {
     try {
-      final NewElasticsearchBatchRequest batchRequest = new NewElasticsearchBatchRequest(client);
+      final NewElasticsearchBatchRequest batchRequest =
+          new NewElasticsearchBatchRequest(client, new BulkRequest.Builder(), scriptBuilder);
       writer.flush(batchRequest);
     } catch (final PersistenceException ex) {
       throw new ElasticsearchExporterException(ex.getMessage(), ex);
