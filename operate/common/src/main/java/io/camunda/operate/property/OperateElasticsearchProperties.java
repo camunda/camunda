@@ -27,7 +27,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return indexPrefix;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
@@ -55,7 +55,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return refreshInterval;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
+  public void setRefreshInterval(final String refreshInterval) {
     this.refreshInterval = refreshInterval;
   }
 
@@ -63,7 +63,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return numberOfShardsForIndices;
   }
 
-  public void setNumberOfShardsForIndices(Map<String, Integer> numberOfShardsForIndices) {
+  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
     this.numberOfShardsForIndices = numberOfShardsForIndices;
   }
 
@@ -71,7 +71,28 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return numberOfReplicasForIndices;
   }
 
-  public void setNumberOfReplicasForIndices(Map<String, Integer> numberOfReplicasForIndices) {
+  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
     this.numberOfReplicasForIndices = numberOfReplicasForIndices;
+  }
+
+  @Override
+  public String toString() {
+    return "OperateElasticsearchProperties{"
+        + "indexPrefix='"
+        + indexPrefix
+        + '\''
+        + ", numberOfShards="
+        + numberOfShards
+        + ", numberOfShardsForIndices="
+        + numberOfShardsForIndices
+        + ", numberOfReplicas="
+        + numberOfReplicas
+        + ", numberOfReplicasForIndices="
+        + numberOfReplicasForIndices
+        + ", refreshInterval='"
+        + refreshInterval
+        + '\''
+        + "} "
+        + super.toString();
   }
 }
