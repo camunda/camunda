@@ -284,7 +284,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     // initializes metadata and position in the runtime state
     container.initMetadata();
-    container.openExporter();
+    if (exporterMode == ExporterMode.ACTIVE) {
+      container.openExporter();
+    }
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
 
