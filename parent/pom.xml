@@ -42,11 +42,11 @@
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.18.0</version.camunda>
     <version.checkstyle>10.9.3</version.checkstyle>
-    <version.commons-lang>3.12.0</version.commons-lang>
+    <version.commons-lang>3.14.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.15</version.commons-codec>
-    <version.commons-compress>1.26.1</version.commons-compress>
+    <version.commons-codec>1.17.0</version.commons-codec>
+    <version.commons-compress>1.26.2</version.commons-compress>
     <version.zstd-jni>1.5.6-3</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
@@ -106,7 +106,7 @@
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.14.17</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
-    <version.commons-io>2.11.0</version.commons-io>
+    <version.commons-io>2.16.1</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.173</version.classgraph>
