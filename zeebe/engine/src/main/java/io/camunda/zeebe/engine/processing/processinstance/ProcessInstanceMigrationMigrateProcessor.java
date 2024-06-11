@@ -288,16 +288,26 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // element in ACTIVATING state should not be subscribed into new subscription during migration
       // https://github.com/camunda/camunda/issues/19212
-      migrateCatchEvent(elementInstance, targetProcessDefinition, sourceElementIdToTargetElementId,
-          elementInstanceRecord, targetElementId, processInstanceKey, elementId);;
+      migrateCatchEvent(
+          elementInstance,
+          targetProcessDefinition,
+          sourceElementIdToTargetElementId,
+          elementInstanceRecord,
+          targetElementId,
+          processInstanceKey,
+          elementId);
+      ;
     }
   }
 
-  private void migrateCatchEvent(final ElementInstance elementInstance,
+  private void migrateCatchEvent(
+      final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
-      final ProcessInstanceRecord elementInstanceRecord, final String targetElementId,
-      final long processInstanceKey, final String elementId) {
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String targetElementId,
+      final long processInstanceKey,
+      final String elementId) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
     final var targetElement =
