@@ -50,7 +50,7 @@
     <pluginManagement>
       <plugins>
 
-       <!-- Javadoc generation fails under Java 11 -->
+        <!-- Javadoc generation fails under Java 11 -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
