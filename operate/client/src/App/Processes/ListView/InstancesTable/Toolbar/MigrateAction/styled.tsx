@@ -7,16 +7,10 @@
  */
 
 import styled from 'styled-components';
-import {ListItem as BaseListItem, Modal as BaseModal} from '@carbon/react';
+import {ListItem as BaseListItem} from '@carbon/react';
 
 const ListItem = styled(BaseListItem)`
   list-style: decimal;
 `;
 
-const Modal = styled(BaseModal)`
-  p {
-    margin-bottom: 0;
-  }
-`;
-
-export {ListItem, Modal};
+export {ListItem};
