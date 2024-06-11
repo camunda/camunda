@@ -174,4 +174,36 @@ public class ElasticsearchProperties {
   public void setBulkRequestMaxSizeInBytes(final int bulkRequestMaxSizeInBytes) {
     this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
   }
+
+  @Override
+  public String toString() {
+    return "ElasticsearchProperties{"
+        + "clusterName='"
+        + clusterName
+        + '\''
+        + ", dateFormat='"
+        + dateFormat
+        + '\''
+        + ", elsDateFormat='"
+        + elsDateFormat
+        + '\''
+        + ", batchSize="
+        + batchSize
+        + ", socketTimeout="
+        + socketTimeout
+        + ", connectTimeout="
+        + connectTimeout
+        + ", createSchema="
+        + createSchema
+        + ", url='"
+        + url
+        + '\''
+        + ", username={Confidential information}"
+        + ", password={Confidential information}"
+        + ", bulkRequestMaxSizeInBytes="
+        + bulkRequestMaxSizeInBytes
+        + ", ssl="
+        + ssl
+        + '}';
+  }
 }
