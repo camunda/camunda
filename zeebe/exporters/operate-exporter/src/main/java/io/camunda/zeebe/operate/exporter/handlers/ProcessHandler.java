@@ -38,10 +38,11 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final ProcessIndex processIndex;
 
-  private final XMLUtil xmlUtil = new XMLUtil();
+  private final XMLUtil xmlUtil;
 
-  public ProcessHandler(final ProcessIndex processIndex) {
+  public ProcessHandler(final ProcessIndex processIndex, final XMLUtil xmlUtil) {
     this.processIndex = processIndex;
+    this.xmlUtil = xmlUtil;
   }
 
   @Override

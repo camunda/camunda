@@ -19,6 +19,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
+import io.camunda.zeebe.operate.exporter.util.XMLUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -35,6 +36,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private ElasticsearchClient client;
   private ExportBatchWriter writer;
   private ElasticsearchScriptBuilder scriptBuilder;
+  private XMLUtil xmlUtil;
 
   private long lastPosition = -1;
   private int batchSize;
@@ -56,11 +58,12 @@ public class OperateElasticsearchExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
+    scriptBuilder = new ElasticsearchScriptBuilder();
+    xmlUtil = new XMLUtil();
+
     client = createClient();
 
     writer = createBatchWriter();
-
-    scriptBuilder = new ElasticsearchScriptBuilder();
 
     scheduleDelayedFlush();
     log.info("Exporter opened");
@@ -141,8 +144,8 @@ public class OperateElasticsearchExporter implements Exporter {
         .withHandler(
             new ProcessHandler(
                 (ProcessIndex)
-                    new ProcessIndex()
-                        .setIndexPrefix(configuration.elasticsearch.getIndexPrefix())))
+                    new ProcessIndex().setIndexPrefix(configuration.elasticsearch.getIndexPrefix()),
+                xmlUtil))
         .build();
   }
 
