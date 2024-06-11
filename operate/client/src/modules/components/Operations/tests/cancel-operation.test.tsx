@@ -129,7 +129,7 @@ describe('Operations - Cancel Operation', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('checkbox', {name: 'Do not show this message again'}),
+      screen.getByRole('checkbox', {name: "Don't show this message next time"}),
     );
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
