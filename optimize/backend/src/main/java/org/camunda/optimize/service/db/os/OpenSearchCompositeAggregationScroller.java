@@ -13,12 +13,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -34,11 +35,11 @@ public class OpenSearchCompositeAggregationScroller {
   private int requestSize;
   private List<String> indices;
 
-  private Map<String, Aggregation> aggregations = new HashMap<>();
+  private Map<String, Aggregation> aggregations;
 
   public OpenSearchCompositeAggregationScroller aggregations(
       final Map<String, Aggregation> aggregations) {
-    this.aggregations.putAll(aggregations);
+    this.aggregations = new HashMap<>(aggregations);
     return this;
   }
 
@@ -104,34 +105,50 @@ public class OpenSearchCompositeAggregationScroller {
                 HashMap::new,
                 (m, v) -> m.put(v.getKey(), v.getValue().to(String.class)),
                 HashMap::putAll);
-    Aggregation currentAggregations = getCurrentAggregations();
 
-    CompositeAggregation prevCompositeAggregation = currentAggregations.composite();
-
-    // find aggregation and adjust after key for next invocation
-    CompositeAggregation upgradedCompositeAggregation =
-        new CompositeAggregation.Builder()
-            .sources(prevCompositeAggregation.sources())
-            .size(prevCompositeAggregation.size())
-            .after(convertedCompositeBucketConsumer)
-            .build();
-
-    aggregations.put(
-        pathToAggregation.get(0),
-        getNullSafeAggregation(upgradedCompositeAggregation, currentAggregations));
+    aggregations =
+        updateAfterKeyInCompositeAggregation(convertedCompositeBucketConsumer, aggregations);
 
     return compositeAggregationResult.buckets().array();
   }
 
-  private Aggregation getNullSafeAggregation(
-      CompositeAggregation upgradedCompositeAggregation, Aggregation currentAggregations) {
-    if (currentAggregations.aggregations() != null) {
-      return Aggregation.of(
-          a ->
-              a.composite(upgradedCompositeAggregation)
-                  .aggregations(currentAggregations.aggregations()));
+  private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
+      Map<String, String> convertedCompositeBucketConsumer, Map<String, Aggregation> currentAgg) {
+    HashMap<String, Aggregation> newAggregations = new HashMap<>();
+
+    // find aggregation response
+    for (String aggPath : pathToAggregation) {
+      Aggregation agg = currentAgg.get(aggPath);
+      if (agg != null) {
+        if (agg.isNested()) {
+          Aggregation newNestedAgg =
+              new Builder()
+                  .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
+                  .aggregations(
+                      updateAfterKeyInCompositeAggregation(
+                          convertedCompositeBucketConsumer, agg.aggregations()))
+                  .build();
+          newAggregations.put(aggPath, newNestedAgg);
+        } else if (agg.isComposite()) {
+          newAggregations.put(
+              aggPath,
+              updateCompositeAggregation(convertedCompositeBucketConsumer, agg.composite())
+                  ._toAggregation());
+        }
+      }
     }
-    return Aggregation.of(a -> a.composite(upgradedCompositeAggregation));
+    return newAggregations;
+  }
+
+  private CompositeAggregation updateCompositeAggregation(
+      Map<String, String> convertedCompositeBucketConsumer,
+      CompositeAggregation prevCompositeAggregation) {
+    // find aggregation and adjust after key for next invocation
+    return new CompositeAggregation.Builder()
+        .sources(prevCompositeAggregation.sources())
+        .size(prevCompositeAggregation.size())
+        .after(convertedCompositeBucketConsumer)
+        .build();
   }
 
   private CompositeAggregate extractCompositeAggregationResult(
@@ -140,35 +157,11 @@ public class OpenSearchCompositeAggregationScroller {
     // find aggregation response
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
       Aggregate agg = aggregations.get(pathToAggregation.get(i));
-      aggregations = agg.nested().aggregations();
+      if (agg.isNested()) {
+        aggregations = agg.nested().aggregations();
+      }
     }
     return aggregations.get(pathToAggregation.getLast()).composite();
-  }
-
-  private Aggregation getCurrentAggregations() {
-    Map<String, Aggregation> aggCol = aggregations;
-    Aggregation currentAggregationFromPath;
-
-    for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-      if (aggCol.containsKey(pathToAggregation.get(i))) {
-        currentAggregationFromPath = aggCol.get(pathToAggregation.get(i));
-      } else {
-        throw new OptimizeRuntimeException(
-            String.format(
-                "Could not find aggregation [%s] in aggregation path.", pathToAggregation.get(i)));
-      }
-      aggCol = currentAggregationFromPath.aggregations();
-    }
-
-    if (aggCol.containsKey(pathToAggregation.getLast())) {
-      currentAggregationFromPath = aggCol.get(pathToAggregation.getLast());
-    } else {
-      throw new OptimizeRuntimeException(
-          String.format(
-              "Could not find composite aggregation [%s] in aggregation path.",
-              pathToAggregation.getLast()));
-    }
-    return currentAggregationFromPath;
   }
 
   public OpenSearchCompositeAggregationScroller setClient(final OptimizeOpenSearchClient osClient) {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -24,8 +25,10 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
 
   private static final String EVENT_PROCESS_DEFINITION_VERSION = "1";

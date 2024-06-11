@@ -300,7 +300,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        includedGroups: [ 'ccsm-test', 'openSearchPassing' ]
+        includedGroups: [ 'ccsm-test', 'openSearchPassing', 'import,eventBasedProcess' ]
         include:
           - includedGroups: 'openSearchPassing'
             excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
@@ -310,6 +310,10 @@ jobs:
             excludedGroups: ''
             profiles: 'ccsm-it'
             requiresCambpm: false
+          - includedGroups: 'import,eventBasedProcess'
+            excludedGroups: ''
+            profiles: 'it,engine-latest'
+            requiresCambpm: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Setup Maven
@@ -380,13 +384,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        includedGroups: [ 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        includedGroups: [ 'reportEvaluation', '' ]
         include:
           - includedGroups: ''
             excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
-            profiles: 'it,engine-latest'
-          - includedGroups: 'import,eventBasedProcess'
-            excludedGroups: ''
             profiles: 'it,engine-latest'
           - includedGroups: 'reportEvaluation'
             excludedGroups: ''

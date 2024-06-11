@@ -440,7 +440,6 @@ public class EventBasedProcessAutogenerationMultipleSourceConnectionsIT
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void createFromThreeSourcesWithOrder_processStartEnd_startEndEvents_external() {
     final String traceId = "tracingId";
     final CamundaEventSourceEntryDto camundaProcessSource =
@@ -532,7 +531,6 @@ public class EventBasedProcessAutogenerationMultipleSourceConnectionsIT
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void createFromThreeSourcesWithOrder_startEndEvents_external_processStartEnd()
       throws SQLException {
     final String traceId = "tracingId";

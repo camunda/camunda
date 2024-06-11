@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 @Tag(OPENSEARCH_PASSING)
 public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImportIT {
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void ingestedVariableDataImportProgressIsPersisted() {
     // given

@@ -107,7 +107,7 @@ import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.DefinitionQueryUtilES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -964,7 +964,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final OutlierAnalysisServiceParameters<T> outlierParams) {
     final T processDefinitionParams = outlierParams.getProcessDefinitionParametersDto();
     final BoolQueryBuilder definitionQuery =
-        DefinitionQueryUtil.createDefinitionQuery(
+        DefinitionQueryUtilES.createDefinitionQuery(
             processDefinitionParams.getProcessDefinitionKey(),
             processDefinitionParams.getProcessDefinitionVersions(),
             processDefinitionParams.getTenantIds(),

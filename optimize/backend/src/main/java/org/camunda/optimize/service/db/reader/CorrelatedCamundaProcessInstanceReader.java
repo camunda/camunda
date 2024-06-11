@@ -5,23 +5,51 @@
  */
 package org.camunda.optimize.service.db.reader;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.service.db.repository.EventRepository;
+import org.springframework.stereotype.Component;
 
-public interface CorrelatedCamundaProcessInstanceReader {
+@RequiredArgsConstructor
+@Component
+@Slf4j
+public class CorrelatedCamundaProcessInstanceReader {
+  private final EventRepository eventRepository;
 
-  String EVENT_SOURCE_AGG = "eventSourceAgg";
-  String BUCKET_HITS_AGG = "bucketHitsAgg";
-  String[] CORRELATABLE_FIELDS = {BUSINESS_KEY, VARIABLES};
-  int MAX_HITS = 100;
+  public List<String> getCorrelationValueSampleForEventSources(
+      final List<CamundaEventSourceEntryDto> eventSources) {
+    final List<CamundaEventSourceEntryDto> camundaSources =
+        eventSources.stream()
+            .filter(eventSource -> EventSourceType.CAMUNDA.equals(eventSource.getSourceType()))
+            .collect(Collectors.toList());
+    if (camundaSources.isEmpty()) {
+      log.debug("There are no Camunda sources to fetch sample correlation values for");
+      return Collections.emptyList();
+    }
 
-  List<String> getCorrelationValueSampleForEventSources(
-      final List<CamundaEventSourceEntryDto> eventSources);
+    log.debug("Fetching sample of correlation values for {} event sources", camundaSources.size());
 
-  List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
-      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues);
+    return eventRepository.getCorrelationValueSampleForEventSources(camundaSources);
+  }
+
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
+    if (camundaSources.isEmpty()) {
+      log.debug("There are no Camunda sources to fetch correlated process instances for");
+      return Collections.emptyList();
+    }
+
+    log.debug(
+        "Fetching correlated process instances for correlation value sample size {} for {} event sources",
+        correlationValues.size(),
+        camundaSources.size());
+
+    return eventRepository.getCorrelatableInstancesForSources(camundaSources, correlationValues);
+  }
 }

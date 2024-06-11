@@ -33,6 +33,7 @@ import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Tag(OPENSEARCH_PASSING)
 public class EngineActivityImportIT extends AbstractImportIT {
@@ -211,6 +212,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void deletionOfProcessInstancesDoesNotDistortActivityInstanceImport() {
     // given
     final Map<String, Object> variables = new HashMap<>();

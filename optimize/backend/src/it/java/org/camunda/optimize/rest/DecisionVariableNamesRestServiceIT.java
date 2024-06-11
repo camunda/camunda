@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModelNoInputAndOutputLabels;
 
 import jakarta.ws.rs.core.Response;
@@ -17,10 +18,12 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionVariableNamesRestServiceIT extends AbstractPlatformIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";

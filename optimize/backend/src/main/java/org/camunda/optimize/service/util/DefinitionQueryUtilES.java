@@ -30,7 +30,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class DefinitionQueryUtil {
+public class DefinitionQueryUtilES {
 
   public static BoolQueryBuilder createDefinitionQuery(
       final String definitionKey, final List<String> tenantIds, final AbstractInstanceIndex type) {

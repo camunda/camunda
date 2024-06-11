@@ -8,6 +8,7 @@ package org.camunda.optimize.service.identity;
 import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -30,6 +31,7 @@ import org.camunda.optimize.util.BpmnModels;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
@@ -37,6 +39,7 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
+@Tag(OPENSEARCH_PASSING)
 public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
   private static final String ASSIGNEE_ID_JOHN = "john";
   private static final String JOHN_FIRST_NAME = "The";

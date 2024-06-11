@@ -359,9 +359,12 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         osClient.search(requestBuilder, Result.class, "Could not obtain process instance ids.");
     final List<String> processInstanceIds =
         response.hits().hits().stream().map(hit -> hit.source().processInstanceId()).toList();
-    result
-        .getEntities()
-        .addAll(processInstanceIds.subList(0, min(response.documents().size(), resolvedLimit)));
+    if (!processInstanceIds.isEmpty()) {
+      result
+          .getEntities()
+          .addAll(
+              processInstanceIds.subList(0, min(response.documents().size(), resolvedLimit) + 1));
+    }
     result.setPagingState(response.scrollId());
 
     return result;

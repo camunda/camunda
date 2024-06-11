@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query.event.process.es;
+package org.camunda.optimize.dto.optimize.query.event.process.db;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -34,7 +34,7 @@ public class DbEventProcessMappingDto implements OptimizeDto {
   private String xml;
   private OffsetDateTime lastModified;
   private String lastModifier;
-  private List<EsEventMappingDto> mappings;
+  private List<DbEventMappingDto> mappings;
   private List<EventSourceEntryDto<?>> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
@@ -53,7 +53,7 @@ public class DbEventProcessMappingDto implements OptimizeDto {
                         mappings.keySet().stream()
                             .map(
                                 flowNodeId ->
-                                    EsEventMappingDto.fromEventMappingDto(
+                                    DbEventMappingDto.fromEventMappingDto(
                                         flowNodeId, eventMappingDto.getMappings().get(flowNodeId)))
                             .collect(Collectors.toList()))
                 .orElse(null))
@@ -64,27 +64,27 @@ public class DbEventProcessMappingDto implements OptimizeDto {
 
   public EventProcessMappingDto toEventProcessMappingDto() {
     return EventProcessMappingDto.builder()
-        .id(this.id)
-        .name(this.name)
-        .xml(this.xml)
-        .lastModified(this.lastModified)
-        .lastModifier(this.lastModifier)
+        .id(id)
+        .name(name)
+        .xml(xml)
+        .lastModified(lastModified)
+        .lastModifier(lastModifier)
         .mappings(
-            Optional.ofNullable(this.mappings)
+            Optional.ofNullable(mappings)
                 .map(
                     mappingList ->
                         mappingList.stream()
                             .collect(
                                 Collectors.toMap(
-                                    EsEventMappingDto::getFlowNodeId,
+                                    DbEventMappingDto::getFlowNodeId,
                                     mapping ->
                                         EventMappingDto.builder()
                                             .start(mapping.getStart())
                                             .end(mapping.getEnd())
                                             .build())))
                 .orElse(null))
-        .eventSources(this.eventSources)
-        .roles(this.roles)
+        .eventSources(eventSources)
+        .roles(roles)
         .build();
   }
 }

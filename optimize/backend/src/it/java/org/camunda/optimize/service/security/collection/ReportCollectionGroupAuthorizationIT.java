@@ -158,7 +158,6 @@ public class ReportCollectionGroupAuthorizationIT extends AbstractCollectionRole
 
   @ParameterizedTest
   @MethodSource(REPORT_SCENARIOS)
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void superGroupIdentityIsGrantedEvaluateAccessToPrivateReportOfOtherUser(
       final ReportCollectionGroupAuthorizationIT.ReportScenario reportScenario) {
     // given

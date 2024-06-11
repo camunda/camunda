@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
@@ -32,6 +33,20 @@ public class OpensearchReaderUtil {
         .map(SearchResponse::hits)
         .map(HitsMetadata::hits)
         .map(hits -> hits.stream().map(Hit::source).toList())
+        .orElseThrow(
+            () -> {
+              String reason = "Was not able to parse response values from OpenSearch";
+              log.error(reason);
+              return new OptimizeRuntimeException(reason);
+            });
+  }
+
+  public static <T> List<T> extractResponseValues(
+      final SearchResponse<T> searchResponse, final Function<Hit<T>, T> mappingFunction) {
+    return Optional.ofNullable(searchResponse)
+        .map(SearchResponse::hits)
+        .map(HitsMetadata::hits)
+        .map(hits -> hits.stream().map(mappingFunction).toList())
         .orElseThrow(
             () -> {
               String reason = "Was not able to parse response values from OpenSearch";
@@ -63,9 +78,15 @@ public class OpensearchReaderUtil {
 
   public static <T> List<T> extractAggregatedResponseValues(
       final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> searchResponse) {
+    return extractAggregatedResponseValues(searchResponse, Hit::source);
+  }
+
+  public static <T> List<T> extractAggregatedResponseValues(
+      final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> searchResponse,
+      final Function<Hit<T>, T> mappingFunction) {
     return Optional.ofNullable(searchResponse)
         .map(OpenSearchDocumentOperations.AggregatedResult::values)
-        .map(hits -> hits.stream().map(Hit::source).collect(Collectors.toList()))
+        .map(hits -> hits.stream().map(mappingFunction).collect(Collectors.toList()))
         .orElseThrow(
             () -> {
               String reason = "Was not able to parse response aggregations from OpenSearch";
@@ -79,16 +100,33 @@ public class OpensearchReaderUtil {
   }
 
   public static <T> Collection<? extends T> mapHits(
-      final HitsMetadata<JsonData> searchHits, final int resultLimit, final Class<T> typeClass) {
+      final HitsMetadata<JsonData> searchHits,
+      final int resultLimit,
+      final Class<T> typeClass,
+      final Function<Hit<T>, T> mappingFunction) {
     final List<T> results = new ArrayList<>();
     for (Hit<JsonData> hit : searchHits.hits()) {
       if (results.size() >= resultLimit) {
         break;
       }
-
       try {
         final Optional<JsonData> optionalMappedHit = Optional.ofNullable(hit.source());
-        optionalMappedHit.ifPresent(hitValue -> results.add(hitValue.to(typeClass)));
+        optionalMappedHit.ifPresent(
+            hitValue -> {
+              try {
+                T definitionDto = hitValue.to(typeClass);
+                Hit<T> adaptedHit =
+                    new Hit.Builder<T>().index(hit.index()).source(definitionDto).build();
+                T enrichedDto = mappingFunction.apply(adaptedHit);
+                results.add(enrichedDto);
+              } catch (Exception e) {
+                final String reason =
+                    "While mapping search results to class {} "
+                        + "it was not possible to deserialize a hit from OpenSearch!";
+                log.error(reason, typeClass.getSimpleName(), e);
+                throw new OptimizeRuntimeException(reason);
+              }
+            });
       } catch (Exception e) {
         final String reason =
             "While mapping search results to class {} "

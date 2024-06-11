@@ -84,7 +84,6 @@ public class CacheRequestIT extends AbstractPlatformIT {
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   @Test
   public void getDefinitionXmlRequest_cacheControlHeadersIsNoStoreForEventBasedProcesses() {
     // given

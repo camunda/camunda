@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.ingested;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
@@ -26,8 +27,10 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.ingested.service.ExternalVariableUpdateImportService;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
 
   @Test

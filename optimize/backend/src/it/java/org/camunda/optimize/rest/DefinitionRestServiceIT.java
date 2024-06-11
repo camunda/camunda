@@ -1679,6 +1679,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   @Test
+  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
   public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
     // given
     final int bucketLimit = 1000;

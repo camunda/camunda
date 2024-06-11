@@ -307,8 +307,6 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
-  // Passes locally but flaky on pipeline
   public void testCleanupModeVariables_specificKeyCleanupMode_noInstanceDataExists() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
@@ -325,10 +323,10 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
                 .build());
 
     importAllEngineEntitiesFromScratch();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     engineDataCleanupLogs.assertContains(

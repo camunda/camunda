@@ -55,7 +55,7 @@ import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.db.reader.VariableLabelReader;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.DefinitionQueryUtilES;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -131,7 +131,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     validNameRequests.forEach(
         request ->
             query.should(
-                DefinitionQueryUtil.createDefinitionQuery(
+                DefinitionQueryUtilES.createDefinitionQuery(
                     request.getProcessDefinitionKey(),
                     request.getProcessDefinitionVersions(),
                     request.getTenantIds(),
@@ -222,7 +222,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     processVariableSources.forEach(
         source -> {
           query.should(
-              DefinitionQueryUtil.createDefinitionQuery(
+              DefinitionQueryUtilES.createDefinitionQuery(
                   source.getProcessDefinitionKey(),
                   source.getProcessDefinitionVersions(),
                   source.getTenantIds(),

@@ -21,7 +21,7 @@ import org.camunda.optimize.service.db.es.report.command.modules.result.Composit
 import org.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
-import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.DefinitionQueryUtilES;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
@@ -63,7 +63,7 @@ public class DecisionReportCmdExecutionPlan<T>
         .ifPresent(
             definitionDto ->
                 definitionFilterQuery.should(
-                    DefinitionQueryUtil.createDefinitionQuery(
+                    DefinitionQueryUtilES.createDefinitionQuery(
                         definitionDto.getKey(),
                         definitionDto.getVersions(),
                         definitionDto.getTenantIds(),

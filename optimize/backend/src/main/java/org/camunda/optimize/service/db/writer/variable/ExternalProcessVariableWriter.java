@@ -7,11 +7,36 @@ package org.camunda.optimize.service.db.writer.variable;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.service.db.repository.TaskRepository;
+import org.camunda.optimize.service.db.repository.VariableRepository;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.springframework.stereotype.Component;
 
-public interface ExternalProcessVariableWriter {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class ExternalProcessVariableWriter {
+  private VariableRepository variableRepository;
+  private TaskRepository taskRepository;
 
-  void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables);
+  public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
+    final String itemName = "external process variables";
+    log.debug("Writing {} {} to Database.", variables.size(), itemName);
+    variableRepository.writeExternalProcessVariables(variables, itemName);
+  }
 
-  void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp);
+  public void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp) {
+    final String deletedItemIdentifier =
+        String.format("external variables with timestamp older than %s", timestamp);
+    log.info("Deleting {}", deletedItemIdentifier);
+    taskRepository.executeWithTaskMonitoring(
+        DeleteByQueryAction.NAME,
+        () ->
+            variableRepository.deleteExternalVariablesIngestedBefore(
+                timestamp, deletedItemIdentifier),
+        log);
+  }
 }

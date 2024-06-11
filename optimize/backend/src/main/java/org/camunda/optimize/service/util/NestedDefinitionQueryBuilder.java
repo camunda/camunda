@@ -34,7 +34,7 @@ public class NestedDefinitionQueryBuilder {
       final DefinitionService definitionService) {
     final BoolQueryBuilder query = boolQuery();
     query.filter(
-        DefinitionQueryUtil.createTenantIdQuery(nestedFieldReference(tenantIdField), tenantIds));
+        DefinitionQueryUtilES.createTenantIdQuery(nestedFieldReference(tenantIdField), tenantIds));
     query.filter(termQuery(nestedFieldReference(definitionKeyField), definitionKey));
     if (isDefinitionVersionSetToLatest(definitionVersions)) {
       query.filter(

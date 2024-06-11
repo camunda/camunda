@@ -8,7 +8,7 @@ package org.camunda.optimize.service.db.es.reader;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.DefinitionQueryUtilES.createDefinitionQuery;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;

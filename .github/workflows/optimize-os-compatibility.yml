@@ -20,13 +20,16 @@ jobs:
       matrix:
         osVersion: ["2.5.0", "2.12.0"]
         includedGroups:
-           [ 'ccsm-test', 'openSearchPassing']
+          [ 'ccsm-test', 'openSearchPassing', 'import,eventBasedProcess' ]
         include:
           - includedGroups: "ccsm-test"
             excludedGroups: ""
             profile: "ccsm-it"
           - includedGroups: 'openSearchPassing'
             excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
+            profile: 'it,engine-latest'
+          - includedGroups: 'import,eventBasedProcess'
+            excludedGroups: ''
             profile: 'it,engine-latest'
 
     steps:

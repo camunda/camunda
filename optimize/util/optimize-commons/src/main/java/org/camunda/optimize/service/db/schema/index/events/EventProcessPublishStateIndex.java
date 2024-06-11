@@ -11,8 +11,8 @@ import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FO
 import java.io.IOException;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
@@ -36,9 +36,9 @@ public abstract class EventProcessPublishStateIndex<TBuilder>
   public static final String EVENT_IMPORT_SOURCES =
       DbEventProcessPublishStateDto.Fields.eventImportSources;
 
-  public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
-  public static final String START = EsEventMappingDto.Fields.start;
-  public static final String END = EsEventMappingDto.Fields.end;
+  public static final String FLOWNODE_ID = DbEventMappingDto.Fields.flowNodeId;
+  public static final String START = DbEventMappingDto.Fields.start;
+  public static final String END = DbEventMappingDto.Fields.end;
 
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;

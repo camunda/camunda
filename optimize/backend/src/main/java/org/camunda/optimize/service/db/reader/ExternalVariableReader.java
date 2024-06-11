@@ -5,13 +5,32 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import java.time.Instant;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import org.camunda.optimize.service.db.repository.VariableRepository;
+import org.springframework.stereotype.Component;
 
-public interface ExternalVariableReader {
+@AllArgsConstructor
+@Component
+@Slf4j
+public class ExternalVariableReader {
+  VariableRepository variableRepository;
 
-  List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
-      final Long ingestTimestamp, final int limit);
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
+      final Long ingestTimestamp, final int limit) {
+    log.debug(
+        "Fetching variables that where ingested after {}", Instant.ofEpochMilli(ingestTimestamp));
 
-  List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp);
+    return variableRepository.getVariableUpdatesIngestedAfter(ingestTimestamp, limit);
+  }
+
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
+    log.debug(
+        "Fetching variables that where ingested at {}", Instant.ofEpochMilli(ingestTimestamp));
+
+    return variableRepository.getVariableUpdatesIngestedAt(ingestTimestamp);
+  }
 }

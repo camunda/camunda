@@ -7,6 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
@@ -16,8 +17,10 @@ import java.util.stream.IntStream;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.ExternalVariableCleanupConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class ExternalVariableCleanupIT extends AbstractCleanupIT {
 
   @Test

@@ -11,8 +11,8 @@ import java.io.IOException;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
@@ -31,9 +31,9 @@ public abstract class EventProcessMappingIndex<TBuilder>
   public static final String MAPPINGS = DbEventProcessMappingDto.Fields.mappings;
   public static final String EVENT_SOURCES = DbEventProcessMappingDto.Fields.eventSources;
 
-  public static final String FLOWNODE_ID = EsEventMappingDto.Fields.flowNodeId;
-  public static final String START = EsEventMappingDto.Fields.start;
-  public static final String END = EsEventMappingDto.Fields.end;
+  public static final String FLOWNODE_ID = DbEventMappingDto.Fields.flowNodeId;
+  public static final String START = DbEventMappingDto.Fields.start;
+  public static final String END = DbEventMappingDto.Fields.end;
 
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;

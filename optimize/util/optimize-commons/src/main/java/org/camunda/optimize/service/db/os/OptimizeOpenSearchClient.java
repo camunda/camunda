@@ -349,7 +349,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   @Override
   public void deleteIndex(final String indexAlias) {
-    getRichOpenSearchClient().index().deleteIndicesWithRetries(indexAlias);
+    if (getRichOpenSearchClient().index().deleteIndicesWithRetries(indexAlias)) {
+      log.debug("Successfully deleted index with alias {}", indexAlias);
+    } else {
+      log.warn("Could not delete index with alias {}", indexAlias);
+    }
   }
 
   @Override

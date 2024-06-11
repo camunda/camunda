@@ -7,6 +7,7 @@ package org.camunda.optimize.service.identity;
 
 import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.mockserver.model.HttpRequest.request;
 
 import org.camunda.optimize.service.AbstractMultiEngineIT;
@@ -14,11 +15,13 @@ import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
+@Tag(OPENSEARCH_PASSING)
 public class MultiEngineUserTaskIdentityCacheServiceIT extends AbstractMultiEngineIT {
   public static final String ASSIGNEE_ID_JOHN = "john";
   public static final String JOHN_FIRST_NAME = "The";

@@ -73,7 +73,7 @@ import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;

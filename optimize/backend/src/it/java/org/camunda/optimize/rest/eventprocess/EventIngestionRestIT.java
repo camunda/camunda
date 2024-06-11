@@ -61,7 +61,6 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch() {
     // given
     final List<CloudEventRequestDto> eventDtos =
@@ -98,7 +97,6 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatchWithPlainJsonContentType() {
     // given
     final List<CloudEventRequestDto> eventDtos =
@@ -152,7 +150,6 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_customSecret() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
@@ -177,7 +174,6 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_customSecretUsingBearerScheme() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();
@@ -282,7 +278,6 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void ingestEventBatch_omitOptionalProperties() {
     // given
     final CloudEventRequestDto eventDto = ingestionClient.createCloudEventDto();

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.event;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
@@ -24,8 +25,10 @@ import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountInd
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImportIT {
 
   private static final String START_EVENT = ActivityTypes.START_EVENT;

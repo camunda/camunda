@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import com.google.common.collect.ImmutableList;
 import jakarta.ws.rs.core.Response;
@@ -24,8 +25,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
 
   private static final String CANDIDATE_GROUP_ID_IMPOSTERS = "imposters";

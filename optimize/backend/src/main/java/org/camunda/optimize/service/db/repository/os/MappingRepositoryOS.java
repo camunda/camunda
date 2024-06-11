@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import org.camunda.optimize.service.db.repository.MappingRepository;

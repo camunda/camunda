@@ -19,7 +19,6 @@ import org.camunda.optimize.service.db.repository.DecisionInstanceRepository;
 import org.camunda.optimize.service.db.repository.IndexRepository;
 import org.camunda.optimize.service.db.repository.Repository;
 import org.camunda.optimize.service.db.repository.TaskRepository;
-import org.camunda.optimize.service.util.PeriodicAction;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -51,35 +50,12 @@ public class DecisionInstanceWriter {
           decisionDefinitionKey);
       return;
     }
-    executeWithTaskMonitoring(
+    taskRepository.executeWithTaskMonitoring(
         repository.getDeleteByQueryActionName(),
         () ->
             decisionInstanceRepository
                 .deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
-                    decisionDefinitionKey, evaluationDate));
-  }
-
-  private void executeWithTaskMonitoring(String action, Runnable runnable) {
-    final PeriodicAction progressReporter =
-        new PeriodicAction(
-            getClass().getName(),
-            () ->
-                taskRepository
-                    .tasksProgress(action)
-                    .forEach(
-                        tasksProgressInfo ->
-                            log.info(
-                                "Current {} BulkByScrollTaskTask progress: {}%, total: {}, done: {}",
-                                action,
-                                tasksProgressInfo.progress(),
-                                tasksProgressInfo.totalCount(),
-                                tasksProgressInfo.processedCount())));
-
-    try {
-      progressReporter.start();
-      runnable.run();
-    } finally {
-      progressReporter.stop();
-    }
+                    decisionDefinitionKey, evaluationDate),
+        log);
   }
 }

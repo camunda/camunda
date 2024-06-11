@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.retrieval.variable;
 
 import static java.util.Collections.nCopies;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.STRING;
 
 import java.util.List;
@@ -15,7 +16,9 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
+import org.junit.jupiter.api.Tag;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionInputVariableNameRetrievalIT extends DecisionVariableNameRetrievalIT {
   @Override
   protected DecisionDefinitionEngineDto deployDecisionsWithVarNames(

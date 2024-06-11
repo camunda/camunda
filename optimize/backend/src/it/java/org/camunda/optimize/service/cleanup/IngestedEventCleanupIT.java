@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -16,8 +17,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class IngestedEventCleanupIT extends AbstractPlatformIT {
 
   @BeforeEach

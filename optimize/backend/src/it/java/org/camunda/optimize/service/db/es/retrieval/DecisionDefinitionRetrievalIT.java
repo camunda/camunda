@@ -27,8 +27,6 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
   private static final String DECISION_DEFINITION_KEY = "aDecision";
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
-  // This test does pass some times, but it is very flaky, so disabling it for now
   public void getDecisionDefinitionsWithMoreThanTen() {
     for (int i = 0; i < 11; i++) {
       // given
@@ -38,6 +36,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .getConfigurationService()
         .setEngineImportDecisionDefinitionXmlMaxPageSize(11);
     importAllEngineEntitiesFromScratch();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DecisionDefinitionOptimizeDto> definitions =

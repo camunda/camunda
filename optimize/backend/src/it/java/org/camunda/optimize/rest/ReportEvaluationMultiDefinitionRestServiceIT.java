@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -21,14 +22,17 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
 import org.camunda.optimize.util.DmnModels;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReportRestServiceIT {
 
   @ParameterizedTest
   @EnumSource(ProcessReportDataType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateProcessReport(final ProcessReportDataType reportType) {
     // given
     final String key1 = "key1";
@@ -73,6 +77,7 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
   @ParameterizedTest
   @EnumSource(ProcessReportDataType.class)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void evaluateProcessReportOneDefinitionHasNoData(final ProcessReportDataType reportType) {
     // given
     final String key1 = "key1";

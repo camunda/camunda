@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query.event.process.es;
+package org.camunda.optimize.dto.optimize.query.event.process.db;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -36,7 +36,7 @@ public class DbEventProcessPublishStateDto {
   private Double publishProgress;
   @Builder.Default private Boolean deleted = false;
   private String xml;
-  private List<EsEventMappingDto> mappings;
+  private List<DbEventMappingDto> mappings;
   private List<EventImportSourceDto> eventImportSources;
 
   public static DbEventProcessPublishStateDto fromEventProcessPublishStateDto(
@@ -57,7 +57,7 @@ public class DbEventProcessPublishStateDto {
                         mappings.keySet().stream()
                             .map(
                                 flowNodeId ->
-                                    EsEventMappingDto.fromEventMappingDto(
+                                    DbEventMappingDto.fromEventMappingDto(
                                         flowNodeId, publishState.getMappings().get(flowNodeId)))
                             .collect(Collectors.toList()))
                 .orElse(null))
@@ -82,7 +82,7 @@ public class DbEventProcessPublishStateDto {
                         mappingList.stream()
                             .collect(
                                 Collectors.toMap(
-                                    EsEventMappingDto::getFlowNodeId,
+                                    DbEventMappingDto::getFlowNodeId,
                                     mapping ->
                                         EventMappingDto.builder()
                                             .start(mapping.getStart())

@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.dto.optimize.query.event.process.es;
+package org.camunda.optimize.dto.optimize.query.event.process.db;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,15 +23,15 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 @AllArgsConstructor
 @FieldNameConstants
 @EqualsAndHashCode
-public class EsEventMappingDto implements OptimizeDto {
+public class DbEventMappingDto implements OptimizeDto {
 
   String flowNodeId;
   EventTypeDto start;
   EventTypeDto end;
 
-  public static EsEventMappingDto fromEventMappingDto(
+  public static DbEventMappingDto fromEventMappingDto(
       final String flowNodeId, final EventMappingDto eventMappingDto) {
-    return EsEventMappingDto.builder()
+    return DbEventMappingDto.builder()
         .flowNodeId(flowNodeId)
         .start(eventMappingDto.getStart())
         .end(eventMappingDto.getEnd())

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
@@ -29,11 +30,14 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT {
 
   @Test
@@ -89,6 +93,9 @@ public class EventBasedProcessReportEvaluationIT extends AbstractEventProcessIT 
 
   @ParameterizedTest(name = "using filter class {0}")
   @MethodSource("flowNodeStatusFiltersAndExpectedResults")
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void reportsUsingEventBasedProcessCanBeEvaluatedUsingFlowNodeStatusFilters(
       Class<?> filterType,
       List<ProcessFilterDto<?>> filters,

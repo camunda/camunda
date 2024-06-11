@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
@@ -33,8 +34,10 @@ import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import org.camunda.optimize.jetty.IngestionQoSFilter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class ExternalVariableIngestionRestIT extends AbstractPlatformIT {
 
   @BeforeEach

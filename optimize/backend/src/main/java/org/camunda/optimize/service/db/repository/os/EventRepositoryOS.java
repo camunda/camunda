@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.repository.os;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
@@ -20,12 +21,23 @@ import static org.camunda.optimize.service.db.DatabaseConstants.SORT_NULLS_LAST;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.INGESTION_TIMESTAMP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -33,6 +45,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,14 +62,18 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelationValueDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -66,9 +83,11 @@ import org.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations.AggregatedResult;
 import org.camunda.optimize.service.db.os.reader.OpensearchReaderUtil;
 import org.camunda.optimize.service.db.os.schema.index.events.CamundaActivityEventIndexOS;
 import org.camunda.optimize.service.db.os.schema.index.events.EventIndexOS;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.repository.EventRepository;
 import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -81,6 +100,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Result;
@@ -93,11 +113,17 @@ import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.MaxAggregation;
 import org.opensearch.client.opensearch._types.aggregations.MinAggregation;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
+import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScore;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -123,6 +149,7 @@ public class EventRepositoryOS implements EventRepository {
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeIndexNameService indexNameService;
+  private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
   public void upsertEvents(List<EventDto> eventDtos) {
@@ -582,6 +609,223 @@ public class EventRepositoryOS implements EventRepository {
             bucket -> groups.add((bucket.key().get(EVENT_GROUP_AGG)).to(String.class)))
         .consumePage();
     return groups;
+  }
+
+  @Override
+  public List<String> getCorrelationValueSampleForEventSources(
+      List<CamundaEventSourceEntryDto> camundaSources) {
+    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
+    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
+    camundaSources.forEach(
+        source -> matchesSourceQuery.should(queryForEventSourceInstances(source)));
+
+    SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
+            .query(
+                new BoolQuery.Builder()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery.build().toQuery())
+                    .must(createFunctionScoreQuery())
+                    .build()
+                    .toQuery())
+            .size(0);
+
+    addCorrelationValuesAggregation(searchRequest, camundaSources);
+
+    SearchResponse<String> searchResponse =
+        osClient.search(
+            searchRequest, String.class, "Was not able to fetch sample correlation values");
+    return extractCorrelationValues(searchResponse.aggregations(), camundaSources);
+  }
+
+  private static Query createFunctionScoreQuery() {
+    Query functionScoreQuery =
+        new FunctionScoreQuery.Builder()
+            .query(QueryDSL.matchAll())
+            .functions(
+                new FunctionScore.Builder()
+                    .randomScore(new RandomScoreFunction.Builder().build())
+                    .build())
+            .build()
+            .toQuery();
+    return functionScoreQuery;
+  }
+
+  @Override
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      List<CamundaEventSourceEntryDto> camundaSources, List<String> correlationValues) {
+    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
+    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
+    camundaSources.forEach(
+        eventSource ->
+            matchesSourceQuery.should(
+                queryForEventSourceInstancesWithCorrelationValues(eventSource, correlationValues)));
+
+    SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
+            .query(
+                new BoolQuery.Builder()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery.build().toQuery())
+                    .must(createFunctionScoreQuery())
+                    .build()
+                    .toQuery())
+            .size(MAX_RESPONSE_SIZE_LIMIT)
+            .scroll(
+                RequestDSL.time(
+                    String.valueOf(
+                        configurationService
+                            .getOpenSearchConfiguration()
+                            .getScrollTimeoutInSeconds())));
+
+    try {
+      AggregatedResult<Hit<CorrelatableProcessInstanceDto>> scrollResp =
+          osClient.retrieveAllScrollResults(searchRequest, CorrelatableProcessInstanceDto.class);
+      return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp).stream().toList();
+    } catch (IOException e) {
+      String reason = "Was not able to fetch instances for correlation values";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    } catch (RuntimeException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+            "Was not able to fetch instances for correlation values because no instance indices exist. "
+                + "Returning empty list.");
+        return Collections.emptyList();
+      }
+      throw e;
+    }
+  }
+
+  private List<String> extractCorrelationValues(
+      final Map<String, Aggregate> aggregations,
+      final List<CamundaEventSourceEntryDto> eventSources) {
+    final Aggregate valuesByProcessDefinition = aggregations.get(EVENT_SOURCE_AGG);
+    List<String> correlationValues = new ArrayList<>();
+    for (StringTermsBucket eventSourceBucket :
+        valuesByProcessDefinition.sterms().buckets().array()) {
+      CamundaEventSourceEntryDto eventSourceForCurrentBucket =
+          eventSources.stream()
+              .filter(
+                  source ->
+                      source
+                          .getConfiguration()
+                          .getProcessDefinitionKey()
+                          .equals(eventSourceBucket.key()))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new OptimizeRuntimeException(
+                          String.format(
+                              "Could not find event source for bucket with key %s when sampling for correlation values",
+                              eventSourceBucket.key())));
+      TopHitsAggregate topHits = eventSourceBucket.aggregations().get(BUCKET_HITS_AGG).topHits();
+      for (Hit<JsonData> hit : topHits.hits().hits()) {
+        final CorrelationValueDto correlationValueDto = hit.source().to(CorrelationValueDto.class);
+        Optional<String> correlationValueToAdd =
+            extractCorrelationValue(eventSourceForCurrentBucket, correlationValueDto);
+        if (correlationValueToAdd.isPresent()) {
+          correlationValues.add(correlationValueToAdd.get());
+        } else {
+          log.warn(
+              "Could not find correlation value to use in sample from {}", correlationValueDto);
+        }
+      }
+    }
+    return correlationValues;
+  }
+
+  private void addCorrelationValuesAggregation(
+      final SearchRequest.Builder searchSourceBuilder,
+      final List<CamundaEventSourceEntryDto> eventSources) {
+    TermsAggregation correlationValuesAggregation =
+        new TermsAggregation.Builder()
+            .field(PROCESS_DEFINITION_KEY)
+            .size(eventSources.size())
+            .build();
+    Map<String, Aggregation> subAggregations = new HashMap<>();
+    // We use top hits only to access the documents in the bucket, which will be random
+    // rather than scored
+    subAggregations.put(
+        BUCKET_HITS_AGG,
+        AggregationDSL.topHitsAggregation(List.of(CORRELATABLE_FIELDS), MAX_HITS)._toAggregation());
+    searchSourceBuilder.aggregations(
+        Map.of(
+            EVENT_SOURCE_AGG,
+            AggregationDSL.withSubaggregations(correlationValuesAggregation, subAggregations)));
+  }
+
+  private Query queryForEventSourceInstances(final CamundaEventSourceEntryDto eventSource) {
+    return new BoolQuery.Builder()
+        .filter(versionsQuery(eventSource))
+        .filter(tenantsQuery(eventSource))
+        .build()
+        .toQuery();
+  }
+
+  private Query queryForEventSourceInstancesWithCorrelationValues(
+      final CamundaEventSourceEntryDto eventSource, final List<String> correlationValues) {
+    final BoolQuery.Builder eventSourceQuery =
+        new BoolQuery.Builder()
+            .filter(
+                QueryDSL.term(
+                    PROCESS_DEFINITION_KEY,
+                    eventSource.getConfiguration().getProcessDefinitionKey()))
+            .filter(versionsQuery(eventSource))
+            .filter(tenantsQuery(eventSource));
+    if (eventSource.getConfiguration().isTracedByBusinessKey()) {
+      eventSourceQuery.filter(QueryDSL.stringTerms(BUSINESS_KEY, correlationValues));
+    } else {
+      eventSourceQuery.filter(
+          QueryDSL.nested(
+              VARIABLES,
+              new BoolQuery.Builder()
+                  .filter(
+                      QueryDSL.term(
+                          getNestedVariableNameField(),
+                          eventSource.getConfiguration().getTraceVariable()))
+                  .filter(QueryDSL.stringTerms(getNestedVariableValueField(), correlationValues))
+                  .build()
+                  .toQuery(),
+              ChildScoreMode.None));
+    }
+    return eventSourceQuery.build().toQuery();
+  }
+
+  private Query versionsQuery(final CamundaEventSourceEntryDto eventSource) {
+    final CamundaEventSourceConfigDto eventSourceConfig = eventSource.getConfiguration();
+    final BoolQuery.Builder versionQuery = new BoolQuery.Builder();
+    if (isDefinitionVersionSetToLatest(eventSourceConfig.getVersions())) {
+      versionQuery.must(
+          QueryDSL.term(
+              PROCESS_DEFINITION_VERSION,
+              processDefinitionReader.getLatestVersionToKey(
+                  eventSource.getConfiguration().getProcessDefinitionKey())));
+    } else if (!isDefinitionVersionSetToAll(eventSourceConfig.getVersions())) {
+      versionQuery.must(
+          QueryDSL.stringTerms(PROCESS_DEFINITION_VERSION, eventSourceConfig.getVersions()));
+    } else if (eventSourceConfig.getVersions().isEmpty()) {
+      versionQuery.mustNot(QueryDSL.exists(PROCESS_DEFINITION_VERSION));
+    }
+    return versionQuery.build().toQuery();
+  }
+
+  private Query tenantsQuery(final CamundaEventSourceEntryDto eventSource) {
+    final CamundaEventSourceConfigDto eventSourceConfig = eventSource.getConfiguration();
+    final BoolQuery.Builder tenantQuery = new BoolQuery.Builder();
+    if (eventSourceConfig.getTenants().contains(null) || eventSourceConfig.getTenants().isEmpty()) {
+      tenantQuery.should(QueryDSL.not(QueryDSL.exists(TENANT_ID)));
+    }
+    final List<String> nonNullTenants =
+        eventSourceConfig.getTenants().stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+    if (!nonNullTenants.isEmpty()) {
+      tenantQuery.should(QueryDSL.stringTerms(TENANT_ID, nonNullTenants));
+    }
+    return tenantQuery.build().toQuery();
   }
 
   private Query buildGroupFilterQuery(final List<String> groups) {

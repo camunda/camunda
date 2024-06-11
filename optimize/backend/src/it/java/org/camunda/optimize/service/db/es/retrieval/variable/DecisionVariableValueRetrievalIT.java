@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.es.retrieval.variable;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
@@ -20,8 +21,10 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.es.report.decision.AbstractDecisionDefinitionIT;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag(OPENSEARCH_PASSING)
 public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinitionIT {
 
   @Test

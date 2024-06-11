@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.eventprocess.autogeneration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateConnectionGatewayIdForDefinitionKey;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateModelGatewayIdForSource;
@@ -34,9 +35,11 @@ import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseD
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 // The tests in this class relate to the connections between sources
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessAutogenerationSourceConnectionsIT
     extends AbstractEventProcessAutogenerationIT {
 

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.eventprocess.autogeneration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 import com.google.common.collect.ImmutableMap;
@@ -27,10 +28,12 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 // The tests in this class relate to the order in which the events from each source appear in the
 // generated model
+@Tag(OPENSEARCH_PASSING)
 public class EventBasedProcessAutogenerationSourceOrderingIT
     extends AbstractEventProcessAutogenerationIT {
 

@@ -93,10 +93,8 @@ public interface AggregationDSL {
     return TermsAggregation.of(a -> a.field(field).size(size).order(orderBy));
   }
 
-  static TopHitsAggregation topHitsAggregation(
-      final List<String> sourceFields, final int size, final SortOptions... sortOptions) {
-    return TopHitsAggregation.of(
-        a -> a.source(QueryDSL.sourceInclude(sourceFields)).size(size).sort(List.of(sortOptions)));
+  static TopHitsAggregation topHitsAggregation(final List<String> sourceFields, final int size) {
+    return TopHitsAggregation.of(a -> a.source(QueryDSL.sourceInclude(sourceFields)).size(size));
   }
 
   static TopHitsAggregation topHitsAggregation(final int size, final SortOptions... sortOptions) {

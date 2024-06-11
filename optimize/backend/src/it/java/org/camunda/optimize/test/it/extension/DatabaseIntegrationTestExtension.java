@@ -50,7 +50,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinit
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;

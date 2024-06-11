@@ -10,9 +10,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.DefinitionQueryUtilES.createDefinitionQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -23,19 +21,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
@@ -52,47 +47,7 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
   private final OptimizeElasticsearchClient esClient;
 
   @Override
-  public void consumeAssigneesInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> assigneeBatchConsumer,
-      final int batchSize) {
-    consumeUserTaskFieldTermsInBatches(
-        termQuery(
-            ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name, engineAlias),
-        USER_TASK_ASSIGNEE,
-        assigneeBatchConsumer,
-        batchSize);
-  }
-
-  @Override
-  public void consumeCandidateGroupsInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
-      final int batchSize) {
-
-    consumeUserTaskFieldTermsInBatches(
-        termQuery(
-            ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name, engineAlias),
-        USER_TASK_CANDIDATE_GROUPS,
-        candidateGroupBatchConsumer,
-        batchSize);
-  }
-
-  @Override
-  public Set<String> getAssigneeIdsForProcess(
-      final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    return getUserTaskFieldTerms(
-        ProcessInstanceIndex.USER_TASK_ASSIGNEE, definitionKeyToTenantsMap);
-  }
-
-  @Override
-  public Set<String> getCandidateGroupIdsForProcess(
-      final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    return getUserTaskFieldTerms(
-        ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS, definitionKeyToTenantsMap);
-  }
-
-  private Set<String> getUserTaskFieldTerms(
+  public Set<String> getUserTaskFieldTerms(
       final String userTaskFieldName, final Map<String, Set<String>> definitionKeyToTenantsMap) {
     log.debug(
         "Fetching {} for process definition with key and tenants [{}]",
@@ -105,6 +60,19 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
       consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll);
     }
     return result;
+  }
+
+  @Override
+  public void consumeUserTaskFieldTermsInBatches(
+      final String indexName,
+      final String termField,
+      final String termValue,
+      final String userTaskFieldName,
+      final Consumer<List<String>> termBatchConsumer,
+      final int batchSize) {
+    final TermQueryBuilder filterQuery = termQuery(termField, termValue);
+    consumeUserTaskFieldTermsInBatches(
+        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
   }
 
   private void consumeUserTaskFieldTermsInBatches(
@@ -120,18 +88,9 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
   }
 
   private void consumeUserTaskFieldTermsInBatches(
-      final QueryBuilder filterQuery,
-      final String fieldName,
-      final Consumer<List<String>> termBatchConsumer,
-      final int batchSize) {
-    consumeUserTaskFieldTermsInBatches(
-        PROCESS_INSTANCE_MULTI_ALIAS, filterQuery, fieldName, termBatchConsumer, batchSize);
-  }
-
-  private void consumeUserTaskFieldTermsInBatches(
       final String indexName,
       final QueryBuilder filterQuery,
-      final String fieldName,
+      final String userTaskFieldName,
       final Consumer<List<String>> termBatchConsumer,
       final int batchSize) {
     final int resolvedBatchSize = Math.min(batchSize, MAX_RESPONSE_SIZE_LIMIT);
@@ -139,7 +98,8 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
         new CompositeAggregationBuilder(
                 COMPOSITE_AGG,
                 ImmutableList.of(
-                    new TermsValuesSourceBuilder(TERMS_AGG).field(getUserTaskFieldPath(fieldName))))
+                    new TermsValuesSourceBuilder(TERMS_AGG)
+                        .field(getUserTaskFieldPath(userTaskFieldName))))
             .size(resolvedBatchSize);
     final NestedAggregationBuilder userTasksAgg =
         nested(NESTED_USER_TASKS_AGG, FLOW_NODE_INSTANCES).subAggregation(assigneeCompositeAgg);
@@ -161,9 +121,5 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
       termBatchConsumer.accept(termsBatch);
       termsBatch.clear();
     } while (hasPage);
-  }
-
-  private String getUserTaskFieldPath(final String fieldName) {
-    return FLOW_NODE_INSTANCES + "." + fieldName;
   }
 }

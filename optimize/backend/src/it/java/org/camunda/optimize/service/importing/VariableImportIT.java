@@ -62,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -90,6 +91,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void deletionOfProcessInstancesDoesNotDistortVariableInstanceImport() {
     // given
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
@@ -105,6 +108,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of ProcessVariableReader for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variableImportWorks() {
     // given
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
@@ -193,7 +198,9 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  @Tag(OPENSEARCH_SHOULD_BE_PASSING)
+  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of ProcessVariableReader for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() {
     // given
     importAllEngineEntitiesFromScratch();
@@ -242,6 +249,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() {
     // given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
@@ -677,6 +686,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variableUpdateImport() {
     // given
     BpmnModelInstance processModel = getSingleUserTaskDiagram();
@@ -827,6 +838,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variableUpdatesOnSameVariableDoNotCreateSeveralVariables() {
     // given
     // @formatter:off
@@ -857,6 +870,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void onlyTheLatestVariableValueUpdateIsImported() {
     // given
     // @formatter:off
@@ -896,6 +911,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of ProcessVariableReader for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variablesForCompletedProcessInstancesAreFinalResult() {
     // given
     // @formatter:off
@@ -943,6 +960,8 @@ public class VariableImportIT extends AbstractImportIT {
 
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void oldVariableUpdatesAreOverwritten() {
     // given
     // @formatter:off
@@ -1006,6 +1025,8 @@ public class VariableImportIT extends AbstractImportIT {
   @SneakyThrows
   @Test
   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
+  // Dependent on implementation of Reporting functionality for OpenSearch
+  @EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "elasticsearch")
   public void variablesWithoutDefinitionKeyCanBeImported() {
     // given
     final BpmnModelInstance processModel = getSingleServiceTaskProcess();

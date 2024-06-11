@@ -19,7 +19,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.process.es.DbEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
 import org.camunda.optimize.service.db.repository.EventRepository;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessPublishStateIndex;

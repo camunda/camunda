@@ -5,12 +5,15 @@
  */
 package org.camunda.optimize.service.db.repository;
 
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import com.google.common.collect.ImmutableMap;
 import java.time.Instant;
@@ -21,18 +24,25 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelationValueDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
+import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -54,6 +64,11 @@ public interface EventRepository {
   String EVENT_GROUP_AGG = "eventGroupAggregation";
   String LOWERCASE_GROUP_AGG = "lowercaseGroupAggregation";
   String GROUP_COMPOSITE_AGG = "compositeAggregation";
+
+  String EVENT_SOURCE_AGG = "eventSourceAgg";
+  String BUCKET_HITS_AGG = "bucketHitsAgg";
+  String[] CORRELATABLE_FIELDS = {BUSINESS_KEY, VARIABLES};
+  int MAX_HITS = 100;
 
   void upsertEvents(List<EventDto> eventDtos);
 
@@ -78,6 +93,12 @@ public interface EventRepository {
   Page<DeletableEventDto> getEventsForRequest(EventSearchRequestDto eventSearchRequestDto);
 
   List<String> getEventGroups(EventGroupRequestDto eventGroupRequestDto);
+
+  List<String> getCorrelationValueSampleForEventSources(
+      List<CamundaEventSourceEntryDto> camundaSources);
+
+  List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      List<CamundaEventSourceEntryDto> camundaSources, List<String> correlationValues);
 
   enum TimeRangeRequest {
     AT,
@@ -183,5 +204,35 @@ public interface EventRepository {
         return Optional.empty();
       }
     }
+  }
+
+  default String[] getInstanceIndexNames(final List<CamundaEventSourceEntryDto> eventSources) {
+    return eventSources.stream()
+        .map(
+            source ->
+                getProcessInstanceIndexAliasName(
+                    source.getConfiguration().getProcessDefinitionKey()))
+        .toArray(String[]::new);
+  }
+
+  default Optional<String> extractCorrelationValue(
+      CamundaEventSourceEntryDto eventSourceForCurrentBucket,
+      CorrelationValueDto correlationValueDto) {
+    Optional<String> correlationValueToAdd;
+    final CamundaEventSourceConfigDto eventSourceConfig =
+        eventSourceForCurrentBucket.getConfiguration();
+    if (eventSourceConfig.isTracedByBusinessKey()) {
+      correlationValueToAdd = Optional.ofNullable(correlationValueDto.getBusinessKey());
+    } else if (eventSourceConfig.getTraceVariable() != null) {
+      final Map<String, SimpleProcessVariableDto> variablesByName =
+          correlationValueDto.getVariables().stream()
+              .collect(Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
+      correlationValueToAdd =
+          variablesByName.get(eventSourceConfig.getTraceVariable()).getValue().stream().findFirst();
+    } else {
+      throw new OptimizeRuntimeException(
+          "Cannot get variable sample values for event source with no tracing variable");
+    }
+    return correlationValueToAdd;
   }
 }

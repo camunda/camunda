@@ -325,6 +325,11 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
     assertDefinitionHasOnboardedStateForDefinition(false, processKey2);
     restartOnboardingSchedulingService(
         onboardingSchedulerService); // Reinitialize the service to simulate the first start
+    try {
+      Thread.sleep(500); // Wait a tiny bit to make sure that the service is started
+    } catch (InterruptedException e) {
+      // Do nothing, no problem
+    }
     // when Optimize is booted
     onboardingSchedulerService.onboardNewProcesses();
     importAllEngineEntitiesFromScratch();
@@ -333,6 +338,7 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
     engineIntegrationExtension.startProcessInstance(processOne.getId());
     engineIntegrationExtension.startProcessInstance(processTwo.getId());
     importAllEngineEntitiesFromLastIndex();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     onboardingSchedulerService.onboardNewProcesses();
 
     // Then

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
@@ -515,7 +517,8 @@ public class DefinitionReaderOS implements DefinitionReader {
       log.error(errorMsg, e);
       throw new OptimizeRuntimeException(errorMsg, e);
     }
-    return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp);
+    return OpensearchReaderUtil.extractAggregatedResponseValues(
+        scrollResp, createMappingFunctionForDefinitionType(typeClass));
   }
 
   private void addVersionFilterToQuery(
@@ -586,7 +589,10 @@ public class DefinitionReaderOS implements DefinitionReader {
           tenantId);
       return Optional.empty();
     }
-    return Optional.ofNullable(OpensearchReaderUtil.extractResponseValues(searchResponse).get(0));
+    return Optional.ofNullable(
+        OpensearchReaderUtil.extractResponseValues(
+                searchResponse, createMappingFunctionForDefinitionType(typeClass))
+            .get(0));
   }
 
   private <T extends DefinitionOptimizeResponseDto>
@@ -879,7 +885,9 @@ public class DefinitionReaderOS implements DefinitionReader {
 
       for (final StringTermsBucket b : versionsAgg) {
         final TopHitsAggregate topHits = b.aggregations().get(TOP_HITS_AGGREGATION).topHits();
-        results.addAll(OpensearchReaderUtil.mapHits(topHits.hits(), 1, typeClass));
+        results.addAll(
+            OpensearchReaderUtil.mapHits(
+                topHits.hits(), 1, typeClass, createMappingFunctionForDefinitionType(typeClass)));
       }
     }
     return results;
@@ -902,5 +910,31 @@ public class DefinitionReaderOS implements DefinitionReader {
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
     return osClient.getIndexNameService().getOptimizeIndexNameWithVersion(index);
+  }
+
+  private <T extends DefinitionOptimizeResponseDto>
+      Function<Hit<T>, T> createMappingFunctionForDefinitionType(final Class<T> type) {
+    return hit -> {
+      try {
+        T definitionDto = hit.source();
+        if (ProcessDefinitionOptimizeDto.class.equals(type)) {
+          ProcessDefinitionOptimizeDto processDefinition =
+              (ProcessDefinitionOptimizeDto) definitionDto;
+          processDefinition.setType(DefinitionType.PROCESS);
+          processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.index()));
+        } else {
+          definitionDto.setType(DefinitionType.DECISION);
+        }
+        return definitionDto;
+      } catch (Exception e) {
+        final String reason =
+            "While mapping search results to class {} "
+                + "it was not possible to deserialize a hit from OpenSearch!"
+                + " Hit response from OpenSearch: "
+                + hit.id();
+        log.error(reason, type.getSimpleName(), e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    };
   }
 }
