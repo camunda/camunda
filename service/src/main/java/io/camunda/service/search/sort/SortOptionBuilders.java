@@ -18,8 +18,17 @@ public final class SortOptionBuilders {
     return new ProcessInstanceSort.Builder();
   }
 
+  public static UserTaskSort.Builder userTask() {
+    return new UserTaskSort.Builder();
+  }
+
   public static ProcessInstanceSort processInstance(
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     return fn.apply(processInstance()).build();
+  }
+
+  public static UserTaskSort userTask(
+      final Function<UserTaskSort.Builder, ObjectBuilder<UserTaskSort>> fn) {
+    return fn.apply(userTask()).build();
   }
 }
