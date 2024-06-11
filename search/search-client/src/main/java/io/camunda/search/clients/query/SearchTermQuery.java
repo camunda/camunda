@@ -31,27 +31,27 @@ public final record SearchTermQuery(String field, TypedValue value, Boolean case
     }
 
     public Builder value(final String value) {
-      this.value = TypedValue.of(value);
-      return this;
+      return value(TypedValue.of(value));
     }
 
     public Builder value(final int value) {
-      this.value = TypedValue.of(value);
-      return this;
+      return value(TypedValue.of(value));
     }
 
     public Builder value(final long value) {
-      this.value = TypedValue.of(value);
-      return this;
+      return value(TypedValue.of(value));
     }
 
     public Builder value(final double value) {
-      this.value = TypedValue.of(value);
-      return this;
+      return value(TypedValue.of(value));
     }
 
     public Builder value(final boolean value) {
-      this.value = TypedValue.of(value);
+      return value(TypedValue.of(value));
+    }
+
+    public Builder value(final TypedValue value) {
+      this.value = value;
       return this;
     }
 

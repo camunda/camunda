@@ -67,7 +67,11 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery not(final List<SearchQuery> queries) {
-    return map(queries, SearchQueryBuilders::mustNot);
+    final var nonNullQueries = withoutNull(queries);
+    if (nonNullQueries != null && !nonNullQueries.isEmpty()) {
+      return SearchQueryBuilders.mustNot(queries);
+    }
+    return null;
   }
 
   public static SearchQuery or(final SearchQuery query, final SearchQuery... queries) {
