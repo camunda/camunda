@@ -228,6 +228,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
@@ -330,11 +335,6 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.vaadin.external.google</groupId>
-      <artifactId>android-json</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -441,11 +441,9 @@
         <configuration>
           <usedDependencies>
             <dependency>io.camunda:operate-mvc-auth-commons</dependency>
-            <dependency>com.vaadin.external.google:android-json</dependency>
           </usedDependencies>
           <ignoredDependencies>
             <dependency>io.camunda:tasklist-mvc-auth-commons</dependency>
-            <dependency>org.json:json:jar</dependency>
           </ignoredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>

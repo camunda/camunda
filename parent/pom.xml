@@ -158,7 +158,6 @@
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.21</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
-    <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
@@ -187,7 +186,6 @@
     <version.graphql-java-annotations>21.2</version.graphql-java-annotations>
 
     <version.javassist>3.30.2-GA</version.javassist>
-    <version.json>20240303</version.json>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -1837,19 +1835,6 @@
         <groupId>org.hdrhistogram</groupId>
         <artifactId>HdrHistogram</artifactId>
         <version>${version.hdr-histogram}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vaadin.external.google</groupId>
-        <artifactId>android-json</artifactId>
-        <version>${version.android-json}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.json</groupId>
-        <artifactId>json</artifactId>
-        <version>${version.json}</version>
       </dependency>
 
       <dependency>

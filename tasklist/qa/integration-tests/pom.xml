@@ -122,11 +122,6 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
-        <!-- Tasklist depends on org.json:json -->
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
@@ -175,6 +170,12 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -395,12 +396,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.json</groupId>
-      <artifactId>json</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
       <scope>test</scope>
@@ -519,9 +514,9 @@
           </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
-            <dependency>org.json:json</dependency>
             <dependency>io.camunda:tasklist-importer-850</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
