@@ -8,8 +8,6 @@ package io.camunda.optimize.service.security.collection;
 import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static io.camunda.optimize.service.security.authorization.EngineDefinitionAuthorizationIT.DECISION_KEY;
-import static io.camunda.optimize.service.security.authorization.EngineDefinitionAuthorizationIT.PROCESS_KEY;
 import static io.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static io.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static io.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -544,7 +542,7 @@ public class ReportCollectionUserAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private String getDefinitionKey(final int definitionResourceType) {
-    return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
+    return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? "aProcess" : "aDecision";
   }
 
   private AuthorizedReportDefinitionResponseDto getReportByIdAsKermit(final String reportId) {

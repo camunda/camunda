@@ -17,7 +17,6 @@ import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import io.camunda.optimize.test.optimize.AlertClient;
 import io.camunda.optimize.test.optimize.AnalysisClient;
 import io.camunda.optimize.test.optimize.AssigneesClient;
-import io.camunda.optimize.test.optimize.CandidateGroupClient;
 import io.camunda.optimize.test.optimize.CollectionClient;
 import io.camunda.optimize.test.optimize.DashboardClient;
 import io.camunda.optimize.test.optimize.DefinitionClient;
@@ -153,8 +152,6 @@ public abstract class AbstractIT {
       new DefinitionClient(optimizeRequestExecutorSupplier);
   protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
   protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
-  protected CandidateGroupClient candidateGroupClient =
-      new CandidateGroupClient(optimizeRequestExecutorSupplier);
   protected FlowNodeNamesClient flowNodeNamesClient =
       new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
   protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
