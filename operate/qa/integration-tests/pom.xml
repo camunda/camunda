@@ -46,13 +46,13 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-zeebe</artifactId>
+      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>org.springframework.data</groupId>
           <artifactId>spring-data-jpa</artifactId>
         </exclusion>
       </exclusions>
-      <scope>test</scope>
     </dependency>
 
     <!-- ELASTICSEARCH -->
