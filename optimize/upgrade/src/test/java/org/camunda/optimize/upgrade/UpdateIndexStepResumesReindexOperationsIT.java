@@ -30,7 +30,6 @@ import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.matchers.MatchType;
@@ -48,7 +47,6 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   protected final LogCapturer schemaUpdateClientLogs =
       LogCapturer.create().captureForType(SchemaUpgradeClient.class);
 
-  @Disabled("Fix with #12753")
   @Test
   public void singleIndexDetectRunningReindexAndWaitForIt() throws IOException {
     // given a prepared index with some data in it
@@ -85,7 +83,6 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     schemaUpdateClientLogs.assertContains("will wait for it to finish.");
   }
 
-  @Disabled("Fix with #12753")
   @Test
   public void templatedIndexDetectRunningReindexAndWaitForIt() throws IOException {
     // given a prepared index with some data in it
@@ -131,7 +128,6 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     schemaUpdateClientLogs.assertContains("will wait for it to finish.");
   }
 
-  @Disabled("Fix with #12753")
   @Test
   public void templatedRolledOverIndexDetectRunningReindexAndWaitForIt() throws IOException {
     // given a prepared index with some data in it and being rolled over

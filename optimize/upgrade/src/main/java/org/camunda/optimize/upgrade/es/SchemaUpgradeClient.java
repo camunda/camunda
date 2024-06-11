@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.UPDATE_LOG_ENTRY_INDEX_NAME;
@@ -490,7 +491,8 @@ public class SchemaUpgradeClient {
           .filter(
               taskInfo ->
                   taskInfo.getDescription() != null
-                      && taskInfo.getDescription().contains(request.getDescription()))
+                      && areTaskAndRequestDescriptionsEqual(
+                          taskInfo.getDescription(), request.getDescription()))
           .findAny();
     } catch (Exception e) {
       log.warn(
@@ -549,5 +551,19 @@ public class SchemaUpgradeClient {
               "Found pending task with id %s, but it is not in a completable state", reindexTaskId),
           ex);
     }
+  }
+
+  private boolean areTaskAndRequestDescriptionsEqual(
+      String taskDescription, String requestDescription) {
+    return getDescriptionStringWithoutSuffix(taskDescription)
+        .equals(getDescriptionStringWithoutSuffix(requestDescription));
+  }
+
+  private String getDescriptionStringWithoutSuffix(final String descriptionString) {
+    if (descriptionString.endsWith(ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX)) {
+      return descriptionString.substring(
+          0, descriptionString.length() - ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX.length());
+    }
+    return descriptionString;
   }
 }

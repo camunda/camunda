@@ -125,6 +125,8 @@ public class DatabaseConstants {
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
       "resource_already_exists_exception";
 
+  public static final String ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX = "[_doc]";
+
   // used to reference Optimize as the source "engine" of imported data
   public static final String ENGINE_ALIAS_OPTIMIZE = "optimize";
 
