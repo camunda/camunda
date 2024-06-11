@@ -12,21 +12,3 @@ spring:
    generate-ddl: false
    hibernate:
     ddl-auto: validate
-management:
-  server:
-    port: 8082
-  endpoints:
-    web:
-      exposure:
-        include: health,prometheus
-server:
-  compression:
-    enabled: true
-  http2:
-    enabled: true
-  servlet:
-    encoding:
-      charset: UTF-8
-      force: true
-    context-path: ${IDENTITY_BASE_PATH:}
-  max-http-request-header-size: ${SERVER_REQUEST_HEADER_MAX_SIZE:8KB}
