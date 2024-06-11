@@ -29,6 +29,7 @@ public class MigrateProcessInstanceRegressionTest {
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
+  // https://github.com/camunda/camunda/issues/19212
   @Test
   public void shouldResolveIncidentAfterMigratingActivatingElementWithMessageBoundaryEvent() {
     // given
