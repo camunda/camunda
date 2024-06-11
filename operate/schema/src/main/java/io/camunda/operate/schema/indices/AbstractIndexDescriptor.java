@@ -49,10 +49,13 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   // FIXME clean this up when Operate exporter is converted to using Spring
   public String getIndexPrefix() {
-    if (indexPrefix == null) {
-      indexPrefix = operateProperties.getIndexPrefix();
+    if (operateProperties != null) {
+      return DatabaseInfo.isOpensearch()
+          ? operateProperties.getOpensearch().getIndexPrefix()
+          : operateProperties.getElasticsearch().getIndexPrefix();
+    } else {
+      return indexPrefix;
     }
-    return indexPrefix;
   }
 
   public AbstractIndexDescriptor setIndexPrefix(final String indexPrefix) {
