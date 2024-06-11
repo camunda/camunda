@@ -21,9 +21,11 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.nio.ByteBuffer;
@@ -138,6 +140,31 @@ final class ExporterEnableTest {
                     .isEqualTo(TestExporter.METADATA.get(EXPORTER_ID_1).get(p)));
   }
 
+  @Test
+  void exporterStaysEnabledAfterLeaderChange() {
+    // given
+    waitUntilOperationCompleted(actuator.disableExporter(EXPORTER_ID_2));
+    TestExporter.RECORDS.get(EXPORTER_ID_2).clear();
+    TestExporter.METADATA.get(EXPORTER_ID_2).clear();
+
+    // re-enable
+    waitUntilOperationCompleted(actuator.enableExporter(EXPORTER_ID_2));
+
+    // when
+    shutdownLeaderOfPartition2();
+    createDeploymentOnAllPartitions("process-1");
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .during(Duration.ofSeconds(5))
+        .until(TestExporter.RECORDS.get(EXPORTER_ID_2)::size, hasStableValue());
+
+    assertThat(TestExporter.METADATA.get(EXPORTER_ID_2).get(2))
+        .describedAs("Exporter 2 has exported records from partition 2")
+        .isGreaterThan(0);
+  }
+
   private void waitUntilOperationCompleted(final PlannedOperationsResponse disableResponse) {
     Awaitility.await()
         .timeout(Duration.ofSeconds(30))
@@ -154,6 +181,24 @@ final class ExporterEnableTest {
             Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(), "process.bpmn")
         .send()
         .join();
+  }
+
+  private void shutdownLeaderOfPartition2() {
+    final TestStandaloneBroker brokerToStop = cluster.leaderForPartition(2);
+    brokerToStop.stop();
+
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                    .doesNotContainBroker(Integer.parseInt(brokerToStop.nodeId().id())));
+
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                    .hasLeaderForEachPartition(PARTITIONS_COUNT));
   }
 
   public static class TestExporter implements Exporter {
