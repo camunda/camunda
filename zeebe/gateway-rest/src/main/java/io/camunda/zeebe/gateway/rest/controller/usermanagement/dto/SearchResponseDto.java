@@ -5,6 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.dto.search;
+package io.camunda.zeebe.gateway.rest.controller.usermanagement.dto;
 
-public class PageDto {}
+import java.util.List;
+
+public class SearchResponseDto<T> {
+  private List<T> items;
+  private PageResponseDto page;
+
+  public List<T> getItems() {
+    return items;
+  }
+
+  public void setItems(final List<T> items) {
+    this.items = items;
+  }
+}

@@ -845,9 +845,39 @@ components:
           type: "string"
         enabled:
           type: "boolean"
-    SearchRequestDto:
+    FilterDto:
       type: "object"
       properties: { }
+    SortDto:
+      type: "object"
+      properties: { }
+    PageDto:
+      type: "object"
+      properties: { }
+    SearchRequestDto:
+      type: "object"
+      properties:
+        filter:
+          type: "object"
+          properties: { }
+        sort:
+          type: "object"
+          properties: { }
+        page:
+          type: "object"
+          properties: { }
+    SearchResponseDto:
+      type: "object"
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CamundaGroup'
+              - $ref: '#/components/schemas/CamundaUser'
+        page:
+          type: "object"
+          properties: { }
     CamundaGroup:
       type: "object"
       properties:
