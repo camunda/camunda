@@ -209,7 +209,7 @@ test.describe('Process Instances Filters', () => {
     ).not.toBeVisible();
 
     // switch to multiple mode and add multiple variables
-    await page.getByText(/^multiple$/i).click({force: true});
+    await filtersPanel.multipleVariablesSwitch.click({force: true});
     await filtersPanel.variableNameFilter.fill('filtersTest');
     await filtersPanel.variableValueFilter.fill('123, 456');
 

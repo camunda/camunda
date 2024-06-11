@@ -38,7 +38,7 @@ export class FiltersPanel {
   readonly startDateFilter: Locator;
   readonly variableNameFilter: Locator;
   readonly variableValueFilter: Locator;
-  readonly deleteResourceButton: Locator;
+  readonly multipleVariablesSwitch: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -103,9 +103,7 @@ export class FiltersPanel {
       name: /value/i,
     });
 
-    this.deleteResourceButton = this.panel.getByRole('button', {
-      name: 'Delete Process Definition',
-    });
+    this.multipleVariablesSwitch = this.panel.getByText(/^multiple$/i);
   }
 
   async validateCheckedState({
