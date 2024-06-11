@@ -30,8 +30,8 @@ const DeleteFilterModal: React.FC<Props> = ({
       danger
       open={isOpen}
       size="sm"
-      modalLabel="Delete filter"
-      modalHeading="The custom filter will be deleted."
+      modalLabel={isOpen ? 'Delete filter' : undefined}
+      modalHeading={isOpen ? 'The custom filter will be deleted.' : undefined}
       primaryButtonText="Confirm deletion"
       secondaryButtonText="Cancel"
       onRequestClose={onClose}
