@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
@@ -19,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -28,7 +28,7 @@ import org.springframework.http.client.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
-  private final List<Class<?>> springApplications;
+  private final Class<?> springApplication;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
@@ -36,20 +36,21 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private ConfigurableApplicationContext springContext;
 
-  public TestSpringApplication(final List<Class<?>> springApplications) {
+  public TestSpringApplication(final Class<?> springApplications) {
     this(springApplications, new HashMap<>(), new HashMap<>(), new ArrayList<>());
   }
 
   private TestSpringApplication(
-      final List<Class<?>> springApplications,
+      final Class<?> springApplication,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides,
       final Collection<String> additionalProfiles) {
-    this.springApplications = springApplications;
+    this.springApplication = springApplication;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
     this.additionalProfiles.add(Profile.TEST.getId());
+    this.additionalProfiles.add(Profile.IDENTITY.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
@@ -168,7 +169,7 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
             new ContextOverrideInitializer(beans, propertyOverrides),
             new HealthConfigurationInitializer())
         .profiles(additionalProfiles.toArray(String[]::new))
-        .sources(springApplications.toArray(Class[]::new));
+        .sources(springApplication, IdentityModuleConfiguration.class);
   }
 
   @Override

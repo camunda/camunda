@@ -9,12 +9,10 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
-import java.util.List;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
@@ -23,7 +21,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   private final GatewayProperties config;
 
   public TestStandaloneGateway() {
-    super(List.of(GatewayModuleConfiguration.class, IdentityModuleConfiguration.class));
+    super(GatewayModuleConfiguration.class);
     config = new GatewayProperties();
 
     config.getNetwork().setHost("0.0.0.0");
@@ -31,9 +29,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
 
     //noinspection resource
-    withBean("config", config, GatewayProperties.class)
-        .withAdditionalProfile(Profile.GATEWAY)
-        .withAdditionalProfile(Profile.IDENTITY);
+    withBean("config", config, GatewayProperties.class).withAdditionalProfile(Profile.GATEWAY);
   }
 
   @Override
