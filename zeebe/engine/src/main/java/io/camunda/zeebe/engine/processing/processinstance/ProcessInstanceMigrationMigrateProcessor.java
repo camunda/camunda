@@ -296,7 +296,6 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetElementId,
           processInstanceKey,
           elementId);
-      ;
     }
   }
 
