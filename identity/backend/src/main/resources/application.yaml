@@ -36,8 +36,9 @@ server:
     context-path: ${IDENTITY_BASE_PATH:}
   max-http-request-header-size: ${SERVER_REQUEST_HEADER_MAX_SIZE:8KB}
 camunda:
-  presets:
     identity:
-      user: admin
-      password: admin
+      init:
+        users:
+          - username: demo
+            password: demo
 

@@ -7,17 +7,14 @@
  */
 package io.camunda.identity.usermanagement.initializer;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
-import io.camunda.identity.config.IdentityPresets;
+import io.camunda.identity.config.IdentityConfiguration;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.service.UserService;
 import jakarta.annotation.PostConstruct;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -25,34 +22,29 @@ import org.springframework.stereotype.Component;
 @DependsOnDatabaseInitialization
 public class DefaultUserInitializer {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultUserInitializer.class);
-  private final CamundaUserDetailsManager userDetailsManager;
-  private final PasswordEncoder passwordEncoder;
-  private final IdentityPresets identityPresets;
+  private final UserService userService;
+  private final IdentityConfiguration identityConfiguration;
 
   public DefaultUserInitializer(
-      final DataSource dataSource,
-      final PasswordEncoder passwordEncoder,
-      final IdentityPresets identityPresets) {
-    userDetailsManager = new CamundaUserDetailsManager(dataSource);
-    this.passwordEncoder = passwordEncoder;
-    this.identityPresets = identityPresets;
+      final UserService userService, final IdentityConfiguration identityConfiguration) {
+    this.userService = userService;
+    this.identityConfiguration = identityConfiguration;
   }
 
   @PostConstruct
   public void setupUsers() {
-    if (userDetailsManager.userExists(identityPresets.getUser())) {
-      LOG.info("User '{}' already exists, skipping creation.", identityPresets.getUser());
-      return;
+    identityConfiguration.getUsers().forEach(this::setupUser);
+  }
+
+  public void setupUser(final CamundaUserWithPassword camundaUserWithPassword) {
+    try {
+      userService.createUser(camundaUserWithPassword);
+    } catch (final Exception e) {
+      if ("user.duplicate".equals(e.getMessage())) {
+        LOG.info("User '{}' already exists, updating it.", camundaUserWithPassword.getUsername());
+        return;
+      }
+      throw e;
     }
-
-    final UserDetails user =
-        User.builder()
-            .username(identityPresets.getUser())
-            .password(identityPresets.getPassword())
-            .passwordEncoder(passwordEncoder::encode)
-            .roles("DEFAULT_USER")
-            .build();
-
-    userDetailsManager.createUser(user);
   }
 }

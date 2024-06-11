@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.identity.CamundaSpringBootTest;
-import io.camunda.identity.config.IdentityPresets;
+import io.camunda.identity.config.IdentityConfiguration;
+import io.camunda.identity.usermanagement.service.UserService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,8 +21,10 @@ import org.springframework.security.provisioning.UserDetailsManager;
 
 @CamundaSpringBootTest(
     properties = {
-      "camunda.presets.identity.user=" + DefaultUserInitializerTest.USERNAME,
-      "camunda.presets.identity.password=" + DefaultUserInitializerTest.PASSWORD
+      "camunda.identity.init.users[0].username=" + DefaultUserInitializerTest.USERNAME,
+      "camunda.identity.init.users[0].password=" + DefaultUserInitializerTest.PASSWORD,
+      "camunda.identity.init.users[1].username=test1",
+      "camunda.identity.init.users[1].password=password1",
     },
     profiles = {"test", "auth-basic"})
 public class DefaultUserInitializerTest {
@@ -29,25 +33,25 @@ public class DefaultUserInitializerTest {
   static final String PASSWORD = "password";
 
   @Autowired DefaultUserInitializer defaultUserInitializer;
-  @Autowired IdentityPresets presets;
+  @Autowired UserService userService;
+  @Autowired IdentityConfiguration identityConfiguration;
   @Autowired UserDetailsManager camundaUserDetailsManager;
   @Autowired PasswordEncoder passwordEncoder;
 
   @Test
-  void defaultUserIsInitialized() {
-
+  void defaultUsersAreInitialized() {
+    Assertions.assertEquals(2, userService.findAllUsers().size());
     final var defaultUser = camundaUserDetailsManager.loadUserByUsername(USERNAME);
     assertTrue(passwordEncoder.matches("password", defaultUser.getPassword()));
   }
 
   @Test
-  void defaultUserIsInitializedOnce() {
-    presets.setPassword("new-password");
+  void existingDefaultUsersAreNotChanged() {
+    identityConfiguration.getUsers().getFirst().setPassword("new-password");
 
     defaultUserInitializer.setupUsers();
 
     final var defaultUser = camundaUserDetailsManager.loadUserByUsername(USERNAME);
     assertFalse(passwordEncoder.matches("new-password", defaultUser.getPassword()));
-    assertTrue(passwordEncoder.matches(PASSWORD, defaultUser.getPassword()));
   }
 }

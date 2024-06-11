@@ -87,7 +87,7 @@ public class UserService {
 
   public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
     try {
-      if (!Objects.equals(id, user.getId())) {
+      if (user.getId() != null && !Objects.equals(id, user.getId())) {
         throw new RuntimeException("user.notFound");
       }
       final CamundaUser existingUser = userProfileRepository.findUserById(id);
@@ -106,7 +106,7 @@ public class UserService {
               .disabled(!user.isEnabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(existingUser.getId(), user.getEmail()));
+      userProfileRepository.save(new Profile(id, user.getEmail()));
       return userProfileRepository.findUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
