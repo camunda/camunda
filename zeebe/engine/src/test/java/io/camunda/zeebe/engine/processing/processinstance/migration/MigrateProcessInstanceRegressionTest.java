@@ -9,11 +9,13 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -80,7 +82,6 @@ public class MigrateProcessInstanceRegressionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    // when
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
@@ -89,14 +90,15 @@ public class MigrateProcessInstanceRegressionTest {
         .addMappingInstruction("A", "B")
         .migrate();
 
-    // then
-    final Record<IncidentRecordValue> incidentRecord =
-        ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    // when
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    assertThat(incidentRecord.getValue())
-        .describedAs("Expect that the incident resolved event contains updated fields")
-        .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .hasBpmnProcessId(targetProcessId)
-        .hasElementId("B");
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expect that the problem was resolved, so we could create the job")
+        .isTrue();
   }
 }
