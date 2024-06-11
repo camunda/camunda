@@ -15,7 +15,7 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {setup} from './processInstanceMigration.mocks';
+import {setup} from './childProcessInstanceMigration.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
@@ -25,7 +25,7 @@ let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
-  const {processDefinitionKey} = initialData;
+  const {parentProcessDefinitionKey} = initialData;
 
   await expect
     .poll(
@@ -35,7 +35,7 @@ test.beforeAll(async ({request}) => {
           {
             data: {
               filter: {
-                processDefinitionKey,
+                processDefinitionKey: parentProcessDefinitionKey,
               },
             },
           },
@@ -45,54 +45,106 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', 2);
 });
 
 test.beforeEach(async ({processesPage}) => {
   await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
 });
 
-test.describe('Process Instance Migration', () => {
-  test('Migrate Process Instances', async ({
+test.describe('Child Process Instance Migration @roundtrip', () => {
+  test('Migrate Child Process Instances', async ({
     processesPage,
+    processInstancePage,
     migrationView,
     commonPage,
+    page,
   }) => {
-    const {bpmnProcessId, version} = initialData;
-    const targetVersion = '2';
+    test.slow();
+    const {
+      parentBpmnProcessId,
+      parentVersion,
+      processInstances,
+      childBpmnProcessId,
+    } = initialData;
+    const targetVersion = '1';
 
-    await processesPage.selectProcess(bpmnProcessId);
-    await processesPage.selectVersion(version.toString());
+    // Get parent process instance key
+    const parentInstanceKey = processInstances[0]!.processInstanceKey;
 
+    // Select parent process and version on filters
+    await processesPage.selectProcess(parentBpmnProcessId);
+    await processesPage.selectVersion(parentVersion.toString());
+
+    // Should have 2 instances of the parent call activity process
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
-    ).toContainText(/10 results/i);
+    ).toContainText(/2 results/i);
 
-    // select 6 process instances for migration
+    // Navigate to parent process instance page
+    await processesPage.processInstancesTable
+      .getByRole('link', {
+        name: parentInstanceKey,
+      })
+      .click();
+
+    // Click on button to see called elements (child processes) in process instance list
+    await processInstancePage.instanceHeader
+      .getByRole('link', {
+        name: 'View all',
+      })
+      .click();
+
+    // Get child process version that was called by parent process instance
+    const childVersion = await processesPage.processInstancesTable
+      .getByTestId('cell-processVersion')
+      .innerText();
+
+    // Check if parent process instance key is set (filtering by parent instance key is on here)
+    await expect(
+      processesPage.processInstancesTable.getByRole('cell', {
+        name: parentInstanceKey,
+      }),
+    ).toBeVisible();
+
+    // Select child process and version before going into migration
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        process: childBpmnProcessId,
+        version: childVersion,
+        parentInstanceId: parentInstanceKey,
+      },
+    });
+
+    await expect(
+      processesPage.processInstancesTable.getByText(/1 result/i),
+    ).toBeVisible();
+
+    // Select first child process
     await processesPage.getNthProcessInstanceCheckbox(0).click();
-    await processesPage.getNthProcessInstanceCheckbox(1).click();
-    await processesPage.getNthProcessInstanceCheckbox(2).click();
-    await processesPage.getNthProcessInstanceCheckbox(3).click();
-    await processesPage.getNthProcessInstanceCheckbox(4).click();
-    await processesPage.getNthProcessInstanceCheckbox(5).click();
+    await expect(page.getByText(/1 item selected/i)).toBeVisible();
 
+    // Check if migrate button is enabled
+    await expect(processesPage.migrateButton).toBeEnabled();
+
+    // Go into process instance migration
     await processesPage.migrateButton.click();
     await processesPage.migrationModal.confirmButton.click();
 
-    await migrationView.selectTargetProcess('orderProcessMigration');
+    // Select target process, version and map flow nodes
+    await migrationView.selectTargetProcess('childProcess');
     await migrationView.selectTargetVersion(targetVersion);
-
     await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Check payment',
-      targetFlowNodeName: 'Ship Articles',
+      sourceFlowNodeName: 'New Task',
+      targetFlowNodeName: 'Task',
     });
 
+    // Confirm and finish migration
     await migrationView.nextButton.click();
-
     await expect(migrationView.summaryNotification).toContainText(
-      `You are about to migrate 6 process instances from the process definition: ${bpmnProcessId} - version ${version} to the process definition: ${bpmnProcessId} - version ${targetVersion}`,
+      `You are about to migrate 1 process instance from the process definition: ${childBpmnProcessId} - version ${childVersion} to the process definition: ${childBpmnProcessId} - version ${targetVersion}`,
     );
-
     await migrationView.confirmButton.click();
 
     await expect(commonPage.operationsList).toBeVisible();
@@ -110,43 +162,51 @@ test.describe('Process Instance Migration', () => {
       migrateOperationEntry.getByRole('progressbar'),
     ).not.toBeVisible({timeout: 60000});
 
-    await expect(processesPage.processNameFilter).toHaveValue(bpmnProcessId);
+    await expect(processesPage.processNameFilter).toHaveValue(
+      childBpmnProcessId,
+    );
+
     expect(await processesPage.processVersionFilter.innerText()).toBe(
       targetVersion.toString(),
     );
 
-    await migrateOperationEntry
-      .getByRole('link', {name: /6 instances/i})
-      .click();
+    await migrateOperationEntry.getByRole('link').click();
 
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
-    ).toContainText(/6 results/i);
+    ).toContainText(/1 result/i);
 
-    // expect 6 process instances to be migrated to target version
+    // expect 1 process instance to be migrated to target version
     await expect(
       processesPage.processInstancesTable.getByRole('cell', {
-        name: targetVersion.toString(),
+        name: targetVersion,
         exact: true,
       }),
-    ).toHaveCount(6);
+    ).toHaveCount(1);
+
+    // expect parent process instance key to match initial parent process id
+    await expect(
+      processesPage.processInstancesTable.getByRole('cell', {
+        name: parentInstanceKey,
+      }),
+    ).toBeVisible();
 
     // expect no process instances for source version
     await expect(
       processesPage.processInstancesTable.getByRole('cell', {
-        name: version.toString(),
+        name: childVersion,
         exact: true,
       }),
     ).not.toBeVisible();
 
     await processesPage.removeOptionalFilter('Operation Id');
 
-    // expect 4 process instances for source version
-    await processesPage.selectProcess(bpmnProcessId);
-    await processesPage.selectVersion(version.toString());
+    // expect 1 process instances for source version
+    await processesPage.selectProcess(childBpmnProcessId);
+    await processesPage.selectVersion(childVersion);
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
-    ).toContainText(/4 results/i);
+    ).toContainText(/1 result/i);
 
     await commonPage.collapseOperationsPanel();
   });
