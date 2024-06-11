@@ -13,7 +13,6 @@ import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
-import java.util.List;
 import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -28,7 +27,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   }
 
   public TestRestoreApp(final BrokerProperties config) {
-    super(List.of(RestoreApp.class));
+    super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
