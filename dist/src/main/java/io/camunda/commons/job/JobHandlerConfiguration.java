@@ -27,8 +27,8 @@ import org.springframework.util.unit.DataSize;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
-    prefix = "zeebe.broker.gateway",
-    name = "enable",
+    prefix = "camunda.rest",
+    name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class JobHandlerConfiguration {

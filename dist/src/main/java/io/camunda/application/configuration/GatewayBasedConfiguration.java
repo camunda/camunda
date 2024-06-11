@@ -22,11 +22,13 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -56,6 +58,12 @@ public final class GatewayBasedConfiguration {
 
   public Duration shutdownTimeout() {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
+  }
+
+  @ConditionalOnProperty(prefix = "camunda.rest", name = "enabled", havingValue = "false")
+  @Bean
+  public RestGatewayDisabled disableRestGateway() {
+    return new RestGatewayDisabled();
   }
 
   @Bean
