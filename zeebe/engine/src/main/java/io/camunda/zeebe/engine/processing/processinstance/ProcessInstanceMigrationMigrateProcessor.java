@@ -284,6 +284,12 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
+    if (ProcessInstanceIntent.ELEMENT_ACTIVATING == elementInstance.getState()) {
+      // element in ACTIVATING state should not be subscribed into new subscription during migration
+      // https://github.com/camunda/camunda/issues/19212
+      return;
+    }
+
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
     final var targetElement =
