@@ -7,6 +7,7 @@ on:
     - master
     - maintenance/*
     - release/*
+    - optimize-c8
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
