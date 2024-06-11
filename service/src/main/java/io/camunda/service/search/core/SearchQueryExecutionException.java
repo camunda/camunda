@@ -5,18 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.service.search.core;
 
-import {Page} from '@playwright/test';
+import io.camunda.service.CamundaServiceException;
 
-class TestSetupPage {
-  private page: Page;
+public class SearchQueryExecutionException extends CamundaServiceException {
 
-  constructor(page: Page) {
-    this.page = page;
-  }
+  private static final long serialVersionUID = 1L;
 
-  async goToLoginPage() {
-    await this.page.goto('/tasklist/login');
+  public SearchQueryExecutionException(String message, Throwable cause) {
+    super(message, cause);
   }
 }
-export {TestSetupPage};

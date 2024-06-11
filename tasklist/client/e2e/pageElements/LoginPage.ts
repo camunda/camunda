@@ -9,36 +9,30 @@
 import {Page, Locator} from '@playwright/test';
 
 class LoginPage {
+  private page: Page;
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
   readonly errorMessage: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     this.usernameInput = page.getByLabel(/^username$/i);
     this.passwordInput = page.getByLabel(/^password$/i);
     this.loginButton = page.getByRole('button', {name: 'Login'});
     this.errorMessage = page.getByRole('alert').first();
   }
 
-  async fillUsername(username: string) {
-    await this.usernameInput.fill(username);
-  }
-
-  async fillPassword(password: string) {
-    await this.passwordInput.fill(password);
-  }
-
-  async clickLoginButton() {
-    await this.loginButton.click();
-  }
-
   async login(credentials: {username: string; password: string}) {
     const {username, password} = credentials;
 
-    await this.fillUsername(username);
-    await this.fillPassword(password);
-    await this.clickLoginButton();
+    await this.usernameInput.fill(username);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
+  }
+
+  async goto() {
+    await this.page.goto('/tasklist/login');
   }
 }
 
