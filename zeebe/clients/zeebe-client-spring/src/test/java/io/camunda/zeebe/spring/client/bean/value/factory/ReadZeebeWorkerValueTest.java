@@ -33,9 +33,6 @@ import org.junit.jupiter.api.Test;
 
 public class ReadZeebeWorkerValueTest {
 
-  public static final String DEFAULT_WORKER_TYPE = "defaultWorkerType";
-  public static final String DEFAULT_WORKER_NAME = "defaultJobWorkerName";
-
   @Test
   public void applyOnWithZeebeWorker() {
     // given

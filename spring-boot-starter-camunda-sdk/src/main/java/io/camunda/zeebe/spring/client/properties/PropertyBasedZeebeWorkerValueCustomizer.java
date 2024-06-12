@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
+import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
 import static org.apache.commons.lang3.StringUtils.*;
 
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -53,6 +54,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   public void customize(final ZeebeWorkerValue zeebeWorker) {
     applyDefaultWorkerName(zeebeWorker);
     applyDefaultJobWorkerType(zeebeWorker);
+    applyDefaultJobWorkerTenantIds(zeebeWorker);
     applyFetchVariables(zeebeWorker);
     applyOverrides(zeebeWorker);
   }
@@ -166,6 +168,25 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
             generatedJobWorkerType);
         zeebeWorker.setType(generatedJobWorkerType);
       }
+    }
+  }
+
+  private void applyDefaultJobWorkerTenantIds(final ZeebeWorkerValue zeebeWorker) {
+    final List<String> defaultJobWorkerTenantIds =
+        zeebeClientConfigurationProperties.getDefaultJobWorkerTenantIds();
+    if (zeebeWorker.getTenantIds() == null || zeebeWorker.getTenantIds().isEmpty()) {
+      if (!defaultJobWorkerTenantIds.isEmpty()) {
+        LOG.debug(
+            "Worker '{}': Setting tenantIds {}",
+            zeebeWorker.getTenantIds(),
+            defaultJobWorkerTenantIds);
+        zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
+      }
+    } else {
+      final var defaultTenantIds = DEFAULT.getDefaultJobWorkerTenantIds();
+      LOG.debug(
+          "Worker '{}': Setting tenantIds to default {}", zeebeWorker.getName(), defaultTenantIds);
+      zeebeWorker.setTenantIds(defaultTenantIds);
     }
   }
 }
