@@ -21,7 +21,7 @@ on:
       - 'pom.xml'
       - 'zeebe/**'
   pull_request:
-    paths:
+    paths: # keep in sync with common-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
