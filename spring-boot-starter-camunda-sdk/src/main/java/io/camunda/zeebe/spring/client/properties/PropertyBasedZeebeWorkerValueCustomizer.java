@@ -220,14 +220,11 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
             zeebeClientConfigurationProperties::getDefaultJobWorkerTenantIds,
             DEFAULT.getDefaultJobWorkerTenantIds(),
             null);
-    if (zeebeWorker.getTenantIds() == null || zeebeWorker.getTenantIds().isEmpty()) {
-      if (!defaultJobWorkerTenantIds.isEmpty()) {
-        LOG.debug(
-            "Worker '{}': Setting tenantIds to default {}",
-            zeebeWorker.getTenantIds(),
-            defaultJobWorkerTenantIds);
-        zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
-      }
-    }
+
+    LOG.debug(
+        "Worker '{}': Setting tenantIds to default {}",
+        zeebeWorker.getTenantIds(),
+        defaultJobWorkerTenantIds);
+    zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
   }
 }
