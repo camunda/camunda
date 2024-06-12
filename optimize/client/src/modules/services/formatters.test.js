@@ -91,7 +91,6 @@ describe('camelCaseToLabel', () => {
 
 const exampleDurationReport = {
   name: 'report A',
-  combined: false,
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',

@@ -16,7 +16,6 @@ const configuration = {
 };
 
 const pieReport = {
-  combined: false,
   data: {visualization: 'pie', view: {properties: ['frequency']}, configuration},
 };
 

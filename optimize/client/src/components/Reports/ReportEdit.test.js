@@ -51,7 +51,6 @@ const report = {
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
   reportType: 'process',
-  combined: false,
   data: {
     definitions: [
       {
@@ -84,25 +83,6 @@ it('should show the instance count in the header if it is available', () => {
   const node = shallow(<ReportEdit {...props} />);
 
   expect(node.find(InstanceCount)).toExist();
-});
-
-it('should not contain a Control Panel in edit mode for a combined report', () => {
-  const combinedReport = {
-    combined: true,
-    result: {
-      data: {
-        test: {
-          data: {
-            visualization: 'test',
-          },
-        },
-      },
-    },
-  };
-
-  const node = shallow(<ReportEdit {...props} report={{...report, ...combinedReport}} />);
-
-  expect(node).not.toIncludeText('ControlPanel');
 });
 
 it('should contain a Control Panel in edit mode for a single report', () => {

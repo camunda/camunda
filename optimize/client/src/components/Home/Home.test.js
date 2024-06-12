@@ -29,7 +29,6 @@ jest.mock('services', () => ({
         subEntityCounts: {},
       },
       reportType: 'process',
-      combined: false,
     },
   ]),
 }));

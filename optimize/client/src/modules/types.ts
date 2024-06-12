@@ -318,79 +318,30 @@ interface SingleDecisionReportData<GroupByValue = unknown, DistributedByValue = 
   visualization: DecisionReportVisualization | null;
 }
 
-interface CombinedReportTargetValue {
-  countChart: TargetValue;
-  active: boolean;
-  durationChart: TargetValue;
-}
-
-interface CombinedReportConfiguration {
-  pointMarkers: boolean;
-  hideRelativeValue: boolean;
-  hideAbsoluteValue: boolean;
-  alwaysShowRelative: boolean;
-  alwaysShowAbsolute: boolean;
-  targetValue: CombinedReportTargetValue;
-  yLabel: string;
-  xLabel: string;
-}
-
-interface CombinedReportData {
-  configuration: CombinedReportConfiguration;
-  visualization: ProcessReportVisualization;
-  reports: {
-    id: string;
-    color: string;
-  }[];
-}
-
-type CombinedReportResult = {
-  data: Record<
-    string,
-    {
-      data: {
-        view: {
-          properties: string[];
-        };
-      };
-    }
-  >;
-};
-
 export type ReportType = 'process' | 'decision';
 
 export interface Report<
   Type extends ReportType = 'process',
-  Combined extends boolean = false,
-  Data extends object = Combined extends true
-    ? CombinedReportData
-    : Type extends 'process'
-      ? SingleProcessReportData
-      : SingleDecisionReportData,
+  Data extends object = Type extends 'process' ? SingleProcessReportData : SingleDecisionReportData,
   Result = unknown | undefined,
 > extends GenericEntity<Data> {
   id: string;
   collectionId?: string | null;
-  combined: Combined;
   reportType: Type;
   description: string | null;
   result: Result;
 }
 
-export type CombinedReport = Report<'process', true, CombinedReportData, CombinedReportResult>;
 export type SingleProcessReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
   'process',
-  false,
   SingleProcessReportData<GroupByValue, DistributedByValue>
 >;
 export type SingleDecisionReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
   'decision',
-  false,
   SingleDecisionReportData<GroupByValue, DistributedByValue>
 >;
 
 export type GenericReport<GroupByValue = unknown, DistributedByValue = unknown> =
-  | CombinedReport
   | SingleProcessReport<GroupByValue, DistributedByValue>
   | SingleDecisionReport<GroupByValue, DistributedByValue>;
 

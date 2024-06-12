@@ -14,7 +14,6 @@ import ChartTargetInput from './ChartTargetInput';
 
 const validProps = {
   report: {
-    combined: false,
     data: {
       view: {
         properties: ['duration'],
@@ -75,7 +74,6 @@ it('should display select dateFormat dropdown when viewProperty equal duration',
 it('should hide select dateFormat dropdown when viewProperty is not equal duration', () => {
   const newProps = {
     report: {
-      combined: false,
       data: {
         view: {
           properties: ['frequency'],
@@ -99,36 +97,6 @@ it('should invoke the onChange prop on button click', async () => {
   node.find(RadioButton).first().simulate('click');
 
   expect(spy).toHaveBeenCalledWith({targetValue: {durationChart: {isBelow: {$set: false}}}});
-});
-
-it('should display select date format if combined report is duration report', async () => {
-  const combinedProps = {
-    ...validProps,
-    report: {
-      ...validProps.report,
-      combined: true,
-      data: {
-        view: {
-          properties: ['duration'],
-        },
-        configuration: {targetValue: {test: {value: 0, isBelow: true, unit: 'seconds'}}},
-      },
-      result: {
-        data: {
-          test: {
-            data: {
-              view: {
-                properties: ['duration'],
-              },
-            },
-          },
-        },
-      },
-    },
-  } as unknown as ComponentProps<typeof ChartTargetInput>;
-  const node = shallow(<ChartTargetInput {...combinedProps} />);
-
-  expect(node.find('Select')).toExist();
 });
 
 it('should include an error message when invalid target value is typed', () => {

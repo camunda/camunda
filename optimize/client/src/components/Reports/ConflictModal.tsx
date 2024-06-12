@@ -13,7 +13,7 @@ import {Modal} from 'components';
 import {t} from 'translation';
 
 interface ConflictModalProps {
-  conflict?: Record<string, {id: string; name: string}[]>;
+  conflict?: {id: string; name: string}[];
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -35,26 +35,19 @@ export default function ConflictModal({
     <Modal open={!!conflict} onClose={onClose} className="ConflictModal">
       <Modal.Header title={t('report.saveConflict.header')} />
       <Modal.Content>
-        {conflict &&
-          ['combined_report', 'alert'].map((type) => {
-            if (conflict[type]?.length === 0) {
-              return null;
-            }
-
-            return (
-              <div key={type}>
-                <p>{t(`report.saveConflict.${type}.header`)}</p>
-                <ul>
-                  {conflict[type]?.map(({id, name}: {id: string; name: string}) => (
-                    <li key={id}>'{name || id}'</li>
-                  ))}
-                </ul>
-                <p className="conflictMessage">
-                  <b>{t(`report.saveConflict.${type}.message`)}</b>
-                </p>
-              </div>
-            );
-          })}
+        {conflict && conflict?.length !== 0 && (
+          <>
+            <p>{t(`report.saveConflict.alert.header`)}</p>
+            <ul>
+              {conflict?.map(({id, name}: {id: string; name: string}) => (
+                <li key={id}>'{name || id}'</li>
+              ))}
+            </ul>
+            <p className="conflictMessage">
+              <b>{t(`report.saveConflict.alert.message`)}</b>
+            </p>
+          </>
+        )}
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" disabled={loading} className="close" onClick={onClose}>

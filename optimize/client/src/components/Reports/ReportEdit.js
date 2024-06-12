@@ -30,7 +30,6 @@ import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
-import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
 import ReportWarnings from './ReportWarnings';
@@ -90,13 +89,7 @@ export class ReportEdit extends React.Component {
                 name: {$set: name},
                 description: {$set: description},
               }),
-              conflict: error.conflictedItems.reduce(
-                (obj, conflict) => {
-                  obj[conflict.type].push(conflict);
-                  return obj;
-                },
-                {alert: [], combined_report: []}
-              ),
+              conflict: error.conflictedItems,
               updatePromise: resolve,
             });
           } else {
@@ -109,8 +102,8 @@ export class ReportEdit extends React.Component {
 
   save = () => {
     return new Promise(async (resolve, reject) => {
-      const {id, name, description, data, reportType, combined} = this.state.report;
-      const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
+      const {id, name, description, data, reportType} = this.state.report;
+      const endpoint = `report/${reportType}/single`;
 
       if (this.props.isNew) {
         const collectionId = getCollection(this.props.location.pathname);
@@ -232,8 +225,7 @@ export class ReportEdit extends React.Component {
 
   isReportDirty = () => !deepEqual(this.state.report, this.state.originalData);
 
-  isReportComplete = ({data: {view, groupBy, visualization}, combined}) =>
-    (view && groupBy && visualization) || combined;
+  isReportComplete = ({data: {view, groupBy, visualization}}) => view && groupBy && visualization;
 
   loadUpdatedReport = async (query) => {
     this.setState({report: query});
@@ -330,7 +322,7 @@ export class ReportEdit extends React.Component {
       runButtonLoading,
       showReportRenderer,
     } = this.state;
-    const {name, description, data, combined, reportType} = report;
+    const {name, description, data, reportType} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -379,24 +371,22 @@ export class ReportEdit extends React.Component {
           <div className="viewsContainer">
             <div className="mainView">
               <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
-                {!combined && (
-                  <div className="visualization">
-                    <Visualization
-                      type={reportType}
-                      report={data}
-                      onChange={(change) => this.updateReport(change, true)}
-                    />
-                    <Configuration
-                      type={data.visualization}
-                      onChange={this.updateReport}
-                      disabled={loadingReportData}
-                      report={report}
-                      autoPreviewDisabled={!shouldAutoReloadPreview}
-                    />
-                  </div>
-                )}
+                <div className="visualization">
+                  <Visualization
+                    type={reportType}
+                    report={data}
+                    onChange={(change) => this.updateReport(change, true)}
+                  />
+                  <Configuration
+                    type={data.visualization}
+                    onChange={this.updateReport}
+                    disabled={loadingReportData}
+                    report={report}
+                    autoPreviewDisabled={!shouldAutoReloadPreview}
+                  />
+                </div>
 
-                {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
+                {this.isReportComplete(report) && <ReportWarnings report={report} />}
 
                 {(shouldAutoReloadPreview || runButtonLoading) && loadingReportData ? (
                   <Loading />
@@ -412,40 +402,31 @@ export class ReportEdit extends React.Component {
                 )}
               </div>
             </div>
-            {!combined &&
-              typeof report.result !== 'undefined' &&
-              report.data?.visualization !== 'table' && (
-                <CollapsibleContainer
-                  maxHeight={this.containerRef.current?.offsetHeight}
-                  initialState="minimized"
-                  onTransitionEnd={this.showTable}
-                  onExpand={this.handleTableExpand}
-                  onCollapse={this.handleTableCollapse}
-                  title={t('report.view.rawData')}
-                >
-                  <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
-                </CollapsibleContainer>
-              )}
+            {typeof report.result !== 'undefined' && report.data?.visualization !== 'table' && (
+              <CollapsibleContainer
+                maxHeight={this.containerRef.current?.offsetHeight}
+                initialState="minimized"
+                onTransitionEnd={this.showTable}
+                onExpand={this.handleTableExpand}
+                onCollapse={this.handleTableCollapse}
+                title={t('report.view.rawData')}
+              >
+                <InstanceViewTable report={shouldAutoReloadPreview ? report : frozenReport} />
+              </CollapsibleContainer>
+            )}
           </div>
-          {!combined && reportType === 'process' && (
+          {reportType === 'process' && (
             <ReportControlPanel
               report={report}
               updateReport={this.updateReport}
               setLoading={this.setLoading}
             />
           )}
-          {!combined && reportType === 'decision' && (
+          {reportType === 'decision' && (
             <DecisionControlPanel
               report={report}
               updateReport={this.updateReport}
               setLoading={this.setLoading}
-            />
-          )}
-          {combined && (
-            <CombinedReportPanel
-              report={report}
-              updateReport={this.updateReport}
-              loading={loadingReportData}
             />
           )}
         </div>

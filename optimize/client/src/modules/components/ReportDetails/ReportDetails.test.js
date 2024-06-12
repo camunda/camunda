@@ -8,14 +8,12 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import update from 'immutability-helper';
 
 import ReportDetails from './ReportDetails';
 import SingleReportDetails from './SingleReportDetails';
 
 const props = {
   report: {
-    combined: false,
     owner: 'Test Person',
     lastModified: '2020-06-23T09:32:48.938+0200',
     lastModifier: 'Test Person',
@@ -34,18 +32,4 @@ it('should show details for a single report', () => {
 
   expect(node.find(SingleReportDetails)).toExist();
   expect(node.find(SingleReportDetails).prop('report')).toBe(props.report);
-});
-
-it('show details for each report in a combined report', () => {
-  const combinedReport = update(props.report, {
-    combined: {$set: true},
-    result: {$set: {data: {a: {id: 'a'}, b: {id: 'b'}}}},
-  });
-  const node = shallow(<ReportDetails report={combinedReport} />);
-
-  const reportNodes = node.find(SingleReportDetails);
-
-  expect(reportNodes).toHaveLength(2);
-  expect(reportNodes.first().prop('showReportName')).toBe(true);
-  expect(reportNodes.first().prop('report')).toEqual({id: 'a'});
 });

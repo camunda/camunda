@@ -12,18 +12,15 @@ export function formatLink(id, type) {
   return `${type}/${id}/`;
 }
 
-export function formatType(entityType, reportType, combined) {
+export function formatType(entityType, reportType) {
   switch (entityType) {
     case 'collection':
       return t('common.collection.label');
     case 'dashboard':
       return t('dashboard.label');
     case 'report':
-      if (reportType === 'process' && !combined) {
+      if (reportType === 'process') {
         return t('home.types.process');
-      }
-      if (reportType === 'process' && combined) {
-        return t('home.types.combined');
       }
       if (reportType === 'decision') {
         return t('home.types.decision');

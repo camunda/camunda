@@ -44,7 +44,6 @@ beforeEach(() => {
 
 const report = {
   reportType: 'process',
-  combined: false,
   data: {
     configuration: {
       targetValue: {active: false},

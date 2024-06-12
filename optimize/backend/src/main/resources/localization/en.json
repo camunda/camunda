@@ -85,7 +85,6 @@
       "report": {
         "default": "Report",
         "process": "Process report",
-        "combined": "Combined process report",
         "decision": "Decision report"
       }
     },
@@ -113,7 +112,6 @@
     "types": {
       "process": "Process report",
       "decision": "Decision report",
-      "combined": "Combined report",
       "unknown": "Unknown entity"
     },
     "roles": {
@@ -418,16 +416,11 @@
     },
     "saveConflict": {
       "header": "Destructive changes",
-      "combined_report": {
-        "header": "These changes are incompatible with the combined report(s):",
-        "message": "Warning: Saving will remove this report from the combined report(s)."
-      },
       "alert": {
         "header": "These changes are incompatible with the alert(s):",
         "message": "Warning: Saving will delete the alert(s)."
       }
     },
-    "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
     "noViewMessage": "Select an option for <b>View</b>.",
     "noGroupByMessage": "Select what to <b>Group by</b>.",
     "noVisualizationMessage": "Select an option for <b>Visualization</b> above.",
@@ -475,14 +468,6 @@
     "progressBar": {
       "invalid": "Invalid configuration",
       "goal": "Target"
-    },
-    "combined": {
-      "multiSelect": {
-        "available": "Available reports:",
-        "selected": "Selected reports:",
-        "search": "Search for reports",
-        "empty": "No reports found"
-      }
     },
     "config": {
       "buttonTooltip": "Configuration options",
@@ -1375,7 +1360,6 @@
     "deleter": {
       "types": {
         "report": "Report",
-        "combined_report": "Combined report",
         "dashboard": "Dashboard",
         "alert": "Alert",
         "user": "User",
@@ -1394,23 +1378,20 @@
       "affectedMessage": {
         "process": {
           "alert": "The following alert(s) will also be deleted:",
-          "combined_report": "The deleted report(s) will be removed from the combined report(s):",
           "dashboard": "The deleted report(s) will be removed from the dashboard(s):",
           "report": "The following report(s) will be deleted:"
         },
         "source": {
           "alert": "The following alert(s) will also be deleted:",
-          "combined_report": "The deleted report(s) will be removed from the combined report(s):",
           "dashboard": "The deleted report(s) will be removed from the dashboard(s):",
           "report": "The following report(s) will be deleted from the collection:"
         },
         "report": {
-          "combined_report": "This will remove the report from the combined report(s):",
           "dashboard": "This will remove the report from the dashboard(s):",
           "alert": "The following alert(s) will also be deleted:"
         },
         "bulk": {
-          "report": "Any selected reports will be removed from associated dashboards and combined reports; their alerts will be deleted.",
+          "report": "Any selected reports will be removed from associated dashboards; their alerts will be deleted.",
           "process": "Removing data sources deletes all associated reports and their alerts."
         }
       },

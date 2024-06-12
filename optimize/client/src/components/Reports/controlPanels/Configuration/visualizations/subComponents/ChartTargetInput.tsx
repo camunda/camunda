@@ -9,7 +9,7 @@
 import {NumberInput, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
 import {Select} from 'components';
-import {GenericReport} from 'types';
+import {SingleProcessReport} from 'types';
 import {numberParser} from 'services';
 import {t} from 'translation';
 
@@ -17,16 +17,15 @@ interface ChartTargetInputProps {
   onChange: (change: {
     targetValue: Record<string, Record<string, {$set: string | number | boolean}>>;
   }) => void;
-  report: GenericReport;
+  report: SingleProcessReport;
 }
 
 export default function ChartTargetInput({onChange, report}: ChartTargetInputProps) {
   const {
     configuration: {targetValue},
   } = report.data;
-  const referenceReport = report.combined ? Object.values(report.result.data)[0] : report;
   const isCountReport = ['frequency', 'percentage'].includes(
-    referenceReport?.data.view?.properties[0] as string
+    report?.data.view?.properties[0] as string
   );
   const type = isCountReport ? 'countChart' : 'durationChart';
 
