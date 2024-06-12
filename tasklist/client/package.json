@@ -33,7 +33,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.77.5",
     "styled-components": "6.1.11",
-    "ts-pattern": "5.1.2",
+    "ts-pattern": "5.2.0",
     "zod": "3.23.8"
   },
   "scripts": {
