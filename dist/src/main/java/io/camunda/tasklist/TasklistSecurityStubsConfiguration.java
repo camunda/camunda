@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.sources;
+package io.camunda.tasklist;
 
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.property.IdentityProperties;
@@ -37,8 +37,8 @@ import org.springframework.security.core.Authentication;
  * <p>TasklistSecurityStubsConfiguration provides the security related bean stubs required by the
  * service layer of Tasklist.
  */
-@Configuration
-@Profile("tasklist")
+@Configuration(proxyBeanMethods = false)
+@Profile("tasklist && operate")
 public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */

@@ -14,7 +14,6 @@ import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
-import io.camunda.application.sources.TasklistSecurityStubsConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -42,7 +41,6 @@ public class StandaloneCamunda {
             .sources(
                 OperateModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
-                TasklistSecurityStubsConfiguration.class,
                 WebappsModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
                 GatewayModuleConfiguration.class,

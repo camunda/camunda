@@ -26,7 +26,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
  * <li>- {@link
  *     org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAutoConfiguration}
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class DefaultObjectMapperConfiguration {
   @Bean
   @Primary

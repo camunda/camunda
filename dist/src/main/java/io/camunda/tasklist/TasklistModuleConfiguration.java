@@ -8,6 +8,10 @@
 package io.camunda.tasklist;
 
 import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
+import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration;
+import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
+import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
+import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -65,4 +70,18 @@ public class TasklistModuleConfiguration {
     this.broker = broker;
     this.gateway = gateway;
   }
+
+  @Configuration(proxyBeanMethods = false)
+  @Import({
+    WebappSecurityModuleConfiguration.class,
+    ArchiverSecurityModuleConfiguration.class,
+    ImporterSecurityModuleConfiguration.class
+  })
+  @Profile("!operate")
+  public static class TasklistSecurityModulesConfiguration {}
+
+  @Configuration(proxyBeanMethods = false)
+  @Import(WebappManagementModuleConfiguration.class)
+  @Profile("!operate")
+  public static class TasklistManagementModulesConfiguration {}
 }
