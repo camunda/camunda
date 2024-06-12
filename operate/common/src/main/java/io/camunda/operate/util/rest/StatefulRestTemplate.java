@@ -48,7 +48,7 @@ import org.springframework.web.client.RestTemplate;
 public class StatefulRestTemplate extends RestTemplate {
 
   private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
-  private static final String CSRF_TOKEN_HEADER_NAME = "OPERATE-X-CSRF-TOKEN";
+  private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
 
   private static final String USERNAME_DEFAULT = "demo";
   private static final String PASSWORD_DEFAULT = "demo";
