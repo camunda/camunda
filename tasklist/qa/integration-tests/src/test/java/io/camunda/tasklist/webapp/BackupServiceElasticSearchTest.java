@@ -79,7 +79,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       BackupService.class,
       TasklistProfileServiceImpl.class,
     })
-@ActiveProfiles({"test", "backend-test"})
+@ActiveProfiles({"test", "backend-test", "standalone"})
 public class BackupServiceElasticSearchTest {
 
   @SpyBean private BackupManagerElasticSearch backupManager;
