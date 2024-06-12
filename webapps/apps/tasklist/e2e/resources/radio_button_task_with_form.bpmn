@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="9d79354" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="7aabe175-d57d-4dc4-ab75-3fc3690f4444">
+  <bpmn:process id="Radio_Button_User_Task" name="Radio Button Task" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:userTaskForm id="userTaskForm_1toik4l">{
+  "components": [
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        }
+      ],
+      "label": "Radio",
+      "type": "radio",
+      "layout": {
+        "row": "Row_1tcnaek",
+        "columns": null
+      },
+      "id": "Field_0r84gaq",
+      "key": "field_0koka0e"
+    }
+  ],
+  "schemaVersion": 9,
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "9d79354"
+  },
+  "type": "default",
+  "id": "Form_03ni3oq",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.3.0"
+}</zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0870r7r</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0870r7r" sourceRef="StartEvent_1" targetRef="Radio_Button_Task" />
+    <bpmn:endEvent id="Event_1qsnfvb">
+      <bpmn:incoming>Flow_1k9nx3a</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1k9nx3a" sourceRef="Radio_Button_Task" targetRef="Event_1qsnfvb" />
+    <bpmn:userTask id="Radio_Button_Task" name="Radio Button Task">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1toik4l" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0870r7r</bpmn:incoming>
+      <bpmn:outgoing>Flow_1k9nx3a</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Radio_Button_User_Task">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1qsnfvb_di" bpmnElement="Event_1qsnfvb">
+        <dc:Bounds x="402" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qgy7o7_di" bpmnElement="Radio_Button_Task">
+        <dc:Bounds x="240" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0870r7r_di" bpmnElement="Flow_0870r7r">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="240" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1k9nx3a_di" bpmnElement="Flow_1k9nx3a">
+        <di:waypoint x="340" y="118" />
+        <di:waypoint x="402" y="118" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

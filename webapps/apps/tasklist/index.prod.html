@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/" th:attr="href=${contextPath}" />
+    <link rel="icon" href="./favicon.ico" />
+    <script type="text/javascript" src="./client-config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title th:text="${title} ?: 'Tasklist'">Tasklist</title>
+    <meta name="og:image:alt" content="Open a form powered by Camunda." />
+
+    <!-- Primary Meta Tags -->
+
+    <meta
+      name="description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" th:if="${ogUrl!=null}" th:content="${ogUrl}" />
+    <meta property="og:title" th:content="${title} ?: 'Tasklist'" />
+    <meta
+      property="og:description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+    <meta name="og:image" th:if="${ogImage!=null}" th:content="${ogImage}" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" th:if="${ogUrl!=null}" th:content="${ogUrl}" />
+    <meta property="twitter:title" th:content="${title} ?: 'Tasklist'" />
+    <meta
+      property="twitter:description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+    <meta
+      property="twitter:image"
+      th:if="${ogImage!=null}"
+      th:content="${ogImage}"
+    />
+
+    <style>
+      .osano-cm-widget {
+        display: none;
+      }
+      .osano-cm-widget:focus,
+      .osano-cm-widget:hover {
+        opacity: 1;
+        transform: none;
+      }
+      .osano-cm-widget:active {
+        transform: translateY(1px);
+      }
+      div.osano-cm-info__info-views.osano-cm-info-views.osano-cm-info-views--position_0
+        > div
+        > ul
+        > li:last-of-type {
+        display: none;
+      }
+      .osano-cm-button--type_accept {
+        border-radius: 30px;
+        border: 1px solid #000000;
+      }
+      .osano-cm-button--type_deny {
+        border-radius: 30px;
+      }
+      .osano-cm-button--type_save {
+        color: #434343;
+        background-color: #f7f7f7;
+        border-radius: 30px;
+        border: 1px solid #434343;
+      }
+      .osano-cm-button--type_denyAll {
+        color: #434343;
+        background-color: #f7f7f7;
+        border-radius: 30px;
+        border: 1px solid #434343;
+      }
+      .osano-cm-button--type_deny:hover {
+        color: #434343;
+      }
+      .osano-cm-button--type_denyAll:hover {
+        color: #434343;
+        background-color: #e6e6e6;
+      }
+      .osano-cm-button--type_save:hover {
+        color: #434343;
+        background-color: #e6e6e6;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="./src/index.tsx"></script>
+  </body>
+</html>

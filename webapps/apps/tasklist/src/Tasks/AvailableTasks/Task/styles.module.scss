@@ -1,0 +1,169 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+@use '@carbon/layout';
+
+$SPACING: var(--cds-spacing-05);
+$ENTRY_DEFAULT_BORDER_WIDTH: 1px;
+$ENTRY_SELECTED_BORDER_WIDTH: 4px;
+$ENTRY_FOCUSED_BORDER_WIDTH: 2px;
+
+.label {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary);
+
+  &.labelPrimary {
+    color: var(--cds-text-primary);
+  }
+
+  &.contextWrap {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre;
+  }
+}
+
+.name {
+  @include type.type-style('body-short-02');
+  color: var(--cds-text-primary);
+}
+
+.flex {
+  min-height: layout.to-rem(20px);
+  display: flex;
+
+  &.flexRow {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  &.flexColumn {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  & .clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.alignItemsEnd {
+    align-items: flex-end;
+  }
+}
+
+.taskLink {
+  all: unset;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.fullWidthAndHeight {
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  cursor: pointer;
+
+  &.active .taskLink {
+    background-color: var(--cds-layer-selected);
+    border-left: $ENTRY_SELECTED_BORDER_WIDTH solid
+      var(--cds-border-interactive);
+    padding: $SPACING $SPACING $SPACING
+      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+  }
+
+  &.active:last-child .taskLink {
+    padding: $SPACING $SPACING $SPACING
+      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+  }
+
+  &.active + & .task-link:not(:focus) {
+    border-top: none;
+    padding: $SPACING;
+  }
+
+  &:not(.active) {
+    &:hover .task-link {
+      background-color: var(--cds-layer-hover);
+    }
+
+    &:last-child .taskLink {
+      border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
+        var(--cds-border-subtle-selected);
+      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
+    }
+
+    & .taskLink {
+      border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
+        var(--cds-border-subtle-selected);
+      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
+        $SPACING;
+    }
+  }
+
+  & .taskLink:focus {
+    border: none;
+    padding: $SPACING;
+    outline: $ENTRY_FOCUSED_BORDER_WIDTH solid var(--cds-focus);
+    outline-offset: -$ENTRY_FOCUSED_BORDER_WIDTH;
+  }
+
+  &:last-child .taskLink:focus {
+    padding: $SPACING;
+  }
+
+  &:first-child .taskLink {
+    border-top-color: transparent;
+  }
+}
+
+.taskSkeleton {
+  min-height: layout.to-rem(136px);
+  max-height: layout.to-rem(136px);
+
+  &:last-child > * {
+    border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
+  }
+
+  & > * {
+    border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
+      $SPACING;
+  }
+}
+
+.popoverContent {
+  padding: var(--cds-spacing-03);
+}
+
+.popoverHeading {
+  color: var(--cds-text-primary);
+  @include type.type-style('heading-01');
+}
+
+.popoverBody {
+  color: var(--cds-text-primary);
+  @include type.type-style('body-short-01');
+}
+
+.inlineIcon {
+  vertical-align: text-bottom;
+  margin-right: var(--cds-spacing-01);
+}

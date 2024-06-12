@@ -1,0 +1,73 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/layout';
+
+.splitPane {
+  --header-height: 48px;
+  width: 100%;
+  height: calc(100% - var(--header-height));
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  background: var(--cds-layer);
+}
+
+.container {
+  width: 100%;
+  overflow: auto;
+}
+
+.historyAside {
+  max-width: 320px;
+  width: 320px;
+  height: 100%;
+  background-color: var(--cds-layer);
+  overflow-y: auto;
+  border-left: 1px solid var(--cds-border-subtle);
+}
+
+.content {
+  height: fit-content;
+  flex: 1;
+}
+
+.processTilesContainer {
+  background: var(--cds-layer);
+}
+
+.searchContainer {
+  background: var(--cds-background);
+}
+
+.searchContainerInner {
+  max-width: 99em;
+  padding: var(--cds-spacing-06) var(--cds-spacing-08);
+}
+
+.processTilesContainerInner {
+  max-width: 99em;
+  padding: var(--cds-spacing-06) var(--cds-spacing-08);
+}
+
+.searchFieldWrapper {
+  padding: var(--cds-spacing-03) 0;
+}
+
+.dropdown {
+  width: 100%;
+}
+
+.processTileWrapper {
+  padding: var(--cds-spacing-03) 0;
+}
+
+.tileSkeleton {
+  width: 100%;
+  height: layout.to-rem(132px);
+}

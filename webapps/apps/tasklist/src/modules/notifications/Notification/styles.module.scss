@@ -1,0 +1,29 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.notification {
+  margin-top: var(--cds-spacing-03);
+}
+
+.toastEnter {
+  transform: translateX(120%);
+}
+
+.toastEnterActive {
+  transform: translateX(0);
+  transition: transform 300ms ease-in-out;
+}
+
+.toastExitActive {
+  transform: translateX(120%);
+  transition: transform 300ms ease-in-out;
+}
+
+.toastExitDone {
+  display: none;
+}
