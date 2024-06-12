@@ -287,9 +287,11 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
-      // element in ACTIVATING state should not be subscribed into new subscription during migration
-      // https://github.com/camunda/camunda/issues/19212
-      migrateCatchEvent(
+      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
+      // elements to events during migration either. For elements that have been ACTIVATED, a
+      // subscription would already exist if needed. So, we want to deal with the expected event
+      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
+      handleCatchEvents(
           elementInstance,
           targetProcessDefinition,
           sourceElementIdToTargetElementId,
@@ -300,7 +302,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
   }
 
-  private void migrateCatchEvent(
+  /**
+   * Unsubscribes the element instance from unmapped catch events in the source process, and
+   * subscribes it to unmapped catch events in the target process.
+   *
+   * <p>In the future, this method will also migrate event subscriptions if mappings are provided
+   * for the associated catch events.
+   */
+  private void handleCatchEvents(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
