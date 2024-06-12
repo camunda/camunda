@@ -7,8 +7,11 @@
  */
 package io.camunda.tasklist.webapp.security.identity;
 
+import static io.camunda.tasklist.property.IdentityProperties.ALL_RESOURCES;
+import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
+
+import io.camunda.identity.autoconfigure.IdentityProperties;
 import io.camunda.identity.sdk.Identity;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
@@ -24,7 +27,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 @Component
 public class IdentityAuthorizationService {
@@ -32,7 +34,7 @@ public class IdentityAuthorizationService {
   private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationService.class);
 
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private LocalValidatorFactoryBean defaultValidator;
+  @Autowired private IdentityProperties identityProperties;
 
   public List<String> getUserGroups() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -54,14 +56,13 @@ public class IdentityAuthorizationService {
 
     // Fallback groups if authentication type is unrecognized or access token is null
     final List<String> defaultGroups = new ArrayList<>();
-    defaultGroups.add(IdentityProperties.FULL_GROUP_ACCESS);
+    defaultGroups.add(FULL_GROUP_ACCESS);
     return defaultGroups;
   }
 
   public boolean isAllowedToStartProcess(final String processDefinitionKey) {
     return !Collections.disjoint(
-        getProcessDefinitionsFromAuthorization(),
-        Set.of(IdentityProperties.ALL_RESOURCES, processDefinitionKey));
+        getProcessDefinitionsFromAuthorization(), Set.of(ALL_RESOURCES, processDefinitionKey));
   }
 
   public List<String> getProcessReadFromAuthorization() {
@@ -74,7 +75,7 @@ public class IdentityAuthorizationService {
 
   private Optional<IdentityAuthorization> getIdentityAuthorization() {
     if (!tasklistProperties.getIdentity().isResourcePermissionsEnabled()
-        || tasklistProperties.getIdentity().getBaseUrl() == null) {
+        || identityProperties.baseUrl() == null) {
       return Optional.empty();
     }
 
@@ -109,7 +110,7 @@ public class IdentityAuthorizationService {
   private List<String> getFromAuthorization(final String type) {
     final Optional<IdentityAuthorization> optIdentityAuthorization = getIdentityAuthorization();
     if (optIdentityAuthorization.isEmpty()) {
-      return Collections.singletonList(IdentityProperties.ALL_RESOURCES);
+      return Collections.singletonList(ALL_RESOURCES);
     }
 
     final IdentityAuthorization identityAuthorization = optIdentityAuthorization.get();
