@@ -10,8 +10,6 @@ package io.camunda.zeebe.it.exporter;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -58,17 +56,18 @@ final class ExporterEnableTest {
           // We have to restart brokers in the test. So use standalone gateway to avoid potentially
           // accessing an unavailable broker
           .withGatewaysCount(1)
-          .withBrokerConfig(b -> withCustomerExporters(b.brokerConfig()))
+          .withBrokerConfig(
+              b ->
+                  b.withExporter(
+                          EXPORTER_ID_1,
+                          config -> config.setClassName(TestExporter.class.getName()))
+                      .withExporter(
+                          EXPORTER_ID_2,
+                          config -> config.setClassName(TestExporter.class.getName())))
           .build();
 
   @AutoCloseResource private ZeebeClient client;
   private ExportersActuator actuator;
-
-  private void withCustomerExporters(final BrokerProperties brokerConfig) {
-    final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setClassName(TestExporter.class.getName());
-    brokerConfig.setExporters(Map.of(EXPORTER_ID_1, exporterCfg, EXPORTER_ID_2, exporterCfg));
-  }
 
   @BeforeEach
   void setup() {
