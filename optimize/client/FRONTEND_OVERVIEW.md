@@ -26,10 +26,10 @@ This document provides an overview of the front-end application. It explains how
 
 The front-end application is initialized using the `create-react-app` utility which follow the following process:
 
-1. **Application startup**: The application is started using the command `yarn start`. This spins up a Node.js Development Server which serve the `public/index.html` file.
-2. **Initializing React app**: The html file will load the javascript needed for the react application and also the `src/index.js` file, which initializes the React application.
-3. **First React component**: The `src/App.js` file is then loaded as the first React component.
-4. **Utilities and router initialization**: The `App.js` component initializes various utilities (such as notifications, analytics, translations, and onboarding) and sets up routing for different pages (Home, Report, Dashboard, Analysis, EventsBasedProcess, etc.).
+1. **Application startup**: The application is started using the command `yarn start`. This spins up a Node.js Development Server, which serves the `public/index.html` file.
+2. **Initializing React app**: The html file will load the JavaScript needed for the React.js application and also the `src/index.js` file, which initializes the React.js application.
+3. **First React component**: The `src/App.js` file is then loaded as the first React.js component.
+4. **Utilities and router initialization**: The `App.js` component initializes various utilities (such as notifications, analytics, translations, and onboarding) and sets up routing for different pages (Home, Report, Dashboard, Analysis, EventsBasedProcess, etc.)
 
 Below is a flow diagram of the start-up process:
 
@@ -50,18 +50,18 @@ Below is a simplified visual representation of the routing setup:
 
 ## Proxying API requests
 
-In development, to handle API requests, we use a proxy setup to forward requests from the front-end server (running on `localhost:3000`) to the backend server (running on `localhost:8090`). Here is an example of how this works:
+To handle API requests in development, we use a proxy setup to forward requests from the front-end server (running on `localhost:3000`) to the backend server (running on `localhost:8090`). Here is an example of how this works:
 
 1. When the `Home.js` component loads entities by calling `loadEntities()`, it makes a request to `/api/entities`.
 2. The request made to `/api/entities` by the front-end is forwarded to `localhost:8090/api/entities` on the backend server which returns the list of entities to the front-end.
 
 ## Project folder structure
 
-Here is an overview of the `src` folder structure and the purpose of each major directory and file.
+Below is an overview of the `src` folder structure and the purpose of each major directory and file.
 
 ### Root directory
 
-The root `src` directory contains the main entry points and configuration files for the project. Here are the key files:
+The root `src` directory contains the main entry points and configuration files for the project. Below are the key files:
 
 - **App.js**: The main application component.
 - **index.js**: Entry point of the application.
@@ -71,7 +71,7 @@ The root `src` directory contains the main entry points and configuration files 
 
 ### Components
 
-The `components` directory is where the main routes and page components of the application exist. Additionally, it contains the **PrivateRoute** component which contains the logic for protected routes handling.
+The `components` directory is where the main routes and page components of the application exist. Additionally, it contains the **PrivateRoute** component, which contains the logic for protected routes handling.
 
 ### Modules
 
@@ -80,7 +80,7 @@ The `modules` directory contains everything that is reused across routes and com
 - **components**: Reusable components.
 - **HOC**: Reusable higher-order components.
 - **hooks**: Custom reusable React hooks.
-- **services**: Global services for API calls, formatting and other functionalities.
+- **services**: Global services for API calls, formatting, and other functionalities.
 - **shared-styles**: Shared styles and SCSS files.
 - **tracking**: Components and services for mixpanel tracking.
 - **translation**: Components and utilities for handling translations. This is explained in details below.
@@ -88,7 +88,7 @@ The `modules` directory contains everything that is reused across routes and com
 - **types.ts**: Global TypeScript type definitions.
 - **config.tsx**: Global UI configuration.
 
-Note: Everything in this directory can be imported directly by referencing the directory name (e.g. `import { x } from 'components'`) because of the `wireModules` script that we will explain later in this document.
+Note: Everything in this directory can be imported directly by referencing the directory name (for example, `import { x } from 'components'`) because of the `wireModules` script that we will explain later in this document.
 
 ## Development scripts
 
@@ -130,7 +130,7 @@ We have built a module called `translation.tsx` that is responsible for loading 
 
 1. **Fetching translations**: When the application loads, it issues a request to the backend to fetch the appropriate JSON translation file.
 2. **Loading translations**: The translations are then loaded into the application memory as a global object inside the module.
-3. **Resolving translations**: The module resolves the translations dynamically based on the detected browser language, ensuring that users see the application in their preferred language. It has a `t` function that resolves the translation based on the provided path. e.g. `t('login.username')` returns `Username`. It is also possible to pass values to the translation. e.g. `t('report.instanceCount', {count: 5})` returns `There are 5 instances`.
+3. **Resolving translations**: The module resolves the translations dynamically based on the detected browser language, ensuring that users see the application in their preferred language. It has a `t` function that resolves the translation based on the provided path. For example, `t('login.username')` returns `Username`. It is also possible to pass values to the translation. For example, `t('report.instanceCount', {count: 5})` returns `There are 5 instances`.
 
 ## Testing
 
@@ -138,7 +138,7 @@ Our front-end application employs a testing strategy that includes both unit tes
 
 ### Unit tests
 
-Unit tests are conducted using Jest and Enzyme to ensure that individual components function as expected. The configuration file for unit tests (`setupTests.ts`) sets up the testing environment, including polyfills, adapters, and global functions to handle promises and garbage collection.
+Unit tests are conducted using Jest and Enzyme to ensure individual components function as expected. The configuration file for unit tests (`setupTests.ts`) sets up the testing environment, including polyfills, adapters, and global functions to handle promises and garbage collection.
 
 For mocking internal or external modules, we usually use `Jest.mock` function in the test file where the module is being used. In some cases, we require the module to be mocked globally. To do that, we place a mock file or folder of the module inside the `src/__mocks__` folder.
 
@@ -150,9 +150,9 @@ End-to-end tests are executed using TestCafe to validate the functionality of th
 
 **Screenshot generation**: E2E tests can generate screenshots for documentation purposes by running `yarn screenshots`. The `e2e/browserMagic.js` module is sometimes used to add labels and arrows to screenshots, enhancing their utility for documentation.
 
-**CI jobs**: We have two workflows on the CI that run the e2e tests:
-1. `optimize-e2e-tests.yml`: It runs the e2e tests on PR/push in a headless version of Chrome.
-2. `optimize-e2e-tests-browserstack`: Runs the e2e tests on a daily schedule in Chrome, Firefox, Internet Explorer using BrowserStack.
+**CI jobs**: We have two workflows on the CI that run the E2E tests:
+1. `optimize-e2e-tests.yml`: It runs the E2E tests on PR/push in a headless version of Chrome.
+2. `optimize-e2e-tests-browserstack`: Runs the E2E tests on a daily schedule in Chrome, Firefox, and Internet Explorer using BrowserStack.
 
 ## Current migrations
 
@@ -172,4 +172,4 @@ The class-based approach in React is obsolete and should not be used anymore. Wh
 
 We are currently migrating our codebase from using higher-order components (HOCs) to React Hooks. An HOC is a type of wrapper pattern where an HOC function takes a component and returns a new component with extended functionality. While powerful, HOCs can make the code harder to read and follow, especially when multiple HOCs are combined. React Hooks provide a cleaner way to add state and side effects to functional components and are the recommended approach.
 
-It is advised to avoid using HOCs and use hooks instead (e.g. use the useErrorHandling hook instead of the withErrorHandling HOC). However, if you are dealing with a big class and you do not want or have the time to migrate to functional component, you can still use the HOC in that component.
+It is advised to avoid using HOCs and use hooks instead (for example, use the useErrorHandling hook instead of the withErrorHandling HOC). However, if you are dealing with a big class and you do not want or have the time to migrate to functional component, you can still use the HOC in that component.
