@@ -193,7 +193,7 @@ public class ProcessInstanceMigrationClusteredTest {
               Expected to migrate process instance '%s' \
               but active element with id '%s' has a pending message subscription \
               migration distribution for event with id '%s'."""
-                .formatted(processInstanceKey, "B", "boundary1"));
+                .formatted(processInstanceKey, "B", "boundary2"));
 
     // TODO - assert that second migration is not rejected when processing is resumed and  message
     // subscription migration is distributed. To assert that, we first need to implement message

@@ -24,7 +24,7 @@ import org.junit.rules.TestWatcher;
 
 public class MigrateMessageSubscriptionTest {
 
-  @Rule public final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -36,7 +36,7 @@ public class MigrateMessageSubscriptionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -63,7 +63,7 @@ public class MigrateMessageSubscriptionTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables(Map.of("key1", "key1", "key2", "key2"))
@@ -74,7 +74,7 @@ public class MigrateMessageSubscriptionTest {
         .await();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -115,7 +115,7 @@ public class MigrateMessageSubscriptionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -142,7 +142,7 @@ public class MigrateMessageSubscriptionTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariables(Map.of("key1", "key1", "key2", "key2"))
@@ -153,7 +153,7 @@ public class MigrateMessageSubscriptionTest {
         .await();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -177,7 +177,7 @@ public class MigrateMessageSubscriptionTest {
                 .getFirst())
         .isNotNull();
 
-    ENGINE.message().withName("message").withCorrelationKey("key1").publish();
+    engine.message().withName("message").withCorrelationKey("key1").publish();
 
     Assertions.assertThat(
             RecordingExporter.processMessageSubscriptionRecords(
