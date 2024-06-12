@@ -6,7 +6,6 @@
 package io.camunda.optimize.service.db.os;
 
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -10,6 +10,7 @@ import static io.camunda.optimize.rest.providers.BeanConstraintViolationExceptio
 import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
 import static io.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.AbstractPlatformIT;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;

@@ -8,14 +8,14 @@ package io.camunda.optimize.service.db.reader;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.INPUTS;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.OUTPUTS;
 
-import java.util.Collections;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.util.Collections;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor

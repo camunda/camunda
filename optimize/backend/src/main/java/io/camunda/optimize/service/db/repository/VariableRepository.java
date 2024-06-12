@@ -8,16 +8,14 @@ package io.camunda.optimize.service.db.repository;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
+import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.List;
-import java.util.Map;
 
 public interface VariableRepository {
 

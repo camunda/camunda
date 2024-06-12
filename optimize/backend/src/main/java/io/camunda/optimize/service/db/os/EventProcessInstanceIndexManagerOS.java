@@ -9,8 +9,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 import com.google.common.collect.Sets;
-import java.util.concurrent.atomic.AtomicInteger;
-import lombok.extern.slf4j.Slf4j;
 import io.camunda.optimize.service.db.EventProcessInstanceIndexManager;
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.events.EventProcessInstanceIndexOS;
@@ -18,6 +16,7 @@ import io.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;

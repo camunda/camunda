@@ -5,10 +5,10 @@
  */
 package io.camunda.optimize.service.cleanup;
 
+import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static java.util.stream.Collectors.groupingBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;

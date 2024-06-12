@@ -17,7 +17,6 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import io.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;

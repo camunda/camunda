@@ -5,7 +5,6 @@
  */
 package io.camunda.optimize.service.db.repository;
 
-
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;

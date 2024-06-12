@@ -5,8 +5,8 @@
  */
 package io.camunda.optimize.service.db.repository;
 
+import io.camunda.optimize.service.util.PeriodicAction;
 import java.util.List;
-import org.camunda.optimize.service.util.PeriodicAction;
 import org.slf4j.Logger;
 
 public interface TaskRepository {

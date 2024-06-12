@@ -13,7 +13,6 @@ import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCo
 import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.GROUP;
 import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
-import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
 import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;

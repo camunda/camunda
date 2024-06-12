@@ -39,8 +39,6 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndex
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 
-import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
@@ -48,6 +46,7 @@ import io.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelationValueDto;
+import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
@@ -61,6 +60,7 @@ import io.camunda.optimize.dto.optimize.rest.Page;
 import io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
@@ -82,7 +82,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;

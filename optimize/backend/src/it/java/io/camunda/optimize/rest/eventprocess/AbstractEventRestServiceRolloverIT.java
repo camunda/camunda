@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import io.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import java.time.Instant;
 import java.util.Collections;

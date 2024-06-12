@@ -5,25 +5,18 @@
  */
 package io.camunda.optimize.service.db.reader;
 
-import static io.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
-import static io.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
-import static io.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
-import static io.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
-import static io.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
-
-import com.google.common.collect.ImmutableMap;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import io.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import io.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.rest.Page;
 import io.camunda.optimize.service.db.repository.EventRepository;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor

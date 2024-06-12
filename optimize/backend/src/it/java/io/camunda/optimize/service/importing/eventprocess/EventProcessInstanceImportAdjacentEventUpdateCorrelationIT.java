@@ -5,8 +5,8 @@
  */
 package io.camunda.optimize.service.importing.eventprocess;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

@@ -10,7 +10,6 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstance
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import io.camunda.optimize.service.db.repository.Repository;
 import io.camunda.optimize.service.db.repository.TaskRepository;
-import io.camunda.optimize.service.util.PeriodicAction;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

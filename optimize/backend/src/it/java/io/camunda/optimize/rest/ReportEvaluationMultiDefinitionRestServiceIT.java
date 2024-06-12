@@ -5,8 +5,8 @@
  */
 package io.camunda.optimize.rest;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;

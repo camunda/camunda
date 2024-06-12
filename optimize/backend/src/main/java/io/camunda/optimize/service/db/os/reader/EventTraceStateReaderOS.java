@@ -13,8 +13,15 @@ import static io.camunda.optimize.service.db.schema.index.events.EventTraceState
 import static io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.SOURCE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import io.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.reader.EventTraceStateReader;
 import io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
@@ -25,14 +32,6 @@ import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
-import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.reader.EventTraceStateReader;
-import java.util.ArrayList;
-import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @AllArgsConstructor
 @Slf4j

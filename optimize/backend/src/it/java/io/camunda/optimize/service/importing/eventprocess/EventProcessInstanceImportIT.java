@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Tag;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

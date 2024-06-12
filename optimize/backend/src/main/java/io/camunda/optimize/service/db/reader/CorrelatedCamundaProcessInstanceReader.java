@@ -5,19 +5,16 @@
  */
 package io.camunda.optimize.service.db.reader;
 
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-
+import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
+import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import io.camunda.optimize.service.db.repository.EventRepository;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
-import io.camunda.optimize.service.db.repository.EventRepository;
 import org.springframework.stereotype.Component;
-import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
-import java.util.List;
 
 @RequiredArgsConstructor
 @Component

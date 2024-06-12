@@ -5,8 +5,8 @@
  */
 package io.camunda.optimize.service.cleanup;
 
+import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import io.camunda.optimize.AbstractPlatformIT;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;

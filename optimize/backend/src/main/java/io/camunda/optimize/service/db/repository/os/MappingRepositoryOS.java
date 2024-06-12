@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.ws.rs.NotFoundException;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
@@ -22,6 +21,7 @@ import io.camunda.optimize.service.db.schema.index.events.EventProcessMappingInd
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;

@@ -8,10 +8,10 @@ package io.camunda.optimize.service.db.reader;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.time.Instant;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import java.util.List;
 
 @AllArgsConstructor
 @Component

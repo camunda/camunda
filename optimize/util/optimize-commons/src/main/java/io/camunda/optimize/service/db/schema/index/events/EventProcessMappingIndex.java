@@ -10,8 +10,8 @@ import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FOR
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventMappingDto;
+import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;

@@ -9,6 +9,9 @@ import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isD
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
 
 import com.google.common.collect.ImmutableList;
+import io.camunda.optimize.dto.optimize.ReportConstants;
+import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +22,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import io.camunda.optimize.dto.optimize.ReportConstants;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 

@@ -15,8 +15,6 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;

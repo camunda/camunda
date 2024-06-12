@@ -5,7 +5,6 @@
  */
 package io.camunda.optimize.service.db.es.reader;
 
-
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;

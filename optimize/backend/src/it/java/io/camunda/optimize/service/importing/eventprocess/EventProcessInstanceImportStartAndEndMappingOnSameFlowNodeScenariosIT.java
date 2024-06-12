@@ -5,8 +5,8 @@
  */
 package io.camunda.optimize.service.importing.eventprocess;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;

@@ -15,12 +15,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 import com.google.common.collect.ImmutableList;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
-import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.ArrayList;
 import java.util.HashSet;

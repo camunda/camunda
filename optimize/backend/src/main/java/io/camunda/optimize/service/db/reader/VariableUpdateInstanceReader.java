@@ -5,13 +5,13 @@
  */
 package io.camunda.optimize.service.db.reader;
 
+import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import io.camunda.optimize.service.db.repository.VariableRepository;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor

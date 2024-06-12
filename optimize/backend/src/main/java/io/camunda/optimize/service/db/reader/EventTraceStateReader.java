@@ -7,9 +7,9 @@ package io.camunda.optimize.service.db.reader;
 
 import static io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
 
-import io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import java.util.List;
 
 public interface EventTraceStateReader {

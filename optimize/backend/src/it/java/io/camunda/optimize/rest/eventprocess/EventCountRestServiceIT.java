@@ -22,6 +22,7 @@ import static io.camunda.optimize.test.optimize.EventProcessClient.createExterna
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
 import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;

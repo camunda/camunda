@@ -14,7 +14,6 @@ import io.camunda.optimize.service.db.repository.DecisionInstanceRepository;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.Repository;
 import io.camunda.optimize.service.db.repository.TaskRepository;
-import io.camunda.optimize.service.util.PeriodicAction;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;

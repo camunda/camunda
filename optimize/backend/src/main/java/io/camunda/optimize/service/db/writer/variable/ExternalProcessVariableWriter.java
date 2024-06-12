@@ -6,13 +6,12 @@
 package io.camunda.optimize.service.db.writer.variable;
 
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
+import io.camunda.optimize.service.db.repository.TaskRepository;
+import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-import io.camunda.optimize.service.db.repository.TaskRepository;
-import io.camunda.optimize.service.db.repository.VariableRepository;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
 

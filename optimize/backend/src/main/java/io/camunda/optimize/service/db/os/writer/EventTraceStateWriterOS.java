@@ -10,17 +10,17 @@ import static io.camunda.optimize.service.db.schema.index.events.EventTraceState
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import io.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 
 @AllArgsConstructor
 @Slf4j

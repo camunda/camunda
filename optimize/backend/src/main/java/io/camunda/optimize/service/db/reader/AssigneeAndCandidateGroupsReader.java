@@ -5,19 +5,19 @@
  */
 package io.camunda.optimize.service.db.reader;
 
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import lombok.NonNull;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 
 public interface AssigneeAndCandidateGroupsReader {
 

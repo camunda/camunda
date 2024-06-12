@@ -5,9 +5,9 @@
  */
 package io.camunda.optimize.rest.eventprocess;
 
+import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
