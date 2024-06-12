@@ -13,6 +13,7 @@
   <name>Identity Parent</name>
   <modules>
     <module>backend</module>
+    <module>client</module>
     <module>common</module>
   </modules>
 
@@ -21,6 +22,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
+    <skip.fe.build>false</skip.fe.build>
   </properties>
 
   <dependencies>
