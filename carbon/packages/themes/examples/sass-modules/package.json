@@ -1,0 +1,13 @@
+{
+  "name": "sass-modules",
+  "scripts": {
+    "develop": "next"
+  },
+  "dependencies": {
+    "@carbon/themes": "link:../../",
+    "next": "^14.1.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "sass": "^1.36.0"
+  }
+}

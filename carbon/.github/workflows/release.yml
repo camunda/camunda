@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'v*'
+      # Ignore tags for v10, there is a separate v10-release.yml workflow for v10
+      - '!v10*'
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Needed as recommended by npm docs on publishing with provenance https://docs.npmjs.com/generating-provenance-statements
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: yarn install --immutable --immutable-cache --check-cache
+
+      # For generating playwright json report for avt tests
+      - name: Install browsers
+        run: yarn playwright install --with-deps
+
+      - name: Build project
+        run: yarn build
+
+      # Additional steps for generating playwright json report for avt tests
+      - name: Build storybook
+        run:
+          STORYBOOK_STORE_7=false yarn workspace @carbon/react storybook:build
+      - name: Run storybook
+        id: storybook
+        run: |
+          npx serve -l 3000 packages/react/storybook-static &
+          pid=$!
+          echo ::set-output name=pid::"$pid"
+      - uses: ./actions/wait-for-it
+        with:
+          URL: 'http://localhost:3000'
+        timeout-minutes: 3
+      - name: Run AVT
+        if: github.repository == 'carbon-design-system/carbon'
+        run: |
+          yarn playwright test --project chromium --grep @avt
+      - name: Stop storybook
+        run: kill ${{ steps.storybook.outputs.pid }}
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-avt-report
+          path: .playwright
+
+      - name: Run Continuous Integration checks
+        run: yarn ci-check
+
+      - name: Publish packages under the `next` dist tag
+        run:
+          yarn lerna publish from-package --dist-tag next --no-verify-access
+          --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea #v7.0.1
+        with:
+          script: |
+            github.rest.repos.createRelease({
+              tag_name: context.ref,
+              name: context.ref,
+              draft: false,
+              prerelease: true,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });

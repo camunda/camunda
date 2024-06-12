@@ -1,0 +1,37 @@
+{
+  "name": "@carbon/test-utils",
+  "private": true,
+  "version": "10.30.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carbon-design-system/carbon.git",
+    "directory": "packages/test-utils"
+  },
+  "bugs": "https://github.com/carbon-design-system/carbon/issues",
+  "keywords": [
+    "ibm",
+    "elements",
+    "carbon",
+    "carbon-elements",
+    "carbon-design-system",
+    "components",
+    "react"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependencies": {
+    "react-dom": "^16.9.0 || ^17.0.1"
+  },
+  "dependencies": {
+    "prettier": "^2.8.8",
+    "react": "^18.2.0",
+    "resolve": "^1.12.0",
+    "sass": "^1.51.0"
+  },
+  "devDependencies": {
+    "react-dom": "^18.2.0"
+  }
+}

@@ -1,0 +1,48 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/styles/scss/breakpoint';
+
+:global {
+  .fjs-container {
+    .fjs-form-field button[type='submit'],
+    .fjs-powered-by {
+      display: none;
+    }
+  }
+
+  @include breakpoint.breakpoint('lg') {
+    .fjs-form {
+      margin-left: -8px;
+      margin-right: -8px;
+    }
+  }
+}
+
+.formRoot {
+  width: 100%;
+}
+
+.layer {
+  width: 100%;
+  max-width: 900px;
+}
+
+.warningFilled {
+  fill: var(--cds-support-error);
+}
+
+.validationMessage {
+  margin-block: var(--cds-spacing-06);
+}
+
+.hr {
+  border: 0;
+  height: 1px;
+  background: var(--cds-border-subtle);
+}

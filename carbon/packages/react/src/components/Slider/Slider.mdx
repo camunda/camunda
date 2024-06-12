@@ -1,0 +1,55 @@
+import { ArgsTable, Story, Canvas } from '@storybook/blocks';
+import * as SliderStories from './Slider.stories';
+
+# Slider
+
+[Source code](https://github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Slider)
+&nbsp;|&nbsp;
+[Usage guidelines](https://www.carbondesignsystem.com/components/slider/usage)
+&nbsp;|&nbsp;
+[Accessibility](https://www.carbondesignsystem.com/components/slider/accessibility)
+
+## Table of Contents
+
+- [Slider](#slider)
+  - [Overview](#overview)
+  - [Component API](#component-api)
+  - [Feedback](#feedback)
+
+## Overview
+
+Sliders provide a visual indication of adjustable content, where the user can
+increase or decrease the value by moving the handle along a horizontal track.
+
+<Canvas>
+  <Story of={SliderStories.Playground} />
+</Canvas>
+
+## Component API
+
+<ArgsTable />
+
+### `step` Prop
+
+If a `step` value other than `1` is provided, any number entered into the text
+input must adhere to the step value. For example, if the `step` is `5`, with a
+range of values from `0-100`, `40` would be valid, and `42` would be considered
+`invalid`.
+
+### `unstable_valueUpper` Prop
+
+The Slider component can support two handles to specify a range. To enable this
+behavior pass a value for the `unstable_valueUpper` prop. This sets the upper
+bound of the range in addition to the `value` prop, which specifies the lower
+bound. When in two handle mode, both `value` and `valueUpper` are provided as
+keys to `onChange` function prop that is passed to the component.
+
+<Canvas>
+  <Story of={SliderStories.Playground} />
+</Canvas>
+
+## Feedback
+
+Help us improve this component by providing feedback, asking questions on Slack,
+or updating this file on
+[GitHub](https://github.com/carbon-design-system/carbon/edit/main/packages/react/src/components/Slider/Slider.mdx).

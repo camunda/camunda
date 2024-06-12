@@ -1,0 +1,172 @@
+import { Story, ArgsTable, Canvas } from '@storybook/blocks';
+import * as ComboBoxStories from './ComboBox.stories.js';
+import ComboBox from '../ComboBox';
+
+# ComboBox
+
+[Source code](https://github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/ComboBox)
+&nbsp;|&nbsp;
+[Usage guidelines](https://www.carbondesignsystem.com/components/dropdown/usage#combo-box)
+&nbsp;|&nbsp;
+[Accessibility](https://www.carbondesignsystem.com/components/dropdown/accessibility)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Component API](#component-api)
+- [downshiftProps](#combobox-downshiftprops)
+- [Placeholder and labeling](#placeholders-and-labeling)
+- [initialSelectedItem](#initialselecteditem)
+- [itemToElement](#itemtoelement)
+- [itemToString](#itemtostring)
+- [shouldFilterItem](#shouldfilteritem)
+- [allowCustomValue](#allowcustomvalue)
+- [With Layer](#with-layer)
+- [Feedback](#feedback)
+
+## Overview
+
+A combobox allows the user to make a selection from a predefined list of options
+and is typically used when there are a large amount of options to choose from.
+
+<Canvas>
+  <Story of={ComboBoxStories.Default} />
+</Canvas>
+
+## Component API
+
+<ArgsTable sort="asc" />
+
+## Disabled
+
+A disabled combobox is available but should not be used as the sole means of
+conveying information. For example, if the user must complete a previous form
+input before moving on to the combobox, make sure to make that clear to the user
+via an error state on the previous form element in addition to disabling the
+next element.
+
+```jsx
+<Combobox disabled />
+```
+
+## Combobox `downshiftProps`
+
+Our `Combobox` component utilizes [Downshift](https://www.downshift-js.com/)
+under the hood to help provide complex yet accessible custom dropdown
+components. We provide access to the built in Downshift features with this prop.
+For more information, checkout the Downshift prop
+[documentation](https://www.downshift-js.com/downshift#props-used-in-examples)
+
+## Placeholders and Labeling
+
+The placeholder is not a replacement for a label under any circumstances
+including space restraints. Placeholders should be used to provide additive
+information regarding the format of the input. In all cases a label is required
+_in addition to_ a placeholder.
+
+## `initialSelectedItem`
+
+If you want the Combobox to render with a value already selected, but do not
+want to fully control the component, you can use `initialSelectedItem`
+
+```jsx
+const items = ['Option 1', 'Option 2', 'Option 3']
+
+<Combobox initialSelectedItem={items[2]} />;
+```
+
+## `itemToElement`
+
+The Combobox takes in an `items` array and can then be formatted by
+`itemToElement` and `itemToString`. `itemToElement` allows you to wrap each
+dropdown item in a custom element.
+
+```jsx
+<Combobox
+  items={[
+    { id: 'option-0', text: 'Option 0' },
+    { id: 'option-1', text: 'Option 1' },
+    { id: 'option-2', text: 'Option 2' },
+  ]}
+  itemToElement={(item) =>
+    item ? (
+      <span className="test" style={{ color: 'red' }}>
+        {item.text} 🔥
+      </span>
+    ) : (
+      ''
+    )
+  }
+  label="Select an option..."
+/>
+```
+
+## `itemToString`
+
+If the `items` array is not an array of strings, you'll need to use
+`itemToString` to grab the text to be used as the `Combobox` item text.
+
+```jsx
+<Combobox
+  items={[
+    { id: 'option-0', text: 'Option 0' },
+    { id: 'option-1', text: 'Option 1' },
+    { id: 'option-2', text: 'Option 2' },
+  ]}
+  itemToString={(item) => (item ? item.text : '')}
+/>
+```
+
+## `shouldFilterItem`
+
+By default, the Combobox will _not_ filter out items that do not match the input
+string. If you would like to hide items that do not match what the user is
+typing, you can pass in your own filtering function to the `shouldFilterItem`
+prop.
+
+<ComboBox
+  id="carbon-combobox"
+  items={['Apple', 'Orange', 'Banana']}
+  titleText="ComboBox title"
+  helperText="Combobox helper text"
+  shouldFilterItem={(menu) =>
+    menu?.item?.toLowerCase().includes(menu?.inputValue?.toLowerCase())
+  }
+/>
+
+```jsx
+const filterItems = (menu) => {
+  return menu?.item?.toLowerCase().includes(menu?.inputValue?.toLowerCase());
+};
+
+<Combobox
+  titleText="ComboBox title"
+  helperText="Combobox helper text"
+  items={['Apple', 'Orange', 'Banana']}
+  shouldFilterItem={filterItems}
+/>;
+```
+
+## `allowCustomValue`
+
+By default, if text is entered into the `Combobox` and it does not match an
+item, it will be cleared on blur. However, you can change this behavior by
+passing in the `allowCustomValue` prop. This will allow a user to close the menu
+and accept a custom value by pressing `Enter` as well as retain the value on
+blur. The `inputValue` is provided as a second argument to the `onChange`
+callback.
+
+```js
+{selectedItem: undefined, inputValue: 'Apple'}
+```
+
+## With Layer
+
+<Canvas>
+  <Story of={ComboBoxStories._WithLayer} />
+</Canvas>
+
+## Feedback
+
+Help us improve these docs by
+[editing this file on GitHub](https://github.com/carbon-design-system/carbon/edit/main/packages/react/src/components/ComboBox/ComboBox.mdx)

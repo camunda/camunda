@@ -1,0 +1,55 @@
+{
+  "name": "@camunda/webapps",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "build": "remix vite:build",
+    "dev": "remix vite:dev",
+    "preview": "vite preview --outDir build/client",
+    "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "start": "remix-serve ./build/server/index.js",
+    "typecheck": "tsc",
+    "clean": "rimraf node_modules && rimraf build"
+  },
+  "dependencies": {
+    "@camunda/tasklist": "workspace:8.6.0-SNAPSHOT",
+    "@carbon/grid": "11.23.0",
+    "@carbon/layout": "11.22.0",
+    "@carbon/react": "file:/home/vinicius/repos/zeebe/carbon/packages/react",
+    "@carbon/styles": "1.59.0",
+    "@carbon/themes": "11.36.0",
+    "@carbon/type": "11.27.0",
+    "@remix-run/node": "2.10.0",
+    "@remix-run/react": "2.10.0",
+    "@remix-run/serve": "2.10.0",
+    "classnames": "^2.5.1",
+    "isbot": "5.1.11",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@remix-run/dev": "2.10.0",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@typescript-eslint/eslint-plugin": "7.15.0",
+    "@typescript-eslint/parser": "7.15.0",
+    "eslint": "8.57.0",
+    "eslint-import-resolver-typescript": "3.6.1",
+    "eslint-plugin-import": "2.29.1",
+    "eslint-plugin-jsx-a11y": "6.9.0",
+    "eslint-plugin-react": "7.34.3",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "remix-utils": "7.6.0",
+    "sass": "1.77.6",
+    "typescript": "5.5.3",
+    "vite": "5.3.2",
+    "vite-plugin-cjs-interop": "2.1.1",
+    "vite-plugin-svgr": "4.2.0",
+    "vite-tsconfig-paths": "4.3.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

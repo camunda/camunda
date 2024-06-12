@@ -1,0 +1,32 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.canvas {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+
+  :global {
+    .tl-highlighted-activity .djs-outline {
+      stroke-width: 2px;
+      stroke: var(--cds-link-inverse);
+    }
+
+    .bjs-powered-by {
+      display: none;
+    }
+  }
+}

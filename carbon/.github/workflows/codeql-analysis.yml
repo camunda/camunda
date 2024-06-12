@@ -1,0 +1,32 @@
+name: 'codeql'
+
+on:
+  push:
+    branches: [main, v10]
+  pull_request:
+    branches: [main, v10]
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    - cron: '0 12 * * 1'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # required for all workflows
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8

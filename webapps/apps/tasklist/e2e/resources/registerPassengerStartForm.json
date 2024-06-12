@@ -1,0 +1,43 @@
+{
+  "components": [
+    {
+      "text": "# Register Passenger",
+      "label": "Text view",
+      "type": "text",
+      "layout": {
+        "row": "Row_11ikue3",
+        "columns": null
+      },
+      "id": "Field_0zyvrl3"
+    },
+    {
+      "label": "Flight Number",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1uafbby",
+        "columns": null
+      },
+      "id": "Field_1pv5nld",
+      "key": "textfield_z276mb"
+    },
+    {
+      "label": "Passenger Name",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0zmsy2o",
+        "columns": null
+      },
+      "id": "Field_0xjcx7m",
+      "key": "textfield_995ujgl"
+    }
+  ],
+  "type": "default",
+  "id": "Form_1yn4wbi",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.4.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "schemaVersion": 15
+}
