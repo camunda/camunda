@@ -939,6 +939,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>identity-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-common</artifactId>
         <version>${project.version}</version>
       </dependency>
