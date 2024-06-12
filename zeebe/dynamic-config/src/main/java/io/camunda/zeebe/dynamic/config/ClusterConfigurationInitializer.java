@@ -88,6 +88,35 @@ public interface ClusterConfigurationInitializer {
   }
 
   /**
+   * Chain a modifier that updates the configuration after it is initialized.
+   *
+   * @param modifier a modifier that updates the configuration
+   * @return the chained initializer
+   */
+  default ClusterConfigurationInitializer andThen(final ClusterConfigurationModifier modifier) {
+    final ClusterConfigurationInitializer actual = this;
+    return () -> {
+      final ActorFuture<ClusterConfiguration> chainedInitialize = new CompletableActorFuture<>();
+      actual
+          .initialize()
+          .onComplete(
+              (configuration, error) -> {
+                if (error != null) {
+                  LOG.error("Failed to initialize configuration", error);
+                  chainedInitialize.completeExceptionally(error);
+                } else if (configuration.isUninitialized()) {
+                  // Do not modify uninitialized configuration. ClusterConfigurationManager will
+                  // fail anyway when it sees an uninitialized configuration.
+                  chainedInitialize.complete(configuration);
+                } else {
+                  modifier.modify(configuration).onComplete(chainedInitialize);
+                }
+              });
+      return chainedInitialize;
+    };
+  }
+
+  /**
    * If this initializer completed exceptionally with the given exception, the recovery initializer
    * is used instead. If this initializer completed exceptionally with a different exception, the
    * recovery is not used and the exception is propagated.

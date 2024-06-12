@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.RollingUp
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationModifier.ExporterStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
@@ -128,6 +129,11 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 persistedClusterConfiguration,
                 clusterConfigurationGossiper::updateClusterConfiguration,
+                managerActor))
+        .andThen(
+            new ExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId(),
                 managerActor));
   }
 
@@ -148,7 +154,12 @@ public final class ClusterConfigurationManagerService
                 otherKnownMembers,
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration))
-        .orThen(new StaticInitializer(staticConfiguration));
+        .orThen(new StaticInitializer(staticConfiguration))
+        .andThen(
+            new ExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId(),
+                managerActor));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
