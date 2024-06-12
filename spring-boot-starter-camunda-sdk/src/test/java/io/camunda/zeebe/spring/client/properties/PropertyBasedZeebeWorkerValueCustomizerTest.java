@@ -157,6 +157,41 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
+  void shouldSetDefaultTenantIdsLegacy() {
+    // given
+    final ZeebeClientConfigurationProperties properties = legacyProperties();
+    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
+  }
+
+  @Test
+  void shouldSetDefaultTenantIds() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
+  }
+
+  @Test
   void shouldSetDefaultTypeLegacy() {
     // given
     final ZeebeClientConfigurationProperties properties = legacyProperties();
