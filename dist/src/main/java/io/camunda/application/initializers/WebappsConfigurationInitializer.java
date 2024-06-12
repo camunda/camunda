@@ -7,7 +7,6 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.IDENTITY_AUTH;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.SSO_AUTH;
@@ -28,8 +27,7 @@ public class WebappsConfigurationInitializer
   private static final String CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY =
       "camunda.webapps.login-delegated";
 
-  private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
+  private static final Set<String> WEBAPPS_PROFILES = Set.of(OPERATE.getId(), TASKLIST.getId());
   private static final Set<String> LOGIN_DELEGATED_PROFILES =
       Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId());
 
