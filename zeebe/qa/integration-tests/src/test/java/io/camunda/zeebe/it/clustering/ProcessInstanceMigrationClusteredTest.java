@@ -199,4 +199,6 @@ public class ProcessInstanceMigrationClusteredTest {
     // subscription migration is distributed. To assert that, we first need to implement message
     // subscription migration processor where we will also send acknowledge command to the sender
   }
+
+  // TODO - add test to verify msg sub migration works end to end in clustered environment
 }
