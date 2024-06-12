@@ -2,7 +2,6 @@ spring:
   datasource:
     username: ${CAMUNDA_IDENTITY_DATABASE_USERNAME:}
     password: ${CAMUNDA_IDENTITY_DATABASE_PASSWORD:}
-    url: jdbc:h2:mem:${CAMUNDA_IDENTITY_DATABASE_NAME:identity-db}
   jackson:
     mapper:
       accept-case-insensitive-enums: true
