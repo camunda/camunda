@@ -50,7 +50,6 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     this.propertyOverrides = propertyOverrides;
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
     this.additionalProfiles.add(Profile.TEST.getId());
-    this.additionalProfiles.add(Profile.IDENTITY.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
