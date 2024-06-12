@@ -123,12 +123,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-backend</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.security</groupId>
-          <artifactId>spring-security-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- dependencies required for OpenAPI model generation -->
