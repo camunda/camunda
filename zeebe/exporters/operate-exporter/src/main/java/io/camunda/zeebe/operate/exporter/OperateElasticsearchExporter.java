@@ -169,7 +169,7 @@ public class OperateElasticsearchExporter implements Exporter {
             //            PROCESS_INSTANCE,
             //            JOB,
             //            INCIDENT,
-            //            VARIABLE
+            //            VARIABLE,
             //            VARIABLE_DOCUMENT,
             //            PROCESS_MESSAGE_SUBSCRIPTION,
             //            USER_TASK
