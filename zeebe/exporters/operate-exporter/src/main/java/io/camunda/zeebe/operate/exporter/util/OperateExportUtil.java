@@ -9,12 +9,12 @@ package io.camunda.zeebe.operate.exporter.util;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class OperateExportUtil {
 
   public static String tenantOrDefault(final String tenantId) {
-    if (!StringUtils.hasLength(tenantId)) {
+    if (StringUtils.isEmpty(tenantId)) {
       return DEFAULT_TENANT_ID;
     }
     return tenantId;
