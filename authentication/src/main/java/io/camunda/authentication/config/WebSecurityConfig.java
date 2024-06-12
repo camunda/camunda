@@ -23,7 +23,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Profile("auth-basic")
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
@@ -41,6 +40,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
+  @Profile("auth-basic")
   @Primary
   public HttpSecurity localHttpSecurity(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
@@ -49,6 +49,15 @@ public class WebSecurityConfig {
     return baseHttpSecurity(httpSecurity, authFailureHandler)
         .httpBasic(withDefaults())
         .logout((logout) -> logout.logoutSuccessUrl("/"));
+  }
+
+  @Bean
+  @Profile("!auth-basic")
+  @Primary
+  public HttpSecurity localHttpSecurityNoAuth(final HttpSecurity httpSecurity) throws Exception {
+    LOG.info("Configuring no auth");
+    return httpSecurity.authorizeHttpRequests(
+        (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll());
   }
 
   private HttpSecurity baseHttpSecurity(
