@@ -29,6 +29,7 @@ import io.camunda.operate.schema.migration.FillPostImporterQueuePlan;
 import io.camunda.operate.schema.migration.Step;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -68,7 +69,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private RestHighLevelClient esClient;
+  private final RestHighLevelClient esClient;
 
   private Long flowNodesWithIncidentsCount;
   private List<Step> steps;
@@ -76,6 +77,11 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   private String listViewIndexName;
   private String incidentsIndexName;
   private String postImporterQueueIndexName;
+
+  @Autowired
+  public ElasticsearchFillPostImporterQueuePlan(final RetryElasticsearchClient retryClient) {
+    esClient = retryClient.getEsClient();
+  }
 
   @Override
   public FillPostImporterQueuePlan setListViewIndexName(String listViewIndexName) {
