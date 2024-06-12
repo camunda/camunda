@@ -13,10 +13,16 @@ import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
+let sourceVersion: string;
+let targetVersion: string;
+let sourceBpmnProcessId: string;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
   const {processDefinitionKey} = initialData;
+  sourceVersion = initialData.sourceVersion.toString();
+  targetVersion = initialData.targetVersion.toString();
+  sourceBpmnProcessId = initialData.bpmnProcessId;
 
   await expect
     .poll(
@@ -39,11 +45,7 @@ test.beforeAll(async ({request}) => {
     .toHaveProperty('total', 10);
 });
 
-test.beforeEach(async ({processesPage}) => {
-  await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
-});
-
-test.describe('Process Instance Migration @roundtrip', () => {
+test.describe.serial('Process Instance Migration @roundtrip', () => {
   test('Migrate Process Instances', async ({
     processesPage,
     processesPage: {filtersPanel},
@@ -51,11 +53,10 @@ test.describe('Process Instance Migration @roundtrip', () => {
     commonPage,
   }) => {
     test.slow();
-    const {bpmnProcessId, version} = initialData;
-    const targetVersion = '2';
+    await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
 
-    await filtersPanel.selectProcess(bpmnProcessId);
-    await filtersPanel.selectVersion(version.toString());
+    await filtersPanel.selectProcess(sourceBpmnProcessId);
+    await filtersPanel.selectVersion(sourceVersion);
 
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
@@ -82,7 +83,7 @@ test.describe('Process Instance Migration @roundtrip', () => {
     await migrationView.nextButton.click();
 
     await expect(migrationView.summaryNotification).toContainText(
-      `You are about to migrate 6 process instances from the process definition: ${bpmnProcessId} - version ${version} to the process definition: ${bpmnProcessId} - version ${targetVersion}`,
+      `You are about to migrate 6 process instances from the process definition: ${sourceBpmnProcessId} - version ${sourceVersion} to the process definition: ${sourceBpmnProcessId} - version ${targetVersion}`,
     );
 
     await migrationView.confirmButton.click();
@@ -102,9 +103,11 @@ test.describe('Process Instance Migration @roundtrip', () => {
       migrateOperationEntry.getByRole('progressbar'),
     ).not.toBeVisible({timeout: 60000});
 
-    await expect(filtersPanel.processNameFilter).toHaveValue(bpmnProcessId);
+    await expect(filtersPanel.processNameFilter).toHaveValue(
+      sourceBpmnProcessId,
+    );
     expect(await filtersPanel.processVersionFilter.innerText()).toBe(
-      targetVersion.toString(),
+      targetVersion,
     );
 
     await migrateOperationEntry.getByRole('link').click();
@@ -116,7 +119,7 @@ test.describe('Process Instance Migration @roundtrip', () => {
     // expect 6 process instances to be migrated to target version
     await expect(
       processesPage.processInstancesTable.getByRole('cell', {
-        name: targetVersion.toString(),
+        name: targetVersion,
         exact: true,
       }),
     ).toHaveCount(6);
@@ -124,7 +127,7 @@ test.describe('Process Instance Migration @roundtrip', () => {
     // expect no process instances for source version
     await expect(
       processesPage.processInstancesTable.getByRole('cell', {
-        name: version.toString(),
+        name: sourceVersion,
         exact: true,
       }),
     ).not.toBeVisible();
@@ -132,12 +135,35 @@ test.describe('Process Instance Migration @roundtrip', () => {
     await filtersPanel.removeOptionalFilter('Operation Id');
 
     // expect 4 process instances for source version
-    await filtersPanel.selectProcess(bpmnProcessId);
-    await filtersPanel.selectVersion(version.toString());
+    await filtersPanel.selectProcess(sourceBpmnProcessId);
+    await filtersPanel.selectVersion(sourceVersion);
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/4 results/i);
 
     await commonPage.collapseOperationsPanel();
+  });
+
+  test('Migrated date tag', async ({processesPage, processInstancePage}) => {
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        process: sourceBpmnProcessId,
+        version: targetVersion,
+      },
+    });
+
+    // Navigate to the first process instance in the list, that has been migrated
+    await processesPage.processInstancesTable
+      .getByRole('link', {
+        name: /^view instance/i,
+      })
+      .first()
+      .click();
+
+    // Expect the migrated tag to be visible
+    await expect(
+      processInstancePage.instanceHistory.getByText(/^migrated/i),
+    ).toBeVisible();
   });
 });
