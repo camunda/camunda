@@ -59,6 +59,9 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var stateQuery = getStateQuery(filter.taskStates());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
+    // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
+    final var userTaksImplementationQuery = getUserTasksImplementationOnl();
+
     return and(
         userTaskKeysQuery,
         bpmnProcessIdQuery,
@@ -73,7 +76,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
         variablesQuery,
-        tenantQuery);
+        tenantQuery,
+        userTaksImplementationQuery);
   }
 
   @Override
@@ -101,7 +105,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   }
 
   // TDB - First iteration will support CREATED and COMPLETED states
-  // Next iteration will support additional states: PAUSED adn CANCELED
+  // Next iteration will support additional states: PAUSED and CANCELED
   private SearchQuery getUserTaskStateQuery(final UserTaskFilter filter) {
     final var running = filter.completed();
     final var completed = filter.created();
@@ -170,6 +174,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("key", userTaskKeys);
   }
 
+  private SearchQuery getUserTasksImplementationOnl() {
+    return term("implementation", "ZEEBE_USER_TASK");
+  }
+
   private SearchQuery getCandidateUsersQuery(final List<String> candidateUsers) {
     return stringTerms("candidateUsers", candidateUsers);
   }
@@ -194,6 +202,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms("bpmnProcessId", bpmnProcessId);
   }
 
+  // TO-DO: Possible values: [CREATED, COMPLETED, CANCELED, FAILED]
   private SearchQuery getCreatedQuery(final boolean created) {
     if (created) {
       return term("state", "CREATED");

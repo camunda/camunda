@@ -22,4 +22,13 @@ public final class SearchQueryBuilders {
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(processInstanceSearchQuery()).build();
   }
+
+  public static UserTaskQuery.Builder userTaskSearchQuery() {
+    return new UserTaskQuery.Builder();
+  }
+
+  public static UserTaskQuery userTaskSearchQuery(
+      final Function<UserTaskQuery.Builder, ObjectBuilder<UserTaskQuery>> fn) {
+    return fn.apply(userTaskSearchQuery()).build();
+  }
 }
