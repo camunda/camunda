@@ -26,15 +26,16 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Autowired protected OperateProperties operateProperties;
 
+  private String indexPrefix;
+
   @Override
   public String getFullQualifiedName() {
-    return String.format(
-        "%s-%s-%s_", operateProperties.getIndexPrefix(), getIndexName(), getVersion());
+    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
   }
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", operateProperties.getIndexPrefix(), getIndexName());
+    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
   }
 
   @Override
@@ -44,5 +45,21 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     } else {
       return String.format(SCHEMA_CREATE_INDEX_JSON_OPENSEARCH, getIndexName());
     }
+  }
+
+  // FIXME clean this up when Operate exporter is converted to using Spring
+  public String getIndexPrefix() {
+    if (operateProperties != null) {
+      return DatabaseInfo.isOpensearch()
+          ? operateProperties.getOpensearch().getIndexPrefix()
+          : operateProperties.getElasticsearch().getIndexPrefix();
+    } else {
+      return indexPrefix;
+    }
+  }
+
+  public AbstractIndexDescriptor setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+    return this;
   }
 }
