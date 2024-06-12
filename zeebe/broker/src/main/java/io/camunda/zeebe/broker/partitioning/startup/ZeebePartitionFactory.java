@@ -151,7 +151,7 @@ public final class ZeebePartitionFactory {
                 communicationService, membershipService, raftPartition::members),
             actorSchedulingService,
             brokerCfg,
-            commandApiService::newCommandResponseWriter,
+            commandApiService,
             snapshotStore,
             stateController,
             typedRecordProcessorsFactory,

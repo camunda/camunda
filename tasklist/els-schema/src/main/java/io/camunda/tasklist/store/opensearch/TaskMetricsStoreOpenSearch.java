@@ -38,6 +38,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -51,7 +52,10 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreOpenSearch.class);
 
   @Autowired private MetricIndex index;
-  @Autowired private OpenSearchClient openSearchClient;
+
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
 
   @Override
   public void registerTaskCompleteEvent(TaskEntity task) {

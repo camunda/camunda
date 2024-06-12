@@ -34,7 +34,6 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -387,52 +386,93 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   @Override
   public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
     final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(
-        () -> {
-          final var partition = partitions.get(partitionId);
-          if (partition == null) {
-            result.completeExceptionally(
-                new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
-            return;
-          }
-
-          if (partition.zeebePartition() == null) {
-            result.completeExceptionally(
-                new IllegalArgumentException(
-                    "Expected to disable exporter on partition %s, but zeebePartition is not ready"
-                        .formatted(partitionId)));
-            return;
-          }
-          LOGGER.info("Disabling exporter {} on partition {}", exporterId, partitionId);
-          concurrencyControl.runOnCompletion(
-              partition.zeebePartition().disableExporter(exporterId),
-              (ok, error) -> {
-                if (error != null) {
-                  result.completeExceptionally(error);
-                  return;
-                }
-
-                LOGGER.info("Disabled exporter {} on partition {}", exporterId, partitionId);
-                result.complete(null);
-              });
-        });
+    concurrencyControl.run(() -> disableExporter(partitionId, exporterId, result));
     return result;
-  }
-
-  @Override
-  public ActorFuture<Void> enableExporter(
-      final int partitionId, final String exporterId, final long metadataVersionToUpdate) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
   }
 
   @Override
   public ActorFuture<Void> enableExporter(
       final int partitionId,
       final String exporterId,
-      final long metadataVersionToUpdate,
+      final long metadataVersion,
       final String initializeFrom) {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> enableExporter(partitionId, exporterId, metadataVersion, initializeFrom, result));
+    return result;
+  }
+
+  private void disableExporter(
+      final int partitionId, final String exporterId, final ActorFuture<Void> result) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+      return;
+    }
+
+    if (partition.zeebePartition() == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Expected to disable exporter on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+      return;
+    }
+    LOGGER.trace("Disabling exporter {} on partition {}", exporterId, partitionId);
+    concurrencyControl.runOnCompletion(
+        partition.zeebePartition().disableExporter(exporterId),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+            return;
+          }
+
+          LOGGER.info("Disabled exporter {} on partition {}", exporterId, partitionId);
+          result.complete(null);
+        });
+  }
+
+  private void enableExporter(
+      final int partitionId,
+      final String exporterId,
+      final long metadataVersion,
+      final String initializeFrom,
+      final ActorFuture<Void> result) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+      return;
+    }
+
+    if (partition.zeebePartition() == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Expected to enable exporter on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+      return;
+    }
+    LOGGER.trace(
+        "Enabling exporter {} on partition {} with metadata version {} and initializing from {}",
+        exporterId,
+        partitionId,
+        metadataVersion,
+        initializeFrom);
+    concurrencyControl.runOnCompletion(
+        partition.zeebePartition().enableExporter(exporterId, metadataVersion, initializeFrom),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+            return;
+          }
+
+          LOGGER.info(
+              "Enabled exporter {} on partition {} with metadata version {} and initializing from {}",
+              exporterId,
+              partitionId,
+              metadataVersion,
+              initializeFrom);
+          result.complete(null);
+        });
   }
 }

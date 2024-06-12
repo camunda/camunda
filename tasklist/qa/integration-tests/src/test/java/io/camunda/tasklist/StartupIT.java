@@ -39,7 +39,7 @@ public class StartupIT {
   private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
   private static final String VERSION = "current-test";
   public TestRestTemplate restTemplate = new TestRestTemplate();
-  private TestContainerUtil testContainerUtil = new TestContainerUtil();
+  private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private GenericContainer tasklistContainer;
   private TestContext testContext;
 
@@ -81,7 +81,7 @@ public class StartupIT {
     final ResponseEntity<String> clientConfig =
         restTemplate.getForEntity(
             String.format(
-                "http://%s:%s/client-config.js",
+                "http://%s:%s/tasklist/client-config.js",
                 testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort()),
             String.class);
 

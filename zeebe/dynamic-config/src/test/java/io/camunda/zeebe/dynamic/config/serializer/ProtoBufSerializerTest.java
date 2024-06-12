@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
@@ -162,6 +163,21 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeExporterDisableRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(exporterDisableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExporterEnableRequest() {
+    // given
+    final var exporterEnableRequest =
+        new ExporterEnableRequest("expId", Optional.of("expId2"), false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterEnableRequest(exporterEnableRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterEnableRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterEnableRequest);
   }
 
   @Test

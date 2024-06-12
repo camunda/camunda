@@ -87,4 +87,10 @@ public final class JobUpdateRetriesCommandImpl
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobRetries(request, streamObserver);
   }
+
+  @Override
+  public UpdateRetriesJobCommandStep2 operationReference(final long operationReference) {
+    builder.setOperationReference(operationReference);
+    return this;
+  }
 }

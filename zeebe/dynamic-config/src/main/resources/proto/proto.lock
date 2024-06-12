@@ -156,6 +156,26 @@
             ]
           },
           {
+            "name": "ExporterEnableRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "exporterId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "initializeFrom",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "dryRun",
+                "type": "bool"
+              }
+            ]
+          },
+          {
             "name": "CancelTopologyChangeRequest",
             "fields": [
               {

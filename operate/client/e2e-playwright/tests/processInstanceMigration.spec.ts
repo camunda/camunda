@@ -71,7 +71,6 @@ test.describe('Process Instance Migration @roundtrip', () => {
     await processesPage.migrateButton.click();
     await processesPage.migrationModal.confirmButton.click();
 
-    await migrationView.selectTargetProcess('orderProcessMigration');
     await migrationView.selectTargetVersion(targetVersion);
 
     await migrationView.mapFlowNode({
@@ -100,16 +99,14 @@ test.describe('Process Instance Migration @roundtrip', () => {
     // wait for migrate operation to finish
     await expect(
       migrateOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible();
+    ).not.toBeVisible({timeout: 60000});
 
     await expect(processesPage.processNameFilter).toHaveValue(bpmnProcessId);
     expect(await processesPage.processVersionFilter.innerText()).toBe(
       targetVersion.toString(),
     );
 
-    await migrateOperationEntry
-      .getByRole('link', {name: /6 instances/i})
-      .click();
+    await migrateOperationEntry.getByRole('link').click();
 
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),

@@ -29,8 +29,8 @@ import org.springframework.stereotype.Component;
 public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Autowired
-  @Qualifier("zeebeOsClient")
-  protected OpenSearchClient zeebeOsClient;
+  @Qualifier("tasklistZeebeOsClient")
+  private OpenSearchClient zeebeOsClient;
 
   @Override
   public void refreshIndices(final Instant instant) {

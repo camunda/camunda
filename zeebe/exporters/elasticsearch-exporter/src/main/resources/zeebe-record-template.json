@@ -50,6 +50,9 @@
         },
         "sequence": {
           "type": "long"
+        },
+        "operationReference": {
+          "type": "long"
         }
       }
     }
