@@ -15,6 +15,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
   private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
   private static final String DEFAULT_REFRESH_INTERVAL = "1s";
+  private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
@@ -22,6 +23,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
   private Map<String, Integer> numberOfReplicasForIndices = Map.of();
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
+  private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -75,6 +77,14 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.numberOfReplicasForIndices = numberOfReplicasForIndices;
   }
 
+  public int getVariableSizeThreshold() {
+    return variableSizeThreshold;
+  }
+
+  public void setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+  }
+
   @Override
   public String toString() {
     return "OperateElasticsearchProperties{"
@@ -91,6 +101,8 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
         + numberOfReplicasForIndices
         + ", refreshInterval='"
         + refreshInterval
+        + ", variableSizeThreshold="
+        + variableSizeThreshold
         + '\''
         + "} "
         + super.toString();
