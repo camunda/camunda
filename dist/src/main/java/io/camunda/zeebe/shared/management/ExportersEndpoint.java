@@ -47,11 +47,12 @@ public class ExportersEndpoint {
       @PathVariable("exporterId") final String exporterId,
       @RequestBody(required = false) final InitializationInfo initializeInfo,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
-
-    final var initializeFrom = initializeInfo != null ? initializeInfo.initializeFrom() : null;
     return requestSender
         .enableExporter(
-            new ExporterEnableRequest(exporterId, Optional.ofNullable(initializeFrom), dryRun))
+            new ExporterEnableRequest(
+                exporterId,
+                Optional.ofNullable(initializeInfo).map(InitializationInfo::initializeFrom),
+                dryRun))
         .handle(ClusterApiUtils::mapOperationResponse);
   }
 
