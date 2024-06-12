@@ -38,6 +38,7 @@ import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -399,7 +400,16 @@ public class ProcessInstanceMigrationMigrateProcessor
           final var catchEventId = subscription.getRecord().getElementId();
           if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it
-            processMessageSubscriptionsToMigrate.add(subscription);
+            // avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final ProcessMessageSubscription copySubscription = new ProcessMessageSubscription();
+            final ProcessMessageSubscriptionRecord subscriptionRecord =
+                new ProcessMessageSubscriptionRecord();
+            subscriptionRecord.wrap(subscription.getRecord());
+            copySubscription.setRecord(subscriptionRecord);
+            copySubscription.setKey(subscription.getKey());
+            copySubscription.setState(subscription.getState());
+            processMessageSubscriptionsToMigrate.add(copySubscription);
             return false;
           }
 
