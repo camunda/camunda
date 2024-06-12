@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -91,8 +92,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
     containers =
-        context.getDescriptors().stream()
-            .map(descriptor -> new ExporterContainer(descriptor, partitionId))
+        context.getDescriptors().entrySet().stream()
+            .map(
+                descriptorEntry ->
+                    new ExporterContainer(
+                        descriptorEntry.getKey(), partitionId, descriptorEntry.getValue()))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
@@ -223,6 +227,62 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       LOG.info("No exporters are configured. Closing the exporter director '{}'.", name);
       actor.close();
     }
+  }
+
+  /**
+   * Enables an exporter with the given id and descriptor. The exporter will start exporting records
+   * after this operation completes.
+   *
+   * <p>It is expected that the exporter to initialize from the metadata is of same type as the
+   * exporter to enable. The caller of this method must verify that.
+   *
+   * @param exporterId id of the exporter to enable
+   * @param initializationInfo the info required to initialize the exporter state
+   * @param descriptor the descriptor of the exporter to enable
+   * @return future which will be completed after the exporter is enabled.
+   */
+  public ActorFuture<Void> enableExporter(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return actor.call(
+        () -> {
+          containers.stream()
+              .map(ExporterContainer::getId)
+              .filter(exporterId::equals)
+              .findFirst()
+              .ifPresentOrElse(
+                  container -> {
+                    LOG.debug(
+                        "Exporter '{}' is already enabled. Skipping the enabling operation.",
+                        exporterId);
+                  },
+                  () -> addExporter(exporterId, initializationInfo, descriptor));
+        });
+  }
+
+  private void addExporter(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+    final ExporterContainer container =
+        new ExporterContainer(descriptor, partitionId, initializationInfo);
+    container.initContainer(actor, metrics, state, exporterPhase);
+    try {
+      container.configureExporter();
+    } catch (final Exception e) {
+      LOG.error("Failed to configure exporter '{}'", exporterId, e);
+      LangUtil.rethrowUnchecked(e);
+    }
+    // initializes metadata and position in the runtime state
+    container.initMetadata();
+    container.openExporter();
+    containers.add(container);
+    LOG.debug("Exporter '{}' is enabled.", exporterId);
   }
 
   public ActorFuture<ExporterPhase> getPhase() {
@@ -405,7 +465,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     // start reading
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initMetadata();
       container.openExporter();
     }
 
@@ -430,7 +490,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startPassiveExportingMode() {
     // Only initialize the positions, do not open and start exporting
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initMetadata();
     }
 
     if (state.hasExporters()) {
@@ -561,6 +621,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     return actor.call(() -> state.getLowestPosition());
   }
+
+  /**
+   * @param metadataVersion the version of the metadata to initialize the exporter with
+   * @param initializeFrom the id of the exporter to initialize the metadata of the exporter from
+   */
+  public record ExporterInitializationInfo(long metadataVersion, String initializeFrom) {}
 
   private static class ExporterEventFilter implements EventFilter {
 

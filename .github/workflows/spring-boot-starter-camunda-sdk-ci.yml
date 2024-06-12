@@ -50,7 +50,7 @@ jobs:
           cache: 'maven'
       - uses: ./.github/actions/setup-zeebe
         with:
-          maven-cache-key-modifier: it-${{ matrix.group }}
+          maven-cache-key-modifier: sdk-build
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -84,6 +84,7 @@ jobs:
           name: "unit tests"
       - name: Java Checks
         run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs -f spring-boot-starter-camunda-sdk verify
+
   sdk-test-summary:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -92,11 +93,12 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     outputs:
-      flakyUnitTests: ${{ needs.unit-tests.outputs.flakyTests }}
+      flakyUnitTests: ${{ needs.build-sdk.outputs.flakyTests }}
     needs:
       - build-sdk
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+
   notify-if-failed:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
@@ -135,21 +137,14 @@ jobs:
                     "type": "mrkdwn",
                     "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
                   }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_INTEGRATION_TESTS }}"
-                  }
                 }
               ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          FLAKY_UNIT_TESTS: ${{needs.test-summary.outputs.flakyUnitTests}}
-          FLAKY_INTEGRATION_TESTS: ${{needs.test-summary.outputs.flakyIntegrationTests}}
+          FLAKY_UNIT_TESTS: ${{needs.sdk-test-summary.outputs.flakyUnitTests}}
+
   auto-merge:
     # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.

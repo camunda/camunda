@@ -54,7 +54,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       IdentityJwt2AuthenticationTokenConverter.class,
       TasklistProperties.class
     },
-    properties = {TasklistProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"})
+    properties = {
+      TasklistProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url",
+    })
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class IdentityJwt2AuthenticationTokenConverterTest {
 
@@ -115,7 +117,7 @@ public class IdentityJwt2AuthenticationTokenConverterTest {
 
     final List<Tenant> tenants =
         CommonUtils.OBJECT_MAPPER.readValue(
-            this.getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
+            getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
     when(this.tenants.forToken(any())).thenReturn(tenants);
 
     final Jwt token = createJwtTokenWith();

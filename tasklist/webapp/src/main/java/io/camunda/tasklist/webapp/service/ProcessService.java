@@ -41,7 +41,9 @@ import org.springframework.stereotype.Component;
 public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

@@ -13,6 +13,10 @@ spring:
       accept-case-insensitive-enums: true
     deserialization:
       read-unknown-enum-values-using-default-value: true
+  jpa:
+   generate-ddl: false
+   hibernate:
+    ddl-auto: validate
 management:
   server:
     port: 8082
@@ -31,3 +35,10 @@ server:
       force: true
     context-path: ${IDENTITY_BASE_PATH:}
   max-http-request-header-size: ${SERVER_REQUEST_HEADER_MAX_SIZE:8KB}
+camunda:
+    identity:
+      init:
+        users:
+          - username: demo
+            password: demo
+

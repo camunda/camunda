@@ -54,7 +54,10 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   public static final String ASSIGNEE = "assignee";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
   @Autowired private MetricIndex index;
-  @Autowired private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

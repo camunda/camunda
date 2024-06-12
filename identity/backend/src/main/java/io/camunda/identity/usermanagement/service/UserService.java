@@ -8,85 +8,106 @@
 package io.camunda.identity.usermanagement.service;
 
 import io.camunda.authentication.user.CamundaUserDetailsManager;
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.repository.UserRepository;
+import io.camunda.identity.usermanagement.CamundaUser;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.model.Profile;
+import io.camunda.identity.usermanagement.repository.UserProfileRepository;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class UserService {
   private final CamundaUserDetailsManager userDetailsManager;
-  private final UserRepository userRepository;
+  private final UserProfileRepository userProfileRepository;
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
       final CamundaUserDetailsManager userDetailsManager,
-      final UserRepository userRepository,
+      final UserProfileRepository userProfileRepository,
       final PasswordEncoder passwordEncoder) {
     this.userDetailsManager = userDetailsManager;
-    this.userRepository = userRepository;
+    this.userProfileRepository = userProfileRepository;
     this.passwordEncoder = passwordEncoder;
   }
 
   public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
     try {
       final UserDetails userDetails =
-          org.springframework.security.core.userdetails.User.withUsername(
-                  userWithCredential.user().username())
-              .password(userWithCredential.password())
+          User.withUsername(userWithCredential.getUsername())
+              .password(userWithCredential.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .disabled(!userWithCredential.user().enabled())
+              .disabled(!userWithCredential.isEnabled())
               .roles("DEFAULT_USER")
               .build();
       userDetailsManager.createUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
+      userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
+      return userProfileRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
   }
 
-  public void deleteUser(final String username) {
-    if (!userDetailsManager.userExists(username)) {
+  public void deleteUser(final Long id) {
+    final CamundaUser user = findUserById(id);
+    userDetailsManager.deleteUser(user.getUsername());
+  }
+
+  public CamundaUser findUserById(final Long id) {
+    final var user = userProfileRepository.findUserById(id);
+    if (user == null) {
       throw new RuntimeException("user.notFound");
     }
-    userDetailsManager.deleteUser(username);
+    return user;
   }
 
   public CamundaUser findUserByUsername(final String username) {
-    try {
-      final UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
-    } catch (final UsernameNotFoundException e) {
+    final var user = userProfileRepository.findByUsername(username);
+    if (user == null) {
       throw new RuntimeException("user.notFound");
     }
+    return user;
+  }
+
+  public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
+    return userProfileRepository.findAllByUsernameIn(usernames);
   }
 
   public List<CamundaUser> findAllUsers() {
-    return userRepository.loadUsers();
+    return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final String username, final CamundaUserWithPassword user) {
+  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
     try {
-      if (!username.equals(user.user().username())) {
+      if (user.getId() != null && !Objects.equals(id, user.getId())) {
+        throw new RuntimeException("user.notFound");
+      }
+      final CamundaUser existingUser = userProfileRepository.findUserById(id);
+      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
-      final UserDetails existingUser = userDetailsManager.loadUserByUsername(username);
+      final UserDetails existingUserDetail =
+          userDetailsManager.loadUserByUsername(existingUser.getUsername());
 
       final UserDetails userDetails =
-          org.springframework.security.core.userdetails.User.withUsername(username)
-              .password(user.password())
+          User.withUsername(existingUser.getUsername())
+              .password(user.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .authorities(existingUser.getAuthorities())
-              .disabled(!user.user().enabled())
+              .authorities(existingUserDetail.getAuthorities())
+              .disabled(!user.isEnabled())
               .build();
       userDetailsManager.updateUser(userDetails);
-      return new CamundaUser(userDetails.getUsername(), userDetails.isEnabled());
+      userProfileRepository.save(new Profile(id, user.getEmail()));
+      return userProfileRepository.findUserById(id);
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }

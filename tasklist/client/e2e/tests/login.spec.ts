@@ -9,8 +9,8 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 
-test.beforeEach(async ({testSetupPage}) => {
-  await testSetupPage.goToLoginPage();
+test.beforeEach(async ({loginPage}) => {
+  await loginPage.goto();
 });
 
 test.describe.parallel('login page', () => {
@@ -24,7 +24,7 @@ test.describe.parallel('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/tasklist');
   });
 
   test('have no a11y violations', async ({makeAxeBuilder}) => {
@@ -44,7 +44,7 @@ test.describe.parallel('login page', () => {
       password: 'wrong',
     });
 
-    await expect(page).toHaveURL('/login');
+    await expect(page).toHaveURL('/tasklist/login');
     await expect(loginPage.errorMessage).toContainText(
       'Username and password do not match',
     );
@@ -56,28 +56,28 @@ test.describe.parallel('login page', () => {
   });
 
   test('block form submission with empty fields', async ({loginPage, page}) => {
-    await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('/login');
+    await loginPage.loginButton.click();
+    await expect(page).toHaveURL('/tasklist/login');
 
-    await loginPage.fillUsername('demo');
-    await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('/login');
+    await loginPage.usernameInput.fill('demo');
+    await loginPage.loginButton.click();
+    await expect(page).toHaveURL('/tasklist/login');
 
-    await loginPage.fillUsername(' ');
-    await loginPage.fillPassword('demo');
-    await loginPage.clickLoginButton();
-    await expect(page).toHaveURL('/login');
+    await loginPage.usernameInput.fill(' ');
+    await loginPage.passwordInput.fill('demo');
+    await loginPage.loginButton.click();
+    await expect(page).toHaveURL('/tasklist/login');
   });
 
-  test('log out redirect', async ({loginPage, mainPage, page}) => {
+  test('log out redirect', async ({loginPage, header, page}) => {
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/tasklist');
 
-    await mainPage.logout();
-    await expect(page).toHaveURL('/login');
+    await header.logout();
+    await expect(page).toHaveURL('/tasklist/login');
   });
 
   test('persistency of a session', async ({loginPage, page}) => {
@@ -86,39 +86,39 @@ test.describe.parallel('login page', () => {
       password: 'demo',
     });
 
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/tasklist');
     await page.reload();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/tasklist');
   });
 
   test('redirect to the correct URL after login', async ({
     loginPage,
-    mainPage,
+    header,
     page,
   }) => {
-    await loginPage.navigateToURL('/123');
+    await page.goto('/tasklist/123');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('/123');
+    await expect(page).toHaveURL('/tasklist/123');
 
-    await mainPage.logout();
+    await header.logout();
 
-    await loginPage.navigateToURL('/?filter=unassigned');
+    await page.goto('/tasklist?filter=unassigned');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('/?filter=unassigned');
+    await expect(page).toHaveURL('/tasklist?filter=unassigned');
 
-    await mainPage.logout();
+    await header.logout();
 
-    await loginPage.navigateToURL('/123?filter=unassigned');
+    await page.goto('/tasklist/123?filter=unassigned');
     await loginPage.login({
       username: 'demo',
       password: 'demo',
     });
-    await expect(page).toHaveURL('/123?filter=unassigned');
+    await expect(page).toHaveURL('/tasklist/123?filter=unassigned');
   });
 });

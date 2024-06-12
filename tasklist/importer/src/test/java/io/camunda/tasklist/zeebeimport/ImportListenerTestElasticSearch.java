@@ -52,7 +52,7 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
   @MockBean private ImportPositionHolder importPositionHolder;
 
   @MockBean
-  @Qualifier("zeebeEsClient")
+  @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
   @MockBean private RecordsReaderHolder recordsReaderHolder;

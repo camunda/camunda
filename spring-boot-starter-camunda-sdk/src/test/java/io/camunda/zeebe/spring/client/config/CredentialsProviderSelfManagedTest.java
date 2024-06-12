@@ -50,7 +50,7 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 @SpringBootTest(
     classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
     properties = {
-      "camunda.client.mode=oidc",
+      "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
       "camunda.client.auth.issuer=http://localhost:14682/auth-server"

@@ -45,7 +45,7 @@
 * [McAlm](https://github.com/McAlm)
 * [Meggle](https://github.com/megglos)
 * [Mustafa Ulu](https://github.com/mustafau)
-* [Ole Schönburg](https://github.com/oleschoenburg)
+* [Lena Schönburg](https://github.com/lenaschoenburg)
 * [Pablo Romanelli](https://github.com/pabloromanelli)
 * [Philipp Ossler](https://github.com/saig0)
 * [Alexander Pruss](https://github.com/AlexanderPruss)

@@ -15,28 +15,17 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
-import io.camunda.identity.sdk.IdentityConfiguration.Type;
-
 public class AuthProperties {
 
   // simple
   private String username;
   private String password;
 
-  // oidc and saas
+  // self-managed and saas
   private String clientId;
   private String clientSecret;
 
-  private Type oidcType;
   private String issuer;
-
-  public Type getOidcType() {
-    return oidcType;
-  }
-
-  public void setOidcType(final Type oidcType) {
-    this.oidcType = oidcType;
-  }
 
   public String getIssuer() {
     return issuer;

@@ -27,7 +27,7 @@ public abstract class AbstractArchiverJob implements Runnable {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
+  @Qualifier("tasklistArchiverThreadPoolExecutor")
   protected ThreadPoolTaskScheduler archiverExecutor;
 
   @Autowired protected ArchiverUtil archiverUtil;
@@ -36,7 +36,7 @@ public abstract class AbstractArchiverJob implements Runnable {
   private final BackoffIdleStrategy errorStrategy;
 
   private boolean shutdown = false;
-  private List<Integer> partitionIds;
+  private final List<Integer> partitionIds;
 
   @Autowired private TasklistProperties tasklistProperties;
 

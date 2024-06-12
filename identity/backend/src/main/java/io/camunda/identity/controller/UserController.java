@@ -7,8 +7,8 @@
  */
 package io.camunda.identity.controller;
 
-import io.camunda.identity.user.CamundaUser;
-import io.camunda.identity.user.CamundaUserWithPassword;
+import io.camunda.identity.usermanagement.CamundaUser;
+import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,14 +34,14 @@ public class UserController {
     return userService.createUser(user);
   }
 
-  @DeleteMapping("/{username}")
-  public void deleteUser(@PathVariable("username") final String username) {
-    userService.deleteUser(username);
+  @DeleteMapping("/{id}")
+  public void deleteUser(@PathVariable("id") final long id) {
+    userService.deleteUser(id);
   }
 
-  @GetMapping("/{username}")
-  public CamundaUser findUserByUsername(@PathVariable("username") final String username) {
-    return userService.findUserByUsername(username);
+  @GetMapping("/{id}")
+  public CamundaUser findUserById(@PathVariable("id") final long id) {
+    return userService.findUserById(id);
   }
 
   @GetMapping
@@ -49,9 +49,9 @@ public class UserController {
     return userService.findAllUsers();
   }
 
-  @PutMapping("/{username}")
+  @PutMapping("/{id}")
   public CamundaUser updateUser(
-      @PathVariable("username") final String username, final CamundaUserWithPassword user) {
-    return userService.updateUser(username, user);
+      @PathVariable("id") final long id, final CamundaUserWithPassword user) {
+    return userService.updateUser(id, user);
   }
 }

@@ -22,13 +22,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 public class ArchiverStarter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverStarter.class);
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
+  @Qualifier("tasklistArchiverThreadPoolExecutor")
   public ThreadPoolTaskScheduler taskScheduler;
 
   @Autowired private BeanFactory beanFactory;

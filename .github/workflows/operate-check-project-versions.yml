@@ -31,7 +31,7 @@ jobs:
       - name: Check versions
         env:
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
-          BRANCH_NAME: ${{ inputs.branchName }}
+          BRANCH_NAME: ${{ inputs.branch }}
         run: |
           IDENTITY_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 

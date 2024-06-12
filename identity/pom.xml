@@ -75,7 +75,9 @@
             <dep>org.springframework:spring-jdbc</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-web</dep>
+            <dep>org.springframework.boot:spring-boot</dep>
             <dep>org.springframework.boot:spring-boot-starter-web</dep>
+            <dep>org.springframework.boot:spring-boot-starter-data-jpa</dep>
             <dep>org.springframework.boot:spring-boot-starter-jdbc</dep>
             <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
             <dep>org.slf4j:slf4j-api</dep>

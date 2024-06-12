@@ -34,6 +34,7 @@
     <module>gateway-protocol</module>
     <module>gateway-protocol-impl</module>
     <module>gateway</module>
+    <module>gateway-grpc</module>
     <module>gateway-rest</module>
     <module>clients/java</module>
     <module>exporter-api</module>

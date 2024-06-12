@@ -419,4 +419,17 @@ public class TasklistProperties {
   public void setDocumentation(final TasklistDocumentationProperties documentation) {
     this.documentation = documentation;
   }
+
+  public String getIndexPrefix() {
+    if (database.equals(ELASTIC_SEARCH)) {
+      return elasticsearch.getIndexPrefix();
+    } else if (database.equals(OPEN_SEARCH)) {
+      return openSearch.getIndexPrefix();
+    }
+    return null;
+  }
+
+  public String getDatabaseType() {
+    return database;
+  }
 }

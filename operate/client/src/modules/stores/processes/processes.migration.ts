@@ -41,6 +41,7 @@ class Processes extends ProcessesBase {
       filteredProcesses: override,
       setSelectedTargetVersion: action,
       setSelectedTargetProcess: action,
+      clearSelectedTarget: action,
       reset: override,
     });
   }
@@ -125,6 +126,11 @@ class Processes extends ProcessesBase {
       [],
     );
   }
+
+  clearSelectedTarget = () => {
+    this.migrationState.selectedTargetProcess = null;
+    this.migrationState.selectedTargetVersion = null;
+  };
 
   setSelectedTargetProcess = (selectedTargetProcessKey: string) => {
     const process = this.processes.find(

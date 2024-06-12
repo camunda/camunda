@@ -47,7 +47,9 @@ public class CUSTOMCopyProcessesFromOptimize {
       LoggerFactory.getLogger(CUSTOMCopyProcessesFromOptimize.class);
   private static final String OPTIMIZE_PROCESS_INDEX = "optimize-process-definition_v6";
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private XMLUtil xmlUtil;
 

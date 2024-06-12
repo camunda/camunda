@@ -16,6 +16,11 @@ import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 
+/**
+ * The REST API is not enabled when the Zeebe Gateway is disabled, i.e. the {@link
+ * RestGatewayDisabled} bean is not present. This setup might happen when an embedded Zeebe Gateway
+ * is used in the standalone Zeebe Broker and the Broker Gateway is disabled.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented

@@ -31,7 +31,11 @@ type Events =
         | 'public-start-form-submitted'
         | 'public-start-form-submission-failed'
         | 'public-start-form-invalid-form-schema'
-        | 'os-notification-opted-out';
+        | 'os-notification-opted-out'
+        | 'custom-filter-saved'
+        | 'custom-filter-applied'
+        | 'custom-filter-updated'
+        | 'custom-filter-deleted';
     }
   | {
       eventName: 'task-opened';

@@ -25,6 +25,7 @@ export declare global {
     clientConfig?: {
       isEnterprise?: boolean;
       contextPath?: string;
+      baseName?: string;
       organizationId?: null | string;
       clusterId?: null | string;
       canLogout?: null | boolean;

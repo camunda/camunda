@@ -8,7 +8,6 @@
 package io.camunda.tasklist.os;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
@@ -21,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.opensearch.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +31,7 @@ import org.springframework.stereotype.Component;
 public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
-  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateOpenSearch.class);
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
@@ -49,12 +47,7 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
             + tasklistProperties.getOpenSearch().getIndexPrefix()
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ISM policy to all existent indices");
-    final Response policyExists =
-        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
-    if (policyExists == null) {
-      LOGGER.info("ISM policy does not exist, creating it");
-      schemaManager.createIndexLifeCycles();
-    }
+    schemaManager.createIndexLifeCyclesIfNotExist();
     applyIlmPolicyToIndexTemplate(true);
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
 
@@ -121,7 +114,10 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
           final String requiredPolicyId = applyPolicy ? TASKLIST_DELETE_ARCHIVED_INDICES : null;
 
           if (isPolicyAlreadyApplied(existingSettings, requiredPolicyId)) {
-            LOGGER.info("ISM policy already applied to index template {}", templateName);
+            LOGGER.info(
+                "ISM policy already {} index template {}",
+                applyPolicy ? "applied to" : "removed from",
+                templateName);
             continue;
           }
 
