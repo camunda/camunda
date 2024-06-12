@@ -36,7 +36,7 @@ public class DefaultUserInitializer {
     identityConfiguration.getUsers().forEach(this::setupUser);
   }
 
-  public void setupUser(final CamundaUserWithPassword camundaUserWithPassword) {
+  private void setupUser(final CamundaUserWithPassword camundaUserWithPassword) {
     try {
       userService.createUser(camundaUserWithPassword);
     } catch (final Exception e) {
