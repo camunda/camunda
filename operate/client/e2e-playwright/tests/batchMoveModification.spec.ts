@@ -121,7 +121,7 @@ test.describe('Process Instance Batch Modification', () => {
     // Wait for migrate operation to finish
     await expect(
       modificationOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible();
+    ).not.toBeVisible({timeout: 60000});
 
     await modificationOperationEntry.getByRole('link').click();
 

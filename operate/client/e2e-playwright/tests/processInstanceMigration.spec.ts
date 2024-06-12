@@ -99,7 +99,7 @@ test.describe('Process Instance Migration @roundtrip', () => {
     // wait for migrate operation to finish
     await expect(
       migrateOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible();
+    ).not.toBeVisible({timeout: 60000});
 
     await expect(processesPage.processNameFilter).toHaveValue(bpmnProcessId);
     expect(await processesPage.processVersionFilter.innerText()).toBe(

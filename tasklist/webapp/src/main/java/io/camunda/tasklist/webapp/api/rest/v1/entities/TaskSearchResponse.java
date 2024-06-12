@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -102,6 +103,7 @@ public class TaskSearchResponse {
           @Schema(
               description =
                   "An array of the task's variables. Only variables specified in `TaskSearchRequest.includeVariables` are returned. Note that a variable's draft value is not returned in `TaskSearchResponse`."))
+  @JsonIgnoreProperties("draft")
   private VariableSearchResponse[] variables;
 
   @Schema(description = "The context variable (from modeler) of the task.")

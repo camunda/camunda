@@ -8097,10 +8097,10 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.2.4.tgz#eca284f75d2965079309dc0ad9255abb2ebc1632"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
 
-lint-staged@15.2.5:
-  version "15.2.5"
-  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-15.2.5.tgz#8c342f211bdb34ffd3efd1311248fa6b50b43b50"
-  integrity sha512-j+DfX7W9YUvdzEZl3Rk47FhDF6xwDBV5wwsCPw6BwWZVPYJemusQmvb9bRsW23Sqsaa+vRloAWogbK4BUuU2zA==
+lint-staged@15.2.6:
+  version "15.2.6"
+  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-15.2.6.tgz#6e4b0c4ba4a692c52e2143a3bb4b360ac5832121"
+  integrity sha512-M/3PdijFXT/A5lnbSK3EQNLbIIrkE00JZaD39r7t4kfFOqT1Ly9LgSZSMMtvQ3p2/C8Nyj/ou0vkNHmEwqoB8g==
   dependencies:
     chalk "~5.3.0"
     commander "~12.1.0"
@@ -10919,10 +10919,10 @@ sass-loader@^12.3.0:
     klona "^2.0.4"
     neo-async "^2.6.2"
 
-sass@1.77.4:
-  version "1.77.4"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.77.4.tgz#92059c7bfc56b827c56eb116778d157ec017a5cd"
-  integrity sha512-vcF3Ckow6g939GMA4PeU7b2K/9FALXk2KF9J87txdHzXbUF9XRQRwSxcAs/fGaTnJeBFd7UoV22j3lzMLdM0Pw==
+sass@1.77.5:
+  version "1.77.5"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.77.5.tgz#5f9009820297521356e962c0bed13ee36710edfe"
+  integrity sha512-oDfX1mukIlxacPdQqNb6mV2tVCrnE+P3nVYioy72V5tlk56CPNcO4TCuFcaCRKKfJ1M3lH95CleRS+dVKL2qMg==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
