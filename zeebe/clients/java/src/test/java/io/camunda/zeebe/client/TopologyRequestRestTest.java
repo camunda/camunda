@@ -48,7 +48,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
         new TopologyResponse()
             .gatewayVersion("1.22.3-SNAPSHOT")
             .clusterSize(3)
-            .replicationFactor(2)
+            .replicationFactor(3)
             .partitionsCount(2)
             .addBrokersItem(
                 new BrokerInfo()
