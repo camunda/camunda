@@ -103,5 +103,11 @@ public class RoleController {
     roleService.assignPermissionToRole(roleName, request.permissionId());
   }
 
-  // delete permission from role
+  // unassign permission from role
+  @DeleteMapping(path = "/roles/{id}/permissions/{permissionId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void removePermissionFromRole(
+      @PathVariable("id") final String roleName, @PathVariable final long permissionId) {
+    roleService.unassignPermissionFromRole(roleName, permissionId);
+  }
 }

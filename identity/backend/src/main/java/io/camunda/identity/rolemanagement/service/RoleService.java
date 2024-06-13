@@ -69,13 +69,23 @@ public class RoleService {
   }
 
   public void assignPermissionToRole(final String roleName, final long permissionId) {
-    final Permission permission =
-        permissionRepository
-            .findById(permissionId)
-            .orElseThrow(() -> new RuntimeException("permission.notFound"));
+    final Permission permission = findPermissionById(permissionId);
     final Role role = findRoleByName(roleName);
 
     role.getPermissions().add(permission);
     roleRepository.save(role);
+  }
+
+  public void unassignPermissionFromRole(final String roleName, final long permissionId) {
+    final Permission permission = findPermissionById(permissionId);
+    final Role role = findRoleByName(roleName);
+    role.getPermissions().remove(permission);
+    roleRepository.save(role);
+  }
+
+  private Permission findPermissionById(final long permissionId) {
+    return permissionRepository
+        .findById(permissionId)
+        .orElseThrow(() -> new RuntimeException("permission.notFound"));
   }
 }
