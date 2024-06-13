@@ -51,13 +51,8 @@ public class StandaloneOperate {
 
   private static Map<String, Object> getDefaultProperties() {
     final Map<String, Object> defaultsProperties = new HashMap<>();
-    defaultsProperties.putAll(getWebProperties());
     defaultsProperties.putAll(getManagementProperties());
     return defaultsProperties;
-  }
-
-  private static Map<String, Object> getWebProperties() {
-    return Map.of("server.servlet.session.cookie.name", "OPERATE-SESSION");
   }
 
   public static Map<String, Object> getManagementProperties() {
