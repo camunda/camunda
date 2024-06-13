@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -113,6 +115,19 @@ final class ClusterConfigurationModifierTest {
               1, partition -> PartitionStateAssert.assertThat(partition).hasConfig(expectedConfig))
           .hasPartitionSatisfying(
               2, partition -> PartitionStateAssert.assertThat(partition).hasConfig(expectedConfig));
+    }
+
+    @Test
+    void shouldNotUpdateMemberStateIfNoExporterChanges() {
+      // when
+      final var newConfiguration =
+          new ClusterConfigurationModifier.ExporterStateInitializer(
+                  Set.of("expA", "expB"), localMemberId, executor)
+              .modify(currentConfiguration)
+              .join();
+
+      // then
+      assertThat(newConfiguration).isEqualTo(currentConfiguration);
     }
 
     public static Stream<Arguments> provideConfigs() {

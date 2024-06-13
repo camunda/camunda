@@ -67,9 +67,15 @@ public interface ClusterConfigurationModifier {
     private MemberState updateExporterState(final MemberState memberState) {
       MemberState updatedMemberState = memberState;
       for (final var p : memberState.partitions().keySet()) {
-        updatedMemberState =
-            updatedMemberState.updatePartition(
-                p, partitionState -> updateExporterStateInPartition(partitionState));
+        final PartitionState currentPartitionState = memberState.partitions().get(p);
+        final var updatedPartitionState = updateExporterStateInPartition(currentPartitionState);
+        // Do not update the member state if the partition state is not changed, otherwise the
+        // version will be updated during every restart and this could interfere with other
+        // concurrent configuration changes.
+        if (!updatedPartitionState.equals(currentPartitionState)) {
+          updatedMemberState =
+              updatedMemberState.updatePartition(p, partitionState -> updatedPartitionState);
+        }
       }
       return updatedMemberState;
     }
