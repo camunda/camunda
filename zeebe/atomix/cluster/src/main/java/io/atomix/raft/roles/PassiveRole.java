@@ -134,7 +134,11 @@ public class PassiveRole extends InactiveRole {
     // Skip the snapshot and response successfully.
     if (raft.getCommitIndex() > request.index()) {
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.OK)
+                  .withPreferredChunkSize(InstallResponse.DEFAULT_CHUNK_SIZE)
+                  .build()));
     }
 
     // If a snapshot is currently being received and the snapshot versions don't match, simply
@@ -155,7 +159,11 @@ public class PassiveRole extends InactiveRole {
       abortPendingSnapshots();
 
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.OK)
+                  .withPreferredChunkSize(InstallResponse.DEFAULT_CHUNK_SIZE)
+                  .build()));
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -280,7 +288,11 @@ public class PassiveRole extends InactiveRole {
     }
 
     return CompletableFuture.completedFuture(
-        logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+        logResponse(
+            InstallResponse.builder()
+                .withStatus(RaftResponse.Status.OK)
+                .withPreferredChunkSize(InstallResponse.DEFAULT_CHUNK_SIZE)
+                .build()));
   }
 
   @Override
@@ -442,7 +454,11 @@ public class PassiveRole extends InactiveRole {
       // happens, instead of crashing raft thread, we respond with success because we already
       // have the snapshot.
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(Status.OK)
+                  .withPreferredChunkSize(InstallResponse.DEFAULT_CHUNK_SIZE)
+                  .build()));
     } else {
       log.warn(
           "Failed to create pending snapshot when receiving snapshot {}",
