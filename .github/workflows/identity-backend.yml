@@ -1,0 +1,30 @@
+name: Identity Backend
+on:
+  push:
+    branches:
+      - 'main'
+      - 'stable/**'
+      - 'release/**'
+    paths:
+      - '.github/workflows/identity-backend.yml'
+      - 'identity/backend/**'
+  pull_request:
+    paths:
+      - '.github/workflows/identity-backend.yml'
+      - 'identity/backend/**'
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java Environment
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Verify
+        run: mvn -f identity/backend verify
