@@ -484,10 +484,10 @@ public class ClusteringRule extends ExternalResource {
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = config.brokerClientConfig();
-    final var brokerClientComponent =
+    final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
-    final var brokerClient = brokerClientComponent.brokerClient();
+    final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
