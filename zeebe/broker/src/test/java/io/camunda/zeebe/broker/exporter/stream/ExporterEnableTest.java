@@ -162,6 +162,27 @@ public class ExporterEnableTest {
         .isEqualTo(4);
   }
 
+  @Test
+  public void shouldReStartExportingAfterNewExporterIsEnabledWhenNoExporterIsConfigured() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
+    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+
+    // when
+    final var newExporterId = "new-exporter";
+    final var descriptor = createExporter(newExporterId, Collections.singletonMap("x", 1));
+    rule.getDirector()
+        .enableExporter(newExporterId, new ExporterInitializationInfo(1, null), descriptor)
+        .join();
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(newExporterId).getExportedRecords()).hasSize(1));
+  }
+
   private void waitUntilExportersHaveSeenTheExpectedRecords() {
     Awaitility.await()
         .untilAsserted(

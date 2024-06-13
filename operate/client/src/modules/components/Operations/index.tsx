@@ -241,6 +241,9 @@ const Operations: React.FC<Props> = observer(
             isVisible={isModificationModeHelperModalVisible}
             onClose={() => {
               setIsModificationModeHelperModalVisible(false);
+            }}
+            onSubmit={() => {
+              setIsModificationModeHelperModalVisible(false);
               modificationsStore.enableModificationMode();
             }}
           />

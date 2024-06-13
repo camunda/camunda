@@ -14,6 +14,8 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 
 const currentInstanceMock = createInstance();
 
+jest.unmock('modules/utils/date/formatDate');
+
 describe('stores/currentInstance', () => {
   afterEach(() => {
     processInstanceDetailsStore.reset();
@@ -185,6 +187,7 @@ describe('stores/currentInstance', () => {
         id: 'id_27',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
+        completedDate: null,
       },
       createOperation('CANCEL_PROCESS_INSTANCE'),
     ]);
@@ -203,8 +206,77 @@ describe('stores/currentInstance', () => {
         id: 'id_27',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
+        completedDate: null,
       },
     ]);
+  });
+
+  it('should get latest migration date', () => {
+    const LATEST_MIGRATION_DATE = '2022-02-02T12:00:00.000+0000';
+
+    processInstanceDetailsStore.setProcessInstance({
+      ...createInstance({
+        id: '123',
+        hasActiveOperation: false,
+      }),
+      // unsorted operations
+      operations: [
+        {
+          ...createOperation('MIGRATE_PROCESS_INSTANCE'),
+          completedDate: '2022-01-01T11:00:00.000+0000',
+          state: 'COMPLETED',
+        },
+        // latest completed migrate operation
+        {
+          ...createOperation('MIGRATE_PROCESS_INSTANCE'),
+          completedDate: LATEST_MIGRATION_DATE,
+          state: 'COMPLETED',
+        },
+        {
+          ...createOperation('DELETE_PROCESS_INSTANCE'),
+          completedDate: '2023-01-01T17:55:00.000+0000',
+          state: 'COMPLETED',
+        },
+        {
+          ...createOperation('MIGRATE_PROCESS_INSTANCE'),
+          completedDate: null,
+          state: 'SENT',
+        },
+        {
+          ...createOperation('MIGRATE_PROCESS_INSTANCE'),
+          completedDate: '2022-01-01T17:55:00.000+0000',
+          state: 'COMPLETED',
+        },
+      ],
+    });
+
+    expect(processInstanceDetailsStore.latestMigrationDate).toBe(
+      LATEST_MIGRATION_DATE,
+    );
+  });
+
+  it('should return undefined if there is no migration', () => {
+    processInstanceDetailsStore.setProcessInstance({
+      ...createInstance({
+        id: '123',
+        hasActiveOperation: false,
+      }),
+      // unsorted operations
+      operations: [
+        {
+          ...createOperation('DELETE_PROCESS_INSTANCE'),
+          completedDate: '2023-01-01T17:55:00.000+0000',
+          state: 'COMPLETED',
+        },
+        {
+          ...createOperation('MIGRATE_PROCESS_INSTANCE'),
+          completedDate: null,
+          state: 'SENT',
+        },
+      ],
+    });
+
+    expect(processInstanceDetailsStore.latestMigrationDate).toBeUndefined();
   });
 
   it('should retry fetch on network reconnection', async () => {
