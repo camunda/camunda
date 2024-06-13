@@ -8,6 +8,7 @@
 package io.camunda.zeebe.operate.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -157,14 +158,13 @@ public class OperateElasticsearchExporter implements Exporter {
   private static final class ElasticsearchRecordFilter implements Context.RecordFilter {
     private static final List<ValueType> VALUE_TYPES_2_IMPORT =
         List.of(
-            PROCESS
+            PROCESS, VARIABLE
             //            DECISION,
             //            DECISION_REQUIREMENTS,
             //            DECISION_EVALUATION,
             //            PROCESS_INSTANCE,
             //            JOB,
             //            INCIDENT,
-            //            VARIABLE,
             //            VARIABLE_DOCUMENT,
             //            PROCESS_MESSAGE_SUBSCRIPTION,
             //            USER_TASK
