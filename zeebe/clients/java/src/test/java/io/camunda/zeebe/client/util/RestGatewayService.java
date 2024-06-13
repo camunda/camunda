@@ -45,11 +45,11 @@ public class RestGatewayService {
         .register(WireMock.get(URL_TOPOLOGY).willReturn(WireMock.okJson(toJson(topologyResponse))));
   }
 
-  private static String toJson(final TopologyResponse topologyResponse) {
+  private static String toJson(final Object response) {
     try {
-      return JSON_MAPPER.writeValueAsString(topologyResponse);
+      return JSON_MAPPER.writeValueAsString(response);
     } catch (final JsonProcessingException e) {
-      Assertions.fail("Couldn't serialize request body to JSON", e);
+      Assertions.fail("Couldn't serialize response body to JSON", e);
       return null;
     }
   }
