@@ -31,7 +31,7 @@ final class SnapshotChunkUtil {
       final long snapshotChecksum,
       final String fileName,
       final byte[] fileData,
-      final int filePart) {
+      final long filePart) {
 
     final long checksum = createChecksum(fileData);
     return new SnapshotChunkImpl(

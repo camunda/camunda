@@ -34,7 +34,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;
 
-  private int offset;
+  private long offset;
   private NavigableSet<CharSequence> chunksView;
   private final int totalCount;
   private final long snapshotChecksum;
