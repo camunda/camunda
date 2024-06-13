@@ -32,7 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH = "/tasklist-test-opensearch-schema-validator.json";
+  private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH =
+      "/tasklist-test-opensearch-schema-validator.json";
   private static final String INDEX_NAME = "test";
 
   @Autowired private TasklistProperties tasklistProperties;
