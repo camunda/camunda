@@ -494,10 +494,16 @@ final class LeaderAppender {
 
   /** Handles an OK install response. */
   private void handleInstallResponseOk(
-      final RaftMemberContext member, final InstallRequest request) {
+      final RaftMemberContext member,
+      final InstallRequest request,
+      final InstallResponse response) {
     // Reset the member failure count and update the member's status if necessary.
     succeedAttempt(member);
 
+    //    if not given in response defaults to 0
+    if (response.preferredChunkSize() > 0) {
+      member.getSnapshotChunkReader().setChunkSize(response.preferredChunkSize());
+    }
     // If the install request was completed successfully, set the member's snapshotIndex and reset
     // the next snapshot index/offset.
     if (request.complete()) {
@@ -843,7 +849,7 @@ final class LeaderAppender {
       final InstallResponse response,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
-      handleInstallResponseOk(member, request);
+      handleInstallResponseOk(member, request, response);
     } else {
       handleInstallResponseError(member, request, response);
     }

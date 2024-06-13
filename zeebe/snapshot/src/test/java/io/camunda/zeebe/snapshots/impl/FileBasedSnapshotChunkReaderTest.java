@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,6 @@ public final class FileBasedSnapshotChunkReaderTest {
       SNAPSHOT_CHUNK.entrySet().stream()
           .sorted(Entry.comparingByKey())
           .collect(Collectors.toUnmodifiableList());
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private Path snapshotDirectory;
 
@@ -221,6 +221,31 @@ public final class FileBasedSnapshotChunkReaderTest {
     final var chunkIds =
         snapshotChunks.stream().map(SnapshotChunk::getChunkId).collect(Collectors.toList());
     assertThat(chunkIds).isEqualTo(expectedChunkIds);
+  }
+
+  @Test
+  public void shouldStartSplittingFilesOnceChunkSizeIsSet() throws IOException {
+    // given
+    final int maxChunkSize = 3;
+    final var snapshotChunkReader = newReader();
+    final var snapshotChunkIds = new ArrayList<String>();
+
+    // when
+    for (int i = 0; i < 2; i++) {
+      snapshotChunkIds.add(snapshotChunkReader.next().getChunkId());
+    }
+
+    snapshotChunkReader.setChunkSize(maxChunkSize);
+    while (snapshotChunkReader.hasNext()) {
+      snapshotChunkIds.add(snapshotChunkReader.next().getChunkId());
+    }
+
+    // then
+    final var expectedSnapshotChunkIds = new ArrayList<String>();
+    Collections.addAll(
+        expectedSnapshotChunkIds, "file1-1", "file2-1", "file3-1", "file3-2", "file3-3");
+
+    assertThat(snapshotChunkIds).isEqualTo(expectedSnapshotChunkIds);
   }
 
   private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {

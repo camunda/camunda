@@ -119,6 +119,9 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       }
 
       @Override
+      public void setChunkSize(final int chunkSize) {}
+
+      @Override
       public void close() {
         iterator = null;
       }

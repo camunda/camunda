@@ -39,7 +39,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private final int totalCount;
   private final long snapshotChecksum;
   private final String snapshotID;
-  private final int chunkSize;
+  private int chunkSize;
 
   FileBasedSnapshotChunkReader(final Path directory, final long checksum) throws IOException {
     this(directory, checksum, Integer.MAX_VALUE);
@@ -89,6 +89,11 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     }
 
     return encodeChunkId(chunksView.first());
+  }
+
+  @Override
+  public void setChunkSize(final int chunkSize) {
+    this.chunkSize = chunkSize;
   }
 
   @Override
