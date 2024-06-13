@@ -76,7 +76,9 @@ public class VariableHandlerTest {
 
   @Test
   public void testCreateNewEntity() {
-    assertThat(underTest.createNewEntity("id")).isNotNull();
+    final var result = (underTest.createNewEntity("id"));
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isEqualTo("id");
   }
 
   @Test

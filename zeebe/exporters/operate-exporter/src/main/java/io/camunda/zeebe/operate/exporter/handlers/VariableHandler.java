@@ -53,7 +53,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public VariableEntity createNewEntity(final String id) {
-    return new VariableEntity();
+    return new VariableEntity().setId(id);
   }
 
   @Override
