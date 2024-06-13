@@ -572,7 +572,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v1/topology")
+              WireMock.get("/v2/topology")
                   .withHeader("Authorization", WireMock.equalTo(TOKEN_TYPE + " " + ACCESS_TOKEN))
                   .willReturn(
                       WireMock.aResponse()
@@ -593,7 +593,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v1/topology")
+              WireMock.get("/v2/topology")
                   .willReturn(
                       WireMock.unauthorized()
                           .withBody(JSON_MAPPER.writeValueAsBytes(new ProblemDetail()))
