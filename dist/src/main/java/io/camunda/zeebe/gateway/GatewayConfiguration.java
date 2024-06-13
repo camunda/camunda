@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
@@ -44,6 +45,16 @@ public final class GatewayConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return config.getMultiTenancy();
+  }
+
+  @Bean
+  public SchedulerConfiguration schedulerConfiguration() {
+    final var cpuThreads = config.getThreads().getManagementThreads();
+    // We set ioThreads to zero as the Gateway isn't using any IO threads.
+    final var ioThreads = 0;
+    final var metricsEnabled = false;
+    final var nodeId = config.getCluster().getMemberId();
+    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Gateway", nodeId);
   }
 
   @ConfigurationProperties("zeebe.gateway")
