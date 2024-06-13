@@ -18,27 +18,27 @@ import org.springframework.context.annotation.Configuration;
 @VisibleForTesting
 public final class ActorSchedulerConfiguration {
 
-  private final SchedulerConfiguration properties;
+  private final SchedulerConfiguration schedulerConfiguration;
   private final IdleStrategySupplier idleStrategySupplier;
   private final ActorClockConfiguration actorClockConfiguration;
 
   @Autowired
   public ActorSchedulerConfiguration(
-      final SchedulerConfiguration properties,
+      final SchedulerConfiguration schedulerConfiguration,
       final IdleStrategySupplier idleStrategySupplier,
       final ActorClockConfiguration actorClockConfiguration) {
-    this.properties = properties;
+    this.schedulerConfiguration = schedulerConfiguration;
     this.idleStrategySupplier = idleStrategySupplier;
     this.actorClockConfiguration = actorClockConfiguration;
   }
 
   @Bean(destroyMethod = "close")
   public ActorScheduler scheduler() {
-    final var cpuThreads = properties.cpuThreads();
-    final var ioThreads = properties.ioThreads();
-    final var metricsEnabled = properties.metricsEnabled();
-    final var prefix = properties.prefix();
-    final var nodeId = properties.nodeId();
+    final var cpuThreads = schedulerConfiguration.cpuThreads();
+    final var ioThreads = schedulerConfiguration.ioThreads();
+    final var metricsEnabled = schedulerConfiguration.metricsEnabled();
+    final var prefix = schedulerConfiguration.prefix();
+    final var nodeId = schedulerConfiguration.nodeId();
 
     final var scheduler =
         ActorScheduler.newActorScheduler()
