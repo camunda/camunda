@@ -61,4 +61,9 @@ class TestSnapshotChunkImpl implements SnapshotChunk {
   public long getSnapshotChecksum() {
     return 0;
   }
+
+  @Override
+  public String getChunkId() {
+    return "";
+  }
 }

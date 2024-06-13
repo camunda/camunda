@@ -104,4 +104,9 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
     }
     return snapshotChecksum;
   }
+
+  @Override
+  public String getChunkId() {
+    return "";
+  }
 }
