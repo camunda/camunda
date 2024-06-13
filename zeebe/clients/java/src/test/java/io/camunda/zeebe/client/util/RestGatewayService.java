@@ -47,7 +47,7 @@ public class RestGatewayService {
       mockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v1/topology")
+              WireMock.get("/v2/topology")
                   .willReturn(
                       WireMock.okJson(
                           JSON_MAPPER.writeValueAsString(
