@@ -156,10 +156,10 @@ final class StandaloneGatewaySecurityTest {
     final var topologyManager = topologyServices.brokerTopologyManager();
     topologyServices.gatewayClusterTopologyService(topologyManager);
 
-    final var brokerClientComponent =
+    final var brokerClientConfiguration =
         new BrokerClientConfiguration(
             brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
-    brokerClient = brokerClientComponent.brokerClient();
+    brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
     return new GatewayModuleConfiguration(
