@@ -25,21 +25,23 @@ final class SnapshotChunkUtil {
     return new CRC32C();
   }
 
-  static SnapshotChunk createSnapshotChunkFromFile(
-      final Path chunkFile,
+  static SnapshotChunk createSnapshotChunkFromFileChunk(
       final String snapshotId,
       final int totalCount,
-      final long snapshotChecksum)
-      throws IOException {
-    final byte[] content = Files.readAllBytes(chunkFile);
-    final long checksum = createChecksum(content);
+      final long snapshotChecksum,
+      final String fileName,
+      final byte[] fileData,
+      final int filePart) {
+
+    final long checksum = createChecksum(fileData);
     return new SnapshotChunkImpl(
         snapshotId,
         totalCount,
-        chunkFile.getFileName().toString(),
+        fileName,
         checksum,
-        content,
-        snapshotChecksum);
+        fileData,
+        snapshotChecksum,
+        fileName + "-" + filePart);
   }
 
   private static final class SnapshotChunkImpl implements SnapshotChunk {
