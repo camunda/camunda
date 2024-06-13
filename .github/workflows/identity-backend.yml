@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/heads/${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0 # fetches all history for all branches and tags
 
       - name: Setup Java Environment
         uses: actions/setup-java@v4
