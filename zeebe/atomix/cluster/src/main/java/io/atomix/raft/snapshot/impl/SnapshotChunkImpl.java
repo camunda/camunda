@@ -30,6 +30,7 @@ public final class SnapshotChunkImpl
   private final SnapshotChunkEncoder encoder = new SnapshotChunkEncoder();
   private final SnapshotChunkDecoder decoder = new SnapshotChunkDecoder();
   private final DirectBuffer content = new UnsafeBuffer(0, 0);
+  private String chunkId;
   private String snapshotId;
   private int totalCount;
   private String chunkName;
@@ -45,6 +46,7 @@ public final class SnapshotChunkImpl
     checksum = chunk.getChecksum();
     snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
+    chunkId = chunk.getChunkId();
   }
 
   @Override
@@ -67,6 +69,7 @@ public final class SnapshotChunkImpl
 
     snapshotId = "";
     chunkName = "";
+    chunkId = "";
     content.wrap(0, 0);
   }
 
@@ -78,7 +81,9 @@ public final class SnapshotChunkImpl
         + SnapshotChunkEncoder.chunkNameHeaderLength()
         + chunkName.length()
         + SnapshotChunkEncoder.contentHeaderLength()
-        + content.capacity();
+        + content.capacity()
+        + SnapshotChunkEncoder.chunkIdHeaderLength()
+        + chunkId.length();
   }
 
   @Override
@@ -91,6 +96,7 @@ public final class SnapshotChunkImpl
         .chunkName(chunkName)
         .checksum(checksum)
         .snapshotChecksum(snapshotChecksum)
+        .chunkId(chunkId)
         .putContent(content, 0, content.capacity());
   }
 
@@ -103,6 +109,7 @@ public final class SnapshotChunkImpl
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
     snapshotChecksum = decoder.snapshotChecksum();
+    chunkId = decoder.chunkId();
 
     if (decoder.contentLength() > 0) {
       decoder.wrapContent(content);
@@ -140,6 +147,11 @@ public final class SnapshotChunkImpl
   }
 
   @Override
+  public String getChunkId() {
+    return chunkId;
+  }
+
+  @Override
   public String toString() {
     return "SnapshotChunkImpl{"
         + "snapshotId="
@@ -153,6 +165,8 @@ public final class SnapshotChunkImpl
         + checksum
         + ", snapshotChecksum="
         + snapshotChecksum
+        + ", chunkId='"
+        + chunkId
         + "} "
         + super.toString();
   }

@@ -39,4 +39,9 @@ public interface SnapshotChunk {
    * @return the checksum of the entire snapshot
    */
   long getSnapshotChecksum();
+
+  /**
+   * @return the chunk id format <file_name>-<file_part> e.g. foo-1, foo-2
+   */
+  String getChunkId();
 }
