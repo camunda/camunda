@@ -72,7 +72,7 @@ public final class BrokerBasedConfiguration {
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 
-  @ConditionalOnProperty(prefix = "camunda.rest", name = "enabled", havingValue = "false")
+  @ConditionalOnProperty(prefix = "zeebe.broker.gateway", name = "enable", havingValue = "false")
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();

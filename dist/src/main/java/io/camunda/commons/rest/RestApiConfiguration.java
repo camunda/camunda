@@ -14,8 +14,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
 @ConditionalOnProperty(
-    prefix = "camunda.rest",
-    name = "enabled",
+    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
     havingValue = "true",
     matchIfMissing = true)
 public class RestApiConfiguration {}
