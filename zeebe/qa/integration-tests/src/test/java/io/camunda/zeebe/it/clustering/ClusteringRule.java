@@ -344,7 +344,7 @@ public class ClusteringRule extends ExternalResource {
             new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
             Version.from(VersionUtil.getVersion()));
     final var scheduler =
-        new io.camunda.commons.actor.ActorSchedulerConfiguration(
+        new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
                 actorClockConfiguration)
