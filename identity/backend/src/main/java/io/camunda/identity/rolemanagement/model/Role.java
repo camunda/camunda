@@ -13,18 +13,30 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "roles")
 public class Role {
-  @Id
+
+  @Id private Long id;
+
   @Column(name = "authority")
   @NotNull
   private String name;
 
   private String description;
-  @ManyToMany private Set<Permission> permissions;
+
+  @ManyToMany private Set<Permission> permissions = new HashSet<>();
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(final Long id) {
+    this.id = id;
+  }
 
   public String getName() {
     return name;

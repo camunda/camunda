@@ -36,7 +36,7 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
   protected void addCustomAuthorities(
       final String username, final List<GrantedAuthority> authorities) {
     super.addCustomAuthorities(username, authorities);
-    final List<GrantedAuthority> permissions = loadRolesPrivilages(authorities);
+    final List<GrantedAuthority> permissions = loadRolesPrivileges(authorities);
     authorities.addAll(permissions);
   }
 
@@ -46,7 +46,7 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     return new CamundaUserDetails(super.loadUserByUsername(username));
   }
 
-  private List<GrantedAuthority> loadRolesPrivilages(final List<GrantedAuthority> roles) {
+  private List<GrantedAuthority> loadRolesPrivileges(final List<GrantedAuthority> roles) {
     final List<GrantedAuthority> authorities = new ArrayList<>();
     authorities.addAll(
         roles.stream()

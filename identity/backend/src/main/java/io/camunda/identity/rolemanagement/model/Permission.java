@@ -7,28 +7,29 @@
  */
 package io.camunda.identity.rolemanagement.model;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Table(
     name = "permissions",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"audience", "definition"})})
 public class Permission {
-  @Id @Column private UUID id;
+
+  @Id private Long id;
+
   @NotNull private String audience;
+
   @NotNull private String definition;
 
   private String description;
 
   public Permission(
-      final UUID id, final String audience, final String definition, final String description) {
+      final Long id, final String audience, final String definition, final String description) {
     this.id = id;
     this.audience = audience;
     this.definition = definition;
@@ -37,11 +38,11 @@ public class Permission {
 
   public Permission() {}
 
-  public UUID getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(final UUID id) {
+  public void setId(final Long id) {
     this.id = id;
   }
 

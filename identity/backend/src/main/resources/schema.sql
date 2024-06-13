@@ -48,13 +48,40 @@ CREATE TABLE IF NOT EXISTS profiles(
 
 
 CREATE TABLE IF NOT EXISTS roles(
-   authority varchar(50) not null,
-   description varchar(500)
+                                    id
+                                    bigint
+                                    generated
+                                    by
+                                    default as
+                                    identity
+(
+                                    start
+                                    with
+                                    1
+) primary key,
+    authority varchar
+(
+    50
+) not null,
+    description varchar
+(
+    500
+)
 );
 
 CREATE TABLE IF NOT EXISTS permissions
 (
-    id uuid not null,
+    id
+    bigint
+    generated
+    by
+    default as
+    identity
+(
+    start
+    with
+    1
+) primary key,
     audience varchar(50) not null,
     definition varchar(50) not null,
     description varchar(50) not null
@@ -62,8 +89,14 @@ CREATE TABLE IF NOT EXISTS permissions
 
 CREATE TABLE IF NOT EXISTS roles_permissions
 (
-    role_authority varchar(50) not null,
-    permissions_id uuid not null
+    role_id
+    bigint
+    not
+    null,
+    permissions_id
+    bigint
+    not
+    null
 );
 
 insert into permissions values('a297baed-730f-442a-915c-10363bee38a4', 'aud', 'write:*', 'write');

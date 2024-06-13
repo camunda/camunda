@@ -66,11 +66,9 @@ public class UserService {
   }
 
   public CamundaUser findUserById(final Long id) {
-    final var user = userProfileRepository.findUserById(id);
-    if (user == null) {
-      throw new RuntimeException("user.notFound");
-    }
-    return user;
+    return userProfileRepository
+        .findUserById(id)
+        .orElseThrow(() -> new RuntimeException("user.notFound"));
   }
 
   public CamundaUser findUserByUsername(final String username) {
@@ -94,8 +92,10 @@ public class UserService {
       if (!Objects.equals(id, user.getId())) {
         throw new RuntimeException("user.notFound");
       }
-      final CamundaUser existingUser = userProfileRepository.findUserById(id);
-      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
+
+      final CamundaUser existingUser = findUserById(id);
+
+      if (!existingUser.getUsername().equals(user.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
@@ -109,16 +109,24 @@ public class UserService {
               .authorities(existingUserDetail.getRoles())
               .disabled(!user.isEnabled())
               .build();
+
       camundaUserDetailsManager.updateUser(userDetails);
       userProfileRepository.save(new Profile(existingUser.getId(), user.getEmail()));
-      return userProfileRepository.findUserById(id);
+
+      return userProfileRepository
+          .findUserById(id)
+          .orElseThrow(() -> new RuntimeException("user.notFound"));
+
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
   }
 
   public void assignRoleToUser(final Long userId, final String roleName) {
-    final CamundaUser existingUser = userProfileRepository.findUserById(userId);
+    final CamundaUser existingUser =
+        userProfileRepository
+            .findUserById(userId)
+            .orElseThrow(() -> new RuntimeException("user.notFound"));
     final CamundaUserDetails existingUserDetail =
         camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
     final var authorities = new HashSet<GrantedAuthority>(existingUserDetail.getRoles());
@@ -136,7 +144,10 @@ public class UserService {
 
   public void unassignRoleFromUser(final Long userId, final String roleName) {
 
-    final CamundaUser existingUser = userProfileRepository.findUserById(userId);
+    final CamundaUser existingUser =
+        userProfileRepository
+            .findUserById(userId)
+            .orElseThrow(() -> new RuntimeException("user.notFound"));
     final CamundaUserDetails existingUserDetail =
         camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
     final var authorities =
