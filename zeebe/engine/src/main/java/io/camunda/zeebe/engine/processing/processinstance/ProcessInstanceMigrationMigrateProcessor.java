@@ -59,6 +59,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -346,6 +347,7 @@ public class ProcessInstanceMigrationMigrateProcessor
             .getProcess()
             .getElementById(targetElementId, ExecutableActivity.class);
     final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
+    final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
     catchEventBehavior
         .subscribeToEvents(
             context,
@@ -355,6 +357,9 @@ public class ProcessInstanceMigrationMigrateProcessor
               final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
               if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
                 // We will migrate this mapped catch event, so we don't want to subscribe to it
+                // Store interrupting status, we will use it to update the interrupting status of
+                // the migrated subscription
+                targetCatchEventIdToInterrupting.put(targetCatchEventId, element.isInterrupting());
                 return false;
               }
 
@@ -421,12 +426,14 @@ public class ProcessInstanceMigrationMigrateProcessor
           final var processMessageSubscriptionRecord = processMessageSubscription.getRecord();
           final var sourceCatchEventId = processMessageSubscriptionRecord.getElementId();
           final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+          final Boolean interrupting = targetCatchEventIdToInterrupting.get(targetCatchEventId);
           stateWriter.appendFollowUpEvent(
               processMessageSubscription.getKey(),
               ProcessMessageSubscriptionIntent.MIGRATED,
               processMessageSubscriptionRecord
                   .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                  .setElementId(BufferUtil.wrapString(targetCatchEventId)));
+                  .setElementId(BufferUtil.wrapString(targetCatchEventId))
+                  .setInterrupting(interrupting));
 
           final long distributionKey = processMessageSubscription.getKey();
 
@@ -438,7 +445,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
                   .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
                   .setTenantId(processMessageSubscriptionRecord.getTenantId())
-                  .setInterrupting(processMessageSubscriptionRecord.isInterrupting());
+                  .setInterrupting(interrupting);
 
           final var subscriptionPartitionId =
               SubscriptionUtil.getSubscriptionPartitionId(
