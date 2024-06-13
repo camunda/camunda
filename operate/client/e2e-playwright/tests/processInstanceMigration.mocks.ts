@@ -23,26 +23,22 @@ const setup = async () => {
     throw new Error('Error deploying process');
   }
 
-  await deployProcess([
+  const deploymentV3 = await deployProcess([
     'ProcessInstanceMigration/orderProcessMigration_v_3.bpmn',
   ]);
-
-  const {
-    version: sourceVersion,
-    processDefinitionKey,
-    bpmnProcessId,
-  } = deploymentV1.processes[0];
+  if (deploymentV3.processes[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
 
   return {
-    processInstances: await createInstances(
+    processV1Instances: await createInstances(
       'orderProcessMigration',
-      sourceVersion,
+      deploymentV1.processes[0].version,
       10,
     ),
-    processDefinitionKey,
-    bpmnProcessId,
-    sourceVersion: sourceVersion,
-    targetVersion: deploymentV2.processes[0].version,
+    processV1: deploymentV1.processes[0],
+    processV2: deploymentV2.processes[0],
+    processV3: deploymentV3.processes[0],
   };
 };
 
