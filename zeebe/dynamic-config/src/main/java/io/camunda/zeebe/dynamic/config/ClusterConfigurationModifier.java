@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -74,7 +75,12 @@ public interface ClusterConfigurationModifier {
     }
 
     private PartitionState updateExporterStateInPartition(final PartitionState partitionState) {
-      final var exportersInConfig = partitionState.config().exporting().exporters();
+      final var initializedPartitionState =
+          partitionState.config().isInitialized()
+              ? partitionState
+              : new PartitionState(
+                  partitionState.state(), partitionState.priority(), DynamicPartitionConfig.init());
+      final var exportersInConfig = initializedPartitionState.config().exporting().exporters();
 
       final var newlyAddedExporters =
           configuredExporters.stream().filter(id -> !exportersInConfig.containsKey(id)).toList();
@@ -83,7 +89,7 @@ public interface ClusterConfigurationModifier {
               .filter(id -> !configuredExporters.contains(id))
               .toList();
 
-      return partitionState
+      return initializedPartitionState
           .updateConfig(c -> c.updateExporting(e -> e.disableExporters(removedExporters)))
           .updateConfig(c -> c.updateExporting(e -> e.addExporters(newlyAddedExporters)));
     }

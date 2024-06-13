@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -73,6 +74,45 @@ final class ClusterConfigurationModifierTest {
               2,
               partition ->
                   PartitionStateAssert.assertThat(partition).hasConfig(parameter.expectedConfig()));
+    }
+
+    @Test
+    void shouldUpdateExporterConfigOnFirstUpdateToV86() {
+      // given
+      final ClusterConfiguration currentConfiguration =
+          ClusterConfiguration.init()
+              .addMember(
+                  localMemberId,
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1,
+                          PartitionState.active(1, DynamicPartitionConfig.uninitialized()),
+                          2,
+                          PartitionState.active(2, DynamicPartitionConfig.uninitialized()))));
+
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+
+      // when
+      final var newConfiguration =
+          new ClusterConfigurationModifier.ExporterStateInitializer(
+                  Set.of("expA", "expB"), localMemberId, executor)
+              .modify(currentConfiguration)
+              .join();
+
+      // then
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
+          .member(localMemberId)
+          .hasPartitionSatisfying(
+              1, partition -> PartitionStateAssert.assertThat(partition).hasConfig(expectedConfig))
+          .hasPartitionSatisfying(
+              2, partition -> PartitionStateAssert.assertThat(partition).hasConfig(expectedConfig));
     }
 
     public static Stream<Arguments> provideConfigs() {
