@@ -21,7 +21,7 @@ const Wrapper = ({children}: Props) => {
   useEffect(() => {
     processInstanceMigrationStore.setCurrentStep('elementMapping');
     return processInstanceMigrationStore.reset;
-  });
+  }, []);
   return (
     <MemoryRouter>
       {children}

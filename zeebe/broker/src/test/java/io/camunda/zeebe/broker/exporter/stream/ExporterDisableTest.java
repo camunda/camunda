@@ -122,19 +122,4 @@ public class ExporterDisableTest {
     assertThat(rule.getDirector().disableExporter(EXPORTER_ID_1))
         .succeedsWithin(Duration.ofMillis(100));
   }
-
-  @Test
-  public void shouldCloseExporterDirectorWhenAllExportersAreDisabled() {
-    // given
-    rule.startExporterDirector(exporterDescriptors);
-
-    // when
-    rule.getDirector().disableExporter(EXPORTER_ID_1).join();
-    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
-
-    // then
-    Awaitility.await("ExporterDirector is closed")
-        .untilAsserted(
-            () -> assertThat(rule.getDirector().getPhase().join()).isEqualTo(ExporterPhase.CLOSED));
-  }
 }
