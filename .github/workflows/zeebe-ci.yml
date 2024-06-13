@@ -24,7 +24,7 @@ on:
     paths: # keep in sync with common-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
+      # - '.github/workflows/zeebe-*'
       - 'Dockerfile'
       - 'bom/*'
       - 'build-tools/**'

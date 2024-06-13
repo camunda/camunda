@@ -5,7 +5,7 @@ on:
     paths-ignore: # keep in sync with zeebe-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
+      # - '.github/workflows/zeebe-*'
       - 'Dockerfile'
       - 'bom/*'
       - 'build-tools/**'
