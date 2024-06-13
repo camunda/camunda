@@ -203,12 +203,12 @@ public final class FileBasedSnapshotChunkReaderTest {
 
   @Test
   public void shouldHaveCorrectChunkIdsForSplitFiles() throws IOException {
-    //given
+    // given
     final int maxChunkSize = 3;
     final var snapshotChunkReader = newReader(maxChunkSize);
     final var snapshotChunks = getAllChunks(snapshotChunkReader);
 
-    //when - then
+    // when - then
     final var expectedChunkIds = new ArrayList<String>();
 
     for (final var entry : SORTED_CHUNKS) {
