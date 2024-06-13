@@ -29,7 +29,7 @@ import io.atomix.raft.RaftError;
  */
 public class InstallResponse extends AbstractRaftResponse {
 
-  public static final int DEFAULT_CHUNK_SIZE = 1024 * 1024;
+  public static final int DEFAULT_CHUNK_SIZE = Integer.MAX_VALUE;
   protected int preferredChunkSize;
 
   public InstallResponse(final Status status, final RaftError error, final int preferredChunkSize) {
