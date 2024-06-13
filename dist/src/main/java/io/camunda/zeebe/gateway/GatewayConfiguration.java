@@ -50,6 +50,7 @@ public final class GatewayConfiguration {
   @Bean
   public SchedulerConfiguration schedulerConfiguration() {
     final var cpuThreads = config.getThreads().getManagementThreads();
+    // We set ioThreads to zero as the Gateway isn't using any IO threads.
     final var ioThreads = 0;
     final var metricsEnabled = false;
     final var nodeId = config.getCluster().getMemberId();
