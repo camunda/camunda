@@ -25,8 +25,10 @@ import org.junit.jupiter.api.Assertions;
 
 public class RestGatewayService {
 
+  /** The topology request URL */
+  public static final String URL_TOPOLOGY = HttpClientFactory.REST_API_PATH + "/topology";
+
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-  private static final String URL_TOPOLOGY = HttpClientFactory.REST_API_PATH + "/topology";
 
   private final WireMockRuntimeInfo mockInfo;
 
