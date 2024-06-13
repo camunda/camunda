@@ -7,7 +7,6 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -40,7 +39,6 @@ public class StandaloneOperate {
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
-                ApplicationModuleConfiguration.class,
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 WebappsModuleConfiguration.class)

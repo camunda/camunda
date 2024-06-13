@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.backup;
 import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;

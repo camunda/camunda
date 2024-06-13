@@ -7,18 +7,12 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.commons.CommonsModuleConfiguration;
-import java.util.List;
 
 public abstract class TestCamundaApplication<T extends TestCamundaApplication<T>>
     extends TestSpringApplication<T> {
 
   public TestCamundaApplication(final Class<?> springApplication) {
-    super(
-        List.of(
-            ApplicationModuleConfiguration.class,
-            CommonsModuleConfiguration.class,
-            springApplication));
+    super(springApplication, CommonsModuleConfiguration.class);
   }
 }

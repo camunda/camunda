@@ -7,7 +7,6 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -23,10 +22,7 @@ public class StandaloneBroker {
 
     final var standaloneBrokerApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(
-                ApplicationModuleConfiguration.class,
-                CommonsModuleConfiguration.class,
-                BrokerModuleConfiguration.class)
+            .sources(CommonsModuleConfiguration.class, BrokerModuleConfiguration.class)
             .profiles(Profile.BROKER.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer())
             .build(args);

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.application.configuration.GatewayBasedConfiguration;
+import io.camunda.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;

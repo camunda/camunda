@@ -9,8 +9,8 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.application.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;

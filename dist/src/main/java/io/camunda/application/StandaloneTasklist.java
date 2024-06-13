@@ -7,7 +7,6 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.configuration.ApplicationModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -35,7 +34,6 @@ public class StandaloneTasklist {
     final var standaloneTasklistApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
-                ApplicationModuleConfiguration.class,
                 CommonsModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
                 WebappsModuleConfiguration.class)

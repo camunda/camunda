@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.configuration;
+package io.camunda.commons.configuration;
 
 import io.camunda.application.Profile;
 import io.camunda.zeebe.broker.Loggers;
