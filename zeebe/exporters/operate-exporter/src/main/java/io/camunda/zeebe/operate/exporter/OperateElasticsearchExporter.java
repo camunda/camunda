@@ -8,17 +8,20 @@
 package io.camunda.zeebe.operate.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
 import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
+import io.camunda.zeebe.operate.exporter.handlers.VariableHandler;
 import io.camunda.zeebe.operate.exporter.util.XMLUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -138,28 +141,30 @@ public class OperateElasticsearchExporter implements Exporter {
   }
 
   private ExportBatchWriter createBatchWriter() {
+    final String indexPrefix = configuration.elasticsearch.getIndexPrefix();
     return ExportBatchWriter.Builder.begin()
         // #processProcessRecords
         // processZeebeRecordProcessor.processDeploymentRecord
         .withHandler(
             new ProcessHandler(
-                (ProcessIndex)
-                    new ProcessIndex().setIndexPrefix(configuration.elasticsearch.getIndexPrefix()),
-                xmlUtil))
+                (ProcessIndex) new ProcessIndex().setIndexPrefix(indexPrefix), xmlUtil))
+        .withHandler(
+            new VariableHandler(
+                (VariableTemplate) new VariableTemplate().setIndexPrefix(indexPrefix),
+                configuration.elasticsearch.getVariableSizeThreshold()))
         .build();
   }
 
   private static final class ElasticsearchRecordFilter implements Context.RecordFilter {
     private static final List<ValueType> VALUE_TYPES_2_IMPORT =
         List.of(
-            PROCESS
+            PROCESS, VARIABLE
             //            DECISION,
             //            DECISION_REQUIREMENTS,
             //            DECISION_EVALUATION,
             //            PROCESS_INSTANCE,
             //            JOB,
             //            INCIDENT,
-            //            VARIABLE,
             //            VARIABLE_DOCUMENT,
             //            PROCESS_MESSAGE_SUBSCRIPTION,
             //            USER_TASK
