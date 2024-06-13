@@ -287,7 +287,7 @@ const FieldsModal: React.FC<Props> = ({
                         hideLabel
                         labelA="Hidden"
                         labelB="Visible"
-                        toggled={input.checked}
+                        toggled={input.value}
                         onToggle={input.onChange}
                       />
                     )}
