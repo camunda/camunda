@@ -56,6 +56,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
           )}
           button={{
             label: t("Assign members"),
+            onClick: () => null,
           }}
           link={{
             label: t("Learn more about groups"),
@@ -71,11 +72,10 @@ const Members: FC<MembersProps> = ({ groupId }) => {
         title={t("Assigned members")}
         data={users}
         headers={[
-          { header: t("Full name"), key: "name" },
           { header: t("Username"), key: "username" },
           { header: t("Email"), key: "email" },
         ]}
-        sortProperty="name"
+        sortProperty="username"
         loading={loading}
         addEntityLabel={t("Assign members")}
         menuItems={[

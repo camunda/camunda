@@ -19,7 +19,6 @@ import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
 import { getGroupDetails } from "src/utility/api/groups";
-import UserDetails from "src/pages/users/detail/UserDetailsTab";
 import Members from "src/pages/groups/detail/members";
 
 const Details: FC = () => {
@@ -55,28 +54,26 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        <Section>
-          <Tabs
-            tabs={[
-              ...(group
-                ? [
-                    {
-                      key: "members",
-                      label: t("Members"),
-                      content: <Members groupId={group?.id} />,
-                    },
-                  ]
-                : []),
-              {
-                key: "roles",
-                label: t("Roles"),
-                content: t("Roles"),
-              },
-            ]}
-            selectedTabKey={tab}
-            path={`../${id}`}
-          />
-        </Section>
+        {group && (
+          <Section>
+            <Tabs
+              tabs={[
+                {
+                  key: "members",
+                  label: t("Members"),
+                  content: <Members groupId={group?.id} />,
+                },
+                {
+                  key: "roles",
+                  label: t("Roles"),
+                  content: t("Roles"),
+                },
+              ]}
+              selectedTabKey={tab}
+              path={`../${id}`}
+            />
+          </Section>
+        )}
       </>
     </StackPage>
   );
