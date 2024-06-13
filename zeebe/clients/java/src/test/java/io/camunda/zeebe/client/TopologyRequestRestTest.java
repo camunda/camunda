@@ -89,7 +89,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     final Topology topology = response.get();
     assertThat(topology.getClusterSize()).isEqualTo(3);
     assertThat(topology.getPartitionsCount()).isEqualTo(2);
-    assertThat(topology.getReplicationFactor()).isEqualTo(2);
+    assertThat(topology.getReplicationFactor()).isEqualTo(3);
     assertThat(topology.getGatewayVersion()).isEqualTo("1.22.3-SNAPSHOT");
 
     final List<io.camunda.zeebe.client.api.response.BrokerInfo> brokers = topology.getBrokers();
