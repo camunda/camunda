@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public final class ActivatedJobImpl implements ActivatedJob {
@@ -79,7 +80,13 @@ public final class ActivatedJobImpl implements ActivatedJob {
         job.getCustomHeaders() == null
             ? new HashMap<>()
             : job.getCustomHeaders().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, jsonMapper::toJson));
+                .collect(
+                    Collectors.toMap(
+                        Entry::getKey,
+                        e ->
+                            (e.getValue() instanceof String)
+                                ? (String) e.getValue()
+                                : jsonMapper.toJson(e.getValue())));
     worker = getOrEmpty(job.getWorker());
     retries = getOrEmpty(job.getRetries());
     deadline = getOrEmpty(job.getDeadline());
