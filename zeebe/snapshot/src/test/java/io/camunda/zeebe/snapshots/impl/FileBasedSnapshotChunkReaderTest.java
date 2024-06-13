@@ -13,15 +13,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.util.FileUtil;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -31,6 +36,11 @@ public final class FileBasedSnapshotChunkReaderTest {
   private static final long SNAPSHOT_CHECKSUM = 1L;
   private static final Map<String, String> SNAPSHOT_CHUNK =
       Map.of("file3", "content", "file1", "this", "file2", "is");
+
+  private static final List<Entry<String, String>> SORTED_CHUNKS =
+      SNAPSHOT_CHUNK.entrySet().stream()
+          .sorted(Entry.comparingByKey())
+          .collect(Collectors.toUnmodifiableList());
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private Path snapshotDirectory;
@@ -55,7 +65,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     Files.delete(snapshotDirectory.resolve("file1"));
 
     // then
-    assertThatThrownBy(reader::next).hasCauseInstanceOf(NoSuchFileException.class);
+    assertThatThrownBy(reader::next).hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   @Test
@@ -67,7 +77,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     FileUtil.deleteFolder(snapshotDirectory);
 
     // then
-    assertThatThrownBy(reader::next).hasCauseInstanceOf(NoSuchFileException.class);
+    assertThatThrownBy(reader::next).hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   @Test
@@ -167,11 +177,67 @@ public final class FileBasedSnapshotChunkReaderTest {
     assertThatThrownBy(snapshotChunkReader::next).isInstanceOf(NoSuchElementException.class);
   }
 
+  @Test
+  public void shouldSplitFileContentsIntoChunks() throws IOException {
+    // given
+    final int maxChunkSize = 3;
+    final var snapshotChunkReader = newReader(maxChunkSize);
+    final var snapshotChunks = getAllChunks(snapshotChunkReader);
+
+    // when - then
+    final var fileNameBytesMap = new HashMap<String, ByteBuffer>();
+    for (final var entry : SNAPSHOT_CHUNK.entrySet()) {
+      final var contentBytes = entry.getValue().getBytes(StandardCharsets.UTF_8);
+      fileNameBytesMap.put(entry.getKey(), ByteBuffer.allocate(contentBytes.length));
+    }
+
+    for (final var chunk : snapshotChunks) {
+      fileNameBytesMap.get(chunk.getChunkName()).put(chunk.getContent());
+    }
+
+    for (final var entry : SNAPSHOT_CHUNK.entrySet()) {
+      final var contentBytes = entry.getValue().getBytes(StandardCharsets.UTF_8);
+      assertThat(fileNameBytesMap.get(entry.getKey()).array()).isEqualTo(contentBytes);
+    }
+  }
+
+  @Test
+  public void shouldHaveCorrectChunkIdsForSplitFiles() throws IOException {
+    //given
+    final int maxChunkSize = 3;
+    final var snapshotChunkReader = newReader(maxChunkSize);
+    final var snapshotChunks = getAllChunks(snapshotChunkReader);
+
+    //when - then
+    final var expectedChunkIds = new ArrayList<String>();
+
+    for (final var entry : SORTED_CHUNKS) {
+      final var fileName = entry.getKey();
+      final var fileChunkCount =
+          Math.ceilDiv(entry.getValue().getBytes(StandardCharsets.UTF_8).length, maxChunkSize);
+      IntStream.range(1, fileChunkCount + 1).forEach(i -> expectedChunkIds.add(fileName + "-" + i));
+    }
+
+    final var chunkIds =
+        snapshotChunks.stream().map(SnapshotChunk::getChunkId).collect(Collectors.toList());
+    assertThat(chunkIds).isEqualTo(expectedChunkIds);
+  }
+
+  private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {
+    final var snapshotChunks = new ArrayList<SnapshotChunk>();
+
+    while (reader.hasNext()) {
+      snapshotChunks.add(reader.next());
+    }
+
+    return snapshotChunks;
+  }
+
   private ByteBuffer asByteBuffer(final String string) {
     return ByteBuffer.wrap(string.getBytes()).order(Protocol.ENDIANNESS);
   }
 
-  private FileBasedSnapshotChunkReader newReader() throws IOException {
+  private FileBasedSnapshotChunkReader newReader(final int chunkSize) throws IOException {
     snapshotDirectory = temporaryFolder.getRoot().toPath();
 
     for (final var chunk : SNAPSHOT_CHUNK.keySet()) {
@@ -180,6 +246,10 @@ public final class FileBasedSnapshotChunkReaderTest {
       Files.writeString(path, SNAPSHOT_CHUNK.get(chunk));
     }
 
-    return new FileBasedSnapshotChunkReader(snapshotDirectory, SNAPSHOT_CHECKSUM);
+    return new FileBasedSnapshotChunkReader(snapshotDirectory, SNAPSHOT_CHECKSUM, chunkSize);
+  }
+
+  private FileBasedSnapshotChunkReader newReader() throws IOException {
+    return newReader(Integer.MAX_VALUE);
   }
 }
