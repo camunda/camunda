@@ -103,13 +103,12 @@ public class UserService {
       final var userBuilder =
           User.withUsername(existingUser.getUsername())
               .authorities(existingUserDetail.getAuthorities())
-              .disabled(!user.isEnabled());
-
-      if (StringUtils.hasText(user.getPassword())) {
-        userBuilder
-            .password(user.getPassword())
-            .passwordEncoder(passwordEncoder::encode);
-      }
+              .disabled(!user.isEnabled())
+              .password(
+                  StringUtils.hasText(user.getPassword())
+                      ? user.getPassword()
+                      : existingUserDetail.getPassword())
+              .passwordEncoder(passwordEncoder::encode);
 
       final UserDetails userDetails = userBuilder.build();
       userDetailsManager.updateUser(userDetails);
