@@ -9,32 +9,40 @@
 import {deployProcess, createInstances} from '../setup-utils';
 
 const setup = async () => {
-  const deployProcessResponse = await deployProcess([
+  const deploymentV1 = await deployProcess([
     'ProcessInstanceMigration/orderProcessMigration_v_1.bpmn',
   ]);
-  await deployProcess([
+  if (deploymentV1.processes[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
+
+  const deploymentV2 = await deployProcess([
     'ProcessInstanceMigration/orderProcessMigration_v_2.bpmn',
   ]);
+  if (deploymentV2.processes[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
+
   await deployProcess([
     'ProcessInstanceMigration/orderProcessMigration_v_3.bpmn',
   ]);
 
-  if (deployProcessResponse.processes[0] === undefined) {
-    throw new Error('Error deploying process');
-  }
-
-  const {version, processDefinitionKey, bpmnProcessId} =
-    deployProcessResponse.processes[0];
+  const {
+    version: sourceVersion,
+    processDefinitionKey,
+    bpmnProcessId,
+  } = deploymentV1.processes[0];
 
   return {
     processInstances: await createInstances(
       'orderProcessMigration',
-      version,
+      sourceVersion,
       10,
     ),
     processDefinitionKey,
     bpmnProcessId,
-    version,
+    sourceVersion: sourceVersion,
+    targetVersion: deploymentV2.processes[0].version,
   };
 };
 

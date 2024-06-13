@@ -56,8 +56,11 @@ public class WebSecurityConfig {
   @Primary
   public HttpSecurity localHttpSecurityNoAuth(final HttpSecurity httpSecurity) throws Exception {
     LOG.info("Configuring no auth");
-    return httpSecurity.authorizeHttpRequests(
-        (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll());
+    return httpSecurity
+        .authorizeHttpRequests(
+            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+        .csrf(AbstractHttpConfigurer::disable)
+        .cors(AbstractHttpConfigurer::disable);
   }
 
   private HttpSecurity baseHttpSecurity(

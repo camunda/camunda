@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -22,7 +22,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.0
+    image: docker.elastic.co/kibana/kibana:8.14.1
     ports:
       - 5601:5601
     links:
@@ -119,7 +119,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.5.2
+    image: camunda/operate:8.5.3
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

@@ -24,6 +24,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
 import {tracking} from 'modules/tracking';
 import isEqual from 'lodash/isEqual';
+import isNil from 'lodash/isNil';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;
@@ -167,6 +168,32 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     } else {
       return ['ACTIVE', 'INCIDENT'].includes(processInstance.state);
     }
+  }
+
+  get latestMigrationDate() {
+    const migrateOperations = this.state.processInstance?.operations
+      .filter((operation) => {
+        return (
+          operation.type === 'MIGRATE_PROCESS_INSTANCE' &&
+          // this filters for operations with a completedDate
+          !isNil(operation.completedDate)
+        );
+      })
+      .sort(({completedDate: dateA}, {completedDate: dateB}) => {
+        // It is safe use the a non-null assertion operator (!) for dateA and dateB here.
+        // The value will never be null or undefined, because only operations with a
+        // completedDate are filtered above.
+        return new Date(dateA!).getTime() - new Date(dateB!).getTime();
+      });
+
+    if (migrateOperations !== undefined) {
+      const lastMigrationDate =
+        migrateOperations[migrateOperations.length - 1]?.completedDate;
+
+      return lastMigrationDate ?? undefined;
+    }
+
+    return undefined;
   }
 
   getPermissions = () => {

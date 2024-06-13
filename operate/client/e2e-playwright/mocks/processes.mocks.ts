@@ -966,6 +966,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '25350af0-92a5-44d9-85fa-f694d88a6dba',
@@ -973,6 +974,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '2e25ce5b-673f-42fa-bb29-a91569206e4f',
@@ -980,6 +982,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '31820589-a50f-42de-bd1e-544e472f65ff',
@@ -987,6 +990,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5635a619-cbd7-4267-a590-0f59069bb8ca',
@@ -994,6 +998,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5dc3f7d2-92c3-40a3-8243-0eda83003ccd',
@@ -1001,6 +1006,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '77fe7726-00a3-4c83-9c7f-244df2ad8b37',
@@ -1008,6 +1014,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -1232,6 +1239,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -1276,6 +1284,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -1938,6 +1947,7 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'FAILED',
           errorMessage: 'Batch Operation Error Message',
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -1964,6 +1974,7 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062816',
@@ -2014,6 +2025,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '25350af0-92a5-44d9-85fa-f694d88a6dba',
@@ -2021,6 +2033,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '2e25ce5b-673f-42fa-bb29-a91569206e4f',
@@ -2028,6 +2041,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '31820589-a50f-42de-bd1e-544e472f65ff',
@@ -2035,6 +2049,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5635a619-cbd7-4267-a590-0f59069bb8ca',
@@ -2042,6 +2057,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5dc3f7d2-92c3-40a3-8243-0eda83003ccd',
@@ -2049,6 +2065,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '77fe7726-00a3-4c83-9c7f-244df2ad8b37',
@@ -2056,6 +2073,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -2280,6 +2298,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -2324,6 +2343,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,

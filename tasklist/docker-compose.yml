@@ -4,7 +4,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -50,7 +50,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.0
+    image: docker.elastic.co/kibana/kibana:8.14.1
     ports:
       - 5601:5601
     environment:
@@ -153,7 +153,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:8.5.2
+    image: camunda/operate:8.5.3
     ports:
       - 8088:8080
     environment:

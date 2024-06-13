@@ -12,7 +12,7 @@
     "@carbon/react": "1.59.0",
     "@monaco-editor/react": "4.6.0",
     "@tanstack/eslint-plugin-query": "5.43.1",
-    "@tanstack/react-query": "5.44.0",
+    "@tanstack/react-query": "5.45.0",
     "@uidotdev/usehooks": "2.4.1",
     "bpmn-js": "17.8.1",
     "classnames": "^2.5.1",
@@ -33,7 +33,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.77.5",
     "styled-components": "6.1.11",
-    "ts-pattern": "5.1.2",
+    "ts-pattern": "5.2.0",
     "zod": "3.23.8"
   },
   "scripts": {
@@ -63,7 +63,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.9.1",
     "@playwright/test": "1.44.1",
-    "@tanstack/react-query-devtools": "5.44.0",
+    "@tanstack/react-query-devtools": "5.45.0",
     "@testing-library/dom": "10.1.0",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "16.0.0",

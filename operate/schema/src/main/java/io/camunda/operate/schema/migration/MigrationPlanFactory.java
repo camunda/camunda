@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.operate.schema.migration;
 
-import {Checkbox as BaseCheckbox} from '@carbon/react';
-import styled from 'styled-components';
+public interface MigrationPlanFactory {
 
-const Checkbox = styled(BaseCheckbox)`
-  margin-left: var(--cds-spacing-05);
-`;
+  FillPostImporterQueuePlan createFillPostImporterQueuePlan();
 
-export {Checkbox};
+  ReindexPlan createReindexPlan();
+
+  ReindexWithQueryAndScriptPlan createReindexWithQueryAndScriptPlan();
+}

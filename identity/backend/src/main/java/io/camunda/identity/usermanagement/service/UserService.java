@@ -111,12 +111,11 @@ public class UserService {
               .build();
 
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(existingUser.getId(), user.getEmail()));
+      userProfileRepository.save(new Profile(id, user.getEmail()));
 
       return userProfileRepository
           .findUserById(id)
           .orElseThrow(() -> new RuntimeException("user.notFound"));
-
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
