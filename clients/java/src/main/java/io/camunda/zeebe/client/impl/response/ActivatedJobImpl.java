@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class ActivatedJobImpl implements ActivatedJob {
 
@@ -66,6 +67,31 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+  }
+
+  public ActivatedJobImpl(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.protocol.rest.ActivatedJob job) {
+    this.jsonMapper = jsonMapper;
+
+    key = getOrEmpty(job.getKey());
+    type = getOrEmpty(job.getType());
+    customHeaders =
+        job.getCustomHeaders() == null
+            ? new HashMap<>()
+            : job.getCustomHeaders().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, jsonMapper::toJson));
+    worker = getOrEmpty(job.getWorker());
+    retries = getOrEmpty(job.getRetries());
+    deadline = getOrEmpty(job.getDeadline());
+    variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
+    variables = jsonMapper.toJson(variablesAsMap);
+    processInstanceKey = getOrEmpty(job.getProcessInstanceKey());
+    bpmnProcessId = getOrEmpty(job.getBpmnProcessId());
+    processDefinitionVersion = getOrEmpty(job.getProcessDefinitionVersion());
+    processDefinitionKey = getOrEmpty(job.getProcessDefinitionKey());
+    elementId = getOrEmpty(job.getElementId());
+    elementInstanceKey = getOrEmpty(job.getElementInstanceKey());
+    tenantId = getOrEmpty(job.getTenantId());
   }
 
   @Override
@@ -168,5 +194,17 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String toString() {
     return toJson();
+  }
+
+  private static String getOrEmpty(final String value) {
+    return value == null ? "" : value;
+  }
+
+  private static Long getOrEmpty(final Long value) {
+    return value == null ? -1L : value;
+  }
+
+  private static Integer getOrEmpty(final Integer value) {
+    return value == null ? -1 : value;
   }
 }
