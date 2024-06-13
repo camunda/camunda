@@ -36,6 +36,13 @@ public interface ClusterConfigurationModifier {
    */
   ActorFuture<ClusterConfiguration> modify(ClusterConfiguration configuration);
 
+  /**
+   * Updates the exporter state of the local member in the configuration. If a broker restarts with
+   * a changes of exporters in the static configuration, this modifier updates the dynamic config to
+   * reflect that. If new exporter are added to the static configuration, they are added to the
+   * dynamic config with state ENABLED. If existing exporters are removed, they are marked as
+   * disabled. Note that the exporters are not removed from the dynamic config.
+   */
   class ExporterStateInitializer implements ClusterConfigurationModifier {
 
     private final Set<String> configuredExporters;

@@ -45,6 +45,11 @@ import org.slf4j.LoggerFactory;
  *     static configuration. See {@link StaticInitializer}.
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
  *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
+ * <li>After initialization, the configuration can be modified using {@link
+ *     ClusterConfigurationModifier}. Currently only {@link
+ *     io.camunda.zeebe.dynamic.config.ClusterConfigurationModifier.ExporterStateInitializer} is
+ *     available. It overwrites the local member's state to keep it in sync with the statically
+ *     configured exporters.
  */
 public interface ClusterConfigurationInitializer {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
