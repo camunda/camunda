@@ -24,6 +24,7 @@ import io.atomix.utils.Version;
 import io.camunda.commons.actor.ActorClockConfiguration;
 import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.commons.clustering.DynamicClusterServices;
 import io.camunda.zeebe.broker.Broker;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
@@ -344,22 +344,22 @@ public class ClusteringRule extends ExternalResource {
         new AtomixCluster(
             new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
             Version.from(VersionUtil.getVersion()));
+
     final var scheduler =
         new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
                 actorClockConfiguration)
             .scheduler();
+
     final var dynamicClusterServices = new DynamicClusterServices(scheduler, atomixCluster);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
-    final var brokerClient =
-        new BrokerClientImpl(
-            brokerCfg.getGateway().getCluster().getRequestTimeout(),
-            atomixCluster.getMessagingService(),
-            atomixCluster.getEventService(),
-            scheduler,
-            topologyManager);
+    final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, scheduler, topologyManager);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
         new SystemContext(
@@ -483,20 +483,18 @@ public class ClusteringRule extends ExternalResource {
     final var dynamicClusterServices = new DynamicClusterServices(actorScheduler, atomixCluster);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
-    final var brokerClient =
-        new BrokerClientImpl(
-            gatewayCfg.getCluster().getRequestTimeout(),
-            atomixCluster.getMessagingService(),
-            atomixCluster.getEventService(),
-            actorScheduler,
-            topologyManager);
+    final var brokerClientConfig = config.brokerClientConfig();
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
+
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
-    brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
