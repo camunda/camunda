@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Test;
 class UnassignUserTaskTest {
 
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private ZeebeClient client;
 
@@ -35,7 +34,7 @@ class UnassignUserTaskTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
     userTaskKey = resourcesHelper.createSingleUserTask();
   }

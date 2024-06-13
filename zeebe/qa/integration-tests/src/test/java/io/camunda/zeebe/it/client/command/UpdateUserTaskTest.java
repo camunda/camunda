@@ -34,8 +34,7 @@ class UpdateUserTaskTest {
       ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
 
   @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private ZeebeClient client;
 
@@ -43,7 +42,7 @@ class UpdateUserTaskTest {
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
     userTaskKey = resourcesHelper.createSingleUserTask();
   }
