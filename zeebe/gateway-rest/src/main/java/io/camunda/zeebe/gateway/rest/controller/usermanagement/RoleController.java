@@ -47,15 +47,15 @@ public class RoleController {
 
   @DeleteMapping(path = "/roles/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteRoleById(@PathVariable("id") final long id) {
-    roleService.deleteRoleById(id);
+  public void deleteRoleById(@PathVariable("id") final String roleName) {
+    roleService.deleteRoleByName(roleName);
   }
 
   @GetMapping(
       path = "/roles/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public Role getRoleById(@PathVariable("id") final long id) {
-    return roleService.findRoleById(id);
+  public Role getRoleById(@PathVariable("id") final String roleName) {
+    return roleService.findRoleByName(roleName);
   }
 
   @PostMapping(
@@ -72,11 +72,11 @@ public class RoleController {
   }
 
   @PutMapping(
-      path = "/users/{id}",
+      path = "/roles/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public Role updateRole(@PathVariable("id") final long id, @RequestBody final Role role) {
-    return roleService.updateRole(id, role);
+  public Role updateRole(@PathVariable("id") final String roleName, @RequestBody final Role role) {
+    return roleService.updateRole(roleName, role);
   }
 
   // list permissions of role
@@ -85,9 +85,10 @@ public class RoleController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<Permission> findAllPermissions(
-      @PathVariable final long id, @RequestBody final SearchRequestDto searchRequestDto) {
+      @PathVariable("id") final String roleName,
+      @RequestBody final SearchRequestDto searchRequestDto) {
     final SearchResponseDto<Permission> permissionSearchResponseDto = new SearchResponseDto<>();
-    final List<Permission> allPermissionsOfRole = roleService.findAllPermissionsOfRole(id);
+    final List<Permission> allPermissionsOfRole = roleService.findAllPermissionsOfRole(roleName);
     permissionSearchResponseDto.setItems(allPermissionsOfRole);
 
     return permissionSearchResponseDto;
@@ -97,8 +98,9 @@ public class RoleController {
   @PostMapping(path = "/roles/{id}/permissions", consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void assignPermissionsToRole(
-      @PathVariable("id") final long roleId, @RequestBody final AssignPermissionRequest request) {
-    roleService.assignPermissionToRole(roleId, request.permissionId());
+      @PathVariable("id") final String roleName,
+      @RequestBody final AssignPermissionRequest request) {
+    roleService.assignPermissionToRole(roleName, request.permissionId());
   }
 
   // delete permission from role

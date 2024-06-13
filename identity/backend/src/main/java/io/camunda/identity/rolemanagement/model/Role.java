@@ -9,7 +9,10 @@ package io.camunda.identity.rolemanagement.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -20,23 +23,19 @@ import java.util.Set;
 @Table(name = "roles")
 public class Role {
 
-  @Id private Long id;
-
-  @Column(name = "authority")
+  @Id
   @NotNull
+  @Column(name = "authority")
   private String name;
 
   private String description;
 
-  @ManyToMany private Set<Permission> permissions = new HashSet<>();
-
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(final Long id) {
-    this.id = id;
-  }
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "roles_permissions",
+      joinColumns = @JoinColumn(name = "role_authority"),
+      inverseJoinColumns = @JoinColumn(name = "permission_id"))
+  private Set<Permission> permissions = new HashSet<>();
 
   public String getName() {
     return name;

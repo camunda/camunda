@@ -10,14 +10,11 @@ package io.camunda.identity.rolemanagement.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
 
 @Entity
-@Table(
-    name = "permissions",
-    uniqueConstraints = {@UniqueConstraint(columnNames = {"audience", "definition"})})
+@Table(name = "permissions")
 public class Permission {
 
   @Id private Long id;

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @Transactional
@@ -29,49 +30,50 @@ public class RoleService {
   }
 
   public Role createRole(final Role role) {
-    if (role.getId() != null) {
-      role.setId(null);
+    if (!StringUtils.hasText(role.getName())) {
+      throw new RuntimeException("role.notValid");
     }
     return roleRepository.save(role);
   }
 
-  public void deleteRoleById(final long roleId) {
-    roleRepository.deleteById(roleId);
+  public void deleteRoleByName(final String roleName) {
+    roleRepository.deleteById(roleName);
   }
 
-  public Role findRoleById(final long roleId) {
-    return roleRepository.findById(roleId).orElseThrow(() -> new RuntimeException("role.notFound"));
+  public Role findRoleByName(final String roleName) {
+    return roleRepository
+        .findById(roleName)
+        .orElseThrow(() -> new RuntimeException("role.notFound"));
   }
 
   public List<Role> findAllRoles() {
     return roleRepository.findAll();
   }
 
-  public Role updateRole(final long roleId, final Role role) {
-    if (!Objects.equals(roleId, role.getId())) {
+  public Role updateRole(final String roleName, final Role role) {
+    if (!Objects.equals(roleName, role.getName())) {
       throw new RuntimeException("role.notFound");
     }
 
-    final Role existingRole = findRoleById(roleId);
+    final Role existingRole = findRoleByName(roleName);
 
-    existingRole.setName(role.getName());
     existingRole.setDescription(role.getDescription());
     existingRole.setPermissions(role.getPermissions());
 
     return roleRepository.save(existingRole);
   }
 
-  public List<Permission> findAllPermissionsOfRole(final long roleId) {
-    final Role role = findRoleById(roleId);
+  public List<Permission> findAllPermissionsOfRole(final String roleName) {
+    final Role role = findRoleByName(roleName);
     return role.getPermissions().stream().toList();
   }
 
-  public void assignPermissionToRole(final long roleId, final long permissionId) {
+  public void assignPermissionToRole(final String roleName, final long permissionId) {
     final Permission permission =
         permissionRepository
             .findById(permissionId)
             .orElseThrow(() -> new RuntimeException("permission.notFound"));
-    final Role role = findRoleById(roleId);
+    final Role role = findRoleByName(roleName);
 
     role.getPermissions().add(permission);
     roleRepository.save(role);

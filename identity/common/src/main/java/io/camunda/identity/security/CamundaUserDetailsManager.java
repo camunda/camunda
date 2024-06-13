@@ -19,10 +19,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
+
   public CamundaUserDetailsManager(final DataSource dataSource) {
     super(dataSource);
     setEnableGroups(true);
     setEnableAuthorities(true);
+    setRolePrefix("ROLE_");
   }
 
   @Override
@@ -36,7 +38,7 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
   protected void addCustomAuthorities(
       final String username, final List<GrantedAuthority> authorities) {
     super.addCustomAuthorities(username, authorities);
-    final List<GrantedAuthority> permissions = loadRolesPrivileges(authorities);
+    final List<GrantedAuthority> permissions = loadPermissionsOfRoles(authorities);
     authorities.addAll(permissions);
   }
 
@@ -46,22 +48,22 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     return new CamundaUserDetails(super.loadUserByUsername(username));
   }
 
-  private List<GrantedAuthority> loadRolesPrivileges(final List<GrantedAuthority> roles) {
-    final List<GrantedAuthority> authorities = new ArrayList<>();
-    authorities.addAll(
-        roles.stream()
-            .flatMap(
-                role ->
-                    getJdbcTemplate()
-                        .query(
-                            "select p.definition from roles_permissions rp "
-                                + "join permissions p on p.id = rp.permissions_id "
-                                + " where role_authority = ? ",
-                            new String[] {role.getAuthority()},
-                            (rs, rowNum) -> new SimpleGrantedAuthority(rs.getString(1)))
-                        .stream())
-            .distinct()
-            .toList());
-    return authorities;
+  private List<GrantedAuthority> loadPermissionsOfRoles(final List<GrantedAuthority> roles) {
+    final List<GrantedAuthority> permissions = new ArrayList<>();
+
+    for (final GrantedAuthority role : roles) {
+      final List<String> permissionsForRole =
+          getJdbcTemplate()
+              .queryForList(
+                  "select p.definition "
+                      + "from roles_permissions rp join permissions p on rp.permission_id = p.id "
+                      + "where rp.role_authority = ?",
+                  String.class,
+                  role.getAuthority().replace(getRolePrefix(), ""));
+
+      permissions.addAll(permissionsForRole.stream().map(SimpleGrantedAuthority::new).toList());
+    }
+
+    return permissions.stream().distinct().toList();
   }
 }
