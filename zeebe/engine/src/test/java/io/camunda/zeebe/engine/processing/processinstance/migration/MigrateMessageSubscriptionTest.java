@@ -96,6 +96,7 @@ public class MigrateMessageSubscriptionTest {
         .hasElementId("boundary2")
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey("key1");
+
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -204,7 +205,199 @@ public class MigrateMessageSubscriptionTest {
         .hasCorrelationKey("key1");
   }
 
-  // TODO - Test that interrupting status change is not allowed
+  @Test
+  public void shouldMigrateToInterruptingStatus() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .cancelActivity(true)
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .create();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .isNotInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .isNotInterrupting();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isInterrupting();
+  }
+
+  @Test
+  public void shouldMigrateToNonInterruptingStatus() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(true)
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .create();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .isInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .isInterrupting();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isNotInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isNotInterrupting();
+  }
 
   // TODO - Test that we can migrate an active element with multiple message boundary events
 }
