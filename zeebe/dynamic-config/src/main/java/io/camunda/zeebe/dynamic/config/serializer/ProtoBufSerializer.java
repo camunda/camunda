@@ -186,7 +186,7 @@ public class ProtoBufSerializer
       return new PartitionState(
           toPartitionState(partitionState.getState()),
           partitionState.getPriority(),
-          DynamicPartitionConfig.init());
+          DynamicPartitionConfig.uninitialized());
     }
   }
 
@@ -235,11 +235,17 @@ public class ProtoBufSerializer
   }
 
   private Topology.PartitionState encodePartitions(final PartitionState partitionState) {
-    return Topology.PartitionState.newBuilder()
-        .setState(toSerializedState(partitionState.state()))
-        .setPriority(partitionState.priority())
-        .setConfig(encodePartitionConfig(partitionState.config()))
-        .build();
+    final var builder =
+        Topology.PartitionState.newBuilder()
+            .setState(toSerializedState(partitionState.state()))
+            .setPriority(partitionState.priority());
+
+    if (partitionState.config().isInitialized()) {
+      // Do not encode if the config is uninitialized. This is required to handle rolling upgrade to
+      // 8.6
+      builder.setConfig(encodePartitionConfig(partitionState.config()));
+    }
+    return builder.build();
   }
 
   private PartitionConfig encodePartitionConfig(final DynamicPartitionConfig config) {
