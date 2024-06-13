@@ -21,18 +21,19 @@ import static io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum.UNHEALT
 import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.FOLLOWER;
 import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.INACTIVE;
 import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.LEADER;
-import static io.camunda.zeebe.client.util.RestGatewayService.broker;
-import static io.camunda.zeebe.client.util.RestGatewayService.partition;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
+import io.camunda.zeebe.client.protocol.rest.Partition;
+import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -44,31 +45,41 @@ public final class TopologyRequestRestTest extends ClientRestTest {
   void shouldRequestTopology() throws ExecutionException, InterruptedException {
     // given
     gatewayService.onTopologyRequest(
-        2,
-        10,
-        3,
-        "1.22.3-SNAPSHOT",
-        broker(
-            0,
-            "host1",
-            123,
-            "1.22.3-SNAPSHOT",
-            partition(0, LEADER, HEALTHY),
-            partition(1, FOLLOWER, UNHEALTHY)),
-        broker(
-            1,
-            "host2",
-            212,
-            "2.22.3-SNAPSHOT",
-            partition(0, FOLLOWER, HEALTHY),
-            partition(1, LEADER, HEALTHY)),
-        broker(
-            2,
-            "host3",
-            432,
-            "3.22.3-SNAPSHOT",
-            partition(0, FOLLOWER, UNHEALTHY),
-            partition(1, INACTIVE, UNHEALTHY)));
+        new TopologyResponse()
+            .gatewayVersion("1.22.3-SNAPSHOT")
+            .clusterSize(3)
+            .replicationFactor(2)
+            .partitionsCount(2)
+            .addBrokersItem(
+                new BrokerInfo()
+                    .nodeId(0)
+                    .host("host1")
+                    .port(123)
+                    .version("1.22.3-SNAPSHOT")
+                    .partitions(
+                        Arrays.asList(
+                            new Partition().partitionId(0).role(LEADER).health(HEALTHY),
+                            new Partition().partitionId(1).role(FOLLOWER).health(UNHEALTHY))))
+            .addBrokersItem(
+                new BrokerInfo()
+                    .nodeId(1)
+                    .host("host2")
+                    .port(212)
+                    .version("2.22.3-SNAPSHOT")
+                    .partitions(
+                        Arrays.asList(
+                            new Partition().partitionId(0).role(FOLLOWER).health(HEALTHY),
+                            new Partition().partitionId(1).role(LEADER).health(HEALTHY))))
+            .addBrokersItem(
+                new BrokerInfo()
+                    .nodeId(2)
+                    .host("host3")
+                    .port(432)
+                    .version("3.22.3-SNAPSHOT")
+                    .partitions(
+                        Arrays.asList(
+                            new Partition().partitionId(0).role(FOLLOWER).health(UNHEALTHY),
+                            new Partition().partitionId(1).role(INACTIVE).health(UNHEALTHY)))));
 
     // when
     final Future<Topology> response = client.newTopologyRequest().send();
@@ -76,15 +87,15 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     // then
     assertThat(response).succeedsWithin(Duration.ofSeconds(5));
     final Topology topology = response.get();
-    assertThat(topology.getClusterSize()).isEqualTo(2);
-    assertThat(topology.getPartitionsCount()).isEqualTo(10);
-    assertThat(topology.getReplicationFactor()).isEqualTo(3);
+    assertThat(topology.getClusterSize()).isEqualTo(3);
+    assertThat(topology.getPartitionsCount()).isEqualTo(2);
+    assertThat(topology.getReplicationFactor()).isEqualTo(2);
     assertThat(topology.getGatewayVersion()).isEqualTo("1.22.3-SNAPSHOT");
 
-    final List<BrokerInfo> brokers = topology.getBrokers();
+    final List<io.camunda.zeebe.client.api.response.BrokerInfo> brokers = topology.getBrokers();
     assertThat(brokers).hasSize(3);
 
-    BrokerInfo broker = brokers.get(0);
+    io.camunda.zeebe.client.api.response.BrokerInfo broker = brokers.get(0);
     assertThat(broker.getNodeId()).isEqualTo(0);
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);
@@ -125,11 +136,18 @@ public final class TopologyRequestRestTest extends ClientRestTest {
   void shouldAcceptDeadPartitions() {
     // given
     gatewayService.onTopologyRequest(
-        1,
-        1,
-        1,
-        "1.22.3-SNAPSHOT",
-        broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER, DEAD)));
+        new TopologyResponse()
+            .gatewayVersion("1.22.3-SNAPSHOT")
+            .clusterSize(1)
+            .replicationFactor(1)
+            .partitionsCount(1)
+            .addBrokersItem(
+                new BrokerInfo()
+                    .nodeId(0)
+                    .host("host1")
+                    .port(123)
+                    .version("1.22.3-SNAPSHOT")
+                    .addPartitionsItem(new Partition().partitionId(0).role(LEADER).health(DEAD))));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();

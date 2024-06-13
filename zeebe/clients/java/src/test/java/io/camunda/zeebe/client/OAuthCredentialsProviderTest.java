@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -78,6 +79,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 @WireMockTest
 public final class OAuthCredentialsProviderTest {
+
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -89,6 +91,7 @@ public final class OAuthCredentialsProviderTest {
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
+  private static final String URL_TOPOLOGY = HttpClientFactory.REST_API_PATH + "/topology";
 
   private final TestCredentialsApplier applier = new TestCredentialsApplier();
   private final WireMockRuntimeInfo wireMockInfo;
@@ -572,7 +575,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v2/topology")
+              WireMock.get(URL_TOPOLOGY)
                   .withHeader("Authorization", WireMock.equalTo(TOKEN_TYPE + " " + ACCESS_TOKEN))
                   .willReturn(
                       WireMock.aResponse()
@@ -593,7 +596,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v2/topology")
+              WireMock.get(URL_TOPOLOGY)
                   .willReturn(
                       WireMock.unauthorized()
                           .withBody(JSON_MAPPER.writeValueAsBytes(new ProblemDetail()))

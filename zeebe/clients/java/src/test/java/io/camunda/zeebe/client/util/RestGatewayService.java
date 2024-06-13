@@ -19,65 +19,38 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
-import io.camunda.zeebe.client.protocol.rest.Partition;
-import io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum;
-import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
+import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
-import java.util.Arrays;
 import org.junit.jupiter.api.Assertions;
 
 public class RestGatewayService {
 
-  public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  private static final String URL_TOPOLOGY = HttpClientFactory.REST_API_PATH + "/topology";
 
   private final WireMockRuntimeInfo mockInfo;
 
-  public RestGatewayService(final WireMockRuntimeInfo mockInfo) {
+  protected RestGatewayService(final WireMockRuntimeInfo mockInfo) {
     this.mockInfo = mockInfo;
   }
 
-  public void onTopologyRequest(
-      final int clusterSize,
-      final int partitionsCount,
-      final int replicationFactor,
-      final String gatewayVersion,
-      final BrokerInfo... brokers) {
+  /**
+   * Register the given response for GET requests to {@value #URL_TOPOLOGY}
+   *
+   * @param topologyResponse the response to provide upon a topology request
+   */
+  public void onTopologyRequest(final TopologyResponse topologyResponse) {
+    mockInfo
+        .getWireMock()
+        .register(WireMock.get(URL_TOPOLOGY).willReturn(WireMock.okJson(toJson(topologyResponse))));
+  }
+
+  private static String toJson(final TopologyResponse topologyResponse) {
     try {
-      mockInfo
-          .getWireMock()
-          .register(
-              WireMock.get("/v2/topology")
-                  .willReturn(
-                      WireMock.okJson(
-                          JSON_MAPPER.writeValueAsString(
-                              new TopologyResponse()
-                                  .gatewayVersion(gatewayVersion)
-                                  .clusterSize(clusterSize)
-                                  .replicationFactor(replicationFactor)
-                                  .partitionsCount(partitionsCount)
-                                  .brokers(Arrays.asList(brokers))))));
+      return JSON_MAPPER.writeValueAsString(topologyResponse);
     } catch (final JsonProcessingException e) {
-      Assertions.fail("Couldn't register topology request", e);
+      Assertions.fail("Couldn't serialize request body to JSON", e);
+      return null;
     }
-  }
-
-  public static BrokerInfo broker(
-      final int nodeId,
-      final String host,
-      final int port,
-      final String version,
-      final Partition... partitions) {
-    return new BrokerInfo()
-        .nodeId(nodeId)
-        .host(host)
-        .port(port)
-        .version(version)
-        .partitions(Arrays.asList(partitions));
-  }
-
-  public static Partition partition(
-      final int partitionId, final RoleEnum role, final HealthEnum health) {
-    return new Partition().partitionId(partitionId).role(role).health(health);
   }
 }
