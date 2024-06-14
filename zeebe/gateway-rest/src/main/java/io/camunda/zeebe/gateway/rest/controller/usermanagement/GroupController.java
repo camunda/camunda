@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.identity.rolemanagement.service.RoleMembershipService;
 import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.service.GroupService;
@@ -14,6 +15,7 @@ import io.camunda.identity.usermanagement.service.MembershipService;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.AssignUserToGroupRequest;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.RoleAssignRequest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.SearchResponseDto;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -32,11 +34,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public class GroupController {
   private final GroupService groupService;
   private final MembershipService membershipService;
+  private final RoleMembershipService roleMembershipService;
 
   public GroupController(
-      final GroupService groupService, final MembershipService membershipService) {
+      final GroupService groupService,
+      final MembershipService membershipService,
+      final RoleMembershipService roleMembershipService) {
     this.groupService = groupService;
     this.membershipService = membershipService;
+    this.roleMembershipService = roleMembershipService;
   }
 
   @PostMapping(
@@ -110,5 +116,33 @@ public class GroupController {
     responseDto.setItems(allUsers);
 
     return responseDto;
+  }
+
+  @PostMapping(
+      path = "/groups/{id}/roles/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public SearchResponseDto<String> findRolesOfGroup(
+      @PathVariable("id") final Long groupId,
+      @RequestBody final SearchRequestDto searchRequestDto) {
+    final List<String> roleNames = roleMembershipService.getRolesOfGroupByGroupId(groupId);
+    final SearchResponseDto<String> responseDto = new SearchResponseDto<>();
+    responseDto.setItems(roleNames);
+    return responseDto;
+  }
+
+  @PostMapping(path = "/groups/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void assignRoleToGroup(
+      @PathVariable("id") final long groupId, @RequestBody final RoleAssignRequest request) {
+    roleMembershipService.assignRoleToGroup(request.roleName(), groupId);
+  }
+
+  @GetMapping(
+      path = "/groups/{id}/roles/{roleName}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public void unassignRoleFromGroup(
+      @PathVariable("id") final long groupId, @PathVariable final String roleName) {
+    roleMembershipService.unassignRoleFromGroup(roleName, groupId);
   }
 }
