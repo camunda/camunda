@@ -114,19 +114,20 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     final var filePath = directory.resolve(fileName).toString();
 
     try (final var file = new RandomAccessFile(filePath, "r")) {
-      final var bytesToRead = Math.min(chunkSize, file.length() - offset);
+      final var fileLength = file.length();
+      final var bytesToRead = Math.min(chunkSize, fileLength - offset);
       final byte[] buffer = new byte[(int) bytesToRead];
       file.seek(offset);
       file.read(buffer);
 
       offset += bytesToRead;
       final var fileBlockIndex = Math.ceilDiv(offset, chunkSize);
-      if (offset == file.length()) {
+      if (offset == fileLength) {
         offset = 0;
         chunksView.pollFirst();
       }
 
-      final var totalFileBlocks = Math.ceilDiv(file.length(), chunkSize);
+      final var totalFileBlocks = Math.ceilDiv(fileLength, chunkSize);
 
       return SnapshotChunkUtil.createSnapshotChunkFromFileChunk(
           snapshotID,
