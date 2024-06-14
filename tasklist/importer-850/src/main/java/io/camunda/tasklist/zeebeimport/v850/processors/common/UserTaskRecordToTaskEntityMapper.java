@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,7 +45,9 @@ public class UserTaskRecordToTaskEntityMapper {
 
   private final ObjectMapper objectMapper;
 
-  public UserTaskRecordToTaskEntityMapper(ObjectMapper objectMapper, FormStore formStore) {
+  public UserTaskRecordToTaskEntityMapper(
+      @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper,
+      final FormStore formStore) {
     this.objectMapper = objectMapper;
     this.formStore = formStore;
   }

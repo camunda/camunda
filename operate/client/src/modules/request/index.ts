@@ -19,7 +19,7 @@ type RequestParams = {
 };
 
 async function request({url, method, body, headers, signal}: RequestParams) {
-  const csrfToken = sessionStorage.getItem('OPERATE-X-CSRF-TOKEN');
+  const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&
@@ -33,7 +33,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
       body: typeof body === 'string' ? body : JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
-        ...(hasCsrfToken ? {'OPERATE-X-CSRF-TOKEN': csrfToken} : {}),
+        ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
         ...headers,
       },
       mode: 'cors',
@@ -48,9 +48,9 @@ async function request({url, method, body, headers, signal}: RequestParams) {
   if (response.ok) {
     authenticationStore.handleThirdPartySessionSuccess();
 
-    const csrfToken = response.headers.get('OPERATE-X-CSRF-TOKEN');
+    const csrfToken = response.headers.get('X-CSRF-TOKEN');
     if (csrfToken !== null) {
-      sessionStorage.setItem('OPERATE-X-CSRF-TOKEN', csrfToken);
+      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
     }
   }
 

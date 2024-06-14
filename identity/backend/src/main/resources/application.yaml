@@ -1,13 +1,10 @@
 spring:
-  datasource:
-    username: ${CAMUNDA_IDENTITY_DATABASE_USERNAME:}
-    password: ${CAMUNDA_IDENTITY_DATABASE_PASSWORD:}
-  jackson:
-    mapper:
-      accept-case-insensitive-enums: true
-    deserialization:
-      read-unknown-enum-values-using-default-value: true
-  jpa:
-   generate-ddl: false
-   hibernate:
-    ddl-auto: validate
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 31536000
+          s-max-age: 31536000
+          must-revalidate: true
+          proxy-revalidate: true
+          no-transform: true

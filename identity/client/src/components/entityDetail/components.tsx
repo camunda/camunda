@@ -5,12 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import styled from "styled-components";
+import { StructuredListCell } from "@carbon/react";
+import { cssSize } from "src/utility/style";
 
-import {Checkbox as BaseCheckbox} from '@carbon/react';
-import styled from 'styled-components';
-
-const Checkbox = styled(BaseCheckbox)`
-  margin-left: var(--cds-spacing-05);
+export const Cell = styled(StructuredListCell)`
+  border-top: 0 none;
 `;
 
-export {Checkbox};
+export const HeadCell = styled(StructuredListCell)`
+  width: ${cssSize(32)};
+`;
