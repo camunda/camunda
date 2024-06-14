@@ -21,10 +21,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @Transactional
 public class UserService {
+
   private final CamundaUserDetailsManager userDetailsManager;
   private final UserProfileRepository userProfileRepository;
   private final PasswordEncoder passwordEncoder;
@@ -98,13 +100,17 @@ public class UserService {
       final UserDetails existingUserDetail =
           userDetailsManager.loadUserByUsername(existingUser.getUsername());
 
-      final UserDetails userDetails =
+      final var userBuilder =
           User.withUsername(existingUser.getUsername())
-              .password(user.getPassword())
-              .passwordEncoder(passwordEncoder::encode)
               .authorities(existingUserDetail.getAuthorities())
               .disabled(!user.isEnabled())
-              .build();
+              .password(
+                  StringUtils.hasText(user.getPassword())
+                      ? user.getPassword()
+                      : existingUserDetail.getPassword())
+              .passwordEncoder(passwordEncoder::encode);
+
+      final UserDetails userDetails = userBuilder.build();
       userDetailsManager.updateUser(userDetails);
       userProfileRepository.save(new Profile(id, user.getEmail()));
       return userProfileRepository.findUserById(id);
