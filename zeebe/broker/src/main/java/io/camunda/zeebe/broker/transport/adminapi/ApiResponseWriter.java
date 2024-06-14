@@ -18,7 +18,7 @@ public final class ApiResponseWriter implements ResponseWriter {
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final AdminResponseEncoder responseEncoder = new AdminResponseEncoder();
   private final ServerResponseImpl response = new ServerResponseImpl();
-  private String payload = null;
+  private String payload = "";
 
   @Override
   public void tryWriteResponse(
@@ -32,7 +32,9 @@ public final class ApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void reset() {}
+  public void reset() {
+    throw new UnsupportedOperationException();
+  }
 
   public AdminResponseEncoder getResponseEncoder() {
     return responseEncoder;
@@ -46,8 +48,8 @@ public final class ApiResponseWriter implements ResponseWriter {
   public int getLength() {
     return MessageHeaderEncoder.ENCODED_LENGTH
         + AdminResponseEncoder.BLOCK_LENGTH
-        + payload.getBytes().length
-        + 4;
+        + AdminResponseEncoder.payloadHeaderLength()
+        + payload.getBytes().length;
   }
 
   @Override
