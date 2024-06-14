@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -76,16 +75,17 @@ public class AdminApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
 
-    final int payloadLength = requestReader.getMessageDecoder().payloadLength();
-    final byte[] bytes = new byte[payloadLength];
-    requestReader.getMessageDecoder().getPayload(bytes, 0, payloadLength);
-    final ObjectMapper mapper = new ObjectMapper();
+    final String payload = requestReader.configuration();
     final FlowControlCfg flowControlCfg;
 
     try {
-      flowControlCfg = mapper.readValue(bytes, FlowControlCfg.class);
+      flowControlCfg = FlowControlCfg.fromJson(payload);
     } catch (final IOException e) {
-      result.completeExceptionally(e);
+      LOG.error("Failed to parse the flow control configuration: ", e);
+      result.complete(
+          Either.left(
+              errorWriter.internalError(
+                  "Failed to parse the flow control configuration: %s".formatted(e.getMessage()))));
       return result;
     }
 
@@ -100,7 +100,8 @@ public class AdminApiRequestHandler
                 result.complete(
                     Either.left(
                         errorWriter.internalError(
-                            "Failed to set the flow control configuration.")));
+                            "Failed to set the flow control configuration: %s"
+                                .formatted(t.getMessage()))));
               }
             });
     return result;
