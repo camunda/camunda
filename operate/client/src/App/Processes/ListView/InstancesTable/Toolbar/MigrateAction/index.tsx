@@ -20,9 +20,13 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {ListItem, Modal} from './styled';
+import {ListItem} from './styled';
 import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {HelperModal} from 'modules/components/HelperModal';
+import {getStateLocally} from 'modules/utils/localStorage';
+
+const localStorageKey = 'hideMigrationHelperModal';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -57,6 +61,31 @@ const MigrateAction: React.FC = observer(() => {
     }
   };
 
+  const handleSubmit = () => {
+    processXmlMigrationSourceStore.setProcessXml(processXmlStore.state.xml);
+
+    const requestFilterParameters = {
+      ...getProcessInstancesRequestFilters(),
+      ids: isAllChecked ? [] : selectedProcessInstanceIds,
+      excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
+    };
+
+    processStatisticsMigrationSourceStore.fetchProcessStatistics(
+      requestFilterParameters,
+    );
+    processInstanceMigrationStore.setSelectedInstancesCount(
+      processInstancesSelectionStore.selectedProcessInstanceCount,
+    );
+    processInstanceMigrationStore.setBatchOperationQuery(
+      requestFilterParameters,
+    );
+    processInstanceMigrationStore.enable();
+
+    tracking.track({
+      eventName: 'process-instance-migration-mode-entered',
+    });
+  };
+
   return (
     <Restricted
       scopes={['write']}
@@ -70,7 +99,11 @@ const MigrateAction: React.FC = observer(() => {
           <TableBatchAction
             renderIcon={MigrateAlt}
             onClick={() => {
-              setOpen(true);
+              if (getStateLocally()?.[localStorageKey]) {
+                handleSubmit();
+              } else {
+                setOpen(true);
+              }
               tracking.track({
                 eventName: 'process-instance-migration-button-clicked',
               });
@@ -87,50 +120,22 @@ const MigrateAction: React.FC = observer(() => {
         )}
       >
         {({open, setOpen}) => (
-          <Modal
+          <HelperModal
+            title="Migrate process instance versions"
             open={open}
-            preventCloseOnClickOutside
-            modalHeading="Migrate process instance versions"
-            primaryButtonText="Continue"
-            secondaryButtonText="Cancel"
-            onRequestSubmit={() => {
-              processXmlMigrationSourceStore.setProcessXml(
-                processXmlStore.state.xml,
-              );
-
-              const requestFilterParameters = {
-                ...getProcessInstancesRequestFilters(),
-                ids: isAllChecked ? [] : selectedProcessInstanceIds,
-                excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
-              };
-
-              processStatisticsMigrationSourceStore.fetchProcessStatistics(
-                requestFilterParameters,
-              );
-              processInstanceMigrationStore.setSelectedInstancesCount(
-                processInstancesSelectionStore.selectedProcessInstanceCount,
-              );
-              processInstanceMigrationStore.setBatchOperationQuery(
-                requestFilterParameters,
-              );
-              processInstanceMigrationStore.enable();
-
-              tracking.track({
-                eventName: 'process-instance-migration-mode-entered',
-              });
-            }}
-            onRequestClose={() => setOpen(false)}
-            onSecondarySubmit={() => setOpen(false)}
-            size="md"
+            onClose={() => setOpen(false)}
+            localStorageKey={localStorageKey}
+            onSubmit={handleSubmit}
           >
             <Stack as={OrderedList} nested gap={5}>
               <ListItem>
-                Migrate is used to move a process to a newer (or older) version
-                of the process.
+                Migrate is used to migrate running process instances to a
+                different process definition.
               </ListItem>
               <ListItem>
-                When the migration steps are executed, all process instances are
-                affected. This can lead to interruptions, delays, or changes.
+                When the migration steps are executed, all selected process
+                instances will be affected. This can lead to interruptions,
+                delays or changes.
               </ListItem>
               <ListItem>
                 To minimize interruptions or delays, plan the migration at times
@@ -148,7 +153,7 @@ const MigrateAction: React.FC = observer(() => {
               </Link>{' '}
               for guidance and best practices.
             </p>
-          </Modal>
+          </HelperModal>
         )}
       </ModalStateManager>
     </Restricted>

@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.webapps.zeebe;
 
-import {Checkbox as BaseCheckbox} from '@carbon/react';
-import styled from 'styled-components';
+import io.camunda.zeebe.util.Either;
 
-const Checkbox = styled(BaseCheckbox)`
-  margin-left: var(--cds-spacing-05);
-`;
+public interface PartitionSupplier {
 
-export {Checkbox};
+  Either<Exception, Integer> getPartitionsCount();
+}

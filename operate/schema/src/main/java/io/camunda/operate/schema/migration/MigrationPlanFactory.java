@@ -5,11 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebe;
+package io.camunda.operate.schema.migration;
 
-import io.camunda.operate.util.Either;
+public interface MigrationPlanFactory {
 
-public interface PartitionSupplier {
+  FillPostImporterQueuePlan createFillPostImporterQueuePlan();
 
-  public Either<Exception, Integer> getPartitionsCount();
+  ReindexPlan createReindexPlan();
+
+  ReindexWithQueryAndScriptPlan createReindexWithQueryAndScriptPlan();
 }

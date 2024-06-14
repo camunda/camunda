@@ -51,7 +51,7 @@ public class UserController {
 
   @PutMapping("/{id}")
   public CamundaUser updateUser(
-      @PathVariable("id") final long id, final CamundaUserWithPassword user) {
+      @PathVariable("id") final long id, @RequestBody final CamundaUserWithPassword user) {
     return userService.updateUser(id, user);
   }
 }

@@ -10,19 +10,30 @@ import React from 'react';
 
 import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
-import {Layer, Stack} from '@carbon/react';
-
+import {Layer, Stack, Tag} from '@carbon/react';
 import {ModificationIcons} from './ModificationIcons';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {formatDate} from 'modules/utils/date';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
   nodeName: string;
   isTimestampLabelVisible?: boolean;
+  isRoot?: boolean;
+  latestMigrationDate?: string;
 };
 
 const Bar = React.forwardRef<HTMLDivElement, Props>(
-  ({nodeName, flowNodeInstance, isTimestampLabelVisible = false}, ref) => {
+  (
+    {
+      nodeName,
+      flowNodeInstance,
+      isTimestampLabelVisible = false,
+      isRoot = false,
+      latestMigrationDate,
+    },
+    ref,
+  ) => {
     return (
       <Container ref={ref} data-testid={`node-details-${flowNodeInstance.id}`}>
         <Stack orientation="horizontal" gap={5}>
@@ -30,6 +41,9 @@ const Bar = React.forwardRef<HTMLDivElement, Props>(
             <StateIcon state={flowNodeInstance.state} size={16} />
           )}
           <NodeName>{nodeName}</NodeName>
+          {isRoot && latestMigrationDate !== undefined && (
+            <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
+          )}
           {isTimestampLabelVisible && (
             <Layer>
               <TimeStampLabel timeStamp={flowNodeInstance.endDate} />

@@ -16,6 +16,8 @@
 package io.camunda.zeebe.spring.client.properties;
 
 import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
+import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.prioritized;
+import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -58,6 +60,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   public void customize(final ZeebeWorkerValue zeebeWorker) {
     applyDefaultWorkerName(zeebeWorker);
     applyDefaultJobWorkerType(zeebeWorker);
+    applyDefaultJobWorkerTenantIds(zeebeWorker);
     applyFetchVariables(zeebeWorker);
     applyOverrides(zeebeWorker);
   }
@@ -203,5 +206,25 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
         zeebeWorker.setType(generatedJobWorkerType);
       }
     }
+  }
+
+  private void applyDefaultJobWorkerTenantIds(final ZeebeWorkerValue zeebeWorker) {
+    final List<String> defaultJobWorkerTenantIds =
+        getOrLegacyOrDefault(
+            "DefaultJobWorkerTenantIds",
+            prioritized(
+                DEFAULT.getDefaultJobWorkerTenantIds(),
+                List.of(
+                    camundaClientProperties::getTenantIds,
+                    () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds())),
+            zeebeClientConfigurationProperties::getDefaultJobWorkerTenantIds,
+            DEFAULT.getDefaultJobWorkerTenantIds(),
+            null);
+
+    LOG.debug(
+        "Worker '{}': Setting tenantIds to default {}",
+        zeebeWorker.getTenantIds(),
+        defaultJobWorkerTenantIds);
+    zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
   }
 }
