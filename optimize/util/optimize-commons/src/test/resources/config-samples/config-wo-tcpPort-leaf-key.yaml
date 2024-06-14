@@ -1,0 +1,5 @@
+es:
+  connection:
+    nodes:
+      - host: 'localhost'
+        httpPort: 9200

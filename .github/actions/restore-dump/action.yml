@@ -1,0 +1,44 @@
+name: Restore postgres dump
+description: Downloads and restores the postgres dump file
+inputs:
+  sql_dump:
+    description: SQL dump to use
+    default: "optimize_data-medium.sqlc"
+    required: false
+  postgres_user:
+    description: Postgress db username
+    default: camunda
+    required: false
+  postgres_db:
+    description: Postgress db name
+    default: engine
+    required: false
+  num_of_parallel_threads:
+    type: number
+    default: 8
+    description: How many parallel threads should the importer use (8 by default, use 0 to disable)
+runs:
+  using: composite
+  steps:
+    - name: check if qsuilt is available
+      shell: bash
+      run: |
+        if ! command -v gsutil &> /dev/null
+        then
+            echo "gsutil could not be found"
+            exit 1
+        fi
+    - name: Install Posgtres Clinet
+      shell: bash
+      run: |
+        sudo apt update -qq
+        sudo apt install -y postgresql-client
+    - name: Download dump
+      shell: bash
+      run: gsutil -q -m cp gs://optimize-data/${{ inputs.sql_dump }} dump.sqlc
+    - name: Restore dump
+      shell: bash
+      run: PGPASSWORD=camunda pg_restore ${{ inputs.num_of_parallel_threads == 0 && '' || format('-j {0}', inputs.num_of_parallel_threads) }} --clean --if-exists -v -h localhost -U ${{ inputs.postgres_user }} -d ${{ inputs.postgres_db }} dump.sqlc
+    - name: Remove dump
+      shell: bash
+      run: rm -f dump.sqlc

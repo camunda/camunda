@@ -1,0 +1,20 @@
+{
+  "typeLabels": [
+    {
+      "title": "🚀 New Features",
+      "types": ["feat", "improve"]
+    },
+    {
+      "title": "💊 Bugfixes",
+      "types": ["fix", "revert"]
+    },
+    {
+      "title": "🧹 Chore",
+      "types": ["chore", "docs", "test", "refactor", "style"]
+    }
+  ],
+  "bumpLabels": [],
+  "issuesUrl": "",
+  "sortOrder": "desc",
+  "emptyMessage": "No changes"
+}

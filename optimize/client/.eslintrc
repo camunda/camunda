@@ -1,0 +1,13 @@
+{
+  "plugins": ["prettier", "testcafe"],
+  "rules": {
+    "prettier/prettier": ["warn", {
+      "endOfLine": "auto"
+    }],
+    "curly": "error"
+  },
+  "globals": {
+    "flushPromises": "readonly"
+  },
+  "extends": ["react-app", "plugin:camunda-licensed/commercial", "plugin:testcafe/recommended"]
+}

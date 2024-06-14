@@ -1,0 +1,68 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
+ */
+package io.camunda.optimize.dto.optimize.query.processoverview;
+
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
+import static io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit.mapToChronoUnit;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.time.Duration;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
+
+@Data
+@FieldNameConstants
+@NoArgsConstructor
+public class KpiResultDto {
+
+  private String reportId;
+  private String collectionId;
+  private String reportName;
+  private String value;
+  private String target;
+
+  @JsonProperty("isBelow")
+  private boolean isBelow;
+
+  private KpiType type;
+  private ViewProperty measure;
+  private TargetValueUnit unit;
+
+  @JsonIgnore
+  public boolean isTargetMet() {
+    if (StringUtils.isBlank(value) || StringUtils.isBlank(target)) {
+      return false;
+    }
+    final double doubleValue;
+    final double doubleTarget;
+    try {
+      doubleValue = Double.parseDouble(value);
+      doubleTarget = Double.parseDouble(target);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          String.format("Error parsing KPI value %s and target %s", value, target));
+    }
+    if (isBelow) {
+      return DURATION.equals(measure)
+          ? Duration.ofMillis((long) doubleValue)
+                  .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit)))
+              <= 0
+          : doubleValue <= doubleTarget;
+    } else {
+      return DURATION.equals(measure)
+          ? Duration.ofMillis((long) doubleValue)
+                  .compareTo(Duration.of((long) doubleTarget, mapToChronoUnit(unit)))
+              >= 0
+          : doubleValue >= doubleTarget;
+    }
+  }
+}

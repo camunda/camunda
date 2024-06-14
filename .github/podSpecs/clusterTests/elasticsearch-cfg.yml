@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - protocol: TCP
+      port: 9200
+      targetPort: 9200
+      name: es-client

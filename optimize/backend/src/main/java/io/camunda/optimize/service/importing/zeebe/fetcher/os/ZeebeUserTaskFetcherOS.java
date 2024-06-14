@@ -1,0 +1,46 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
+ * Licensed under a proprietary license. See the License.txt file for more information.
+ * You may not use this file except in compliance with the proprietary license.
+ */
+package io.camunda.optimize.service.importing.zeebe.fetcher.os;
+
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
+import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.importing.zeebe.db.ZeebeUserTaskFetcher;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+@Component
+@Slf4j
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Conditional(OpenSearchCondition.class)
+public class ZeebeUserTaskFetcherOS extends AbstractZeebeRecordFetcherOS<ZeebeUserTaskRecordDto>
+    implements ZeebeUserTaskFetcher {
+
+  protected ZeebeUserTaskFetcherOS(
+      final int partitionId,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    super(partitionId, osClient, objectMapper, configurationService);
+  }
+
+  @Override
+  protected String getBaseIndexName() {
+    return ZEEBE_USER_TASK_INDEX_NAME;
+  }
+
+  @Override
+  protected Class<ZeebeUserTaskRecordDto> getRecordDtoClass() {
+    return ZeebeUserTaskRecordDto.class;
+  }
+}

@@ -1,0 +1,21 @@
+.SubNav {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  width: 100%;
+  padding-bottom: 11px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--silver-darken-87);
+  font-size: 15px;
+  display: flex;
+  background-color: var(--white);
+  z-index: 1;
+
+  .NavItem:first-child {
+    border-left: none;
+  }
+
+  a {
+    text-decoration: none;
+  }
+}

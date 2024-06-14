@@ -13,3 +13,8 @@ operate/client/build
 operate/client/node_modules
 operate/client/src/node_modules
 operate/client/target
+
+optimize/client/build
+optimize/client/node_modules
+optimize/client/src/node_modules
+optimize/client/target

@@ -1,0 +1,87 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should display meaningful data if there are no evaluations 1`] = `
+<div
+  className="DecisionTable"
+>
+  <DMNDiagramErrorHandler
+    additionalModules={
+      Array [
+        "addon",
+      ]
+    }
+    decisionDefinitionKey="key"
+    onLoad={[Function]}
+    xml="dmn xml string"
+  >
+    <DmnJsPortal
+      key="a"
+      renderIn={<td />}
+    >
+      <i>
+        0 (0%)
+      </i>
+    </DmnJsPortal>
+    <DmnJsPortal
+      key="b"
+      renderIn={<td />}
+    >
+      <i>
+        0 (0%)
+      </i>
+    </DmnJsPortal>
+    <DmnJsPortal
+      renderIn={<td />}
+    >
+      <b>
+        0
+         Evaluation
+        s
+      </b>
+    </DmnJsPortal>
+  </DMNDiagramErrorHandler>
+</div>
+`;
+
+exports[`should render content in DmnJsPortals 1`] = `
+<div
+  className="DecisionTable"
+>
+  <DMNDiagramErrorHandler
+    additionalModules={
+      Array [
+        "addon",
+      ]
+    }
+    decisionDefinitionKey="key"
+    onLoad={[Function]}
+    xml="dmn xml string"
+  >
+    <DmnJsPortal
+      key="a"
+      renderIn={<td />}
+    >
+      <i>
+        1 (33.3%)
+      </i>
+    </DmnJsPortal>
+    <DmnJsPortal
+      key="b"
+      renderIn={<td />}
+    >
+      <i>
+        2 (66.7%)
+      </i>
+    </DmnJsPortal>
+    <DmnJsPortal
+      renderIn={<td />}
+    >
+      <b>
+        3
+         Evaluation
+        s
+      </b>
+    </DmnJsPortal>
+  </DMNDiagramErrorHandler>
+</div>
+`;

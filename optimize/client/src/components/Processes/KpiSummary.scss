@@ -1,0 +1,32 @@
+.KpiSummary {
+  min-width: 100px;
+  border-radius: 2rem;
+  border: solid 1px var(--cds-border-subtle);
+  background-color: var(--cds-field-02);
+  display: flex;
+  align-items: center;
+
+  svg {
+    &.error {
+      color: var(--cds-support-error);
+    }
+
+    &.success {
+      color: var(--cds-support-success);
+    }
+  }
+
+  > div {
+    padding: 0.25rem 0.5rem;
+    display: flex;
+    align-items: center;
+
+    span {
+      margin-left: 0.5rem;
+    }
+
+    & + div {
+      border-left: 1px solid var(--cds-border-subtle);
+    }
+  }
+}

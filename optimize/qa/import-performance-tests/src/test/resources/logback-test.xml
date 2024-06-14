@@ -1,0 +1,24 @@
+<configuration>
+  <conversionRule conversionWord="sanitize" converterClass="io.camunda.optimize.util.LogUtil" />
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoders are assigned the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %sanitize(%msg) %n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="io.camunda.optimize" level="INFO" />
+  <logger name="io.camunda.optimize.service" level="INFO" />
+  <logger name="io.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="OFF" />
+  <logger name="io.camunda.optimize.service.importing.engine.mediator" level="DEBUG" />
+  <logger name="io.camunda.optimize.service.db.es.writer" level="OFF" />
+  <logger name="io.camunda.optimize.data.generation" level="OFF" />
+  <logger name="io.camunda.optimize.data.generation.DataGenerationExecutor" level="INFO" />
+  <logger name="io.camunda.optimize.service.importing.DatabaseImportJobExecutor" level="DEBUG" />
+  <logger name="org.elasticsearch.client.RestClient" level="OFF" />
+
+  <root level="WARN">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: performance-optimize-camunda-cloud
+  namespace: ${NAMESPACE}
+  labels:
+    team: optimize
+spec:
+  progressDeadlineSeconds: 1800
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: optimize
+  template:
+    metadata:
+      labels:
+        app: optimize
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-preempt
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      tolerations:
+        - key: "agents-n1-standard-8-netssd-preempt"
+          operator: "Exists"
+          effect: "NoSchedule"
+      volumes:
+        - name: configuration
+          configMap:
+            name: performance-optimize-camunda-cloud
+            defaultMode: 0744
+      containers:
+        - name: optimize
+          image: registry.camunda.cloud/team-optimize/optimize:latest
+          imagePullPolicy: Always
+          env:
+            - name: OPTIMIZE_JAVA_OPTS
+              value: |
+                -Xms4g
+                -Xmx4g
+                -XX:MaxMetaspaceSize=128m
+            - name: ES_REFRESH_INTERVAL
+              value: ${ES_REFRESH_INTERVAL}
+            - name: EVENT_IMPORT_ENABLED
+              value: "${EVENT_IMPORT_ENABLED}"
+            - name: WAIT_FOR
+              value: "elasticsearch:9200"
+            - name: WAIT_FOR_TIMEOUT
+              value: "60"
+          ports:
+            - containerPort: 8090
+              name: optimize-http
+              protocol: TCP
+          tty: true
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /
+              port: optimize-http
+          readinessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /api/readyz
+              port: optimize-http
+          resources:
+            limits:
+              cpu: 4
+              memory: 6Gi
+            requests:
+              cpu: 4
+              memory: 5Gi
+          volumeMounts:
+            - name: configuration
+              mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+            - name: configuration
+              mountPath: /optimize/config/environment-logback.xml
+              subPath: environment-logback.xml
+            - name: configuration
+              mountPath: /optimize/config/OptimizeLicense.txt
+              subPath: OptimizeLicense.txt

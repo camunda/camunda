@@ -1,0 +1,16 @@
+---
+
+# overwrites the default elasticsearch connection security
+# properties in Optimize
+es:
+  connection:
+    nodes:
+      - host: 'localhost'
+        httpPort: 80
+  security:
+    username: 'elastic'
+    password: 'optimize'
+    ssl:
+      enabled: false
+plugin:
+  directory: '.'

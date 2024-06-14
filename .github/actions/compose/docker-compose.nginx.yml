@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  nginx:
+    container_name: nginx-${NGINX_PORT:-80}
+    image: beevelop/nginx-basic-auth:latest
+    ports:
+      - ${NGINX_PORT:-80}:${NGINX_PORT:-80}
+    network_mode: host
+    environment:
+      PORT: ${NGINX_PORT:-80}
+      FORWARD_PORT: ${NGINX_FORWARD_PORT:-9203}
+      FORWARD_HOST: ${NGINX_FORWARD_HOST:-localhost}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -so /dev/null http://localhost:${NGINX_PORT:-80} || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3

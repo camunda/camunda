@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
+  <bpmn:process id="extended-order-process" name="Order Process" isExecutable="true">
+    <bpmn:startEvent id="new-order-received" name="new order received" camunda:asyncBefore="true">
+      <bpmn:outgoing>SequenceFlow_05suiqb</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_05suiqb" sourceRef="new-order-received" targetRef="reserve-order-items" />
+    <bpmn:sequenceFlow id="SequenceFlow_17kmq07" sourceRef="reserve-order-items" targetRef="process-payment" />
+    <bpmn:serviceTask id="reserve-order-items" name="Reserve Order Items" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+        <zeebe:taskHeaders>
+          <zeebe:header key="reservationTime" value="PT15M" />
+        </zeebe:taskHeaders>
+        <zeebe:ioMapping>
+          <zeebe:input source="$.orderItems" target="$.orderItems" />
+          <zeebe:output source="$.orderStatus" target="$.orderStatus" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_05suiqb</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_17kmq07</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="process-payment" name="Process Payment" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_17kmq07</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0hs89by</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0hs89by" sourceRef="process-payment" targetRef="adjust-inventory-data" />
+    <bpmn:serviceTask id="adjust-inventory-data" name="Adjust Inventory Data" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0hs89by</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0x7io44</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0x7io44" sourceRef="adjust-inventory-data" targetRef="trigger-shipment" />
+    <bpmn:serviceTask id="trigger-shipment" name="Trigger Shipment" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0x7io44</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_19q71jp</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="order-shipped" name="order shipped">
+      <bpmn:incoming>SequenceFlow_163u0jd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_19q71jp" sourceRef="trigger-shipment" targetRef="idle" />
+    <bpmn:sequenceFlow id="SequenceFlow_0cjkoxj" sourceRef="idle" targetRef="move-along" />
+    <bpmn:sequenceFlow id="SequenceFlow_1a23re1" sourceRef="move-along" targetRef="do-nothing" />
+    <bpmn:sequenceFlow id="SequenceFlow_0l9klq5" sourceRef="do-nothing" targetRef="skip-this-process" />
+    <bpmn:sequenceFlow id="SequenceFlow_0lr1k8n" sourceRef="skip-this-process" targetRef="aimless-existence" />
+    <bpmn:sequenceFlow id="SequenceFlow_0sllgb3" sourceRef="aimless-existence" targetRef="last-task" />
+    <bpmn:sequenceFlow id="SequenceFlow_163u0jd" sourceRef="last-task" targetRef="order-shipped" />
+    <bpmn:serviceTask id="idle" name="Idle" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_19q71jp</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0cjkoxj</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="move-along" name="Move Along" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0cjkoxj</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1a23re1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="do-nothing" name="Do Nothing" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1a23re1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0l9klq5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="skip-this-process" name="Skip this process" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0l9klq5</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0lr1k8n</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="aimless-existence" name="Aimless Existenence" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0lr1k8n</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0sllgb3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="last-task" name="Last Task Without Meaning" camunda:expression="${true}">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="reserveOrderItems" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0sllgb3</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_163u0jd</bpmn:outgoing>
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="extended-order-process">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="new-order-received">
+        <dc:Bounds x="173" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="167" y="138" width="49" height="24" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05suiqb_di" bpmnElement="SequenceFlow_05suiqb">
+        <di:waypoint x="209" y="120" />
+        <di:waypoint x="291" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="250" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_17kmq07_di" bpmnElement="SequenceFlow_17kmq07">
+        <di:waypoint x="391" y="120" />
+        <di:waypoint x="448" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="419.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1chwwy4_di" bpmnElement="reserve-order-items">
+        <dc:Bounds x="291" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0rdjcjf_di" bpmnElement="process-payment">
+        <dc:Bounds x="448" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0hs89by_di" bpmnElement="SequenceFlow_0hs89by">
+        <di:waypoint x="548" y="120" />
+        <di:waypoint x="613" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="580.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1y366xp_di" bpmnElement="adjust-inventory-data">
+        <dc:Bounds x="613" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0x7io44_di" bpmnElement="SequenceFlow_0x7io44">
+        <di:waypoint x="713" y="120" />
+        <di:waypoint x="784" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="748.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_162o5c0_di" bpmnElement="trigger-shipment">
+        <dc:Bounds x="784" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_01khowi_di" bpmnElement="order-shipped">
+        <dc:Bounds x="2021" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2005" y="141" width="68" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_19q71jp_di" bpmnElement="SequenceFlow_19q71jp">
+        <di:waypoint x="884" y="120" />
+        <di:waypoint x="957" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="875.5" y="98.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0cjkoxj_di" bpmnElement="SequenceFlow_0cjkoxj">
+        <di:waypoint x="1057" y="120" />
+        <di:waypoint x="1122" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1089.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1a23re1_di" bpmnElement="SequenceFlow_1a23re1">
+        <di:waypoint x="1222" y="120" />
+        <di:waypoint x="1279" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1250.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0l9klq5_di" bpmnElement="SequenceFlow_0l9klq5">
+        <di:waypoint x="1379" y="120" />
+        <di:waypoint x="1451" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1415" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0lr1k8n_di" bpmnElement="SequenceFlow_0lr1k8n">
+        <di:waypoint x="1551" y="120" />
+        <di:waypoint x="1618" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1584.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0sllgb3_di" bpmnElement="SequenceFlow_0sllgb3">
+        <di:waypoint x="1718" y="120" />
+        <di:waypoint x="1807" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1762.5" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_163u0jd_di" bpmnElement="SequenceFlow_163u0jd">
+        <di:waypoint x="1907" y="120" />
+        <di:waypoint x="2021" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1964" y="98.5" width="0" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0s6avbp_di" bpmnElement="idle">
+        <dc:Bounds x="957" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1o6ppx2_di" bpmnElement="move-along">
+        <dc:Bounds x="1122" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1yzeuye_di" bpmnElement="do-nothing">
+        <dc:Bounds x="1279" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0hqm6ia_di" bpmnElement="skip-this-process">
+        <dc:Bounds x="1451" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1ioxlck_di" bpmnElement="aimless-existence">
+        <dc:Bounds x="1618" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1sugugm_di" bpmnElement="last-task">
+        <dc:Bounds x="1807" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

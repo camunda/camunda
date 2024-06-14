@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.1.0">
+  <bpmn:collaboration id="Collaboration_KontaktdatenAendernProzess">
+    <bpmn:participant id="kontaktdatenAendern" name="Kontaktdaten Aendern Prozess" processRef="kontaktdaten-aendern" />
+  </bpmn:collaboration>
+  <bpmn:process id="kontaktdaten-aendern" name="Kontaktdaten Aendern" isExecutable="true">
+    <bpmn:extensionElements>
+      <camunda:properties>
+        <camunda:property name="contextroot" value="com.talanx.process.partnervertragaendern.vk.web" />
+        <camunda:property name="bpmnerror_on_callbacktimeout" value="prozessFehler" />
+      </camunda:properties>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_KontaktdatenAendern" name="Kontaktdaten sollen&#10;geändert werden" camunda:asyncBefore="true">
+      <bpmn:outgoing>SequenceFlow_08ybd2o</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_5" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="belegErstellenTask" name="Beleg erstellen" camunda:expression="${true}">
+      <bpmn:documentation>Lokaler Aufruf
+AntragRendern</bpmn:documentation>
+      <bpmn:incoming>SequenceFlow_170lfhd</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_12bpgif</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_08ybd2o" sourceRef="StartEvent_KontaktdatenAendern" targetRef="angabenPruefenTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_170lfhd" sourceRef="angabenPruefenTask" targetRef="belegErstellenTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_12bpgif" sourceRef="belegErstellenTask" targetRef="EventBusinessKalender" />
+    <bpmn:endEvent id="EndEvent_KontaktdatenAendern" name="Kontaktdaten geändert">
+      <bpmn:incoming>SequenceFlow_0tntdc3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="vorgangErstellenTask" name="Offenen Vorgang erstellen" camunda:expression="${true}">
+      <bpmn:documentation>Fire/Forget
+esb://arbeitsmanagement/BelegeVerarbeiten</bpmn:documentation>
+      <bpmn:incoming>SequenceFlow_1axayii</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1qzsjxu</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1qzsjxu" sourceRef="vorgangErstellenTask" targetRef="prozessBeendenReceiveTask" />
+    <bpmn:sequenceFlow id="SequenceFlow_1axayii" sourceRef="EventBusinessKalender" targetRef="vorgangErstellenTask" />
+    <bpmn:intermediateCatchEvent id="EventBusinessKalender" name="Auf Servicezeit &#10;warten">
+      <bpmn:incoming>SequenceFlow_12bpgif</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1axayii</bpmn:outgoing>
+      <bpmn:conditionalEventDefinition>
+        <bpmn:condition xsi:type="bpmn:tFormalExpression">${true}</bpmn:condition>
+      </bpmn:conditionalEventDefinition>
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sendTask id="prozessBeendenReceiveTask" name="Auf Ende des Vorgangs warten" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_1qzsjxu</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0tntdc3</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0tntdc3" sourceRef="prozessBeendenReceiveTask" targetRef="EndEvent_KontaktdatenAendern" />
+    <bpmn:userTask id="angabenPruefenTask" name="Angaben prüfen" camunda:candidateUsers="john" camunda:candidateGroups="sales">
+      <bpmn:incoming>SequenceFlow_08ybd2o</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_170lfhd</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmn:message id="Message_5" name="KontaktdatenAendernStartMessage" />
+  <bpmn:message id="Message_6" name="ProzessBeendenMessage" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_KontaktdatenAendernProzess">
+      <bpmndi:BPMNShape id="Participant_0qbfit5_di" bpmnElement="kontaktdatenAendern">
+        <dc:Bounds x="121" y="126" width="825" height="184" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_170lfhd_di" bpmnElement="SequenceFlow_170lfhd">
+        <di:waypoint x="359" y="216" />
+        <di:waypoint x="393" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="376" y="201" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_08ybd2o_di" bpmnElement="SequenceFlow_08ybd2o">
+        <di:waypoint x="220" y="216" />
+        <di:waypoint x="259" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="240" y="201" width="0" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_12bpgif_di" bpmnElement="SequenceFlow_12bpgif">
+        <di:waypoint x="493" y="216" />
+        <di:waypoint x="528" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="465.5" y="201" width="90" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1qzsjxu_di" bpmnElement="SequenceFlow_1qzsjxu">
+        <di:waypoint x="704" y="216" />
+        <di:waypoint x="730" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="672" y="201" width="90" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1fsagwx_di" bpmnElement="EndEvent_KontaktdatenAendern">
+        <dc:Bounds x="875" y="198" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="859" y="234" width="67" height="24" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0mqw9tr_di" bpmnElement="StartEvent_KontaktdatenAendern">
+        <dc:Bounds x="184" y="198" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="163" y="234" width="77" height="36" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0yt6af7_di" bpmnElement="belegErstellenTask">
+        <dc:Bounds x="393" y="176" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1h2o7j4_di" bpmnElement="vorgangErstellenTask">
+        <dc:Bounds x="604" y="176" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1axayii_di" bpmnElement="SequenceFlow_1axayii">
+        <di:waypoint x="564" y="216" />
+        <di:waypoint x="604" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="539" y="201" width="90" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_1dvoi3k_di" bpmnElement="EventBusinessKalender">
+        <dc:Bounds x="528" y="198" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="509" y="234" width="74" height="24" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_0bjrwie_di" bpmnElement="prozessBeendenReceiveTask">
+        <dc:Bounds x="730" y="176" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0tntdc3_di" bpmnElement="SequenceFlow_0tntdc3">
+        <di:waypoint x="830" y="216" />
+        <di:waypoint x="875" y="216" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="808" y="201" width="90" height="0" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="UserTask_0gkwsya_di" bpmnElement="angabenPruefenTask">
+        <dc:Bounds x="259" y="176" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

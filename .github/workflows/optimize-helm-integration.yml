@@ -1,0 +1,28 @@
+name: Optimize Helm Chart Integration Test
+
+on:
+  # TODO: Remove the on: push once this workflow is fully tested
+  push:
+    paths:
+      - "**/Chart.yaml"
+  workflow_dispatch:
+  schedule:
+    - cron: 0 22 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  helm-deploy:
+    name: Helm chart Integration Tests
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    secrets: inherit
+    with:
+      identifier: optimize-int
+      test-enabled: true
+      caller-git-ref: master
+      extra-values: |
+        optimize:
+          image:
+            tag: SNAPSHOT

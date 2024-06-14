@@ -1,0 +1,30 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: postgresql
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: ${NAMESPACE}
+  labels:
+    app: postgresql
+data:
+  init-user-db.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE DATABASE "engine";
+      CREATE USER camunda WITH ENCRYPTED PASSWORD 'camunda';
+      GRANT ALL PRIVILEGES ON DATABASE "engine" TO camunda;
+      ALTER ROLE camunda SUPERUSER;
+    EOSQL

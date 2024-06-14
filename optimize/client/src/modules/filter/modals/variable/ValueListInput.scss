@@ -1,0 +1,19 @@
+.ValueListInput {
+  .singeValueInput {
+    width: 100%;
+  }
+
+  .MultiValueInput {
+    .Tag,
+    .Tag .Button {
+      background-color: var(--blue-lighten-75);
+      color: var(--white);
+    }
+
+    .Tag.invalid,
+    .Tag.invalid .Button {
+      background-color: var(--red-lighten-85);
+      color: var(--grey-lighten-50);
+    }
+  }
+}

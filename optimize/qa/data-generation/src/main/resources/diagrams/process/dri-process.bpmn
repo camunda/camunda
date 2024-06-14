@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.6.0" camunda:diagramRelationId="879d35d7-cbfa-4fe5-92a1-7487ed3201de">
+  <bpmn:process id="DRIProcessWithLoadsOfVariables" name="Optimize DRI Process with loads of Variables" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" camunda:asyncBefore="true">
+      <bpmn:outgoing>SequenceFlow_103z7z6</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_103z7z6" sourceRef="StartEvent_1" targetRef="Task_00vbk8g" />
+    <bpmn:sequenceFlow id="SequenceFlow_16ymyac" sourceRef="Task_00vbk8g" targetRef="Task_1fjnbrh" />
+    <bpmn:sequenceFlow id="SequenceFlow_03xacms" sourceRef="Task_1fjnbrh" targetRef="Task_1t2ivyf" />
+    <bpmn:sequenceFlow id="SequenceFlow_1ab8vzi" sourceRef="Task_1t2ivyf" targetRef="Task_1wamvs1" />
+    <bpmn:dataObjectReference id="DataObjectReference_0jy3gcg" name="Dicitonary" dataObjectRef="DataObject_0f1teom" />
+    <bpmn:dataObject id="DataObject_0f1teom" />
+    <bpmn:sequenceFlow id="SequenceFlow_0z8xcum" sourceRef="Task_1wamvs1" targetRef="Task_15rby0j" />
+    <bpmn:subProcess id="Task_0jsf7rn">
+      <bpmn:incoming>SequenceFlow_1eah31o</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0sx0h24</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+        <bpmn:loopCardinality xsi:type="bpmn:tFormalExpression">${loopCardinality}</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="StartEvent_1e9f7rw" name="Feature part implementation started">
+        <bpmn:outgoing>SequenceFlow_0q250tw</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_0q250tw" sourceRef="StartEvent_1e9f7rw" targetRef="Task_0fup22s" />
+      <bpmn:sequenceFlow id="SequenceFlow_0c3hiai" sourceRef="Task_0fup22s" targetRef="Task_02jhhmk" />
+      <bpmn:exclusiveGateway id="ExclusiveGateway_0nzag76" name="Changes requested?" default="SequenceFlow_1if873w">
+        <bpmn:incoming>SequenceFlow_0ptdgvi</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_0h9apck</bpmn:outgoing>
+        <bpmn:outgoing>SequenceFlow_1if873w</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:sequenceFlow id="SequenceFlow_0ptdgvi" sourceRef="Task_02jhhmk" targetRef="ExclusiveGateway_0nzag76" />
+      <bpmn:sequenceFlow id="SequenceFlow_0h9apck" name="yes" sourceRef="ExclusiveGateway_0nzag76" targetRef="Task_0fup22s">
+        <bpmn:extensionElements>
+          <camunda:executionListener event="take">
+            <camunda:script scriptFormat="groovy">execution.setVariable('doReview', "no");</camunda:script>
+          </camunda:executionListener>
+        </bpmn:extensionElements>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${doReview == "yes"}</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="SequenceFlow_1if873w" name="No" sourceRef="ExclusiveGateway_0nzag76" targetRef="Task_0hk30qq" />
+      <bpmn:sequenceFlow id="SequenceFlow_1dj1n9j" sourceRef="Task_0hk30qq" targetRef="Task_1lcl7e8" />
+      <bpmn:endEvent id="EndEvent_0ojvnmi" name="Feature part implemented">
+        <bpmn:incoming>SequenceFlow_1agi4xi</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1agi4xi" sourceRef="Task_1lcl7e8" targetRef="EndEvent_0ojvnmi" />
+      <bpmn:serviceTask id="Task_0fup22s" name="Implement the feature part" camunda:expression="${true}">
+        <bpmn:incoming>SequenceFlow_0q250tw</bpmn:incoming>
+        <bpmn:incoming>SequenceFlow_0h9apck</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_0c3hiai</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Task_02jhhmk" name="Review the committed code" camunda:expression="${true}">
+        <bpmn:incoming>SequenceFlow_0c3hiai</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_0ptdgvi</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Task_0hk30qq" name="Review the design" camunda:expression="${true}">
+        <bpmn:incoming>SequenceFlow_1if873w</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1dj1n9j</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:serviceTask id="Task_1lcl7e8" name="Conduct QA testing" camunda:expression="${true}">
+        <bpmn:incoming>SequenceFlow_1dj1n9j</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1agi4xi</bpmn:outgoing>
+      </bpmn:serviceTask>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="SequenceFlow_1eah31o" sourceRef="Task_15rby0j" targetRef="Task_0jsf7rn" />
+    <bpmn:endEvent id="EndEvent_19d8lc4" name="Feature is shipped">
+      <bpmn:incoming>SequenceFlow_1vf9duj</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1vf9duj" sourceRef="Task_0lnp6cg" targetRef="EndEvent_19d8lc4" />
+    <bpmn:sequenceFlow id="SequenceFlow_0sx0h24" sourceRef="Task_0jsf7rn" targetRef="Task_0lnp6cg" />
+    <bpmn:serviceTask id="Task_00vbk8g" name="Identify DRI and feature team" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_103z7z6</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_16ymyac</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_1fjnbrh" name="Conduct kick-off" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_16ymyac</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_03xacms</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_1t2ivyf" name="Create the concept" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_03xacms</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1ab8vzi</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_1wamvs1" name="Present the concept (e.g. in the team meeting)" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_1ab8vzi</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0z8xcum</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_15rby0j" name="Carry out the break-down" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_0z8xcum</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1eah31o</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_0lnp6cg" name="Release" camunda:expression="${true}">
+      <bpmn:incoming>SequenceFlow_0sx0h24</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1vf9duj</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:textAnnotation id="TextAnnotation_1mlp97r">
+      <bpmn:text>Tech Lead</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0oynt6q" sourceRef="Task_00vbk8g" targetRef="TextAnnotation_1mlp97r" />
+    <bpmn:textAnnotation id="TextAnnotation_0gju9q0">
+      <bpmn:text>DRI: developer
+pulling in: PM, PD, SRE, involved back-end/front-end developers (also reviewers)</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_01pld94" sourceRef="Task_1fjnbrh" targetRef="TextAnnotation_0gju9q0" />
+    <bpmn:textAnnotation id="TextAnnotation_0403r54">
+      <bpmn:text>Clarify requirements and the expected behavior, identify affected parts, rough estimate of the effort</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_08ytdx0" sourceRef="Task_1fjnbrh" targetRef="TextAnnotation_0403r54" />
+    <bpmn:textAnnotation id="TextAnnotation_1fro6am">
+      <bpmn:text>People responsible:</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0azz95g" sourceRef="StartEvent_1" targetRef="TextAnnotation_1fro6am" />
+    <bpmn:textAnnotation id="TextAnnotation_1lmzd55">
+      <bpmn:text>Outcome:</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_02cdqwg" sourceRef="StartEvent_1" targetRef="TextAnnotation_1lmzd55" />
+    <bpmn:textAnnotation id="TextAnnotation_0tu9dzr">
+      <bpmn:text>It's clear who's the DRI and who else is working on the feature.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0eu3914" sourceRef="Task_00vbk8g" targetRef="TextAnnotation_0tu9dzr" />
+    <bpmn:textAnnotation id="TextAnnotation_0hbpnd5">
+      <bpmn:text>PM, PD, DRI but possibly also developers</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0n2bh1r" sourceRef="Task_1t2ivyf" targetRef="TextAnnotation_0hbpnd5" />
+    <bpmn:textAnnotation id="TextAnnotation_1tbrnj9">
+      <bpmn:text>An idea of how the feature should work and look like. This can still change during the implementation phase, but this is something to start with.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1236ffn" sourceRef="Task_1t2ivyf" targetRef="TextAnnotation_1tbrnj9" />
+    <bpmn:textAnnotation id="TextAnnotation_1jb4ey0">
+      <bpmn:text>PM, PD or DRI</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0rhg3rk" sourceRef="Task_1wamvs1" targetRef="TextAnnotation_1jb4ey0" />
+    <bpmn:textAnnotation id="TextAnnotation_0y33h2i">
+      <bpmn:text>1. Feedback from the other team members, which can then be incorporated into the concept.
+2. Future reviewers know how the feature works.</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_05hq2z8" sourceRef="Task_1wamvs1" targetRef="TextAnnotation_0y33h2i" />
+    <bpmn:textAnnotation id="TextAnnotation_06jih8q">
+      <bpmn:text>DRI = Direct Responsible Individual (usually a developer that's responsible to drive the feature implementation forward)
+PM = Product Manager
+PD = Product Design Team</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0sbt7lb" sourceRef="DataObjectReference_0jy3gcg" targetRef="TextAnnotation_06jih8q" />
+    <bpmn:textAnnotation id="TextAnnotation_0trg18e">
+      <bpmn:text>DRI (maybe with the help of others)</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_09p0xrc" sourceRef="Task_15rby0j" targetRef="TextAnnotation_0trg18e" />
+    <bpmn:textAnnotation id="TextAnnotation_0vdjcus">
+      <bpmn:text>A roadmap Jira ticket which has a lot of child ticket, which are small enough to complete them in at least about 2 days (rule of thumb).</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0396j0b" sourceRef="Task_15rby0j" targetRef="TextAnnotation_0vdjcus" />
+    <bpmn:textAnnotation id="TextAnnotation_0moa9yu">
+      <bpmn:text>The feature!</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0li7v8y" sourceRef="Task_0jsf7rn" targetRef="TextAnnotation_0moa9yu" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="DRIProcessWithLoadsOfVariables">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="282" y="392" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_103z7z6_di" bpmnElement="SequenceFlow_103z7z6">
+        <di:waypoint x="318" y="410" />
+        <di:waypoint x="390" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1mlp97r_di" bpmnElement="TextAnnotation_1mlp97r">
+        <dc:Bounds x="390" y="247" width="100" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0oynt6q_di" bpmnElement="Association_0oynt6q">
+        <di:waypoint x="440" y="370" />
+        <di:waypoint x="440" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_16ymyac_di" bpmnElement="SequenceFlow_16ymyac">
+        <di:waypoint x="490" y="410" />
+        <di:waypoint x="550" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0gju9q0_di" bpmnElement="TextAnnotation_0gju9q0">
+        <dc:Bounds x="515" y="245" width="170" height="67" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_01pld94_di" bpmnElement="Association_01pld94">
+        <di:waypoint x="600" y="370" />
+        <di:waypoint x="600" y="312" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_03xacms_di" bpmnElement="SequenceFlow_03xacms">
+        <di:waypoint x="650" y="410" />
+        <di:waypoint x="710" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0403r54_di" bpmnElement="TextAnnotation_0403r54">
+        <dc:Bounds x="535" y="520" width="130" height="81" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_08ytdx0_di" bpmnElement="Association_08ytdx0">
+        <di:waypoint x="600" y="450" />
+        <di:waypoint x="600" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1fro6am_di" bpmnElement="TextAnnotation_1fro6am">
+        <dc:Bounds x="160" y="247" width="135" height="26" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0azz95g_di" bpmnElement="Association_0azz95g">
+        <di:waypoint x="292" y="394" />
+        <di:waypoint x="234" y="273" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1lmzd55_di" bpmnElement="TextAnnotation_1lmzd55">
+        <dc:Bounds x="160" y="520" width="100" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_02cdqwg_di" bpmnElement="Association_02cdqwg">
+        <di:waypoint x="289" y="425" />
+        <di:waypoint x="221" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0tu9dzr_di" bpmnElement="TextAnnotation_0tu9dzr">
+        <dc:Bounds x="390" y="521" width="100" height="81" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0eu3914_di" bpmnElement="Association_0eu3914">
+        <di:waypoint x="440" y="450" />
+        <di:waypoint x="440" y="521" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0hbpnd5_di" bpmnElement="TextAnnotation_0hbpnd5">
+        <dc:Bounds x="710" y="247" width="100" height="53" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0n2bh1r_di" bpmnElement="Association_0n2bh1r">
+        <di:waypoint x="760" y="370" />
+        <di:waypoint x="760" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1tbrnj9_di" bpmnElement="TextAnnotation_1tbrnj9">
+        <dc:Bounds x="710" y="520" width="100" height="164" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1236ffn_di" bpmnElement="Association_1236ffn">
+        <di:waypoint x="760" y="450" />
+        <di:waypoint x="760" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1ab8vzi_di" bpmnElement="SequenceFlow_1ab8vzi">
+        <di:waypoint x="810" y="410" />
+        <di:waypoint x="870" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1jb4ey0_di" bpmnElement="TextAnnotation_1jb4ey0">
+        <dc:Bounds x="870" y="247" width="100" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0rhg3rk_di" bpmnElement="Association_0rhg3rk">
+        <di:waypoint x="920" y="370" />
+        <di:waypoint x="920" y="277" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0y33h2i_di" bpmnElement="TextAnnotation_0y33h2i">
+        <dc:Bounds x="842" y="520" width="156" height="120" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_05hq2z8_di" bpmnElement="Association_05hq2z8">
+        <di:waypoint x="920" y="450" />
+        <di:waypoint x="920" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="DataObjectReference_0jy3gcg_di" bpmnElement="DataObjectReference_0jy3gcg">
+        <dc:Bounds x="164" y="85" width="36" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="157" y="142" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_06jih8q_di" bpmnElement="TextAnnotation_06jih8q">
+        <dc:Bounds x="252" y="83" width="936" height="53" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0sbt7lb_di" bpmnElement="Association_0sbt7lb">
+        <di:waypoint x="200" y="110" />
+        <di:waypoint x="252" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0z8xcum_di" bpmnElement="SequenceFlow_0z8xcum">
+        <di:waypoint x="970" y="410" />
+        <di:waypoint x="1030" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0trg18e_di" bpmnElement="TextAnnotation_0trg18e">
+        <dc:Bounds x="1030" y="247" width="100" height="53" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_09p0xrc_di" bpmnElement="Association_09p0xrc">
+        <di:waypoint x="1080" y="370" />
+        <di:waypoint x="1080" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0vdjcus_di" bpmnElement="TextAnnotation_0vdjcus">
+        <dc:Bounds x="1009" y="519" width="141" height="95" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0396j0b_di" bpmnElement="Association_0396j0b">
+        <di:waypoint x="1080" y="450" />
+        <di:waypoint x="1080" y="519" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_0o2j8j2_di" bpmnElement="Task_0jsf7rn" isExpanded="true">
+        <dc:Bounds x="1211" y="290" width="1009" height="239" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1e9f7rw_di" bpmnElement="StartEvent_1e9f7rw">
+        <dc:Bounds x="1251" y="370" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1232" y="413" width="75" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1eah31o_di" bpmnElement="SequenceFlow_1eah31o">
+        <di:waypoint x="1130" y="410" />
+        <di:waypoint x="1211" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0q250tw_di" bpmnElement="SequenceFlow_0q250tw">
+        <di:waypoint x="1287" y="388" />
+        <di:waypoint x="1331" y="388" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0c3hiai_di" bpmnElement="SequenceFlow_0c3hiai">
+        <di:waypoint x="1431" y="388" />
+        <di:waypoint x="1484" y="388" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0nzag76_di" bpmnElement="ExclusiveGateway_0nzag76" isMarkerVisible="true">
+        <dc:Bounds x="1645" y="363" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1643" y="333" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ptdgvi_di" bpmnElement="SequenceFlow_0ptdgvi">
+        <di:waypoint x="1584" y="388" />
+        <di:waypoint x="1645" y="388" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0h9apck_di" bpmnElement="SequenceFlow_0h9apck">
+        <di:waypoint x="1670" y="413" />
+        <di:waypoint x="1670" y="469" />
+        <di:waypoint x="1381" y="469" />
+        <di:waypoint x="1381" y="428" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1517" y="451" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1if873w_di" bpmnElement="SequenceFlow_1if873w">
+        <di:waypoint x="1695" y="388" />
+        <di:waypoint x="1760" y="388" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1721" y="370" width="14" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_0ojvnmi_di" bpmnElement="EndEvent_0ojvnmi">
+        <dc:Bounds x="2122" y="370" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2109" y="413" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0moa9yu_di" bpmnElement="TextAnnotation_0moa9yu">
+        <dc:Bounds x="1666" y="600" width="100" height="30" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0li7v8y_di" bpmnElement="Association_0li7v8y">
+        <di:waypoint x="1716" y="529" />
+        <di:waypoint x="1716" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_19d8lc4_di" bpmnElement="EndEvent_19d8lc4">
+        <dc:Bounds x="2522" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2515" y="435" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1vf9duj_di" bpmnElement="SequenceFlow_1vf9duj">
+        <di:waypoint x="2440" y="410" />
+        <di:waypoint x="2522" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1dj1n9j_di" bpmnElement="SequenceFlow_1dj1n9j">
+        <di:waypoint x="1860" y="388" />
+        <di:waypoint x="1950" y="388" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1agi4xi_di" bpmnElement="SequenceFlow_1agi4xi">
+        <di:waypoint x="2050" y="388" />
+        <di:waypoint x="2122" y="388" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0sx0h24_di" bpmnElement="SequenceFlow_0sx0h24">
+        <di:waypoint x="2220" y="410" />
+        <di:waypoint x="2340" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_03tgmhs_di" bpmnElement="Task_00vbk8g">
+        <dc:Bounds x="390" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0saugfc_di" bpmnElement="Task_1fjnbrh">
+        <dc:Bounds x="550" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1owtrjm_di" bpmnElement="Task_1t2ivyf">
+        <dc:Bounds x="710" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1ygr8rb_di" bpmnElement="Task_1wamvs1">
+        <dc:Bounds x="870" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1qg7n3c_di" bpmnElement="Task_15rby0j">
+        <dc:Bounds x="1030" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1q415dd_di" bpmnElement="Task_0fup22s">
+        <dc:Bounds x="1331" y="348" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1rasrqa_di" bpmnElement="Task_02jhhmk">
+        <dc:Bounds x="1484" y="348" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_07n1cpu_di" bpmnElement="Task_0hk30qq">
+        <dc:Bounds x="1760" y="348" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0vhn4a9_di" bpmnElement="Task_1lcl7e8">
+        <dc:Bounds x="1950" y="348" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0yw050f_di" bpmnElement="Task_0lnp6cg">
+        <dc:Bounds x="2340" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

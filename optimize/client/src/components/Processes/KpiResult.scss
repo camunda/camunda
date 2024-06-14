@@ -1,0 +1,38 @@
+@import 'shared-styles/shared-styles.scss';
+
+.KpiResult {
+  min-width: max-content;
+  padding: 0.5rem;
+
+  .kpi {
+    vertical-align: middle;
+    > .title {
+      color: var(--grey-darken-23);
+      max-width: 200px;
+      @include overflow-ellipsis;
+      display: inline-block;
+    }
+    a svg {
+      display: inline-block;
+    }
+
+    &:not(:first-child) {
+      border-top: 1px solid var(--cds-border-subtle);
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+
+    .reportValues {
+      margin-top: 0.5rem;
+
+      .reportValue {
+        margin-right: 1rem;
+        color: var(--cds-support-error);
+
+        &.success {
+          color: var(--cds-support-success);
+        }
+      }
+    }
+  }
+}
