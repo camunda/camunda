@@ -37,6 +37,18 @@ public class RestGatewayService {
   /** The job activation request URL */
   public static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
 
+  /** The user task assignment request URL, including a placeholder for the user task key */
+  public static final String URL_USER_TASK_ASSIGNMENT = REST_API_PATH + "/user-tasks/%s/assignment";
+
+  /** The user task completion request URL, including a placeholder for the user task key */
+  public static final String URL_USER_TASK_COMPLETION = REST_API_PATH + "/user-tasks/%s/completion";
+
+  /** The user task unassignment request URL, including a placeholder for the user task key */
+  public static final String URL_USER_TASK_UNASSIGNMENT = REST_API_PATH + "/user-tasks/%s/assignee";
+
+  /** The user task update request URL, including a placeholder for the user task key */
+  public static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
+
   private static final ZeebeObjectMapper JSON_MAPPER = new ZeebeObjectMapper();
 
   private final WireMockRuntimeInfo mockInfo;
@@ -89,8 +101,9 @@ public class RestGatewayService {
   }
 
   /**
-   * Register the given error response for a URL. The client will receive a BAD_REQUEST (HTTP status
-   * 400) response with the given problem detail upon a request to the URL with any HTTP method.
+   * Register the given error response for a URL. The client will receive a response with the status
+   * provided by the given problem detail upon a request to the URL with any HTTP method. If the
+   * problem detail does not contain a status, BAD_REQUEST (HTTP status 400) is used.
    *
    * @param url the URL to register the error response for
    * @param problemDetailSupplier the supplier for the error details the client will receive upon a
@@ -98,17 +111,25 @@ public class RestGatewayService {
    */
   public void errorOnRequest(
       final String url, final Supplier<ProblemDetail> problemDetailSupplier) {
+    final ProblemDetail problemDetail = problemDetailSupplier.get();
     mockInfo
         .getWireMock()
         .register(
             WireMock.any(WireMock.urlEqualTo(url))
                 .willReturn(
-                    WireMock.badRequest()
-                        .withBody(JSON_MAPPER.toJson(problemDetailSupplier.get()))
+                    WireMock.jsonResponse(
+                            JSON_MAPPER.toJson(problemDetail),
+                            problemDetail.getStatus() == null ? 400 : problemDetail.getStatus())
                         .withHeader("Content-Type", "application/problem+json")));
   }
 
-  private static LoggedRequest getLastRequest() {
+  /**
+   * Fetch the last request that was served. This is a generic {@link LoggedRequest}, provided by
+   * the test framework.
+   *
+   * @return the last logged request
+   */
+  public static LoggedRequest getLastRequest() {
     final List<ServeEvent> serveEvents = WireMock.getAllServeEvents();
     if (serveEvents.isEmpty()) {
       Assertions.fail("No request was found");
