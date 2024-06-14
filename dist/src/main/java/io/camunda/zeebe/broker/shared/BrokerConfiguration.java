@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.shared;
 
+import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -47,6 +49,22 @@ public final class BrokerConfiguration {
 
   public WorkingDirectory workingDirectory() {
     return workingDirectory;
+  }
+
+  @Bean
+  public BrokerClientTimeoutConfiguration brokerClientConfig() {
+    return new BrokerClientTimeoutConfiguration(
+        properties.getGateway().getCluster().getRequestTimeout());
+  }
+
+  @Bean
+  public SchedulerConfiguration schedulerConfiguration() {
+    final var threadCfg = properties.getThreads();
+    final var cpuThreads = threadCfg.getCpuThreadCount();
+    final var ioThreads = threadCfg.getIoThreadCount();
+    final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
+    final var nodeId = String.valueOf(properties.getCluster().getNodeId());
+    return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 
   @ConditionalOnProperty(prefix = "zeebe.broker.gateway", name = "enable", havingValue = "false")

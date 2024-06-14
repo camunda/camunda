@@ -41,6 +41,9 @@ const TargetDiagram: React.FC = observer(() => {
     } else {
       processXmlStore.reset();
     }
+    processInstanceMigrationStore.setTargetProcessDefinitionKey(
+      selectedTargetProcessId ?? null,
+    );
   }, [selectedTargetProcessId]);
 
   const getStatus = () => {
