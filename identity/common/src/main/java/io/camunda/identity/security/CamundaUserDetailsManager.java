@@ -24,7 +24,6 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
     super(dataSource);
     setEnableGroups(true);
     setEnableAuthorities(true);
-    setRolePrefix("ROLE_");
   }
 
   @Override
@@ -59,7 +58,7 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
                       + "from roles_permissions rp join permissions p on rp.permission_id = p.id "
                       + "where rp.role_authority = ?",
                   String.class,
-                  role.getAuthority().replace(getRolePrefix(), ""));
+                  role.getAuthority().replace("ROLE_", ""));
 
       permissions.addAll(permissionsForRole.stream().map(SimpleGrantedAuthority::new).toList());
     }

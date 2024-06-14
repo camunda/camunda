@@ -80,7 +80,7 @@ public class RoleController {
   }
 
   @PostMapping(
-      path = "/roles/{id}/permissions/search}",
+      path = "/roles/{id}/permissions/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<Permission> findAllPermissions(

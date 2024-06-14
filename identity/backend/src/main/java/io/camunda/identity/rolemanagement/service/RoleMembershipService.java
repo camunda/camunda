@@ -15,11 +15,11 @@ import io.camunda.identity.usermanagement.service.GroupService;
 import io.camunda.identity.usermanagement.service.UserService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,19 +30,16 @@ public class RoleMembershipService {
   private final UserService userService;
   private final GroupService groupService;
   private final CamundaUserDetailsManager camundaUserDetailsManager;
-  private final PasswordEncoder passwordEncoder;
   private final RoleRepository roleRepository;
 
   public RoleMembershipService(
       final UserService userService,
       final GroupService groupService,
       final CamundaUserDetailsManager camundaUserDetailsManager,
-      final PasswordEncoder passwordEncoder,
       final RoleRepository roleRepository) {
     this.userService = userService;
     this.groupService = groupService;
     this.camundaUserDetailsManager = camundaUserDetailsManager;
-    this.passwordEncoder = passwordEncoder;
     this.roleRepository = roleRepository;
   }
 
@@ -51,10 +48,7 @@ public class RoleMembershipService {
         camundaUserDetailsManager.loadUserByUsername(
             userService.findUserById(userId).getUsername());
 
-    return camundaUserDetails.getRoles().stream()
-        .map(GrantedAuthority::getAuthority)
-        .map(roleName -> roleName.replace("ROLE_", ""))
-        .toList();
+    return camundaUserDetails.getRoles();
   }
 
   public void assignRoleToUser(final String roleName, final long userId) {
@@ -66,11 +60,11 @@ public class RoleMembershipService {
         camundaUserDetailsManager.loadUserByUsername(
             userService.findUserById(userId).getUsername());
 
-    final List<GrantedAuthority> authorities = new ArrayList<>();
-    authorities.addAll(camundaUserDetails.getAuthorities());
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+    final List<String> roles = new ArrayList<>();
+    roles.addAll(camundaUserDetails.getRoles());
+    roles.add(roleName);
 
-    saveUserDetailsWithAuthorities(camundaUserDetails, authorities);
+    saveUserDetailsWithRoles(camundaUserDetails, roles);
   }
 
   public void unassignRoleFromUser(final String roleName, final long userId) {
@@ -82,24 +76,20 @@ public class RoleMembershipService {
         camundaUserDetailsManager.loadUserByUsername(
             userService.findUserById(userId).getUsername());
 
-    final List<GrantedAuthority> authorities = new ArrayList<>();
-    final String prefixedRoleName = "ROLE_" + roleName;
-    authorities.addAll(
-        camundaUserDetails.getAuthorities().stream()
-            .filter(grantedAuthority -> !prefixedRoleName.equals(grantedAuthority.getAuthority()))
-            .toList());
+    final List<String> roles = new ArrayList<>();
+    roles.addAll(
+        camundaUserDetails.getRoles().stream().filter(rn -> !rn.equals(roleName)).toList());
 
-    saveUserDetailsWithAuthorities(camundaUserDetails, authorities);
+    saveUserDetailsWithRoles(camundaUserDetails, roles);
   }
 
-  private void saveUserDetailsWithAuthorities(
-      final CamundaUserDetails camundaUserDetails, final List<GrantedAuthority> authorities) {
-
+  private void saveUserDetailsWithRoles(
+      final CamundaUserDetails camundaUserDetails, final List<String> roles) {
     final UserDetails userDetails =
         User.withUsername(camundaUserDetails.getUsername())
             .password(camundaUserDetails.getPassword())
-            .passwordEncoder(passwordEncoder::encode)
-            .authorities(authorities)
+            .passwordEncoder(Function.identity())
+            .roles(roles.toArray(roles.toArray(new String[0])))
             .disabled(!camundaUserDetails.isEnabled())
             .build();
 

@@ -17,8 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -87,15 +85,15 @@ public class UserService {
     return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
+  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
     try {
-      if (!Objects.equals(id, user.getId())) {
+      if (!Objects.equals(id, userWithPassword.getId())) {
         throw new RuntimeException("user.notFound");
       }
 
       final CamundaUser existingUser = findUserById(id);
 
-      if (!existingUser.getUsername().equals(user.getUsername())) {
+      if (!existingUser.getUsername().equals(userWithPassword.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
@@ -104,14 +102,14 @@ public class UserService {
 
       final UserDetails userDetails =
           User.withUsername(existingUser.getUsername())
-              .password(user.getPassword())
+              .password(userWithPassword.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .authorities(existingUserDetail.getRoles())
-              .disabled(!user.isEnabled())
+              .roles(existingUserDetail.getRoles().toArray(new String[0]))
+              .disabled(!userWithPassword.isEnabled())
               .build();
 
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(id, user.getEmail()));
+      userProfileRepository.save(new Profile(id, userWithPassword.getEmail()));
 
       return userProfileRepository
           .findUserById(id)
@@ -126,16 +124,19 @@ public class UserService {
         userProfileRepository
             .findUserById(userId)
             .orElseThrow(() -> new RuntimeException("user.notFound"));
+
     final CamundaUserDetails existingUserDetail =
         camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
-    final var authorities = new HashSet<GrantedAuthority>(existingUserDetail.getRoles());
-    authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName));
+
+    final List<String> roles = existingUserDetail.getRoles();
+
+    roles.add(roleName);
 
     final UserDetails userDetails =
         User.withUsername(existingUser.getUsername())
             .password(existingUserDetail.getPassword())
             .passwordEncoder(passwordEncoder::encode)
-            .authorities(authorities)
+            .roles(roles.toArray(new String[0]))
             .disabled(!existingUserDetail.isEnabled())
             .build();
     camundaUserDetailsManager.updateUser(userDetails);
@@ -147,17 +148,19 @@ public class UserService {
         userProfileRepository
             .findUserById(userId)
             .orElseThrow(() -> new RuntimeException("user.notFound"));
+
     final CamundaUserDetails existingUserDetail =
         camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
-    final var authorities =
-        new HashSet<GrantedAuthority>(existingUserDetail.getRoles())
-            .stream().filter(a -> !a.getAuthority().equals("ROLE_" + roleName)).toList();
+
+    final List<String> roles =
+        new HashSet<>(existingUserDetail.getRoles())
+            .stream().filter(a -> !a.equals(roleName)).toList();
 
     final UserDetails userDetails =
         User.withUsername(existingUser.getUsername())
             .password(existingUserDetail.getPassword())
             .passwordEncoder(passwordEncoder::encode)
-            .authorities(authorities)
+            .roles(roles.toArray(new String[0]))
             .disabled(!existingUserDetail.isEnabled())
             .build();
     camundaUserDetailsManager.updateUser(userDetails);

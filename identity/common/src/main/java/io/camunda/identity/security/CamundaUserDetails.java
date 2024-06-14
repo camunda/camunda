@@ -8,6 +8,7 @@
 package io.camunda.identity.security;
 
 import java.util.Collection;
+import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -53,9 +54,11 @@ public class CamundaUserDetails implements UserDetails {
     return user.isEnabled();
   }
 
-  public Collection<? extends GrantedAuthority> getRoles() {
+  public List<String> getRoles() {
     return user.getAuthorities().stream()
         .filter(r -> r.getAuthority().startsWith("ROLE_"))
+        .map(GrantedAuthority::getAuthority)
+        .map(roleName -> roleName.replace("ROLE_", ""))
         .toList();
   }
 }

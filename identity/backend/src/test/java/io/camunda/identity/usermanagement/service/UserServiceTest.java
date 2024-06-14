@@ -197,6 +197,6 @@ class UserServiceTest {
         userDetail2.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_R2")));
     Assertions.assertTrue(
         userDetail2.getAuthorities().contains(new SimpleGrantedAuthority("write:*")));
-    Assertions.assertFalse(userDetail.getRoles().contains(new SimpleGrantedAuthority("write:*")));
+    Assertions.assertFalse(userDetail.getRoles().contains("write:*"));
   }
 }
