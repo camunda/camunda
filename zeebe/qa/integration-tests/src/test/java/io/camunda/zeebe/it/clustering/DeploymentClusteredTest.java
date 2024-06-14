@@ -123,13 +123,7 @@ public final class DeploymentClusteredTest {
             .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
-    final var processDefinitionKey = deploymentEvent.getKey();
-
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(3)
-                .findFirst())
-        .isPresent();
+    final var deploymentKey = deploymentEvent.getKey();
 
     clusteringRule.stopBroker(deploymentPartitionLeader);
     adminServiceLeaderTwo.resumeStreamProcessing();
@@ -139,10 +133,11 @@ public final class DeploymentClusteredTest {
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
 
     // then
-    clientRule.waitUntilDeploymentIsDone(processDefinitionKey);
+    clientRule.waitUntilDeploymentIsDone(deploymentKey);
 
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withRecordKey(deploymentKey)
                 .withDistributionPartitionId(2)
                 .findFirst())
         .isPresent();
