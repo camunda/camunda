@@ -19,6 +19,7 @@ public enum Profile {
   RESTORE("restore"),
   OPERATE("operate"),
   TASKLIST("tasklist"),
+  IDENTITY("identity"),
 
   // environment profiles
   TEST("test"),

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ZeebeRestController
-@RequestMapping("/v2")
+@RequestMapping("/v2/users")
 public class UserController {
   private final UserService userService;
   private final RoleMembershipService roleMembershipService;
@@ -40,7 +40,6 @@ public class UserController {
   }
 
   @PostMapping(
-      path = "/users",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
@@ -48,21 +47,21 @@ public class UserController {
     return userService.createUser(user);
   }
 
-  @DeleteMapping(path = "/users/{id}")
+  @DeleteMapping(path = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteUser(@PathVariable final Long id) {
     userService.deleteUser(id);
   }
 
   @GetMapping(
-      path = "/users/{id}",
+      path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CamundaUser findUserByUsername(@PathVariable final Long id) {
     return userService.findUserById(id);
   }
 
   @PostMapping(
-      path = "/users/search",
+      path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<CamundaUser> findAllUsers(
@@ -75,7 +74,7 @@ public class UserController {
   }
 
   @PutMapping(
-      path = "/users/{id}",
+      path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CamundaUser updateUser(

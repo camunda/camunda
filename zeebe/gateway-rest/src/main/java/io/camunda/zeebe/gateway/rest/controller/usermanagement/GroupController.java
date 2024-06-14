@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ZeebeRestController
-@RequestMapping("/v2")
+@RequestMapping("/v2/groups")
 public class GroupController {
   private final GroupService groupService;
   private final MembershipService membershipService;
@@ -46,7 +46,6 @@ public class GroupController {
   }
 
   @PostMapping(
-      path = "/groups",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
@@ -54,21 +53,21 @@ public class GroupController {
     return groupService.createGroup(group);
   }
 
-  @DeleteMapping(path = "/groups/{id}")
+  @DeleteMapping(path = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteGroup(@PathVariable(name = "id") final Long groupId) {
     groupService.deleteGroupById(groupId);
   }
 
   @GetMapping(
-      path = "/groups/{id}",
+      path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public CamundaGroup findGroupById(@PathVariable(name = "id") final Long groupId) {
     return groupService.findGroupById(groupId);
   }
 
   @PostMapping(
-      path = "/groups/search",
+      path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<CamundaGroup> findAllGroups(
@@ -81,7 +80,7 @@ public class GroupController {
   }
 
   @PutMapping(
-      path = "/groups/{id}",
+      path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CamundaGroup updateGroup(
@@ -89,7 +88,7 @@ public class GroupController {
     return groupService.renameGroupById(groupId, group);
   }
 
-  @PostMapping(path = "/groups/{id}/users", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(path = "/{id}/users", consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void assignUserToGroup(
       @PathVariable(name = "id") final Long groupId,
@@ -97,7 +96,7 @@ public class GroupController {
     membershipService.addUserToGroupByIds(assignRequest.userId(), groupId);
   }
 
-  @DeleteMapping(path = "/groups/{id}/users/{userId}")
+  @DeleteMapping(path = "/{id}/users/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void removeUserFromGroup(
       @PathVariable(name = "id") final Long groupId, @PathVariable final Long userId) {
@@ -105,7 +104,7 @@ public class GroupController {
   }
 
   @PostMapping(
-      path = "/groups/{id}/users/search",
+      path = "/{id}/users/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public SearchResponseDto<CamundaUser> findAllUsersOfGroup(

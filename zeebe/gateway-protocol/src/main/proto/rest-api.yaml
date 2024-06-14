@@ -892,8 +892,6 @@ components:
         userId:
           type: "integer"
           format: "int64"
-        organizationId:
-          type: "string"
   securitySchemes:
     bearerAuth:
       type: http

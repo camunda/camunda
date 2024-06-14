@@ -27,7 +27,6 @@ import org.springframework.util.StringUtils;
 @Service
 @Transactional
 public class UserService {
-
   private final CamundaUserDetailsManager camundaUserDetailsManager;
   private final UserProfileRepository userProfileRepository;
   private final PasswordEncoder passwordEncoder;
