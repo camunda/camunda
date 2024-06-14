@@ -109,7 +109,7 @@ public class ReplayStateRandomizedPropertyTest {
     engineRule.stop();
 
     // when
-    engineRule.start(StreamProcessorMode.PROCESSING);
+    engineRule.start(StreamProcessorMode.PROCESSING, true);
 
     Awaitility.await()
         .untilAsserted(

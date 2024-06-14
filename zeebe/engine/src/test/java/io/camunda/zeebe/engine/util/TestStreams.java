@@ -208,7 +208,7 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     return startStreamProcessor(
-        log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty(), cfg -> {});
+        log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty(), cfg -> {}, true);
   }
 
   public StreamProcessor startStreamProcessor(
@@ -216,14 +216,15 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
-      final Consumer<StreamProcessorBuilder> processorConfiguration) {
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream,
         zeebeDbFactory,
         processorConfiguration,
         typedRecordProcessorFactory,
-        true,
+        awaitOpening,
         streamProcessorListenerOpt);
   }
 

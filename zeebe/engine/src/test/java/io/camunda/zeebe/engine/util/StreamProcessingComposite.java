@@ -83,14 +83,16 @@ public class StreamProcessingComposite implements CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
-    return startTypedStreamProcessor(partitionId, factory, streamProcessorListenerOpt, cfg -> {});
+    return startTypedStreamProcessor(
+        partitionId, factory, streamProcessorListenerOpt, cfg -> {}, true);
   }
 
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
-      final Consumer<StreamProcessorBuilder> processorConfiguration) {
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     final var result =
         streams.startStreamProcessor(
             getLogName(partitionId),
@@ -101,7 +103,8 @@ public class StreamProcessingComposite implements CommandWriter {
               return factory.createProcessors(processingContext);
             }),
             streamProcessorListenerOpt,
-            processorConfiguration);
+            processorConfiguration,
+            awaitOpening);
 
     return result;
   }
