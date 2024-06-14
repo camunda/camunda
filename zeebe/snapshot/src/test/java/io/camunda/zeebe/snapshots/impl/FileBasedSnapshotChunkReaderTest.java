@@ -20,14 +20,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -202,25 +201,25 @@ public final class FileBasedSnapshotChunkReaderTest {
   }
 
   @Test
-  public void shouldHaveCorrectChunkIdsForSplitFiles() throws IOException {
-    // given
+  public void shouldHaveCorrectFileBlockFieldsForSplitFiles() throws IOException { // given final
     final int maxChunkSize = 3;
     final var snapshotChunkReader = newReader(maxChunkSize);
     final var snapshotChunks = getAllChunks(snapshotChunkReader);
-
     // when - then
-    final var expectedChunkIds = new ArrayList<String>();
+    final var fileChunksGroupedByFileName =
+        snapshotChunks.stream().collect(Collectors.groupingBy(SnapshotChunk::getChunkName));
 
-    for (final var entry : SORTED_CHUNKS) {
+    for (final var entry : fileChunksGroupedByFileName.entrySet()) {
       final var fileName = entry.getKey();
-      final var fileChunkCount =
-          Math.ceilDiv(entry.getValue().getBytes(StandardCharsets.UTF_8).length, maxChunkSize);
-      IntStream.range(1, fileChunkCount + 1).forEach(i -> expectedChunkIds.add(fileName + "-" + i));
-    }
+      final var fileContentsBytesLength =
+          SNAPSHOT_CHUNK.get(fileName).getBytes(StandardCharsets.UTF_8).length;
+      final var expectedFileBlocksCount = Math.ceilDiv(fileContentsBytesLength, maxChunkSize);
 
-    final var chunkIds =
-        snapshotChunks.stream().map(SnapshotChunk::getChunkId).collect(Collectors.toList());
-    assertThat(chunkIds).isEqualTo(expectedChunkIds);
+      final var fileBlocks = entry.getValue();
+      assertThat(fileBlocks.size()).isEqualTo(expectedFileBlocksCount);
+      assertThat(fileBlocks.stream().map(SnapshotChunk::getFileBlockIndex).toList())
+          .isEqualTo(LongStream.range(1, expectedFileBlocksCount + 1).boxed().toList());
+    }
   }
 
   @Test
@@ -228,24 +227,25 @@ public final class FileBasedSnapshotChunkReaderTest {
     // given
     final int maxChunkSize = 3;
     final var snapshotChunkReader = newReader();
-    final var snapshotChunkIds = new ArrayList<String>();
+    final var snapshotChunks = new ArrayList<SnapshotChunk>();
 
     // when
     for (int i = 0; i < 2; i++) {
-      snapshotChunkIds.add(snapshotChunkReader.next().getChunkId());
+      snapshotChunks.add(snapshotChunkReader.next());
     }
 
     snapshotChunkReader.setChunkSize(maxChunkSize);
     while (snapshotChunkReader.hasNext()) {
-      snapshotChunkIds.add(snapshotChunkReader.next().getChunkId());
+      snapshotChunks.add(snapshotChunkReader.next());
     }
 
     // then
-    final var expectedSnapshotChunkIds = new ArrayList<String>();
-    Collections.addAll(
-        expectedSnapshotChunkIds, "file1-1", "file2-1", "file3-1", "file3-2", "file3-3");
+    final var fileChunksGroupedByFileName =
+        snapshotChunks.stream().collect(Collectors.groupingBy(SnapshotChunk::getChunkName));
 
-    assertThat(snapshotChunkIds).isEqualTo(expectedSnapshotChunkIds);
+    assertThat(fileChunksGroupedByFileName.get("file1").size()).isEqualTo(1);
+    assertThat(fileChunksGroupedByFileName.get("file2").size()).isEqualTo(1);
+    assertThat(fileChunksGroupedByFileName.get("file3").size()).isEqualTo(3);
   }
 
   private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {
