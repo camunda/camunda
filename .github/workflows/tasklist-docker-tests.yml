@@ -13,6 +13,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.github/actions/**'
@@ -22,6 +23,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
