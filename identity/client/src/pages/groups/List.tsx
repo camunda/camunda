@@ -19,8 +19,7 @@ import {
 import { getGroups, Group } from "src/utility/api/groups";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import { useEntityModal } from "src/components/modal";
-import useModal from "src/components/modal/useModal";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import AddModal from "src/pages/groups/modals/AddModal";

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { EditFormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -23,34 +23,24 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
 
-  const [callUpdateGroup, { namedErrors, loading }, reset] =
-    useApiCall(updateGroup);
+  const [callUpdateGroup, { namedErrors, loading }] = useApiCall(updateGroup);
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(group.name);
 
   const handleSubmit = async () => {
-    if (group) {
-      const { success } = await callUpdateGroup({
-        id: group.id,
-        name: name.trim(),
-      });
+    const { success } = await callUpdateGroup({
+      id: group.id,
+      name: name.trim(),
+    });
 
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("Group has been updated."),
-        });
-        onSuccess();
-      }
+    if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("Group has been updated."),
+      });
+      onSuccess();
     }
   };
-
-  useEffect(() => {
-    if (open) {
-      setName(group?.name || "");
-      reset();
-    }
-  }, [open]);
 
   return (
     <EditFormModal

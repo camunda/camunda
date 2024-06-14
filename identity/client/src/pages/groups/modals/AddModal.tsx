@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -15,8 +15,7 @@ import { createGroup } from "src/utility/api/groups";
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate();
 
-  const [callAddGroup, { loading, namedErrors }, reset] =
-    useApiCall(createGroup);
+  const [callAddGroup, { loading, namedErrors }] = useApiCall(createGroup);
 
   const [name, setName] = useState("");
 
@@ -29,13 +28,6 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onSuccess();
     }
   };
-
-  useEffect(() => {
-    if (open) {
-      setName("");
-      reset();
-    }
-  }, [open]);
 
   return (
     <FormModal

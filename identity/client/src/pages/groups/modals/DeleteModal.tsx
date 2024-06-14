@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { FC } from "react";
 import {
   DeleteModal as Modal,
@@ -20,18 +27,15 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   const [callDeleteGroup, { loading }] = useApiCall(deleteGroup);
 
   const handleSubmit = async () => {
-    if (group) {
-      const { success } = await callDeleteGroup({
-        id: group.id,
+    const { success } = await callDeleteGroup({
+      id: group.id,
+    });
+    if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("Group has been deleted."),
       });
-
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("Group has been deleted."),
-        });
-        onSuccess();
-      }
+      onSuccess();
     }
   };
 
