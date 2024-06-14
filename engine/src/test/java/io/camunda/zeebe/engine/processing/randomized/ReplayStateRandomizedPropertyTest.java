@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.util.ProcessExecutor;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
@@ -105,17 +104,20 @@ public class ReplayStateRandomizedPropertyTest {
 
     engineRule.pauseProcessing(1);
 
+    final var lastProcessedPosition =
+        engineRule.getStreamProcessor(1).getLastProcessedPositionAsync().join();
+
     final var processingState = engineRule.collectState();
     engineRule.stop();
 
     // when
-    engineRule.start(StreamProcessorMode.PROCESSING, true);
+    engineRule.start(StreamProcessorMode.REPLAY, false);
 
-    Awaitility.await()
+    Awaitility.await("Until all events have been replayed")
         .untilAsserted(
             () ->
-                assertThat(engineRule.getStreamProcessor(1).getCurrentPhase().join())
-                    .isEqualTo(Phase.PROCESSING));
+                assertThat(engineRule.getStreamProcessor(1).getLastProcessedPositionAsync().join())
+                    .isEqualTo(lastProcessedPosition));
 
     // then
     Awaitility.await("await that the replay state is equal to the processing state")
@@ -124,6 +126,10 @@ public class ReplayStateRandomizedPropertyTest {
               final var replayState = engineRule.collectState();
               assertIdenticalStates(processingState, replayState);
             });
+
+    // now continue processing as usual
+    engineRule.stop();
+    engineRule.start(StreamProcessorMode.PROCESSING, true);
   }
 
   private void assertIdenticalStates(
