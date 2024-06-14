@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { FC, useState } from "react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
@@ -5,16 +12,15 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { updateUser, User } from "src/utility/api/users";
 
-const AddModal: FC<UseEntityModalProps<User>> = ({
+const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { id, email: currentEmail, username: currentUsername },
+  entity: { id, email: currentEmail, username },
 }) => {
   const { t } = useTranslate();
   const [apiCall, { loading, namedErrors }] = useApiCall(updateUser);
   const [email, setEmail] = useState(currentEmail);
-  const [username, setUsername] = useState(currentUsername);
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
@@ -44,9 +50,8 @@ const AddModal: FC<UseEntityModalProps<User>> = ({
         label={t("Username")}
         value={username}
         placeholder={t("Username")}
-        onChange={setUsername}
         errors={namedErrors?.username}
-        autoFocus
+        disabled
       />
       <TextField
         label={t("Email")}
@@ -54,6 +59,7 @@ const AddModal: FC<UseEntityModalProps<User>> = ({
         placeholder={t("Email")}
         onChange={setEmail}
         errors={namedErrors?.email}
+        autoFocus
       />
       <TextField
         label={t("Password")}
@@ -68,4 +74,4 @@ const AddModal: FC<UseEntityModalProps<User>> = ({
   );
 };
 
-export default AddModal;
+export default EditModal;
