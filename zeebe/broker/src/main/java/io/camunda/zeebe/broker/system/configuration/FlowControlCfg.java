@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg.LimitAlgorithm;
 
@@ -33,5 +35,14 @@ public class FlowControlCfg implements ConfigurationEntry {
 
   public void setRequest(final LimitCfg request) {
     this.request = request;
+  }
+
+  public static FlowControlCfg fromJson(final String json) throws JsonProcessingException {
+    final ObjectMapper mapper = new ObjectMapper();
+    final FlowControlCfg flowControlCfg;
+
+    flowControlCfg = mapper.readValue(json, FlowControlCfg.class);
+
+    return flowControlCfg;
   }
 }
