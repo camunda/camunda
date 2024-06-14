@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Import;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import(WebappsModuleConfiguration.class)
+@Import({WebappsModuleConfiguration.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {

@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.security;
 public final class OperateURIs {
 
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
-  public static final String X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN";
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String ROOT = "/operate";
   public static final String API = "/api/**";
   public static final String PUBLIC_API = "/v*/**";

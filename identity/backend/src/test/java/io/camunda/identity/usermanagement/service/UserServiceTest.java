@@ -162,6 +162,20 @@ class UserServiceTest {
   }
 
   @Test
+  void emptyPassUpdateUserPasswordNotChanged() {
+    final var username = "user" + UUID.randomUUID();
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
+    final var userWithPassword =
+        new CamundaUserWithPassword(user.getId(), username, "email", false, "");
+
+    userService.updateUser(user.getId(), userWithPassword);
+
+    final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
+    assertTrue(passwordEncoder.matches("password", updatedUser.getPassword()));
+  }
+
+  @Test
   void newPassUpdateUserPasswordChanged() {
     final var username = "user" + UUID.randomUUID();
     final var password = "password";

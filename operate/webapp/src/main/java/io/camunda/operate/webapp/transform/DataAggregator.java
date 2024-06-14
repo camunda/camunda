@@ -15,10 +15,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public abstract class DataAggregator {
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  protected ObjectMapper objectMapper;
 
   public abstract Map<String, BatchOperationDto> requestAndAddMetadata(
       Map<String, BatchOperationDto> resultDtos, List<String> ids);

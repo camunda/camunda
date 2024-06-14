@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebe;
+package io.camunda.webapps.zeebe;
 
-import io.camunda.operate.util.Either;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.util.Either;
 
 public class StandalonePartitionSupplier implements PartitionSupplier {
 
@@ -24,7 +24,7 @@ public class StandalonePartitionSupplier implements PartitionSupplier {
       final var topology = zeebeClient.newTopologyRequest().send().join();
       final var partitionCount = topology.getPartitionsCount();
       return Either.right(partitionCount);
-    } catch (Exception t) {
+    } catch (final Exception t) {
       return Either.left(t);
     }
   }
