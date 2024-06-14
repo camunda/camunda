@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -50,13 +49,7 @@ public class ReplayStateRandomizedPropertyTest {
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
-  private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
-
-  @Before
-  public void init() {
-    lastProcessedPosition = -1L;
-  }
 
   public TestDataRecord getDataRecord() {
     return record;
