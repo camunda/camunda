@@ -102,9 +102,8 @@ public class UserController {
     roleMembershipService.assignRoleToUser(request.roleName(), userId);
   }
 
-  @GetMapping(
-      path = "/users/{id}/roles/{roleName}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @DeleteMapping(path = "/users/{id}/roles/{roleName}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void unassignRoleFromUser(
       @PathVariable("id") final long userId, @PathVariable final String roleName) {
     roleMembershipService.unassignRoleFromUser(roleName, userId);

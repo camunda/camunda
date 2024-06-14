@@ -138,9 +138,8 @@ public class GroupController {
     roleMembershipService.assignRoleToGroup(request.roleName(), groupId);
   }
 
-  @GetMapping(
-      path = "/groups/{id}/roles/{roleName}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @DeleteMapping(path = "/groups/{id}/roles/{roleName}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void unassignRoleFromGroup(
       @PathVariable("id") final long groupId, @PathVariable final String roleName) {
     roleMembershipService.unassignRoleFromGroup(roleName, groupId);

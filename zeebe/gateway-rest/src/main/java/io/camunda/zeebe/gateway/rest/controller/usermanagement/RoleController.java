@@ -79,7 +79,6 @@ public class RoleController {
     return roleService.updateRole(roleName, role);
   }
 
-  // list permissions of role
   @PostMapping(
       path = "/roles/{id}/permissions/search}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
@@ -94,7 +93,6 @@ public class RoleController {
     return permissionSearchResponseDto;
   }
 
-  // assign permission to role
   @PostMapping(path = "/roles/{id}/permissions", consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void assignPermissionsToRole(
@@ -103,7 +101,6 @@ public class RoleController {
     roleService.assignPermissionToRole(roleName, request.permissionId());
   }
 
-  // unassign permission from role
   @DeleteMapping(path = "/roles/{id}/permissions/{permissionId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void removePermissionFromRole(
