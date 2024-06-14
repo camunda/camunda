@@ -101,7 +101,7 @@ public class TopologyControllerTest extends RestControllerTest {
     webClient
         .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(expectedResponse));
   }
 
@@ -123,7 +123,7 @@ public class TopologyControllerTest extends RestControllerTest {
     webClient
         .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(content().json(expectedResponse));
   }
 

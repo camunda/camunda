@@ -12,7 +12,7 @@ import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.SearchResponseDto;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.SearchResponseDtoUser;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -59,9 +59,8 @@ public class UserController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public SearchResponseDto<CamundaUser> findAllUsers(
-      @RequestBody final SearchRequestDto searchRequestDto) {
-    final SearchResponseDto<CamundaUser> responseDto = new SearchResponseDto<>();
+  public SearchResponseDtoUser findAllUsers(@RequestBody final SearchRequestDto searchRequestDto) {
+    final SearchResponseDtoUser responseDto = new SearchResponseDtoUser();
     final List<CamundaUser> allUsers = userService.findAllUsers();
     responseDto.setItems(allUsers);
 

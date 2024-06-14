@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -21,7 +22,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   private final GatewayProperties config;
 
   public TestStandaloneGateway() {
-    super(GatewayModuleConfiguration.class);
+    super(GatewayModuleConfiguration.class, IdentityModuleConfiguration.class);
     config = new GatewayProperties();
 
     config.getNetwork().setHost("0.0.0.0");

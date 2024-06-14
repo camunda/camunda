@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -74,7 +75,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestElasticsearchSchemaManager.class,
-        TestSchemaStartup.class);
+        TestSchemaStartup.class,
+        IdentityModuleConfiguration.class);
 
     brokerProperties = new BrokerProperties();
 
