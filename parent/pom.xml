@@ -528,6 +528,13 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- Webapps Common -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>webapps-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Operate Modules -->
       <dependency>
         <groupId>io.camunda</groupId>

@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebe;
+package io.camunda.webapps.zeebe;
 
-import io.camunda.operate.util.Either;
+import io.camunda.zeebe.util.Either;
 
 public interface PartitionSupplier {
 
-  public Either<Exception, Integer> getPartitionsCount();
+  Either<Exception, Integer> getPartitionsCount();
 }

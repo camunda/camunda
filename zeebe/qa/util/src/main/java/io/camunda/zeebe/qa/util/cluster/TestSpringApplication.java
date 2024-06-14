@@ -10,7 +10,6 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
-import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
@@ -23,31 +22,36 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.client.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
-  private final Class<?> springApplication;
+  private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
+  private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
 
   private ConfigurableApplicationContext springContext;
 
-  public TestSpringApplication(final Class<?> springApplications) {
-    this(springApplications, new HashMap<>(), new HashMap<>(), new ArrayList<>());
+  public TestSpringApplication(final Class<?>... springApplications) {
+    this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);
   }
 
   private TestSpringApplication(
-      final Class<?> springApplication,
       final Map<String, Bean<?>> beans,
       final Map<String, Object> propertyOverrides,
-      final Collection<String> additionalProfiles) {
-    this.springApplication = springApplication;
+      final Collection<String> additionalProfiles,
+      final Class<?>... springApplications) {
+    this.springApplications = springApplications;
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
+    additionalInitializers = new ArrayList<>();
+    additionalInitializers.add(new ContextOverrideInitializer(beans, propertyOverrides));
+    additionalInitializers.add(new HealthConfigurationInitializer());
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
     this.additionalProfiles.add(Profile.TEST.getId());
 
@@ -151,6 +155,11 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  public T withAdditionalInitializer(final ApplicationContextInitializer<?> initializer) {
+    additionalInitializers.add(initializer);
+    return self();
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];
@@ -164,11 +173,9 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
         .registerShutdownHook(false)
-        .initializers(
-            new ContextOverrideInitializer(beans, propertyOverrides),
-            new HealthConfigurationInitializer())
+        .initializers(additionalInitializers.toArray(ApplicationContextInitializer[]::new))
         .profiles(additionalProfiles.toArray(String[]::new))
-        .sources(springApplication, IdentityModuleConfiguration.class);
+        .sources(springApplications);
   }
 
   @Override

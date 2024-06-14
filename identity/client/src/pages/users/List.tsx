@@ -16,13 +16,17 @@ import { DocumentationLink } from "src/components/documentation";
 import { getUsers, User } from "src/utility/api/users";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
+import AddModal from "src/pages/users/AddModal";
+import EditModal from "src/pages/users/EditModal";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
-
   const { data: users, loading, reload, success } = useApi(getUsers);
+  const [addUser, addUserModal] = useModal(AddModal, reload);
+  const [editUser, editUserModal] = useEntityModal(EditModal, reload);
 
   const showDetails = ({ id }: User) => navigate(`${id}`);
 
@@ -35,8 +39,16 @@ const List: FC = () => {
           { header: t("Username"), key: "username" },
           { header: t("Email"), key: "email" },
         ]}
+        menuItems={[
+          {
+            label: t("Edit user"),
+            onClick: editUser,
+          },
+        ]}
         sortProperty="username"
         onEntityClick={showDetails}
+        addEntityLabel={t("Create user")}
+        onAddEntity={addUser}
         onSearch={setSearch}
         loading={loading}
       />
@@ -52,6 +64,8 @@ const List: FC = () => {
           actionButton={{ label: "Retry", onClick: reload }}
         />
       )}
+      {addUserModal}
+      {editUserModal}
     </Page>
   );
 };

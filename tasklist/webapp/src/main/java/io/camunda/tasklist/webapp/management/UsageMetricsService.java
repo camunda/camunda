@@ -35,7 +35,7 @@ public class UsageMetricsService extends InternalAPIErrorController {
   @GetMapping(
       value = "/assignees",
       produces = {MediaType.APPLICATION_JSON_VALUE})
-  public UsageMetricDTO retrieveUniqueAssignedUsers(UsageMetricQueryDTO query) {
+  public UsageMetricDTO retrieveUniqueAssignedUsers(final UsageMetricQueryDTO query) {
     final List<String> assignees =
         taskMetricsStore.retrieveDistinctAssigneesBetweenDates(
             query.getStartTime(), query.getEndTime());
