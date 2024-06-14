@@ -5,16 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC } from "react";
-import Lazy from "src/components/router/Lazy";
-import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "src/pages/users/detail";
+package io.camunda.operate.schema.migration;
 
-const Users: FC = () => (
-  <PageRoutes
-    indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
-  />
-);
+public interface MigrationPlanFactory {
 
-export default Users;
+  FillPostImporterQueuePlan createFillPostImporterQueuePlan();
+
+  ReindexPlan createReindexPlan();
+
+  ReindexWithQueryAndScriptPlan createReindexWithQueryAndScriptPlan();
+}

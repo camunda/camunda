@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared;
+package io.camunda.commons.actor;
 
+import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategyProperties;
 import java.time.Duration;
 import java.util.function.Supplier;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -22,15 +22,15 @@ import org.springframework.lang.Nullable;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(IdleStrategyProperties.class)
-public final class IdleStrategyConfig {
+public final class ActorIdleStrategyConfiguration {
   private final IdleStrategyProperties properties;
 
   @Autowired
-  public IdleStrategyConfig(final IdleStrategyProperties properties) {
+  public ActorIdleStrategyConfiguration(final IdleStrategyProperties properties) {
     this.properties = properties;
   }
 
-  public IdleStrategyConfig() {
+  public ActorIdleStrategyConfiguration() {
     this(new IdleStrategyProperties(null, null, null, null));
   }
 

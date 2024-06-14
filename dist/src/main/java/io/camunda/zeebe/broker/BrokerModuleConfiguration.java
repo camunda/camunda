@@ -42,6 +42,7 @@ import org.springframework.context.annotation.Profile;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = {
+      "io.camunda.commons",
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.gateway.rest",
@@ -49,6 +50,7 @@ import org.springframework.context.annotation.Profile;
     })
 @ConfigurationPropertiesScan(
     basePackages = {
+      "io.camunda.commons",
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
       "io.camunda.authentication"

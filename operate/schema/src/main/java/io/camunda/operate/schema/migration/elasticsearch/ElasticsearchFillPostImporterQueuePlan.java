@@ -14,10 +14,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
@@ -46,29 +44,16 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@Component
-@Conditional(ElasticsearchCondition.class)
-@Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchFillPostImporterQueuePlan.class);
 
-  @Autowired private OperateProperties operateProperties;
-
-  @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
-
-  @Autowired private RestHighLevelClient esClient;
+  private final OperateProperties operateProperties;
+  private final MigrationProperties migrationProperties;
+  private final ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
 
   private Long flowNodesWithIncidentsCount;
   private List<Step> steps;
@@ -76,6 +61,17 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   private String listViewIndexName;
   private String incidentsIndexName;
   private String postImporterQueueIndexName;
+
+  public ElasticsearchFillPostImporterQueuePlan(
+      final OperateProperties operateProperties,
+      final MigrationProperties migrationProperties,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient) {
+    this.operateProperties = operateProperties;
+    this.migrationProperties = migrationProperties;
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+  }
 
   @Override
   public FillPostImporterQueuePlan setListViewIndexName(String listViewIndexName) {
