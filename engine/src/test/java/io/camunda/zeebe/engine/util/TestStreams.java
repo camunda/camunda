@@ -40,6 +40,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -207,22 +208,30 @@ public final class TestStreams {
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
-    return startStreamProcessor(log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty());
+    return startStreamProcessor(
+        log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty(), cfg -> {});
   }
 
   public StreamProcessor startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream, zeebeDbFactory, typedRecordProcessorFactory, true, streamProcessorListenerOpt);
+        stream,
+        zeebeDbFactory,
+        processorConfiguration,
+        typedRecordProcessorFactory,
+        true,
+        streamProcessorListenerOpt);
   }
 
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
       final TypedRecordProcessorFactory factory,
       final boolean awaitOpening,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
@@ -263,6 +272,8 @@ public final class TestStreams {
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
+
+    processorConfiguration.accept(builder);
 
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
