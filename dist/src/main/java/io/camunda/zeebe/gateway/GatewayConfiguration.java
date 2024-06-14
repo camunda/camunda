@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
@@ -41,6 +42,14 @@ public final class GatewayConfiguration {
 
   public Duration shutdownTimeout() {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
+  }
+
+  @Bean
+  public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
+    return new ActivateJobHandlerConfiguration(
+        "ActivateJobsHandlerRest-Gateway",
+        config.getLongPolling(),
+        config.getNetwork().getMaxMessageSize());
   }
 
   @Bean

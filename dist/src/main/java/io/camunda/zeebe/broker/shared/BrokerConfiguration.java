@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.shared;
 
 import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -71,6 +72,14 @@ public final class BrokerConfiguration {
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @Bean
+  public ActivateJobHandlerConfiguration activateJobHandlerConfiguration() {
+    return new ActivateJobHandlerConfiguration(
+        "ActivateJobsHandlerRest-Broker",
+        properties.getGateway().getLongPolling(),
+        properties.getGateway().getNetwork().getMaxMessageSize());
   }
 
   public Duration shutdownTimeout() {
