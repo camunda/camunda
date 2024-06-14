@@ -106,7 +106,12 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
   }
 
   @Override
-  public String getChunkId() {
-    return "";
+  public long getFileBlockIndex() {
+    return 0;
+  }
+
+  @Override
+  public long getTotalFileBlocks() {
+    return 0;
   }
 }

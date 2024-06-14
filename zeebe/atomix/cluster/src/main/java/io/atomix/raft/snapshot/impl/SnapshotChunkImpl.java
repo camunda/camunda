@@ -30,12 +30,13 @@ public final class SnapshotChunkImpl
   private final SnapshotChunkEncoder encoder = new SnapshotChunkEncoder();
   private final SnapshotChunkDecoder decoder = new SnapshotChunkDecoder();
   private final DirectBuffer content = new UnsafeBuffer(0, 0);
-  private String chunkId;
   private String snapshotId;
   private int totalCount;
   private String chunkName;
   private long checksum;
   private long snapshotChecksum;
+  private long fileBlockIndex;
+  private long totalFileBlocks;
 
   public SnapshotChunkImpl() {}
 
@@ -46,7 +47,8 @@ public final class SnapshotChunkImpl
     checksum = chunk.getChecksum();
     snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
-    chunkId = chunk.getChunkId();
+    fileBlockIndex = chunk.getFileBlockIndex();
+    totalFileBlocks = chunk.getTotalFileBlocks();
   }
 
   @Override
@@ -66,10 +68,11 @@ public final class SnapshotChunkImpl
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
     snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
+    fileBlockIndex = SnapshotChunkDecoder.fileBlockIndexNullValue();
+    totalFileBlocks = SnapshotChunkDecoder.totalFileBlocksNullValue();
 
     snapshotId = "";
     chunkName = "";
-    chunkId = "";
     content.wrap(0, 0);
   }
 
@@ -81,9 +84,7 @@ public final class SnapshotChunkImpl
         + SnapshotChunkEncoder.chunkNameHeaderLength()
         + chunkName.length()
         + SnapshotChunkEncoder.contentHeaderLength()
-        + content.capacity()
-        + SnapshotChunkEncoder.chunkIdHeaderLength()
-        + chunkId.length();
+        + content.capacity();
   }
 
   @Override
@@ -92,11 +93,12 @@ public final class SnapshotChunkImpl
 
     encoder
         .totalCount(totalCount)
+        .fileBlockIndex(fileBlockIndex)
+        .totalFileBlocks(totalFileBlocks)
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
         .snapshotChecksum(snapshotChecksum)
-        .chunkId(chunkId)
         .putContent(content, 0, content.capacity());
   }
 
@@ -105,11 +107,12 @@ public final class SnapshotChunkImpl
     super.wrap(buffer, offset, length);
 
     totalCount = decoder.totalCount();
+    fileBlockIndex = decoder.fileBlockIndex();
+    totalFileBlocks = decoder.totalFileBlocks();
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
     snapshotChecksum = decoder.snapshotChecksum();
-    chunkId = decoder.chunkId();
 
     if (decoder.contentLength() > 0) {
       decoder.wrapContent(content);
@@ -147,8 +150,13 @@ public final class SnapshotChunkImpl
   }
 
   @Override
-  public String getChunkId() {
-    return chunkId;
+  public long getFileBlockIndex() {
+    return fileBlockIndex;
+  }
+
+  @Override
+  public long getTotalFileBlocks() {
+    return totalFileBlocks;
   }
 
   @Override
@@ -165,8 +173,10 @@ public final class SnapshotChunkImpl
         + checksum
         + ", snapshotChecksum="
         + snapshotChecksum
-        + ", chunkId='"
-        + chunkId
+        + ", fileBlockIndex="
+        + fileBlockIndex
+        + ", totalFileBlocks="
+        + totalFileBlocks
         + "} "
         + super.toString();
   }

@@ -31,7 +31,8 @@ final class SnapshotChunkUtil {
       final long snapshotChecksum,
       final String fileName,
       final byte[] fileData,
-      final long filePart) {
+      final long fileBlockIndex,
+      final long totalFileBlocks) {
 
     final long checksum = createChecksum(fileData);
     return new SnapshotChunkImpl(
@@ -41,7 +42,8 @@ final class SnapshotChunkUtil {
         checksum,
         fileData,
         snapshotChecksum,
-        fileName + "-" + filePart);
+        fileBlockIndex,
+        totalFileBlocks);
   }
 
   private static final class SnapshotChunkImpl implements SnapshotChunk {
@@ -51,7 +53,8 @@ final class SnapshotChunkUtil {
     private final byte[] content;
     private final long snapshotChecksum;
     private final long checksum;
-    private final String chunkId;
+    private final long fileBlockIndex;
+    private final long totalFileBlocks;
 
     SnapshotChunkImpl(
         final String snapshotId,
@@ -60,14 +63,16 @@ final class SnapshotChunkUtil {
         final long checksum,
         final byte[] content,
         final long snapshotChecksum,
-        final String chunkId) {
+        final long fileBlockIndex,
+        final long totalFileBlocks) {
       this.snapshotId = snapshotId;
       this.totalCount = totalCount;
       this.chunkName = chunkName;
       this.checksum = checksum;
       this.content = content;
       this.snapshotChecksum = snapshotChecksum;
-      this.chunkId = chunkId;
+      this.fileBlockIndex = fileBlockIndex;
+      this.totalFileBlocks = totalFileBlocks;
     }
 
     @Override
@@ -101,8 +106,13 @@ final class SnapshotChunkUtil {
     }
 
     @Override
-    public String getChunkId() {
-      return chunkId;
+    public long getFileBlockIndex() {
+      return fileBlockIndex;
+    }
+
+    @Override
+    public long getTotalFileBlocks() {
+      return totalFileBlocks;
     }
   }
 }
