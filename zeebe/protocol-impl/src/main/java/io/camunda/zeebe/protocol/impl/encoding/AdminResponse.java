@@ -17,15 +17,16 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public class AdminResponse implements BufferReader, BufferWriter {
+  String configuration = null;
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-
   private final AdminResponseEncoder bodyEncoder = new AdminResponseEncoder();
   private final AdminResponseDecoder bodyDecoder = new AdminResponseDecoder();
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+    configuration = bodyDecoder.payload();
   }
 
   @Override
@@ -36,5 +37,9 @@ public class AdminResponse implements BufferReader, BufferWriter {
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+  }
+
+  public String getConfiguration() {
+    return configuration;
   }
 }
