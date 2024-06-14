@@ -70,4 +70,37 @@ describe('MigrationConfirmationModal', () => {
 
     onSubmitMock.mockClear();
   });
+
+  it('should auto focus', () => {
+    render(
+      <MigrationConfirmationModal
+        open={true}
+        setOpen={jest.fn()}
+        onSubmit={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('textbox')).toHaveFocus();
+  });
+
+  it('should validate input', async () => {
+    const errorMessage = /Value must match MIGRATE/i;
+
+    const {user} = render(
+      <MigrationConfirmationModal
+        open={true}
+        setOpen={jest.fn()}
+        onSubmit={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByText(errorMessage)).not.toBeInTheDocument();
+
+    await user.type(screen.getByRole('textbox'), 'Foo');
+    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'MIGRATE');
+    expect(screen.queryByText(errorMessage)).not.toBeInTheDocument();
+  });
 });

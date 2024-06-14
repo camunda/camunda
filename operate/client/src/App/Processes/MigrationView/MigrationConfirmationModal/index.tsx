@@ -21,6 +21,7 @@ const MigrationConfirmationModal: React.FC<Props> = ({
   const [inputValue, setInputValue] = useState('');
 
   const isDisabled = inputValue !== 'MIGRATE';
+  const isInvalid = !['MIGRATE', ''].includes(inputValue);
 
   return (
     <Modal
@@ -37,13 +38,14 @@ const MigrationConfirmationModal: React.FC<Props> = ({
       <MigrationDetails />
 
       <TextInput
+        autoFocus
         id="modification-confirmation"
         labelText="Type MIGRATE to confirm"
         onChange={({target}) => {
           setInputValue(target.value);
         }}
         value={inputValue}
-        invalid={isDisabled}
+        invalid={isInvalid}
         invalidText="Value must match MIGRATE"
       />
     </Modal>
