@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator;
@@ -118,7 +119,7 @@ public class ReplayStateRandomizedPropertyTest {
     engineRule.stop();
 
     // when
-    engineRule.start();
+    engineRule.start(StreamProcessorMode.PROCESSING);
 
     Awaitility.await()
         .untilAsserted(
