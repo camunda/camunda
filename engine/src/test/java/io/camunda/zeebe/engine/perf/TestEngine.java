@@ -88,7 +88,8 @@ public final class TestEngine {
                                 testStreams.getLogStream(
                                     StreamProcessingComposite.getLogName(partitionId)))),
                 Optional.empty(),
-                processorConfiguration));
+                processorConfiguration,
+                true));
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
