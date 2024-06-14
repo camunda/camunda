@@ -44,11 +44,13 @@ import org.springframework.context.annotation.Profile;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = {
+      "io.camunda.commons",
       "io.camunda.zeebe.gateway",
       "io.camunda.zeebe.shared",
       "io.camunda.zeebe.util.liveness"
     })
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
+@ConfigurationPropertiesScan(
+    basePackages = {"io.camunda.commons", "io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
 @EnableAutoConfiguration
 @Profile("gateway")
 public class GatewayModuleConfiguration implements CloseableSilently {

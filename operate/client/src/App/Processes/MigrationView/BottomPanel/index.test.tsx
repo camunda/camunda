@@ -55,11 +55,14 @@ const Wrapper = ({children}: Props) => {
   processInstanceMigrationStore.enable();
 
   useEffect(() => {
-    processInstanceMigrationStore.reset();
-    processXmlMigrationSourceStore.reset();
-    processXmlMigrationTargetStore.reset();
-    processStatisticsStore.reset();
-  });
+    return () => {
+      processInstanceMigrationStore.reset();
+      processXmlMigrationSourceStore.reset();
+      processXmlMigrationTargetStore.reset();
+      processStatisticsStore.reset();
+    };
+  }, []);
+
   return (
     <>
       {children}

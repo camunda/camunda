@@ -5,19 +5,28 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker;
+package io.camunda.commons.clustering;
 
+import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
-import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration;
+import io.atomix.utils.Version;
+import io.camunda.zeebe.util.VersionUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-public final class BrokerClusterConfiguration {
-  @Bean
-  public ClusterConfig clusterConfig(final BrokerConfiguration config) {
-    final var configFactory = new ClusterConfigFactory();
-    return configFactory.mapConfiguration(config.config());
+public final class AtomixClusterConfiguration {
+
+  private final ClusterConfig config;
+
+  @Autowired
+  public AtomixClusterConfiguration(final ClusterConfig config) {
+    this.config = config;
+  }
+
+  @Bean(destroyMethod = "stop")
+  public AtomixCluster atomixCluster() {
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }
