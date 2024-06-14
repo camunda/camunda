@@ -9,12 +9,28 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {formatters, getReportResult} from 'services';
+import {formatters, getReportResult, processResult as processSingleReportResult} from 'services';
 
-import CombinedReportRenderer from './CombinedReportRenderer';
+import {Table, Chart} from './visualizations';
 import ProcessReportRenderer from './ProcessReportRenderer';
+import {getFormatter} from './service';
 
 const {formatReportResult} = formatters;
+
+const getComponent = (visualization) => {
+  if (visualization === 'table') {
+    return Table;
+  } else {
+    return Chart;
+  }
+};
+
+function processResult(reports) {
+  return Object.entries(reports).reduce((result, [reportId, report]) => {
+    result[reportId] = {...report, result: processSingleReportResult(report)};
+    return result;
+  }, {});
+}
 
 export default function HyperReportRenderer({report, ...rest}) {
   const result = getReportResult(report);
@@ -61,13 +77,19 @@ export default function HyperReportRenderer({report, ...rest}) {
     result: {
       ...result,
       type: 'hyperMap',
-      data: newResultData,
+      data: processResult(newResultData),
     },
   };
 
-  return <CombinedReportRenderer {...rest} report={convertedReport} />;
-}
+  const {view, visualization} = Object.values(convertedReport.result.data)[0].data;
+  const Component = getComponent(visualization);
 
+  return (
+    <div className="component">
+      <Component {...rest} report={convertedReport} formatter={getFormatter(view.properties[0])} />
+    </div>
+  );
+}
 function formatResult(data, result) {
   const {
     distributedBy,
