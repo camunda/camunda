@@ -139,9 +139,10 @@ public final class StreamProcessorRule implements TestRule {
       final int partitionId,
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
-      final Consumer<StreamProcessorBuilder> processorConfiguration) {
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     return streamProcessingComposite.startTypedStreamProcessor(
-        partitionId, factory, streamProcessorListenerOpt, processorConfiguration);
+        partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
   }
 
   public void pauseProcessing(final int partitionId) {
