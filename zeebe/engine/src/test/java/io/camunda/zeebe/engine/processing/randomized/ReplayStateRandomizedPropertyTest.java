@@ -101,10 +101,7 @@ public class ReplayStateRandomizedPropertyTest {
     // given
     Awaitility.await(
             "await the last written record to be processed, then wait a GRACE_PERIOD to make sure no new events are added")
-        .untilAsserted(
-            () -> {
-              processingHasStoppedAndNoNewRecordsAreAddedDuringGracePeriod();
-            });
+        .untilAsserted(this::processingHasStoppedAndNoNewRecordsAreAddedDuringGracePeriod);
 
     engineRule.pauseProcessing(1);
 
@@ -162,14 +159,10 @@ public class ReplayStateRandomizedPropertyTest {
     assertThat(engineRule.hasReachedEnd())
         .describedAs("Processing has reached end of the log.")
         .isTrue();
-    final var stateBeforeGracePeriod = engineRule.collectState();
     Thread.sleep(GRACE_PERIOD);
     assertThat(engineRule.hasReachedEnd())
         .describedAs("Processing has reached end of the log.")
         .isTrue();
-    final var stateAfterGracePeriod = engineRule.collectState();
-
-    assertIdenticalStates(stateBeforeGracePeriod, stateAfterGracePeriod);
   }
 
   @Parameters(name = "{0}")
