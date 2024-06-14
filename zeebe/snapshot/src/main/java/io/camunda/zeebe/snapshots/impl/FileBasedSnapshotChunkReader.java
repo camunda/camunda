@@ -41,7 +41,8 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private final String snapshotID;
   private int chunkSize;
 
-  FileBasedSnapshotChunkReader(final Path directory, final long checksum) throws IOException {
+  public FileBasedSnapshotChunkReader(final Path directory, final long checksum)
+      throws IOException {
     this(directory, checksum, Integer.MAX_VALUE);
   }
 
@@ -119,14 +120,22 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       file.read(buffer);
 
       offset += bytesToRead;
-      final var filePart = Math.ceilDiv(offset, chunkSize);
+      final var fileBlockIndex = Math.ceilDiv(offset, chunkSize);
       if (offset == file.length()) {
         offset = 0;
         chunksView.pollFirst();
       }
 
+      final var totalFileBlocks = Math.ceilDiv(file.length(), chunkSize);
+
       return SnapshotChunkUtil.createSnapshotChunkFromFileChunk(
-          snapshotID, totalCount, snapshotChecksum, fileName, buffer, filePart);
+          snapshotID,
+          totalCount,
+          snapshotChecksum,
+          fileName,
+          buffer,
+          fileBlockIndex,
+          totalFileBlocks);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
