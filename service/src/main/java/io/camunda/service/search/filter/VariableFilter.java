@@ -10,6 +10,7 @@ package io.camunda.service.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.service.search.filter.UserTaskFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -17,13 +18,14 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final record VariableFilter(
-    List<VariableValueFilter> variableFilters
-
+    List<VariableValueFilter> variableFilters,
+    List<Long> scopeFlowNodeId
 )
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
     List<VariableValueFilter> variableFilters;
+    List<Long> scopeFlowNodeId;
 
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
@@ -34,16 +36,21 @@ public final record VariableFilter(
       return variable(collectValues(value, values));
     }
 
-    public Builder variable(
-        final Function<VariableValueFilter.Builder, ObjectBuilder<VariableValueFilter>> fn) {
-      return variable(FilterBuilders.variableValue(fn));
+    public Builder scopeFlowNodeId(final Long value, final Long... values) {
+      return scopeFlowNodeId(collectValues(value, values));
     }
 
+    public Builder scopeFlowNodeId(final List<Long> values) {
+      scopeFlowNodeId = addValuesToList(scopeFlowNodeId, values);
+      return this;
+    }
 
     @Override
     public VariableFilter build() {
       return new VariableFilter(
-          Objects.requireNonNullElseGet(variableFilters, Collections::emptyList));
+          Objects.requireNonNullElseGet(variableFilters, Collections::emptyList),
+          Objects.requireNonNullElseGet(scopeFlowNodeId, Collections::emptyList)
+      );
     }
   }
 }
