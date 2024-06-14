@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.model.Profile;
@@ -26,16 +26,15 @@ import org.springframework.util.StringUtils;
 @Service
 @Transactional
 public class UserService {
-
-  private final CamundaUserDetailsManager userDetailsManager;
+  private final CamundaUserDetailsManager camundaUserDetailsManager;
   private final UserProfileRepository userProfileRepository;
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
-      final CamundaUserDetailsManager userDetailsManager,
+      final CamundaUserDetailsManager camundaUserDetailsManager,
       final UserProfileRepository userProfileRepository,
       final PasswordEncoder passwordEncoder) {
-    this.userDetailsManager = userDetailsManager;
+    this.camundaUserDetailsManager = camundaUserDetailsManager;
     this.userProfileRepository = userProfileRepository;
     this.passwordEncoder = passwordEncoder;
   }
@@ -49,7 +48,7 @@ public class UserService {
               .disabled(!userWithCredential.isEnabled())
               .roles("DEFAULT_USER")
               .build();
-      userDetailsManager.createUser(userDetails);
+      camundaUserDetailsManager.createUser(userDetails);
       final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
       userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
       return userProfileRepository.findByUsername(userWithCredential.getUsername());
@@ -60,7 +59,7 @@ public class UserService {
 
   public void deleteUser(final Long id) {
     final CamundaUser user = findUserById(id);
-    userDetailsManager.deleteUser(user.getUsername());
+    camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
   public CamundaUser findUserById(final Long id) {
@@ -98,7 +97,7 @@ public class UserService {
       }
 
       final UserDetails existingUserDetail =
-          userDetailsManager.loadUserByUsername(existingUser.getUsername());
+          camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
 
       final var userBuilder =
           User.withUsername(existingUser.getUsername())
@@ -111,7 +110,7 @@ public class UserService {
               .passwordEncoder(passwordEncoder::encode);
 
       final UserDetails userDetails = userBuilder.build();
-      userDetailsManager.updateUser(userDetails);
+      camundaUserDetailsManager.updateUser(userDetails);
       userProfileRepository.save(new Profile(id, user.getEmail()));
       return userProfileRepository.findUserById(id);
     } catch (final UsernameNotFoundException e) {
