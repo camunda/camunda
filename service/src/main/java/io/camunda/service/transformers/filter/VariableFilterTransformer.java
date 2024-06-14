@@ -11,24 +11,20 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.DateValueFilter;
-import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.transformers.ServiceTransformers;
-import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
+
   private final ServiceTransformers transformers;
 
   public VariableFilterTransformer(final ServiceTransformers transformers) {
@@ -37,13 +33,14 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
 
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
+    final var variablesQuery = getVariablesQuery(filter.variableFilters());
+    final var scopeKeyQuery = getScopeKeyQuery(filter.scopeKeys());
+    final var processInstanceKeyQuery = getProcessInstanceKeyQuery(filter.processInstanceKeys());
 
-
-    // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
-    ;final var userTaksImplementationQuery = getUserTasksImplementationOnl();
-
-    //return and();
-    return null;
+    return and(variablesQuery,
+        scopeKeyQuery,
+        processInstanceKeyQuery
+    );
   }
 
   @Override
@@ -64,12 +61,17 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return null;
   }
 
+  private SearchQuery getScopeKeyQuery(final List<Long> scopeKey) {
+    return longTerms("scopeKeys", scopeKey);
+  }
+
+  private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKey) {
+    return longTerms("processInstanceKey", processInstanceKey);
+  }
+
+
 
   private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
     return transformers.getFilterTransformer(VariableValueFilter.class);
-  }
-
-  private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {
-    return transformers.getFilterTransformer(DateValueFilter.class);
   }
 }

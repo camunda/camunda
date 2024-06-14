@@ -10,22 +10,22 @@ package io.camunda.service.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
-import io.camunda.service.search.filter.UserTaskFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 public final record VariableFilter(
     List<VariableValueFilter> variableFilters,
-    List<Long> scopeFlowNodeId
+    List<Long> scopeKeys,
+    List<Long> processInstanceKeys
 )
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
     List<VariableValueFilter> variableFilters;
-    List<Long> scopeFlowNodeId;
+    List<Long> scopeKeys;
+    List<Long> processInstanceKeys;
 
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
@@ -36,12 +36,21 @@ public final record VariableFilter(
       return variable(collectValues(value, values));
     }
 
-    public Builder scopeFlowNodeId(final Long value, final Long... values) {
-      return scopeFlowNodeId(collectValues(value, values));
+    public Builder scopeKeys(final Long value, final Long... values) {
+      return scopeKeys(collectValues(value, values));
     }
 
-    public Builder scopeFlowNodeId(final List<Long> values) {
-      scopeFlowNodeId = addValuesToList(scopeFlowNodeId, values);
+    public Builder scopeKeys(final List<Long> values) {
+      scopeKeys = addValuesToList(scopeKeys, values);
+      return this;
+    }
+
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeys(collectValues(value, values));
+    }
+
+    public Builder processInstanceKeys(final List<Long> values) {
+      processInstanceKeys = addValuesToList(processInstanceKeys, values);
       return this;
     }
 
@@ -49,7 +58,8 @@ public final record VariableFilter(
     public VariableFilter build() {
       return new VariableFilter(
           Objects.requireNonNullElseGet(variableFilters, Collections::emptyList),
-          Objects.requireNonNullElseGet(scopeFlowNodeId, Collections::emptyList)
+          Objects.requireNonNullElseGet(scopeKeys, Collections::emptyList),
+          Objects.requireNonNullElseGet(processInstanceKeys, Collections::emptyList)
       );
     }
   }
