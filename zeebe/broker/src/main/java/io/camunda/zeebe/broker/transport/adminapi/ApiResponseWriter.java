@@ -32,9 +32,7 @@ public final class ApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void reset() {
-    throw new UnsupportedOperationException();
-  }
+  public void reset() {}
 
   public AdminResponseEncoder getResponseEncoder() {
     return responseEncoder;

@@ -18,9 +18,7 @@ public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
   private String configuration = null;
 
   @Override
-  public void reset() {
-    throw new UnsupportedOperationException();
-  }
+  public void reset() {}
 
   @Override
   public AdminRequestDecoder getMessageDecoder() {
