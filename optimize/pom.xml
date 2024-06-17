@@ -584,7 +584,7 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
-          <header>${parent.basedir}/../license/header.txt</header>
+          <header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</header>
           <includes>
             <include>**/*.java</include>
           </includes>
