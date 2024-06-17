@@ -10,7 +10,7 @@ package io.camunda.data.transformers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

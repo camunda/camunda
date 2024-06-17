@@ -7,12 +7,9 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
-import io.atomix.utils.Version;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
-import io.camunda.zeebe.util.VersionUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,10 +19,5 @@ public final class BrokerClusterConfiguration {
   public ClusterConfig clusterConfig(final BrokerConfiguration config) {
     final var configFactory = new ClusterConfigFactory();
     return configFactory.mapConfiguration(config.config());
-  }
-
-  @Bean(destroyMethod = "stop")
-  public AtomixCluster atomixCluster(final ClusterConfig config) {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }

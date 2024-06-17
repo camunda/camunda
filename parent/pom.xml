@@ -71,7 +71,7 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.110.Final</version.netty>
+    <version.netty>4.1.111.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
@@ -94,7 +94,7 @@
     <version.feel-scala>1.17.7</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.8</version.spring>
+    <version.spring>6.1.9</version.spring>
     <version.spring-security>6.3.0</version.spring-security>
     <version.spring-boot>3.3.0</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -118,11 +118,11 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
-    <version.zpt>8.5.2</version.zpt>
+    <version.zpt>8.5.3</version.zpt>
     <version.feign>13.2.1</version.feign>
-    <version.google-sdk>26.40.0</version.google-sdk>
+    <version.google-sdk>26.41.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.25.70</version.awssdk>
+    <version.awssdk>2.26.3</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -135,7 +135,7 @@
     <version.postgresql>42.7.3</version.postgresql>
     <version.h2>2.2.224</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
-    <version.reactor-netty>1.1.19</version.reactor-netty>
+    <version.reactor-netty>1.1.20</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
@@ -153,10 +153,10 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.740</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.744</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
-    <version.elasticsearch7>7.17.21</version.elasticsearch7>
+    <version.elasticsearch7>7.17.22</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
@@ -198,10 +198,10 @@
     <plugin.version.checkstyle>3.4.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.6.1</plugin.version.dependency>
+    <plugin.version.dependency>3.7.0</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.3.0</plugin.version.exec>
-    <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
+    <plugin.version.failsafe>3.3.0</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.1</plugin.version.maven-jar>
@@ -213,7 +213,7 @@
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.5.0</plugin.version.spotbugs>
-    <plugin.version.surefire>3.2.5</plugin.version.surefire>
+    <plugin.version.surefire>3.3.0</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
@@ -523,6 +523,13 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Webapps Common -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>webapps-common</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -913,13 +920,19 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>auth-spring-boot-starter</artifactId>
+        <artifactId>camunda-authentication</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-backend</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1709,7 +1722,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.6.6</version>
+        <version>3.6.7</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
@@ -2512,7 +2525,7 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
-                  <dep>io.camunda:auth-spring-boot-starter</dep>
+                  <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
                 </ignoredUnusedDeclaredDependencies>

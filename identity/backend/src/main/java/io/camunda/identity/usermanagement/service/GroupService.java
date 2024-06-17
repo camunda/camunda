@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
+import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
@@ -16,13 +16,14 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class GroupService {
-  private final CamundaUserDetailsManager userDetailsManager;
+  private final CamundaUserDetailsManager camundaUserDetailsManager;
 
   private final GroupRepository groupRepository;
 
   public GroupService(
-      final CamundaUserDetailsManager userDetailsManager, final GroupRepository groupRepository) {
-    this.userDetailsManager = userDetailsManager;
+      final CamundaUserDetailsManager camundaUserDetailsManager,
+      final GroupRepository groupRepository) {
+    this.camundaUserDetailsManager = camundaUserDetailsManager;
     this.groupRepository = groupRepository;
   }
 
@@ -38,16 +39,16 @@ public class GroupService {
   }
 
   public CamundaGroup createGroup(final CamundaGroup group) {
-    userDetailsManager.createGroup(group.name(), Collections.emptyList());
+    camundaUserDetailsManager.createGroup(group.name(), Collections.emptyList());
     return findGroupByName(group.name());
   }
 
   public void deleteGroup(final CamundaGroup group) {
-    userDetailsManager.deleteGroup(group.name());
+    camundaUserDetailsManager.deleteGroup(group.name());
   }
 
   public CamundaGroup updateGroup(final String name, final CamundaGroup group) {
-    userDetailsManager.renameGroup(name, group.name());
+    camundaUserDetailsManager.renameGroup(name, group.name());
     return findGroupByName(group.name());
   }
 }

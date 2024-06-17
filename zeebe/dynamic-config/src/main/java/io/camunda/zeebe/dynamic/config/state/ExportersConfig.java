@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.state;
 
 import com.google.common.collect.ImmutableMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,6 +43,23 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             Optional.empty()));
   }
 
+  public ExportersConfig disableExporters(final Collection<String> exporterNames) {
+    final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
+
+    exporterNames.forEach(
+        exporterName ->
+            builder.put(
+                exporterName,
+                new ExporterState(
+                    exporters.get(exporterName).metadataVersion(),
+                    ExporterState.State.DISABLED,
+                    Optional.empty())));
+
+    final var newExporters =
+        builder.buildKeepingLast(); // choose last one if there are duplicate keys
+    return new ExportersConfig(newExporters);
+  }
+
   public ExportersConfig enableExporter(final String exporterName, final long metadataVersion) {
     return enableExporter(exporterName, null, metadataVersion);
   }
@@ -51,5 +69,25 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
     return updateExporter(
         exporterName,
         new ExporterState(metadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
+  }
+
+  public ExportersConfig addExporters(final Collection<String> exporterNames) {
+    exporterNames.forEach(
+        exporterName -> {
+          if (exporters.containsKey(exporterName)) {
+            throw new IllegalArgumentException(
+                String.format("Exporter '%s' already exists in the partition", exporterName));
+          }
+        });
+
+    final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
+
+    exporterNames.forEach(
+        exporterName ->
+            builder.put(exporterName, new ExporterState(0, State.ENABLED, Optional.empty())));
+
+    final var newExporters =
+        builder.buildKeepingLast(); // choose last one if there are duplicate keys
+    return new ExportersConfig(newExporters);
   }
 }

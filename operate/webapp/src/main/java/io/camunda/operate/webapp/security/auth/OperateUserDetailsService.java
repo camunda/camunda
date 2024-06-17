@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,11 +36,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
         + OperateProfileService.SSO_AUTH_PROFILE
         + " & !"
         + OperateProfileService.IDENTITY_AUTH_PROFILE)
+/*
+ * Required as primary for now due to a clashing bean in the always active Identity service classes.
+ * In future versions this class will be removed and the Identity service will be used instead.
+ */
+@Primary
 public class OperateUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateUserDetailsService.class);
   private static final String READ_ONLY_USER = "view";
-  private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
+  private static final String ACT_USERNAME = "act";
+  private static final String ACT_PASSWORD = ACT_USERNAME;
   @Autowired private UserStore userStore;
   @Autowired private OperateProperties operateProperties;
 
@@ -102,7 +109,7 @@ public class OperateUserDetailsService implements UserDetailsService {
           userEntity.getDisplayName(),
           userEntity.getPassword(),
           map(userEntity.getRoles(), Role::fromString));
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       throw new UsernameNotFoundException(
           String.format("User with userId '%s' not found.", userId), e);
     }
@@ -111,7 +118,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   private boolean userExists(final String userId) {
     try {
       return userStore.getById(userId) != null;
-    } catch (Exception t) {
+    } catch (final Exception t) {
       return false;
     }
   }

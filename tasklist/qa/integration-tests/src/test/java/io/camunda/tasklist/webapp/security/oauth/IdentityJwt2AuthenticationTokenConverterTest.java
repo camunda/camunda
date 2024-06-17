@@ -56,6 +56,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     properties = {
       TasklistProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url",
+      "management.endpoint.health.group.readiness.include=readinessState"
     })
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class IdentityJwt2AuthenticationTokenConverterTest {

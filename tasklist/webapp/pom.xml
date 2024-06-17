@@ -120,6 +120,11 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
     <!-- Micrometer Prometheus -->
     <dependency>
       <groupId>io.micrometer</groupId>
