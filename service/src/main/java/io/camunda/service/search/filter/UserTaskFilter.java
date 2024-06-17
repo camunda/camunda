@@ -28,6 +28,7 @@ public final record UserTaskFilter(
     List<String> candidateGroups,
     boolean created,
     boolean completed,
+    boolean canceled,
     DateValueFilter creationDateFilter,
     DateValueFilter completionDateFilter,
     DateValueFilter dueDateFilter,
@@ -48,6 +49,7 @@ public final record UserTaskFilter(
     private List<String> candidateGroups;
     private boolean created;
     private boolean completed;
+    private boolean canceled;
     private DateValueFilter creationDateFilter;
     private DateValueFilter completionDateFilter;
     private DateValueFilter dueDateFilter;
@@ -204,6 +206,16 @@ public final record UserTaskFilter(
       return this;
     }
 
+    public Builder completed() {
+      completed = true;
+      return this;
+    }
+
+    public Builder canceled() {
+      canceled = true;
+      return this;
+    }
+
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
@@ -218,6 +230,7 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
           created,
           completed,
+          canceled,
           creationDateFilter,
           completionDateFilter,
           dueDateFilter,

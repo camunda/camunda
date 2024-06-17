@@ -83,8 +83,9 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     final var completed = filter.completed();
+    final var canceled = filter.canceled();
 
-    if (completed) {
+    if (completed || canceled) {
       return Arrays.asList("tasklist-task-8.5.0_alias");
     } else {
       return Arrays.asList("tasklist-task-8.5.0_");
@@ -102,32 +103,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
       return and(queries);
     }
     return null;
-  }
-
-  // TDB - First iteration will support CREATED and COMPLETED states
-  // Next iteration will support additional states: PAUSED and CANCELED
-  private SearchQuery getUserTaskStateQuery(final UserTaskFilter filter) {
-    final var running = filter.completed();
-    final var completed = filter.created();
-
-    if (running && completed) {
-      return matchAll();
-    }
-
-    SearchQuery runningQuery = null;
-    SearchQuery completedQuery = null;
-
-    if (running) {
-      runningQuery = not(exists("completionTime"));
-    }
-
-    if (completed) {
-      completedQuery = exists("completionTime");
-    }
-
-    final var userTaskStateQuery = or(runningQuery, completedQuery);
-
-    return userTaskStateQuery;
   }
 
   private SearchQuery getCreationDate(final DateValueFilter filter) {
@@ -214,6 +189,14 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   private SearchQuery getCompletedQuery(final boolean completed) {
     if (completed) {
       return term("state", "COMPLETED");
+    }
+
+    return null;
+  }
+
+  private SearchQuery getCanceledQuery(final boolean canceled) {
+    if (canceled) {
+      return term("state", "CANCELED");
     }
 
     return null;
