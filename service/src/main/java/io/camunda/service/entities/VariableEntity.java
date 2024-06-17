@@ -10,14 +10,14 @@ package io.camunda.service.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final record VariableEntity (
-  Long key,
-  String name,
-  String value,
-  String fullValue,
-  boolean isPreview,
-  Long scopeKey,
-  Long processInstanceKey,
-  Long processDefinitionKey,
-  String bpmnProcessId,
-  String tenantId) {}
+public final record VariableEntity(
+    Long key,
+    String name,
+    String value,
+    String fullValue,
+    boolean isPreview,
+    Long scopeKey,
+    Long processInstanceKey,
+    Long processDefinitionKey,
+    String bpmnProcessId,
+    String tenantId) {}

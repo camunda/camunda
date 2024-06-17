@@ -19,9 +19,11 @@ import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.TypedSearchQuery;
 import io.camunda.service.search.query.UserTaskQuery;
+import io.camunda.service.search.query.VariableQuery;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.UserTaskSort;
+import io.camunda.service.search.sort.VariableSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer;
@@ -75,6 +77,11 @@ public final class ServiceTransformers {
     mappers.put(
         UserTaskQuery.class,
         new TypedSearchQueryTransformer<UserTaskFilter, UserTaskSort>(mappers));
+
+    // query -> request
+    mappers.put(
+        VariableQuery.class,
+        new TypedSearchQueryTransformer<VariableFilter, VariableSort>(mappers));
 
     // search query response -> search query result
     mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());

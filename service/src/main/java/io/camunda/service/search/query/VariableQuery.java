@@ -15,16 +15,16 @@
 package io.camunda.service.search.query;
 
 import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.UserTaskFilter;
+import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.sort.SortOptionBuilders;
-import io.camunda.service.search.sort.UserTaskSort;
+import io.camunda.service.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final record VariableQuery(UserTaskFilter filter, UserTaskSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<UserTaskFilter, UserTaskSort> {
+public final record VariableQuery(VariableFilter filter, VariableSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<VariableFilter, VariableSort> {
 
   public static VariableQuery of(final Function<Builder, ObjectBuilder<VariableQuery>> fn) {
     return fn.apply(new Builder()).build();
@@ -33,29 +33,29 @@ public final record VariableQuery(UserTaskFilter filter, UserTaskSort sort, Sear
   public static final class Builder extends AbstractQueryBuilder<Builder>
       implements ObjectBuilder<VariableQuery> {
 
-    private static final UserTaskFilter EMPTY_FILTER = FilterBuilders.userTask().build();
-    private static final UserTaskSort EMPTY_SORT = SortOptionBuilders.userTask().build();
+    private static final VariableFilter EMPTY_FILTER = FilterBuilders.variable().build();
+    private static final VariableSort EMPTY_SORT = SortOptionBuilders.variable().build();
 
-    private UserTaskFilter filter;
-    private UserTaskSort sort;
+    private VariableFilter filter;
+    private VariableSort sort;
 
-    public Builder filter(final UserTaskFilter value) {
+    public Builder filter(final VariableFilter value) {
       filter = value;
       return this;
     }
 
     public Builder filter(
-        final Function<UserTaskFilter.Builder, ObjectBuilder<UserTaskFilter>> fn) {
-      return filter(FilterBuilders.userTask(fn));
+        final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
+      return filter(FilterBuilders.variable(fn));
     }
 
-    public Builder sort(final UserTaskSort value) {
+    public Builder sort(final VariableSort value) {
       sort = value;
       return this;
     }
 
-    public Builder sort(final Function<UserTaskSort.Builder, ObjectBuilder<UserTaskSort>> fn) {
-      return sort(SortOptionBuilders.userTask(fn));
+    public Builder sort(final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {
+      return sort(SortOptionBuilders.variable(fn));
     }
 
     @Override
