@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -35,7 +36,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final BrokerProperties config;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class);
+    super(BrokerModuleConfiguration.class, IdentityModuleConfiguration.class);
 
     config = new BrokerProperties();
 
