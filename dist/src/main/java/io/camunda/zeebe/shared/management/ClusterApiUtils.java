@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
@@ -20,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -34,6 +38,7 @@ import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.ExporterConfig;
 import io.camunda.zeebe.management.cluster.ExporterStateCode;
+import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation;
@@ -52,6 +57,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -373,5 +379,73 @@ final class ClusterApiUtils {
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
 
     return mappedOperation;
+  }
+
+  static List<ExporterStatus> aggregateExporterState(
+      final ClusterConfiguration clusterConfiguration) {
+    final var exporters =
+        clusterConfiguration.members().values().stream()
+            .flatMap(
+                m ->
+                    m.partitions().values().stream()
+                        .flatMap(p -> p.config().exporting().exporters().entrySet().stream()))
+            .collect(
+                Collectors.groupingBy(Entry::getKey, mapping(e -> e.getValue().state(), toList())));
+
+    return exporters.entrySet().stream()
+        .map(
+            e ->
+                e.getValue().stream()
+                    .distinct()
+                    .map(s -> transformState(e.getKey(), s))
+                    .reduce(
+                        (status, other) -> reduceExporterState(status, other, clusterConfiguration))
+                    .orElse(null))
+        .toList();
+  }
+
+  private static ExporterStatus reduceExporterState(
+      final ExporterStatus status,
+      final ExporterStatus other,
+      final ClusterConfiguration clusterConfiguration) {
+    if (status.getStatus().equals(other.getStatus()) && !clusterConfiguration.hasPendingChanges()) {
+      return status;
+    }
+
+    return clusterConfiguration
+        .pendingChanges()
+        .flatMap(
+            p ->
+                p.pendingOperations().stream()
+                    .findAny()
+                    .map(
+                        operation -> {
+                          if (operation instanceof PartitionEnableExporterOperation) {
+                            return new ExporterStatus()
+                                .exporterId(status.getExporterId())
+                                .status(ExporterStatus.StatusEnum.ENABLING);
+                          } else if (operation instanceof PartitionDisableExporterOperation) {
+                            return new ExporterStatus()
+                                .exporterId(status.getExporterId())
+                                .status(ExporterStatus.StatusEnum.DISABLING);
+                          }
+                          return new ExporterStatus()
+                              .exporterId(status.getExporterId())
+                              .status(ExporterStatus.StatusEnum.UNKNOWN);
+                        }))
+        .orElse(
+            new ExporterStatus()
+                .exporterId(status.getExporterId())
+                .status(ExporterStatus.StatusEnum.UNKNOWN));
+  }
+
+  private static ExporterStatus transformState(
+      final String exporterId, final ExporterState.State state) {
+    return switch (state) {
+      case ENABLED ->
+          new ExporterStatus().exporterId(exporterId).status(ExporterStatus.StatusEnum.ENABLED);
+      case DISABLED ->
+          new ExporterStatus().exporterId(exporterId).status(ExporterStatus.StatusEnum.DISABLED);
+    };
   }
 }
