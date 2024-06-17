@@ -13,7 +13,8 @@ public final record VariableFilter(
     List<VariableValueFilter> variableFilters,
     List<Long> scopeKeys,
     List<Long> processInstanceKeys,
-    boolean orConditions)
+    boolean orConditions,
+    boolean onlyRuntimeVariables)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
@@ -21,6 +22,10 @@ public final record VariableFilter(
     private List<Long> scopeKeys;
     private List<Long> processInstanceKeys;
     private boolean orConditions;
+    private boolean
+        onlyRuntimeVariables; // internally used to restric the search to variables for running
+
+    // tasks/processes to improve the performance
 
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
@@ -59,13 +64,23 @@ public final record VariableFilter(
       return this;
     }
 
+    public Builder onlyRuntimeVariables(final boolean onlyRuntimeVariables) {
+      this.onlyRuntimeVariables = onlyRuntimeVariables;
+      return this;
+    }
+
+    public Builder onlyRuntimeVariables() {
+      return onlyRuntimeVariables(true);
+    }
+
     @Override
     public VariableFilter build() {
       return new VariableFilter(
           Objects.requireNonNullElseGet(variableFilters, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeKeys, Collections::emptyList),
           Objects.requireNonNullElseGet(processInstanceKeys, Collections::emptyList),
-          orConditions);
+          orConditions,
+          onlyRuntimeVariables);
     }
   }
 }

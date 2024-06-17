@@ -35,6 +35,10 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
 
   @Override
   public List<String> toIndices(final VariableFilter filter) {
+    final boolean onlyRuntimeVariables = filter.onlyRuntimeVariables();
+    if (onlyRuntimeVariables) {
+      return Arrays.asList("operate-variable-8.3.0_");
+    }
     return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
