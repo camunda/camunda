@@ -30,12 +30,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @Profile(
-    "!"
+    {"!"
         + OperateProfileService.LDAP_AUTH_PROFILE
         + " & !"
         + OperateProfileService.SSO_AUTH_PROFILE
         + " & !"
-        + OperateProfileService.IDENTITY_AUTH_PROFILE)
+        + OperateProfileService.IDENTITY_AUTH_PROFILE
+        + " & !"
+        + OperateProfileService.AUTH_BASIC
+    })
 /*
  * Required as primary for now due to a clashing bean in the always active Identity service classes.
  * In future versions this class will be removed and the Identity service will be used instead.
@@ -51,6 +54,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   @Autowired private OperateProperties operateProperties;
 
   @Bean
+  @Primary
   public PasswordEncoder getPasswordEncoder() {
     return new BCryptPasswordEncoder();
   }
