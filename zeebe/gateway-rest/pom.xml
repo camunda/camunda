@@ -38,6 +38,16 @@
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+    </dependency>
+
     <!-- zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
