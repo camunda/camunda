@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,8 @@ public final class FileBasedSnapshotChunkReaderTest {
 
         // then
 
-        assertThat(ByteBuffer.wrap(chunk.getChunkName().getBytes(StandardCharsets.UTF_8)))
+        final var chunkId = chunk.getChunkName() + "-" + chunk.getFileBlockIndex();
+        assertThat(ByteBuffer.wrap(chunkId.getBytes(StandardCharsets.UTF_8)))
             .isNotNull()
             .isEqualTo(nextId);
         assertThat(chunk.getSnapshotId()).isEqualTo(snapshotDirectory.getFileName().toString());
@@ -119,7 +121,7 @@ public final class FileBasedSnapshotChunkReaderTest {
 
     // then
     assertThat(snapshotChunkIds)
-        .containsExactly(asByteBuffer("file1"), asByteBuffer("file2"), asByteBuffer("file3"));
+        .containsExactly(asByteBuffer("file1-1"), asByteBuffer("file2-1"), asByteBuffer("file3-1"));
 
     assertThat(snapshotChunks)
         .extracting(SnapshotChunk::getContent)
@@ -222,6 +224,34 @@ public final class FileBasedSnapshotChunkReaderTest {
       assertThat(fileBlocks.stream().map(SnapshotChunk::getFileBlockIndex).toList())
           .isEqualTo(LongStream.range(1, expectedFileBlocksCount + 1).boxed().toList());
     }
+  }
+
+  @Test
+  public void shouldHaveCorrectNextChunkIdForSplitFiles() throws IOException {
+    // given
+    final int maxChunkSize = 3;
+    final var snapshotChunkReader = newReader(maxChunkSize);
+
+    // when
+    final var snapshotChunkIds = new ArrayList<ByteBuffer>();
+
+    while (snapshotChunkReader.hasNext()) {
+      snapshotChunkIds.add(snapshotChunkReader.nextId());
+      snapshotChunkReader.next();
+    }
+
+    // then
+    final var expectedChunkIds = new ArrayList<ByteBuffer>();
+    Collections.addAll(
+        expectedChunkIds,
+        ByteBuffer.wrap("file1-1".getBytes()),
+        ByteBuffer.wrap("file1-2".getBytes()),
+        ByteBuffer.wrap("file2-1".getBytes()),
+        ByteBuffer.wrap("file3-1".getBytes()),
+        ByteBuffer.wrap("file3-2".getBytes()),
+        ByteBuffer.wrap("file3-3".getBytes()));
+
+    assertThat(snapshotChunkIds).isEqualTo(expectedChunkIds);
   }
 
   @Test
