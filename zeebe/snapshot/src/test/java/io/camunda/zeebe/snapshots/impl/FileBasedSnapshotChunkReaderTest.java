@@ -202,9 +202,11 @@ public final class FileBasedSnapshotChunkReaderTest {
 
   @Test
   public void shouldHaveCorrectFileBlockFieldsForSplitFiles() throws IOException { // given final
+    // given
     final int maxChunkSize = 3;
     final var snapshotChunkReader = newReader(maxChunkSize);
     final var snapshotChunks = getAllChunks(snapshotChunkReader);
+
     // when - then
     final var fileChunksGroupedByFileName =
         snapshotChunks.stream().collect(Collectors.groupingBy(SnapshotChunk::getChunkName));
