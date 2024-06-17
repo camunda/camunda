@@ -124,6 +124,15 @@
       <groupId>io.camunda</groupId>
       <artifactId>identity-backend</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- dependencies required for OpenAPI model generation -->
     <dependency>
