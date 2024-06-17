@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.identity.rolemanagement.service.RoleMembershipService;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.RoleAssignRequest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.SearchResponseDto;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -29,9 +31,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserService userService;
+  private final RoleMembershipService roleMembershipService;
 
-  public UserController(final UserService userService) {
+  public UserController(
+      final UserService userService, final RoleMembershipService roleMembershipService) {
     this.userService = userService;
+    this.roleMembershipService = roleMembershipService;
   }
 
   @PostMapping(
@@ -75,5 +80,31 @@ public class UserController {
   public CamundaUser updateUser(
       @PathVariable final Long id, @RequestBody final CamundaUserWithPassword user) {
     return userService.updateUser(id, user);
+  }
+
+  @PostMapping(
+      path = "/{id}/roles/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public SearchResponseDto<String> findRolesOfUser(
+      @PathVariable("id") final Long userId, @RequestBody final SearchRequestDto searchRequestDto) {
+    final List<String> roleNames = roleMembershipService.getRolesOfUserByUserId(userId);
+    final SearchResponseDto<String> responseDto = new SearchResponseDto<>();
+    responseDto.setItems(roleNames);
+    return responseDto;
+  }
+
+  @PostMapping(path = "/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void assignRoleToUser(
+      @PathVariable("id") final long userId, @RequestBody final RoleAssignRequest request) {
+    roleMembershipService.assignRoleToUser(request.roleName(), userId);
+  }
+
+  @DeleteMapping(path = "/{id}/roles/{roleName}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void unassignRoleFromUser(
+      @PathVariable("id") final long userId, @PathVariable final String roleName) {
+    roleMembershipService.unassignRoleFromUser(roleName, userId);
   }
 }

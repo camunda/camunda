@@ -10,6 +10,7 @@ package io.camunda.identity.usermanagement.repository;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.model.Profile;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,32 +21,32 @@ public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id""")
   List<CamundaUser> findAllUsers();
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
-          where username = :username
+          where users.username = :username
           """)
   CamundaUser findByUsername(@Param("username") final String username);
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
           where users.id = :id
           """)
-  CamundaUser findUserById(@Param("id") final Long id);
+  Optional<CamundaUser> findUserById(@Param("id") final Long id);
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, username, email, enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
           where users.username in (:usernames)
