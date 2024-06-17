@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperConfiguratio
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.gateway.rest.controller.UserTaskController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.GroupController;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.RoleController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -287,6 +288,11 @@ public class ErrorMapperTest {
     @Bean
     public GroupController groupController() {
       return Mockito.mock(GroupController.class);
+    }
+
+    @Bean
+    public RoleController roleController() {
+      return Mockito.mock(RoleController.class);
     }
   }
 }
