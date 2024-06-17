@@ -36,7 +36,7 @@
     "eslint-plugin-react-refresh": "0.4.7",
     "event-source-polyfill": "1.0.31",
     "prettier": "3.3.2",
-    "sass": "1.77.5",
+    "sass": "1.77.6",
     "typescript": "5.4.5",
     "vite": "5.3.1"
   },
