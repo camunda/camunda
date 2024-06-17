@@ -67,8 +67,7 @@ public final class ActivateJobsCommandImpl
       final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate,
-      final boolean useRest) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -79,7 +78,7 @@ public final class ActivateJobsCommandImpl
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
-    this.useRest = useRest;
+    useRest = config.preferRestOverGrpc();
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
   }

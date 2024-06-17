@@ -73,7 +73,11 @@ final class JobStreamImplTest {
         InProcessServerBuilder.forName(name).directExecutor().addService(service).build().start());
     client =
         new JobClientImpl(
-            asyncStub, new ZeebeClientBuilderImpl(), new ZeebeObjectMapper(), ignored -> false);
+            asyncStub,
+            null,
+            new ZeebeClientBuilderImpl(),
+            new ZeebeObjectMapper(),
+            ignored -> false);
     jobStreamer = createStreamer();
   }
 

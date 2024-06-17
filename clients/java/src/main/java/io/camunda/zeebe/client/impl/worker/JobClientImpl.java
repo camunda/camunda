@@ -41,29 +41,18 @@ public final class JobClientImpl implements JobClient {
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final Predicate<StatusCode> retryPredicate;
-  private final boolean useRest;
-
-  public JobClientImpl(
-      final GatewayStub asyncStub,
-      final ZeebeClientConfiguration config,
-      final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate) {
-    this(asyncStub, null, config, jsonMapper, retryPredicate, false);
-  }
 
   public JobClientImpl(
       final GatewayStub asyncStub,
       final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate,
-      final boolean useRest) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
     this.config = config;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    this.useRest = useRest;
   }
 
   @Override
@@ -101,8 +90,7 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(
-        asyncStub, httpClient, config, jsonMapper, retryPredicate, useRest);
+    return new ActivateJobsCommandImpl(asyncStub, httpClient, config, jsonMapper, retryPredicate);
   }
 
   @Override
