@@ -69,10 +69,6 @@ public final record VariableFilter(
       return this;
     }
 
-    public Builder onlyRuntimeVariables() {
-      return onlyRuntimeVariables(true);
-    }
-
     @Override
     public VariableFilter build() {
       return new VariableFilter(
