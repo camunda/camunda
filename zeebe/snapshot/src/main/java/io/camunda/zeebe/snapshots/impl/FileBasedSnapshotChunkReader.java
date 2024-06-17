@@ -120,7 +120,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       final var bytesToRead = Math.min(maximumChunkSize, fileLength - offset);
       final byte[] buffer = new byte[(int) bytesToRead];
       file.seek(offset);
-      file.read(buffer);
+      file.readFully(buffer);
 
       final var fileBlockPosition = offset;
       offset += bytesToRead;
