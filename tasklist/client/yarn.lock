@@ -2134,10 +2134,10 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.8.1:
-  version "17.8.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.1.tgz#83e7b05e2c7053fc0ef99e975c6b7e461b09daed"
-  integrity sha512-IKcnSBCCzZiTlEevNVGj9UoWksS0nFRw82aABdePY/V2/ZmE7e3Z+5Qgz1jqgC8hUf/NSUegqlIZvoaTq195Yw==
+bpmn-js@17.8.2:
+  version "17.8.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.2.tgz#10a192c27db2b3e970e6bcbcc64aa7bab52fe1d0"
+  integrity sha512-No3xH8SIhDrZDQ0Jc1XdeGVwafv9lWaYOWUNPx2QrFhY6GDSz8Tg6/FyEYXdGgsyqluwbdc34zwnKhJ5PdxXng==
   dependencies:
     bpmn-moddle "^8.1.0"
     diagram-js "^14.7.1"
