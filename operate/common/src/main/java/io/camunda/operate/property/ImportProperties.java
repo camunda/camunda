@@ -67,11 +67,12 @@ public class ImportProperties {
 
   /**
    * When reading parent flow node instance from Elastic, we retry with 2 seconds delay for
-   * the case when parent was imported with the previous batch but Elastic did not yet refresh the
-   * indices. This may degrade import performance (especially when parent data is lost and
-   * no retry will help to find it). In this case, disable the retry by setting the parameter to false.
+   * the case when parent was imported with the previous batch but Elastic did not yet refresh
+   * the indices. This may degrade import performance (especially when parent data is lost and
+   * no retry will help to find it). In this case, disable the retry by setting the parameter
+   * to false.
    */
-  private final boolean retryReadingParents = true;
+  private boolean retryReadingParents = true;
 
   private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
 
@@ -197,6 +198,11 @@ public class ImportProperties {
 
   public boolean isRetryReadingParents() {
     return retryReadingParents;
+  }
+
+  public ImportProperties setRetryReadingParents(final boolean retryReadingParents) {
+    this.retryReadingParents = retryReadingParents;
+    return this;
   }
 
   public int getMaxEmptyRuns() {
