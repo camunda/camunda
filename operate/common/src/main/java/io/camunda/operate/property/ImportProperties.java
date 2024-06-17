@@ -66,10 +66,10 @@ public class ImportProperties {
   private boolean readArchivedParents = false;
 
   /**
-   * When reading parent flow node instance from Elastic, we retry 1 time with 2 seconds delay for
+   * When reading parent flow node instance from Elastic, we retry with 2 seconds delay for
    * the case when parent was imported with the previous batch but Elastic did not yet refresh the
-   * indices. This may degrade import performance (expecially when parent data is lost and not retry
-   * will help to find it. In this case, disable this the retry but setting the parameter to false.
+   * indices. This may degrade import performance (especially when parent data is lost and
+   * no retry will help to find it). In this case, disable the retry by setting the parameter to false.
    */
   private final boolean retryReadingParents = true;
 
