@@ -197,9 +197,9 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void getBackupState() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
     mockSynchronSnapshotOperations();
     mockObjectMapperForMetadata(new Metadata().setPartCount(3));
-
     when(openSearchSnapshotOperations.get(any()))
         .thenReturn(
             new OpenSearchGetSnapshotResponse(
@@ -212,7 +212,7 @@ class OpensearchBackupRepositoryTest {
     final var response = repository.getBackupState("repo", 5L);
 
     assertThat(response).isNotNull();
-    assertThat(response.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+    assertThat(response.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
     assertThat(response.getBackupId()).isEqualTo(5L);
     final var snapshotDetails = response.getDetails();
     assertThat(snapshotDetails).hasSize(1);
@@ -290,7 +290,7 @@ class OpensearchBackupRepositoryTest {
         new OpenSearchSnapshotInfo()
             .setUuid("uuid")
             .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(17L + 6 * 60);
+            .setStartTimeInMillis(17L + 6 * 60 * 1_000);
     when(openSearchSnapshotOperations.get(any()))
         .thenReturn(
             new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));

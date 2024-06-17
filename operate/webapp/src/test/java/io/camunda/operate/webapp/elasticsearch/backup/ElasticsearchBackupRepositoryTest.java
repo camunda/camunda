@@ -93,7 +93,7 @@ class ElasticsearchBackupRepositoryTest {
 
     // Set up last Snapshot details
     when(lastSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
-    when(lastSnapshotInfo.endTime()).thenReturn(23L + 6 * 60);
+    when(lastSnapshotInfo.endTime()).thenReturn(23L + 6 * 60 * 1_000);
     when(lastSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
 
     // Set up Snapshot response
