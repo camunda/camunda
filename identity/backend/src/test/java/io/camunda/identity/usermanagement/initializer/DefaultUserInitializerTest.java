@@ -40,7 +40,7 @@ public class DefaultUserInitializerTest {
 
   @Test
   void defaultUsersAreInitialized() {
-    Assertions.assertEquals(2, userService.findAllUsers().size());
+    Assertions.assertEquals(3, userService.findAllUsers().size());
     final var defaultUser = camundaUserDetailsManager.loadUserByUsername(USERNAME);
     assertTrue(passwordEncoder.matches("password", defaultUser.getPassword()));
   }
