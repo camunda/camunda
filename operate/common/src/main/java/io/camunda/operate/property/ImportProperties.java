@@ -65,13 +65,21 @@ public class ImportProperties {
    */
   private boolean readArchivedParents = false;
 
+  /**
+   * When reading parent flow node instance from Elastic, we retry 1 time with 2 seconds delay for
+   * the case when parent was imported with the previous batch but Elastic did not yet refresh the
+   * indices. This may degrade import performance (expecially when parent data is lost and not retry
+   * will help to find it. In this case, disable this the retry but setting the parameter to false.
+   */
+  private final boolean retryReadingParents = true;
+
   private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
 
-  public void setStartLoadingDataOnStartup(boolean startLoadingDataOnStartup) {
+  public void setStartLoadingDataOnStartup(final boolean startLoadingDataOnStartup) {
     this.startLoadingDataOnStartup = startLoadingDataOnStartup;
   }
 
@@ -79,7 +87,7 @@ public class ImportProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -96,7 +104,7 @@ public class ImportProperties {
     return postImportEnabled;
   }
 
-  public ImportProperties setPostImportEnabled(boolean postImportEnabled) {
+  public ImportProperties setPostImportEnabled(final boolean postImportEnabled) {
     this.postImportEnabled = postImportEnabled;
     return this;
   }
@@ -105,7 +113,8 @@ public class ImportProperties {
     return postImporterIgnoreMissingData;
   }
 
-  public ImportProperties setPostImporterIgnoreMissingData(boolean postImporterIgnoreMissingData) {
+  public ImportProperties setPostImporterIgnoreMissingData(
+      final boolean postImporterIgnoreMissingData) {
     this.postImporterIgnoreMissingData = postImporterIgnoreMissingData;
     return this;
   }
@@ -114,7 +123,7 @@ public class ImportProperties {
     return useOnlyPosition;
   }
 
-  public ImportProperties setUseOnlyPosition(boolean useOnlyPosition) {
+  public ImportProperties setUseOnlyPosition(final boolean useOnlyPosition) {
     this.useOnlyPosition = useOnlyPosition;
     return this;
   }
@@ -132,7 +141,7 @@ public class ImportProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
   }
 
@@ -140,7 +149,7 @@ public class ImportProperties {
     return readerBackoff;
   }
 
-  public void setReaderBackoff(int readerBackoff) {
+  public void setReaderBackoff(final int readerBackoff) {
     this.readerBackoff = readerBackoff;
   }
 
@@ -148,7 +157,7 @@ public class ImportProperties {
     return schedulerBackoff;
   }
 
-  public void setSchedulerBackoff(int schedulerBackoff) {
+  public void setSchedulerBackoff(final int schedulerBackoff) {
     this.schedulerBackoff = schedulerBackoff;
   }
 
@@ -173,7 +182,7 @@ public class ImportProperties {
     return importPositionUpdateInterval;
   }
 
-  public void setImportPositionUpdateInterval(int importPositionUpdateInterval) {
+  public void setImportPositionUpdateInterval(final int importPositionUpdateInterval) {
     this.importPositionUpdateInterval = importPositionUpdateInterval;
   }
 
@@ -181,16 +190,20 @@ public class ImportProperties {
     return readArchivedParents;
   }
 
-  public ImportProperties setReadArchivedParents(boolean readArchivedParents) {
+  public ImportProperties setReadArchivedParents(final boolean readArchivedParents) {
     this.readArchivedParents = readArchivedParents;
     return this;
+  }
+
+  public boolean isRetryReadingParents() {
+    return retryReadingParents;
   }
 
   public int getMaxEmptyRuns() {
     return maxEmptyRuns;
   }
 
-  public ImportProperties setMaxEmptyRuns(int maxEmptyRuns) {
+  public ImportProperties setMaxEmptyRuns(final int maxEmptyRuns) {
     this.maxEmptyRuns = maxEmptyRuns;
     return this;
   }
