@@ -19,9 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import org.agrona.AsciiSequenceView;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Implements a chunk reader where each chunk is a single file in a root directory. Chunks are then
@@ -149,8 +146,6 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   }
 
   private CharSequence decodeChunkId(final ByteBuffer id) {
-    final DirectBuffer buffer = new UnsafeBuffer(id);
-    final var chunkId = new AsciiSequenceView().wrap(buffer, 0, buffer.capacity());
-    return chunkId.toString();
+    return ID_CHARSET.decode(id).toString();
   }
 }
