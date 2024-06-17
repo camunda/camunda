@@ -92,7 +92,7 @@ public final class FileBasedSnapshotChunkReaderTest {
 
         // then
 
-        final var chunkId = chunk.getChunkName() + "-" + chunk.getFileBlockIndex();
+        final var chunkId = chunk.getChunkName() + "__" + chunk.getFileBlockPosition();
         assertThat(ByteBuffer.wrap(chunkId.getBytes(StandardCharsets.UTF_8)))
             .isNotNull()
             .isEqualTo(nextId);
@@ -121,7 +121,8 @@ public final class FileBasedSnapshotChunkReaderTest {
 
     // then
     assertThat(snapshotChunkIds)
-        .containsExactly(asByteBuffer("file1-1"), asByteBuffer("file2-1"), asByteBuffer("file3-1"));
+        .containsExactly(
+            asByteBuffer("file1__0"), asByteBuffer("file2__0"), asByteBuffer("file3__0"));
 
     assertThat(snapshotChunks)
         .extracting(SnapshotChunk::getContent)
@@ -134,7 +135,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     // when
     final var snapshotChunkIds = new ArrayList<String>();
     try (final var snapshotChunkReader = newReader()) {
-      snapshotChunkReader.seek(asByteBuffer("file2"));
+      snapshotChunkReader.seek(asByteBuffer("file2__0"));
       while (snapshotChunkReader.hasNext()) {
         snapshotChunkIds.add(snapshotChunkReader.next().getChunkName());
       }
@@ -149,7 +150,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     // given
     final var snapshotChunkIds = new ArrayList<String>();
     try (final var snapshotChunkReader = newReader()) {
-      snapshotChunkReader.seek(asByteBuffer("file2"));
+      snapshotChunkReader.seek(asByteBuffer("file2__0"));
       snapshotChunkReader.next();
 
       // when
@@ -221,8 +222,12 @@ public final class FileBasedSnapshotChunkReaderTest {
 
       final var fileBlocks = entry.getValue();
       assertThat(fileBlocks.size()).isEqualTo(expectedFileBlocksCount);
-      assertThat(fileBlocks.stream().map(SnapshotChunk::getFileBlockIndex).toList())
-          .isEqualTo(LongStream.range(1, expectedFileBlocksCount + 1).boxed().toList());
+      assertThat(fileBlocks.stream().map(SnapshotChunk::getFileBlockPosition).toList())
+          .isEqualTo(
+              LongStream.range(0, expectedFileBlocksCount)
+                  .map(l -> l * maxChunkSize)
+                  .boxed()
+                  .toList());
     }
   }
 
@@ -244,12 +249,12 @@ public final class FileBasedSnapshotChunkReaderTest {
     final var expectedChunkIds = new ArrayList<ByteBuffer>();
     Collections.addAll(
         expectedChunkIds,
-        ByteBuffer.wrap("file1-1".getBytes()),
-        ByteBuffer.wrap("file1-2".getBytes()),
-        ByteBuffer.wrap("file2-1".getBytes()),
-        ByteBuffer.wrap("file3-1".getBytes()),
-        ByteBuffer.wrap("file3-2".getBytes()),
-        ByteBuffer.wrap("file3-3".getBytes()));
+        ByteBuffer.wrap("file1__0".getBytes()),
+        ByteBuffer.wrap("file1__3".getBytes()),
+        ByteBuffer.wrap("file2__0".getBytes()),
+        ByteBuffer.wrap("file3__0".getBytes()),
+        ByteBuffer.wrap("file3__3".getBytes()),
+        ByteBuffer.wrap("file3__6".getBytes()));
 
     assertThat(snapshotChunkIds).isEqualTo(expectedChunkIds);
   }
