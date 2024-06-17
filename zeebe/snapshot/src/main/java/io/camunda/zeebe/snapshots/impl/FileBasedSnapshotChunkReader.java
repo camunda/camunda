@@ -79,8 +79,12 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return;
     }
 
-    final var fileName = decodeChunkId(id);
-    chunksView = new TreeSet<>(chunks.tailSet(fileName, true));
+    final var chunkId = decodeChunkId(id);
+    final var chunkIdParts = chunkId.toString().split("__");
+
+    offset = Long.valueOf(chunkIdParts[1]);
+
+    chunksView = new TreeSet<>(chunks.tailSet(chunkIdParts[0], true));
   }
 
   @Override
@@ -149,6 +153,6 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private CharSequence decodeChunkId(final ByteBuffer id) {
     final DirectBuffer buffer = new UnsafeBuffer(id);
     final var chunkId = new AsciiSequenceView().wrap(buffer, 0, buffer.capacity());
-    return chunkId.toString().split("-")[0];
+    return chunkId.toString();
   }
 }
