@@ -15,13 +15,9 @@ import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import io.grpc.ServerInterceptor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
@@ -31,18 +27,18 @@ public final class InterceptorRepository {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final ExternalJarRepository jarRepository;
-  private final SortedMap<InterceptorId, Class<? extends ServerInterceptor>> interceptors;
+  private final List<InterceptorElement> interceptors;
   private final Path basePath;
 
   public InterceptorRepository() {
     this(
-        new TreeMap<>(),
+        new ArrayList<>(),
         new ExternalJarRepository(),
         Paths.get(Optional.ofNullable(System.getProperty("basedir")).orElse(".")));
   }
 
   InterceptorRepository(
-      final SortedMap<InterceptorId, Class<? extends ServerInterceptor>> interceptors,
+      final List<InterceptorElement> interceptors,
       final ExternalJarRepository jarRepository,
       final Path basePath) {
     this.interceptors = interceptors;
@@ -50,41 +46,40 @@ public final class InterceptorRepository {
     this.basePath = basePath;
   }
 
-  public SortedMap<InterceptorId, Class<? extends ServerInterceptor>> getInterceptors() {
-    return Collections.unmodifiableSortedMap(interceptors);
+  public List<InterceptorElement> getInterceptors() {
+    return interceptors;
   }
 
   public Stream<ServerInterceptor> instantiate() {
-    return interceptors.entrySet().stream()
-        .map(entry -> instantiate(entry.getKey().id, entry.getValue()));
+    return interceptors.stream().map(entry -> instantiate(entry.id, entry.clazz));
   }
 
   public InterceptorRepository load(final List<? extends InterceptorCfg> configs) {
-    IntStream.range(0, configs.size())
-        .forEach(
-            i -> {
-              final var config = configs.get(i);
-              try {
-                load(i, config);
-              } catch (final Exception e) {
-                LOGGER.debug(
-                    "Failed to load interceptor {} with config {}", config.getId(), config);
-                LangUtil.rethrowUnchecked(e);
-              }
-            });
+    configs.forEach(
+        config -> {
+          try {
+            load(config);
+          } catch (final Exception e) {
+            LOGGER.debug("Failed to load interceptor {} with config {}", config.getId(), config);
+            LangUtil.rethrowUnchecked(e);
+          }
+        });
 
     return this;
   }
 
-  Class<? extends ServerInterceptor> load(final int order, final InterceptorCfg config)
+  Class<? extends ServerInterceptor> load(final InterceptorCfg config)
       throws ExternalJarLoadException {
     final ClassLoader classLoader;
     final Class<? extends ServerInterceptor> interceptorClass;
     final String id = config.getId();
-    final InterceptorId interceptorId = new InterceptorId(id, order);
 
-    if (interceptors.containsKey(interceptorId)) {
-      return interceptors.get(interceptorId);
+    final var existingInterceptor =
+        interceptors.stream()
+            .filter(interceptorElement -> interceptorElement.id.equals(id))
+            .findFirst();
+    if (existingInterceptor.isPresent()) {
+      return existingInterceptor.get().clazz;
     }
 
     if (!config.isExternal()) {
@@ -104,13 +99,10 @@ public final class InterceptorRepository {
           id, "specified class does not implement ServerInterceptor", e);
     }
 
-    put(interceptorId, interceptorClass);
-    return interceptorClass;
-  }
+    final InterceptorElement interceptorElement = new InterceptorElement(id, interceptorClass);
+    interceptors.add(interceptorElement);
 
-  private void put(
-      final InterceptorId id, final Class<? extends ServerInterceptor> interceptorClass) {
-    interceptors.put(id, interceptorClass);
+    return interceptorClass;
   }
 
   private ServerInterceptor instantiate(
@@ -122,10 +114,5 @@ public final class InterceptorRepository {
     }
   }
 
-  public record InterceptorId(String id, int order) implements Comparable<InterceptorId> {
-    @Override
-    public int compareTo(final InterceptorRepository.InterceptorId o) {
-      return Comparator.comparingInt(InterceptorId::order).compare(this, o);
-    }
-  }
+  public record InterceptorElement(String id, Class<? extends ServerInterceptor> clazz) {}
 }
