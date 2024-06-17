@@ -12,17 +12,22 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -167,6 +172,49 @@ public final class CompleteJobTest {
     assertThat(throwable.getMessage()).contains("Property 'variables' is invalid");
     assertThat(throwable.getMessage())
         .contains("Expected document to be a root level object, but was 'INTEGER'");
+  }
+
+  @Test
+  public void shouldRespectVariableScopeWhenMergingVariableWithSameNameAndValue() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .subProcess("sub", s -> s.zeebeInputExpression("1", "x"))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").withVariable("x", 1).complete();
+
+    // look up the embedded subprocess instance key for variable scope verification
+    final var subprocessInstanceKey =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withName("x"))
+        .extracting(
+            Record::getIntent, r -> r.getValue().getValue(), r -> r.getValue().getScopeKey())
+        .describedAs("Expect that the variable is not created globally")
+        .doesNotContain(Tuple.tuple(VariableIntent.CREATED, "1", processInstanceKey))
+        .describedAs("Expect that the local variable is only created once")
+        .containsExactly(Tuple.tuple(VariableIntent.CREATED, "1", subprocessInstanceKey));
   }
 
   @Test
