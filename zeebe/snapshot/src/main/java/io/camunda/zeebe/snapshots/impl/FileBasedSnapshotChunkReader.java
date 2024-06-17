@@ -43,8 +43,8 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     this(directory, checksum, Long.MAX_VALUE);
   }
 
-  FileBasedSnapshotChunkReader(final Path directory, final long checksum, final long maximumChunkSize)
-      throws IOException {
+  FileBasedSnapshotChunkReader(
+      final Path directory, final long checksum, final long maximumChunkSize) throws IOException {
     this.directory = directory;
     chunks = collectChunks(directory);
     totalCount = chunks.size();
