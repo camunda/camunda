@@ -335,7 +335,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
       if (isIncompleteCheckTimedOut(
-          operateProperties, startTimeInMilliseconds, endTimeInMilliseconds)) {
+          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
+          startTimeInMilliseconds,
+          endTimeInMilliseconds)) {
         response.setState(BackupStateDto.INCOMPLETE);
       } else {
         response.setState(BackupStateDto.IN_PROGRESS);

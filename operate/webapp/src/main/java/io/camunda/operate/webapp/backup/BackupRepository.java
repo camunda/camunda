@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.backup;
 
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import java.time.Instant;
 import java.util.List;
@@ -32,19 +31,19 @@ public interface BackupRepository {
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 
   default boolean isIncompleteCheckTimedOut(
-      final OperateProperties operateProperties,
+      final long incompleteCheckTimeoutInSeconds,
       final long startTimeInMilliseconds,
       final long endTimeInMilliseconds) {
+    final var incompleteCheckTimeoutInMilliseconds = incompleteCheckTimeoutInSeconds * 1000;
     try {
       final var now = Instant.now().toEpochMilli();
-      final var timeout = operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
-      // if is no end time available we just check start time with now
-      if (now - startTimeInMilliseconds > timeout && endTimeInMilliseconds <= 0) {
+      // if is no end time available (endTimeInMilliseconds <= 0 ) we just check start time with now
+      if ((now - startTimeInMilliseconds) > incompleteCheckTimeoutInMilliseconds
+          && endTimeInMilliseconds <= 0) {
         return true;
       }
-      final long timeOutInSeconds =
-          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds();
-      return (endTimeInMilliseconds - startTimeInMilliseconds) > timeOutInSeconds;
+      return (endTimeInMilliseconds - startTimeInMilliseconds)
+          > (incompleteCheckTimeoutInMilliseconds);
     } catch (final Exception e) {
       LOGGER.warn(
           "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);

@@ -365,7 +365,9 @@ public class OpensearchBackupRepository implements BackupRepository {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
       if (isIncompleteCheckTimedOut(
-          operateProperties, startTimeInMilliseconds, endTimeInMilliseconds)) {
+          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
+          startTimeInMilliseconds,
+          endTimeInMilliseconds)) {
         return BackupStateDto.INCOMPLETE;
       } else {
         return BackupStateDto.IN_PROGRESS;
