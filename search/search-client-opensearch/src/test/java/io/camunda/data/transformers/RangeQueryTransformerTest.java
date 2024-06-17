@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.query.SearchRangeQuery;
-import io.camunda.search.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
