@@ -4,7 +4,6 @@ import useTranslate from "src/utility/localization";
 
 export type TextFieldProps = {
   label: string;
-  onChange: (newValue: string) => void;
   value: string;
   errors?: string[];
   helperText?: string;
@@ -12,10 +11,20 @@ export type TextFieldProps = {
   cols?: number;
   autoFocus?: boolean;
   type?: "text" | "password";
-};
+} & (
+    | {
+  onChange: (newValue: string) => void;
+  disabled?: false;
+}
+    | {
+  onChange?: () => void;
+  disabled: true;
+}
+    );
 
 const TextField: FC<TextFieldProps> = ({
-                                         onChange,
+                                         onChange = () => null,
+                                         disabled = false,
                                          errors,
                                          value,
                                          helperText,
@@ -49,6 +58,7 @@ const TextField: FC<TextFieldProps> = ({
           id={label}
           helperText={helperText}
           value={value}
+          disabled={disabled}
           placeholder={placeholder}
           onChange={handleChange}
           invalid={errors && errors.length > 0}

@@ -91,8 +91,8 @@ describe('Target Diagram', () => {
       }),
     ).not.toBeInTheDocument();
 
-    expect(screen.getByText('New demo process')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.queryByText('New demo process')).not.toBeInTheDocument();
+    expect(screen.queryByText('3')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
 
