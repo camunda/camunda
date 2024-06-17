@@ -36,14 +36,14 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private final int totalCount;
   private final long snapshotChecksum;
   private final String snapshotID;
-  private int chunkSize;
+  private long maximumChunkSize;
 
   public FileBasedSnapshotChunkReader(final Path directory, final long checksum)
       throws IOException {
-    this(directory, checksum, Integer.MAX_VALUE);
+    this(directory, checksum, Long.MAX_VALUE);
   }
 
-  FileBasedSnapshotChunkReader(final Path directory, final long checksum, final int chunkSize)
+  FileBasedSnapshotChunkReader(final Path directory, final long checksum, final long maximumChunkSize)
       throws IOException {
     this.directory = directory;
     chunks = collectChunks(directory);
@@ -54,7 +54,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
 
     snapshotID = directory.getFileName().toString();
 
-    this.chunkSize = chunkSize;
+    this.maximumChunkSize = maximumChunkSize;
   }
 
   private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
@@ -94,8 +94,8 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   }
 
   @Override
-  public void setChunkSize(final int chunkSize) {
-    this.chunkSize = chunkSize;
+  public void setMaximumChunkSize(final int maximumChunkSize) {
+    this.maximumChunkSize = maximumChunkSize;
   }
 
   @Override
@@ -116,7 +116,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
 
     try (final var file = new RandomAccessFile(filePath, "r")) {
       final var fileLength = file.length();
-      final var bytesToRead = Math.min(chunkSize, fileLength - offset);
+      final var bytesToRead = Math.min(maximumChunkSize, fileLength - offset);
       final byte[] buffer = new byte[(int) bytesToRead];
       file.seek(offset);
       file.read(buffer);

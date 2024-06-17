@@ -271,7 +271,7 @@ public final class FileBasedSnapshotChunkReaderTest {
       snapshotChunks.add(snapshotChunkReader.next());
     }
 
-    snapshotChunkReader.setChunkSize(maxChunkSize);
+    snapshotChunkReader.setMaximumChunkSize(maxChunkSize);
     while (snapshotChunkReader.hasNext()) {
       snapshotChunks.add(snapshotChunkReader.next());
     }
@@ -299,7 +299,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     return ByteBuffer.wrap(string.getBytes()).order(Protocol.ENDIANNESS);
   }
 
-  private FileBasedSnapshotChunkReader newReader(final int chunkSize) throws IOException {
+  private FileBasedSnapshotChunkReader newReader(final long chunkSize) throws IOException {
     snapshotDirectory = temporaryFolder.getRoot().toPath();
 
     for (final var chunk : SNAPSHOT_CHUNK.keySet()) {
@@ -312,6 +312,6 @@ public final class FileBasedSnapshotChunkReaderTest {
   }
 
   private FileBasedSnapshotChunkReader newReader() throws IOException {
-    return newReader(Integer.MAX_VALUE);
+    return newReader(Long.MAX_VALUE);
   }
 }

@@ -502,7 +502,7 @@ final class LeaderAppender {
 
     //    if not given in response defaults to 0
     if (response.preferredChunkSize() > 0) {
-      member.getSnapshotChunkReader().setChunkSize(response.preferredChunkSize());
+      member.getSnapshotChunkReader().setMaximumChunkSize(response.preferredChunkSize());
     }
     // If the install request was completed successfully, set the member's snapshotIndex and reset
     // the next snapshot index/offset.

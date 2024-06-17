@@ -119,7 +119,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       }
 
       @Override
-      public void setChunkSize(final int chunkSize) {}
+      public void setMaximumChunkSize(final int maximumChunkSize) {}
 
       @Override
       public void close() {

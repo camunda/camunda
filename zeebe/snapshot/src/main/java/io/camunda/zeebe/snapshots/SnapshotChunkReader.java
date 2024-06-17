@@ -38,7 +38,7 @@ public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableS
   /**
    * Sets the maximum chunk size for the reader when sending files.
    *
-   * @param chunkSize
+   * @param maximumChunkSize
    */
-  void setChunkSize(final int chunkSize);
+  void setMaximumChunkSize(final int maximumChunkSize);
 }
