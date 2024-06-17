@@ -19,6 +19,7 @@ on:
       - 'pom.xml'
       - 'tasklist.Dockerfile'
       - 'tasklist/**'
+      - 'webapps-common/**'
       - 'zeebe/**'
 
 jobs:

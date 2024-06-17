@@ -39,7 +39,8 @@ import org.springframework.context.annotation.Conditional;
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test.json";
+  private static final String ORIGINAL_SCHEMA_PATH =
+      "/tasklist-test-elasticsearch-schema-manager.json";
   private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;

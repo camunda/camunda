@@ -122,7 +122,7 @@
     <version.feign>13.2.1</version.feign>
     <version.google-sdk>26.41.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.1</version.awssdk>
+    <version.awssdk>2.26.3</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.742</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.744</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
@@ -203,7 +203,7 @@
     <plugin.version.dependency>3.7.0</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.3.0</plugin.version.exec>
-    <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
+    <plugin.version.failsafe>3.3.0</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.1</plugin.version.maven-jar>
@@ -215,7 +215,7 @@
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.5.0</plugin.version.spotbugs>
-    <plugin.version.surefire>3.2.5</plugin.version.surefire>
+    <plugin.version.surefire>3.3.0</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
