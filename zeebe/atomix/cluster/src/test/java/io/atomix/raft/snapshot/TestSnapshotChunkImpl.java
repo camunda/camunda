@@ -63,12 +63,12 @@ class TestSnapshotChunkImpl implements SnapshotChunk {
   }
 
   @Override
-  public long getFileBlockIndex() {
+  public long getFileBlockPosition() {
     return 0;
   }
 
   @Override
-  public long getTotalFileBlocks() {
+  public long getTotalFileSize() {
     return 0;
   }
 }

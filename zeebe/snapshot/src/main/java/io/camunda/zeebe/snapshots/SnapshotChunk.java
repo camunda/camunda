@@ -43,7 +43,7 @@ public interface SnapshotChunk {
   /**
    * @return the index of the part of the chunk contents.
    */
-  long getFileBlockIndex();
+  long getFileBlockPosition();
 
-  long getTotalFileBlocks();
+  long getTotalFileSize();
 }

@@ -31,8 +31,8 @@ final class SnapshotChunkUtil {
       final long snapshotChecksum,
       final String fileName,
       final byte[] fileData,
-      final long fileBlockIndex,
-      final long totalFileBlocks) {
+      final long fileBlockPosition,
+      final long totalFileSize) {
 
     final long checksum = createChecksum(fileData);
     return new SnapshotChunkImpl(
@@ -42,8 +42,8 @@ final class SnapshotChunkUtil {
         checksum,
         fileData,
         snapshotChecksum,
-        fileBlockIndex,
-        totalFileBlocks);
+        fileBlockPosition,
+        totalFileSize);
   }
 
   private static final class SnapshotChunkImpl implements SnapshotChunk {
@@ -53,8 +53,8 @@ final class SnapshotChunkUtil {
     private final byte[] content;
     private final long snapshotChecksum;
     private final long checksum;
-    private final long fileBlockIndex;
-    private final long totalFileBlocks;
+    private final long fileBlockPosition;
+    private final long totalFileSize;
 
     SnapshotChunkImpl(
         final String snapshotId,
@@ -63,16 +63,16 @@ final class SnapshotChunkUtil {
         final long checksum,
         final byte[] content,
         final long snapshotChecksum,
-        final long fileBlockIndex,
-        final long totalFileBlocks) {
+        final long fileBlockPosition,
+        final long totalFileSize) {
       this.snapshotId = snapshotId;
       this.totalCount = totalCount;
       this.chunkName = chunkName;
       this.checksum = checksum;
       this.content = content;
       this.snapshotChecksum = snapshotChecksum;
-      this.fileBlockIndex = fileBlockIndex;
-      this.totalFileBlocks = totalFileBlocks;
+      this.fileBlockPosition = fileBlockPosition;
+      this.totalFileSize = totalFileSize;
     }
 
     @Override
@@ -106,13 +106,13 @@ final class SnapshotChunkUtil {
     }
 
     @Override
-    public long getFileBlockIndex() {
-      return fileBlockIndex;
+    public long getFileBlockPosition() {
+      return fileBlockPosition;
     }
 
     @Override
-    public long getTotalFileBlocks() {
-      return totalFileBlocks;
+    public long getTotalFileSize() {
+      return totalFileSize;
     }
   }
 }

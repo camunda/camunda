@@ -35,8 +35,8 @@ public final class SnapshotChunkImpl
   private String chunkName;
   private long checksum;
   private long snapshotChecksum;
-  private long fileBlockIndex;
-  private long totalFileBlocks;
+  private long fileBlockPosition;
+  private long totalFileSize;
 
   public SnapshotChunkImpl() {}
 
@@ -47,8 +47,8 @@ public final class SnapshotChunkImpl
     checksum = chunk.getChecksum();
     snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
-    fileBlockIndex = chunk.getFileBlockIndex();
-    totalFileBlocks = chunk.getTotalFileBlocks();
+    fileBlockPosition = chunk.getFileBlockPosition();
+    totalFileSize = chunk.getTotalFileSize();
   }
 
   @Override
@@ -68,8 +68,8 @@ public final class SnapshotChunkImpl
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
     snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
-    fileBlockIndex = SnapshotChunkDecoder.fileBlockIndexNullValue();
-    totalFileBlocks = SnapshotChunkDecoder.totalFileBlocksNullValue();
+    fileBlockPosition = SnapshotChunkDecoder.fileBlockPositionNullValue();
+    totalFileSize = SnapshotChunkDecoder.totalFileSizeNullValue();
 
     snapshotId = "";
     chunkName = "";
@@ -93,8 +93,8 @@ public final class SnapshotChunkImpl
 
     encoder
         .totalCount(totalCount)
-        .fileBlockIndex(fileBlockIndex)
-        .totalFileBlocks(totalFileBlocks)
+        .fileBlockPosition(fileBlockPosition)
+        .totalFileSize(totalFileSize)
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
@@ -107,8 +107,8 @@ public final class SnapshotChunkImpl
     super.wrap(buffer, offset, length);
 
     totalCount = decoder.totalCount();
-    fileBlockIndex = decoder.fileBlockIndex();
-    totalFileBlocks = decoder.totalFileBlocks();
+    fileBlockPosition = decoder.fileBlockPosition();
+    totalFileSize = decoder.totalFileSize();
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
@@ -150,13 +150,13 @@ public final class SnapshotChunkImpl
   }
 
   @Override
-  public long getFileBlockIndex() {
-    return fileBlockIndex;
+  public long getFileBlockPosition() {
+    return fileBlockPosition;
   }
 
   @Override
-  public long getTotalFileBlocks() {
-    return totalFileBlocks;
+  public long getTotalFileSize() {
+    return totalFileSize;
   }
 
   @Override
@@ -173,10 +173,10 @@ public final class SnapshotChunkImpl
         + checksum
         + ", snapshotChecksum="
         + snapshotChecksum
-        + ", fileBlockIndex="
-        + fileBlockIndex
-        + ", totalFileBlocks="
-        + totalFileBlocks
+        + ", fileBlockPosition="
+        + fileBlockPosition
+        + ", totalFileSize="
+        + totalFileSize
         + "} "
         + super.toString();
   }

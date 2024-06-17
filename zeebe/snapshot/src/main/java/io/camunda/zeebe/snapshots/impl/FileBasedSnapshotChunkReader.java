@@ -124,14 +124,12 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       file.seek(offset);
       file.read(buffer);
 
+      final var fileBlockPosition = offset;
       offset += bytesToRead;
-      final var fileBlockIndex = Math.ceilDiv(offset, chunkSize);
       if (offset == fileLength) {
         offset = 0;
         chunksView.pollFirst();
       }
-
-      final var totalFileBlocks = Math.ceilDiv(fileLength, chunkSize);
 
       return SnapshotChunkUtil.createSnapshotChunkFromFileChunk(
           snapshotID,
@@ -139,8 +137,8 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
           snapshotChecksum,
           fileName,
           buffer,
-          fileBlockIndex,
-          totalFileBlocks);
+          fileBlockPosition,
+          fileLength);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
