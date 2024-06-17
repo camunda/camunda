@@ -89,7 +89,9 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return null;
     }
 
-    return encodeChunkId(chunksView.first());
+    final var nextFilePartIndex = Math.ceilDiv(offset, chunkSize) + 1;
+
+    return encodeChunkId(chunksView.first().toString() + "-" + nextFilePartIndex);
   }
 
   @Override
