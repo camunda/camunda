@@ -12,7 +12,8 @@ import {api} from 'modules/api';
 import {getStage} from 'modules/utils/getStage';
 import {useEffect, useState} from 'react';
 
-const getIsSaas = () => typeof window.clientConfig?.organizationId === 'string';
+const getIsSaas = () =>
+  typeof window?.clientConfig?.organizationId === 'string';
 const calculateStage = () => getStage(window.location.host);
 
 async function fetchToken() {

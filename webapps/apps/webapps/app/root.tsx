@@ -5,6 +5,10 @@ import {
   Scripts,
   ScrollRestoration,
 } from '@remix-run/react';
+import {ClientOnly} from 'remix-utils/client-only';
+import styles from './styles/global.scss?url';
+
+export const links = () => [{rel: 'stylesheet', href: styles}];
 
 export function Layout({children}: {children: React.ReactNode}) {
   return (
@@ -16,7 +20,7 @@ export function Layout({children}: {children: React.ReactNode}) {
         <Links />
       </head>
       <body>
-        {children}
+        <ClientOnly>{() => children}</ClientOnly>
         <ScrollRestoration />
         <Scripts />
       </body>

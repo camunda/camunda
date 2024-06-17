@@ -14,13 +14,9 @@ import {AuthenticationCheck} from 'AuthenticationCheck';
 import {pages} from 'modules/routing';
 import {OSNotifications} from 'OSNotifications';
 import {C3Provider} from 'C3Provider';
-import styled from 'styled-components';
+import styles from '@camunda/camunda-composite-components/style.css?url';
 
-// const StyledLayout = styled.div`
-//   display: flex;
-//   flex-direction: column;
-//   height: 100vh;
-// `;
+export const links = [{rel: 'stylesheet', href: styles}];
 
 const Layout: React.FC = () => {
   return (

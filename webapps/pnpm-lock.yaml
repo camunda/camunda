@@ -24,8 +24,8 @@ importers:
         specifier: 1.8.7
         version: 1.8.7
       '@bpmn-io/form-js-viewer':
-        specifier: 1.8.7
-        version: 1.8.7
+        specifier: file:/home/vinicius/repos/form-js/packages/form-js-viewer
+        version: file:../../form-js/packages/form-js-viewer
       '@camunda/camunda-composite-components':
         specifier: file:/home/vinicius/repos/camunda-composite-components
         version: file:../../camunda-composite-components(@carbon/react@file:../../carbon/packages/react(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.77.4))(@types/react@18.3.3)(event-source-polyfill@1.0.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.1.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
@@ -261,12 +261,24 @@ importers:
       '@camunda/tasklist':
         specifier: workspace:8.6.0-SNAPSHOT
         version: link:../tasklist
+      '@carbon/grid':
+        specifier: 11.23.0
+        version: 11.23.0
       '@carbon/layout':
         specifier: 11.22.0
         version: 11.22.0
       '@carbon/react':
         specifier: file:/home/vinicius/repos/carbon/packages/react
         version: file:../../carbon/packages/react(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.77.4)
+      '@carbon/styles':
+        specifier: 1.59.0
+        version: 1.59.0(sass@1.77.4)
+      '@carbon/themes':
+        specifier: 11.36.0
+        version: 11.36.0
+      '@carbon/type':
+        specifier: 11.27.0
+        version: 11.27.0
       '@remix-run/node':
         specifier: 2.9.2
         version: 2.9.2(typescript@5.4.5)
@@ -276,6 +288,9 @@ importers:
       '@remix-run/serve':
         specifier: 2.9.2
         version: 2.9.2(typescript@5.4.5)
+      classnames:
+        specifier: ^2.5.1
+        version: 2.5.1
       isbot:
         specifier: 5.1.9
         version: 5.1.9
@@ -285,6 +300,9 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
+      zod:
+        specifier: 3.23.8
+        version: 3.23.8
     devDependencies:
       '@remix-run/dev':
         specifier: 2.9.2
@@ -319,6 +337,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: 4.6.2
         version: 4.6.2(eslint@8.57.0)
+      remix-utils:
+        specifier: 7.6.0
+        version: 7.6.0(@remix-run/node@2.9.2(typescript@5.4.5))(@remix-run/react@2.9.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5))(@remix-run/router@1.16.1)(react@18.3.1)(zod@3.23.8)
       sass:
         specifier: 1.77.4
         version: 1.77.4
@@ -544,8 +565,8 @@ packages:
   '@bpmn-io/form-js-carbon-styles@1.8.7':
     resolution: {integrity: sha512-soUKfJg9JJLfcyx8nLK2YMphz5INXWcmPLaG+MM0Ed93HWDerv49Gj6NQGXMM2TtDjYCBXI59tpzK1KmUIbLcQ==}
 
-  '@bpmn-io/form-js-viewer@1.8.7':
-    resolution: {integrity: sha512-AOgvHkfCpcz3p1NUo2i+WY6hGu17vF8z+7LXiP7qf2lr7xgjJ4qFglgTwOpGY5O2eS4692GRdZqcaze6A9T5ug==}
+  '@bpmn-io/form-js-viewer@file:../../form-js/packages/form-js-viewer':
+    resolution: {directory: ../../form-js/packages/form-js-viewer, type: directory}
 
   '@bundled-es-modules/cookie@2.0.0':
     resolution: {integrity: sha512-Or6YHg/kamKHpxULAdSqhGqnWFneIXu1NKvvfBBzKGwpVsYuFIQ5aBPHDnnoR3ghW1nvSkALd+EF9iMtY7Vjxw==}
@@ -3787,6 +3808,9 @@ packages:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
 
+  lodash-es@4.17.21:
+    resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
+
   lodash.camelcase@4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}
 
@@ -6168,7 +6192,7 @@ snapshots:
 
   '@bpmn-io/form-js-carbon-styles@1.8.7': {}
 
-  '@bpmn-io/form-js-viewer@1.8.7':
+  '@bpmn-io/form-js-viewer@file:../../form-js/packages/form-js-viewer':
     dependencies:
       '@carbon/grid': 11.23.0
       big.js: 6.2.1
@@ -6179,7 +6203,7 @@ snapshots:
       feelin: 3.1.0
       flatpickr: 4.6.13
       ids: 1.0.5
-      lodash: 4.17.21
+      lodash-es: 4.17.21
       marked: 12.0.2
       min-dash: 4.2.1
       preact: 10.22.0
@@ -9897,6 +9921,8 @@ snapshots:
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
+
+  lodash-es@4.17.21: {}
 
   lodash.camelcase@4.3.0: {}
 

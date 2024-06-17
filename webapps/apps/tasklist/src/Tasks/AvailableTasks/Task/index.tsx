@@ -15,7 +15,7 @@ import {
   CheckmarkFilled,
   Warning,
   Notification,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {pages} from 'modules/routing';
 import {
   formatISODate,

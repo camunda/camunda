@@ -73,6 +73,17 @@ module.exports = {
       ],
     },
 
+    {
+      settings: {
+        'import/internal-regex': '^~/',
+        'import/resolver': {
+          alias: {
+            extensions: ['.css', '.scss'],
+          },
+        },
+      },
+    },
+
     // Node
     {
       files: ['.eslintrc.cjs'],

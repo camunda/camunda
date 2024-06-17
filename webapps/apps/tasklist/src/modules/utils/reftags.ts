@@ -55,20 +55,24 @@ function decodeRefTagData<T>(
 }
 
 function encodeTaskOpenedRef(data: TaskOpenedRef): string {
+  return '';
   return `${TASK_OPENED_PREFIX}:${encodeRefTagData(data)}`;
 }
 
 function encodeTaskEmptyPageRef(data: TaskEmptyPageOpenedRef): string {
+  return '';
   return `${TASK_EMPTY_PAGE_OPENED_PREFIX}:${encodeRefTagData(data)}`;
 }
 
 function decodeTaskOpenedRef(str: string | null): TaskOpenedRef | null {
+  return '';
   return decodeRefTagData(str, TASK_OPENED_PREFIX, TASK_OPENED_REF);
 }
 
 function decodeTaskEmptyPageRef(
   str: string | null,
 ): TaskEmptyPageOpenedRef | null {
+  return '';
   return decodeRefTagData(
     str,
     TASK_EMPTY_PAGE_OPENED_PREFIX,

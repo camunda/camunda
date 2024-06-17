@@ -11,13 +11,13 @@ import {useParams} from 'react-router-dom';
 /* istanbul ignore file */
 
 const pages = {
-  initial: '/',
+  initial: '/tasklist',
   login: '/login',
   taskDetails(id: string = ':id') {
-    return `/${id}`;
+    return `/tasklist/${id}`;
   },
   taskDetailsProcess(id: string = ':id') {
-    return `/${id}/process`;
+    return `/tasklist/${id}/process`;
   },
   processes(
     options: {tenantId?: string; matchAllChildren?: boolean} = {
@@ -25,7 +25,9 @@ const pages = {
     },
   ) {
     const {tenantId, matchAllChildren: matchAllChildren = false} = options;
-    const baseRoute = matchAllChildren ? 'processes/*' : 'processes';
+    const baseRoute = matchAllChildren
+      ? '/tasklist/processes/*'
+      : '/tasklist/processes';
     if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
       return `${baseRoute}?tenantId=${tenantId}`;
     }
@@ -34,7 +36,7 @@ const pages = {
   },
   startProcessFromForm: '/new/:bpmnProcessId',
   internalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
-    return `/processes/${bpmnProcessId}/start`;
+    return `/tasklist/processes/${bpmnProcessId}/start`;
   },
 } as const;
 

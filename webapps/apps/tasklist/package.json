@@ -17,6 +17,22 @@
     "./routes/tasks": {
       "types": "./src/routes/tasks.tsx",
       "import": "./src/routes/tasks.tsx"
+    },
+    "./routes/noTaskSelected": {
+      "types": "./src/routes/noTaskSelected.tsx",
+      "import": "./src/routes/noTaskSelected.tsx"
+    },
+    "./routes/taskDetails": {
+      "types": "./src/routes/taskDetails.tsx",
+      "import": "./src/routes/taskDetails.tsx"
+    },
+    "./routes/taskDetailsIndex": {
+      "types": "./src/routes/taskDetailsIndex.client.tsx",
+      "import": "./src/routes/taskDetailsIndex.client.tsx"
+    },
+    "./routes/taskDetailsProcess": {
+      "types": "./src/routes/taskDetailsProcess.tsx",
+      "import": "./src/routes/taskDetailsProcess.tsx"
     }
   },
   "files": [
@@ -25,7 +41,7 @@
   "dependencies": {
     "@bpmn-io/element-template-icon-renderer": "0.5.2",
     "@bpmn-io/form-js-carbon-styles": "1.8.7",
-    "@bpmn-io/form-js-viewer": "1.8.7",
+    "@bpmn-io/form-js-viewer": "file:/home/vinicius/repos/form-js/packages/form-js-viewer",
     "@camunda/camunda-composite-components": "file:/home/vinicius/repos/camunda-composite-components",
     "@carbon/elements": "11.47.0",
     "@carbon/react": "file:/home/vinicius/repos/carbon/packages/react",
