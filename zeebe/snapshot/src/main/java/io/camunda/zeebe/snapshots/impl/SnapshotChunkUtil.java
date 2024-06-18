@@ -76,6 +76,11 @@ final class SnapshotChunkUtil {
     }
 
     @Override
+    public boolean isLastFileBlock() {
+      return fileBlockPosition + content.length == totalFileSize;
+    }
+
+    @Override
     public String getSnapshotId() {
       return snapshotId;
     }
