@@ -25,6 +25,7 @@ import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class PropertyBasedZeebeWorkerValueCustomizerTest {
@@ -103,6 +104,24 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     customizer.customize(zeebeWorkerValue);
     // then
     assertThat(zeebeWorkerValue.getName()).isEqualTo("testBean#sampleWorker");
+  }
+
+  @Test
+  void shouldSetDefaultTenantIds() {
+    // given
+    final ZeebeClientConfigurationProperties properties = properties();
+    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
   }
 
   @Test
