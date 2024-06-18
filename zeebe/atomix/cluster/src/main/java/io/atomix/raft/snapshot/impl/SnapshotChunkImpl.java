@@ -121,7 +121,7 @@ public final class SnapshotChunkImpl
 
   @Override
   public boolean isLastFileBlock() {
-    return getFileBlockPosition() + content.byteArray().length == getTotalFileSize();
+    return getFileBlockPosition() + content.capacity() == getTotalFileSize();
   }
 
   @Override
