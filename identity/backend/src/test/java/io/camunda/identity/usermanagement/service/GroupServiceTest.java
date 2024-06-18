@@ -7,22 +7,25 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.identity.CamundaSpringBootTest;
 import io.camunda.identity.usermanagement.CamundaGroup;
+import java.util.Random;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CamundaSpringBootTest
 public class GroupServiceTest {
+
   @Autowired private GroupService groupService;
 
   @Test
-  void uniqueGroupCreateUserCreated() {
+  void uniqueGroupCreateGroupCreated() {
     final var groupName = "gr" + UUID.randomUUID();
 
     final var group = groupService.createGroup(new CamundaGroup(groupName));
@@ -46,24 +49,42 @@ public class GroupServiceTest {
     final var groupName = "gr" + UUID.randomUUID();
     final var group = groupService.createGroup(new CamundaGroup(groupName));
 
+    assertDoesNotThrow(() -> (groupService.findGroupById(group.id())));
+
     groupService.deleteGroup(group);
 
     assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
   }
 
   @Test
-  void nonExistingGroupDeleteGroupException() {
+  void existingGroupDeleteGroupByIdDeleted() {
     final var groupName = "gr" + UUID.randomUUID();
+    final var group = groupService.createGroup(new CamundaGroup(groupName));
 
-    assertThrows(
-        RuntimeException.class, () -> groupService.deleteGroup(new CamundaGroup(groupName)));
+    assertDoesNotThrow(() -> (groupService.findGroupById(group.id())));
+
+    groupService.deleteGroupById(group.id());
+
+    assertThrows(RuntimeException.class, () -> groupService.findGroupById(group.id()));
   }
 
   @Test
-  void nonExistingGroupFindGroupByNameThrowsException() {
+  void nonExistingGroupDeleteGroupException() {
     final var groupName = "gr" + UUID.randomUUID();
+    final long randId = new Random().nextLong();
+
+    assertThrows(
+        RuntimeException.class, () -> groupService.deleteGroup(new CamundaGroup(groupName)));
+    assertThrows(RuntimeException.class, () -> groupService.deleteGroupById(randId));
+  }
+
+  @Test
+  void nonExistingGroupFindGroupThrowsException() {
+    final var groupName = "gr" + UUID.randomUUID();
+    final long randId = new Random().nextLong();
 
     assertThrows(RuntimeException.class, () -> groupService.findGroupByName(groupName));
+    assertThrows(RuntimeException.class, () -> groupService.findGroupById(randId));
   }
 
   @Test
@@ -77,23 +98,39 @@ public class GroupServiceTest {
   }
 
   @Test
-  void nonExistingGroupUpdateGroupThrowsException() {
+  void nonExistingGroupRenameGroupThrowsException() {
     final var groupName = "gr" + UUID.randomUUID();
+    final long randId = new Random().nextLong();
 
     assertThrows(
         RuntimeException.class,
-        () -> groupService.updateGroup(groupName, new CamundaGroup(groupName)));
+        () -> groupService.renameGroup(groupName, new CamundaGroup(groupName)));
+    assertThrows(
+        RuntimeException.class,
+        () -> groupService.renameGroupById(randId, new CamundaGroup(randId, groupName)));
   }
 
   @Test
-  void existingGroupUpdateGroupUpdated() {
+  void existingGroupRenameGroupUpdated() {
     final var groupName = "gr" + UUID.randomUUID();
     final var newGroupName = "newGr" + UUID.randomUUID();
     groupService.createGroup(new CamundaGroup(groupName));
 
-    groupService.updateGroup(groupName, new CamundaGroup(newGroupName));
+    groupService.renameGroup(groupName, new CamundaGroup(newGroupName));
 
     final var group = groupService.findGroupByName(newGroupName);
+    assertNotNull(group);
+  }
+
+  @Test
+  void existingGroupRenameGroupByIdUpdated() {
+    final var groupName = "gr" + UUID.randomUUID();
+    final var newGroupName = "newGr" + UUID.randomUUID();
+    final CamundaGroup createdGroup = groupService.createGroup(new CamundaGroup(groupName));
+
+    groupService.renameGroupById(createdGroup.id(), new CamundaGroup(newGroupName));
+
+    final var group = groupService.findGroupById(createdGroup.id());
     assertNotNull(group);
   }
 }
