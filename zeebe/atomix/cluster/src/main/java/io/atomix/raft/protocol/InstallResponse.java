@@ -52,7 +52,7 @@ public class InstallResponse extends AbstractRaftResponse {
 
   /** Install response builder. */
   public static class Builder extends AbstractRaftResponse.Builder<Builder, InstallResponse> {
-    protected int preferredChunkSize;
+    protected int preferredChunkSize = DEFAULT_CHUNK_SIZE;
 
     @Override
     public InstallResponse build() {
