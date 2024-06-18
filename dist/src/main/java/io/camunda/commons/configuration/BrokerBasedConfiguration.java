@@ -15,9 +15,16 @@ import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDir
 import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.RestApiCompositeFilter;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
+import jakarta.servlet.Filter;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
@@ -26,6 +33,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(BrokerBasedProperties.class)
@@ -76,6 +84,16 @@ public final class BrokerBasedConfiguration {
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @ConditionalOnRestGatewayEnabled
+  @Bean
+  public CompositeFilter restApiCompositeFilter() {
+    final List<FilterCfg> filterCfgs = properties.getGateway().getFilters();
+    final List<Filter> filters =
+        new FilterRepository().load(filterCfgs).instantiate().collect(Collectors.toList());
+
+    return new RestApiCompositeFilter(filters);
   }
 
   @Bean

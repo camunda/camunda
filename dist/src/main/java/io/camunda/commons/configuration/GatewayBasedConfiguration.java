@@ -18,14 +18,20 @@ import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfigurati
 import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
 import io.camunda.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
+import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,6 +41,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(GatewayBasedProperties.class)
@@ -64,6 +71,16 @@ public final class GatewayBasedConfiguration {
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @ConditionalOnRestGatewayEnabled
+  @Bean
+  public CompositeFilter restApiCompositeFilter() {
+    final List<FilterCfg> filterCfgs = properties.getFilters();
+    final List<Filter> filters =
+        new FilterRepository().load(filterCfgs).instantiate().collect(Collectors.toList());
+
+    return new RestApiCompositeFilter(filters);
   }
 
   @Bean
