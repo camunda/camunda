@@ -141,7 +141,6 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.14.0</version.jna-platform>
-    <version.msal4j>1.15.1</version.msal4j>
 
     <version.commons-io>2.16.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
@@ -1753,13 +1752,6 @@
         <groupId>jakarta.json</groupId>
         <artifactId>jakarta.json-api</artifactId>
         <version>${version.jakarta.json-api}</version>
-      </dependency>
-
-      <!-- internal conflicts from azure-identity -->
-      <dependency>
-        <groupId>com.microsoft.azure</groupId>
-        <artifactId>msal4j</artifactId>
-        <version>${version.msal4j}</version>
       </dependency>
 
       <dependency>
