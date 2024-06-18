@@ -167,13 +167,6 @@ jobs:
                     "type": "mrkdwn",
                     "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
                   }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_INTEGRATION_TESTS }}"
-                  }
                 }
               ]
             }
