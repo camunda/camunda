@@ -120,11 +120,15 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    startProcessors();
+    start();
   }
 
   public void start() {
-    startProcessors();
+    start(StreamProcessorMode.PROCESSING, true);
+  }
+
+  public void start(final StreamProcessorMode mode, final boolean awaitOpening) {
+    startProcessors(mode, awaitOpening);
   }
 
   public void stop() {
@@ -156,7 +160,7 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  private void startProcessors() {
+  private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
     forEachPartition(
@@ -190,7 +194,9 @@ public final class EngineRule extends ExternalResource {
                       lastProcessedPosition = skippedRecord.getPosition();
                       onSkippedCallback.accept(skippedRecord);
                     }
-                  }));
+                  }),
+              cfg -> cfg.streamProcessorMode(mode),
+              awaitOpening);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
@@ -232,7 +238,7 @@ public final class EngineRule extends ExternalResource {
     // we need to reset the record exporter
     RecordingExporter.reset();
 
-    startProcessors();
+    startProcessors(StreamProcessorMode.PROCESSING, true);
     TestUtil.waitUntil(
         () -> RecordingExporter.getRecords().size() >= lastSize,
         "Failed to reprocess all events, only re-exported %d but expected %d",
