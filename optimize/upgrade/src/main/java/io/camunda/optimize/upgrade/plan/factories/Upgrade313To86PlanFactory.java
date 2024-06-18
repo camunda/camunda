@@ -14,13 +14,13 @@ import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
-public class Upgrade313To314PlanFactory implements UpgradePlanFactory {
+public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion("3.13")
-        .toVersion("3.14.0")
+        .toVersion("8.6.0")
         .addUpgradeStep(new DeleteIndexIfExistsStep("onboarding-state", 2))
         .addUpgradeStep(deleteLastModifierAndTelemetryInitializedSettingFields())
         .build();
