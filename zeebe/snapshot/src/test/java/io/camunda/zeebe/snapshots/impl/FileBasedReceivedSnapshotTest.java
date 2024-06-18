@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
@@ -333,6 +335,44 @@ public class FileBasedReceivedSnapshotTest {
         .isDirectoryContaining(
             name ->
                 name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+  }
+
+  @Test
+  public void shouldPersistOutOfOrderChunksCorrectly() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+
+    // when
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    final var chunks = new ArrayList<SnapshotChunk>();
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+      while (snapshotChunkReader.hasNext()) {
+        chunks.add(snapshotChunkReader.next());
+      }
+    }
+
+    Collections.shuffle(chunks);
+
+    for (final var chunk : chunks) {
+      receivedSnapshot.apply(chunk).join();
+    }
+
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      files
+          .filter(fileName -> !fileName.getFileName().toString().contains("metadata"))
+          .forEach(
+              fileName -> {
+                try {
+                  assertThat(Files.readString(fileName))
+                      .isEqualTo(SNAPSHOT_FILE_CONTENTS.get(fileName.getFileName().toString()));
+                } catch (final IOException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+    }
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
