@@ -14,6 +14,7 @@ public final record VariableValueFilter(
     String name, Object eq, Object neq, Object gt, Object gte, Object lt, Object lte)
     implements FilterBase {
 
+
   public static final class Builder implements ObjectBuilder<VariableValueFilter> {
 
     private String name;

@@ -27,6 +27,7 @@ test.describe('selections and operations', () => {
     page,
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
     await page.route(
       /^.*\/api.*$/i,
@@ -47,9 +48,9 @@ test.describe('selections and operations', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion('1');
-    await processesPage.processVersionFilter.blur();
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion('1');
+    await filtersPanel.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-many-instances-with-incident.png',
@@ -75,6 +76,7 @@ test.describe('selections and operations', () => {
     page,
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
     await page.route(
       /^.*\/api.*$/i,
@@ -95,9 +97,9 @@ test.describe('selections and operations', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion('1');
-    await processesPage.processVersionFilter.blur();
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion('1');
+    await filtersPanel.processVersionFilter.blur();
 
     await commonPage.expandOperationsPanel();
 

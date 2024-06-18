@@ -13,7 +13,7 @@ public class CamundaUser {
   private Long id;
   private String username;
   private String email;
-  private boolean enabled;
+  private boolean enabled = true;
 
   public CamundaUser() {}
 

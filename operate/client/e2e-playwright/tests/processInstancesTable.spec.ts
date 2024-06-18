@@ -88,7 +88,7 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Process Instances Table', () => {
-  test('Sorting', async ({page, processesPage}) => {
+  test('Sorting', async ({page, processesPage: {filtersPanel}}) => {
     const {instances} = initialData;
 
     // pick one instance from each process
@@ -98,9 +98,9 @@ test.describe('Process Instances Table', () => {
       instances.processB_v_2[0]!.processInstanceKey,
     ].sort();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
-    await processesPage.processInstanceKeysFilter.type(instanceIds.join());
+    await filtersPanel.processInstanceKeysFilter.type(instanceIds.join());
 
     await expect(page.getByText(/3 results/)).toBeVisible();
 
@@ -246,7 +246,7 @@ test.describe('Process Instances Table', () => {
       .toContain('instancesTableProcessB');
   });
 
-  test('Scrolling', async ({page, processesPage}) => {
+  test('Scrolling', async ({page, processesPage: {filtersPanel}}) => {
     const {instancesForInfiniteScroll} = initialData.instances;
 
     const descendingInstanceIds = instancesForInfiniteScroll
@@ -255,7 +255,7 @@ test.describe('Process Instances Table', () => {
         return instanceId2 - instanceId1;
       });
 
-    await processesPage.selectProcess('Process For Infinite Scroll');
+    await filtersPanel.selectProcess('Process For Infinite Scroll');
 
     await page
       .getByRole('button', {

@@ -31,4 +31,13 @@ public final class SearchQueryBuilders {
       final Function<UserTaskQuery.Builder, ObjectBuilder<UserTaskQuery>> fn) {
     return fn.apply(userTaskSearchQuery()).build();
   }
+
+  public static VariableQuery.Builder variableSearchQuery() {
+    return new VariableQuery.Builder();
+  }
+
+  public static VariableQuery variableSearchQuery(
+      final Function<VariableQuery.Builder, ObjectBuilder<VariableQuery>> fn) {
+    return fn.apply(variableSearchQuery()).build();
+  }
 }

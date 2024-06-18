@@ -10,8 +10,8 @@ package io.camunda.data.clients;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.data.util.StubbedOpensearchClient;
-import io.camunda.search.clients.OpensearchSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.os.clients.OpensearchSearchClient;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

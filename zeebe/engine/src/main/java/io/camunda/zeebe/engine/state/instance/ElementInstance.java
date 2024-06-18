@@ -10,12 +10,17 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
@@ -39,12 +44,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new ObjectProperty<>("elementRecord", new IndexedRecord());
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
+  private final ArrayProperty<StringValue> activeSequenceFlowIdsProp =
+      new ArrayProperty<>("activeSequenceFlowIds", StringValue::new);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
 
   public ElementInstance() {
-    super(13);
+    super(14);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -56,6 +63,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
+        .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
         .declareProperty(executionListenerIndexProp);
   }
@@ -222,6 +230,20 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     activeSequenceFlowsProp.increment();
   }
 
+  public void addActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
+    activeSequenceFlowIdsProp.add().wrap(sequenceFlowId);
+  }
+
+  public void removeActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
+    final Iterator<StringValue> iterator = activeSequenceFlowIdsProp.iterator();
+    while (iterator.hasNext()) {
+      if (iterator.next().getValue().equals(sequenceFlowId)) {
+        iterator.remove();
+        return;
+      }
+    }
+  }
+
   public void resetActiveSequenceFlows() {
     activeSequenceFlowsProp.setValue(0);
   }
@@ -244,5 +266,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void resetExecutionListenerIndex() {
     executionListenerIndexProp.setValue(0);
+  }
+
+  public Set<DirectBuffer> getActiveSequenceFlowIds() {
+    return activeSequenceFlowIdsProp.stream()
+        .map(StringValue::getValue)
+        .collect(Collectors.toSet());
   }
 }

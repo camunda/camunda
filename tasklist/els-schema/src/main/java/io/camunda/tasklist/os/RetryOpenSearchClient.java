@@ -19,6 +19,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
@@ -652,12 +652,15 @@ public class RetryOpenSearchClient {
   public Response putLifeCyclePolicy(final String indexName, final String policyName) {
     final Request request = new Request("PUT", indexName + "/_settings");
 
-    final JSONObject settings = new JSONObject();
-    final JSONObject indexSettings = new JSONObject();
-    indexSettings.put(
-        "plugins.index_state_management.policy_id",
-        Objects.requireNonNullElse(policyName, JSONObject.NULL));
-    settings.put("index", indexSettings);
+    final JsonObject settings =
+        Json.createObjectBuilder()
+            .add(
+                "index",
+                Json.createObjectBuilder()
+                    .add(
+                        "plugins.index_state_management.policy_id",
+                        policyName != null ? Json.createValue(policyName) : JsonValue.NULL))
+            .build();
 
     request.setJsonEntity(settings.toString());
 
