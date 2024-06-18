@@ -14,9 +14,12 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -98,13 +101,28 @@ final class Utils {
             .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    final var deploymentKey =
+        zeebeClient
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send()
+            .join()
+            .getKey();
+
+    Awaitility.await("deployment is distributed")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                RecordingExporter.commandDistributionRecords()
+                    .withDistributionIntent(DeploymentIntent.CREATE)
+                    .withRecordKey(deploymentKey)
+                    .withIntent(CommandDistributionIntent.FINISHED)
+                    .exists());
 
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
         // Might throw exception when a partition has not yet received deployment distribution
         .ignoreExceptions()
-        // If deployment is not distributed, it will be retried after 10 seconds
         .timeout(Duration.ofSeconds(20))
         .until(
             () -> {
