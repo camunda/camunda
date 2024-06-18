@@ -35,8 +35,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
 
-    final var variablesQuery = getVariablesQuery(filter.variableFilters());
-
     final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
     final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");
     final var dueDateQuery = getDateFilter(filter.dueDateFilter(), "dueDate");
@@ -70,7 +68,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         followUpDateQuery,
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
-        variablesQuery,
         tenantQuery,
         userTaksImplementationQuery);
   }
@@ -85,19 +82,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     } else {
       return Arrays.asList("tasklist-task-8.5.0_");
     }
-  }
-
-  private SearchQuery getVariablesQuery(final List<VariableValueFilter> variableFilters) {
-    if (variableFilters != null && !variableFilters.isEmpty()) {
-      final var transformer = getVariableValueFilterTransformer();
-      final var queries =
-          variableFilters.stream()
-              .map(transformer::apply)
-              .map((q) -> hasChildQuery("variable", q))
-              .collect(Collectors.toList());
-      return and(queries);
-    }
-    return null;
   }
 
   private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {
