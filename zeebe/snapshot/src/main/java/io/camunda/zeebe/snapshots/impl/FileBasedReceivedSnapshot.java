@@ -107,8 +107,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     if (checksumCollection == null) {
       checksumCollection = new SfvChecksumImpl();
     }
-    checksumCollection.updateFromBytes(
-        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    checksumCollection.updateFromSnapshotChunk(snapshotChunk);
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
       try {
