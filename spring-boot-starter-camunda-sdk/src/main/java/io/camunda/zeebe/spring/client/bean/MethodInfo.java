@@ -18,15 +18,20 @@ package io.camunda.zeebe.spring.client.bean;
 import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
 public class MethodInfo implements BeanInfo {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final StandardReflectionParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
       new StandardReflectionParameterNameDiscoverer();
@@ -84,7 +89,7 @@ public class MethodInfo implements BeanInfo {
 
   public List<ParameterInfo> getParameters() {
     final Parameter[] parameters = method.getParameters();
-    final String[] parameterNames = PARAMETER_NAME_DISCOVERER.getParameterNames(method);
+    final String[] parameterNames = getParameterNames();
 
     final ArrayList<ParameterInfo> result = new ArrayList<>();
     for (int i = 0; i < parameters.length; i++) {
@@ -93,9 +98,26 @@ public class MethodInfo implements BeanInfo {
     return result;
   }
 
+  private String[] getParameterNames() {
+    String[] parameterNames = PARAMETER_NAME_DISCOVERER.getParameterNames(method);
+    if (parameterNames == null) {
+      LOG.warn(
+          "Parameter names of method "
+              + method.getName()
+              + " could not be discoverd. Please set compiler flag -parameters if you rely on parameter names (e.g. for variable names to fetch from Zeebe)");
+      // use default names to avoid null pointer exceptions
+      final Parameter[] parameters = method.getParameters();
+      parameterNames = new String[parameters.length];
+      for (int i = 0; i < parameters.length; i++) {
+        parameterNames[i] = "arg" + i;
+      }
+    }
+    return parameterNames;
+  }
+
   public List<ParameterInfo> getParametersFilteredByAnnotation(final Class type) {
     final Parameter[] parameters = method.getParameters();
-    final String[] parameterNames = PARAMETER_NAME_DISCOVERER.getParameterNames(method);
+    final String[] parameterNames = getParameterNames();
 
     final ArrayList<ParameterInfo> result = new ArrayList<>();
     for (int i = 0; i < parameters.length; i++) {

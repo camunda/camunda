@@ -153,7 +153,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:8.5.3
+    image: camunda/operate:8.5.4
     ports:
       - 8088:8080
     environment:

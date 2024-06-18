@@ -188,7 +188,7 @@ public final class ProcessInstanceFilterTest {
     final var processInstanceFilter = new Builder().build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).isNull();
+    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
     //    assertThat(processInstanceFilter.index()).contains("operate-list-view-8.3.0_");
 
     assertThat(processInstanceFilter.active()).isFalse();

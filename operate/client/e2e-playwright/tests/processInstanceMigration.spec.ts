@@ -107,6 +107,8 @@ test.describe.serial('Process Instance Migration', () => {
     );
 
     await migrationView.confirmButton.click();
+    await migrationView.confirmMigration();
+
     await expect(commonPage.operationsList).toBeVisible();
 
     const migrateOperationEntry = commonPage.operationsList
@@ -211,6 +213,7 @@ test.describe.serial('Process Instance Migration', () => {
     );
 
     await migrationView.confirmButton.click();
+    await migrationView.confirmMigration();
 
     await expect(commonPage.operationsList).toBeVisible();
 

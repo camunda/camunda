@@ -26,8 +26,11 @@
     <module>tasklist</module>
     <module>identity</module>
     <module>webapps-common</module>
+    <module>authentication</module>
     <module>search</module>
     <module>service</module>
+    <module>testing/camunda-process-test-java</module>
+    <module>clients/java</module>
   </modules>
 
   <scm>
