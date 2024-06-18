@@ -8,12 +8,8 @@
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
@@ -28,6 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
+
   private final ServiceTransformers transformers;
 
   public UserTaskFilterTransformer(final ServiceTransformers transformers) {
@@ -36,16 +33,14 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
-    final List<Long> userTaskKeys = filter.userTaskKeys();
-
-    final var userTaskKeysQuery = getUserTaskKeysQuery(userTaskKeys);
+    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
 
     final var variablesQuery = getVariablesQuery(filter.variableFilters());
 
-    final var creationDateQuery = getCreationDate(filter.creationDateFilter());
-    final var completionTimeQuery = getCompletionTime(filter.completionDateFilter());
-    final var dueDateQuery = getDueDate(filter.dueDateFilter());
-    final var followUpDateQuery = getFollowUpDate(filter.followUpDateFilter());
+    final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
+    final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");
+    final var dueDateQuery = getDateFilter(filter.dueDateFilter(), "dueDate");
+    final var followUpDateQuery = getDateFilter(filter.followUpDateFilter(), "followUpDate");
 
     final var processInstanceKeysQuery = getProcessInstanceKeysQuery(filter.processInstanceKeys());
     final var processDefinitionKeyQuery =
@@ -60,7 +55,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
-    final var userTaksImplementationQuery = getUserTasksImplementationOnl();
+    final var userTaksImplementationQuery = getUserTasksImplementationOnly();
 
     return and(
         userTaskKeysQuery,
@@ -105,34 +100,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return null;
   }
 
-  private SearchQuery getCreationDate(final DateValueFilter filter) {
+  private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {
     if (filter != null) {
       final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter("creationTime", filter));
-    }
-    return null;
-  }
-
-  private SearchQuery getCompletionTime(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter("completionTime", filter));
-    }
-    return null;
-  }
-
-  private SearchQuery getDueDate(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter("dueDate", filter));
-    }
-    return null;
-  }
-
-  private SearchQuery getFollowUpDate(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter("followUpDate", filter));
+      return transformer.apply(new DateFieldFilter(field, filter));
     }
     return null;
   }
@@ -149,7 +120,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("key", userTaskKeys);
   }
 
-  private SearchQuery getUserTasksImplementationOnl() {
+  private SearchQuery getUserTasksImplementationOnly() {
     return term("implementation", "ZEEBE_USER_TASK");
   }
 
