@@ -1,10 +1,11 @@
 ---
+
 name: Optimize Bug report
 about: Report a problem and help us fix it.
 title: ''
 labels: type:bug, qa:pendingVerification
 assignees: ''
----
+-------------
 
 ### Describe the bug
 
@@ -50,9 +51,9 @@ commands by writing `/help` as a comment on this issue.
 Is this bug reproducible?
 
 - [ ] Yes. If so:
-    - [ ] The bug description is clear
-    - [ ] The steps to reproduce are clear
-    - [ ] The environments observed are correct and complete
+  - [ ] The bug description is clear
+  - [ ] The steps to reproduce are clear
+  - [ ] The environments observed are correct and complete
 - [ ] No
 
 ### Review
@@ -60,7 +61,6 @@ Is this bug reproducible?
 #### Review Resources
 
 <!-- When in review, the resources to be used for review should be listed here) -->
-
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
@@ -81,3 +81,4 @@ Is this bug reproducible?
 - [ ] All Review stages are successfully completed
 - [ ] All associated PRs are merged to the main branch(es) and maintenance branches
 - [ ] The correct version labels are applied to the issue
+

@@ -30,10 +30,10 @@ as part of running the tests:
 mvn -Pclustering-tests clean verify -Dskip.docker=false
 ```
 
-
 # Maven Execution Parameters
 
 There are four parameters applicable when running the upgrade tests:
 
 * `-Doptimize.importing.host` & `-Doptimize.importing.host` pointing to the instance that performs the import
 * `-Doptimize.notImporting.host` & `-Doptimize.notImporting.host` pointing to one instance that does not perform the import
+

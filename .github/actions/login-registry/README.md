@@ -8,8 +8,8 @@ This action abstracts the Docker login to the [Harbor registry](registry.camunda
 
 ### Inputs
 
-| Input   | Description                                                 | Required | Default |
-| ------- | ----------------------------------------------------------- | -------- | ------- |
+|  Input  |                         Description                         | Required | Default |
+|---------|-------------------------------------------------------------|----------|---------|
 | secrets | JSON wrapped secrets for easier secret passing              | true     |         |
 | env     | By providing "dev." or "stage." one can switch the registry | false    |         |
 
@@ -23,3 +23,4 @@ steps:
     with:
         secrets: ${{ toJSON(secrets) }}
 ```
+

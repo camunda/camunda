@@ -8,8 +8,8 @@ This action abstracts login to the [Google cloud](https://console.cloud.google.c
 
 ### Inputs
 
-| Input      | Description                                    | Required | Default      |
-| ---------- | ---------------------------------------------- | -------- | ------------ |
+|   Input    |                  Description                   | Required |   Default    |
+|------------|------------------------------------------------|----------|--------------|
 | secrets    | JSON wrapped secrets for easier secret passing | true     |              |
 | project_id | Google cloud project ID                        | false    | ci-30-162810 |
 
@@ -23,3 +23,4 @@ steps:
     with:
       secrets: ${{ toJSON(secrets) }}
 ```
+

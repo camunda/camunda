@@ -12,7 +12,7 @@ It can be run either on a prepared environment or using an environment created b
 ## Windows
 
 If you're on Windows, you might experience issues running the commands using `bin/bash`. You can use `cmd.exe` instead.
-For example, you can replace `def command = ["/bin/bash", "./optimize-startup.sh"]` in `OptimizeWrapper.groovy` with 
+For example, you can replace `def command = ["/bin/bash", "./optimize-startup.sh"]` in `OptimizeWrapper.groovy` with
 `def command = ["cmd.exe", "/C", "optimize-startup.bat"]`.
 
 # Camunda Optimize Upgrade Test - Prepared environment
@@ -32,7 +32,6 @@ OR for the optimize data test suite:
 mvn -Pupgrade-optimize-data clean verify
 ```
 
-
 # Camunda Optimize Upgrade Test - docker-compose environment
 
 Prerequisites:
@@ -47,3 +46,4 @@ OR for the optimize data test suite:
 ```
 mvn -Pupgrade-optimize-data,docker clean verify
 ```
+

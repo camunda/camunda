@@ -8,8 +8,8 @@ This action abstracts installing postgres client and restoring the database dump
 
 ### Inputs
 
-| Input                   | Description                                                                          | Required | Default                   |
-| ----------------------- | ------------------------------------------------------------------------------------ | -------- | ------------------------- |
+|          Input          |                                     Description                                      | Required |          Default          |
+|-------------------------|--------------------------------------------------------------------------------------|----------|---------------------------|
 | sql_dump                | Name of the dump file stored in `gs://optimize-data/`                                | false    | optimize_data-medium.sqlc |
 | postgres_user           | Postgres username                                                                    | false    | camunda                   |
 | postgres_db             | Postgres database                                                                    | false    | engine                    |
@@ -30,3 +30,4 @@ steps:
     with:
       sql_dump: "optimize_data-e2e.sqlc"
 ```
+

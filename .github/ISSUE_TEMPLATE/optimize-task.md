@@ -1,10 +1,11 @@
 ---
+
 name: Optimize Task
 about: Describe a technical task (e.g. a refactoring, a new productivity tool, missing tests).
 title: ''
 labels: type:task
 assignees: ''
----
+-------------
 
 ### Context
 
@@ -44,7 +45,6 @@ commands by writing `/help` as a comment on this issue.
 #### Review Resources
 
 <!-- When in review, the resources to be used for review should be listed here) -->
-
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
@@ -65,3 +65,4 @@ commands by writing `/help` as a comment on this issue.
 - [ ] All Review stages are successfully completed
 - [ ] All associated PRs are merged to the main branch(es) and maintenance branches
 - [ ] The correct version labels are applied to the issue
+

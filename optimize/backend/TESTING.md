@@ -21,6 +21,7 @@ mvn clean test
 
 All the unit tests are contained in the [src/test](./src/test/java/.) folder.
 To write your own unit test, just add the springrunner class and the respective application context like this:
+
 ```java
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class YourCustomUnitTest {
@@ -41,9 +42,9 @@ The spring context enables you to instantiate an object of each class used in Op
 This project has integration tests implemented that rely on following facts:
 
 * tomcat is with engine, engine-rest and engine-it-plugin modules is started and is listening to port 8080
-for HTTP requests
+  for HTTP requests
 * elasticsearch is started and is listening to port 9300 for TCP connections, as well as as port 9200
-for HTTP connections
+  for HTTP connections
 * build is performed with ```it``` profile
 
 in order to debug your test locally you have the following options:
@@ -55,6 +56,7 @@ in order to debug your test locally you have the following options:
 
 If you just want to run all tests in one command without making additional
 efforts, just run the following:
+
 ```
 mvn -Pit clean verify
 ```
@@ -67,6 +69,7 @@ Given a powerful machine, tests can be run concurrently using test process forks
 In order to fork multiple test processes the `test.forkCount` jvm property can be provided.
 
 E.g. for running 2 tests processes in parallel do:
+
 ```
 mvn -Pit clean verify -Dtest.forkCount=2
 ```
@@ -77,6 +80,7 @@ Especially, if you want to debug a test, it can make sense to setup the
 environment manually to step through a failing test case.
 
 Start Tomcat with the engine deployed and Elasticsearch together using the following cmdline:
+
 ```
 mvn -Pit pre-integration-test
 ```
@@ -125,9 +129,9 @@ Note, that there are two kind of integration tests:
 * Backend end to end test: Data is added to the engine, imported to Optimize and a query executed. Therefore, all three rules are needed.
 * Rest service tests: The idea is just to test the rest endpoint. Data is added to elasticsearch manually, a rest request is performed against Optimize and the result validated. Therefore, only the *EmbeddedOptimizeRule* and the *ElasticSearchIntegrationTestRule* are needed here. Also use the application context */it/it-applicationContext.xml* for this kind of tests.
 
-### Working with snapshots 
+### Working with snapshots
 
-While executing integration tests it might be useful snapshots of data from elasticsearch. Please refer to [wiki](https://github.com/camunda/camunda-optimize/wiki/Using-ES-snapshots) for more information. 
+While executing integration tests it might be useful snapshots of data from elasticsearch. Please refer to [wiki](https://github.com/camunda/camunda-optimize/wiki/Using-ES-snapshots) for more information.
 
 ## Performance testing
 
@@ -156,3 +160,4 @@ mvn clean install -Dskip.docker -DskipTests -Pproduction,it,engine-latest -pl op
 // then run the schema migration test
 mvn clean verify -f qa/upgrade-tests/pom.xml -Pupgrade-es-schema-tests
 ```
+

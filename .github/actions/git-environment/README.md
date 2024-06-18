@@ -17,15 +17,15 @@ action itself takes 2 seconds but GitHub only bills full minutes.
 
 ### Inputs
 
-| Input                    | Description                                               | Required | Default                         |
+|          Input           |                        Description                        | Required |             Default             |
 |--------------------------|-----------------------------------------------------------|----------|---------------------------------|
-| maintenance_branch_regex | A bash regex provided to determine the maintenance branch | false    | ^maintenance\/([0-9]+\.[0-9]+)$ | 
+| maintenance_branch_regex | A bash regex provided to determine the maintenance branch | false    | ^maintenance\/([0-9]+\.[0-9]+)$ |
 | main_branch_regex        | A bash regex provided to determine the main branch        | false    | ^master$                        |
 | branch                   | A provided branch name                                    | false    | defaults to github.ref_name     |
 
 ### Outputs
 
-| Output                        | Description                                                                             |
+|            Output             |                                       Description                                       |
 |-------------------------------|-----------------------------------------------------------------------------------------|
 | maintenance_version           | If it's a maintenance branch, which maintenance version it is                           |
 | is_maintenance_branch         | Whether the provided branch is a maintenance branch                                     |
@@ -71,3 +71,4 @@ jobs:
           } >> "$GITHUB_ENV"
   ...
 ```
+
