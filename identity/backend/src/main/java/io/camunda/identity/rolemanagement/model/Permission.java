@@ -19,16 +19,12 @@ public class Permission {
 
   @Id private Long id;
 
-  @NotNull private String audience;
-
   @NotNull private String definition;
 
   private String description;
 
-  public Permission(
-      final Long id, final String audience, final String definition, final String description) {
+  public Permission(final Long id, final String definition, final String description) {
     this.id = id;
-    this.audience = audience;
     this.definition = definition;
     this.description = description;
   }
@@ -41,14 +37,6 @@ public class Permission {
 
   public void setId(final Long id) {
     this.id = id;
-  }
-
-  public String getAudience() {
-    return audience;
-  }
-
-  public void setAudience(final String audience) {
-    this.audience = audience;
   }
 
   public String getDefinition() {
@@ -69,7 +57,7 @@ public class Permission {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getId(), getAudience(), getDefinition(), getDescription());
+    return Objects.hash(getId(), getDefinition(), getDescription());
   }
 
   @Override
@@ -82,7 +70,6 @@ public class Permission {
     }
     final Permission thatPermission = (Permission) that;
     return Objects.equals(getId(), thatPermission.getId())
-        && Objects.equals(getAudience(), thatPermission.getAudience())
         && Objects.equals(getDefinition(), thatPermission.getDefinition())
         && Objects.equals(getDescription(), thatPermission.getDescription());
   }

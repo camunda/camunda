@@ -83,24 +83,12 @@ public class RoleMembershipService {
     saveUserDetailsWithRoles(camundaUserDetails, roles);
   }
 
-  private void saveUserDetailsWithRoles(
-      final CamundaUserDetails camundaUserDetails, final List<String> roles) {
-    final UserDetails userDetails =
-        User.withUsername(camundaUserDetails.getUsername())
-            .password(camundaUserDetails.getPassword())
-            .passwordEncoder(Function.identity())
-            .roles(roles.toArray(roles.toArray(new String[0])))
-            .disabled(!camundaUserDetails.isEnabled())
-            .build();
-
-    camundaUserDetailsManager.updateUser(userDetails);
-  }
-
   public List<String> getRolesOfGroupByGroupId(final Long groupId) {
     final CamundaGroup group = groupService.findGroupById(groupId);
 
     return camundaUserDetailsManager.findGroupAuthorities(group.name()).stream()
         .map(GrantedAuthority::getAuthority)
+        .map(authorityName -> authorityName.replace("ROLE_", ""))
         .toList();
   }
 
@@ -122,5 +110,18 @@ public class RoleMembershipService {
 
     camundaUserDetailsManager.removeGroupAuthority(
         group.name(), new SimpleGrantedAuthority("ROLE_" + roleName));
+  }
+
+  private void saveUserDetailsWithRoles(
+      final CamundaUserDetails camundaUserDetails, final List<String> roles) {
+    final UserDetails userDetails =
+        User.withUsername(camundaUserDetails.getUsername())
+            .password(camundaUserDetails.getPassword())
+            .passwordEncoder(Function.identity())
+            .roles(roles.toArray(roles.toArray(new String[0])))
+            .disabled(!camundaUserDetails.isEnabled())
+            .build();
+
+    camundaUserDetailsManager.updateUser(userDetails);
   }
 }
