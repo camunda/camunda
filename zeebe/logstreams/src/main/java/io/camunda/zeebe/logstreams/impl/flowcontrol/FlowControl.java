@@ -22,8 +22,8 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.NavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
@@ -31,7 +31,7 @@ public final class FlowControl implements AppendListener {
   private final Limiter<Intent> processingLimiter;
   private final RateLimiter writeRateLimiter;
 
-  private final Map<Long, Listener> unprocessed = new ConcurrentHashMap<>();
+  private final NavigableMap<Long, Listener> unprocessed = new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
@@ -87,10 +87,9 @@ public final class FlowControl implements AppendListener {
   }
 
   public void onProcessed(final long position) {
-    final var processed = unprocessed.remove(position);
-    if (processed != null) {
-      processed.onSuccess();
-    }
+    final var processed = unprocessed.headMap(position, true);
+    processed.forEach((key, value) -> value.onSuccess());
+    processed.clear();
   }
 
   public sealed interface Rejection {
