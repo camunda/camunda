@@ -261,7 +261,6 @@ public final class FileBasedSnapshotChunkReaderTest {
 
   @Test
   public void shouldStartSplittingFilesOnceChunkSizeIsSet() throws IOException {
-    // given
     final int maxChunkSize = 3;
     final var snapshotChunkReader = newReader();
     final var snapshotChunks = new ArrayList<SnapshotChunk>();
@@ -283,6 +282,35 @@ public final class FileBasedSnapshotChunkReaderTest {
     assertThat(fileChunksGroupedByFileName.get("file1").size()).isEqualTo(1);
     assertThat(fileChunksGroupedByFileName.get("file2").size()).isEqualTo(1);
     assertThat(fileChunksGroupedByFileName.get("file3").size()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldSeekCorrectlyWhenFileChunkingEnabled() throws IOException {
+    final int maxChunkSize = 3;
+    final var snapshotChunkReader = newReader(maxChunkSize);
+    final var snapshotChunks = new ArrayList<SnapshotChunk>();
+    final var firstId = snapshotChunkReader.nextId();
+
+    // when
+    while (snapshotChunkReader.hasNext()) {
+      snapshotChunks.add(snapshotChunkReader.next());
+    }
+
+    snapshotChunkReader.seek(firstId);
+    final var snapshotChunksAfterSeek = new ArrayList<SnapshotChunk>();
+
+    while (snapshotChunkReader.hasNext()) {
+      snapshotChunksAfterSeek.add(snapshotChunkReader.next());
+    }
+
+    assertThat(
+            snapshotChunksAfterSeek.stream()
+                .map(SnapshotChunk::getContent)
+                .collect(Collectors.toUnmodifiableList()))
+        .containsExactlyElementsOf(
+            snapshotChunks.stream()
+                .map(SnapshotChunk::getContent)
+                .collect(Collectors.toUnmodifiableList()));
   }
 
   private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {
