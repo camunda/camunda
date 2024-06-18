@@ -18,13 +18,11 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
@@ -35,6 +33,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.primitive.TestMember;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
@@ -51,6 +50,7 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.File;
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,22 +63,27 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Raft test. */
 public class RaftTest extends ConcurrentTestCase {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftTest.class);
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private volatile int nextId;
@@ -220,27 +225,31 @@ public class RaftTest extends ConcurrentTestCase {
   public void testDemoteLeader() throws Throwable {
     final List<RaftServer> servers = createServers(3);
 
-    final RaftServer leader =
-        servers.stream()
-            .filter(s -> s.cluster().getLocalMember().equals(s.cluster().getLeader()))
-            .findFirst()
-            .orElseThrow();
+    final var leader = servers.stream().filter(RaftServer::isLeader).findFirst().orElseThrow();
+    final var leaderId = leader.cluster().getLocalMember().memberId();
 
-    final RaftServer follower =
-        servers.stream()
-            .filter(s -> !s.cluster().getLocalMember().equals(s.cluster().getLeader()))
-            .findFirst()
-            .orElseThrow();
+    final var follower = servers.stream().filter(RaftServer::isFollower).findFirst().orElseThrow();
+    final var followerId = follower.cluster().getLocalMember().memberId();
 
     follower
         .cluster()
-        .getMember(leader.cluster().getLocalMember().memberId())
+        .getMember(leaderId)
         .addTypeChangeListener(
             t -> {
               threadAssertEquals(t, RaftMember.Type.PASSIVE);
               resume();
+              LOGGER.debug("Leader {} changed to passive on {}", leaderId, followerId);
             });
-    leader.cluster().getLocalMember().demote(RaftMember.Type.PASSIVE).thenRun(this::resume);
+    leader
+        .cluster()
+        .getLocalMember()
+        .demote(RaftMember.Type.PASSIVE)
+        .whenComplete(
+            (ignored, error) -> {
+              threadAssertNull(error);
+              resume();
+              LOGGER.debug("Leader {} demoted to passive", leaderId);
+            });
     await(15000, 2);
   }
 
@@ -446,11 +455,18 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> followers = getFollowers(servers);
     final RaftServer follower = followers.get(0);
     final MemberId followerId = follower.getContext().getCluster().getLocalMember().memberId();
+    final var pollCount = new LongAdder();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    Mockito.clearInvocations(followerServer);
-    protocolFactory.partition(followerId);
+    followerServer.interceptRequest(
+        PollRequest.class,
+        r -> {
+          pollCount.increment();
+          return CompletableFuture.failedFuture(new ConnectException());
+        });
+    // Disconnect one way so that follower do not receive any messages from the leader.
+    protocolFactory.blockMessagesTo(followerId);
 
     // then
     // With priority election enabled the lowest priority node can wait upto 3 * electionTimeout
@@ -458,7 +474,7 @@ public class RaftTest extends ConcurrentTestCase {
     final var timeout = follower.getContext().getElectionTimeout().multipliedBy(4).toMillis();
 
     // should send poll requests to 2 nodes
-    verify(followerServer, timeout(timeout).atLeast(2)).poll(any(), any());
+    Awaitility.await().timeout(Duration.ofMillis(timeout)).untilAdder(pollCount, greaterThan(2L));
   }
 
   @Test
@@ -467,17 +483,24 @@ public class RaftTest extends ConcurrentTestCase {
     final List<RaftServer> followers = getFollowers(servers);
     final MemberId followerId =
         followers.get(0).getContext().getCluster().getLocalMember().memberId();
+    final var pollCount = new LongAdder();
 
     // when
     final TestRaftServerProtocol followerServer = serverProtocols.get(followerId);
-    Mockito.clearInvocations(followerServer);
-    protocolFactory.partition(followerId);
-    verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
-    Mockito.clearInvocations(followerServer);
+    // Disconnect one way so that follower do not receive any messages from the leader.
+    protocolFactory.blockMessagesTo(followerId);
+    followerServer.interceptRequest(
+        PollRequest.class,
+        r -> {
+          pollCount.increment();
+          return CompletableFuture.failedFuture(new TimeoutException());
+        });
+    Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
+    pollCount.reset();
 
     // then
     // no response for previous poll requests, so send them again
-    verify(followerServer, timeout(5000).atLeast(2)).poll(any(), any());
+    Awaitility.await().timeout(Duration.ofSeconds(5)).untilAdder(pollCount, greaterThan(2L));
   }
 
   @Test
