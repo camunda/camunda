@@ -171,13 +171,11 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
       combinedChecksum.update(fileName.getBytes(UTF_8));
     }
 
-    partialChecksums.putIfAbsent(fileName, new CRC32C());
-    partialChecksums.get(fileName).update(chunk.getContent());
+    partialChecksums.computeIfAbsent(fileName, k -> new CRC32C()).update(chunk.getContent());
     combinedChecksum.update(chunk.getContent());
 
     if (chunk.isLastFileBlock()) {
-      checksums.put(fileName, partialChecksums.get(fileName).getValue());
-      partialChecksums.remove(fileName);
+      checksums.put(fileName, partialChecksums.remove(fileName).getValue());
     }
   }
 
