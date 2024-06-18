@@ -69,7 +69,15 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         });
   }
 
+  private boolean containsChunk(final String chunkId) {
+    return Files.exists(directory.resolve(chunkId));
+  }
+
   private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
+    if (snapshotChunk.getFileBlockPosition() == 0 && containsChunk(snapshotChunk.getChunkName())) {
+      return;
+    }
+
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
     final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
@@ -100,6 +108,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
+    if (snapshotChunk.getFileBlockPosition() == 0 && Files.exists(snapshotFile)) {
+      throw new SnapshotWriteException(
+          String.format(
+              "Received a snapshot snapshotChunk which already exist '%s'.", snapshotFile));
+    }
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
