@@ -5,13 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.shared;
+package io.camunda.commons.configuration;
 
+import io.atomix.cluster.ClusterConfig;
 import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
@@ -23,19 +25,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BrokerProperties.class)
-public final class BrokerConfiguration {
+@EnableConfigurationProperties(BrokerBasedProperties.class)
+@Profile(value = {"broker", "restore"})
+public final class BrokerBasedConfiguration {
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
   private final LifecycleProperties lifecycle;
 
   @Autowired
-  public BrokerConfiguration(
+  public BrokerBasedConfiguration(
       final WorkingDirectory workingDirectory,
-      final BrokerProperties properties,
+      final BrokerBasedProperties properties,
       final LifecycleProperties lifecycle) {
     this.workingDirectory = workingDirectory;
     this.properties = properties;
@@ -82,15 +86,21 @@ public final class BrokerConfiguration {
         properties.getGateway().getNetwork().getMaxMessageSize());
   }
 
-  public Duration shutdownTimeout() {
-    return lifecycle.getTimeoutPerShutdownPhase();
-  }
-
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return properties.getGateway().getMultiTenancy();
   }
 
+  public Duration shutdownTimeout() {
+    return lifecycle.getTimeoutPerShutdownPhase();
+  }
+
+  @Bean
+  public ClusterConfig clusterConfig() {
+    final var configFactory = new ClusterConfigFactory();
+    return configFactory.mapConfiguration(properties);
+  }
+
   @ConfigurationProperties("zeebe.broker")
-  public static final class BrokerProperties extends BrokerCfg {}
+  public static final class BrokerBasedProperties extends BrokerCfg {}
 }

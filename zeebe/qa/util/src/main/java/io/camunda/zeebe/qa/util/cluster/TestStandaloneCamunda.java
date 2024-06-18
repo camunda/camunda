@@ -10,13 +10,14 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.commons.CommonsModuleConfiguration;
+import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -63,7 +64,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           .withEnv("xpack.watcher.enabled", "false")
           .withEnv("xpack.ml.enabled", "false")
           .withEnv("action.destructive_requires_name", "false");
-  private final BrokerProperties brokerProperties;
+  private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
 
   public TestStandaloneCamunda() {
@@ -71,12 +72,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         BrokerModuleConfiguration.class,
         OperateModuleConfiguration.class,
         WebappsModuleConfiguration.class,
+        CommonsModuleConfiguration.class,
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestElasticsearchSchemaManager.class,
         TestSchemaStartup.class);
 
-    brokerProperties = new BrokerProperties();
+    brokerProperties = new BrokerBasedProperties();
 
     brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     brokerProperties.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -91,7 +93,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties = new OperateProperties();
 
     //noinspection resource
-    withBean("config", brokerProperties, BrokerProperties.class)
+    withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("operate-config", operateProperties, OperateProperties.class)
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
@@ -209,7 +211,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   /** Returns the broker configuration */
-  public BrokerProperties brokerConfig() {
+  public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
   }
 
@@ -217,7 +219,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerProperties> modifier) {
+  public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
     return this;
   }
