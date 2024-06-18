@@ -49,6 +49,13 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
   void updateFromChecksum(final Path filePath, final long checksum);
 
   /**
+   * Update the checksum map with the contents of the given snapshot chunk
+   *
+   * @param snapshotChunk
+   */
+  void updateFromSnapshotChunk(final SnapshotChunk snapshotChunk);
+
+  /**
    * Returns if all file checksums match exactly.
    *
    * @param o The other checksum
