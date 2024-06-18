@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.rolemanagement.model.Permission;
+import io.camunda.identity.permissions.PermissionEnum;
 import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.service.RoleService;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
@@ -82,11 +82,12 @@ public class RoleController {
       path = "/{id}/permissions/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public SearchResponseDto<Permission> findAllPermissions(
+  public SearchResponseDto<PermissionEnum> findAllPermissions(
       @PathVariable("id") final String roleName,
       @RequestBody final SearchRequestDto searchRequestDto) {
-    final SearchResponseDto<Permission> permissionSearchResponseDto = new SearchResponseDto<>();
-    final List<Permission> allPermissionsOfRole = roleService.findAllPermissionsOfRole(roleName);
+    final SearchResponseDto<PermissionEnum> permissionSearchResponseDto = new SearchResponseDto<>();
+    final List<PermissionEnum> allPermissionsOfRole =
+        roleService.findAllPermissionsOfRole(roleName);
     permissionSearchResponseDto.setItems(allPermissionsOfRole);
 
     return permissionSearchResponseDto;
@@ -97,13 +98,13 @@ public class RoleController {
   public void assignPermissionsToRole(
       @PathVariable("id") final String roleName,
       @RequestBody final AssignPermissionRequest request) {
-    roleService.assignPermissionToRole(roleName, request.permissionId());
+    roleService.assignPermissionToRole(roleName, request.permissionName());
   }
 
-  @DeleteMapping(path = "/{id}/permissions/{permissionId}")
+  @DeleteMapping(path = "/{id}/permissions/{permissionName}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void removePermissionFromRole(
-      @PathVariable("id") final String roleName, @PathVariable final long permissionId) {
-    roleService.unassignPermissionFromRole(roleName, permissionId);
+      @PathVariable("id") final String roleName, @PathVariable final String permissionName) {
+    roleService.unassignPermissionFromRole(roleName, permissionName);
   }
 }

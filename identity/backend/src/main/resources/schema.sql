@@ -65,10 +65,10 @@ CREATE TABLE IF NOT EXISTS permissions(
     description varchar(50) not null
 );
 
-CREATE TABLE IF NOT EXISTS roles_permissions(
+CREATE TABLE IF NOT EXISTS role_permissions(
     role_authority varchar(50) not null,
-    permission_id bigint not null,
-    constraint unique_rp unique(role_authority, permission_id)
+    permission varchar(50) not null,
+    constraint unique_rp unique(role_authority, permission)
 );
 
 insert into roles(authority, description)
@@ -76,8 +76,8 @@ values ('ADMIN', 'administrator role');
 insert into roles(authority, description)
 values ('DEFAULT_USER', 'default user role');
 
-insert into permissions(definition, description)
-values ('*:create', 'create all');
-values ('*:read', 'read all');
-values ('*:update', 'update all');
-values ('*:delete', 'delete all');
+-- insert into permissions(definition, description)
+-- values ('*:create', 'create all');
+-- values ('*:read', 'read all');
+-- values ('*:update', 'update all');
+-- values ('*:delete', 'delete all');

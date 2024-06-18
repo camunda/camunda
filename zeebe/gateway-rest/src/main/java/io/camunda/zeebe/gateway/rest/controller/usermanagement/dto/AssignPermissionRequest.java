@@ -9,4 +9,5 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record AssignPermissionRequest(@NotBlank(message = "permissionId.null") long permissionId) {}
+public record AssignPermissionRequest(
+    @NotBlank(message = "permissionId.null") String permissionName) {}

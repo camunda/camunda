@@ -54,8 +54,8 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
       final List<String> permissionsForRole =
           getJdbcTemplate()
               .queryForList(
-                  "select p.definition "
-                      + "from roles_permissions rp join permissions p on rp.permission_id = p.id "
+                  "select rp.permission "
+                      + "from role_permissions rp "
                       + "where rp.role_authority = ?",
                   String.class,
                   role.getAuthority().replace("ROLE_", ""));

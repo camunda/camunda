@@ -7,13 +7,15 @@
  */
 package io.camunda.identity.rolemanagement.model;
 
+import io.camunda.identity.permissions.PermissionEnum;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashSet;
@@ -30,12 +32,11 @@ public class Role {
 
   private String description;
 
-  @ManyToMany(fetch = FetchType.EAGER)
-  @JoinTable(
-      name = "roles_permissions",
-      joinColumns = @JoinColumn(name = "role_authority"),
-      inverseJoinColumns = @JoinColumn(name = "permission_id"))
-  private Set<Permission> permissions = new HashSet<>();
+  @ElementCollection(targetClass = PermissionEnum.class)
+  @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_authority"))
+  @Column(name = "permission", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private Set<PermissionEnum> permissions = new HashSet<>();
 
   public String getName() {
     return name;
@@ -53,11 +54,11 @@ public class Role {
     this.description = description;
   }
 
-  public Set<Permission> getPermissions() {
+  public Set<PermissionEnum> getPermissions() {
     return permissions;
   }
 
-  public void setPermissions(final Set<Permission> permissions) {
+  public void setPermissions(final Set<PermissionEnum> permissions) {
     this.permissions = permissions;
   }
 }

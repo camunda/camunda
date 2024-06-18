@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.rolemanagement.repository;
+package io.camunda.identity.permissions;
 
-import io.camunda.identity.rolemanagement.model.Permission;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface PermissionRepository extends JpaRepository<Permission, Long> {}
+public enum PermissionEnum {
+  CREATE_ALL,
+  READ_ALL,
+  UPDATE_ALL,
+  DELETE_ALL;
+}
