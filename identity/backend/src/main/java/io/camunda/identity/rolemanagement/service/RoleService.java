@@ -13,6 +13,7 @@ import io.camunda.identity.rolemanagement.repository.PermissionRepository;
 import io.camunda.identity.rolemanagement.repository.RoleRepository;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -33,6 +34,11 @@ public class RoleService {
     if (!StringUtils.hasText(role.getName())) {
       throw new RuntimeException("role.notValid");
     }
+
+    if (role.getPermissions() != null && !existAllPermissions(role.getPermissions())) {
+      throw new RuntimeException("permissions.notFound");
+    }
+
     return roleRepository.save(role);
   }
 
@@ -53,6 +59,10 @@ public class RoleService {
   public Role updateRole(final String roleName, final Role role) {
     if (!Objects.equals(roleName, role.getName())) {
       throw new RuntimeException("role.notFound");
+    }
+
+    if (role.getPermissions() != null && !existAllPermissions(role.getPermissions())) {
+      throw new RuntimeException("permissions.notFound");
     }
 
     final Role existingRole = findRoleByName(roleName);
@@ -87,5 +97,18 @@ public class RoleService {
     return permissionRepository
         .findById(permissionId)
         .orElseThrow(() -> new RuntimeException("permission.notFound"));
+  }
+
+  private boolean existAllPermissions(final Set<Permission> permissions) {
+    boolean existAll = true;
+
+    for (final Permission permission : permissions) {
+      if (!permissionRepository.existsById(permission.getId())) {
+        existAll = false;
+        break;
+      }
+    }
+
+    return existAll;
   }
 }
