@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -194,11 +195,217 @@ public class ProcessInstanceMigrationClusteredTest {
               but active element with id '%s' has a pending message subscription \
               migration distribution for event with id '%s'."""
                 .formatted(processInstanceKey, "B", "boundary2"));
-
-    // TODO - assert that second migration is not rejected when processing is resumed and  message
-    // subscription migration is distributed. To assert that, we first need to implement message
-    // subscription migration processor where we will also send acknowledge command to the sender
   }
 
-  // TODO - add test to verify msg sub migration works end to end in clustered environment
+  @Test
+  public void shouldMigrateMultipleMessageSubscriptions() {
+    // given
+    final String processId = "sourceProcess";
+    final String targetProcessId = "targetProcess";
+
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getClient()
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message1").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .boundaryEvent("boundary2")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message2").zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done(),
+                "sourceProcess.bpmn")
+            .addProcessModel(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary3")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message3").zeebeCorrelationKeyExpression("key3"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .boundaryEvent("boundary4")
+                    .cancelActivity(false)
+                    .message(m -> m.name("message4").zeebeCorrelationKeyExpression("key4"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done(),
+                "targetProcess.bpmn")
+            .send()
+            .join();
+    final var sourceProcessDefinitionKey =
+        deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
+    final var targetProcessDefinitionKey =
+        deploymentEvent.getProcesses().get(1).getProcessDefinitionKey();
+
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withDistributionPartitionId(2)
+                .findFirst())
+        .isPresent();
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withDistributionPartitionId(3)
+                .findFirst())
+        .isPresent();
+
+    final ProcessInstanceEvent processInstanceEvent =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .processDefinitionKey(sourceProcessDefinitionKey)
+            .variables(Map.of("key1", "key1", "key2", "key2", "key3", "key3", "key4", "key4"))
+            .send()
+            .join();
+    final var processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+
+    // when
+    clientRule
+        .getClient()
+        .newMigrateProcessInstanceCommand(processInstanceKey)
+        .migrationPlan(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary3")
+        .send()
+        .join();
+
+    // then
+
+    // assert that the first message subscription is migrated
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary3")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    // assert that the second boundary event is unsubscribed
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message2")
+                .withCorrelationKey("key2")
+                .exists())
+        .describedAs("Expect that the second message boundary event is unsubscribed")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message2")
+                .withCorrelationKey("key2")
+                .exists())
+        .describedAs("Expect that the second message boundary event is unsubscribed")
+        .isTrue();
+
+    // assert that the target boundary event is subscribed
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message4")
+                .withCorrelationKey("key4")
+                .exists())
+        .describedAs("Expect that the target message boundary event is subscribed")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message4")
+                .withCorrelationKey("key4")
+                .exists())
+        .describedAs("Expect that the target message boundary event is subscribed")
+        .isTrue();
+
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName("message1")
+        .correlationKey("key1")
+        .send()
+        .join();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary3")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    clientRule
+        .getClient()
+        .newPublishMessageCommand()
+        .messageName("message4")
+        .correlationKey("key4")
+        .send()
+        .join();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message4")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary4")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key4");
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message4")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key4");
+  }
 }
