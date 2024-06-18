@@ -21,6 +21,22 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
