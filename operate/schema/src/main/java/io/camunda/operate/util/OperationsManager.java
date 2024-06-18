@@ -28,6 +28,8 @@ import io.camunda.operate.store.OperationStore;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -36,13 +38,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperationsManager {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperationsManager.class);
+
   @Autowired BeanFactory beanFactory;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private OperationStore operationStore;
 
-  public void updateFinishedInBatchOperation(String batchOperationId) throws PersistenceException {
-    this.updateFinishedInBatchOperation(batchOperationId, null);
+  public void updateFinishedInBatchOperation(final String batchOperationId)
+      throws PersistenceException {
+    updateFinishedInBatchOperation(batchOperationId, null);
   }
 
   public void updateFinishedInBatchOperation(
@@ -50,6 +55,9 @@ public class OperationsManager {
     final Map<String, String> ids2indexNames =
         getIndexNameForAliasAndId(batchOperationTemplate.getAlias(), batchOperationId);
     final String index = ids2indexNames.get(batchOperationId);
+    if (isIndexEmptyFor(index, batchOperationId)) {
+      return;
+    }
     final String script =
         "ctx._source."
             + BatchOperationTemplate.OPERATIONS_FINISHED_COUNT
@@ -70,17 +78,20 @@ public class OperationsManager {
     }
   }
 
-  public void updateInstancesInBatchOperation(String batchOperationId, long increment)
+  public void updateInstancesInBatchOperation(final String batchOperationId, final long increment)
       throws PersistenceException {
-    this.updateInstancesInBatchOperation(batchOperationId, null, increment);
+    updateInstancesInBatchOperation(batchOperationId, null, increment);
   }
 
   public void updateInstancesInBatchOperation(
-      final String batchOperationId, final BatchRequest batchRequest, long increment)
+      final String batchOperationId, final BatchRequest batchRequest, final long increment)
       throws PersistenceException {
     final Map<String, String> ids2indexNames =
         getIndexNameForAliasAndId(batchOperationTemplate.getAlias(), batchOperationId);
     final String index = ids2indexNames.get(batchOperationId);
+    if (isIndexEmptyFor(index, batchOperationId)) {
+      return;
+    }
     final String script =
         String.format("ctx._source.%s += %d;", BatchOperationTemplate.INSTANCES_COUNT, increment);
     final Map<String, Object> parameters = Map.of();
@@ -122,7 +133,7 @@ public class OperationsManager {
   }
 
   public void completeOperation(
-      final OperationEntity operationEntity, boolean updateFinishedInBatch)
+      final OperationEntity operationEntity, final boolean updateFinishedInBatch)
       throws PersistenceException {
     final BatchRequest batchRequest = newBatchRequest();
     if (operationEntity.getBatchOperationId() != null && updateFinishedInBatch) {
@@ -140,10 +151,10 @@ public class OperationsManager {
   }
 
   private List<OperationEntity> getOperations(
-      Long zeebeCommandKey,
-      Long processInstanceKey,
-      Long incidentKey,
-      OperationType operationType) {
+      final Long zeebeCommandKey,
+      final Long processInstanceKey,
+      final Long incidentKey,
+      final OperationType operationType) {
     return operationStore.getOperationsFor(
         zeebeCommandKey, processInstanceKey, incidentKey, operationType);
   }
@@ -167,5 +178,15 @@ public class OperationsManager {
   private Map<String, String> getIndexNameForAliasAndIds(
       final String alias, final Collection<String> ids) {
     return operationStore.getIndexNameForAliasAndIds(alias, ids);
+  }
+
+  private boolean isIndexEmptyFor(final String index, final String batchOperationId) {
+    if (index == null || index.isEmpty()) {
+      LOGGER.warn(
+          "No index found for batchOperationId={}. Skip adding an update request.",
+          batchOperationId);
+      return true;
+    }
+    return false;
   }
 }
