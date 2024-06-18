@@ -167,7 +167,7 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   public void updateFromSnapshotChunk(final SnapshotChunk chunk) {
     final String fileName = chunk.getChunkName();
 
-    if (chunk.getFileBlockPosition() == 0) {
+    if (chunk.isFirstFileBlock()) {
       combinedChecksum.update(fileName.getBytes(UTF_8));
     }
 

@@ -74,7 +74,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
-    if (snapshotChunk.getFileBlockPosition() == 0 && containsChunk(snapshotChunk.getChunkName())) {
+    if (snapshotChunk.isFirstFileBlock() && containsChunk(snapshotChunk.getChunkName())) {
       return;
     }
 
@@ -108,7 +108,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
-    if (snapshotChunk.getFileBlockPosition() == 0 && Files.exists(snapshotFile)) {
+    if (snapshotChunk.isFirstFileBlock() && Files.exists(snapshotFile)) {
       throw new SnapshotWriteException(
           String.format(
               "Received a snapshot snapshotChunk which already exist '%s'.", snapshotFile));
