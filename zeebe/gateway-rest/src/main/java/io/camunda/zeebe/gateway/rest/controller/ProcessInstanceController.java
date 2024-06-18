@@ -8,10 +8,18 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @ZeebeRestController
 public class ProcessInstanceController {
@@ -20,8 +28,20 @@ public class ProcessInstanceController {
 
   @PostMapping(
       path = "/process-instances/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Object> searchProcessInstances() {
-    return ResponseEntity.ok(processInstanceServices.search((q) -> q));
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
+      @RequestBody final ProcessInstanceSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
+        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+  }
+
+  private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
+      final ProcessInstanceQuery query) {
+    final var tenantIds = TenantAttributeHolder.tenantIds();
+    final var result =
+        processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+    return ResponseEntity.ok(
+        SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result).get());
   }
 }
