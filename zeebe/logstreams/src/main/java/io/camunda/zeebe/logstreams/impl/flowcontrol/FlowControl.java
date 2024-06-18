@@ -12,8 +12,6 @@ import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.RequestLimitExhausted;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection.WriteRateLimitExhausted;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -22,16 +20,17 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
+import org.agrona.collections.Long2ObjectHashMap;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
   private final Limiter<Intent> processingLimiter;
   private final RateLimiter writeRateLimiter;
+  private long lastAppendedPosition = -1;
+  private volatile long lastProcessedPosition = -1;
 
-  private final NavigableMap<Long, Listener> unprocessed = new ConcurrentSkipListMap<>();
+  private final Long2ObjectHashMap<InFlightEntry> inFlight = new Long2ObjectHashMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
@@ -55,14 +54,23 @@ public final class FlowControl implements AppendListener {
    */
   public Either<Rejection, InFlightEntry> tryAcquire(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    metrics.received(context);
+    final var result = tryAcquireInternal(context, batchMetadata);
+    switch (result) {
+      case Either.Left<Rejection, InFlightEntry>(final var reason) ->
+          metrics.flowControlRejected(context, reason);
+      case Either.Right<Rejection, InFlightEntry>(final var ignored) ->
+          metrics.flowControlAccepted(context);
+    }
+    return result;
+  }
 
+  private Either<Rejection, InFlightEntry> tryAcquireInternal(
+      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     final Listener requestListener;
     if (context instanceof UserCommand(final var intent)) {
       requestListener = processingLimiter.acquire(intent).orElse(null);
       if (requestListener == null) {
-        metrics.dropped(context);
-        return Either.left(new RequestLimitExhausted());
+        return Either.left(Rejection.RequestLimitExhausted);
       }
     } else {
       requestListener = null;
@@ -72,29 +80,49 @@ public final class FlowControl implements AppendListener {
       if (requestListener != null) {
         requestListener.onIgnore();
       }
-      metrics.dropped(context);
-      return Either.left(new WriteRateLimitExhausted());
+      return Either.left(Rejection.WriteRateLimitExhausted);
     }
 
-    return Either.right(new InFlightEntry(batchMetadata, requestListener));
+    return Either.right(new InFlightEntry(metrics, batchMetadata, requestListener));
   }
 
   public void onAppend(final InFlightEntry entry, final long highestPosition) {
-    if (entry.requestListener() == null) {
-      return;
+    entry.onAppend();
+    for (long p = lastAppendedPosition; p <= lastProcessedPosition; p++) {
+      inFlight.remove(p);
     }
-    unprocessed.put(highestPosition, entry.requestListener());
+    inFlight.put(highestPosition, entry);
+    lastAppendedPosition = highestPosition;
+  }
+
+  @Override
+  public void onWrite(final long index, final long highestPosition) {
+    metrics.setLastWrittenPosition(highestPosition);
+    final var inFlightEntry = inFlight.get(highestPosition);
+    if (inFlightEntry != null) {
+      inFlightEntry.onWrite();
+    }
+  }
+
+  @Override
+  public void onCommit(final long index, final long highestPosition) {
+    metrics.setLastCommittedPosition(highestPosition);
+    final var inFlightEntry = inFlight.get(highestPosition);
+    if (inFlightEntry != null) {
+      inFlightEntry.onCommit();
+    }
   }
 
   public void onProcessed(final long position) {
-    final var processed = unprocessed.headMap(position, true);
-    processed.forEach((key, value) -> value.onSuccess());
-    processed.clear();
+    lastProcessedPosition = position;
+    final var inFlightEntry = inFlight.get(position);
+    if (inFlightEntry != null) {
+      inFlightEntry.onProcessed();
+    }
   }
 
-  public sealed interface Rejection {
-    record WriteRateLimitExhausted() implements Rejection {}
-
-    record RequestLimitExhausted() implements Rejection {}
+  public enum Rejection {
+    WriteRateLimitExhausted,
+    RequestLimitExhausted
   }
 }

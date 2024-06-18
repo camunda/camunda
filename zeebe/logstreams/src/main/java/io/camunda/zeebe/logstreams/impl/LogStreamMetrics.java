@@ -7,7 +7,12 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
+import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
+import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
+import io.camunda.zeebe.logstreams.log.WriteContext.Scheduled;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,6 +23,16 @@ import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
 
 public final class LogStreamMetrics {
+  private static final Counter FLOW_CONTROL_OUTCOME =
+      Counter.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("outcome")
+          .help(
+              "The count of entries passing through the flow control, organized by context and outcome")
+          .labelNames("partition", "context", "outcome")
+          .register();
+
   private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
       Counter.build()
           .namespace("zeebe")
@@ -152,20 +167,6 @@ public final class LogStreamMetrics {
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
   }
 
-  public void received(final WriteContext context) {
-    triedAppends.inc();
-    if (context instanceof UserCommand) {
-      receivedRequests.inc();
-    }
-  }
-
-  public void dropped(final WriteContext context) {
-    deferredAppends.inc();
-    if (context instanceof UserCommand) {
-      droppedRequests.inc();
-    }
-  }
-
   public void increaseInflightAppends() {
     inflightAppends.inc();
   }
@@ -231,5 +232,40 @@ public final class LogStreamMetrics {
     LAST_WRITTEN_POSITION.remove(partitionLabel);
     COMMIT_LATENCY.remove(partitionLabel);
     WRITE_LATENCY.remove(partitionLabel);
+  }
+
+  private String contextLabel(final WriteContext context) {
+    return switch (context) {
+      case final UserCommand ignored -> "userCommand";
+      case final ProcessingResult ignored -> "processingResult";
+      case final InterPartition ignored -> "interPartition";
+      case final Scheduled ignored -> "scheduled";
+      case final Internal ignored -> "internal";
+    };
+  }
+
+  private String reasonLabel(final Rejection reason) {
+    return switch (reason) {
+      case Rejection.WriteRateLimitExhausted -> "writeRateLimitExhausted";
+      case Rejection.RequestLimitExhausted -> "requestLimitExhausted";
+    };
+  }
+
+  public void flowControlAccepted(final WriteContext context) {
+    triedAppends.inc();
+    if (context instanceof UserCommand) {
+      receivedRequests.inc();
+    }
+    FLOW_CONTROL_OUTCOME.labels(partitionLabel, contextLabel(context), "accepted").inc();
+  }
+
+  public void flowControlRejected(final WriteContext context, final Rejection reason) {
+    triedAppends.inc();
+    deferredAppends.inc();
+    if (context instanceof UserCommand) {
+      receivedRequests.inc();
+      droppedRequests.inc();
+    }
+    FLOW_CONTROL_OUTCOME.labels(partitionLabel, contextLabel(context), reasonLabel(reason)).inc();
   }
 }
