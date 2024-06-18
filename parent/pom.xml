@@ -802,6 +802,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-connect</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
