@@ -121,7 +121,7 @@ public final class SnapshotChunkImpl
 
   @Override
   public boolean isLastFileBlock() {
-    return fileBlockPosition + content.byteArray().length == totalFileSize;
+    return getFileBlockPosition() + content.byteArray().length == getTotalFileSize();
   }
 
   @Override
@@ -156,11 +156,21 @@ public final class SnapshotChunkImpl
 
   @Override
   public long getFileBlockPosition() {
+    // backwards compatability
+    if (fileBlockPosition == SnapshotChunkDecoder.fileBlockPositionNullValue()) {
+      return 0;
+    }
+
     return fileBlockPosition;
   }
 
   @Override
   public long getTotalFileSize() {
+    // backwards comptability
+    if (totalFileSize == SnapshotChunkDecoder.totalFileSizeNullValue()) {
+      return getContent().length;
+    }
+
     return totalFileSize;
   }
 
