@@ -39,6 +39,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
+  private ByteBuffer metadataBuffer;
   private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
@@ -111,15 +112,23 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
       try {
-        collectMetadata(snapshotChunk.getContent());
+        collectMetadata(snapshotChunk);
       } catch (final IOException e) {
         throw new SnapshotWriteException("Cannot decode snapshot metadata");
       }
     }
   }
 
-  private void collectMetadata(final byte[] content) throws IOException {
-    metadata = FileBasedSnapshotMetadata.decode(content);
+  private void collectMetadata(final SnapshotChunk chunk) throws IOException {
+    if (metadataBuffer == null) {
+      metadataBuffer = ByteBuffer.allocate(Math.toIntExact(chunk.getTotalFileSize()));
+    }
+
+    metadataBuffer.put(chunk.getContent());
+
+    if (chunk.isLastFileBlock()) {
+      metadata = FileBasedSnapshotMetadata.decode(metadataBuffer.array());
+    }
   }
 
   private void checkChunkChecksumIsValid(
