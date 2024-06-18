@@ -51,7 +51,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var candidateGroupsQuery = getCandidateGroupsQuery(filter.candidateGroups());
 
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
-    final var stateQuery = getStateQuery(filter.taskStates());
+    final var stateQuery = getStateQuery(filter.userTaskState());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
@@ -146,31 +146,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
     return stringTerms("bpmnProcessId", bpmnProcessId);
-  }
-
-  // TO-DO: Possible values: [CREATED, COMPLETED, CANCELED, FAILED]
-  private SearchQuery getCreatedQuery(final boolean created) {
-    if (created) {
-      return term("state", "CREATED");
-    }
-
-    return null;
-  }
-
-  private SearchQuery getCompletedQuery(final boolean completed) {
-    if (completed) {
-      return term("state", "COMPLETED");
-    }
-
-    return null;
-  }
-
-  private SearchQuery getCanceledQuery(final boolean canceled) {
-    if (canceled) {
-      return term("state", "CANCELED");
-    }
-
-    return null;
   }
 
   private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {

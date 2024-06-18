@@ -18,10 +18,10 @@ import java.util.function.Function;
 
 public final record UserTaskFilter(
     List<Long> userTaskKeys,
-    List<String> taskDefinitionIds,
+    List<String> userTaskDefinitionIds,
     List<String> processNames,
     List<String> assignees,
-    List<String> taskStates,
+    List<String> userTaskState,
     List<Long> processInstanceKeys,
     List<String> processDefinitionKeys,
     List<String> candidateUsers,
@@ -39,10 +39,10 @@ public final record UserTaskFilter(
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
     private List<Long> userTaskKeys;
-    private List<String> taskDefinitionIds;
+    private List<String> userTaskDefinitionIds;
     private List<String> processNames;
     private List<String> assignees;
-    private List<String> taskStates;
+    private List<String> userTaskState;
     private List<Long> processInstanceKeys;
     private List<String> processDefinitionKeys;
     private List<String> candidateUsers;
@@ -66,12 +66,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder taskDefinitionIds(final String value, final String... values) {
-      return taskDefinitionIds(collectValues(value, values));
+    public Builder userTaskDefinitionIds(final String value, final String... values) {
+      return userTaskDefinitionIds(collectValues(value, values));
     }
 
-    public Builder taskDefinitionIds(final List<String> values) {
-      taskDefinitionIds = addValuesToList(taskDefinitionIds, values);
+    public Builder userTaskDefinitionIds(final List<String> values) {
+      userTaskDefinitionIds = addValuesToList(userTaskDefinitionIds, values);
       return this;
     }
 
@@ -93,12 +93,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder taskStates(final String value, final String... values) {
-      return taskStates(collectValues(value, values));
+    public Builder userTaskState(final String value, final String... values) {
+      return userTaskState(collectValues(value, values));
     }
 
-    public Builder taskStates(final List<String> values) {
-      taskStates = addValuesToList(taskStates, values);
+    public Builder userTaskState(final List<String> values) {
+      userTaskState = addValuesToList(userTaskState, values);
       return this;
     }
 
@@ -220,10 +220,10 @@ public final record UserTaskFilter(
     public UserTaskFilter build() {
       return new UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(taskDefinitionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(processNames, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(taskStates, Collections.emptyList()),
+          Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
