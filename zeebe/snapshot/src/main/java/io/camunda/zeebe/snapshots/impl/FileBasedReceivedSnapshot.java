@@ -69,15 +69,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         });
   }
 
-  private boolean containsChunk(final String chunkId) {
-    return Files.exists(directory.resolve(chunkId));
-  }
-
   private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
-    if (snapshotChunk.isFirstFileBlock() && containsChunk(snapshotChunk.getChunkName())) {
-      return;
-    }
-
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
     final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
