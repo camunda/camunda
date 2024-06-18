@@ -161,13 +161,6 @@
       <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-spring-boot-test</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <!-- Tasklist depends on org.json:json -->
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

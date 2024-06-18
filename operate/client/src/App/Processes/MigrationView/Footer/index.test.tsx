@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {Footer} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
@@ -21,7 +21,7 @@ const Wrapper = ({children}: Props) => {
   useEffect(() => {
     processInstanceMigrationStore.setCurrentStep('elementMapping');
     return processInstanceMigrationStore.reset;
-  });
+  }, []);
   return (
     <MemoryRouter>
       {children}
@@ -120,6 +120,10 @@ describe('Footer', () => {
     await user.click(screen.getByRole('button', {name: /map element/i}));
     await user.click(screen.getByRole('button', {name: /next/i}));
     await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    const withinModal = within(screen.getByRole('dialog'));
+    await user.type(withinModal.getByRole('textbox'), 'MIGRATE');
+    await user.click(withinModal.getByRole('button', {name: /confirm/i}));
 
     expect(trackSpy).toHaveBeenCalledWith({
       eventName: 'process-instance-migration-confirmed',

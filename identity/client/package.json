@@ -14,28 +14,31 @@
     "@carbon/react": "1.59.0",
     "i18next": "23.11.5",
     "react": "18.3.1",
+    "react-debounced": "1.1.2",
     "react-dom": "18.3.1",
     "react-i18next": "14.1.2",
     "react-router": "6.23.1",
     "react-router-dom": "6.23.1",
+    "react-transition-group": "4.4.5",
     "styled-components": "6.1.11"
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
-    "@types/node": "^20.14.2",
+    "@types/node": "20.14.5",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
-    "@typescript-eslint/eslint-plugin": "7.2.0",
-    "@typescript-eslint/parser": "7.2.0",
+    "@types/react-transition-group": "4.4.10",
+    "@typescript-eslint/eslint-plugin": "7.13.1",
+    "@typescript-eslint/parser": "7.13.1",
     "@vitejs/plugin-react": "4.3.1",
     "eslint": "8.57.0",
     "eslint-plugin-react-hooks": "4.6.2",
     "eslint-plugin-react-refresh": "0.4.7",
     "event-source-polyfill": "1.0.31",
     "prettier": "3.3.2",
-    "sass": "1.77.4",
+    "sass": "1.77.6",
     "typescript": "5.4.5",
-    "vite": "5.2.13"
+    "vite": "5.3.1"
   },
   "packageManager": "yarn@4.3.0"
 }
