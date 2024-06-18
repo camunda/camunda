@@ -33,6 +33,11 @@ class TestSnapshotChunkImpl implements SnapshotChunk {
   }
 
   @Override
+  public boolean isLastFileBlock() {
+    return false;
+  }
+
+  @Override
   public String getSnapshotId() {
     return snapshotId;
   }

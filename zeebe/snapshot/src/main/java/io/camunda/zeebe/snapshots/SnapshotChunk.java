@@ -11,6 +11,11 @@ package io.camunda.zeebe.snapshots;
 public interface SnapshotChunk {
 
   /**
+   * @return is this the last chunk for the given chunkName (file name).
+   */
+  boolean isLastFileBlock();
+
+  /**
    * @return a unique snapshot identifier *
    */
   String getSnapshotId();
