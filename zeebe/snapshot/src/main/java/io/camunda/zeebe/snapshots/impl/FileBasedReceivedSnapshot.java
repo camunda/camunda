@@ -18,7 +18,6 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -40,6 +39,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
   private ByteBuffer metadataBuffer;
+  private long writtenMetadataBytes = 0;
   private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
@@ -69,7 +69,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         });
   }
 
-  private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
+  private void applyInternal(final SnapshotChunk snapshotChunk)
+      throws SnapshotWriteException, IOException {
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
     final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
@@ -100,19 +101,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
-    if (snapshotChunk.isFirstFileBlock() && Files.exists(snapshotFile)) {
-      throw new SnapshotWriteException(
-          String.format(
-              "Received a snapshot snapshotChunk which already exist '%s'.", snapshotFile));
-    }
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
-    writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+    final var fileFullyWritten = writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
     if (checksumCollection == null) {
       checksumCollection = new SfvChecksumImpl();
     }
-    checksumCollection.updateFromSnapshotChunk(snapshotChunk);
+
+    if (fileFullyWritten) {
+      checksumCollection.updateFromFile(snapshotFile);
+    }
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
       try {
@@ -128,9 +127,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       metadataBuffer = ByteBuffer.allocate(Math.toIntExact(chunk.getTotalFileSize()));
     }
 
-    metadataBuffer.put(chunk.getContent());
+    metadataBuffer.put(Math.toIntExact(chunk.getFileBlockPosition()), chunk.getContent());
+    writtenMetadataBytes += chunk.getContent().length;
 
-    if (chunk.isLastFileBlock()) {
+    if (writtenMetadataBytes == chunk.getTotalFileSize()) {
       metadata = FileBasedSnapshotMetadata.decode(metadataBuffer.array());
     }
   }
@@ -192,31 +192,33 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
   }
 
-  private void writeReceivedSnapshotChunk(
+  private boolean writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
 
-    final var openOptions = new StandardOpenOption[] {StandardOpenOption.WRITE, null};
-    openOptions[1] =
-        Files.exists(snapshotFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE_NEW;
-
-    try (final var channel = FileChannel.open(snapshotFile, openOptions)) {
+    try (final var channel =
+        FileChannel.open(snapshotFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
 
       while (buffer.hasRemaining()) {
         final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
+        channel.position(snapshotChunk.getFileBlockPosition());
         channel.write(buffer.limit(newLimit));
         buffer.limit(buffer.capacity());
       }
 
-      if (snapshotChunk.isLastFileBlock()) {
+      // file fully written
+      if (channel.size() == snapshotChunk.getTotalFileSize()) {
         channel.force(true);
+        return true;
       }
+
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
     }
 
     LOGGER.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
+    return false;
   }
 
   @Override
