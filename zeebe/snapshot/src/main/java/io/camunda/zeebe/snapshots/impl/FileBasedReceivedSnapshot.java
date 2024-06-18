@@ -189,8 +189,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
-    try (final var channel =
-        FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+
+    final var openOptions = new StandardOpenOption[] {StandardOpenOption.WRITE, null};
+    openOptions[1] =
+        Files.exists(snapshotFile) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE_NEW;
+
+    try (final var channel = FileChannel.open(snapshotFile, openOptions)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
 
       while (buffer.hasRemaining()) {
@@ -199,7 +203,9 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         buffer.limit(buffer.capacity());
       }
 
-      channel.force(true);
+      if (snapshotChunk.isLastFileBlock()) {
+        channel.force(true);
+      }
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
