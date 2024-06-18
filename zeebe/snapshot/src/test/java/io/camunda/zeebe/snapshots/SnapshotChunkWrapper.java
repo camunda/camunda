@@ -66,6 +66,11 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
   }
 
   @Override
+  public boolean isFirstFileBlock() {
+    return wrappedChunk.isFirstFileBlock();
+  }
+
+  @Override
   public String getSnapshotId() {
     if (snapshotId == null) {
       return wrappedChunk.getSnapshotId();

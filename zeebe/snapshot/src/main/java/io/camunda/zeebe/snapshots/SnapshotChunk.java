@@ -16,6 +16,11 @@ public interface SnapshotChunk {
   boolean isLastFileBlock();
 
   /**
+   * @return is this the first chunk for a given chunkName (file name).
+   */
+  boolean isFirstFileBlock();
+
+  /**
    * @return a unique snapshot identifier *
    */
   String getSnapshotId();

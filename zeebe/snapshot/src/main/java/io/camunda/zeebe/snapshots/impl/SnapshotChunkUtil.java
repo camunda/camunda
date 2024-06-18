@@ -81,6 +81,11 @@ final class SnapshotChunkUtil {
     }
 
     @Override
+    public boolean isFirstFileBlock() {
+      return fileBlockPosition == 0;
+    }
+
+    @Override
     public String getSnapshotId() {
       return snapshotId;
     }
