@@ -25,6 +25,7 @@ jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
+      java-unit-tests: ${{ steps.filter.outputs.java-unit-tests }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -58,8 +59,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  unit-tests:
-    if: needs.detect-changes.outputs.actionlint == 'true'
+  java-unit-tests:
+    if: needs.detect-changes.outputs.java-unit-tests == 'true'
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
