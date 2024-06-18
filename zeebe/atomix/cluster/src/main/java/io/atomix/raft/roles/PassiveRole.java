@@ -115,19 +115,6 @@ public class PassiveRole extends InactiveRole {
     logRequest(request);
     updateTermAndLeader(request.currentTerm(), request.leader());
 
-    // Assume null means install request is for first chunk
-    if (nextPendingSnapshotChunkId != null && request.chunkId() != nextPendingSnapshotChunkId) {
-      abortPendingSnapshots();
-      final var errMsg =
-          "expected ChunkId=[" + nextPendingSnapshotChunkId + "], got [" + request.chunkId() + "].";
-      return CompletableFuture.completedFuture(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.ERROR)
-                  .withError(Type.ILLEGAL_MEMBER_STATE, errMsg)
-                  .build()));
-    }
-
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
 
     // If the request is for a lesser term, reject the request.
@@ -284,7 +271,6 @@ public class PassiveRole extends InactiveRole {
 
       pendingSnapshot = null;
       pendingSnapshotStartTimestamp = 0L;
-      setNextExpected(null);
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
