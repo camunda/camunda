@@ -11,7 +11,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
-import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -161,22 +160,6 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   public void updateFromChecksum(final Path filePath, final long checksum) {
     final String fileName = filePath.getFileName().toString();
     checksums.put(fileName, checksum);
-  }
-
-  @Override
-  public void updateFromSnapshotChunk(final SnapshotChunk chunk) {
-    final String fileName = chunk.getChunkName();
-
-    if (chunk.isFirstFileBlock()) {
-      combinedChecksum.update(fileName.getBytes(UTF_8));
-    }
-
-    partialChecksums.computeIfAbsent(fileName, k -> new CRC32C()).update(chunk.getContent());
-    combinedChecksum.update(chunk.getContent());
-
-    if (chunk.isLastFileBlock()) {
-      checksums.put(fileName, partialChecksums.remove(fileName).getValue());
-    }
   }
 
   @Override
