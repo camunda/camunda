@@ -122,10 +122,10 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     outputs:
-      flakyUnitTests: ${{ needs.unit-tests.outputs.flakyTests }}
+      flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
     needs:
       - actionlint
-      - unit-tests
+      - java-unit-tests
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
