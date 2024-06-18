@@ -22,18 +22,6 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
   void updateFromFile(final Path filePath) throws IOException;
 
   /**
-   * Update the checksum collection, and add a new checksum from given bytes, likely a read file or
-   * soon to be written file.
-   *
-   * <p>Useful, if we want to avoid re-reading files etc.
-   *
-   * @param fileName the name of the file (which relates to the given bytes), that is used in the
-   *     checksum collection in SFV file format
-   * @param bytes the bytes for which the checksum should be created
-   */
-  void updateFromBytes(final String fileName, final byte[] bytes);
-
-  /**
    * Build the checksum collection from a SFV format string array.
    *
    * @param lines the lines (in SFV) to build up the checksum collection

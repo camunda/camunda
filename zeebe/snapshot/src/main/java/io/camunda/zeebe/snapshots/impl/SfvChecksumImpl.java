@@ -136,15 +136,6 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
-  public void updateFromBytes(final String fileName, final byte[] bytes) {
-    combinedChecksum.update(fileName.getBytes(UTF_8));
-    final Checksum checksum = new CRC32C();
-    checksum.update(bytes);
-    combinedChecksum.update(bytes);
-    checksums.put(fileName, checksum.getValue());
-  }
-
-  @Override
   public void updateFromSfvFile(final String... lines) {
     for (String line : lines) {
       line = line.trim();
