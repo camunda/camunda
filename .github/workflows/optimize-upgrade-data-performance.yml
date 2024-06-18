@@ -31,7 +31,7 @@ on:
 
 jobs:
   upgrade-data-performance:
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-32-longrunning
     timeout-minutes: ${{ fromJson(inputs.upgrade_timeout || 360) }}
 
     steps:

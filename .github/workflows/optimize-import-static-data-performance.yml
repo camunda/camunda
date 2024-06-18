@@ -33,7 +33,7 @@ concurrency:
 jobs:
   import-static-data-performance:
     name: Import Static Dataset Performance Test
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-32-longrunning
     timeout-minutes: 60
     env:
       NAMESPACE: optimize-import-static-data-performance-test-${{ github.run_id }}
