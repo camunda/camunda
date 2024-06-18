@@ -8,11 +8,10 @@ A Maven wrapper to provide defaults when running maven. E.g. defaults to Europe/
 
 ### Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| parameters | Maven paremeters to supply to specify the action | true | |
-| threads | Allows overwriting the amount of threads used by passing the value to -T | false | 1C |
-
+|   Input    |                               Description                                | Required | Default |
+|------------|--------------------------------------------------------------------------|----------|---------|
+| parameters | Maven paremeters to supply to specify the action                         | true     |         |
+| threads    | Allows overwriting the amount of threads used by passing the value to -T | false    | 1C      |
 
 ## Example of using the action
 
@@ -24,3 +23,4 @@ steps:
     with:
         parameters: verify -Dskip.docker -pl upgrade
 ```
+

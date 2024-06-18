@@ -56,31 +56,31 @@ info("TEST")
 
 ### High level overview
 
-    ┌──────────┐  ┌──────────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐
-    │          │  │              │  │          │  │            │  │                  │
-    │ Optimize │  │ *RestService │  │ *Service │  │ *Reader/   │  │                  │
-    │   REST   │  │ Java         │  │ Java     │  │ *Writer    │  │                  │
-    │   API    │  │ Classes      │  │ Classes  │  │ Interfaces │  │                  │
-    │          │  │              │  │          │  │            │  │                  │
-    └──────────┘  └──────────────┘  └──────────┘  └────────────┘  │  Database        │
-                                        ┌──────────────────┐      │  (e.g.,          │
-                                        │                  │      │  ElasticSearch)  │
-                                        │     Scheduled    │      │                  │
-                                        │     services     │      │                  │
-                                        │                  │      │                  │
-                                        └──────────────────┘      │                  │
-    ┌───────────┐      ┌───────────┐    ┌─────────────────┐       │                  │
-    │ Import    │ <──> │ Import    │    │ Import handlers │──────>│                  │
-    │ scheduler │      │ mediator  │    │ (state storage) │       │                  │
-    └───────────┘      └───────────┘    └─────────────────┘       │                  │       
-                                        ┌─────────────────┐       │                  │
-                                        │ Import fetchers │       │                  │
-                                        │ (data fetching) │       │                  │
-                                        └─────────────────┘       │                  │
-                  ┌──────────────────┐ ┌──────────────────┐       │                  │
-                  │ Import service   │ │    Import job    │       │                  │
-                  │ (data transform) │ └──────────────────┘       │                  │
-                  └──────────────────┘                            └──────────────────┘
+        ┌──────────┐  ┌──────────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐
+        │          │  │              │  │          │  │            │  │                  │
+        │ Optimize │  │ *RestService │  │ *Service │  │ *Reader/   │  │                  │
+        │   REST   │  │ Java         │  │ Java     │  │ *Writer    │  │                  │
+        │   API    │  │ Classes      │  │ Classes  │  │ Interfaces │  │                  │
+        │          │  │              │  │          │  │            │  │                  │
+        └──────────┘  └──────────────┘  └──────────┘  └────────────┘  │  Database        │
+                                            ┌──────────────────┐      │  (e.g.,          │
+                                            │                  │      │  ElasticSearch)  │
+                                            │     Scheduled    │      │                  │
+                                            │     services     │      │                  │
+                                            │                  │      │                  │
+                                            └──────────────────┘      │                  │
+        ┌───────────┐      ┌───────────┐    ┌─────────────────┐       │                  │
+        │ Import    │ <──> │ Import    │    │ Import handlers │──────>│                  │
+        │ scheduler │      │ mediator  │    │ (state storage) │       │                  │
+        └───────────┘      └───────────┘    └─────────────────┘       │                  │       
+                                            ┌─────────────────┐       │                  │
+                                            │ Import fetchers │       │                  │
+                                            │ (data fetching) │       │                  │
+                                            └─────────────────┘       │                  │
+                      ┌──────────────────┐ ┌──────────────────┐       │                  │
+                      │ Import service   │ │    Import job    │       │                  │
+                      │ (data transform) │ └──────────────────┘       │                  │
+                      └──────────────────┘                            └──────────────────┘
 
 The shape of this diagram hints that each block only interacts with its neighboring blocks, e.g.,
 no `*RestService` class interacts with the database, and only implementations of `*Reader` and
@@ -98,12 +98,12 @@ time there is a file named `<Anything>RestService.java`, that is where the REST 
 Some examples are the following:
 
 * ReportRestService.java defines:
-    * `/api/report`
-    * `/api/report/{id}/evaluate`
-      etc...
+  * `/api/report`
+  * `/api/report/{id}/evaluate`
+    etc...
 * ProcessVariableRestService.java defines:
-    * `/api/variables`
-    * `/api/variables/values` etc...
+  * `/api/variables`
+  * `/api/variables/values` etc...
 
 Each endpoint has some input object. These can be:
 

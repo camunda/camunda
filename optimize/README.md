@@ -17,11 +17,13 @@ mvn clean install
 ```
 
 And if you don't want to run the tests
+
 ```
 mvn clean install -DskipTests
 ```
 
 **On Windows** make sure you run this in a command line as Administrator
+
 - as some npm modules need to be able to create symlinks.
 
 After the build is completed, you will find the distributions under ```
@@ -29,7 +31,8 @@ optimize-distro/target ```
 
 ## Frontend
 
-Learn how to build, debug, test and more in the front-end in the [Front-End README](./client/README.md)
+Learn how to build, debug, test and more in the front-end in
+the [Front-End README](./client/README.md)
 
 ## Backend
 
@@ -40,6 +43,7 @@ Learn how to build, debug, test and more in the back-end in the [Back-End README
 ### Docker
 
 You can start the platform (with C7 engine) with H2 by issuing:
+
 ```
 docker-compose up -d
 ```
@@ -50,11 +54,13 @@ docker-compose.postgresql.yml up -d ```
 
 This will start Elasticsearch and a PostgreSQL-backed Camunda Platform 7 instance.
 The services are exposed to localhost on the following ports:
+
 - Elasticsearch: 9200, 9300
 - PostgreSQL: 5432
 - CamBPM: 8080
 
 Services can be shutdown again using
+
 ```
 docker-compose down
 ```
@@ -64,14 +70,18 @@ You can also run Optimize in C8SM mode (Self-managed C8 Engine) by running the f
 ```
 docker-compose -f docker-compose.ccsm-with-optimize.yml up -d
 ```
+
 or optionally the C8SM stack without Optimize using:
+
 ```
 docker-compose -f docker-compose.ccsm-without-optimize.yml up -d
 ```
 
-This will start all the components of Identity, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 
+This will start all the components of Identity, Elasticsearch, Zeebe, and Optimize. Optimize will be
+available at localhost:8090.
 
 Optimize then needs to be started in C8SM mode, and with the following environment variables:
+
 ```
 SPRING_PROFILES_ACTIVE=ccsm;
 CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=[Identity host]

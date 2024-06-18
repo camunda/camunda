@@ -22,9 +22,11 @@ They can be run using the maven profile `engine-cleanup-performance`:
 ```
 mvn -Pengine-cleanup-performance clean test
 ```
+
 2. Test Ingested Event and Event Based Process data cleanup
-They can be run using the maven profile `event-cleanup-performance`:
+   They can be run using the maven profile `event-cleanup-performance`:
 
 ```
 mvn -Pevent-cleanup-performance clean test
 ```
+

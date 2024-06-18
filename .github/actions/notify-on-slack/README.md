@@ -6,13 +6,13 @@ Action that allows to post a status message of the workflow results to slack cha
 
 ### Inputs
 
-| Input             | Description                      | Required | Default                           |
-| ----------------- | -------------------------------- | -------- |-----------------------------------|
-| slack_webhook_url | Slack Webhook URL                | true     |                                   |
-| text              | Message to be sent               | false    |                                   |
-| status            | Status of the message            | false    | failure                           |
+|       Input       |           Description            | Required |              Default               |
+|-------------------|----------------------------------|----------|------------------------------------|
+| slack_webhook_url | Slack Webhook URL                | true     |                                    |
+| text              | Message to be sent               | false    |                                    |
+| status            | Status of the message            | false    | failure                            |
 | fields            | Fields to be used in the message | false    | workflow,eventName,repo,action,ref |
-| channel           | Slack channel name               | false    | "#optimize-status"   |
+| channel           | Slack channel name               | false    | "#optimize-status"                 |
 
 ## Example of using the action
 
@@ -35,3 +35,4 @@ steps:
       slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
       status: ${{ job.status }}
 ```
+

@@ -12,10 +12,10 @@ Using the `env` directive allows configuring variables within the docker-compose
 
 ### Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| compose_file | Full path to the compose file | true | |
-| project_name | Project name to allow running the same file multiple times | true | |
+|    Input     |                        Description                         | Required | Default |
+|--------------|------------------------------------------------------------|----------|---------|
+| compose_file | Full path to the compose file                              | true     |         |
+| project_name | Project name to allow running the same file multiple times | true     |         |
 
 ## Example of using the action
 
@@ -49,3 +49,4 @@ steps:
     ELASTIC_JVM_MEMORY: 1
     ELASTIC_HTTP_PORT: 9200
 ```
+

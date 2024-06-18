@@ -8,14 +8,14 @@ This actions gets a branch for which we want to generate changelog, finds last t
 
 ### Inputs
 
-| Input  | Description                                      | Required | Default |
-| ------ | ------------------------------------------------ | -------- | ------- |
+| Input  |                   Description                    | Required | Default |
+|--------|--------------------------------------------------|----------|---------|
 | branch | A branch for which we want to generate changelog | true     | master  |
 
 ### Outputs
 
-| Output    | Descritpion                                      |
-| --------- | ------------------------------------------------ |
+|  Output   |                   Descritpion                    |
+|-----------|--------------------------------------------------|
 | changelog | Generated changelog as a multiline string output |
 
 ## Example of using this action
@@ -39,3 +39,4 @@ jobs:
         run: |
           echo "${{ steps.changelog.outputs.changelog }}"
 ```
+

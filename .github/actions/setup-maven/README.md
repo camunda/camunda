@@ -10,12 +10,12 @@ See [setup-java](https://github.com/actions/setup-java) for possible distributio
 
 ### Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| java-version | Allows setting a version version to overwrite the default | false | 21      |
-| distribution | Allows changing the java distribution | false | temurin |
-| maven-version | Allows overwriting the maven version installed by default | false | 3.8.6   |
-| secrets | JSON wrapped secrets for easier secret passing | true |         |
+|     Input     |                        Description                        | Required | Default |
+|---------------|-----------------------------------------------------------|----------|---------|
+| java-version  | Allows setting a version version to overwrite the default | false    | 21      |
+| distribution  | Allows changing the java distribution                     | false    | temurin |
+| maven-version | Allows overwriting the maven version installed by default | false    | 3.8.6   |
+| secrets       | JSON wrapped secrets for easier secret passing            | true     |         |
 
 ## Example of using the action
 
@@ -29,3 +29,4 @@ steps:
         java-version: 21
         distribution: zulu
 ```
+

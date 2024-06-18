@@ -36,6 +36,7 @@ docker login registry.camunda.cloud
 ## Setup Auth0 credentials
 
 Create a file called `.env` in the root directory (client) that contains the following:
+
 ```bash
 AUTH0_CLIENTSECRET=
 AUTH0_USEREMAIL=
@@ -43,7 +44,6 @@ AUTH0_USERPASSWORD=
 ```
 
 Retrieve the credentials from the [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/products/optimize/ci/jenkins) and paste them into the .env file you have just created
-
 
 ## Development server
 
@@ -57,8 +57,9 @@ if you want to run Optimize in cloud mode, use the following command:
 ```bash
 yarn run start-backend-cloud
 ```
+
 > **Tip:**
-  Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.
+> Make sure you don't have any active docker containers running on the optimize ports (e.g. 8090, etc) before starting the backend.
 
 Then in new terminal
 
@@ -140,3 +141,4 @@ Make sure you started the backend with `yarn run start-backend` and the frontend
 ```bash
 yarn run e2e
 ```
+
