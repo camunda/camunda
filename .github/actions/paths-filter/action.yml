@@ -1,0 +1,35 @@
+---
+name: Common paths filter for camunda/camunda
+
+description: Common filters to detect and group changes against a base branch
+
+outputs:
+  actionlint:
+    description: Output whether `actionlint` should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change
+      }}
+
+runs:
+  using: composite
+  steps:
+
+  - uses: dorny/paths-filter@v3
+    id: filter-common
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+
+        maven-change:
+          - 'bom/*'
+          - 'build-tools/**'
+          - 'dist/**'
+          - 'parent/*'
+          - 'pom.xml'

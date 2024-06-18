@@ -18,6 +18,7 @@ on:
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.ci/**'
@@ -28,6 +29,7 @@ on:
       - 'pom.xml'
       - 'operate.Dockerfile'
       - 'parent/*'
+      - 'webapps-common/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.

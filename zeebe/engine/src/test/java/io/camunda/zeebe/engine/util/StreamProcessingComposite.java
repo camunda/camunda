@@ -24,10 +24,12 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 public class StreamProcessingComposite implements CommandWriter {
 
@@ -81,13 +83,16 @@ public class StreamProcessingComposite implements CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
-    return startTypedStreamProcessor(partitionId, factory, streamProcessorListenerOpt);
+    return startTypedStreamProcessor(
+        partitionId, factory, streamProcessorListenerOpt, cfg -> {}, true);
   }
 
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     final var result =
         streams.startStreamProcessor(
             getLogName(partitionId),
@@ -97,7 +102,9 @@ public class StreamProcessingComposite implements CommandWriter {
 
               return factory.createProcessors(processingContext);
             }),
-            streamProcessorListenerOpt);
+            streamProcessorListenerOpt,
+            processorConfiguration,
+            awaitOpening);
 
     return result;
   }

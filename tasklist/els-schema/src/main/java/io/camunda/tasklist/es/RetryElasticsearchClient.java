@@ -102,7 +102,9 @@ public class RetryElasticsearchClient {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private ElasticsearchInternalTask elasticsearchTask;
 

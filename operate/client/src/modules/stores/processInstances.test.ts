@@ -593,11 +593,13 @@ describe('stores/processInstances', () => {
               errorMessage: 'string',
               state: 'SENT',
               type: 'RESOLVE_INCIDENT',
+              completedDate: null,
             },
             {
               errorMessage: 'string',
               state: 'SENT',
               type: 'CANCEL_PROCESS_INSTANCE',
+              completedDate: null,
             },
           ],
         },

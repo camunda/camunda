@@ -37,17 +37,22 @@ public class WebappsRequestForwardManager {
   }
 
   private String saveRequestAndRedirectToLogin(final HttpServletRequest request) {
+    final String requestedUrl = getRequestedUrl(request);
+    request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);
+    LOGGER.warn(
+        "Requested path {}, but not authenticated. Redirect to  {} ",
+        request.getRequestURI().substring(request.getContextPath().length()),
+        LOGIN_RESOURCE);
+    return "forward:" + LOGIN_RESOURCE;
+  }
+
+  public static String getRequestedUrl(final HttpServletRequest request) {
     final String requestedPath =
         request.getRequestURI().substring(request.getContextPath().length());
     final String queryString = request.getQueryString();
     final String requestedUrl =
         StringUtils.isEmpty(queryString) ? requestedPath : requestedPath + "?" + queryString;
-    request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);
-    LOGGER.warn(
-        "Requested path {}, but not authenticated. Redirect to  {} ",
-        requestedPath,
-        LOGIN_RESOURCE);
-    return "forward:" + LOGIN_RESOURCE;
+    return requestedUrl;
   }
 
   private boolean isNotLoggedIn() {

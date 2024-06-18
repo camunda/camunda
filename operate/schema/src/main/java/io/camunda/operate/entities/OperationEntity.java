@@ -39,6 +39,8 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private String modifyInstructions;
   private String migrationPlan;
 
+  private OffsetDateTime completedDate;
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -197,6 +199,15 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
   public OperationEntity setMigrationPlan(final String migrationPlan) {
     this.migrationPlan = migrationPlan;
+    return this;
+  }
+
+  public OffsetDateTime getCompletedDate() {
+    return completedDate;
+  }
+
+  public OperationEntity setCompletedDate(final OffsetDateTime completedDate) {
+    this.completedDate = completedDate;
     return this;
   }
 
