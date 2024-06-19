@@ -9,9 +9,11 @@ package io.camunda.identity.usermanagement.service;
 
 import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaGroup;
+import io.camunda.identity.usermanagement.model.Group;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,5 +76,17 @@ public class GroupService {
     final CamundaGroup group = findGroupById(groupId);
     camundaUserDetailsManager.renameGroup(group.name(), updatedGroup.name());
     return new CamundaGroup(groupId, updatedGroup.name());
+  }
+
+  public void assignRoleToGroup(final Long groupId, final String roleName) {
+    final Group group = groupRepository.findById(groupId).orElseThrow();
+    camundaUserDetailsManager.addGroupAuthority(
+        group.getName(), new SimpleGrantedAuthority(roleName));
+  }
+
+  public void unassignRoleFromGroup(final Long groupId, final String roleName) {
+    final Group group = groupRepository.findById(groupId).orElseThrow();
+    camundaUserDetailsManager.removeGroupAuthority(
+        group.getName(), new SimpleGrantedAuthority(roleName));
   }
 }

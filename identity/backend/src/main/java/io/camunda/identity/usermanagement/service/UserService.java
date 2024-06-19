@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import io.camunda.identity.security.CamundaUserDetails;
 import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
@@ -86,31 +87,33 @@ public class UserService {
 
   public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
     try {
-      if (userWithPassword.getId() != null && !Objects.equals(id, userWithPassword.getId())) {
+      if (!Objects.equals(id, userWithPassword.getId())) {
         throw new RuntimeException("user.notFound");
       }
+
       final CamundaUser existingUser = findUserById(id);
+
       if (existingUser == null
           || !existingUser.getUsername().equals(userWithPassword.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
-      final UserDetails existingUserDetail =
+      final CamundaUserDetails existingUserDetail =
           camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
 
-      final var userBuilder =
+      final UserDetails userDetails =
           User.withUsername(existingUser.getUsername())
-              .authorities(existingUserDetail.getAuthorities())
-              .disabled(!userWithPassword.isEnabled())
               .password(
                   StringUtils.hasText(userWithPassword.getPassword())
                       ? userWithPassword.getPassword()
                       : existingUserDetail.getPassword())
-              .passwordEncoder(passwordEncoder::encode);
+              .passwordEncoder(passwordEncoder::encode)
+              .roles(existingUserDetail.getRoles().toArray(new String[0]))
+              .disabled(!userWithPassword.isEnabled())
+              .build();
 
-      final UserDetails userDetails = userBuilder.build();
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(id, userWithPassword.getEmail()));
+      userProfileRepository.save(new Profile(existingUser.getId(), userWithPassword.getEmail()));
 
       return userProfileRepository
           .findUserById(id)
