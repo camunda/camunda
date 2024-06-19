@@ -53,7 +53,6 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
       Pattern.compile(".*combinedValue\\s+=\\s+([0-9a-fA-F]{1,16})");
   private Checksum combinedChecksum;
   private final SortedMap<String, Long> checksums = new TreeMap<>();
-  private final SortedMap<String, Checksum> partialChecksums = new TreeMap<>();
   private String snapshotDirectoryComment;
 
   /**
@@ -131,6 +130,15 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
         readBuffer.clear();
       }
     }
+    checksums.put(fileName, checksum.getValue());
+  }
+
+  @Override
+  public void updateFromBytes(final String fileName, final byte[] bytes) {
+    combinedChecksum.update(fileName.getBytes(UTF_8));
+    final Checksum checksum = new CRC32C();
+    checksum.update(bytes);
+    combinedChecksum.update(bytes);
     checksums.put(fileName, checksum.getValue());
   }
 
