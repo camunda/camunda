@@ -8,15 +8,22 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Test
       uses: ./.github/actions/run-maven
       with:
         parameters: test -Dskip.fe.build -Dskip.docker
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -32,24 +39,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: "Parse pom.xml for versions"
       id: "pom_info"
       uses: YunaBraska/java-info-action@main
+
     - name: Set Node.js
       uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
       with:
         node-version: ${{ steps.pom_info.outputs.x_version_node }}
         cache: yarn
         cache-dependency-path: ./optimize/client/yarn.lock
+
     - name: Pull Dependencies
       working-directory: ./optimize/client
       run: |
         yarn
+
     - name: Test
       working-directory: ./optimize/client
       run: |
         yarn test:ci
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
