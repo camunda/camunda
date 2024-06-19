@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.client.metrics.ZeebeClientMetricsBridge;
 import java.time.Duration;
@@ -37,6 +38,7 @@ public class JobWorkerManager {
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
+  private final ResultProcessorStrategy resultProcessorStrategy;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<ZeebeWorkerValue> workerValues = new ArrayList<>();
@@ -44,10 +46,12 @@ public class JobWorkerManager {
   public JobWorkerManager(
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy) {
+      final ParameterResolverStrategy parameterResolverStrategy,
+      final ResultProcessorStrategy resultProcessorStrategy) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
+    this.resultProcessorStrategy = resultProcessorStrategy;
   }
 
   public JobWorker openWorker(final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue) {
@@ -58,7 +62,8 @@ public class JobWorkerManager {
             zeebeWorkerValue,
             commandExceptionHandlingStrategy,
             metricsRecorder,
-            parameterResolverStrategy));
+            parameterResolverStrategy,
+            resultProcessorStrategy));
   }
 
   public JobWorker openWorker(
