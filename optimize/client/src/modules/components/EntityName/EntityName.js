@@ -21,7 +21,7 @@ export default function EntityName({children, details, linkTo, onClick}) {
       <div className="name-container">
         <Tooltip content={children} overflowOnly position="bottom" theme="dark" delay={0}>
           {linkTo ? (
-            <Link to={linkTo} onClick={onClick} className="name">
+            <Link to={linkTo} onClick={onClick} className="cds--link name">
               {children}
             </Link>
           ) : (

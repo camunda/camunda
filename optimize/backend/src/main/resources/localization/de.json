@@ -211,7 +211,7 @@
     "displayName": "Anzeigename",
     "displayNamePlaceholder": "Optionalen Anzeigenamen hinzufügen",
     "noSources": "Keine Datenquelle",
-    "copyTooltip": "{entity} kopieren, um Varianten zu vergleichen und zu analysieren.<br/><a href='{docsLink}' target='_blank' rel='noopener noreferrer'>Dokumentation</a>",
+    "copyTooltip": "{entity} kopieren, um Varianten zu vergleichen und zu analysieren.<br/><a class='cds--link' href='{docsLink}' target='_blank' rel='noopener noreferrer'>Dokumentation</a>",
     "templates": {
       "blank": "Leerer Bericht",
       "analyzeSharesAsPieChart": "Analysiere Verteilung als Kuchendiagramm",
@@ -773,7 +773,7 @@
     "edit": "Alarm bearbeiten",
     "recipient": "Empfänger",
     "description": "\"{name}\" hat einen Wert {aboveOrBelow} {thresholdValue}",
-    "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
+    "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a class='cds--link' href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
       "name": "Alarm Name",
       "report": "Wenn der Bericht",
@@ -1357,7 +1357,7 @@
     "csvLimit": {
       "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
       "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätzen. Filtern Sie Ihre Daten, oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben",
-      "exportApi": "Sie können auch die <a href='{docsLink}'>Datenexport-API</a> verwenden, um größere Datenmengen aus Optimize zu exportieren."
+      "exportApi": "Sie können auch die <a class='cds--link' href='{docsLink}'>Datenexport-API</a> verwenden, um größere Datenmengen aus Optimize zu exportieren."
     },
     "unit": {
       "automatic": "Automatisch",
