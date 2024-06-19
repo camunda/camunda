@@ -10,10 +10,10 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-client-java</artifactId>
+  <artifactId>camunda-client-java</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Client Java</name>
+  <name>Camunda Client Java</name>
 
   <licenses>
     <license>
