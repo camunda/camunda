@@ -7,13 +7,11 @@
  */
 package io.camunda.identity.rolemanagement.service;
 
-import io.camunda.identity.permissions.PermissionEnum;
 import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.repository.RoleRepository;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -72,15 +70,5 @@ public class RoleService {
     existingRole.setPermissions(role.getPermissions());
 
     return roleRepository.save(existingRole);
-  }
-
-  private Optional<PermissionEnum> findPermissionByName(final String permissionName) {
-    Optional<PermissionEnum> permission;
-    try {
-      permission = Optional.of(PermissionEnum.valueOf(permissionName));
-    } catch (final IllegalArgumentException e) {
-      permission = Optional.empty();
-    }
-    return permission;
   }
 }
