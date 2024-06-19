@@ -22,7 +22,7 @@ jobs:
     - name: Test
       uses: ./.github/actions/run-maven
       with:
-        parameters: test -Dskip.fe.build -Dskip.docker
+        parameters: test -pl optimize -Dskip.fe.build -Dskip.docker
 
     - name: Upload Test Results
       if: always()
