@@ -34,6 +34,7 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   build:
@@ -101,26 +102,17 @@ jobs:
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build and tag Docker images
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            registry.camunda.cloud/team-operate/camunda-operate
-          tags: |
-            ${{ env.IMAGE_TAG }}
-            ${{ env.CI_IMAGE_TAG }}
-            ${{ env.PR_IMAGE_TAG }}
-
-      #########################################################################
       # Build Docker image
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
-          tags: ${{ steps.meta.outputs.tags }}
+          repository: registry.camunda.cloud/team-operate/camunda-operate
+          version: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.CI_IMAGE_TAG }}
+            ${{ env.PR_IMAGE_TAG }}
           push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
+          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
           dockerfile: operate.Dockerfile
 
       #########################################################################
@@ -138,9 +130,10 @@ jobs:
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:
-          tags: |
-            camunda/operate:SNAPSHOT
+          repository: camunda/operate
+          version: SNAPSHOT
           push: true
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile
 
       #########################################################################

@@ -11,7 +11,7 @@ inputs:
     default: 'camunda/zeebe'
     required: true
   version:
-    description: 'The image version, e.g. SNAPSHOT, 8.1.0'
+    description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
     required: false
   distball:
     description: 'The path to the Camunda platform distribution TAR ball'
@@ -72,10 +72,12 @@ runs:
       id: get-date
       shell: bash
       run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
-    - name: Set image name from params and/or project version
+    - name: Build image names from params and/or project version
       id: get-image
-      shell: bash
-      run: echo "result=${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}" >> $GITHUB_OUTPUT
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ inputs.repository }}
+        tags: ${{ inputs.version || steps.get-version.outputs.result }}
     - name: Set DISTBALL path relative to the build context
       id: get-distball
       shell: bash
@@ -85,7 +87,7 @@ runs:
       with:
         context: .
         file: ${{ inputs.dockerfile }}
-        tags: ${{ steps.get-image.outputs.result }}
+        tags: ${{ steps.get-image.outputs.tags }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         platforms: ${{ inputs.platforms }}
