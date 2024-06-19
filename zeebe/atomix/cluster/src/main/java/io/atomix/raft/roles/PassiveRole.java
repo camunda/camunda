@@ -121,11 +121,10 @@ public class PassiveRole extends InactiveRole {
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
 
     if (Objects.equals(request.chunkId(), previouslyReceivedSnapshotChunkId)) {
-      //     if the request next is the same as the next expected. We assume we have received the
-      // same chunk as we have most recently applied.
       return CompletableFuture.completedFuture(
           logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
+
     // if null assume it is first chunk of file
     {
       if (nextPendingSnapshotChunkId != null
