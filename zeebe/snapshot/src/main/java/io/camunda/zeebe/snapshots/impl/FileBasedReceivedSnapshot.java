@@ -199,7 +199,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
       while (buffer.hasRemaining()) {
         final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
-        channel.position(snapshotChunk.getFileBlockPosition());
+        channel.position(snapshotChunk.getFileBlockPosition() + buffer.position());
         channel.write(buffer.limit(newLimit));
         buffer.limit(buffer.capacity());
       }
