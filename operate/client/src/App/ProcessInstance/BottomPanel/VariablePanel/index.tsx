@@ -6,18 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {useEffect} from 'react';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
+import {IS_LISTENERS_TAB_SUPPORTED} from 'modules/feature-flags';
+import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
+import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
+import {Listeners} from './Listeners';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const [flowNodeHasListeners, setFlowNodeHasListeners] = useState(false);
+
+  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+
+  const {fetchListeners, state} = processInstanceListenersStore;
+  const {listeners} = state;
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -26,6 +35,18 @@ const VariablePanel = observer(function VariablePanel() {
       variablesStore.reset();
     };
   }, [processInstanceId]);
+
+  useEffect(() => {
+    if (flowNodeId) {
+      fetchListeners(processInstanceId, flowNodeId);
+    }
+  }, [fetchListeners, processInstanceId, flowNodeId]);
+
+  useEffect(() => {
+    listeners.length > 0
+      ? setFlowNodeHasListeners(true)
+      : setFlowNodeHasListeners(false);
+  }, [listeners]);
 
   return (
     <TabView
@@ -55,6 +76,16 @@ const VariablePanel = observer(function VariablePanel() {
                 content: <InputOutputMappings type="Output" />,
                 onClick: variablesStore.stopPolling,
               },
+              ...(IS_LISTENERS_TAB_SUPPORTED && flowNodeHasListeners
+                ? [
+                    {
+                      id: 'listeners',
+                      label: 'Listeners',
+                      content: <Listeners listeners={listeners} />,
+                      onClick: () => {},
+                    },
+                  ]
+                : []),
             ]),
       ]}
     />
