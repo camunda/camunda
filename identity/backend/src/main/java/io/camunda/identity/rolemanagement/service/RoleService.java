@@ -74,30 +74,6 @@ public class RoleService {
     return roleRepository.save(existingRole);
   }
 
-  public List<PermissionEnum> findAllPermissionsOfRole(final String roleName) {
-    final Role role = findRoleByName(roleName);
-    return role.getPermissions().stream().toList();
-  }
-
-  public void assignPermissionToRole(final String roleName, final String permissionName) {
-    final PermissionEnum permission =
-        findPermissionByName(permissionName)
-            .orElseThrow(() -> new RuntimeException("permission.notFound"));
-    final Role role = findRoleByName(roleName);
-
-    role.getPermissions().add(permission);
-    roleRepository.save(role);
-  }
-
-  public void unassignPermissionFromRole(final String roleName, final String permissionName) {
-    final PermissionEnum permission =
-        findPermissionByName(permissionName)
-            .orElseThrow(() -> new RuntimeException("permission.notFound"));
-    final Role role = findRoleByName(roleName);
-    role.getPermissions().remove(permission);
-    roleRepository.save(role);
-  }
-
   private Optional<PermissionEnum> findPermissionByName(final String permissionName) {
     Optional<PermissionEnum> permission;
     try {
