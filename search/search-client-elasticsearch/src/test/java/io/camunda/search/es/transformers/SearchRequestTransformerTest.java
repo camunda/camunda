@@ -5,14 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.data.transformers;
+package io.camunda.search.es.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
