@@ -54,6 +54,7 @@ import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -116,6 +117,24 @@ public class PassiveRole extends InactiveRole {
     updateTermAndLeader(request.currentTerm(), request.leader());
 
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
+
+    // if null assume it is first chunk of file
+    if (nextPendingSnapshotChunkId != null
+        && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
+      abortPendingSnapshots();
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      RaftError.Type.ILLEGAL_MEMBER_STATE,
+                      "Expected chunkId of ["
+                          + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
+                          + "] got ["
+                          + new String(request.chunkId().array(), StandardCharsets.UTF_8)
+                          + "].")
+                  .build()));
+    }
 
     // If the request is for a lesser term, reject the request.
     if (request.currentTerm() < raft.getTerm()) {
@@ -271,6 +290,7 @@ public class PassiveRole extends InactiveRole {
 
       pendingSnapshot = null;
       pendingSnapshotStartTimestamp = 0L;
+      setNextExpected(null);
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
