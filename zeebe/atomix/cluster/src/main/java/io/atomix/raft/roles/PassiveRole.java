@@ -57,6 +57,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -69,6 +70,7 @@ public class PassiveRole extends InactiveRole {
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
   private ByteBuffer nextPendingSnapshotChunkId;
+  private ByteBuffer previouslyReceivedSnapshotChunkId;
 
   public PassiveRole(final RaftContext context) {
     super(context);
@@ -117,21 +119,31 @@ public class PassiveRole extends InactiveRole {
     updateTermAndLeader(request.currentTerm(), request.leader());
 
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
-    // if null assume it is first chunk of file
-    if (nextPendingSnapshotChunkId != null
-        && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
-      final var errMsg =
-          "Expected chunkId of ["
-              + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
-              + "] got ["
-              + new String(request.chunkId().array(), StandardCharsets.UTF_8)
-              + "].";
+
+    if (Objects.equals(request.chunkId(), previouslyReceivedSnapshotChunkId)) {
+      //     if the request next is the same as the next expected. We assume we have received the
+      // same chunk as we have most recently applied.
       return CompletableFuture.completedFuture(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, errMsg)
-                  .build()));
+          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+    }
+    // if null assume it is first chunk of file
+    {
+      if (nextPendingSnapshotChunkId != null
+          && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
+        final var errMsg =
+            "Expected chunkId of ["
+                + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
+                + "] got ["
+                + new String(request.chunkId().array(), StandardCharsets.UTF_8)
+                + "].";
+        abortPendingSnapshots();
+        return CompletableFuture.completedFuture(
+            logResponse(
+                InstallResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(Type.ILLEGAL_MEMBER_STATE, errMsg)
+                    .build()));
+      }
     }
 
     // If the request is for a lesser term, reject the request.
@@ -289,12 +301,14 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshot = null;
       pendingSnapshotStartTimestamp = 0L;
       setNextExpected(null);
+      previouslyReceivedSnapshotChunkId = null;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
       onSnapshotReceiveCompletedOrAborted();
     } else {
       setNextExpected(request.nextChunkId());
+      previouslyReceivedSnapshotChunkId = request.chunkId();
     }
 
     return CompletableFuture.completedFuture(
