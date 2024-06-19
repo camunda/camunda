@@ -15,9 +15,11 @@ import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.springframework.http.ProblemDetail;
@@ -40,7 +42,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
+      final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
@@ -57,7 +59,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, List<VariableValueFilter>> toVariableValueFilter(
-      final List<io.camunda.zeebe.gateway.protocol.rest.VariableValueFilter> filters) {
+      final List<VariableValueFilterRequest> filters) {
 
     final List<VariableValueFilter> result;
 
@@ -75,13 +77,13 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableValueFilter> toVariableValueFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.VariableValueFilter f) {
+      final VariableValueFilterRequest f) {
     return Either.right(
         FilterBuilders.variableValue(
             (v) ->
                 v.name(f.getName())
                     .eq(f.getEq())
-                    .gt(f.getEq())
+                    .gt(f.getGt())
                     .gte(f.getGte())
                     .lt(f.getLt())
                     .lte(f.getLte())));
@@ -103,29 +105,31 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceSort> toSearchQuerySort(
-      final SearchQuerySortRequest sorting) {
-    if (sorting != null) {
+      final List<SearchQuerySortRequest> sorting) {
+    if (sorting != null && !sorting.isEmpty()) {
       final var builder = SortOptionBuilders.processInstance();
 
-      final var field = sorting.getField();
-      final var order = sorting.getOrder();
+      for (SearchQuerySortRequest sort : sorting) {
+        final var field = sort.getField();
+        final var order = sort.getOrder();
 
-      if ("processInstanceKey".equals(field)) {
-        builder.processInstanceKey();
-      } else if ("startDate".equals(field)) {
-        builder.startDate();
-      } else if ("endDate".equals(field)) {
-        builder.endDate();
-      } else {
-        throw new RuntimeException("unkown sortBy " + field);
-      }
+        if ("processInstanceKey".equals(field)) {
+          builder.processInstanceKey();
+        } else if ("startDate".equals(field)) {
+          builder.startDate();
+        } else if ("endDate".equals(field)) {
+          builder.endDate();
+        } else {
+          throw new RuntimeException("unkown sortBy " + field);
+        }
 
-      if ("asc".equalsIgnoreCase(order)) {
-        builder.asc();
-      } else if ("desc".equalsIgnoreCase(order)) {
-        builder.desc();
-      } else {
-        throw new RuntimeException("unkown sortOrder " + order);
+        if ("asc".equalsIgnoreCase(order)) {
+          builder.asc();
+        } else if ("desc".equalsIgnoreCase(order)) {
+          builder.desc();
+        } else {
+          throw new RuntimeException("unkown sortOrder " + order);
+        }
       }
 
       return Either.right(builder.build());

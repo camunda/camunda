@@ -15,23 +15,9 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
-import java.util.function.Consumer;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstance;
 
 public interface ProcessInstanceQuery
-    extends TypedQuery<ProcessInstanceFilter, ProcessInstanceSort>,
-        FinalCommandStep<ProcessInstanceSearchQueryResponse> {
-
-  ProcessInstanceQuery filter(final ProcessInstanceFilter value);
-
-  ProcessInstanceQuery filter(final Consumer<ProcessInstanceFilter> fn);
-
-  ProcessInstanceQuery sort(final ProcessInstanceSort value);
-
-  ProcessInstanceQuery sort(final Consumer<ProcessInstanceSort> fn);
-
-  ProcessInstanceQuery page(final QueryPage value);
-
-  ProcessInstanceQuery page(final Consumer<QueryPage> fn);
-}
+    extends TypedSearchQueryRequest<
+            ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceQuery>,
+        FinalSearchQueryStep<ProcessInstance> {}

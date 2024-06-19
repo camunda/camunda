@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,10 +39,19 @@ public class ProcessInstanceController {
 
   private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
       final ProcessInstanceQuery query) {
-    final var tenantIds = TenantAttributeHolder.tenantIds();
-    final var result =
-        processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
-    return ResponseEntity.ok(
-        SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result).get());
+    try {
+      final var tenantIds = TenantAttributeHolder.tenantIds();
+      final var result =
+          processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result).get());
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST, e.getMessage(), "Ups, something went wrong");
+      return ResponseEntity.of(problemDetail)
+          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
+          .build();
+    }
   }
 }

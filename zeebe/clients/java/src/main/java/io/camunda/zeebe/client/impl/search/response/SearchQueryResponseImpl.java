@@ -13,25 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.response;
 
-import io.camunda.zeebe.client.api.search.ProcessInstanceSort;
+import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
+import java.util.List;
 
-public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstanceSort>
-    implements ProcessInstanceSort {
+public final class SearchQueryResponseImpl<T> implements SearchQueryResponse<T> {
 
-  @Override
-  public ProcessInstanceSort startDate() {
-    return field("startDate");
+  private final List<T> items;
+  private final SearchResponsePage page;
+
+  public SearchQueryResponseImpl(final List<T> items, final SearchResponsePage page) {
+    this.items = items;
+    this.page = page;
   }
 
   @Override
-  public ProcessInstanceSort endDate() {
-    return field("endDate");
+  public List<T> items() {
+    return items;
   }
 
   @Override
-  protected ProcessInstanceSort self() {
-    return this;
+  public SearchResponsePage page() {
+    return page;
   }
 }

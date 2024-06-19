@@ -15,13 +15,14 @@
  */
 package io.camunda.zeebe.client.api.search;
 
+import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public interface ProcessInstanceFilter extends SearchQueryFilter {
+public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   ProcessInstanceFilter processInstanceKeys(final Long value, final Long... values);
 

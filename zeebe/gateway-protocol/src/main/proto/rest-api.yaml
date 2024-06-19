@@ -553,9 +553,10 @@ components:
       type: object
       properties:
         sort:
-          allOf:
-            - $ref: "#/components/schemas/SearchQuerySortRequest"
-          type: object
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
           allOf:
             - $ref: "#/components/schemas/SearchQueryPageRequest"
@@ -605,7 +606,7 @@ components:
           type: array
           items:
             type: object
-    ProcessInstanceFilter:
+    ProcessInstanceFilterRequest:
       description: BAR FOO
       type: object
       properties:
@@ -617,8 +618,8 @@ components:
         variables:
           type: array
           items:
-            $ref: "#/components/schemas/VariableValueFilter"
-    VariableValueFilter:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
+    VariableValueFilterRequest:
       description: BAR FOO
       type: object
       properties:
@@ -668,7 +669,7 @@ components:
       properties:
         filter:
           allOf:
-            - $ref: "#/components/schemas/ProcessInstanceFilter"
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     ProcessInstanceSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"

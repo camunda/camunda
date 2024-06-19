@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.impl.search;
 
-public interface QueryPage {
+public abstract class TypedSearchRequestPropertyProvider<T> {
 
-  QueryPage from(final Integer value);
-
-  QueryPage size(final Integer value);
-
-  QueryPage searchBefore(final Object[] values);
-
-  QueryPage searchAfter(final Object[] values);
+  protected abstract T getSearchRequestProperty();
 }

@@ -16,18 +16,32 @@
 package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
+import java.util.function.Consumer;
 
-public interface VariableValueFilter extends SearchRequestFilter {
+public interface TypedSearchQueryRequest<
+    F extends SearchRequestFilter,
+    S extends SearchRequestSort<S>,
+    SELF extends TypedSearchQueryRequest<F, S, SELF>> {
 
-  VariableValueFilter name(final String value);
+  SELF filter(final F value);
 
-  VariableValueFilter eq(final Object value);
+  SELF filter(final Consumer<F> fn);
 
-  VariableValueFilter gt(final Object value);
+  SELF sort(final S value);
 
-  VariableValueFilter gte(final Object value);
+  SELF sort(final Consumer<S> fn);
 
-  VariableValueFilter lt(final Object value);
+  SELF page(final SearchRequestPage value);
 
-  VariableValueFilter lte(final Object value);
+  SELF page(final Consumer<SearchRequestPage> fn);
+
+  public static interface SearchRequestFilter {}
+
+  public static interface SearchRequestSort<S extends SearchRequestSort<S>> {
+
+    S asc();
+
+    S desc();
+  }
 }

@@ -15,4 +15,15 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-public interface SearchQuerySort {}
+import java.util.List;
+
+public interface SearchRequestPage {
+
+  SearchRequestPage from(final Integer value);
+
+  SearchRequestPage size(final Integer value);
+
+  SearchRequestPage searchBefore(final List<Object> values);
+
+  SearchRequestPage searchAfter(final List<Object> values);
+}

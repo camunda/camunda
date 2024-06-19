@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.response;
 
-public interface TypedQuery<F extends SearchQueryFilter, S extends SearchQuerySort> {}
+import java.util.List;
+
+public interface SearchResponsePage {
+
+  Long totalItems();
+
+  List<Object> firstSortValues();
+
+  List<Object> lastSortValues();
+}

@@ -15,13 +15,11 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-public interface ProcessInstanceSort extends SearchQuerySort {
+import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
+
+public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSort> {
 
   ProcessInstanceSort startDate();
 
   ProcessInstanceSort endDate();
-
-  ProcessInstanceSort asc();
-
-  ProcessInstanceSort desc();
 }

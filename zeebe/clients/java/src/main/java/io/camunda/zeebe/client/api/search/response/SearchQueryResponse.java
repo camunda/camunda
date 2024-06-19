@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.api.search.response;
 
-public abstract class TypedQueryProperty<T> {
+import java.util.List;
 
-  protected abstract T getQueryProperty();
+public interface SearchQueryResponse<T> {
+
+  List<T> items();
+
+  SearchResponsePage page();
 }

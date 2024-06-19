@@ -15,15 +15,21 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
+
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.ProcessInstanceSort;
-import io.camunda.zeebe.client.api.search.QueryPage;
+import io.camunda.zeebe.client.api.search.SearchRequestPage;
+import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import java.time.Duration;
@@ -31,7 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessInstanceQueryImpl extends TypedQueryProperty<ProcessInstanceSearchQueryRequest>
+public class ProcessInstanceQueryImpl
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQueryRequest>
     implements ProcessInstanceQuery {
 
   private final ProcessInstanceSearchQueryRequest request;
@@ -49,62 +56,60 @@ public class ProcessInstanceQueryImpl extends TypedQueryProperty<ProcessInstance
   @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
     final ProcessInstanceFilterImpl filter = (ProcessInstanceFilterImpl) value;
-    request.setFilter(filter.getQueryProperty());
+    request.setFilter(filter.getSearchRequestProperty());
     return this;
   }
 
   @Override
   public ProcessInstanceQuery filter(final Consumer<ProcessInstanceFilter> fn) {
-    final ProcessInstanceFilterImpl filter = new ProcessInstanceFilterImpl();
-    fn.accept(filter);
-    return filter(filter);
+    return filter(processInstanceFilter(fn));
   }
 
   @Override
   public ProcessInstanceQuery sort(final ProcessInstanceSort value) {
     final ProcessInstanceSortImpl sorting = (ProcessInstanceSortImpl) value;
-    request.setSort(sorting.getQueryProperty());
+    request.setSort(sorting.getSearchRequestProperty());
     return this;
   }
 
   @Override
   public ProcessInstanceQuery sort(final Consumer<ProcessInstanceSort> fn) {
-    final ProcessInstanceSortImpl sort = new ProcessInstanceSortImpl();
-    fn.accept(sort);
-    return sort(sort);
+    return sort(processInstanceSort(fn));
   }
 
   @Override
-  public ProcessInstanceQuery page(final QueryPage value) {
-    final QueryPageImpl page = (QueryPageImpl) value;
-    request.setPage(page.getQueryProperty());
+  public ProcessInstanceQuery page(final SearchRequestPage value) {
+    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
+    request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public ProcessInstanceQuery page(final Consumer<QueryPage> fn) {
-    final QueryPageImpl page = new QueryPageImpl();
-    fn.accept(page);
-    return page(page);
+  public ProcessInstanceQuery page(final Consumer<SearchRequestPage> fn) {
+    return page(searchRequestPage(fn));
   }
 
   @Override
-  protected ProcessInstanceSearchQueryRequest getQueryProperty() {
+  protected ProcessInstanceSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 
   @Override
-  public FinalCommandStep<ProcessInstanceSearchQueryResponse> requestTimeout(
-      Duration requestTimeout) {
+  public FinalSearchQueryStep<ProcessInstance> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<ProcessInstanceSearchQueryResponse> send() {
-    final HttpZeebeFuture<ProcessInstanceSearchQueryResponse> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/process-instances/search", jsonMapper.toJson(request), httpRequestConfig.build(), result);
+        "/process-instances/search",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        ProcessInstanceSearchQueryResponse.class,
+        SearchResponseMapper::toProcessInstanceSearchResponse,
+        result);
     return result;
   }
 }

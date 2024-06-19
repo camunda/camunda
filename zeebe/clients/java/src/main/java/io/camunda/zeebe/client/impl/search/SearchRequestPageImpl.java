@@ -15,44 +15,46 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
-import io.camunda.zeebe.client.api.search.QueryPage;
+import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import java.util.Arrays;
+import java.util.List;
 
-public class QueryPageImpl extends TypedQueryProperty<SearchQueryPageRequest> implements QueryPage {
+public class SearchRequestPageImpl
+    extends TypedSearchRequestPropertyProvider<SearchQueryPageRequest>
+    implements SearchRequestPage {
 
   private final SearchQueryPageRequest page;
 
-  public QueryPageImpl() {
+  public SearchRequestPageImpl() {
     page = new SearchQueryPageRequest();
   }
 
   @Override
-  public QueryPage from(final Integer value) {
+  public SearchRequestPage from(final Integer value) {
     page.setFrom(value);
     return this;
   }
 
   @Override
-  public QueryPage size(final Integer value) {
+  public SearchRequestPage size(final Integer value) {
     page.setSize(value);
     return this;
   }
 
   @Override
-  public QueryPage searchBefore(final Object[] values) {
-    page.setSearchBefore(Arrays.asList(values));
+  public SearchRequestPage searchBefore(final List<Object> values) {
+    page.setSearchBefore(values);
     return this;
   }
 
   @Override
-  public QueryPage searchAfter(final Object[] values) {
-    page.setSearchAfter(Arrays.asList(values));
+  public SearchRequestPage searchAfter(final List<Object> values) {
+    page.setSearchAfter(values);
     return this;
   }
 
   @Override
-  protected SearchQueryPageRequest getQueryProperty() {
+  protected SearchQueryPageRequest getSearchRequestProperty() {
     return page;
   }
 }

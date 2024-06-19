@@ -15,4 +15,11 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-public interface SearchQueryFilter {}
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import java.time.Duration;
+
+public interface FinalSearchQueryStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {
+
+  FinalSearchQueryStep<T> requestTimeout(Duration requestTimeout);
+}

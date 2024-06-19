@@ -16,15 +16,16 @@
 package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.VariableValueFilter;
+import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
 
 public class VariableValueFilterImpl
-    extends TypedQueryProperty<io.camunda.zeebe.client.protocol.rest.VariableValueFilter>
+    extends TypedSearchRequestPropertyProvider<VariableValueFilterRequest>
     implements VariableValueFilter {
 
-  private final io.camunda.zeebe.client.protocol.rest.VariableValueFilter filter;
+  private final VariableValueFilterRequest filter;
 
   public VariableValueFilterImpl() {
-    filter = new io.camunda.zeebe.client.protocol.rest.VariableValueFilter();
+    filter = new VariableValueFilterRequest();
   }
 
   @Override
@@ -64,7 +65,7 @@ public class VariableValueFilterImpl
   }
 
   @Override
-  protected io.camunda.zeebe.client.protocol.rest.VariableValueFilter getQueryProperty() {
+  protected VariableValueFilterRequest getSearchRequestProperty() {
     return filter;
   }
 }
