@@ -35,22 +35,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: "Read Java / Version Info"
       id: pom-info
       uses: YunaBraska/java-info-action@a39db57e7ff3656a1ad67b920444363dd1ec11e9 # 2.0.0
+
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
       with:
         parameters: install -DskipTests -Dskip.docker
+
     - name: Build and push Docker image
       uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5
       with:
