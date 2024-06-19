@@ -120,16 +120,6 @@ public final class SnapshotChunkImpl
   }
 
   @Override
-  public boolean isLastFileBlock() {
-    return getFileBlockPosition() + content.capacity() == getTotalFileSize();
-  }
-
-  @Override
-  public boolean isFirstFileBlock() {
-    return getFileBlockPosition() == 0;
-  }
-
-  @Override
   public String getSnapshotId() {
     return snapshotId;
   }

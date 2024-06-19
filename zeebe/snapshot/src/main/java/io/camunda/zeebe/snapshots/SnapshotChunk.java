@@ -11,16 +11,6 @@ package io.camunda.zeebe.snapshots;
 public interface SnapshotChunk {
 
   /**
-   * @return is this the last chunk for the given chunkName (file name).
-   */
-  boolean isLastFileBlock();
-
-  /**
-   * @return is this the first chunk for a given chunkName (file name).
-   */
-  boolean isFirstFileBlock();
-
-  /**
    * @return a unique snapshot identifier *
    */
   String getSnapshotId();
