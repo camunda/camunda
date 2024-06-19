@@ -329,8 +329,7 @@ public class ProcessInstanceMigrationMigrateProcessor
    * Unsubscribes the element instance from unmapped catch events in the source process, and
    * subscribes it to unmapped catch events in the target process.
    *
-   * <p>In the future, this method will also migrate event subscriptions if mappings are provided
-   * for the associated catch events.
+   * <p>It also migrates event subscriptions for mapped catch events.
    */
   private void handleCatchEvents(
       final ElementInstance elementInstance,
