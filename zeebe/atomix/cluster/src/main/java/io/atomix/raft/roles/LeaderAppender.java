@@ -413,6 +413,7 @@ final class LeaderAppender {
       if (!reader.hasNext()) {
         return Optional.empty();
       }
+      final ByteBuffer currentChunkId = reader.nextId();
       final SnapshotChunk chunk = reader.next();
 
       // Create the install request, indicating whether this is the last chunk of data based on
@@ -427,7 +428,7 @@ final class LeaderAppender {
               .withTerm(persistedSnapshot.getTerm())
               .withVersion(persistedSnapshot.version())
               .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
-              .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))
+              .withChunkId(currentChunkId)
               .withInitial(member.getNextSnapshotChunk() == null)
               .withComplete(!reader.hasNext())
               .withNextChunkId(reader.nextId())
