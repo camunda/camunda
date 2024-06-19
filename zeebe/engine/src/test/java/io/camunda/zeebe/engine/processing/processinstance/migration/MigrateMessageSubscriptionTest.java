@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -301,6 +302,45 @@ public class MigrateMessageSubscriptionTest {
         .hasCorrelationKey("key1")
         .describedAs("Expected that the interrupting status is updated")
         .isInterrupting();
+
+    engine.message().withName("message").withCorrelationKey("key1").publish();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .getFirst())
+        .describedAs(
+            "Expect that the element is terminated as we the boundary event is now interrupting")
+        .isNotNull();
   }
 
   @Test
@@ -315,7 +355,7 @@ public class MigrateMessageSubscriptionTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .userTask("A")
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
                     .boundaryEvent("boundary1")
                     .cancelActivity(true)
                     .message(m -> m.name("message").zeebeCorrelationKeyExpression("key1"))
@@ -326,12 +366,13 @@ public class MigrateMessageSubscriptionTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .userTask("B")
+                    .serviceTask("B", b -> b.zeebeJobType("B"))
                     .boundaryEvent("boundary2")
                     .cancelActivity(false)
                     .message(m -> m.name("message").zeebeCorrelationKeyExpression("key2"))
                     .endEvent()
                     .moveToActivity("B")
+                    .userTask("C")
                     .endEvent()
                     .done())
             .deploy();
@@ -398,6 +439,48 @@ public class MigrateMessageSubscriptionTest {
         .hasCorrelationKey("key1")
         .describedAs("Expected that the interrupting status is updated")
         .isNotInterrupting();
+
+    engine.message().withName("message").withCorrelationKey("key1").publish();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("boundary2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isNotInterrupting();
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1")
+        .describedAs("Expected that the interrupting status is updated")
+        .isNotInterrupting();
+
+    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("C")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the element is activated as we the boundary event is now non-interrupting")
+        .isNotNull();
   }
 
   @Test
