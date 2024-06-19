@@ -32,6 +32,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new UserTaskServices(searchClient, transformers, authentication);
   }
 
+  public VariableServices variableServices() {
+    return new VariableServices(searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(searchClient, transformers, authentication);
