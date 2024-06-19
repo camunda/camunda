@@ -65,7 +65,7 @@ jobs:
     concurrency:
       cancel-in-progress: true
       group: ${{ github.workflow }}-${{ inputs.sql-dump-filename }}
-    runs-on: gcp-core-32-longrunning-big-ssd
+    runs-on: gcp-core-32-longrunning
     env:
       PGDATABASE: engine
       PGHOST: localhost

@@ -1,7 +1,7 @@
-name: [Optimize] Check renovate configuration
+name: Optimize Check renovate configuration
 
 on:
-  pull_request: 
+  pull_request:
     paths:
       - ".github/renovate.json5"
 
