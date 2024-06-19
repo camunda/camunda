@@ -126,23 +126,21 @@ public class PassiveRole extends InactiveRole {
     }
 
     // if null assume it is first chunk of file
-    {
-      if (nextPendingSnapshotChunkId != null
-          && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
-        final var errMsg =
-            "Expected chunkId of ["
-                + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
-                + "] got ["
-                + new String(request.chunkId().array(), StandardCharsets.UTF_8)
-                + "].";
-        abortPendingSnapshots();
-        return CompletableFuture.completedFuture(
-            logResponse(
-                InstallResponse.builder()
-                    .withStatus(Status.ERROR)
-                    .withError(Type.ILLEGAL_MEMBER_STATE, errMsg)
-                    .build()));
-      }
+    if (nextPendingSnapshotChunkId != null
+        && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
+      final var errMsg =
+          "Expected chunkId of ["
+              + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
+              + "] got ["
+              + new String(request.chunkId().array(), StandardCharsets.UTF_8)
+              + "].";
+      abortPendingSnapshots();
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(Type.ILLEGAL_MEMBER_STATE, errMsg)
+                  .build()));
     }
 
     // If the request is for a lesser term, reject the request.
