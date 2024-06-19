@@ -29,5 +29,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # does this only execute unit tests and thus will be covered by https://github.com/camunda/camunda/pull/19436 ?
       - name: Verify
         run: mvn -f identity/backend verify

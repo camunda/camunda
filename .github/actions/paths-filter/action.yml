@@ -20,6 +20,14 @@ outputs:
         steps.filter-common.outputs.java-code-change ||
         steps.filter-common.outputs.maven-change
       }}
+  identity-frontend-tests:
+    description: Output whether Identity frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change ||
+        steps.filter-identity.outputs.identity-frontend-change
+      }}
 
 runs:
   using: composite
@@ -43,10 +51,19 @@ runs:
         java-code-change:
           - '**/src/main/**'
           - '**/src/test/**'
-          
+
         maven-change:
           - 'bom/*'
           - 'build-tools/**'
           - 'dist/**'
           - 'parent/*'
           - 'pom.xml'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-identity
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        identity-frontend-change:
+          - 'identity/client/**'
