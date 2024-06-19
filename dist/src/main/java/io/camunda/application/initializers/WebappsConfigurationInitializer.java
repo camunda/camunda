@@ -31,7 +31,8 @@ public class WebappsConfigurationInitializer
       "camunda.webapps.login-delegated";
   private static final String SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY =
       "server.servlet.session.cookie.name";
-  private static final Set<String> WEBAPPS_PROFILES = Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
+  private static final Set<String> WEBAPPS_PROFILES =
+      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
   private static final Set<String> LOGIN_DELEGATED_PROFILES =
       Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId());
 
@@ -54,7 +55,7 @@ public class WebappsConfigurationInitializer
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
         propertyMap.put(
             SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, TasklistURIs.COOKIE_JSESSIONID);
-      }  else if (activeProfiles.contains(IDENTITY.getId())) {
+      } else if (activeProfiles.contains(IDENTITY.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
       }
       propertyMap.put(
