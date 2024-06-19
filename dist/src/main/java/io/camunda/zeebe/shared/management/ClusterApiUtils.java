@@ -383,6 +383,7 @@ final class ClusterApiUtils {
 
   static List<ExporterStatus> aggregateExporterState(
       final ClusterConfiguration clusterConfiguration) {
+    // Map of ExporterId => List of ExporterState (each item corresponds to a partition)
     final var exporters =
         clusterConfiguration.members().values().stream()
             .flatMap(
@@ -391,16 +392,20 @@ final class ClusterApiUtils {
                         .flatMap(p -> p.config().exporting().exporters().entrySet().stream()))
             .collect(
                 Collectors.groupingBy(Entry::getKey, mapping(e -> e.getValue().state(), toList())));
-
     return exporters.entrySet().stream()
         .map(
             e ->
+                // Aggregate exporters state from all partition to a single ExporterStatus
                 e.getValue().stream()
                     .distinct()
                     .map(s -> transformState(e.getKey(), s))
                     .reduce(
                         (status, other) -> reduceExporterState(status, other, clusterConfiguration))
-                    .orElse(null))
+                    .orElse(
+                        // This case would never happen, as we are reducing a non-empty stream
+                        new ExporterStatus()
+                            .exporterId(e.getKey())
+                            .status(ExporterStatus.StatusEnum.UNKNOWN)))
         .toList();
   }
 
@@ -418,25 +423,24 @@ final class ClusterApiUtils {
             p ->
                 p.pendingOperations().stream()
                     .findAny()
-                    .map(
-                        operation -> {
-                          if (operation instanceof PartitionEnableExporterOperation) {
-                            return new ExporterStatus()
-                                .exporterId(status.getExporterId())
-                                .status(ExporterStatus.StatusEnum.ENABLING);
-                          } else if (operation instanceof PartitionDisableExporterOperation) {
-                            return new ExporterStatus()
-                                .exporterId(status.getExporterId())
-                                .status(ExporterStatus.StatusEnum.DISABLING);
-                          }
-                          return new ExporterStatus()
-                              .exporterId(status.getExporterId())
-                              .status(ExporterStatus.StatusEnum.UNKNOWN);
-                        }))
+                    .map(operation -> getExporterStatus(status, operation)))
         .orElse(
             new ExporterStatus()
                 .exporterId(status.getExporterId())
                 .status(ExporterStatus.StatusEnum.UNKNOWN));
+  }
+
+  private static ExporterStatus getExporterStatus(
+      final ExporterStatus status, final ClusterConfigurationChangeOperation operation) {
+    final var statusEnum =
+        switch (operation) {
+          case final PartitionEnableExporterOperation ignored -> ExporterStatus.StatusEnum.ENABLING;
+          case final PartitionDisableExporterOperation ignored ->
+              ExporterStatus.StatusEnum.DISABLING;
+          default -> ExporterStatus.StatusEnum.UNKNOWN;
+        };
+
+    return new ExporterStatus().exporterId(status.getExporterId()).status(statusEnum);
   }
 
   private static ExporterStatus transformState(
