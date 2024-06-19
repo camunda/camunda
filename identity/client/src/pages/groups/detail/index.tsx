@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
 import { spacing02 } from "@carbon/themes";
 import useTranslate from "src/utility/localization";
@@ -20,15 +20,23 @@ import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
 import { getGroupDetails } from "src/utility/api/groups";
 import Members from "src/pages/groups/detail/members";
+import { useEntityModal } from "src/components/modal";
+import EditModal from "src/pages/groups/modals/EditModal";
+import DeleteModal from "src/pages/groups/modals/DeleteModal";
 
 const Details: FC = () => {
+  const navigate = useNavigate();
   const { t } = useTranslate();
   const { id = "", tab = "members" } = useParams<{
     id: string;
     tab: string;
   }>();
 
-  const { data: group, loading } = useApi(getGroupDetails, { id });
+  const { data: group, loading, reload } = useApi(getGroupDetails, { id });
+  const [renameGroup, editModal] = useEntityModal(EditModal, reload);
+  const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
+    navigate("..", { replace: true }),
+  );
 
   if (!loading && !group) return <NotFound />;
 
@@ -46,8 +54,19 @@ const Details: FC = () => {
                   <PageHeadline>{group.name}</PageHeadline>
 
                   <OverflowMenu ariaLabel={t("Open group context menu")}>
-                    <OverflowMenuItem itemText={t("Rename")} />
-                    <OverflowMenuItem itemText={t("Delete")} isDelete />
+                    <OverflowMenuItem
+                      itemText={t("Rename")}
+                      onClick={() => {
+                        renameGroup(group);
+                      }}
+                    />
+                    <OverflowMenuItem
+                      itemText={t("Delete")}
+                      isDelete
+                      onClick={() => {
+                        deleteGroup(group);
+                      }}
+                    />
                   </OverflowMenu>
                 </>
               )}
@@ -74,6 +93,8 @@ const Details: FC = () => {
             />
           </Section>
         )}
+        <>{editModal}</>
+        <>{deleteModal}</>
       </>
     </StackPage>
   );

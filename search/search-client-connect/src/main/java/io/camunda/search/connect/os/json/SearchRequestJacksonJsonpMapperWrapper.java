@@ -5,32 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.clients.json;
+package io.camunda.search.connect.os.json;
 
-import io.camunda.search.os.clients.json.jackson.SearchAfterFieldJsonGenerator;
-import jakarta.json.spi.JsonProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.os.json.jackson.SearchAfterFieldJsonGenerator;
 import jakarta.json.stream.JsonGenerator;
-import jakarta.json.stream.JsonParser;
-import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
-public final class SearchRequestJsonMapper implements JsonpMapper {
+public final class SearchRequestJacksonJsonpMapperWrapper extends JacksonJsonpMapper {
 
-  private final JsonpMapper mapper;
-
-  public SearchRequestJsonMapper(final JsonpMapper mapper) {
-    this.mapper = mapper;
-  }
-
-  @Override
-  public JsonProvider jsonProvider() {
-    return mapper.jsonProvider();
-  }
-
-  @Override
-  public <T> T deserialize(JsonParser parser, Class<T> clazz) {
-    return mapper.deserialize(parser, clazz);
+  public SearchRequestJacksonJsonpMapperWrapper(final ObjectMapper objectMapper) {
+    super(objectMapper);
   }
 
   @Override
@@ -38,9 +25,9 @@ public final class SearchRequestJsonMapper implements JsonpMapper {
     if (SearchRequest.class.isAssignableFrom(value.getClass())) {
       final var wrappedGenerator =
           new SearchAfterFieldJsonGenerator((JacksonJsonpGenerator) generator);
-      mapper.serialize(value, wrappedGenerator);
+      super.serialize(value, wrappedGenerator);
     } else {
-      mapper.serialize(value, generator);
+      super.serialize(value, generator);
     }
   }
 }
