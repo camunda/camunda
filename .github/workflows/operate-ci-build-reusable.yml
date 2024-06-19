@@ -116,11 +116,12 @@ jobs:
       #########################################################################
       # Build Docker image
       - name: Build Docker image
-        uses: ./.github/actions/build-operate-docker
+        uses: ./.github/actions/build-platform-docker
         with:
           tags: ${{ steps.meta.outputs.tags }}
           push: ${{ inputs.pushDocker }}
           platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
+          dockerfile: operate.Dockerfile
 
       #########################################################################
       # Docker login for snapshot deployment
@@ -135,11 +136,12 @@ jobs:
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: ./.github/actions/build-operate-docker
+        uses: ./.github/actions/build-platform-docker
         with:
           tags: |
             camunda/operate:SNAPSHOT
           push: true
+          dockerfile: operate.Dockerfile
 
       #########################################################################
       # Deploy Nexus SNAPSHOT

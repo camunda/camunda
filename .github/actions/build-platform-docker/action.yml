@@ -15,7 +15,8 @@ inputs:
     required: false
   distball:
     description: 'The path to the Camunda platform distribution TAR ball'
-    required: true
+    required: false
+    default: 'dist/target/camunda-zeebe-*.tar.gz'
   revision:
     description: 'The revision of the source the content of this image is based on.'
     required: false
