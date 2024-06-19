@@ -5,31 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.data.clients;
+package io.camunda.search.os.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
-import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
-import io.camunda.data.util.StubbedElasticsearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.es.clients.ElasticsearchSearchClient;
+import io.camunda.search.os.util.StubbedOpensearchClient;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
-public class ElasticsearchDataStoreClientTest {
+public class OpensearchSearchClientTest {
 
-  private ElasticsearchSearchClient client;
-  private StubbedElasticsearchClient stubbedElasticsearchClient;
+  private OpensearchSearchClient client;
+  private StubbedOpensearchClient stubbedOpensearchClient;
 
   @BeforeEach
   public void before() {
-    stubbedElasticsearchClient = new StubbedElasticsearchClient();
-    stubbedElasticsearchClient.registerHandler(
+    stubbedOpensearchClient = new StubbedOpensearchClient();
+    stubbedOpensearchClient.registerHandler(
         (h) -> {
-          return SearchResponse.of(
+          return SearchResponse.searchResponseOf(
               (f) ->
                   f.took(122)
                       .hits(
@@ -41,7 +40,7 @@ public class ElasticsearchDataStoreClientTest {
                       .timedOut(false));
         });
 
-    client = new ElasticsearchSearchClient(stubbedElasticsearchClient);
+    client = new OpensearchSearchClient(stubbedOpensearchClient);
   }
 
   @Test
@@ -54,7 +53,7 @@ public class ElasticsearchDataStoreClientTest {
     client.search(request, Object.class);
 
     // then
-    final var searchRequest = stubbedElasticsearchClient.getSingleSearchRequest();
+    final var searchRequest = stubbedOpensearchClient.getSingleSearchRequest();
     assertThat(searchRequest.index()).hasSize(1).contains("operate-list-view-8.3.0_");
   }
 

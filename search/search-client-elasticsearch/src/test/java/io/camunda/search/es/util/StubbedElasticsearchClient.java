@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.data.util;
+package io.camunda.search.es.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
