@@ -394,7 +394,7 @@ final class LeaderAppender {
         return Optional.empty();
       }
       member.setNextSnapshotIndex(persistedSnapshot.getIndex());
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
     }
 
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
@@ -442,7 +442,7 @@ final class LeaderAppender {
           e);
       // If snapshot was deleted, a new reader should be created with the new snapshot
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
       return Optional.empty();
     }
   }
@@ -486,7 +486,7 @@ final class LeaderAppender {
 
     if (!isTimeout) {
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
     }
 
     // Log the failed attempt to contact the member.
@@ -509,13 +509,13 @@ final class LeaderAppender {
     // the next snapshot index/offset.
     if (request.complete()) {
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
       member.setSnapshotIndex(request.index());
       resetNextIndex(member, request.index() + 1);
     }
     // If more install requests remain, increment the member's snapshot offset.
     else {
-      member.setNextSnapshotChunk(request.nextChunkId());
+      member.setNextSnapshotChunkId(request.nextChunkId());
     }
 
     // Recursively append entries to the member.
@@ -535,7 +535,7 @@ final class LeaderAppender {
         response.error().toString());
 
     member.setNextSnapshotIndex(0);
-    member.setNextSnapshotChunk(null);
+    member.setNextSnapshotChunkId(null);
   }
 
   /**
