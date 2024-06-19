@@ -77,13 +77,3 @@ jobs:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
-
-  test-summary:
-    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Tasklist files got changed:
-    # https://github.com/orgs/community/discussions/26251
-    # This name is hard-coded in the branch rules; remember to update that if this name changes
-    name: Test summary
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0
