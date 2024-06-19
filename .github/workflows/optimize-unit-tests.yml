@@ -23,7 +23,7 @@ jobs:
       run: cd optimize
 
     - name: Test
-      uses: ./.github/actions/run-maven
+      uses: ../.github/actions/run-maven
       with:
         parameters: test -Dskip.fe.build -Dskip.docker
 
