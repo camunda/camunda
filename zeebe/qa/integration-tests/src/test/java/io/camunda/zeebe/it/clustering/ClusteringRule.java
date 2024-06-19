@@ -58,6 +58,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -99,6 +100,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -725,9 +727,12 @@ public class ClusteringRule extends ExternalResource {
             });
   }
 
-  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+  public long createProcessInstanceOnPartition(
+      final int partitionId, final String bpmnProcessId, final Map<String, String> variables) {
     final BrokerCreateProcessInstanceRequest request =
-        new BrokerCreateProcessInstanceRequest().setBpmnProcessId(bpmnProcessId);
+        new BrokerCreateProcessInstanceRequest()
+            .setBpmnProcessId(bpmnProcessId)
+            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
 
@@ -745,6 +750,10 @@ public class ClusteringRule extends ExternalResource {
               + ": "
               + response);
     }
+  }
+
+  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+    return createProcessInstanceOnPartition(partitionId, bpmnProcessId, Collections.emptyMap());
   }
 
   public InetSocketAddress getGatewayAddress() {

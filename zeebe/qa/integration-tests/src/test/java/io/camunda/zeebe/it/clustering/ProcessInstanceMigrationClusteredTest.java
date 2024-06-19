@@ -14,7 +14,6 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -112,28 +111,20 @@ public class ProcessInstanceMigrationClusteredTest {
                 .findFirst())
         .isPresent();
 
-    int processInstancePartitionId = 0;
-    int subscriptionPartitionId = 0;
-    long processInstanceKey = -1;
+    final int processInstancePartitionId = 2;
+    final long processInstanceKey =
+        clusteringRule.createProcessInstanceOnPartition(
+            processInstancePartitionId,
+            "sourceProcess",
+            Map.of("key1", "key1", "key2", "key2", "key3", "key3"));
+
+    // always partition 1
+    final var subscriptionPartitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(CORRELATION_KEY), 3);
 
     // To test multi partition behaviour of the migration, we need to ensure that the process
     // instance and the message subscription are on different partitions
-    // TODO - make process instance partition id deterministic, so no need to loop
-    while (processInstancePartitionId == subscriptionPartitionId) {
-      final ProcessInstanceEvent processInstanceEvent =
-          clientRule
-              .getClient()
-              .newCreateInstanceCommand()
-              .processDefinitionKey(sourceProcessDefinitionKey)
-              .variables(Map.of("key1", "key1", "key2", "key2", "key3", "key3"))
-              .send()
-              .join();
-      processInstanceKey = processInstanceEvent.getProcessInstanceKey();
-
-      processInstancePartitionId = Protocol.decodePartitionId(processInstanceKey);
-      subscriptionPartitionId =
-          SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(CORRELATION_KEY), 3);
-    }
+    assertThat(subscriptionPartitionId).isNotEqualTo(processInstancePartitionId);
 
     // Pause the stream processing on the partition leader for the message subscription
     // Therefore, the message subscription migration distribution will not be processed
