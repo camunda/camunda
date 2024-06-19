@@ -8,7 +8,7 @@
     "@bpmn-io/form-js-carbon-styles": "1.8.8",
     "@bpmn-io/form-js-viewer": "1.8.8",
     "@camunda/camunda-composite-components": "0.8.0",
-    "@carbon/elements": "11.47.0",
+    "@carbon/elements": "11.48.1",
     "@carbon/react": "1.59.0",
     "@monaco-editor/react": "4.6.0",
     "@tanstack/eslint-plugin-query": "5.43.1",
