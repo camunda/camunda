@@ -34,37 +34,56 @@ public final class InFlightEntry {
   public void onAppend() {
     writeTimer = metrics.startWriteTimer();
     commitTimer = metrics.startCommitTimer();
-    metrics.increaseInflightAppends();
     if (requestListener != null) {
       metrics.increaseInflightRequests();
     }
   }
 
   public void onWrite() {
-    entryMetadata.forEach(
-        metadata ->
-            metrics.recordAppendedEntry(
-                1, metadata.recordType(), metadata.valueType(), metadata.intent()));
-    entryMetadata = null;
+    final var entryMetadata = this.entryMetadata;
+    if (entryMetadata != null) {
+      entryMetadata.forEach(
+          metadata ->
+              metrics.recordAppendedEntry(
+                  1, metadata.recordType(), metadata.valueType(), metadata.intent()));
+      this.entryMetadata = null;
+    }
+    final var writeTimer = this.writeTimer;
     if (writeTimer != null) {
       writeTimer.close();
-      writeTimer = null;
+      this.writeTimer = null;
     }
   }
 
   public void onCommit() {
-    metrics.decreaseInflightAppends();
+    final var commitTimer = this.commitTimer;
     if (commitTimer != null) {
       commitTimer.close();
-      commitTimer = null;
+      this.commitTimer = null;
     }
   }
 
   public void onProcessed() {
+    final var requestListener = this.requestListener;
     if (requestListener != null) {
       requestListener.onSuccess();
       metrics.decreaseInflightRequests();
-      requestListener = null;
+      this.requestListener = null;
+    }
+  }
+
+  public void cleanup() {
+    final var requestListener = this.requestListener;
+    if (requestListener != null) {
+      requestListener.onIgnore();
+    }
+    final var writeTimer = this.writeTimer;
+    if (writeTimer != null) {
+      writeTimer.close();
+    }
+    final var commitTimer = this.commitTimer;
+    if (commitTimer != null) {
+      commitTimer.close();
     }
   }
 }

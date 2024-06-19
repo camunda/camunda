@@ -20,17 +20,17 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import org.agrona.collections.Long2ObjectHashMap;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
   private final Limiter<Intent> processingLimiter;
   private final RateLimiter writeRateLimiter;
-  private long lastAppendedPosition = -1;
   private volatile long lastProcessedPosition = -1;
 
-  private final Long2ObjectHashMap<InFlightEntry> inFlight = new Long2ObjectHashMap<>();
+  private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
@@ -88,11 +88,11 @@ public final class FlowControl implements AppendListener {
 
   public void onAppend(final InFlightEntry entry, final long highestPosition) {
     entry.onAppend();
-    for (long p = lastAppendedPosition; p <= lastProcessedPosition; p++) {
-      inFlight.remove(p);
-    }
+    metrics.increaseInflightAppends();
+    final var clearable = inFlight.headMap(lastProcessedPosition, true);
+    clearable.forEach((position, inFlightEntry) -> inFlightEntry.cleanup());
+    clearable.clear();
     inFlight.put(highestPosition, entry);
-    lastAppendedPosition = highestPosition;
   }
 
   @Override
@@ -107,6 +107,7 @@ public final class FlowControl implements AppendListener {
   @Override
   public void onCommit(final long index, final long highestPosition) {
     metrics.setLastCommittedPosition(highestPosition);
+    metrics.decreaseInflightAppends();
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
       inFlightEntry.onCommit();
@@ -114,11 +115,11 @@ public final class FlowControl implements AppendListener {
   }
 
   public void onProcessed(final long position) {
-    lastProcessedPosition = position;
     final var inFlightEntry = inFlight.get(position);
     if (inFlightEntry != null) {
       inFlightEntry.onProcessed();
     }
+    lastProcessedPosition = position;
   }
 
   public enum Rejection {
