@@ -117,22 +117,20 @@ public class PassiveRole extends InactiveRole {
     updateTermAndLeader(request.currentTerm(), request.leader());
 
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
-
     // if null assume it is first chunk of file
     if (nextPendingSnapshotChunkId != null
         && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
-      abortPendingSnapshots();
+      final var errMsg =
+          "Expected chunkId of ["
+              + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
+              + "] got ["
+              + new String(request.chunkId().array(), StandardCharsets.UTF_8)
+              + "].";
       return CompletableFuture.completedFuture(
           logResponse(
               InstallResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      RaftError.Type.ILLEGAL_MEMBER_STATE,
-                      "Expected chunkId of ["
-                          + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
-                          + "] got ["
-                          + new String(request.chunkId().array(), StandardCharsets.UTF_8)
-                          + "].")
+                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, errMsg)
                   .build()));
     }
 
