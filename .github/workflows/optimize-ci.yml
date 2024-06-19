@@ -35,22 +35,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: "Read Java / Version Info"
       id: pom-info
       uses: YunaBraska/java-info-action@a39db57e7ff3656a1ad67b920444363dd1ec11e9 # 2.0.0
+
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
       with:
         parameters: install -DskipTests -Dskip.docker
+
     - name: Build and push Docker image
       uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5
       with:
@@ -68,18 +77,26 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
+
     - name: Start Cambpm
       uses: ./.github/actions/compose
       with:
@@ -88,6 +105,7 @@ jobs:
       env:
         CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         CAMBPM_JVM_MEMORY: 1
+
     - name: Start Elastic - Old
       uses: ./.github/actions/compose
       with:
@@ -97,6 +115,7 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
+
     - name: Start Elastic - New
       uses: ./.github/actions/compose
       with:
@@ -106,22 +125,27 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
     - name: Install
       uses: ./.github/actions/run-maven
       with:
         parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
+
     - name: Verify upgrade
       uses: ./.github/actions/run-maven
       with:
         parameters: verify -Dskip.docker -pl optimize/upgrade
+
     - name: Verify optimize/util/optimize-reimport-preparation
       uses: ./.github/actions/run-maven
       with:
         parameters: verify -Dskip.docker -pl optimize/util/optimize-reimport-preparation -Pengine-latest,it
+
     - name: Verify optimize/qa/upgrade-tests
       uses: ./.github/actions/run-maven
       with:
         parameters: verify -Dskip.docker -pl optimize/qa/upgrade-tests -Pupgrade-es-schema-tests
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -133,6 +157,7 @@ jobs:
           **/*.json
         retention-days: 7
         if-no-files-found: ignore
+
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()
@@ -144,18 +169,26 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
+
     - name: Start Cambpm # Cambpm even needed?
       uses: ./.github/actions/compose
       with:
@@ -164,6 +197,7 @@ jobs:
       env:
         CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         CAMBPM_JVM_MEMORY: 1
+
     - name: Start Elastic - Old
       uses: ./.github/actions/compose
       with:
@@ -173,6 +207,7 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
+
     - name: Start Elastic - New
       uses: ./.github/actions/compose
       with:
@@ -182,14 +217,17 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
     - name: Install
       uses: ./.github/actions/run-maven
       with:
         parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
+
     - name: Verify optimize/qa/upgrade-tests
       uses: ./.github/actions/run-maven
       with:
         parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/upgrade-tests -Pupgrade-optimize-data
+
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
@@ -200,6 +238,7 @@ jobs:
           **/*.log
         retention-days: 7
         if-no-files-found: ignore
+
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()
@@ -233,21 +272,30 @@ jobs:
           profiles: 'it,engine-latest'
           requiresCambpm: true
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: Login to Harbor registry
       uses: ./.github/actions/login-registry
       with:
         secrets: ${{ toJSON(secrets) }}
+
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
+
     - name: Expose Parsed Elastic Version
       run: |
         echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
+
     - name: Start Cambpm
       if: ${{ matrix.requiresCambpm }}
       uses: ./.github/actions/compose
@@ -257,6 +305,7 @@ jobs:
       env:
         CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         CAMBPM_JVM_MEMORY: 8
+
     - name: Start Elastic
       uses: ./.github/actions/compose
       with:
@@ -266,6 +315,7 @@ jobs:
         ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
         ELASTIC_JVM_MEMORY: 16
         ELASTIC_HTTP_PORT: 9200
+
     - name: Verify integration
       uses: ./.github/actions/run-maven
       env:
@@ -288,6 +338,7 @@ jobs:
           **/failsafe-reports/**/*.xml
         retention-days: 7
         if-no-files-found: ignore
+
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()
@@ -316,20 +367,29 @@ jobs:
             profiles: 'it,engine-latest'
             requiresCambpm: true
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
+
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
         with:
           secrets: ${{ toJSON(secrets) }}
+
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
+
       - name: Start Cambpm
         if: ${{ matrix.requiresCambpm }}
         uses: ./.github/actions/compose
@@ -339,6 +399,7 @@ jobs:
         env:
           CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
           CAMBPM_JVM_MEMORY: 8
+
       - name: Start OpenSearch
         uses: ./.github/actions/compose
         with:
@@ -348,6 +409,7 @@ jobs:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9205
+
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -370,6 +432,7 @@ jobs:
             **/failsafe-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
+
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
@@ -394,20 +457,29 @@ jobs:
             excludedGroups: ''
             profiles: 'it,engine-latest'
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
+
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
+
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
         with:
           secrets: ${{ toJSON(secrets) }}
+
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
+
       - name: Start Cambpm
         uses: ./.github/actions/compose
         with:
@@ -416,6 +488,7 @@ jobs:
         env:
           CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
           CAMBPM_JVM_MEMORY: 8
+
       - name: Start OpenSearch
         uses: ./.github/actions/compose
         with:
@@ -425,6 +498,7 @@ jobs:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9205
+
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -447,6 +521,7 @@ jobs:
             **/failsafe-reports/**/*.xml
           retention-days: 7
           if-no-files-found: ignore
+
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
