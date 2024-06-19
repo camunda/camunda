@@ -59,7 +59,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "management.endpoint.health.group.readiness.include=readinessState"
     })
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
-public class IdentityJwt2AuthenticationTokenConverterTest {
+public class IdentityJwt2AuthenticationTokenConverterIT {
 
   @Autowired @SpyBean private IdentityJwt2AuthenticationTokenConverter tokenConverter;
 
