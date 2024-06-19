@@ -6,12 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_VERSION_TAG_ENABLED = false;
-const IS_LISTENERS_TAB_SUPPORTED = true;
+const mockListeners: ListenerEntity[] = [
+  {
+    listenerType: 'EXECUTION',
+    listenerKey: 1,
+    state: 'ACTIVE',
+    jobType: 'SERVICE',
+    event: 'EVENT',
+    time: '2024-01-01',
+  },
+  {
+    listenerType: 'USER_TASK',
+    listenerKey: 2,
+    state: 'ACTIVE',
+    jobType: 'SERVICE',
+    event: 'EVENT',
+    time: '2024-01-02',
+  },
+];
 
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_VERSION_TAG_ENABLED,
-  IS_LISTENERS_TAB_SUPPORTED,
-};
+export {mockListeners};

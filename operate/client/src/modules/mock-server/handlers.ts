@@ -6,22 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
+import {
+  IS_LISTENERS_TAB_SUPPORTED,
+  IS_VERSION_TAG_ENABLED,
+} from 'modules/feature-flags';
+import {mockListeners} from 'modules/mocks/mockListeners';
 import {RequestHandler, rest} from 'msw';
 
-const processVersionTagHandler = [
-  rest.get('/api/processes/:processId', async (req, res, ctx) => {
-    const response = await ctx.fetch(req);
-    const body = await response.json();
+const processVersionTagHandler = IS_VERSION_TAG_ENABLED
+  ? [
+      rest.get('/api/processes/:processId', async (req, res, ctx) => {
+        const response = await ctx.fetch(req);
+        const body = await response.json();
 
-    return res(
-      ctx.json({
-        ...body,
-        versionTag: 'myVersionTag',
+        return res(
+          ctx.json({
+            ...body,
+            versionTag: 'myVersionTag',
+          }),
+        );
       }),
-    );
-  }),
-];
+    ]
+  : [];
 
 const processInstancesVersionTagHandler = [
   rest.post('/api/processes/grouped', async (req, res, ctx) => {
@@ -46,8 +52,26 @@ const processInstancesVersionTagHandler = [
   }),
 ];
 
-const handlers: RequestHandler[] = IS_VERSION_TAG_ENABLED
-  ? [...processVersionTagHandler, ...processInstancesVersionTagHandler]
+const listenersHandler = IS_LISTENERS_TAB_SUPPORTED
+  ? [
+      rest.post(
+        '/api/process-instances/:instanceId/listeners',
+        async (req, res, ctx) => {
+          const body: {pageSize: number; flowNodeId: string} = await req.json();
+
+          if (body.flowNodeId.includes('start')) {
+            return res(ctx.json(mockListeners));
+          }
+          return res(ctx.json([]));
+        },
+      ),
+    ]
   : [];
+
+const handlers: RequestHandler[] = [
+  ...processVersionTagHandler,
+  ...processInstancesVersionTagHandler,
+  ...listenersHandler,
+];
 
 export {handlers};
