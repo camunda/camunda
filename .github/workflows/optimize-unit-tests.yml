@@ -19,13 +19,10 @@ jobs:
       with:
         secrets: ${{ toJSON(secrets) }}
 
-    - name: Optimize context
-      run: cd optimize
-
     - name: Test
-      uses: ../.github/actions/run-maven
+      uses: ./.github/actions/run-maven
       with:
-        parameters: test -Dskip.fe.build -Dskip.docker
+        parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
 
     - name: Upload Test Results
       if: always()
