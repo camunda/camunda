@@ -39,7 +39,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
   private ByteBuffer metadataBuffer;
-  private long writtenMetadataBytes = 0;
+  private long writtenMetadataBytes;
   private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
@@ -53,6 +53,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     this.actor = actor;
     expectedSnapshotChecksum = Long.MIN_VALUE;
     expectedTotalCount = Integer.MIN_VALUE;
+    writtenMetadataBytes = 0;
   }
 
   @Override
@@ -69,8 +70,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         });
   }
 
-  private void applyInternal(final SnapshotChunk snapshotChunk)
-      throws SnapshotWriteException, IOException {
+  private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
     final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
@@ -103,15 +103,13 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
-    final var fileFullyWritten = writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+    writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
     if (checksumCollection == null) {
       checksumCollection = new SfvChecksumImpl();
     }
-
-    if (fileFullyWritten) {
-      checksumCollection.updateFromFile(snapshotFile);
-    }
+    checksumCollection.updateFromBytes(
+        snapshotFile.getFileName().toString(), snapshotChunk.getContent());
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
       try {
@@ -192,7 +190,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
   }
 
-  private boolean writeReceivedSnapshotChunk(
+  private void writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
 
     try (final var channel =
@@ -206,19 +204,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         buffer.limit(buffer.capacity());
       }
 
-      // file fully written
-      if (channel.size() == snapshotChunk.getTotalFileSize()) {
-        channel.force(true);
-        return true;
-      }
-
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
     }
 
     LOGGER.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
-    return false;
   }
 
   @Override
