@@ -8,8 +8,18 @@
 package io.camunda.identity.permissions;
 
 public enum PermissionEnum {
-  CREATE_ALL,
-  READ_ALL,
-  UPDATE_ALL,
-  DELETE_ALL;
+  CREATE_ALL("*:create"),
+  READ_ALL("*:read"),
+  UPDATE_ALL("*:update"),
+  DELETE_ALL("*:delete");
+
+  private final String value;
+
+  PermissionEnum(final String value) {
+    this.value = value;
+  }
+
+  public String getValue() {
+    return value;
+  }
 }
