@@ -28,10 +28,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.identity\\.starter\\..*"),
-        @ComponentScan.Filter(
-            type = FilterType.REGEX,
-            pattern = "io\\.camunda\\.identity\\.webapp\\..*")
+          pattern = "io\\.camunda\\.identity\\.starter\\..*")
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
 @EnableAutoConfiguration
