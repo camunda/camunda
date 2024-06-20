@@ -10,11 +10,12 @@ package io.camunda.zeebe.broker.system.configuration;
 import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_ELECTION_TIMEOUT;
 
 import java.time.Duration;
+import org.springframework.util.unit.DataSize;
 
 public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
-  public static final int DEFAULT_SNAPSHOT_CHUNK_SIZE = Integer.MAX_VALUE;
+  public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofGigabytes(1);
   private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
   // Requests should time out faster than the election timeout to ensure that a single missed
   // heartbeat does not cause immediate re-election.
@@ -25,7 +26,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
-  private int snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
+  private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
   private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
@@ -50,11 +51,11 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   }
 
   public int getSnapshotChunkSize() {
-    return snapshotChunkSize;
+    return Math.toIntExact(snapshotChunkSize.toBytes());
   }
 
   public void setSnapshotChunkSize(final int snapshotChunkSize) {
-    this.snapshotChunkSize = snapshotChunkSize;
+    this.snapshotChunkSize = DataSize.ofBytes(snapshotChunkSize);
   }
 
   public Duration getConfigurationChangeTimeout() {

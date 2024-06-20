@@ -1031,9 +1031,9 @@
         # snapshotRequestTimeout: 2500ms
 
         # Sets the maximum size of snapshot chunks sent by raft leaders to the followers.
-        # The number is an integer which represents the chunk size in bytes.
+        # The default value is 1GB.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTCHUNKSIZE.
-        # snapshotChunkSize: 1048576
+        # snapshotChunkSize: 1GB
 
         # Sets the timeout for configuration change requests such as joining or leaving. Since changes are usually a multi-step
         # process with multiple commits, a higher timeout than the default requestTimeout is recommended.
