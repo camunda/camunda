@@ -9,10 +9,12 @@ package io.camunda.operate.schema.util.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.connect.OpensearchConnector;
-import io.camunda.operate.property.OpensearchProperties;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.util.ObservableConnector;
+import io.camunda.operate.schema.util.ObservableConnector.OperateTestHttpRequest;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.os.OpensearchClientConnector;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(OpensearchCondition.class)
-public class TestOpenSearchConnector extends OpensearchConnector implements ObservableConnector {
+public class TestOpenSearchConnector extends OpensearchClientProvider
+    implements ObservableConnector {
 
   private List<Consumer<OperateTestHttpRequest>> requestListeners = new ArrayList<>();
 
@@ -34,37 +37,10 @@ public class TestOpenSearchConnector extends OpensearchConnector implements Obse
     super(operateProperties, objectMapper);
   }
 
-  /**
-   * Adds a request interceptor that a test case can plug in, so that we can assert requests made to
-   * OpenSearch
-   */
   @Override
-  protected HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, OpensearchProperties elsConfig) {
-    httpAsyncClientBuilder.addRequestInterceptorFirst(
-        new HttpRequestInterceptor() {
-
-          @Override
-          public void process(HttpRequest request, EntityDetails entityDetails, HttpContext context)
-              throws IOException {
-            requestListeners.forEach(
-                listener ->
-                    listener.accept(
-                        new OperateTestHttpRequest() {
-
-                          @Override
-                          public String getUri() {
-                            return request.getRequestUri();
-                          }
-
-                          @Override
-                          public String getMethod() {
-                            return request.getMethod();
-                          }
-                        }));
-          }
-        });
-    return super.configureHttpClient(httpAsyncClientBuilder, elsConfig);
+  protected OpensearchClientConnector createOpensearchConnector(
+      final ConnectConfiguration configuration, final ObjectMapper objectMapper) {
+    return new TestHttpClientInterceptorOSConnector(configuration, objectMapper, requestListeners);
   }
 
   public void addRequestListener(Consumer<OperateTestHttpRequest> listener) {
@@ -73,5 +49,53 @@ public class TestOpenSearchConnector extends OpensearchConnector implements Obse
 
   public void clearRequestListeners() {
     this.requestListeners.clear();
+  }
+
+  private static final class TestHttpClientInterceptorOSConnector
+      extends OpensearchClientConnector {
+
+    private final List<Consumer<OperateTestHttpRequest>> requestListeners;
+
+    public TestHttpClientInterceptorOSConnector(
+        final ConnectConfiguration configuration,
+        final ObjectMapper objectMapper,
+        final List<Consumer<OperateTestHttpRequest>> requestListeners) {
+      super(configuration, objectMapper);
+      this.requestListeners = requestListeners;
+    }
+
+    /**
+     * Adds a request interceptor that a test case can plug in, so that we can assert requests made
+     * to OpenSearch
+     */
+    @Override
+    protected HttpAsyncClientBuilder configureHttpClient(
+        final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+      httpAsyncClientBuilder.addRequestInterceptorFirst(
+          new HttpRequestInterceptor() {
+
+            @Override
+            public void process(
+                HttpRequest request, EntityDetails entityDetails, HttpContext context)
+                throws IOException {
+              requestListeners.forEach(
+                  listener ->
+                      listener.accept(
+                          new OperateTestHttpRequest() {
+
+                            @Override
+                            public String getUri() {
+                              return request.getRequestUri();
+                            }
+
+                            @Override
+                            public String getMethod() {
+                              return request.getMethod();
+                            }
+                          }));
+            }
+          });
+      return super.configureHttpClient(httpAsyncClientBuilder);
+    }
   }
 }

@@ -14,8 +14,8 @@ import static org.mockito.BDDMockito.given;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
@@ -65,10 +65,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class,
-      ElasticsearchConnector.class,
+      ElasticsearchClientProvider.class,
       OpensearchTaskStore.class,
       RichOpenSearchClient.class,
-      OpensearchConnector.class,
+      OpensearchClientProvider.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,

@@ -20,8 +20,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -86,11 +86,11 @@ import org.springframework.test.context.junit4.SpringRunner;
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
       SameSiteCookieTomcatContextCustomizer.class,
-      ElasticsearchConnector.class,
+      ElasticsearchClientProvider.class,
       ElasticsearchSessionRepository.class,
       OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
-      OpensearchConnector.class,
+      OpensearchClientProvider.class,
       PermissionConverter.class,
       SecurityContextWrapper.class,
       JacksonConfig.class,

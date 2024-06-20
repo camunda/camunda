@@ -9,7 +9,7 @@ package io.camunda.operate.webapp;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -63,8 +63,8 @@ public class StartupBean {
   public void shutdown() {
     if (DatabaseInfo.isElasticsearch()) {
       LOGGER.info("Shutdown elasticsearch clients.");
-      ElasticsearchConnector.closeEsClient(esClient);
-      ElasticsearchConnector.closeEsClient(zeebeEsClient);
+      ElasticsearchClientProvider.closeEsClient(esClient);
+      ElasticsearchClientProvider.closeEsClient(zeebeEsClient);
     }
   }
 }

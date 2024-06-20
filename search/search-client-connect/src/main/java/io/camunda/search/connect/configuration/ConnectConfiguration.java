@@ -7,6 +7,11 @@
  */
 package io.camunda.search.connect.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.search.connect.SearchClientConnectException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class ConnectConfiguration {
 
   private static final String DATABASE_TYPE_DEFAULT = "elasticsearch";
@@ -118,5 +123,20 @@ public class ConnectConfiguration {
 
   public void setIndexPrefix(String indexPrefix) {
     this.indexPrefix = indexPrefix;
+  }
+
+  @JsonIgnore
+  public boolean hasBasicAuthenticationConfigured() {
+    final var username = getUsername();
+    final var password = getPassword();
+    return !(username == null || password == null || username.isEmpty() || password.isEmpty());
+  }
+
+  public URI getUrlAsUri() {
+    try {
+      return new URI(getUrl());
+    } catch (URISyntaxException e) {
+      throw new SearchClientConnectException("Error in url: " + getUrl(), e);
+    }
   }
 }
