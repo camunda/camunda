@@ -19,8 +19,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
@@ -268,9 +267,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     executionListenerIndexProp.setValue(0);
   }
 
-  public Set<DirectBuffer> getActiveSequenceFlowIds() {
-    return activeSequenceFlowIdsProp.stream()
-        .map(StringValue::getValue)
-        .collect(Collectors.toSet());
+  public List<DirectBuffer> getActiveSequenceFlowIds() {
+    return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
   }
 }
