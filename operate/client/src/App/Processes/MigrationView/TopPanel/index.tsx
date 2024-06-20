@@ -7,13 +7,11 @@
  */
 
 import {Diagrams} from './Diagrams';
-import {Header} from './Header';
 import {Section} from './styled';
 
 const TopPanel: React.FC = () => {
   return (
     <Section>
-      <Header />
       <Diagrams />
     </Section>
   );

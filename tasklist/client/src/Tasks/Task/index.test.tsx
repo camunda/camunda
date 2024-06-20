@@ -96,6 +96,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -150,6 +154,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -212,6 +220,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -258,6 +270,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -310,6 +326,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -358,6 +378,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -415,6 +439,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     const {user} = render(<Component />, {
@@ -466,6 +494,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -530,6 +562,10 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
     );
 
     render(<Component />, {
@@ -592,6 +628,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 
@@ -659,6 +699,10 @@ describe('<Task />', () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
         {once: true},
+      ),
+      http.get(
+        '/v1/internal/processes/:processId',
+        async () => new HttpResponse(undefined, {status: 404}),
       ),
     );
 

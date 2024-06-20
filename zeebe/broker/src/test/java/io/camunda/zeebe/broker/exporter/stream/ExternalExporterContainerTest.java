@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -129,7 +130,8 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = new ExporterContainer(descriptor, 0);
+    final var container =
+        new ExporterContainer(descriptor, 0, new ExporterInitializationInfo(0, null));
 
     // when
     container.close();

@@ -9,10 +9,11 @@
 import {Button, Heading, Stack} from '@carbon/react';
 import {ErrorRobot} from 'modules/images/error-robot';
 import styles from './styles.module.scss';
+import cn from 'classnames';
 
-const SomethingWentWrong: React.FC = () => {
+const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
   return (
-    <div className={styles.container}>
+    <div className={cn(className, styles.container)}>
       <div className={styles.content}>
         <Stack gap={6} orientation="horizontal">
           <ErrorRobot />

@@ -21,7 +21,7 @@ on:
       - 'pom.xml'
       - 'zeebe/**'
   pull_request:
-    paths:
+    paths: # keep in sync with common-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
@@ -102,7 +102,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -196,8 +196,6 @@ jobs:
           -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Normalize artifact name
-        run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -251,7 +249,7 @@ jobs:
         with:
           go: false
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
@@ -411,7 +409,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
@@ -445,9 +443,6 @@ jobs:
         with:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
           version: v1.55.2
-          # caching issues, see: https://github.com/golangci/golangci-lint-action/issues/244#issuecomment-1052190775
-          skip-pkg-cache: true
-          skip-build-cache: true
           working-directory: clients/go
       - name: Observe build status
         if: always()
@@ -546,7 +541,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           # we use a local registry for pushing
@@ -660,7 +655,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe

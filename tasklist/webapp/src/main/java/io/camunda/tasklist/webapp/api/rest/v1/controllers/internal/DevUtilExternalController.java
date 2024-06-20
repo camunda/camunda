@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
-import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -26,6 +25,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,9 +41,9 @@ public class DevUtilExternalController {
 
   @Autowired private SchemaManager schemaManager;
 
-  @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private DataGenerator devDataGenerator;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
@@ -84,7 +84,6 @@ public class DevUtilExternalController {
     processCache.clearCache();
     schemaManager.createSchema();
     searchEngineUserDetailsService.initializeUsers();
-    devDataGenerator.createDemoUsers();
     return ResponseEntity.ok().build();
   }
 }

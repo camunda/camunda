@@ -55,6 +55,7 @@ import org.opensearch.client.transport.JsonEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -72,8 +73,14 @@ public class BackupManagerOpenSearch extends BackupManager {
   private final Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private OpenSearchAsyncClient openSearchAsyncClient;
-  @Autowired private OpenSearchClient openSearchClient;
+
+  @Autowired
+  @Qualifier("tasklistOsAsyncClient")
+  private OpenSearchAsyncClient openSearchAsyncClient;
+
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
 
   @Override
   public void deleteBackup(final Long backupId) {
@@ -493,7 +500,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         .setVersion(jsonDataMap.get("version").to(String.class));
   }
 
-  @Bean("backupThreadPoolExecutor")
+  @Bean("tasklistBackupThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);

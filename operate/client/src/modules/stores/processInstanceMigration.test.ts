@@ -27,7 +27,7 @@ describe('processInstanceMigration', () => {
 
     expect(processInstanceMigrationStore.isSummaryStep).toBe(false);
     expect(processInstanceMigrationStore.currentStep).toEqual({
-      stepDescription: 'Mapping elements',
+      stepDescription: 'mapping elements',
       stepNumber: 1,
     });
     expect(processInstanceMigrationStore.isSummaryStep).toBe(false);
@@ -35,7 +35,7 @@ describe('processInstanceMigration', () => {
     processInstanceMigrationStore.setCurrentStep('summary');
 
     expect(processInstanceMigrationStore.currentStep).toEqual({
-      stepDescription: 'Confirm',
+      stepDescription: 'confirm',
       stepNumber: 2,
     });
     expect(processInstanceMigrationStore.isSummaryStep).toBe(true);
@@ -101,6 +101,30 @@ describe('processInstanceMigration', () => {
     processInstanceMigrationStore.resetFlowNodeMapping();
 
     expect(processInstanceMigrationStore.hasFlowNodeMapping).toBe(false);
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
+  });
+
+  it('should clear flow node mapping', () => {
+    processInstanceMigrationStore.enable();
+
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
+
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: 'startEvent',
+      targetId: 'endEvent',
+    });
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: 'taskA',
+      targetId: 'taskB',
+    });
+
+    expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({
+      startEvent: 'endEvent',
+      taskA: 'taskB',
+    });
+
+    processInstanceMigrationStore.clearFlowNodeMapping();
+
     expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
   });
 

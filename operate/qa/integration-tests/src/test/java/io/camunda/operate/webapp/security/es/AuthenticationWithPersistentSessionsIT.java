@@ -14,8 +14,11 @@ import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -39,9 +42,8 @@ import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import jakarta.json.Json;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,7 +88,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateWebSessionIndex.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
-      ElasticsearchSessionRepository.class
+      ElasticsearchSessionRepository.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
@@ -215,7 +220,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   }
 
   @Test
-  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
+  public void testCanReadAndWriteLoggersActuatorEndpoint() {
     ResponseEntity<String> response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",
@@ -226,7 +231,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     final HttpEntity<String> request =
-        new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+        new HttpEntity<>(
+            Json.createObjectBuilder().add("configuredLevel", "TRACE").build().toString(), headers);
     response =
         testRestTemplate.postForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",

@@ -32,6 +32,7 @@ import java.util.function.Function;
 public class TestRaftServerProtocol implements RaftServerProtocol {
 
   private static final long REQUEST_TIMEOUT_MS = 1000;
+  private static final long CONFIGURATION_REQUEST_TIMEOUT_MS = 4000;
 
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
@@ -91,7 +92,7 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
         .thenCompose(listener -> intercept(listener, request, ReconfigureRequest.class))
         .thenCompose(listener -> listener.reconfigure(request))
         .thenCompose(response -> transformResponse(response, ReconfigureResponse.class))
-        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        .orTimeout(CONFIGURATION_REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -110,7 +111,7 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
         .thenCompose(listener -> intercept(listener, request, JoinRequest.class))
         .thenCompose(listener -> listener.join(request))
         .thenCompose(response -> transformResponse(response, JoinResponse.class))
-        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        .orTimeout(CONFIGURATION_REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -120,7 +121,7 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
         .thenCompose(listener -> intercept(listener, request, LeaveRequest.class))
         .thenCompose(listener -> listener.leave(request))
         .thenCompose(response -> transformResponse(response, LeaveResponse.class))
-        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        .orTimeout(CONFIGURATION_REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
   }
 
   @Override

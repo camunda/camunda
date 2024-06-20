@@ -82,7 +82,7 @@ export class ProcessInstance {
     id: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(Paths.processInstance(id), options);
+    await this.page.goto('.' + Paths.processInstance(id), options);
   }
 
   async getNthTreeNodeTestId(n: number) {

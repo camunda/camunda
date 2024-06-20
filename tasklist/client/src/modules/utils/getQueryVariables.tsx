@@ -22,11 +22,20 @@ const SORT_BY_FIELD: Record<
 };
 
 const getQueryVariables = (
-  filters: TaskFilters,
+  filters: Omit<
+    TaskFilters,
+    | 'assignee'
+    | 'pageSize'
+    | 'searchBefore'
+    | 'searchBeforeOrEqual'
+    | 'searchAfter'
+    | 'searchAfterOrEqual'
+  >,
   {
     assignee,
     pageSize,
     searchBefore,
+    searchBeforeOrEqual,
     searchAfter,
     searchAfterOrEqual,
   }: Pick<
@@ -34,6 +43,7 @@ const getQueryVariables = (
     | 'assignee'
     | 'pageSize'
     | 'searchBefore'
+    | 'searchBeforeOrEqual'
     | 'searchAfter'
     | 'searchAfterOrEqual'
   >,
@@ -48,11 +58,14 @@ const getQueryVariables = (
     ],
     pageSize,
     searchBefore,
+    searchBeforeOrEqual,
     searchAfter,
     searchAfterOrEqual,
   };
-  const {taskVariables, ...parsedFilters} =
-    convertFiltersToQueryVariables(remainingFilters);
+  const {taskVariables, ...parsedFilters} = convertFiltersToQueryVariables({
+    ...remainingFilters,
+    filter,
+  });
 
   switch (filter) {
     case 'assigned-to-me': {
@@ -79,28 +92,29 @@ const getQueryVariables = (
         ...parsedFilters,
       };
     }
-    case 'custom': {
-      return {
-        ...BASE_QUERY_VARIABLES,
-        ...parsedFilters,
-        taskVariables,
-      };
-    }
-    case 'all-open':
-    default: {
+    case 'all-open': {
       return {
         ...BASE_QUERY_VARIABLES,
         state: 'CREATED',
         ...parsedFilters,
       };
     }
+    case 'custom':
+    default: {
+      return {
+        ...BASE_QUERY_VARIABLES,
+        ...parsedFilters,
+        taskVariables,
+      };
+    }
   }
 };
 
 function convertFiltersToQueryVariables(
-  filters: Omit<TaskFilters, 'filter' | 'sortBy' | 'sortOrder'>,
+  filters: Omit<TaskFilters, 'sortBy' | 'sortOrder'>,
 ): TasksSearchBody {
   const {
+    filter,
     dueDateFrom,
     dueDateTo,
     followUpDateFrom,
@@ -108,7 +122,7 @@ function convertFiltersToQueryVariables(
     ...restFilters
   } = filters;
   const updatedFilters: TasksSearchBody = restFilters;
-  const customFilters = getStateLocally('customFilters')?.custom;
+  const customFilters = getStateLocally('customFilters')?.[filter];
 
   if (customFilters !== undefined && Array.isArray(customFilters?.variables)) {
     updatedFilters.taskVariables = customFilters.variables.map<{

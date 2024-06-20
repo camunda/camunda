@@ -7,14 +7,8 @@
  */
 package io.camunda.tasklist.modules;
 
-import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
-import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.apps.modules.ModulesTestApplication;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,12 +20,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @SpringBootTest(
     classes = {
       ModulesTestApplication.class,
-      TestElasticsearchSchemaManager.class,
-      TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
-      RetryElasticsearchClient.class,
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",

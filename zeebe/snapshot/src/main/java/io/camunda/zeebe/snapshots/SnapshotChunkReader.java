@@ -34,4 +34,11 @@ public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableS
    * @return the next chunk ID
    */
   ByteBuffer nextId();
+
+  /**
+   * Sets the maximum chunk size for the reader when sending files.
+   *
+   * @param maximumChunkSize
+   */
+  void setMaximumChunkSize(final int maximumChunkSize);
 }

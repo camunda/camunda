@@ -104,6 +104,11 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
+  public long getOperationReference() {
+    return metadata.getOperationReference();
+  }
+
+  @Override
   public Record copyOf() {
     return CopiedRecords.createCopiedRecord(getPartitionId(), rawEvent);
   }

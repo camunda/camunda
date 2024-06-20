@@ -17,15 +17,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
@@ -39,6 +43,7 @@ import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationToken
 import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import org.assertj.core.util.DateUtil;
 import org.junit.Test;
@@ -87,7 +92,12 @@ import org.springframework.test.context.junit4.SpringRunner;
       RichOpenSearchClient.class,
       OpensearchConnector.class,
       PermissionConverter.class,
-      SecurityContextWrapper.class
+      SecurityContextWrapper.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateIndexController.class,
+      WebappsModuleConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
@@ -99,7 +109,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       "camunda.operate.identity.baseUrl=http://localhost:8080",
       "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
       "camunda.operate.persistentSessionsEnabled=true",
-      "spring.web.resources.add-mappings = true"
+      "spring.web.resources.add-mappings = true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})

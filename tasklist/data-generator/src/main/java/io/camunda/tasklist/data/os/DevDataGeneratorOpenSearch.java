@@ -33,13 +33,14 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorOpenSearch.class);
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   @Autowired
   private OpenSearchClient osClient;
 
+  @Override
   public void createUser(String username, String firstname, String lastname) {
     final String password = username;
     final String passwordEncoded = passwordEncoder.encode(password);
@@ -62,6 +63,7 @@ public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract impleme
     LOGGER.info("Created demo user {} with password {}", username, password);
   }
 
+  @Override
   public boolean shouldCreateData() {
     try {
 

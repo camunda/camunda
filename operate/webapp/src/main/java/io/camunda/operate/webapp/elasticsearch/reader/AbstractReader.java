@@ -19,6 +19,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public abstract class AbstractReader {
 
@@ -26,7 +27,9 @@ public abstract class AbstractReader {
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  protected ObjectMapper objectMapper;
 
   protected <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz)
       throws IOException {

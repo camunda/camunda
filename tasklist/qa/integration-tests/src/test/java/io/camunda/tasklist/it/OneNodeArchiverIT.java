@@ -53,7 +53,6 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
   @Autowired private ArchiverUtil archiverUtil;
 
   @Autowired private NoSqlHelper noSqlHelper;
-  // @Autowired private RestHighLevelClient esClient;
 
   @Autowired private TaskTemplate taskTemplate;
 

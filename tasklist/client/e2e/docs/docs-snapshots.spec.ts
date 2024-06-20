@@ -7,11 +7,11 @@
  */
 
 import {Page, expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '@/test-fixtures';
 import {sub as subTime} from 'date-fns/sub';
 import {add as addTime} from 'date-fns/add';
-import registerPassengerForm from '../resources/registerPassenger.json' assert {type: 'json'};
-import registerPassengerStartForm from '../resources/registerPassengerStartForm.json' assert {type: 'json'};
+import registerPassengerForm from '@/resources/registerPassenger.json' assert {type: 'json'};
+import registerPassengerStartForm from '@/resources/registerPassengerStartForm.json' assert {type: 'json'};
 
 const now = new Date();
 
@@ -271,6 +271,7 @@ async function mockClientConfig(page: Page) {
         "canLogout":true,
         "isLoginDelegated":false,
         "contextPath":"",
+        "baseName":"/",
         "organizationId":null,
         "clusterId":null,
         "stage":null,
@@ -285,30 +286,28 @@ async function mockClientConfig(page: Page) {
 test.beforeEach(async ({page}) => {
   await mockCurrentUser(page);
   await mockClientConfig(page);
-  await page.addInitScript(() => {
+  await page.addInitScript(`(() => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-  });
+  })()`);
 });
 
 test.describe('Tasklist snapshots', () => {
-  test('empty tasklist', async ({page, taskPanelPage}) => {
+  test('empty tasklist', async ({page, tasksPage}) => {
     await mockTaskSearch(page, []);
-    await taskPanelPage.goto();
+    await tasksPage.goto();
     await expect(page).toHaveScreenshot();
   });
 
-  test('populated tasklist', async ({page, taskPanelPage}) => {
+  test('populated tasklist', async ({page, tasksPage}) => {
     await mockTaskSearch(page, MOCK_TASKLIST);
-    await taskPanelPage.goto();
+    await tasksPage.goto();
     await expect(page).toHaveScreenshot();
   });
 
-  test('populated tasklist ordering', async ({page, taskPanelPage}) => {
+  test('populated tasklist ordering', async ({page, tasksPage}) => {
     await mockTaskSearch(page, MOCK_TASKLIST);
 
-    await taskPanelPage.goto();
-
-    // await expect(page.getByTestId('tasks-skeleton')).not.toBeVisible();
+    await tasksPage.goto();
 
     await page.getByRole('button', {name: 'Sort tasks'}).click();
 
@@ -324,7 +323,7 @@ test.describe('Tasklist snapshots', () => {
     });
   });
 
-  test('claim a task', async ({page, taskDetailsPage}) => {
+  test('claim a task', async ({page, tasksPage}) => {
     await mockTaskSearch(page, MOCK_TASKLIST);
     await mockTask(
       page,
@@ -342,7 +341,7 @@ test.describe('Tasklist snapshots', () => {
       registerPassengerForm,
     );
 
-    await taskDetailsPage.goto('1');
+    await tasksPage.gotoTaskDetails('1');
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
@@ -351,7 +350,7 @@ test.describe('Tasklist snapshots', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('claimed a task', async ({page, taskDetailsPage}) => {
+  test('claimed a task', async ({page, tasksPage}) => {
     const alteredTaskList = [
       ...MOCK_TASKLIST.slice(0, 1),
       {...MOCK_TASKLIST[1], assignee: 'demo'},
@@ -374,7 +373,7 @@ test.describe('Tasklist snapshots', () => {
       registerPassengerForm,
     );
 
-    await taskDetailsPage.goto('1');
+    await tasksPage.gotoTaskDetails('1');
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
@@ -385,7 +384,7 @@ test.describe('Tasklist snapshots', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('completed a task', async ({page, taskPanelPage}) => {
+  test('completed a task', async ({page, tasksPage}) => {
     const completedTaskList = [
       {
         ...MOCK_TASKLIST[1],
@@ -411,9 +410,9 @@ test.describe('Tasklist snapshots', () => {
       registerPassengerForm,
     );
 
-    await taskPanelPage.goto({filter: 'completed', sortBy: 'completion'});
+    await tasksPage.goto({filter: 'completed', sortBy: 'completion'});
 
-    await taskPanelPage.openTask(completedTaskList[0].name);
+    await tasksPage.openTask(completedTaskList[0].name);
 
     await expect(page.getByText('Register Passenger')).toBeVisible();
     await expect(page.getByText('Name: ARRON A. ARRONSON')).toBeVisible();
@@ -475,11 +474,12 @@ test.describe('Tasklist snapshots', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('advanced filters', async ({page, taskPanelPage}) => {
+  test('advanced filters', async ({page, tasksPage}) => {
     await mockTaskSearch(page, MOCK_TASKLIST);
 
-    await taskPanelPage.goto();
-    await page.getByLabel('Custom filter').click();
+    await tasksPage.goto();
+    await tasksPage.expandSidePanelButton.click();
+    await tasksPage.addCustomFilterButton.click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();

@@ -18,6 +18,8 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
+  TASKLIST("tasklist"),
+  IDENTITY("identity"),
 
   // environment profiles
   TEST("test"),
@@ -26,6 +28,7 @@ public enum Profile {
 
   // other
   IDENTITY_AUTH("identity-auth"),
+  SSO_AUTH("sso-auth"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");

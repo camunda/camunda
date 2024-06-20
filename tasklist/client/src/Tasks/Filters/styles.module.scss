@@ -6,27 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-  width: 100%;
-
-  :global(.cds--custom-sorting-menu-options-wrapper) {
-    width: 180px;
-  }
-}
-
-.form {
-  display: grid;
-  align-items: flex-end;
-  grid-template-columns: 1fr min-content;
-  gap: var(--cds-spacing-03);
-  width: 100%;
-
-  &.customFilters {
-    grid-template-columns: 1fr min-content min-content;
-    gap: var(--cds-spacing-02);
-  }
-}
-
 .sortItem {
   width: 100%;
   display: flex;
@@ -37,4 +16,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.header {
+  width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: var(--cds-spacing-03);
 }

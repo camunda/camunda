@@ -60,7 +60,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   @Autowired
   private OpenSearchClient osClient;
 

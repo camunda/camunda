@@ -45,6 +45,12 @@ message ExporterDisableRequest {
   bool dryRun = 2;
 }
 
+message ExporterEnableRequest {
+  string exporterId = 1;
+  optional string initializeFrom = 2;
+  bool dryRun = 3;
+}
+
 message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }

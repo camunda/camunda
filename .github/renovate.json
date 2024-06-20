@@ -47,6 +47,13 @@
       "enabled": false
     },
     {
+      "description": "Skip lucene major updates to avoid breaking changes.",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["com.graphql-java"],
       "matchUpdateTypes": ["major"],
@@ -83,12 +90,13 @@
       "enabled": false
     },
     {
-      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844)",
+      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
       "matchPackagePatterns": [
         "react-router-dom",
-        "msw"
+        "msw",
+        "@carbon/react"
       ],
       "enabled": false
     },
@@ -121,6 +129,16 @@
       "groupSlug": "all-minor-patch"
     },
     {
+      "description": "For known GitHub repositories that use GitHub tags/releases of format 'v1.2.3' and where we ignore the 'v' prefix, we also tell Renovate to ignore it via extractVersion when updating .tool-version file",
+      "matchFileNames": [
+        ".github/workflows/*.yml"
+      ],
+      "matchPackageNames": [
+        "rhysd/actionlint"
+      ],
+      "extractVersion": "^v(?<version>.*)$"
+    },
+    {
       "description": "Both dependencies need to be updated at once for green CI.",
       "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
@@ -137,5 +155,15 @@
       "zeebe/benchmarks/**",
       "clients/go/vendor/**"
     ]
-  }
+  },
+  "customManagers": [
+    {
+      "fileMatch": ["\\.yml$"],
+      "customType": "regex",
+      "matchStrings": [
+        "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    }
+  ]
 }

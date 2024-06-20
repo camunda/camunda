@@ -94,6 +94,11 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
+  public long getOperationReference() {
+    return metadata.getOperationReference();
+  }
+
+  @Override
   public long getKey() {
     return key;
   }

@@ -68,13 +68,17 @@ const router = createBrowserRouter(
             ErrorBoundary={ErrorWithinLayout}
           >
             <Route index lazy={() => import('./Tasks/Task')} />
+            <Route
+              path="process"
+              lazy={() => import('./Tasks/Task/ProcessView')}
+            />
           </Route>
         </Route>
       </Route>
     </Route>,
   ),
   {
-    basename: window.clientConfig?.contextPath ?? '/',
+    basename: import.meta.env.DEV ? '/' : window.clientConfig?.baseName ?? '/',
   },
 );
 

@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 // Modify Process Instance Implementation to execute all given modifications in one Zeebe
@@ -38,7 +39,11 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SingleStepModifyProcessInstanceHandler.class);
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private OperationsManager operationsManager;
   @Autowired private MoveTokenHandler moveTokenHandler;
   @Autowired private AddTokenHandler addTokenHandler;

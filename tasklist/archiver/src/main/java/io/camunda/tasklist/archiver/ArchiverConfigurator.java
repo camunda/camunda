@@ -18,7 +18,7 @@ public class ArchiverConfigurator {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Bean("archiverThreadPoolExecutor")
+  @Bean("tasklistArchiverThreadPoolExecutor")
   public ThreadPoolTaskScheduler getTaskScheduler() {
     final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
     scheduler.setPoolSize(tasklistProperties.getArchiver().getThreadsCount());

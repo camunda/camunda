@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp;
 
-import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
 import jakarta.annotation.PostConstruct;
@@ -19,7 +18,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Profile("!test")
 public class StartupBean {
 
@@ -28,8 +27,6 @@ public class StartupBean {
   @Autowired(required = false)
   private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
-  @Autowired private DataGenerator dataGenerator;
-
   @Autowired private TasklistProperties tasklistProperties;
 
   @PostConstruct
@@ -37,13 +34,6 @@ public class StartupBean {
     if (searchEngineUserDetailsService != null) {
       LOGGER.info("INIT: Create users if not exists ...");
       searchEngineUserDetailsService.initializeUsers();
-    }
-    LOGGER.debug("INIT: Generate demo data...");
-    try {
-      dataGenerator.createZeebeDataAsync();
-    } catch (Exception ex) {
-      LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
-      LOGGER.error("Error occurred when generating demo data.", ex);
     }
     LOGGER.info("INIT: DONE");
   }

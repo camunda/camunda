@@ -58,7 +58,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
     given(operateProfileService.currentProfileCanLogout()).willReturn(true);
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -73,6 +73,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isEnterprise\":false,"
                 + "\"canLogout\":true,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
@@ -90,7 +91,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     operateProperties.setTasklistUrl(null);
     given(operateProfileService.currentProfileCanLogout()).willReturn(false);
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -105,6 +106,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isEnterprise\":false,"
                 + "\"canLogout\":false,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
@@ -123,7 +125,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(operateProfileService.isDevelopmentProfileActive()).willReturn(false);
 
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -138,6 +140,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"isEnterprise\":false,"
                 + "\"canLogout\":false,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","

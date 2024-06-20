@@ -73,6 +73,7 @@ export const createOperation = (
     state: 'SENT',
     type: 'RESOLVE_INCIDENT',
     batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
+    completedDate: null,
     ...options,
   };
 };
@@ -522,12 +523,14 @@ export const mockProcessInstancesWithOperation = {
           batchOperationId: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
           errorMessage: 'Batch Operation Error Message',
           type: 'MODIFY_PROCESS_INSTANCE',
+          completedDate: null,
         },
         {
           state: 'COMPLETED',
           batchOperationId: 'c4be6304-a0e0-4976-b81b-7a07fb4e96e5',
           errorMessage: '',
           type: 'MODIFY_PROCESS_INSTANCE',
+          completedDate: null,
         },
       ],
     }),
