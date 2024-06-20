@@ -10,6 +10,7 @@ package io.camunda.tasklist.zeebeimport.v860.record.value;
 import io.camunda.tasklist.zeebeimport.v860.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ListenerEventType;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,6 +31,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
+  private ListenerEventType listenerEventType;
 
   public JobRecordValueImpl() {}
 
@@ -131,6 +133,16 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return this;
   }
 
+  @Override
+  public ListenerEventType getListenerEventType() {
+    return listenerEventType;
+  }
+
+  public JobRecordValueImpl setListenerEventType(final ListenerEventType listenerEventType) {
+    this.listenerEventType = listenerEventType;
+    return this;
+  }
+
   public void setProcessDefinitionVersion(final int processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
   }
@@ -202,7 +214,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         errorMessage,
         errorCode,
         tenantId,
-        jobKind);
+        jobKind,
+        listenerEventType);
   }
 
   @Override
@@ -231,7 +244,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
-        && jobKind == that.jobKind;
+        && jobKind == that.jobKind
+        && listenerEventType == that.listenerEventType;
   }
 
   @Override
@@ -274,6 +288,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobKind="
         + jobKind
+        + '\''
+        + ", listenerEventType="
+        + listenerEventType
         + '}';
   }
 }
