@@ -9,34 +9,30 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
+import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequestChangeset;
-import io.camunda.zeebe.msgpack.value.DocumentValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 
 public class RequestMapper {
 
@@ -50,101 +46,76 @@ public class RequestMapper {
       No update data provided. Provide at least an "action" or a non-null value \
       for a supported attribute in the "changeset".""";
 
-  public static Either<ProblemDetail, BrokerUserTaskCompletionRequest> toUserTaskCompletionRequest(
+  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
-    final var brokerRequest =
-        new BrokerUserTaskCompletionRequest(
+    return Either.right(
+        new CompleteUserTaskRequest(
             userTaskKey,
-            getDocumentOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-            getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
-
-    final String authorizationToken = getAuthorizationToken();
-    brokerRequest.setAuthorization(authorizationToken);
-
-    return Either.right(brokerRequest);
+            getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
+            getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction)));
   }
 
-  public static Either<ProblemDetail, BrokerUserTaskAssignmentRequest> toUserTaskAssignmentRequest(
+  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest, final long userTaskKey) {
 
-    final var validationErrorResponse = validateAssignmentRequest(assignmentRequest);
-    if (validationErrorResponse.isPresent()) {
-      return Either.left(validationErrorResponse.get());
-    }
+    final String actionValue =
+        getStringOrEmpty(assignmentRequest, UserTaskAssignmentRequest::getAction);
 
-    String action = getStringOrEmpty(assignmentRequest, UserTaskAssignmentRequest::getAction);
-    if (action.isBlank()) {
-      action = "assign";
-    }
+    final boolean allowOverride =
+        assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride();
 
-    final UserTaskIntent intent =
-        assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride()
-            ? UserTaskIntent.ASSIGN
-            : UserTaskIntent.CLAIM;
-
-    final BrokerUserTaskAssignmentRequest brokerRequest =
-        new BrokerUserTaskAssignmentRequest(
-            userTaskKey, assignmentRequest.getAssignee(), action, intent);
-
-    final String authorizationToken = getAuthorizationToken();
-    brokerRequest.setAuthorization(authorizationToken);
-
-    return Either.right(brokerRequest);
+    return validateAssignmentRequest(assignmentRequest)
+        .<Either<ProblemDetail, AssignUserTaskRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new AssignUserTaskRequest(
+                        userTaskKey,
+                        assignmentRequest.getAssignee(),
+                        actionValue.isBlank() ? "assign" : actionValue,
+                        allowOverride)));
   }
 
-  public static Either<ProblemDetail, BrokerUserTaskAssignmentRequest>
-      toUserTaskUnassignmentRequest(final long userTaskKey) {
-    final BrokerUserTaskAssignmentRequest brokerRequest =
-        new BrokerUserTaskAssignmentRequest(userTaskKey, "", "unassign", UserTaskIntent.ASSIGN);
-
-    final String authorizationToken = getAuthorizationToken();
-    brokerRequest.setAuthorization(authorizationToken);
-
-    return Either.right(brokerRequest);
+  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskUnassignmentRequest(
+      final long userTaskKey) {
+    return Either.right(new AssignUserTaskRequest(userTaskKey, "", "unassign", true));
   }
 
-  public static Either<ProblemDetail, BrokerUserTaskUpdateRequest> toUserTaskUpdateRequest(
+  public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
       final UserTaskUpdateRequest updateRequest, final long userTaskKey) {
 
-    final var validationErrorResponse = validateUpdateRequest(updateRequest);
-    if (validationErrorResponse.isPresent()) {
-      return Either.left(validationErrorResponse.get());
-    }
-
-    final var brokerRequest =
-        new BrokerUserTaskUpdateRequest(
-            userTaskKey,
-            getRecordWithChangedAttributes(updateRequest),
-            getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction));
-
-    brokerRequest.setAuthorization(getAuthorizationToken());
-
-    return Either.right(brokerRequest);
+    return validateUpdateRequest(updateRequest)
+        .<Either<ProblemDetail, UpdateUserTaskRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new UpdateUserTaskRequest(
+                        userTaskKey,
+                        getRecordWithChangedAttributes(updateRequest),
+                        getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction))));
   }
 
   public static Either<ProblemDetail, BrokerActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest) {
 
     final var validationErrorResponse = validateJobActivationRequest(activationRequest);
-    if (validationErrorResponse.isPresent()) {
-      return Either.left(validationErrorResponse.get());
-    }
-
-    final var brokerRequest =
-        new BrokerActivateJobsRequest(activationRequest.getType())
-            .setMaxJobsToActivate(activationRequest.getMaxJobsToActivate())
-            .setTenantIds(
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds))
-            .setTimeout(activationRequest.getTimeout())
-            .setWorker(getStringOrEmpty(activationRequest, JobActivationRequest::getWorker))
-            .setVariables(
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable));
-
-    final String authorizationToken = getAuthorizationToken();
-    brokerRequest.setAuthorization(authorizationToken);
-
-    return Either.right(brokerRequest);
+    return validationErrorResponse
+        .<Either<ProblemDetail, BrokerActivateJobsRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new BrokerActivateJobsRequest(activationRequest.getType())
+                        .setMaxJobsToActivate(activationRequest.getMaxJobsToActivate())
+                        .setTenantIds(
+                            getStringListOrEmpty(
+                                activationRequest, JobActivationRequest::getTenantIds))
+                        .setTimeout(activationRequest.getTimeout())
+                        .setWorker(
+                            getStringOrEmpty(activationRequest, JobActivationRequest::getWorker))
+                        .setVariables(
+                            getStringListOrEmpty(
+                                activationRequest, JobActivationRequest::getFetchVariable))));
   }
 
   private static Optional<ProblemDetail> validateAssignmentRequest(
@@ -227,15 +198,32 @@ public class RequestMapper {
             && changeset.getCandidateUsers() == null);
   }
 
-  private static String getAuthorizationToken() {
+  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
+      final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
+    return method
+        .get()
+        .handleAsync(
+            (response, error) ->
+                RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
+                    .orElseGet(result));
+  }
+
+  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContenResult(
+      final Supplier<CompletableFuture<?>> method) {
+    return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
+  }
+
+  public static Authentication getAuthentication() {
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
-    return Authorization.jwtEncoder()
-        .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-        .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-        .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-        .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
-        .encode();
+    final String token =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+            .encode();
+    return new Builder().token(token).tenants(authorizedTenants).build();
   }
 
   private static UserTaskRecord getRecordWithChangedAttributes(
@@ -260,13 +248,10 @@ public class RequestMapper {
     return record;
   }
 
-  private static DirectBuffer getDocumentOrEmpty(
+  private static Map<String, Object> getMapOrEmpty(
       final UserTaskCompletionRequest request,
       final Function<UserTaskCompletionRequest, Map<String, Object>> variablesExtractor) {
-    final Map<String, Object> value = request == null ? null : variablesExtractor.apply(request);
-    return value == null || value.isEmpty()
-        ? DocumentValue.EMPTY_DOCUMENT
-        : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+    return request == null ? Map.of() : variablesExtractor.apply(request);
   }
 
   private static <R> String getStringOrEmpty(
@@ -278,6 +263,14 @@ public class RequestMapper {
   private static <R> List<String> getStringListOrEmpty(
       final R request, final Function<R, List<String>> valueExtractor) {
     final List<String> value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? Collections.emptyList() : value;
+    return value == null ? List.of() : value;
   }
+
+  public record CompleteUserTaskRequest(
+      long userTaskKey, Map<String, Object> variables, String action) {}
+
+  public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
+
+  public record AssignUserTaskRequest(
+      long userTaskKey, String assignee, String action, boolean allowOverride) {}
 }
