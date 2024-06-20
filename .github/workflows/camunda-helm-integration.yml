@@ -11,6 +11,7 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
+      camunda-helm-dir: camunda-platform-alpha
       test-enabled: true
       caller-git-ref: main
       extra-values: |
