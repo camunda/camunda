@@ -55,7 +55,9 @@ runs:
     - name: Create context
       shell: bash
       run: |
-        docker context create zeebe-context
+        if ! docker context ls --format '{{.Name}}' | grep -q "^zeebe-context$"; then
+          docker context create zeebe-context
+        fi
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
