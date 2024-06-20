@@ -46,6 +46,7 @@ test.beforeEach(async ({processesPage}) => {
 test.describe('Child Process Instance Migration @roundtrip', () => {
   test('Migrate Child Process Instances', async ({
     processesPage,
+    processesPage: {filtersPanel},
     processInstancePage,
     migrationView,
     commonPage,
@@ -64,8 +65,8 @@ test.describe('Child Process Instance Migration @roundtrip', () => {
     const parentInstanceKey = processInstances[0]!.processInstanceKey;
 
     // Select parent process and version on filters
-    await processesPage.selectProcess(parentBpmnProcessId);
-    await processesPage.selectVersion(parentVersion.toString());
+    await filtersPanel.selectProcess(parentBpmnProcessId);
+    await filtersPanel.selectVersion(parentVersion.toString());
 
     // Should have 2 instances of the parent call activity process
     await expect(
@@ -137,6 +138,7 @@ test.describe('Child Process Instance Migration @roundtrip', () => {
       `You are about to migrate 1 process instance from the process definition: ${childBpmnProcessId} - version ${childVersion} to the process definition: ${childBpmnProcessId} - version ${targetVersion}`,
     );
     await migrationView.confirmButton.click();
+    await migrationView.confirmMigration();
 
     await expect(commonPage.operationsList).toBeVisible();
 
@@ -153,11 +155,11 @@ test.describe('Child Process Instance Migration @roundtrip', () => {
       migrateOperationEntry.getByRole('progressbar'),
     ).not.toBeVisible({timeout: 60000});
 
-    await expect(processesPage.processNameFilter).toHaveValue(
+    await expect(filtersPanel.processNameFilter).toHaveValue(
       childBpmnProcessId,
     );
 
-    expect(await processesPage.processVersionFilter.innerText()).toBe(
+    expect(await filtersPanel.processVersionFilter.innerText()).toBe(
       targetVersion.toString(),
     );
 
@@ -190,11 +192,11 @@ test.describe('Child Process Instance Migration @roundtrip', () => {
       }),
     ).not.toBeVisible();
 
-    await processesPage.removeOptionalFilter('Operation Id');
+    await filtersPanel.removeOptionalFilter('Operation Id');
 
     // expect 1 process instances for source version
-    await processesPage.selectProcess(childBpmnProcessId);
-    await processesPage.selectVersion(childVersion);
+    await filtersPanel.selectProcess(childBpmnProcessId);
+    await filtersPanel.selectVersion(childVersion);
     await expect(
       processesPage.processInstancesTable.getByRole('heading'),
     ).toContainText(/1 result/i);

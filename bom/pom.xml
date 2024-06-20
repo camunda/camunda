@@ -67,7 +67,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-java</artifactId>
+        <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 

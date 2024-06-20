@@ -10,12 +10,11 @@ package io.camunda.zeebe.it.exporter;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
@@ -154,23 +153,15 @@ final class ExporterDisableTest {
   }
 
   private void shutdownLeaderOfPartition2() {
-    final var leaderOfPartition2 =
-        client.newTopologyRequest().send().join().getBrokers().stream()
-            .filter(
-                b ->
-                    b.getPartitions().stream()
-                        .anyMatch(p -> p.getPartitionId() == 2 && p.isLeader()))
-            .map(BrokerInfo::getNodeId)
-            .findFirst()
-            .orElseThrow();
+    final TestStandaloneBroker brokerToStop = cluster.leaderForPartition(2);
+    brokerToStop.stop();
 
-    cluster.brokers().get(MemberId.from(String.valueOf(leaderOfPartition2))).stop();
     Awaitility.await()
         .timeout(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                    .doesNotContainBroker(leaderOfPartition2));
+                    .doesNotContainBroker(Integer.parseInt(brokerToStop.nodeId().id())));
 
     Awaitility.await()
         .untilAsserted(

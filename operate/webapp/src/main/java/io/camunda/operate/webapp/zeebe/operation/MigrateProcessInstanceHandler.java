@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** Operation handler to migrate process instances */
@@ -29,7 +30,8 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
 
   private final ObjectMapper objectMapper;
 
-  public MigrateProcessInstanceHandler(final ObjectMapper objectMapper) {
+  public MigrateProcessInstanceHandler(
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

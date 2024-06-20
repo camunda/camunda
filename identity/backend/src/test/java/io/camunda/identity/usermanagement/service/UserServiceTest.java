@@ -13,8 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.CamundaSpringBootTest;
+import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import java.util.UUID;
@@ -158,6 +158,20 @@ class UserServiceTest {
 
     final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
     assertTrue(passwordEncoder.matches(userWithPassword.getPassword(), updatedUser.getPassword()));
+  }
+
+  @Test
+  void emptyPassUpdateUserPasswordNotChanged() {
+    final var username = "user" + UUID.randomUUID();
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
+    final var userWithPassword =
+        new CamundaUserWithPassword(user.getId(), username, "email", false, "");
+
+    userService.updateUser(user.getId(), userWithPassword);
+
+    final var updatedUser = camundaUserDetailsManager.loadUserByUsername(username);
+    assertTrue(passwordEncoder.matches("password", updatedUser.getPassword()));
   }
 
   @Test

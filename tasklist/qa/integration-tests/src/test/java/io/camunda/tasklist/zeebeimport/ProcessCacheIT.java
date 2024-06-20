@@ -31,6 +31,7 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
   @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
   private TestCheck processIsDeployedCheck;
 
+  @Override
   @AfterEach
   public void after() {
     super.after();

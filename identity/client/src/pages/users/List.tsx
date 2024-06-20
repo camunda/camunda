@@ -8,23 +8,59 @@
 import { FC, useState } from "react";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import Page from "src/components/layout/Page";
+import Page, { PageTitle } from "src/components/layout/Page";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
-import { DocumentationLink } from "src/components/documentation";
+import {
+  documentationHref,
+  DocumentationLink,
+} from "src/components/documentation";
 import { getUsers, User } from "src/utility/api/users";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
+import AddModal from "src/pages/users/modals/AddModal";
+import EditModal from "src/pages/users/modals/EditModal";
+import DeleteModal from "src/pages/users/modals/DeleteModal";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
-
   const { data: users, loading, reload, success } = useApi(getUsers);
+  const [addUser, addUserModal] = useModal(AddModal, reload);
+  const [editUser, editUserModal] = useEntityModal(EditModal, reload);
+  const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ id }: User) => navigate(`${id}`);
+
+  if (success && !users?.length) {
+    return (
+      <Page>
+        <PageTitle>
+          <Translate>Groups</Translate>
+        </PageTitle>
+        <C3EmptyState
+          heading={t("You don’t have any users yet")}
+          description={t(
+            "Roles, permissions, and authorizations can be applied to a user.",
+          )}
+          button={{
+            label: t("Create a user"),
+            onClick: addUser,
+          }}
+          link={{
+            href: documentationHref("/concepts/access-control/users", ""),
+            label: t("Learn more about groups"),
+          }}
+        />
+        {addUserModal}
+      </Page>
+    );
+  }
 
   return (
     <Page>
@@ -35,8 +71,23 @@ const List: FC = () => {
           { header: t("Username"), key: "username" },
           { header: t("Email"), key: "email" },
         ]}
+        menuItems={[
+          {
+            label: t("Edit user"),
+            onClick: editUser,
+            icon: Edit,
+          },
+          {
+            label: t("Delete user"),
+            icon: TrashCan,
+            onClick: deleteUser,
+            isDangerous: true,
+          },
+        ]}
         sortProperty="username"
         onEntityClick={showDetails}
+        addEntityLabel={t("Create user")}
+        onAddEntity={addUser}
         onSearch={setSearch}
         loading={loading}
       />
@@ -52,6 +103,9 @@ const List: FC = () => {
           actionButton={{ label: "Retry", onClick: reload }}
         />
       )}
+      {addUserModal}
+      {editUserModal}
+      {deleteUserModal}
     </Page>
   );
 };
