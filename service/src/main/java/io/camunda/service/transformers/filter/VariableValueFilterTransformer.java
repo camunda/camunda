@@ -22,6 +22,11 @@ public final class VariableValueFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final VariableValueFilter value) {
+    return toSearchQuery(value, "varName", "varValue");
+  }
+
+  public SearchQuery toSearchQuery(
+      final VariableValueFilter value, final String varName, final String varValue) {
     final var name = value.name();
     final var eq = value.eq();
     final var neq = value.neq();
@@ -30,15 +35,15 @@ public final class VariableValueFilterTransformer
     final var lt = value.lt();
     final var lte = value.lte();
 
-    final var variableNameQuery = term("varName", name);
+    final var variableNameQuery = term(varName, name);
     final SearchQuery variableValueQuery;
 
     if (eq != null) {
-      variableValueQuery = of(eq);
+      variableValueQuery = of(eq, varValue);
     } else if (neq != null) {
-      variableValueQuery = not(of(neq));
+      variableValueQuery = not(of(neq, varValue));
     } else {
-      final var builder = range().field("varValue");
+      final var builder = range().field(varValue);
 
       if (gt != null) {
         builder.gt(gt);
@@ -62,8 +67,8 @@ public final class VariableValueFilterTransformer
     return and(variableNameQuery, variableValueQuery);
   }
 
-  private SearchQuery of(final Object value) {
+  private SearchQuery of(final Object value, final String field) {
     final var typedValue = TypedValue.toTypedValue(value);
-    return SearchQueryBuilders.term().field("varValue").value(typedValue).build().toSearchQuery();
+    return SearchQueryBuilders.term().field(field).value(typedValue).build().toSearchQuery();
   }
 }
