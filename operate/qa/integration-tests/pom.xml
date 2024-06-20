@@ -47,6 +47,12 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-zeebe</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.data</groupId>
+          <artifactId>spring-data-jpa</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -175,7 +181,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -231,6 +237,11 @@
     <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -344,11 +355,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.vaadin.external.google</groupId>
-      <artifactId>android-json</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
       <scope>test</scope>
@@ -417,7 +423,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.2.5</version>
+        <version>3.3.0</version>
         <configuration>
           <skipITs>false</skipITs>
           <includes>
@@ -452,11 +458,9 @@
         <configuration>
           <usedDependencies>
             <dependency>io.camunda:operate-mvc-auth-commons</dependency>
-            <dependency>com.vaadin.external.google:android-json</dependency>
           </usedDependencies>
           <ignoredDependencies>
             <dependency>io.camunda:tasklist-mvc-auth-commons</dependency>
-            <dependency>org.json:json:jar</dependency>
           </ignoredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>

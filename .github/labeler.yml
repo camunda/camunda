@@ -51,3 +51,10 @@ component/tasklist:
           - 'tasklist/**'
           - 'tasklist.Dockerfile'
           - 'webapps-common/**'
+component/build-pipeline:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - 'maven-settings.xml'

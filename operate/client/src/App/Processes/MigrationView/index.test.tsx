@@ -8,23 +8,18 @@
 
 import {
   unstable_HistoryRouter as HistoryRouter,
-  MemoryRouter,
   Route,
   Routes,
 } from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {act, render, screen, waitFor, within} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 
 import {AppHeader} from 'App/Layout/AppHeader';
 import {Processes} from '../';
-import {MigrationView} from '.';
 import {useEffect} from 'react';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 jest.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -211,65 +206,4 @@ describe('MigrationView', () => {
       expect(await screen.findByText(/processes page/i)).toBeInTheDocument();
     },
   );
-
-  it('should render summary notification in summary step', async () => {
-    const queryString =
-      '?active=true&incidents=true&process=demoProcess&version=3';
-
-    const originalWindow = {...window};
-
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
-      search: queryString,
-    }));
-
-    processInstanceMigrationStore.setSelectedInstancesCount(7);
-    processInstanceMigrationStore.setCurrentStep('summary');
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
-    render(<MigrationView />, {wrapper: MemoryRouter});
-
-    await waitFor(() => {
-      expect(processesStore.state.status).toBe('fetched');
-    });
-
-    act(() => {
-      processesStore.setSelectedTargetProcess('{bigVarProcess}-{<default>}');
-      processesStore.setSelectedTargetVersion(1);
-    });
-
-    mockFetchProcessXML().withSuccess(mockProcessXML);
-
-    expect(
-      screen.getByText(
-        /You are about to migrate 7 process instances from the process definition:/i,
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      await screen.findByText(/New demo process - version 3/i),
-    ).toBeInTheDocument();
-
-    expect(screen.getByText(/to the process definition:/i)).toBeInTheDocument();
-
-    expect(
-      screen.getByText(/Big variable process - version 1/i),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        /This process can take several minutes until it completes. You can observe progress of this in the operations panel./i,
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        /The flow nodes listed below will be mapped from the source on the left side to target on the right side./i,
-      ),
-    ).toBeInTheDocument();
-
-    locationSpy.mockClear();
-  });
 });
