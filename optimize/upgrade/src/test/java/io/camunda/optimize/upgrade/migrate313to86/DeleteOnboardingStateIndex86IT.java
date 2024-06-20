@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.upgrade.migrate313to314;
+package io.camunda.optimize.upgrade.migrate313to86;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,7 +13,7 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-public class DeleteOnboardingStateIndex314IT extends AbstractUpgrade314IT {
+public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
 
   @Test
   @SneakyThrows
