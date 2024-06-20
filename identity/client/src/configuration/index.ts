@@ -1,4 +1,4 @@
-export const baseUrl = "/";
+export const baseUrl = "/identity";
 
 export const apiBaseUrl = "/api";
 
