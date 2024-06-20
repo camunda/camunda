@@ -23,7 +23,7 @@ paths:
         - $ref: '#/components/parameters/ExporterId'
       responses:
         '202':
-          $ref: "#/components/responses/ExporterDisableResponse"
+          $ref: "#/components/responses/ExporterOperationResponse"
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
         '409':
@@ -41,9 +41,15 @@ paths:
     post:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableExporterRequest"
       responses:
         '202':
-          $ref: "#/components/responses/ExporterDisableResponse"
+          $ref: "#/components/responses/ExporterOperationResponse"
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
         '409':
@@ -77,8 +83,8 @@ components:
         $ref: 'components.yaml#/schemas/ExporterId'
 
   responses:
-    ExporterDisableResponse:
-      description: Request to disable exporters is accepted.
+    ExporterOperationResponse:
+      description: Request to disable or enable exporter is accepted.
       content:
         application.json:
           schema:
@@ -105,4 +111,13 @@ components:
             - DISABLED
             - UNKNOWN
           description: Status of the exporter
+          example: "ENABLED"
+
+    EnableExporterRequest:
+      type: object
+      properties:
+        initializeFrom:
+          type: string
+          description: Id of the exporter to initialize from
+          example: "exporter-1"
 

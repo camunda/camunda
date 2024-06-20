@@ -172,7 +172,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.0</version.keycloak>
+    <version.keycloak>25.0.1</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -808,6 +808,14 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- camunda java client -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
@@ -926,6 +934,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-authentication</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-webjar</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1220,6 +1234,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-client-java</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -2889,6 +2909,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
+                <dep>io.camunda:zeebe-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>
