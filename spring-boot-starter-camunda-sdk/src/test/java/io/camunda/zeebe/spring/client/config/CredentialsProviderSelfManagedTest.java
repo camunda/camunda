@@ -64,9 +64,7 @@ public class CredentialsProviderSelfManagedTest {
 
   @RegisterExtension
   static WireMockExtension wm =
-      WireMockExtension.newInstance()
-          .options(new WireMockConfiguration().dynamicPort())
-          .build();
+      WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
   private static final String ACCESS_TOKEN =
       JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
