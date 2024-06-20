@@ -12,6 +12,7 @@ jobs:
     with:
       identifier: camunda-helm-int
       camunda-helm-dir: camunda-platform-alpha
+      camunda-helm-git-ref: preflightVars_tasklist_operate
       test-enabled: true
       caller-git-ref: main
       extra-values: |
