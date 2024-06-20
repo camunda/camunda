@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
@@ -16,9 +15,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -46,7 +43,7 @@ public class JobController {
     return RequestMapper.toJobsActivationRequest(activationRequest)
         .fold(
             brokerRequest -> sendBrokerRequest(brokerRequest, activationRequest),
-            JobController::handleRequestMappingError);
+            RestErrorMapper::mapProblemToCompletedResponse);
   }
 
   private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
@@ -63,32 +60,5 @@ public class JobController {
           responseObserver.invokeCancelationHandler();
           return res;
         });
-  }
-
-  private static CompletableFuture<ResponseEntity<Object>> handleRequestMappingError(
-      final ProblemDetail problemDetail) {
-    return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
-  }
-
-  public static ProblemDetail mapRejectionToProblem(final BrokerRejection rejection) {
-    final String message =
-        String.format(
-            "Command '%s' rejected with code '%s': %s",
-            rejection.intent(), rejection.type(), rejection.reason());
-    final String title = rejection.type().name();
-    return switch (rejection.type()) {
-      case NOT_FOUND:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.NOT_FOUND, message, title);
-      case INVALID_STATE:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
-      case INVALID_ARGUMENT:
-      case ALREADY_EXISTS:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
-      default:
-        {
-          yield RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, message, title);
-        }
-    };
   }
 }
