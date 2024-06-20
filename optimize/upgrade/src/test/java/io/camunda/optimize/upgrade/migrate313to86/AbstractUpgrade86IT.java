@@ -8,8 +8,8 @@
 package io.camunda.optimize.upgrade.migrate313to86;
 
 import io.camunda.optimize.upgrade.AbstractUpgradeIT;
-import io.camunda.optimize.upgrade.migrate313to314.indices.OnboardingStateIndexV2;
-import io.camunda.optimize.upgrade.migrate313to314.indices.SettingsIndexV2;
+import io.camunda.optimize.upgrade.migrate313to86.indices.OnboardingStateIndexV2;
+import io.camunda.optimize.upgrade.migrate313to86.indices.SettingsIndexV2;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import java.util.List;
