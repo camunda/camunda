@@ -54,8 +54,8 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
     return Math.toIntExact(snapshotChunkSize.toBytes());
   }
 
-  public void setSnapshotChunkSize(final int snapshotChunkSize) {
-    this.snapshotChunkSize = DataSize.ofBytes(snapshotChunkSize);
+  public void setSnapshotChunkSize(final DataSize snapshotChunkSize) {
+    this.snapshotChunkSize = snapshotChunkSize;
   }
 
   public Duration getConfigurationChangeTimeout() {
