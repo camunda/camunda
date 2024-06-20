@@ -15,10 +15,12 @@ import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.StringWriter;
+import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
-
+  // 2kb is half of the default nginx ingress proxy header size
+  public static final int VALIDATION_RESULTS_OUTPUT_MAX_SIZE = 2000;
   private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;
 
@@ -45,8 +47,8 @@ public final class BpmnValidator {
 
     if (results1.hasErrors() || results2.hasErrors()) {
       final StringWriter writer = new StringWriter();
-      results1.write(writer, formatter);
-      results2.write(writer, formatter);
+      final var results = new ModelValidationResultsImpl(results1, results2);
+      results.write(writer, formatter, VALIDATION_RESULTS_OUTPUT_MAX_SIZE);
 
       return writer.toString();
     } else {
