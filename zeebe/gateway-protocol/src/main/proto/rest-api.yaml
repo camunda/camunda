@@ -658,6 +658,9 @@ components:
         key:
           type: integer
           format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
         processVersion:
           type: integer
           format: int32
