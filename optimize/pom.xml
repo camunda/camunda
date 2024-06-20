@@ -545,7 +545,7 @@
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>
-            <developmentBranch>master</developmentBranch>
+            <developmentBranch>test-optimize-release</developmentBranch>
             <supportBranchPrefix>maintenance/</supportBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
