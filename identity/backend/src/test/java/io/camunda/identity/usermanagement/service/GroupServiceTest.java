@@ -113,7 +113,7 @@ public class GroupServiceTest {
     final var newGroupName = "newGr" + UUID.randomUUID();
     final CamundaGroup createdGroup = groupService.createGroup(new CamundaGroup(groupName));
 
-    groupService.updateGroup(createdGroup.id(), new CamundaGroup(newGroupName));
+    groupService.updateGroup(createdGroup.id(), new CamundaGroup(createdGroup.id(), newGroupName));
 
     final var group = groupService.findGroupById(createdGroup.id());
     assertNotNull(group);
