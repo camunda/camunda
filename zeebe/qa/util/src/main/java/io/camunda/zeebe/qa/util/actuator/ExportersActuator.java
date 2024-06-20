@@ -20,6 +20,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -101,6 +102,15 @@ public interface ExportersActuator {
   @RequestLine("POST /{exporterId}/enable")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse enableExporter(@Param final String exporterId);
+
+  /**
+   * Returns the list of exporters with their status
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<ExporterStatus> getExporters();
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   @JsonInclude(Include.NON_EMPTY)

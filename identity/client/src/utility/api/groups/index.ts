@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
-import { User } from "src/utility/api/users";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -23,14 +22,6 @@ export type GetGroupParams = {
 
 export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({ id }) =>
   apiGet(`${GROUPS_ENDPOINT}/${id}`);
-
-export type GetGroupUsersParams = {
-  id: string;
-};
-
-export const getGroupUsers: ApiDefinition<User[], GetGroupUsersParams> = ({
-  id,
-}) => apiGet(`${GROUPS_ENDPOINT}/${id}/users`);
 
 export type CreateGroupParams = { name: Group["name"] };
 
