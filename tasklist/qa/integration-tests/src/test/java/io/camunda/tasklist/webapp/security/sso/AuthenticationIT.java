@@ -50,13 +50,13 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
+import jakarta.json.Json;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -155,7 +155,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         5L);
   }
 
-  private static String toEncodedToken(final Map<String, ?> map) {
+  private static String toEncodedToken(final Map<String, Object> map) {
     return toBase64(toJSON(map));
   }
 
@@ -163,8 +163,8 @@ public class AuthenticationIT implements AuthenticationTestable {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(final Map<String, ?> map) {
-    return new JSONObject(map).toString();
+  private static String toJSON(final Map<String, Object> map) {
+    return Json.createObjectBuilder(map).build().toString();
   }
 
   @BeforeEach

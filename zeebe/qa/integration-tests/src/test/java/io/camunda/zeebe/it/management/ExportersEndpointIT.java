@@ -15,6 +15,8 @@ import feign.FeignException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStateCode;
+import io.camunda.zeebe.management.cluster.ExporterStatus;
+import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -90,6 +92,13 @@ final class ExportersEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     assertThat(recordsBeforeDisable).isEqualTo(recordsAfterDisable);
+
+    assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
+        .describedAs("Exporter is disabled")
+        .hasSize(1)
+        .first()
+        .isEqualTo(
+            new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.DISABLED));
   }
 
   private boolean hasExporterDisabled(final BrokerState b) {
@@ -131,6 +140,12 @@ final class ExportersEndpointIT {
     Awaitility.await("Record is exported")
         .until(
             () -> RecordingExporter.messageRecords().withName(messageName).findFirst().isPresent());
+
+    assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
+        .describedAs("Exporter is enabled")
+        .hasSize(1)
+        .first()
+        .isEqualTo(new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.ENABLED));
   }
 
   private void waitUntilOperationIsApplied(final PlannedOperationsResponse response) {

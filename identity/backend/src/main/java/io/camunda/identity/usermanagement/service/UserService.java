@@ -63,11 +63,9 @@ public class UserService {
   }
 
   public CamundaUser findUserById(final Long id) {
-    final var user = userProfileRepository.findUserById(id);
-    if (user == null) {
-      throw new RuntimeException("user.notFound");
-    }
-    return user;
+    return userProfileRepository
+        .findUserById(id)
+        .orElseThrow(() -> new RuntimeException("user.notFound"));
   }
 
   public CamundaUser findUserByUsername(final String username) {
@@ -86,13 +84,14 @@ public class UserService {
     return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
+  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
     try {
-      if (user.getId() != null && !Objects.equals(id, user.getId())) {
+      if (userWithPassword.getId() != null && !Objects.equals(id, userWithPassword.getId())) {
         throw new RuntimeException("user.notFound");
       }
-      final CamundaUser existingUser = userProfileRepository.findUserById(id);
-      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
+      final CamundaUser existingUser = findUserById(id);
+      if (existingUser == null
+          || !existingUser.getUsername().equals(userWithPassword.getUsername())) {
         throw new RuntimeException("user.notFound");
       }
 
@@ -102,17 +101,20 @@ public class UserService {
       final var userBuilder =
           User.withUsername(existingUser.getUsername())
               .authorities(existingUserDetail.getAuthorities())
-              .disabled(!user.isEnabled())
+              .disabled(!userWithPassword.isEnabled())
               .password(
-                  StringUtils.hasText(user.getPassword())
-                      ? user.getPassword()
+                  StringUtils.hasText(userWithPassword.getPassword())
+                      ? userWithPassword.getPassword()
                       : existingUserDetail.getPassword())
               .passwordEncoder(passwordEncoder::encode);
 
       final UserDetails userDetails = userBuilder.build();
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(id, user.getEmail()));
-      return userProfileRepository.findUserById(id);
+      userProfileRepository.save(new Profile(id, userWithPassword.getEmail()));
+
+      return userProfileRepository
+          .findUserById(id)
+          .orElseThrow(() -> new RuntimeException("user.notFound"));
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }
