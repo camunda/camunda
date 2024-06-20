@@ -224,7 +224,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPassword"
+              $ref: "#/components/schemas/CamundaUserWithPasswordDto"
         required: true
       responses:
         "201":
@@ -232,10 +232,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/CamundaUserDto"
+        "400":
+          description: "Bad request"
+          content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users/{id}:
     delete:
       tags:
@@ -252,6 +279,36 @@ paths:
       responses:
         "204":
           description: "No Content"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     get:
       tags:
         - User
@@ -270,10 +327,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/CamundaUserDto"
+        "400":
+          description: "Bad request"
+          content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
     put:
       tags:
         - User
@@ -290,7 +374,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPassword"
+              $ref: "#/components/schemas/CamundaUserWithPasswordDto"
         required: true
       responses:
         "200":
@@ -298,10 +382,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/CamundaUserDto"
+        "400":
+          description: "Bad request"
+          content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users/search:
     post:
       tags:
@@ -320,10 +431,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/UserSearchResponseDto"
+        "400":
+          description: "Bad request"
+          content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 components:
   responses:
     TopologyResponse:
@@ -636,11 +774,9 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
-    CamundaUserWithPassword:
+    CamundaUserWithPasswordDto:
       type: "object"
       properties:
-        password:
-          type: "string"
         id:
           type: "integer"
           format: "int64"
@@ -650,7 +786,9 @@ components:
           type: "string"
         enabled:
           type: "boolean"
-    CamundaUser:
+        password:
+          type: "string"
+    CamundaUserDto:
       type: "object"
       properties:
         id:
@@ -683,14 +821,13 @@ components:
         page:
           type: "object"
           properties: { }
-    SearchResponseDto:
+    UserSearchResponseDto:
       type: "object"
       properties:
         items:
           type: array
           items:
-            allOf:
-              - $ref: '#/components/schemas/CamundaUser'
+            $ref: '#/components/schemas/CamundaUserDto'
         page:
           type: "object"
           properties: { }

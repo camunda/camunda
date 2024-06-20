@@ -10,9 +10,11 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.SearchResponseDto;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,8 +40,9 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
-  public CamundaUser createUser(@RequestBody final CamundaUserWithPassword user) {
-    return userService.createUser(user);
+  public CamundaUserDto createUser(
+      @RequestBody final CamundaUserWithPasswordDto userWithPasswordDto) {
+    return mapToCamundaUserDto(userService.createUser(mapToUserWithPassword(userWithPasswordDto)));
   }
 
   @DeleteMapping(path = "/{id}")
@@ -51,18 +54,18 @@ public class UserController {
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaUser findUserByUsername(@PathVariable final Long id) {
-    return userService.findUserById(id);
+  public CamundaUserDto findUserByUsername(@PathVariable final Long id) {
+    return mapToCamundaUserDto(userService.findUserById(id));
   }
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public SearchResponseDto<CamundaUser> findAllUsers(
-      @RequestBody final SearchRequestDto searchRequestDto) {
-    final SearchResponseDto<CamundaUser> responseDto = new SearchResponseDto<>();
-    final List<CamundaUser> allUsers = userService.findAllUsers();
+  public UserSearchResponseDto findAllUsers(@RequestBody final SearchRequestDto searchRequestDto) {
+    final UserSearchResponseDto responseDto = new UserSearchResponseDto();
+    final List<CamundaUserDto> allUsers =
+        userService.findAllUsers().stream().map(this::mapToCamundaUserDto).toList();
     responseDto.setItems(allUsers);
 
     return responseDto;
@@ -72,8 +75,30 @@ public class UserController {
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CamundaUser updateUser(
-      @PathVariable final Long id, @RequestBody final CamundaUserWithPassword user) {
-    return userService.updateUser(id, user);
+  public CamundaUserDto updateUser(
+      @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordDto user) {
+    return mapToCamundaUserDto(userService.updateUser(id, mapToUserWithPassword(user)));
+  }
+
+  private CamundaUserWithPassword mapToUserWithPassword(final CamundaUserWithPasswordDto dto) {
+    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
+
+    camundaUserWithPassword.setId(dto.getId());
+    camundaUserWithPassword.setUsername(dto.getUsername());
+    camundaUserWithPassword.setPassword(dto.getPassword());
+    camundaUserWithPassword.setEmail(dto.getEmail());
+    camundaUserWithPassword.setEnabled(dto.getEnabled());
+
+    return camundaUserWithPassword;
+  }
+
+  private CamundaUserDto mapToCamundaUserDto(final CamundaUser camundaUser) {
+    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    camundaUserDto.setId(camundaUser.getId());
+    camundaUserDto.setUsername(camundaUser.getUsername());
+    camundaUserDto.setEmail(camundaUser.getEmail());
+    camundaUserDto.setEnabled(camundaUser.isEnabled());
+
+    return camundaUserDto;
   }
 }
