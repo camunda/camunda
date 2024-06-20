@@ -7,6 +7,7 @@
  */
 package io.camunda.application.initializers;
 
+import static io.camunda.application.Profile.AUTH_BASIC;
 import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.IDENTITY_AUTH;
 import static io.camunda.application.Profile.OPERATE;
@@ -34,7 +35,7 @@ public class WebappsConfigurationInitializer
   private static final Set<String> WEBAPPS_PROFILES =
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
   private static final Set<String> LOGIN_DELEGATED_PROFILES =
-      Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId());
+      Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId(), AUTH_BASIC.getId());
 
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
