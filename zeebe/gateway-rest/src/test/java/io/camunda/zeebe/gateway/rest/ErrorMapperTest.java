@@ -8,12 +8,15 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 
+import io.camunda.service.CamundaServiceException;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.UserTaskServices;
+import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
-import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
-import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -26,7 +29,6 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,28 +62,24 @@ public class ErrorMapperTest {
 
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
-  @MockBean BrokerClient brokerClient;
-  Supplier<CompletableFuture<BrokerResponse<Object>>> brokerResponseFutureSupplier;
+  @MockBean UserTaskServices userTaskServices;
 
   @Autowired private WebTestClient webClient;
 
   @BeforeEach
   void setUp() {
-    brokerResponseFutureSupplier =
-        () -> CompletableFuture.supplyAsync(() -> new BrokerResponse<>(new UserTaskRecord()));
-    Mockito.when(brokerClient.sendRequest(any()))
-        .thenAnswer(i -> brokerResponseFutureSupplier.get());
+    Mockito.when(userTaskServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(userTaskServices);
   }
 
   @Test
-  public void shouldYieldNotFoundWhenBrokerErrorNotFound() {
+  void shouldYieldNotFoundWhenBrokerErrorNotFound() {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerErrorResponse<>(
-                        new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error")));
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -104,14 +102,13 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldYieldTooManyRequestsWhenBrokerErrorExhausted() {
+  void shouldYieldTooManyRequestsWhenBrokerErrorExhausted() {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerErrorResponse<>(
-                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error")));
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -134,14 +131,13 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldYieldUnavailableWhenBrokerErrorLeaderMismatch() {
+  void shouldYieldUnavailableWhenBrokerErrorLeaderMismatch() {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () ->
-                    new BrokerErrorResponse<>(
-                        new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error")));
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -178,10 +174,10 @@ public class ErrorMapperTest {
       })
   public void shouldYieldInternalErrorWhenBrokerError(final ErrorCode errorCode) {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () -> new BrokerErrorResponse<>(new BrokerError(errorCode, "Just an error")));
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(new BrokerError(errorCode, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -210,12 +206,10 @@ public class ErrorMapperTest {
   @Test
   public void shouldYieldInternalErrorWhenException() {
     // given
-    brokerResponseFutureSupplier =
-        () ->
-            CompletableFuture.supplyAsync(
-                () -> {
-                  throw new NullPointerException("Just an error");
-                });
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(new NullPointerException("Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -260,7 +254,7 @@ public class ErrorMapperTest {
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
-    Mockito.verifyNoInteractions(brokerClient);
+    Mockito.verifyNoInteractions(userTaskServices);
   }
 
   @SpringBootApplication(
