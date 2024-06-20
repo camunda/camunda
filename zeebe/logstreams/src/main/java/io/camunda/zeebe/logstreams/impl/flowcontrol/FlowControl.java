@@ -43,7 +43,7 @@ public final class FlowControl implements AppendListener {
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
             : new NoopLimiter<>();
-    writeRateLimiter = writeRateLimit.limiter();
+    writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
   }
 
   /**
