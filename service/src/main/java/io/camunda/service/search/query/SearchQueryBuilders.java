@@ -40,4 +40,13 @@ public final class SearchQueryBuilders {
       final Function<VariableQuery.Builder, ObjectBuilder<VariableQuery>> fn) {
     return fn.apply(variableSearchQuery()).build();
   }
+
+  public static ProcessDefinitionQuery.Builder processDefinitionSearchQuery() {
+    return new ProcessDefinitionQuery.Builder();
+  }
+
+  public static ProcessDefinitionQuery processDefinitionSearchQuery(
+      final Function<ProcessDefinitionQuery.Builder, ObjectBuilder<ProcessDefinitionQuery>> fn) {
+    return fn.apply(processDefinitionSearchQuery()).build();
+  }
 }

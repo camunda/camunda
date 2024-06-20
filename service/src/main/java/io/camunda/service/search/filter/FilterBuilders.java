@@ -58,4 +58,13 @@ public final class FilterBuilders {
       final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
     return fn.apply(dateValue()).build();
   }
+
+  public static ProcessDefinitionFilter.Builder processDefinition() {
+    return new ProcessDefinitionFilter.Builder();
+  }
+
+  public static ProcessDefinitionFilter processDefinition(
+      final Function<ProcessDefinitionFilter.Builder, ObjectBuilder<ProcessDefinitionFilter>> fn) {
+    return fn.apply(processDefinition()).build();
+  }
 }

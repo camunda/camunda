@@ -26,6 +26,10 @@ public final class SortOptionBuilders {
     return new VariableSort.Builder();
   }
 
+  public static ProcessDefinitionSort.Builder processDefinition() {
+    return new ProcessDefinitionSort.Builder();
+  }
+
   public static ProcessInstanceSort processInstance(
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     return fn.apply(processInstance()).build();
@@ -39,5 +43,10 @@ public final class SortOptionBuilders {
   public static VariableSort variable(
       final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static ProcessDefinitionSort processDefinition(
+      final Function<ProcessDefinitionSort.Builder, ObjectBuilder<ProcessDefinitionSort>> fn) {
+    return fn.apply(processDefinition()).build();
   }
 }

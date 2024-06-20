@@ -36,6 +36,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new VariableServices(searchClient, transformers, authentication);
   }
 
+  public ProcessDefinitionServices processDefinitionServices() {
+    return new ProcessDefinitionServices(searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(searchClient, transformers, authentication);

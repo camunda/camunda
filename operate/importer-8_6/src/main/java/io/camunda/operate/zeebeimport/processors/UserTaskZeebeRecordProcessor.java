@@ -135,6 +135,7 @@ public class UserTaskZeebeRecordProcessor {
     final Intent intent = userTaskRecord.getIntent();
     LOGGER.info("Intent is: {}", intent);
     final var userTaskValue = userTaskRecord.getValue();
+
     final UserTaskEntity userTaskEntity;
     try {
       userTaskEntity = createEntity(userTaskRecord);

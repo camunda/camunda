@@ -11,6 +11,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.FilterBase;
+import io.camunda.service.search.filter.ProcessDefinitionFilter;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableFilter;
@@ -28,6 +29,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
+import io.camunda.service.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.service.transformers.filter.VariableFilterTransformer;
@@ -98,5 +100,6 @@ public final class ServiceTransformers {
     mappers.put(
         VariableFilter.class,
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
+    mappers.put(ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers));
   }
 }
