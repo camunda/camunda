@@ -53,4 +53,29 @@ public abstract class ApiServices<T extends ApiServices<T>> {
       final Function<Authentication.Builder, ObjectBuilder<Authentication>> fn) {
     return withAuthentication(fn.apply(new Authentication.Builder()).build());
   }
+
+  protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
+    brokerRequest.setAuthorization(authentication.token());
+    return brokerClient
+        .sendRequest(brokerRequest)
+        .handleAsync(
+            (response, error) -> {
+              if (error != null) {
+                throw new CamundaServiceException(error);
+              }
+              if (response.isError()) {
+                throw new CamundaServiceException(response.getError());
+              }
+              if (response.isRejection()) {
+                throw new CamundaServiceException(response.getRejection());
+              }
+              return response.getResponse();
+            });
+  }
+
+  protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {
+    return value == null || value.isEmpty()
+        ? DocumentValue.EMPTY_DOCUMENT
+        : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+  }
 }

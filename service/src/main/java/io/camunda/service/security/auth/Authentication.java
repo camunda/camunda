@@ -13,10 +13,11 @@ import io.camunda.service.search.filter.FilterBase;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public final record Authentication(
+public record Authentication(
     String authenticatedUserId,
     List<String> authenticatedGroupIds,
-    List<String> authenticatedTenantIds)
+    List<String> authenticatedTenantIds,
+    String token)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<Authentication> {
@@ -24,6 +25,7 @@ public final record Authentication(
     private String user;
     private List<String> groups;
     private List<String> tenants;
+    private String token;
 
     public Builder user(final String value) {
       user = value;
@@ -48,9 +50,14 @@ public final record Authentication(
       return this;
     }
 
+    public Builder token(final String value) {
+      token = value;
+      return this;
+    }
+
     @Override
     public Authentication build() {
-      return new Authentication(user, groups, tenants);
+      return new Authentication(user, groups, tenants, token);
     }
   }
 }
