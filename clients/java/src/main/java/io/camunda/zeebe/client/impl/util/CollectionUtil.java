@@ -35,9 +35,8 @@ public final class CollectionUtil {
     return result;
   }
 
-  public static <T> List<T> collectValues(final T value, final T... values) {
+  public static <T> List<T> toList(final T... values) {
     final List<T> collectedValues = new ArrayList<>();
-    collectedValues.add(value);
     if (values != null && values.length > 0) {
       collectedValues.addAll(Arrays.asList(values));
     }

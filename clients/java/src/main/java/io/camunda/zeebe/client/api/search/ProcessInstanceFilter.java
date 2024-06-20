@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final Long value, final Long... values);
+  ProcessInstanceFilter processInstanceKeys(final Long... values);
 
   /** Filter by process instance keys. */
   ProcessInstanceFilter processInstanceKeys(final List<Long> values);

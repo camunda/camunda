@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.search;
 
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
 import static io.camunda.zeebe.client.impl.util.CollectionUtil.addValuesToList;
-import static io.camunda.zeebe.client.impl.util.CollectionUtil.collectValues;
+import static io.camunda.zeebe.client.impl.util.CollectionUtil.toList;
 
 import io.camunda.zeebe.client.api.search.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.VariableValueFilter;
@@ -37,8 +37,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKeys(final Long value, final Long... values) {
-    return processInstanceKeys(collectValues(value, values));
+  public ProcessInstanceFilter processInstanceKeys(final Long... values) {
+    return processInstanceKeys(toList(values));
   }
 
   @Override
