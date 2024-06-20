@@ -22,6 +22,7 @@ import static io.camunda.zeebe.client.impl.util.CollectionUtil.collectValues;
 import io.camunda.zeebe.client.api.search.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.VariableValueFilter;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -48,8 +49,8 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter variable(final VariableValueFilter value) {
-    final VariableValueFilterImpl variableFilter = (VariableValueFilterImpl) value;
-    filter.addVariablesItem(variableFilter.getSearchRequestProperty());
+    final VariableValueFilterRequest variableFilter = provideSearchRequestProperty(value);
+    filter.addVariablesItem(variableFilter);
     return this;
   }
 

@@ -18,4 +18,14 @@ package io.camunda.zeebe.client.impl.search;
 public abstract class TypedSearchRequestPropertyProvider<T> {
 
   protected abstract T getSearchRequestProperty();
+
+  public static <T> T provideSearchRequestProperty(final Object value) {
+    if (value instanceof TypedSearchRequestPropertyProvider) {
+      final TypedSearchRequestPropertyProvider<T> provider =
+          (TypedSearchRequestPropertyProvider<T>) value;
+      return provider.getSearchRequestProperty();
+    }
+    throw new UnsupportedOperationException(
+        "Passed value is not of type " + TypedSearchRequestPropertyProvider.class);
+  }
 }

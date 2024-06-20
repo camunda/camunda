@@ -30,9 +30,13 @@ import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -55,8 +59,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
-    final ProcessInstanceFilterImpl filter = (ProcessInstanceFilterImpl) value;
-    request.setFilter(filter.getSearchRequestProperty());
+    final ProcessInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    request.setFilter(filter);
     return this;
   }
 
@@ -67,8 +71,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery sort(final ProcessInstanceSort value) {
-    final ProcessInstanceSortImpl sorting = (ProcessInstanceSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
+    request.setSort(sorting);
     return this;
   }
 
@@ -79,8 +83,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+    final SearchQueryPageRequest page = provideSearchRequestProperty(value);
+    request.setPage(page);
     return this;
   }
 
