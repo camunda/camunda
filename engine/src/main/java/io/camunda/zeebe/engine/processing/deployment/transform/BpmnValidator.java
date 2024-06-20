@@ -19,19 +19,20 @@ import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
-  // 2kb is half of the default nginx ingress proxy header size
-  public static final int VALIDATION_RESULTS_OUTPUT_MAX_SIZE = 2000;
   private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;
-
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
+  private final int validatorResultsOutputMaxSize;
 
   public BpmnValidator(
-      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
+      final ExpressionLanguage expressionLanguage,
+      final ExpressionProcessor expressionProcessor,
+      final int validatorResultsOutputMaxSize) {
     designTimeAspectValidator = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
     runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
+    this.validatorResultsOutputMaxSize = validatorResultsOutputMaxSize;
   }
 
   public String validate(final BpmnModelInstance modelInstance) {
@@ -48,7 +49,7 @@ public final class BpmnValidator {
     if (results1.hasErrors() || results2.hasErrors()) {
       final StringWriter writer = new StringWriter();
       final var results = new ModelValidationResultsImpl(results1, results2);
-      results.write(writer, formatter, VALIDATION_RESULTS_OUTPUT_MAX_SIZE);
+      results.write(writer, formatter, validatorResultsOutputMaxSize);
 
       return writer.toString();
     } else {
