@@ -18,7 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,7 +27,7 @@ import java.util.Set;
 public class Role {
 
   @Id
-  @NotNull
+  @NotBlank
   @Column(name = "authority")
   private String name;
 
