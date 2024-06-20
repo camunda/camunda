@@ -65,12 +65,7 @@ public class GroupService {
     groupRepository.deleteById(groupId);
   }
 
-  public CamundaGroup renameGroup(final String name, final CamundaGroup group) {
-    camundaUserDetailsManager.renameGroup(name, group.name());
-    return findGroupByName(group.name());
-  }
-
-  public CamundaGroup renameGroupById(final Long groupId, final CamundaGroup updatedGroup) {
+  public CamundaGroup updateGroup(final Long groupId, final CamundaGroup updatedGroup) {
     final CamundaGroup group = findGroupById(groupId);
     camundaUserDetailsManager.renameGroup(group.name(), updatedGroup.name());
     return new CamundaGroup(groupId, updatedGroup.name());
