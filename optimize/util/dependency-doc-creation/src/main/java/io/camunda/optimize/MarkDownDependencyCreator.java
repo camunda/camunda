@@ -23,7 +23,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class MarkDownDependencyCreator {
-  private static final UrlValidator URL_VALIDATOR = new UrlValidator();
+  private static final UrlValidator urlValidator = new UrlValidator();
 
   private static final Map<String, String> LICENSE_TO_URL_MAP = new HashMap<>();
 
@@ -32,23 +32,23 @@ public class MarkDownDependencyCreator {
       System.err.println("Please provide a valid path to the backend license xml file!");
       return;
     }
-    final String licenseFilePath = args[0];
+    String licenseFilePath = args[0];
     try {
-      final File inputFile = new File(licenseFilePath);
-      final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+      File inputFile = new File(licenseFilePath);
+      DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
       dbFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-      final DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-      final Document doc = dBuilder.parse(inputFile);
+      DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+      Document doc = dBuilder.parse(inputFile);
       doc.getDocumentElement().normalize();
-      final NodeList nList = doc.getElementsByTagName("dependency");
-      final StringBuilder dependencyMarkdownPage = new StringBuilder();
+      NodeList nList = doc.getElementsByTagName("dependency");
+      StringBuilder dependencyMarkdownPage = new StringBuilder();
       dependencyMarkdownPage.append(createMarkdownHeader());
 
       for (int temp = 0; temp < nList.getLength(); temp++) {
-        final Node nNode = nList.item(temp);
+        Node nNode = nList.item(temp);
         if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-          final Element eElement = (Element) nNode;
-          final OptimizeDependency licenseLink = new OptimizeDependency();
+          Element eElement = (Element) nNode;
+          OptimizeDependency licenseLink = new OptimizeDependency();
           licenseLink.setProjectName(getElementTextContent(eElement, "artifactId"));
           licenseLink.setProjectVersion(getElementTextContent(eElement, "version"));
           final String licenseName = getElementTextContent(eElement, "name");
@@ -72,7 +72,7 @@ public class MarkDownDependencyCreator {
 
   private static String resolveLicenseUrl(final Element eElement, final String licenseName) {
     String licenseUrl = getElementTextContent(eElement, "url");
-    if (URL_VALIDATOR.isValid(licenseUrl)) {
+    if (urlValidator.isValid(licenseUrl)) {
       LICENSE_TO_URL_MAP.put(licenseName, licenseUrl);
     } else {
       licenseUrl = LICENSE_TO_URL_MAP.get(licenseName);
@@ -81,7 +81,7 @@ public class MarkDownDependencyCreator {
   }
 
   private static void createMarkdownFile(String markdownPageAsString) throws FileNotFoundException {
-    final PrintWriter out = new PrintWriter("./backend-dependencies.md");
+    PrintWriter out = new PrintWriter("./backend-dependencies.md");
     out.println(markdownPageAsString);
     out.flush();
     out.close();
@@ -103,7 +103,7 @@ public class MarkDownDependencyCreator {
   }
 
   private static String getElementTextContent(Element eElement, String tagName) {
-    final NodeList nodeList = eElement.getElementsByTagName(tagName);
+    NodeList nodeList = eElement.getElementsByTagName(tagName);
     if (nodeList != null && nodeList.getLength() > 0) {
       return nodeList.item(0).getTextContent();
     } else {
