@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -327,7 +326,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotPersistWhenSnapshotChecksumIsWrong() {
+  public void shouldPersistEvenIfCombinedChecksumDoesNotMatch() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -344,10 +343,9 @@ public class ReceivedSnapshotTest {
     }
 
     // then
-    assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .as(
-            "the snapshot should not be persisted since the computed checksum is not the reported one")
-        .hasCauseInstanceOf(InvalidSnapshotChecksum.class);
+    assertThat(receivedSnapshot.persist().join())
+        .as("The snapshot should persist with mis-match in combined checksums")
+        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
   }
 
   @Test
