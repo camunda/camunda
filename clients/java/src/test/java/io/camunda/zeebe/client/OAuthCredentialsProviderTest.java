@@ -360,7 +360,7 @@ public final class OAuthCredentialsProviderTest {
             WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
                 .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
                 .withHeader("Accept", equalTo("application/json"))
-                .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
                 .withRequestBody(equalTo(encodedBody))
                 .willReturn(
                     WireMock.aResponse()

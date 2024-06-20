@@ -808,6 +808,14 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- camunda java client -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
@@ -1220,6 +1228,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-client-java</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -2889,6 +2903,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
+                <dep>io.camunda:zeebe-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>
