@@ -17,25 +17,28 @@ import io.camunda.service.search.query.VariableQuery.Builder;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
 
-  public VariableServices(final CamundaSearchClient dataStoreClient) {
-    this(dataStoreClient, null, null);
+  public VariableServices(
+      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
+    this(brokerClient, dataStoreClient, null, null);
   }
 
   public VariableServices(
+      final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
-    super(searchClient, transformers, authentication);
+    super(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override
   public VariableServices withAuthentication(final Authentication authentication) {
-    return new VariableServices(searchClient, transformers, authentication);
+    return new VariableServices(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override
