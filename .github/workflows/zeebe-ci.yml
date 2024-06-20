@@ -102,7 +102,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -249,7 +249,7 @@ jobs:
         with:
           go: false
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
@@ -409,7 +409,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
@@ -541,7 +541,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           # we use a local registry for pushing
@@ -655,7 +655,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
