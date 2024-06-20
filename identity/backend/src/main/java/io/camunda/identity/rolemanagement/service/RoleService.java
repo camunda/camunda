@@ -9,14 +9,16 @@ package io.camunda.identity.rolemanagement.service;
 
 import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.repository.RoleRepository;
+import jakarta.validation.Valid;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 public class RoleService {
   private final RoleRepository roleRepository;
@@ -25,11 +27,7 @@ public class RoleService {
     this.roleRepository = roleRepository;
   }
 
-  public Role createRole(final Role role) {
-    if (!StringUtils.hasText(role.getName())) {
-      throw new RuntimeException("role.notValid");
-    }
-
+  public Role createRole(@Valid final Role role) {
     if (role.getPermissions() == null) {
       role.setPermissions(new HashSet<>());
     }
@@ -51,17 +49,9 @@ public class RoleService {
     return roleRepository.findAll();
   }
 
-  public Role updateRole(final String roleName, final Role role) {
-    if (!StringUtils.hasText(role.getName())) {
-      throw new RuntimeException("role.notValid");
-    }
-
+  public Role updateRole(final String roleName, @Valid final Role role) {
     if (!Objects.equals(roleName, role.getName())) {
       throw new RuntimeException("role.notFound");
-    }
-
-    if (role.getPermissions() == null) {
-      role.setPermissions(new HashSet<>());
     }
 
     final Role existingRole = findRoleByName(roleName);

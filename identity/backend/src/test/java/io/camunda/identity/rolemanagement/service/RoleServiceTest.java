@@ -47,7 +47,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -58,7 +58,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -69,7 +69,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -80,18 +80,21 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
   public void deleteRole_Works() {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
+    List<Role> allRoles = roleService.findAllRoles();
+    assertEquals(1, allRoles.size());
+
     roleService.deleteRoleByName(role.getName());
 
-    final List<Role> allRoles = roleService.findAllRoles();
+    allRoles = roleService.findAllRoles();
 
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(role.getName())));
   }
 
@@ -100,13 +103,13 @@ public class RoleServiceTest {
     final String randomString = RandomStringUtils.randomAlphabetic(2);
 
     List<Role> allRoles = roleService.findAllRoles();
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(randomString)));
 
     roleService.deleteRoleByName(randomString);
 
     allRoles = roleService.findAllRoles();
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(randomString)));
   }
 
@@ -153,7 +156,7 @@ public class RoleServiceTest {
         assertThrows(
             RuntimeException.class, () -> roleService.updateRole("validName", invalidRole));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("updateRole.role.name: role.notValid", exception.getMessage());
 
     invalidRole.setName("   ");
 
@@ -161,7 +164,7 @@ public class RoleServiceTest {
         assertThrows(
             RuntimeException.class, () -> roleService.updateRole("validName", invalidRole));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("updateRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -174,5 +177,18 @@ public class RoleServiceTest {
             RuntimeException.class, () -> roleService.updateRole("differentValidName", validRole));
 
     assertEquals("role.notFound", exception.getMessage());
+  }
+
+  @Test
+  public void updateRole_PermissionsIsNull_ThrowsException() {
+    final String name = RandomStringUtils.randomAlphabetic(10);
+    final Role role = new Role();
+    role.setName(name);
+    role.setPermissions(null);
+
+    final RuntimeException exception =
+        assertThrows(RuntimeException.class, () -> roleService.updateRole(name, role));
+
+    assertEquals("updateRole.role.permissions: role.notValid", exception.getMessage());
   }
 }
