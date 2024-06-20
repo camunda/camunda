@@ -33,6 +33,8 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(configuration.getValidatorsResultsOutputMaxSize())
+        .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
   }
 
   @Test
@@ -50,5 +52,6 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
+    assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
   }
 }
