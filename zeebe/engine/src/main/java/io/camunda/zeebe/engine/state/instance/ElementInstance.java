@@ -267,6 +267,17 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     executionListenerIndexProp.setValue(0);
   }
 
+  /**
+   * Returns a list of currently active sequence flow ids. If the same sequence flow is active
+   * multiple times, it will appear in the list multiple times. I.e. this can be used to track
+   * virtual sequence flow instances. Virtual, because there are no sequence flow instances in
+   * Zeebe.
+   *
+   * <p>Warning, this method should not be used for process instances created before 8.6. It may
+   * provide incorrect information for such process instances.
+   *
+   * @since 8.6
+   */
   public List<DirectBuffer> getActiveSequenceFlowIds() {
     return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
   }
