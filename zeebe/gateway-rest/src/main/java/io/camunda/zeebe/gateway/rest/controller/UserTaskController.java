@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -34,8 +35,7 @@ public class UserTaskController {
 
   private final BrokerClient brokerClient;
 
-  @Autowired
-  private final UserTaskServices userTaskServices;
+  @Autowired private UserTaskServices userTaskServices;
 
   @Autowired
   public UserTaskController(final BrokerClient brokerClient) {

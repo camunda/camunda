@@ -18,7 +18,7 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public final class ProcessInstanceServices
+public final class  ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 

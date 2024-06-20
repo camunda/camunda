@@ -10,6 +10,7 @@ package io.camunda.commons.service;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.UserTaskServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -38,5 +39,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public ProcessInstanceServices processInstanceServices(final CamundaServices camundaServices) {
     return camundaServices.processInstanceServices();
+  }
+
+  @Bean
+  public UserTaskServices userTaskServices(final CamundaServices camundaServices) {
+    return camundaServices.userTaskServices();
   }
 }
