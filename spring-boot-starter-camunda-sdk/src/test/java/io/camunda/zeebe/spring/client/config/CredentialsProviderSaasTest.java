@@ -22,6 +22,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.core.Options;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
@@ -63,7 +65,7 @@ public class CredentialsProviderSaasTest {
   @RegisterExtension
   static WireMockExtension wm =
       WireMockExtension.newInstance()
-          // dynamic port is the default
+          .options(new WireMockConfiguration().dynamicPort())
           .build();
 
   private static final String ACCESS_TOKEN = "access-token";

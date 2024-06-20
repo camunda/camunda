@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
@@ -64,7 +65,7 @@ public class CredentialsProviderSelfManagedTest {
   @RegisterExtension
   static WireMockExtension wm =
       WireMockExtension.newInstance()
-          // dynamic port is the default
+          .options(new WireMockConfiguration().dynamicPort())
           .build();
 
   private static final String ACCESS_TOKEN =
