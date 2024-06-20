@@ -22,10 +22,12 @@ public final class BpmnFactory {
         createExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())));
   }
 
-  public static BpmnValidator createValidator(final ExpressionProcessor expressionProcessor) {
+  public static BpmnValidator createValidator(
+      final ExpressionProcessor expressionProcessor, final int validatorResultsOutputMaxSize) {
     return new BpmnValidator(
         createExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())),
-        expressionProcessor);
+        expressionProcessor,
+        validatorResultsOutputMaxSize);
   }
 
   private static ExpressionLanguage createExpressionLanguage(

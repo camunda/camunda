@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
@@ -79,7 +80,8 @@ public final class DeploymentCreateProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineConfiguration config) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     timerInstanceState = processingState.getTimerState();
@@ -92,7 +94,7 @@ public final class DeploymentCreateProcessor
     this.distributionBehavior = distributionBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
-            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
+            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags, config);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }

@@ -119,7 +119,8 @@ public final class EngineProcessors {
         deploymentDistributionCommandSender,
         processingState.getKeyGenerator(),
         featureFlags,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        config);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -226,7 +227,8 @@ public final class EngineProcessors {
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineConfiguration config) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -237,7 +239,8 @@ public final class EngineProcessors {
             writers,
             keyGenerator,
             featureFlags,
-            distributionBehavior);
+            distributionBehavior,
+            config);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution
