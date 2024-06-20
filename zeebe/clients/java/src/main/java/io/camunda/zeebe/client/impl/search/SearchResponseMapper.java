@@ -21,6 +21,8 @@ import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.UserTask;
+import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
 
 public final class SearchResponseMapper {
 
@@ -28,6 +30,14 @@ public final class SearchResponseMapper {
 
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
       final ProcessInstanceSearchQueryResponse response) {
+    final SearchResponsePage page =
+        new SearchResponsePageImpl(response.getTotal(), null, response.getSortValues());
+    return new SearchQueryResponseImpl<>(response.getItems(), page);
+  }
+
+  //toUserTaskSearchResponse
+  public static SearchQueryResponse<UserTask> toUserTaskSearchResponse(
+      final UserTaskSearchQueryResponse response) {
     final SearchResponsePage page =
         new SearchResponsePageImpl(response.getTotal(), null, response.getSortValues());
     return new SearchQueryResponseImpl<>(response.getItems(), page);

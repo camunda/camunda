@@ -35,6 +35,9 @@ public class UserTaskController {
   private final BrokerClient brokerClient;
 
   @Autowired
+  private final UserTaskServices userTaskServices;
+
+  @Autowired
   public UserTaskController(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
   }

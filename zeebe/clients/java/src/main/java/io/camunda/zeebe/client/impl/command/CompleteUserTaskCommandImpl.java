@@ -22,7 +22,6 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.UserTaskCompletionRequest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;

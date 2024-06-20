@@ -20,9 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class SearchQuerySortBase<T>
-    extends TypedSearchRequestPropertyProvider<List<SearchQuerySortRequest>> {
+    extends
+    TypedSearchRequestPropertyProvider<List<SearchQuerySortRequest>> {
 
-  private final List<SearchQuerySortRequest> sorting = new ArrayList<>();
+  private final List<SearchQuerySortRequest> sorting = new ArrayList<SearchQuerySortRequest>();
   private SearchQuerySortRequest current;
 
   protected T field(final String value) {

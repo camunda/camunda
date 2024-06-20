@@ -22,8 +22,6 @@ import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
