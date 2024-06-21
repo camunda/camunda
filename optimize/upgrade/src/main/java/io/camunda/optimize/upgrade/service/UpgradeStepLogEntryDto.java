@@ -24,10 +24,15 @@ import lombok.experimental.FieldNameConstants;
 @Builder
 @FieldNameConstants
 public class UpgradeStepLogEntryDto {
-  @NonNull private String indexName;
-  @NonNull private String optimizeVersion;
-  @NonNull private UpgradeStepType stepType;
-  @NonNull private Integer stepNumber;
+
+  @NonNull
+  private String indexName;
+  @NonNull
+  private String optimizeVersion;
+  @NonNull
+  private UpgradeStepType stepType;
+  @NonNull
+  private Integer stepNumber;
   private Instant appliedDate;
 
   @JsonIgnore

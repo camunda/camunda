@@ -16,6 +16,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 @EqualsAndHashCode(callSuper = true)
 public class DeleteDataStep extends UpgradeStep {
+
   private final QueryBuilder query;
 
   public DeleteDataStep(final IndexMappingCreator index, final QueryBuilder query) {

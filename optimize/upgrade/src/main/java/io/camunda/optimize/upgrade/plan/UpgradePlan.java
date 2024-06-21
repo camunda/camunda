@@ -20,15 +20,21 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Slf4j
 public class UpgradePlan {
-  @Getter private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  @Getter @Setter private Semver toVersion;
-  @Getter @Setter private Semver fromVersion;
 
-  public void addUpgradeStep(UpgradeStep upgradeStep) {
-    this.upgradeSteps.add(upgradeStep);
+  @Getter
+  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
+  @Getter
+  @Setter
+  private Semver toVersion;
+  @Getter
+  @Setter
+  private Semver fromVersion;
+
+  public void addUpgradeStep(final UpgradeStep upgradeStep) {
+    upgradeSteps.add(upgradeStep);
   }
 
-  public void addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+  public void addUpgradeSteps(final List<UpgradeStep> upgradeSteps) {
     this.upgradeSteps.addAll(upgradeSteps);
   }
 }

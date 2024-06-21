@@ -15,6 +15,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 public class InsertDataStep extends UpgradeStep {
+
   private final String data;
 
   public InsertDataStep(final IndexMappingCreator index, final String data) {

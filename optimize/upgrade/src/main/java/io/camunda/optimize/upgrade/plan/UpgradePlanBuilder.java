@@ -14,11 +14,11 @@ import java.util.List;
 public class UpgradePlanBuilder {
 
   public static AddFromVersionBuilder createUpgradePlan() {
-    UpgradePlan upgradePlan = new UpgradePlan();
+    final UpgradePlan upgradePlan = new UpgradePlan();
     return new UpgradePlanBuilder().startUpgradePlanBuild(upgradePlan);
   }
 
-  private AddFromVersionBuilder startUpgradePlanBuild(UpgradePlan upgradePlan) {
+  private AddFromVersionBuilder startUpgradePlanBuild(final UpgradePlan upgradePlan) {
     return new AddFromVersionBuilder(upgradePlan);
   }
 
@@ -26,11 +26,11 @@ public class UpgradePlanBuilder {
 
     private final UpgradePlan upgradePlan;
 
-    public AddFromVersionBuilder(UpgradePlan upgradePlan) {
+    public AddFromVersionBuilder(final UpgradePlan upgradePlan) {
       this.upgradePlan = upgradePlan;
     }
 
-    public AddToVersionBuilder fromVersion(String fromVersion) {
+    public AddToVersionBuilder fromVersion(final String fromVersion) {
       // LOOSE to allow for missing patch if an update applies to all patches of a minor
       upgradePlan.setFromVersion(new Semver(fromVersion, Semver.SemverType.LOOSE));
       return new AddToVersionBuilder(upgradePlan);
@@ -38,13 +38,14 @@ public class UpgradePlanBuilder {
   }
 
   public static class AddToVersionBuilder {
+
     private final UpgradePlan upgradePlan;
 
-    public AddToVersionBuilder(UpgradePlan upgradePlan) {
+    public AddToVersionBuilder(final UpgradePlan upgradePlan) {
       this.upgradePlan = upgradePlan;
     }
 
-    public AddUpgradeStepBuilder toVersion(String toVersion) {
+    public AddUpgradeStepBuilder toVersion(final String toVersion) {
       upgradePlan.setToVersion(new Semver(toVersion));
       return new AddUpgradeStepBuilder(upgradePlan);
     }
@@ -54,16 +55,16 @@ public class UpgradePlanBuilder {
 
     private final UpgradePlan upgradePlan;
 
-    public AddUpgradeStepBuilder(UpgradePlan upgradePlan) {
+    public AddUpgradeStepBuilder(final UpgradePlan upgradePlan) {
       this.upgradePlan = upgradePlan;
     }
 
-    public AddUpgradeStepBuilder addUpgradeStep(UpgradeStep upgradeStep) {
+    public AddUpgradeStepBuilder addUpgradeStep(final UpgradeStep upgradeStep) {
       upgradePlan.addUpgradeStep(upgradeStep);
       return this;
     }
 
-    public AddUpgradeStepBuilder addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+    public AddUpgradeStepBuilder addUpgradeSteps(final List<UpgradeStep> upgradeSteps) {
       upgradePlan.addUpgradeSteps(upgradeSteps);
       return this;
     }

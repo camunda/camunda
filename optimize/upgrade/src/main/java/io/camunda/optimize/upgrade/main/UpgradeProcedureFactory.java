@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeProcedureFactory {
+
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
         upgradeDependencies.esClient(),

@@ -41,13 +41,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class UpgradeProcedureTest {
+
   private static final String TARGET_VERSION = Version.VERSION;
   private static final String FROM_VERSION = PreviousVersion.PREVIOUS_VERSION;
 
-  @Spy private final CreateIndexStep createIndexStep = new CreateIndexStep(new UserTestIndex(1));
-  @Mock private SchemaUpgradeClient schemaUpgradeClient;
-  @Mock private UpgradeValidationService validationService;
-  @Mock private UpgradeStepLogService upgradeStepLogService;
+  @Spy
+  private final CreateIndexStep createIndexStep = new CreateIndexStep(new UserTestIndex(1));
+  @Mock
+  private SchemaUpgradeClient schemaUpgradeClient;
+  @Mock
+  private UpgradeValidationService validationService;
+  @Mock
+  private UpgradeStepLogService upgradeStepLogService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OptimizeElasticsearchClient esClient;
@@ -84,7 +89,7 @@ public class UpgradeProcedureTest {
     underTest.performUpgrade(createUpgradePlan());
 
     // then the validation and execution happens in the expected order
-    InOrder inOrder = inOrder(validationService, createIndexStep);
+    final InOrder inOrder = inOrder(validationService, createIndexStep);
     // The validation order matters since we first need to ensure that the ES client
     // is able to communicate to ElasticSearch before using it to retrieve the schema version.
     inOrder.verify(validationService).validateESVersion(any(), any());
@@ -104,7 +109,7 @@ public class UpgradeProcedureTest {
     underTest.performUpgrade(createUpgradePlan());
 
     // then the validation and execution happens in the expected order
-    InOrder inOrder = inOrder(createIndexStep, upgradeStepLogService);
+    final InOrder inOrder = inOrder(createIndexStep, upgradeStepLogService);
     inOrder.verify(createIndexStep).execute(eq(schemaUpgradeClient));
     inOrder.verify(upgradeStepLogService).recordAppliedStep(any(), any());
   }
@@ -121,7 +126,7 @@ public class UpgradeProcedureTest {
     assertThrows(UpgradeRuntimeException.class, () -> underTest.performUpgrade(upgradePlan));
 
     // then the validation and execution happens in the expected order
-    InOrder inOrder = inOrder(createIndexStep, upgradeStepLogService);
+    final InOrder inOrder = inOrder(createIndexStep, upgradeStepLogService);
     inOrder.verify(createIndexStep).execute(eq(schemaUpgradeClient));
     inOrder.verify(upgradeStepLogService, never()).recordAppliedStep(any(), any());
   }

@@ -26,7 +26,7 @@ public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator<XCon
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
         .startObject("password")
         .field("type", "keyword")

@@ -19,8 +19,11 @@ import org.elasticsearch.index.query.QueryBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ReindexStep extends UpgradeStep {
-  @Getter private final IndexMappingCreator sourceIndex;
-  @Getter private final IndexMappingCreator targetIndex;
+
+  @Getter
+  private final IndexMappingCreator sourceIndex;
+  @Getter
+  private final IndexMappingCreator targetIndex;
   private final QueryBuilder sourceIndexFilterQuery;
   private final String mappingScript;
 

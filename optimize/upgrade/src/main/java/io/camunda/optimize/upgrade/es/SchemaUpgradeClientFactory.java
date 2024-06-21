@@ -24,6 +24,7 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {
+
   public static SchemaUpgradeClient createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
     return createSchemaUpgradeClient(
@@ -61,7 +62,7 @@ public class SchemaUpgradeClientFactory {
         metadataService,
         esClient,
         new ObjectMapperFactory(
-                new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+            new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
             .createOptimizeMapper());
   }
 

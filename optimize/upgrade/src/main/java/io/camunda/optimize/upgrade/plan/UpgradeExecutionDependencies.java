@@ -18,4 +18,6 @@ public record UpgradeExecutionDependencies(
     OptimizeIndexNameService indexNameService,
     OptimizeElasticsearchClient esClient,
     ObjectMapper objectMapper,
-    ElasticSearchMetadataService metadataService) {}
+    ElasticSearchMetadataService metadataService) {
+
+}

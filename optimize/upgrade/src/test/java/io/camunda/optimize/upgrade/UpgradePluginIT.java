@@ -32,7 +32,7 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
   @Test
   public void fixedHeaderPluginsAreUsedDuringUpgrade() {
     // given
-    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
+    final String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     setUpUpgradeDependenciesWithConfiguration(configurationService);
     // clear all mock recordings that happen during setup
@@ -53,7 +53,7 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
   @Test
   public void dynamicCustomHeaderPluginsAreUsedDuringUpgrade() {
     // given
-    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
+    final String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     setUpUpgradeDependenciesWithConfiguration(configurationService);
 
@@ -78,9 +78,9 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
   @Test
   public void multipleCustomHeaderPluginsAreUsedDuringUpgrade() {
     // given
-    String[] basePackages = {
-      "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
-      "io.camunda.optimize.testplugin.elasticsearch.custom"
+    final String[] basePackages = {
+        "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
+        "io.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
     setUpUpgradeDependenciesWithConfiguration(configurationService);
@@ -119,8 +119,8 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
   }
 
   private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(
-      String... basePackages) {
-    List<String> basePackagesList = Arrays.asList(basePackages);
+      final String... basePackages) {
+    final List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
   }
 }

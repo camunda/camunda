@@ -117,12 +117,12 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex =
         getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + INDEX_SUFFIX_PRE_ROLLOVER))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
@@ -164,21 +164,21 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex =
         getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + INDEX_SUFFIX_PRE_ROLLOVER))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + NEWEST_INDEX_SUFFIX))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + NEWEST_INDEX_SUFFIX))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
@@ -243,12 +243,12 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex =
         getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + INDEX_SUFFIX_PRE_ROLLOVER))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 
@@ -290,21 +290,21 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     final GetIndexResponse newIndex =
         getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + INDEX_SUFFIX_PRE_ROLLOVER))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
     assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + NEWEST_INDEX_SUFFIX))
+        newIndex
+            .getAliases()
+            .get(
+                getVersionedIndexName(
+                    TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                    + NEWEST_INDEX_SUFFIX))
         .singleElement()
         .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
 

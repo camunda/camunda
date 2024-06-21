@@ -23,6 +23,7 @@ public class AbstractUpgrade86IT extends AbstractUpgradeIT {
   protected final OnboardingStateIndexV2 ONBOARDING_STATE_INDEX = new OnboardingStateIndexV2();
   protected final SettingsIndexV2 SETTINGS_INDEX = new SettingsIndexV2();
 
+  @Override
   @BeforeEach
   protected void setUp() throws Exception {
     super.setUp();

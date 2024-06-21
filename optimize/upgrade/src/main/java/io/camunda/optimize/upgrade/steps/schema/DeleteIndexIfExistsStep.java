@@ -20,8 +20,10 @@ import lombok.Getter;
 public class DeleteIndexIfExistsStep extends UpgradeStep {
 
   // This should be the name of the index without prefix and without version suffix
-  @Getter private final String indexName;
-  @Getter private final int indexVersion;
+  @Getter
+  private final String indexName;
+  @Getter
+  private final int indexVersion;
 
   public DeleteIndexIfExistsStep(final String indexName, final int indexVersion) {
     super(null);
@@ -32,6 +34,11 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   @Override
   public IndexMappingCreator getIndex() {
     throw new UpgradeRuntimeException("Index class does not exist as it is being deleted");
+  }
+
+  @Override
+  public UpgradeStepType getType() {
+    return UpgradeStepType.SCHEMA_DELETE_INDEX;
   }
 
   @Override
@@ -46,10 +53,5 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   public String getVersionedIndexName() {
     return OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
         indexName, String.valueOf(indexVersion));
-  }
-
-  @Override
-  public UpgradeStepType getType() {
-    return UpgradeStepType.SCHEMA_DELETE_INDEX;
   }
 }

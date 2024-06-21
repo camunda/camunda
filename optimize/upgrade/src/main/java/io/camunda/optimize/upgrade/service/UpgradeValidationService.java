@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 public class UpgradeValidationService {
+
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
 
   public void validateSchemaVersions(
@@ -46,8 +47,8 @@ public class UpgradeValidationService {
       final OptimizeElasticsearchClient restClient, final String toVersion) {
     try {
       checkESVersionSupport(restClient.getHighLevelClient(), restClient.requestOptions());
-    } catch (Exception e) {
-      String errorMessage =
+    } catch (final Exception e) {
+      final String errorMessage =
           "It was not possible to upgrade Optimize to version "
               + toVersion
               + ".\n"
@@ -58,12 +59,12 @@ public class UpgradeValidationService {
 
   public void validateEnvironmentConfigInClasspath() {
     boolean configAvailable = false;
-    try (InputStream resourceAsStream =
+    try (final InputStream resourceAsStream =
         UpgradeValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
       if (resourceAsStream != null) {
         configAvailable = true;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 

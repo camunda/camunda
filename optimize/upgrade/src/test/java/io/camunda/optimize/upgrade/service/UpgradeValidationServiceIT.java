@@ -32,7 +32,7 @@ public class UpgradeValidationServiceIT {
       final String schemaVersion, final String fromVersion, final String toVersion) {
     // when
     assertThatThrownBy(
-            () -> underTest.validateSchemaVersions(schemaVersion, fromVersion, toVersion))
+        () -> underTest.validateSchemaVersions(schemaVersion, fromVersion, toVersion))
         // then
         .isInstanceOf(UpgradeRuntimeException.class);
   }

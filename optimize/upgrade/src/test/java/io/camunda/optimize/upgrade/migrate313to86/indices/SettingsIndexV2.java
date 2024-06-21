@@ -53,7 +53,8 @@ public class SettingsIndexV2 extends DefaultIndexMappingCreator<XContentBuilder>
   }
 
   @Override
-  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+  public XContentBuilder addStaticSetting(final String key, final int value,
+      final XContentBuilder contentBuilder)
       throws IOException {
     return contentBuilder.field(key, value);
   }

@@ -19,6 +19,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 @EqualsAndHashCode(callSuper = true)
 public class UpdateDataStep extends UpgradeStep {
+
   private final QueryBuilder query;
   private final String updateScript;
   private Map<String, Object> parameters;
@@ -57,7 +58,7 @@ public class UpdateDataStep extends UpgradeStep {
 
   @Override
   @SneakyThrows
-  public void execute(SchemaUpgradeClient schemaUpgradeClient) {
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     if (paramMapProvider != null) {
       parameters = paramMapProvider.call();
     }

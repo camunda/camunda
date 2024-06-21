@@ -23,7 +23,7 @@ public class DeleteSettingsIndexFields86IT extends AbstractUpgrade86IT {
         .singleElement()
         .satisfies(
             hit -> {
-              Map<String, Object> fields = hit.getSourceAsMap();
+              final Map<String, Object> fields = hit.getSourceAsMap();
               assertThat(fields)
                   .hasSize(4)
                   .containsKeys("metadataTelemetryEnabled", "lastModifier");
@@ -37,7 +37,7 @@ public class DeleteSettingsIndexFields86IT extends AbstractUpgrade86IT {
         .singleElement()
         .satisfies(
             hit -> {
-              Map<String, Object> fields = hit.getSourceAsMap();
+              final Map<String, Object> fields = hit.getSourceAsMap();
               assertThat(fields)
                   .hasSize(2)
                   .doesNotContainKeys("metadataTelemetryEnabled", "lastModifier");

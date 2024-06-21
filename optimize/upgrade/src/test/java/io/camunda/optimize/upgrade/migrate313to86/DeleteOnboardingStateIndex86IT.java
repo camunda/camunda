@@ -19,7 +19,7 @@ public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
   @SneakyThrows
   public void deleteOnboardingStateIndex() {
     // given pre-upgrade
-    List<String> onboardingStateIndexList =
+    final List<String> onboardingStateIndexList =
         prefixAwareClient.getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();
@@ -29,7 +29,7 @@ public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
     performUpgrade();
 
     // then
-    List<String> onboardingStateIndexListPostUpgrade =
+    final List<String> onboardingStateIndexListPostUpgrade =
         prefixAwareClient.getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();

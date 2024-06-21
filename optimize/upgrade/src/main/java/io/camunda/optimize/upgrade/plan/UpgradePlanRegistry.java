@@ -28,8 +28,8 @@ public class UpgradePlanRegistry {
   private final Map<Semver, UpgradePlan> upgradePlans;
 
   public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    this.upgradePlans = new HashMap<>();
-    try (ScanResult scanResult =
+    upgradePlans = new HashMap<>();
+    try (final ScanResult scanResult =
         new ClassGraph()
             .enableClassInfo()
             .acceptPackages(UpgradePlanFactory.class.getPackage().getName())
@@ -53,10 +53,10 @@ public class UpgradePlanRegistry {
                     // (e.g. if no operation default upgrade plan was added first)
                     upgradePlans.put(upgradePlan.getToVersion(), upgradePlan);
                   }
-                } catch (InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException
-                    | NoSuchMethodException e) {
+                } catch (final InstantiationException
+                               | IllegalAccessException
+                               | InvocationTargetException
+                               | NoSuchMethodException e) {
                   log.error(
                       "Could not instantiate {}, will skip this factory.",
                       upgradePlanFactoryClass.getName());

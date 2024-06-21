@@ -35,7 +35,7 @@ public class UpdateLogEntryIndex extends DefaultIndexMappingCreator<XContentBuil
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
         .startObject(UpgradeStepLogEntryDto.Fields.indexName)

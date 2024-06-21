@@ -54,25 +54,27 @@ import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientReindexTest {
-  @Mock private ElasticSearchSchemaManager schemaManager;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
-  private OptimizeElasticsearchClient elasticsearchClient;
-
-  @Mock private ConfigurationService configurationService;
-  @Mock private OptimizeIndexNameService indexNameService;
-  @Mock private ElasticSearchMetadataService metadataService;
-  @Mock private TaskInfo taskInfo;
-
-  private SchemaUpgradeClient underTest;
 
   @RegisterExtension
   LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClient.class);
+  @Mock
+  private ElasticSearchSchemaManager schemaManager;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
+  private OptimizeElasticsearchClient elasticsearchClient;
+  @Mock
+  private ConfigurationService configurationService;
+  @Mock
+  private OptimizeIndexNameService indexNameService;
+  @Mock
+  private ElasticSearchMetadataService metadataService;
+  @Mock
+  private TaskInfo taskInfo;
+  private SchemaUpgradeClient underTest;
 
   @BeforeEach
   public void init() {
     when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
-    this.underTest =
+    underTest =
         createSchemaUpgradeClient(
             schemaManager, metadataService, configurationService, elasticsearchClient);
   }
@@ -292,7 +294,7 @@ public class SchemaUpgradeClientReindexTest {
     when(elasticsearchClient.countWithoutPrefix(new CountRequest(indexName))).thenReturn(count);
   }
 
-  private Response createEsResponse(TaskResponse taskResponse) throws IOException {
+  private Response createEsResponse(final TaskResponse taskResponse) throws IOException {
     final Response mockedReindexResponse = mock(Response.class);
 
     final HttpEntity httpEntity = mock(HttpEntity.class);

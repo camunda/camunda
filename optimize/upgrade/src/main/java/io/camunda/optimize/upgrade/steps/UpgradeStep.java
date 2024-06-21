@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public abstract class UpgradeStep {
+
   protected IndexMappingCreator index;
 
   public abstract UpgradeStepType getType();

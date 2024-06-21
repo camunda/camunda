@@ -17,6 +17,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 public class CreateIndexStep extends UpgradeStep {
+
   private Set<String> readOnlyAliases = new HashSet<>();
 
   public CreateIndexStep(final IndexMappingCreator index) {

@@ -27,6 +27,7 @@ import org.elasticsearch.cluster.metadata.AliasMetadata;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 public class UpdateIndexStep extends UpgradeStep {
+
   private final String mappingScript;
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
@@ -170,7 +171,7 @@ public class UpdateIndexStep extends UpgradeStep {
       final SchemaUpgradeClient schemaUpgradeClient,
       final String indexName,
       final Set<AliasMetadata> aliases) {
-    for (AliasMetadata alias : aliases) {
+    for (final AliasMetadata alias : aliases) {
       schemaUpgradeClient.addAlias(
           alias.getAlias(),
           indexName,
@@ -181,7 +182,7 @@ public class UpdateIndexStep extends UpgradeStep {
 
   private void applyAdditionalReadOnlyAliasesToIndex(
       final SchemaUpgradeClient schemaUpgradeClient, final String indexName) {
-    for (String alias : additionalReadAliases) {
+    for (final String alias : additionalReadAliases) {
       schemaUpgradeClient.addAlias(
           schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(alias),
           indexName,

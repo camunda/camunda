@@ -25,6 +25,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 
 public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
+
   @RegisterExtension
   protected final LogCapturer logCapturer =
       LogCapturer.create()

@@ -11,5 +11,6 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 
 public interface UpgradePlanFactory {
+
   UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies);
 }

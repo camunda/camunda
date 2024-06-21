@@ -8,15 +8,16 @@
 package io.camunda.optimize.upgrade.exception;
 
 public class UpgradeRuntimeException extends RuntimeException {
-  public UpgradeRuntimeException(String message) {
+
+  public UpgradeRuntimeException(final String message) {
     super(message);
   }
 
-  public UpgradeRuntimeException(Exception e) {
+  public UpgradeRuntimeException(final Exception e) {
     super(e);
   }
 
-  public UpgradeRuntimeException(String message, Exception e) {
+  public UpgradeRuntimeException(final String message, final Exception e) {
     super(message, e);
   }
 }

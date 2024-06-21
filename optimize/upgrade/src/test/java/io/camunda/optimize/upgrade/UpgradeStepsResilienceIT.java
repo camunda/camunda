@@ -38,7 +38,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   @Test
   public void deleteIndexEventuallySucceedsOnPendingSnapshot() {
     // given
-    UpgradePlan upgradePlan = createDeleteIndexPlan();
+    final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
         indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
@@ -67,7 +67,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   @Test
   public void deleteIndexIndexFailsOnOtherError() {
     // given
-    UpgradePlan upgradePlan = createDeleteIndexPlan();
+    final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
         indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
@@ -91,7 +91,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   @Test
   public void updateIndexEventuallySucceedsOnPendingSnapshot() {
     // given
-    UpgradePlan upgradePlan = createUpdateIndexPlan();
+    final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
         indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
@@ -121,7 +121,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   @Test
   public void updateDeleteIndexFailsOnOtherError() throws IOException {
     // given
-    UpgradePlan upgradePlan = createUpdateIndexPlan();
+    final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
         indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
