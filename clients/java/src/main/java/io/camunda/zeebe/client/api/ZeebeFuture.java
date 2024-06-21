@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+@Deprecated
 public interface ZeebeFuture<T> extends Future<T>, CompletionStage<T> {
 
   /**

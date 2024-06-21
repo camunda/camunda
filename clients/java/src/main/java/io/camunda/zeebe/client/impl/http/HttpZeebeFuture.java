@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +30,8 @@ import java.util.concurrent.TimeoutException;
  *
  * @param <RespT> the expected response type
  */
-public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements ZeebeFuture<RespT> {
+public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT>
+    implements CamundaFuture<RespT> {
 
   private volatile Future<?> transportFuture;
 
@@ -39,7 +41,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
       throw new ClientException(e);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new ClientException("Failed: interrupted while awaiting response", e);
     } catch (final TimeoutException e) {
@@ -57,7 +59,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   }
 
   public void transportFuture(final Future<?> httpFuture) {
-    this.transportFuture = httpFuture;
+    transportFuture = httpFuture;
 
     // possibly we were already cancelled between calls
     if (isCancelled()) {
