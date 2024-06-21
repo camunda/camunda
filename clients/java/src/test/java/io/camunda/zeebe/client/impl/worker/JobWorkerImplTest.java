@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -23,8 +23,8 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
@@ -93,7 +93,8 @@ public final class JobWorkerImplTest {
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     client =
-        new ZeebeClientImpl(new ZeebeClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
   }
 
   @Test
@@ -182,10 +183,10 @@ public final class JobWorkerImplTest {
     // given
     Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "false");
 
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.applyEnvironmentVariableOverrides(true).build();
     final ZeebeClient zeebeClient =
-        new ZeebeClientImpl(builder, channel, GatewayGrpc.newStub(channel));
+        new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel));
 
     final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
         zeebeClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
@@ -208,8 +209,8 @@ public final class JobWorkerImplTest {
     final CountDownLatch latch = new CountDownLatch(1);
 
     try (final ZeebeClient client =
-        new ZeebeClientImpl(
-            new ZeebeClientBuilderImpl(),
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
             new ExecutorResource(executor, false))) {
@@ -248,8 +249,8 @@ public final class JobWorkerImplTest {
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
 
     try (final ZeebeClient client =
-        new ZeebeClientImpl(
-            new ZeebeClientBuilderImpl(),
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
             new ExecutorResource(closedExecutor, false))) {

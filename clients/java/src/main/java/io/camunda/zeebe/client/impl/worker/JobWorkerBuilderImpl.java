@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
+import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -61,6 +62,28 @@ public final class JobWorkerBuilderImpl
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
 
+  public JobWorkerBuilderImpl(
+      final CamundaClientConfiguration configuration,
+      final JobClient jobClient,
+      final ScheduledExecutorService executorService,
+      final List<Closeable> closeables) {
+    this.jobClient = jobClient;
+    this.executorService = executorService;
+    this.closeables = closeables;
+
+    timeout = configuration.getDefaultJobTimeout();
+    workerName = configuration.getDefaultJobWorkerName();
+    maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
+    pollInterval = configuration.getDefaultJobPollInterval();
+    requestTimeout = configuration.getDefaultRequestTimeout();
+    enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
+    defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
+    customTenantIds = new ArrayList<>();
+    backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
+    streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
+  }
+
+  @Deprecated
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,
       final JobClient jobClient,

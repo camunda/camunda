@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
-import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -52,7 +52,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final Lock streamLock;
 
   @GuardedBy("streamLock")
-  private ZeebeFuture<StreamJobsResponse> streamControl;
+  private CamundaFuture<StreamJobsResponse> streamControl;
 
   @GuardedBy("streamLock")
   private FinalCommandStep<StreamJobsResponse> command;
@@ -184,7 +184,7 @@ final class JobStreamerImpl implements JobStreamer {
       streamControl = null;
     }
 
-    final ZeebeFuture<StreamJobsResponse> control = command.send();
+    final CamundaFuture<StreamJobsResponse> control = command.sendCommand();
     control.whenCompleteAsync((ignored, error) -> handleStreamComplete(error), executor);
     streamControl = control;
     LOGGER.debug("Opened job stream of type '{}' for worker '{}'", jobType, workerName);

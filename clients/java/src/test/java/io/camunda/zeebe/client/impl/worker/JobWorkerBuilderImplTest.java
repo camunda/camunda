@@ -33,7 +33,7 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsComm
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
@@ -61,7 +61,7 @@ class JobWorkerBuilderImplTest {
 
   @BeforeEach
   void setUp() {
-    zeebeClientConfig = new ZeebeClientBuilderImpl();
+    zeebeClientConfig = new CamundaClientBuilderImpl();
     jobClient = mock(JobClient.class, Answers.RETURNS_DEEP_STUBS);
     final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     closeables = new ArrayList<>();

@@ -228,7 +228,7 @@ public interface JobClient {
    * <ul>
    *   <li>Closing the Zeebe client
    *   <li>Cancelling the result of {@link StreamJobsCommandStep3#send()} via {@link
-   *       io.camunda.zeebe.client.api.ZeebeFuture#cancel(boolean)} (the argument is irrelevant)
+   *       io.camunda.zeebe.client.api.CamundaFuture#cancel(boolean)} (the argument is irrelevant)
    *   <li>Setting a {@link StreamJobsCommandStep3#requestTimeout(Duration)}; the stream will be
    *       closed once this time out is reached. By default, there is no request time out at all.
    *       <strong>It's recommended to assign a long-ish time out and recreate your streams from
