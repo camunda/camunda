@@ -42,6 +42,19 @@ class UserServiceTest {
   }
 
   @Test
+  void userIsCreatedWithAName() {
+    final var username = "user" + UUID.randomUUID();
+    final var name = "Donald";
+
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(username, name, "password"));
+
+    final var existingUser = userService.findUserById(user.getId());
+    Assertions.assertNotNull(existingUser);
+    Assertions.assertEquals(name, existingUser.getName());
+  }
+
+  @Test
   void duplicateUsernameCreateUserException() {
     final var username = "user" + UUID.randomUUID();
     userService.createUser(new CamundaUserWithPassword(username, "password"));
