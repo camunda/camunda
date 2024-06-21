@@ -22,11 +22,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.ListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -131,10 +131,10 @@ public final class BpmnJobBehavior {
   }
 
   private static ListenerEventType fromExecutionListenerEventType(
-      final ExecutionListenerEventType eventType) {
+      final ZeebeExecutionListenerEventType eventType) {
     return switch (eventType) {
-      case START -> ListenerEventType.START;
-      case END -> ListenerEventType.END;
+      case start -> ListenerEventType.START;
+      case end -> ListenerEventType.END;
     };
   }
 
