@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -52,10 +53,7 @@ import reactor.core.publisher.Mono;
       TestErrorMapperConfiguration.class,
       UserTaskController.class
     },
-    webEnvironment = WebEnvironment.RANDOM_PORT,
-    properties = {
-      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
-    })
+    webEnvironment = WebEnvironment.RANDOM_PORT)
 public class ErrorMapperTest {
 
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
@@ -263,7 +261,7 @@ public class ErrorMapperTest {
     Mockito.verifyNoInteractions(brokerClient);
   }
 
-  @SpringBootApplication
+  @SpringBootApplication(exclude = SecurityAutoConfiguration.class)
   static class TestErrorMapperApplication {
     // required to provide the web server context
   }
