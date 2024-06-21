@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.util.ClientTest;
@@ -408,7 +408,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
+    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
   }
 
   @Test
