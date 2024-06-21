@@ -23,38 +23,39 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
+@Deprecated
 public interface ZeebeClientConfiguration {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     ZeebeClientConfiguration#getGrpcAddress()}
-   * @see ZeebeClientBuilder#grpcAddress(URI)
+   *     CamundaClientConfiguration#getGrpcAddress()}
+   * @see CamundaClientBuilder#grpcAddress(URI)
    */
   @Deprecated
   String getGatewayAddress();
 
   /**
-   * @see ZeebeClientBuilder#restAddress(URI)
+   * @see CamundaClientBuilder#restAddress(URI)
    */
   URI getRestAddress();
 
   /**
-   * @see ZeebeClientBuilder#grpcAddress(URI)
+   * @see CamundaClientBuilder#grpcAddress(URI)
    */
   URI getGrpcAddress();
 
   /**
-   * @see ZeebeClientBuilder#defaultTenantId(String)
+   * @see CamundaClientBuilder#defaultTenantId(String)
    */
   String getDefaultTenantId();
 
   /**
-   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
+   * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   List<String> getDefaultJobWorkerTenantIds();
 
   /**
-   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
+   * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();
 
