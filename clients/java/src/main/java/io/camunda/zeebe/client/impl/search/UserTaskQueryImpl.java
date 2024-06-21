@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -60,13 +61,13 @@ public class UserTaskQueryImpl
   public ZeebeFuture<SearchQueryResponse<UserTaskItem>> send() {
     final HttpZeebeFuture<SearchQueryResponse<UserTaskItem>> result = new HttpZeebeFuture<>();
     // TODO: Implement the following method on the PR with the mappers
-    /*httpClient.post(
-    "/user-tasks/search",
-    jsonMapper.toJson(request),
-    httpRequestConfig.build(),
-    UserTaskSearchQueryResponse.class,
-    SearchResponseMapper::toUserTaskSearchResponse,
-    result);*/
+    httpClient.post(
+        "/user-tasks/search",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        UserTaskSearchQueryResponse.class,
+        SearchResponseMapper::toUserTaskSearchResponse,
+        result);
     return result;
   }
 
