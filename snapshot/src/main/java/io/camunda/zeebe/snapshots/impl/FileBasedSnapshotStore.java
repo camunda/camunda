@@ -542,14 +542,7 @@ public final class FileBasedSnapshotStore extends Actor
     final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
     final SfvChecksum actualChecksum;
     try {
-      // computing the checksum on the final destination also lets us detect any failures during the
-      // copy/move that could occur
       actualChecksum = SnapshotChecksum.calculate(destination);
-      if (actualChecksum.getCombinedValue() != expectedChecksum) {
-        rollbackPartialSnapshot(destination);
-        throw new InvalidSnapshotChecksum(
-            directory, expectedChecksum, actualChecksum.getCombinedValue());
-      }
 
       SnapshotChecksum.persist(checksumPath, actualChecksum);
     } catch (final IOException e) {
