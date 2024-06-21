@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 

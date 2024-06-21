@@ -54,6 +54,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
+
   /user-tasks/{userTaskKey}/completion:
     post:
       tags:
@@ -74,6 +75,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UserTaskCompletionRequest"
+
       responses:
         '204':
           description: The user task was completed successfully.
@@ -217,7 +219,6 @@ paths:
       tags:
         - Process Instance
       summary: Process Instance Search Query
-      description: Search for process instances based on given criteria.
       requestBody:
         required: false
         content:
@@ -584,22 +585,24 @@ components:
           format: uri
           description: A URI identifying the origin of the problem.
     SearchQueryRequest:
-      description: Query for searching items.
       type: object
       properties:
         sort:
           type: array
           items:
-            $ref: "#/components/schemas/SearchQuerySortRequest"
+            allOf:
+              - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
-          $ref: "#/components/schemas/SearchQueryPageRequest"
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageRequest"
+          type: object
     SearchQueryPageRequest:
       type: object
       properties:
         from:
           type: integer
           format: int32
-        size:
+        limit:
           type: integer
           format: int32
         searchAfter:
@@ -607,10 +610,6 @@ components:
           items:
             type: object
         searchBefore:
-          type: array
-          items:
-            type: object
-        searchBeforeOrEqual:
           type: array
           items:
             type: object
@@ -622,21 +621,12 @@ components:
         order:
           type: string
     SearchQueryResponse:
-      description: Response for a search query.
-      type: object
-      properties:
-        total:
-          type: integer
-          format: int64
-        sortValues:
-          type: array
-          items:
-            type: object
-    ProcessInstanceFilterRequest:
       type: object
       properties:
         page:
-          $ref: "#/components/schemas/SearchQueryPageResponse"
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageResponse"
+          type: object
     SearchQueryPageResponse:
       type: object
       properties:
@@ -657,7 +647,35 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: array
+          items:
+            type: integer
+            format: int64
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
+    VariableValueFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        eq:
+          type: object
+        gt:
+          type: object
+        gte:
+          type: object
+        lt:
+          type: object
+        lte:
+          type: object
     ProcessInstanceSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -777,9 +795,13 @@ components:
         taskDefinitionId:
           type: string
         candidateGroup:
-          type: string
+          type: array
+          items:
+              type: string
         candidateUser:
-          type: string
+          type: array
+          items:
+            type: string
         processDefinitionKey:
           type: string
         processInstanceKey:
@@ -809,6 +831,7 @@ components:
         to:
           type: string
           format: date-time
+
   securitySchemes:
     bearerAuth:
       type: http

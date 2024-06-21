@@ -10,13 +10,10 @@ package io.camunda.zeebe.gateway.rest;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstance;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTask;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
@@ -81,10 +78,13 @@ public final class SearchQueryResponseMapper {
     final var sortValues = result.sortValues();
     final var items = result.items();
 
-    response.setTotal(total);
+    final var page = new SearchQueryPageResponse();
+    page.setTotalItems(total);
+    response.setPage(page);
+
 
     if (sortValues != null) {
-      response.setSortValues(Arrays.asList(sortValues));
+      page.setLastSortValues(Arrays.asList(sortValues));
     }
 
     if (items != null) {
