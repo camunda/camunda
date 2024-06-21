@@ -21,6 +21,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+
 jobs:
   detect-changes:
     outputs:
@@ -175,3 +178,35 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
+
+
+  deploy-camunda-docker-snapshot:
+    name: Deploy snapshot Camunda Docker image
+    needs: [ check-results ]
+    runs-on: ubuntu-latest
+    #if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-camunda-docker-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
+          docker-secret-path: secret/data/products/camunda/ci/github-actions
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -T1C -Dskip.fe.build=false
+          go: false
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: camunda/camunda
+          version: SNAPSHOT
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          push: true
+          distball: ${{ steps.build-camunda.outputs.distball }}
