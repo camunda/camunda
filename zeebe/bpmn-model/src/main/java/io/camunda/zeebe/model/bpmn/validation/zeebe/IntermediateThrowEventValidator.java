@@ -16,10 +16,16 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION;
+import static io.camunda.zeebe.model.bpmn.util.ModelUtil.validateExecutionListenersDefinitionForElement;
 
 import io.camunda.zeebe.model.bpmn.impl.QueryImpl;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import java.util.Collection;
 import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -44,12 +50,35 @@ public class IntermediateThrowEventValidator
       final CompensateEventDefinition definition = compensateEventDefinitionOpt.get();
       final String waitForCompletion =
           definition.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
-      if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
+      if (waitForCompletion != null && !Boolean.parseBoolean(waitForCompletion)) {
         validationResultCollector.addError(
             0,
             "A compensation intermediate throwing event waitForCompletion attribute must be true or not present");
       }
     }
+
+    validateExecutionListenersDefinitionForElement(
+        element,
+        validationResultCollector,
+        listeners -> {
+          final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
+          eventDefinitions.stream()
+              .findFirst()
+              .ifPresent(
+                  eventDefinition -> {
+                    if (eventDefinition instanceof EscalationEventDefinition) {
+                      final boolean endExecutionListenersDefined =
+                          listeners.stream()
+                              .map(ZeebeExecutionListener::getEventType)
+                              .anyMatch(ZeebeExecutionListenerEventType.end::equals);
+                      if (endExecutionListenersDefined) {
+                        validationResultCollector.addError(
+                            0,
+                            "Execution listeners of type 'end' are not supported by [escalation] intermediate throw events");
+                      }
+                    }
+                  });
+        });
   }
 
   private Optional<CompensateEventDefinition> getEventDefinition(
