@@ -48,7 +48,9 @@ public class ProcessInstanceController {
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, e.getMessage(), "Ups, something went wrong");
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Failed to execute Process Instance Search Query");
       return ResponseEntity.of(problemDetail)
           .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
           .build();

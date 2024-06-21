@@ -217,7 +217,7 @@ paths:
       tags:
         - Process Instance
       summary: Process Instance Search Query
-      description: FOO BAR
+      description: Search for process instances based on given criteria.
       requestBody:
         required: false
         content:
@@ -228,7 +228,9 @@ paths:
         '200':
           $ref: "#/components/responses/ProcessInstanceSearchQueryResponse"
         '400':
-          description: foo bar
+          description: >
+            The Process Instance Search Query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -249,7 +251,9 @@ paths:
         '200':
           $ref: "#/components/responses/UserTaskSearchQueryResponse"
         '400':
-          description: foo bar
+          description: >
+            The User Task Search Query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -264,7 +268,7 @@ components:
           schema:
             $ref: "#/components/schemas/TopologyResponse"
     ProcessInstanceSearchQueryResponse:
-      description: FOO BAR
+      description: Process instance search response.
       content:
         application/json:
           schema:
@@ -580,20 +584,16 @@ components:
           format: uri
           description: A URI identifying the origin of the problem.
     SearchQueryRequest:
-      description: FOO BAR
+      description: Query for searching items.
       type: object
       properties:
         sort:
           type: array
           items:
-            allOf:
-              - $ref: "#/components/schemas/SearchQuerySortRequest"
+            $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
-          allOf:
-            - $ref: "#/components/schemas/SearchQueryPageRequest"
-          type: object
+          $ref: "#/components/schemas/SearchQueryPageRequest"
     SearchQueryPageRequest:
-      description: FOO BAR
       type: object
       properties:
         from:
@@ -606,10 +606,6 @@ components:
           type: array
           items:
             type: object
-        searchAfterOrEqual:
-          type: array
-          items:
-            type: object
         searchBefore:
           type: array
           items:
@@ -619,7 +615,6 @@ components:
           items:
             type: object
     SearchQuerySortRequest:
-      description: FOO BAR
       type: object
       properties:
         field:
@@ -627,7 +622,7 @@ components:
         order:
           type: string
     SearchQueryResponse:
-      description: FOO BAR
+      description: Response for a search query.
       type: object
       properties:
         total:
@@ -638,41 +633,49 @@ components:
           items:
             type: object
     ProcessInstanceFilterRequest:
-      description: BAR FOO
       type: object
       properties:
-        key:
-          type: array
-          items:
-            type: integer
-            format: int64
-        variables:
-          type: array
-          items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
-    VariableValueFilterRequest:
-      description: BAR FOO
+        page:
+          $ref: "#/components/schemas/SearchQueryPageResponse"
+    SearchQueryPageResponse:
       type: object
       properties:
-        name:
-          type: string
-        eq:
-          type: object
-        gt:
-          type: object
-        gte:
-          type: object
-        lt:
-          type: object
-        lte:
-          type: object
-    ProcessInstance:
-      description: BAR FOO
+        totalItems:
+          type: integer
+          format: int64
+        firstSortValues:
+          type: array
+          items:
+            type: object
+        lastSortValues:
+          type: array
+          items:
+            type: object
+    ProcessInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceItem"
+    ProcessInstanceItem:
       type: object
       properties:
         tenantId:
           type: string
         key:
+          type: integer
+          format: int64
+        processDefinitionKey:
           type: integer
           format: int64
         processVersion:
@@ -692,25 +695,6 @@ components:
         endDate:
           type: string
           format: date-time
-    ProcessInstanceSearchQueryRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      description: FOO BAR
-      type: object
-      properties:
-        filter:
-          allOf:
-            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
-    ProcessInstanceSearchQueryResponse:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      description: FOO BAR
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ProcessInstance"
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -718,8 +702,7 @@ components:
       type: object
       properties:
         filter:
-          allOf:
-            - $ref: "#/components/schemas/UserTaskFilterRequest"
+          $ref: "#/components/schemas/UserTaskFilterRequest"
     UserTaskSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -826,7 +809,6 @@ components:
         to:
           type: string
           format: date-time
-
   securitySchemes:
     bearerAuth:
       type: http

@@ -46,7 +46,6 @@ public final class SearchQueryRequestMapper {
             .build());
   }
 
-  // implement method toUserTaskQuery
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final UserTaskSearchQueryRequest request) {
     final var page = toSearchQueryPage(request.getPage()).get();
@@ -163,7 +162,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryPage.of(
               (p) ->
-                  p.size(requestedPage.getSize())
+                  p.size(requestedPage.getLimit())
                       .from(requestedPage.getFrom())
                       .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
                       .searchBefore(toArrayOrNull(requestedPage.getSearchBefore()))));

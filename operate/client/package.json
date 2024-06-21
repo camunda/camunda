@@ -75,7 +75,7 @@
     "@types/jest": "29.5.12",
     "@types/lodash": "4.17.5",
     "@types/mixpanel-browser": "2.49.0",
-    "@types/node": "20.14.6",
+    "@types/node": "20.14.7",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@types/react-transition-group": "4.4.10",
@@ -97,7 +97,7 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.4.5",
+    "typescript": "5.5.2",
     "zeebe-node": "8.3.2"
   },
   "lint-staged": {
