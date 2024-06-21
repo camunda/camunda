@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
@@ -47,7 +48,6 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
@@ -72,7 +72,6 @@ import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
-import io.camunda.zeebe.client.impl.search.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -98,9 +97,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-@Deprecated
-public class ZeebeClientImpl implements ZeebeClient {
-  private final ZeebeClientConfiguration config;
+public final class CamundaClientImpl implements CamundaClient {
+  private final CamundaClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
@@ -110,17 +108,17 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final CredentialsProvider credentialsProvider;
   private final HttpClient httpClient;
 
-  public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
+  public CamundaClientImpl(final CamundaClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
   }
 
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
+  public CamundaClientImpl(
+      final CamundaClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
   }
 
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration configuration,
+  public CamundaClientImpl(
+      final CamundaClientConfiguration configuration,
       final ManagedChannel channel,
       final HttpClient httpClient) {
     this(
@@ -131,23 +129,23 @@ public class ZeebeClientImpl implements ZeebeClient {
         httpClient);
   }
 
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration configuration,
+  public CamundaClientImpl(
+      final CamundaClientConfiguration configuration,
       final ManagedChannel channel,
       final GatewayStub gatewayStub) {
     this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
 
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration config,
+  public CamundaClientImpl(
+      final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource) {
     this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
   }
 
-  public ZeebeClientImpl(
-      final ZeebeClientConfiguration config,
+  public CamundaClientImpl(
+      final CamundaClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource,
@@ -168,11 +166,11 @@ public class ZeebeClientImpl implements ZeebeClient {
     this.httpClient.start();
   }
 
-  private static HttpClient buildHttpClient(final ZeebeClientConfiguration config) {
+  private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
     return new HttpClientFactory(config).createClient();
   }
 
-  public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
+  public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
     final URI address;
     address = config.getGrpcAddress();
 
@@ -183,7 +181,6 @@ public class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
-    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
@@ -196,7 +193,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     return channelBuilder.build();
   }
 
-  private static CallCredentials buildCallCredentials(final ZeebeClientConfiguration config) {
+  private static CallCredentials buildCallCredentials(final CamundaClientConfiguration config) {
     final CredentialsProvider customCredentialsProvider = config.getCredentialsProvider();
 
     if (customCredentialsProvider == null) {
@@ -207,7 +204,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   private static void configureConnectionSecurity(
-      final ZeebeClientConfiguration config, final NettyChannelBuilder channelBuilder) {
+      final CamundaClientConfiguration config, final NettyChannelBuilder channelBuilder) {
     if (!config.isPlaintextConnectionEnabled()) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
@@ -235,7 +232,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   public static GatewayStub buildGatewayStub(
-      final ManagedChannel channel, final ZeebeClientConfiguration config) {
+      final ManagedChannel channel, final CamundaClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
@@ -267,7 +264,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   private static ExecutorResource buildExecutorService(
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     if (configuration.jobWorkerExecutor() != null) {
       return new ExecutorResource(
           configuration.jobWorkerExecutor(), configuration.ownsJobWorkerExecutor());
@@ -286,11 +283,6 @@ public class ZeebeClientImpl implements ZeebeClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         config.preferRestOverGrpc());
-  }
-
-  @Override
-  public ZeebeClientConfiguration getConfiguration() {
-    return config;
   }
 
   @Override
@@ -472,13 +464,13 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+  public CamundaClientConfiguration getConfiguration() {
+    return config;
   }
 
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

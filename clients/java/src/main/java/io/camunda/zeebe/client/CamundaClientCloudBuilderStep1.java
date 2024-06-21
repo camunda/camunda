@@ -15,18 +15,17 @@
  */
 package io.camunda.zeebe.client;
 
-@Deprecated
-public interface ZeebeClientCloudBuilderStep1 {
+public interface CamundaClientCloudBuilderStep1 extends ZeebeClientCloudBuilderStep1 {
 
   /**
    * Sets the cluster id of the Camunda Cloud cluster. This parameter is mandatory.
    *
    * @param clusterId cluster id of the Camunda Cloud cluster.
    */
-  ZeebeClientCloudBuilderStep2 withClusterId(String clusterId);
+  @Override
+  CamundaClientCloudBuilderStep2 withClusterId(String clusterId);
 
-  @Deprecated
-  interface ZeebeClientCloudBuilderStep2 {
+  interface CamundaClientCloudBuilderStep2 extends ZeebeClientCloudBuilderStep2 {
 
     /**
      * Sets the client id that will be used to authenticate against the Camunda Cloud cluster. This
@@ -34,10 +33,10 @@ public interface ZeebeClientCloudBuilderStep1 {
      *
      * @param clientId client id that will be used in the authentication.
      */
-    ZeebeClientCloudBuilderStep3 withClientId(String clientId);
+    @Override
+    CamundaClientCloudBuilderStep3 withClientId(String clientId);
 
-    @Deprecated
-    interface ZeebeClientCloudBuilderStep3 {
+    interface CamundaClientCloudBuilderStep3 extends ZeebeClientCloudBuilderStep3 {
 
       /**
        * Sets the client secret that will be used to authenticate against the Camunda Cloud cluster.
@@ -45,17 +44,19 @@ public interface ZeebeClientCloudBuilderStep1 {
        *
        * @param clientSecret client secret that will be used in the authentication.
        */
-      ZeebeClientCloudBuilderStep4 withClientSecret(String clientSecret);
+      @Override
+      CamundaClientCloudBuilderStep4 withClientSecret(String clientSecret);
 
-      @Deprecated
-      interface ZeebeClientCloudBuilderStep4 extends ZeebeClientBuilder {
+      interface CamundaClientCloudBuilderStep4
+          extends CamundaClientBuilder, ZeebeClientCloudBuilderStep4 {
 
         /**
          * Sets the region of the Camunda Cloud cluster. Default is 'bru-2'.
          *
          * @param region region of the Camunda Cloud cluster
          */
-        ZeebeClientCloudBuilderStep4 withRegion(String region);
+        @Override
+        CamundaClientCloudBuilderStep4 withRegion(String region);
       }
     }
   }
