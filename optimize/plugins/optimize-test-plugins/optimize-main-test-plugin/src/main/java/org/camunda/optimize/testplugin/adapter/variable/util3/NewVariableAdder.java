@@ -15,8 +15,8 @@ import java.util.List;
 public class NewVariableAdder implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
-    PluginVariableDto dto = new PluginVariableDto();
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
+    final PluginVariableDto dto = new PluginVariableDto();
     dto.setName("foo");
     dto.setValue("bar");
     dto.setType("string");

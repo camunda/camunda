@@ -13,15 +13,15 @@ public class OptimizeIntegrationTestException extends RuntimeException {
     super();
   }
 
-  public OptimizeIntegrationTestException(Exception e) {
+  public OptimizeIntegrationTestException(final Exception e) {
     super(e);
   }
 
-  public OptimizeIntegrationTestException(String message) {
+  public OptimizeIntegrationTestException(final String message) {
     super(message);
   }
 
-  public OptimizeIntegrationTestException(String message, Exception e) {
+  public OptimizeIntegrationTestException(final String message, final Exception e) {
     super(message, e);
   }
 }

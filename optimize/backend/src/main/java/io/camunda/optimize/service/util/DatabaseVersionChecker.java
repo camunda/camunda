@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 public abstract class DatabaseVersionChecker {
 
   @Getter
+  @SuppressWarnings("checkstyle:constantname")
   private static final EnumMap<Database, List<String>> databaseSupportedVersionsMap =
       new EnumMap<>(Database.class);
 

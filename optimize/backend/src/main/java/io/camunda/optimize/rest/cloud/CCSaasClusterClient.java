@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaasClusterClient extends AbstractCCSaaSClient {
+public final class CCSaasClusterClient extends AbstractCCSaaSClient {
 
   private static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
   private static final Set<AppName> REQUIRED_WEBAPPS_LINKS =
@@ -117,7 +117,7 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class ClusterMetadata implements Serializable {
+  private static final class ClusterMetadata implements Serializable {
 
     private String uuid;
     private Map<AppName, String> urls = new EnumMap<>(AppName.class);

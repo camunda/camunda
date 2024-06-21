@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class StatusNotifier implements ImportObserver {
 
-  private static final Logger logger = LoggerFactory.getLogger(StatusNotifier.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StatusNotifier.class);
 
   private final StatusCheckingService statusCheckingService;
   private final ObjectMapper objectMapper;
@@ -80,12 +80,12 @@ public class StatusNotifier implements ImportObserver {
       if (session.isOpen()) {
         session.sendText(objectMapper.writeValueAsString(result), Callback.NOOP);
       } else {
-        logger.debug(
+        LOGGER.debug(
             "Could not write to websocket session [{}], because it already seems closed.", session);
       }
     } catch (final IOException e) {
-      logger.warn("can't write status to web socket");
-      logger.debug("Exception when writing status", e);
+      LOGGER.warn("can't write status to web socket");
+      LOGGER.debug("Exception when writing status", e);
     }
   }
 }

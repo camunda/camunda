@@ -44,6 +44,7 @@ import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@SuppressWarnings("checkstyle:methodname")
 public class CCSMUserCacheTest {
 
   public static final String ACCESS_TOKEN = "testToken";

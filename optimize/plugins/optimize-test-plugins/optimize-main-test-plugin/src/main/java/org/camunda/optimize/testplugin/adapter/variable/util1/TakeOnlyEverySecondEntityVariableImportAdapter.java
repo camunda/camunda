@@ -17,15 +17,15 @@ import java.util.stream.Collectors;
 public class TakeOnlyEverySecondEntityVariableImportAdapter implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
     int counter = 0;
-    List<PluginVariableDto> newList = new ArrayList<>();
+    final List<PluginVariableDto> newList = new ArrayList<>();
     // for consistent behavior
     final List<PluginVariableDto> sortedByName =
         list.stream()
             .sorted(Comparator.comparing(PluginVariableDto::getName))
             .collect(Collectors.toList());
-    for (PluginVariableDto pluginVariableDto : sortedByName) {
+    for (final PluginVariableDto pluginVariableDto : sortedByName) {
       if (counter % 2 == 0) {
         newList.add(pluginVariableDto);
       }

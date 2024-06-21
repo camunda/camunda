@@ -118,7 +118,7 @@ public class LicenseFilter implements Filter {
   }
 
   private static boolean isRootRequest(final String requestPath) {
-    return requestPath.equals("/");
+    return "/".equals(requestPath);
   }
 
   private static boolean isStaticResource(final String requestPath) {

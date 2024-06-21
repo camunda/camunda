@@ -14,13 +14,14 @@ import org.slf4j.LoggerFactory;
 
 public class PropertyUtil {
 
+  @SuppressWarnings("checkstyle:constantname")
   private static final Logger logger = LoggerFactory.getLogger(PropertyUtil.class);
 
-  public static Properties loadProperties(String resource) {
-    Properties properties = new Properties();
+  public static Properties loadProperties(final String resource) {
+    final Properties properties = new Properties();
     try {
       properties.load(PropertyUtil.class.getClassLoader().getResourceAsStream(resource));
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       logger.error("Unable to load test properties!", ex);
     }
     return properties;

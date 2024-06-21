@@ -53,8 +53,7 @@ public class ObjectMapperFactoryTest {
    * By default jackson fails if the external type id property is present but the actual property
    * not. In this case "reportType" is the external type id and "data" is the property.
    *
-   * @see
-   *     com.fasterxml.jackson.databind.DeserializationFeature#FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY
+   * @see com.fasterxml.jackson.databind.DeserializationFeature#FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY
    */
   @Test
   public void testNoFailOnMissingReportDataAlthoughReportTypeSet() throws Exception {
@@ -124,9 +123,9 @@ public class ObjectMapperFactoryTest {
                 ObjectMapperFactoryTest.class.getResourceAsStream("/test/data/filter_request.json"),
                 ProcessReportDataDto.class);
     assertThat(
-            ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
-                .getData()
-                .getValues())
+        ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
+            .getData()
+            .getValues())
         .containsExactly(true);
 
     data =
@@ -136,9 +135,9 @@ public class ObjectMapperFactoryTest {
                     "/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
-            ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
-                .getData()
-                .getValues())
+        ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
+            .getData()
+            .getValues())
         .containsExactly(true);
   }
 
@@ -151,9 +150,9 @@ public class ObjectMapperFactoryTest {
                     "/test/data/filter_request_lowercase_type.json"),
                 ProcessReportDataDto.class);
     assertThat(
-            ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
-                .getData()
-                .getValues())
+        ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
+            .getData()
+            .getValues())
         .containsExactly(true);
 
     data =
@@ -163,9 +162,9 @@ public class ObjectMapperFactoryTest {
                     "/test/data/filter_request_single.json"),
                 ProcessReportDataDto.class);
     assertThat(
-            ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
-                .getData()
-                .getValues())
+        ((BooleanVariableFilterDataDto) data.getFilter().get(0).getData())
+            .getData()
+            .getValues())
         .containsExactly(true);
   }
 

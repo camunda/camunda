@@ -16,10 +16,10 @@ public class AutomaticallySignInAuthenticationExtractorPlugin implements Authent
   public static final String CUSTOM_AUTH_HEADER = "user";
 
   @Override
-  public AuthenticationResult extractAuthenticatedUser(HttpServletRequest servletRequest) {
-    String userToAuthenticate = servletRequest.getHeader(CUSTOM_AUTH_HEADER);
+  public AuthenticationResult extractAuthenticatedUser(final HttpServletRequest servletRequest) {
+    final String userToAuthenticate = servletRequest.getHeader(CUSTOM_AUTH_HEADER);
 
-    AuthenticationResult result = new AuthenticationResult();
+    final AuthenticationResult result = new AuthenticationResult();
     result.setAuthenticatedUser(userToAuthenticate);
     result.setAuthenticated(userToAuthenticate != null);
     return result;

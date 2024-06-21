@@ -23,5 +23,4 @@ public class EngineAuthorizations {
   private List<AuthorizationDto> globalAuthorizations = new ArrayList<>();
   private List<AuthorizationDto> groupAuthorizations = new ArrayList<>();
   private List<AuthorizationDto> userAuthorizations = new ArrayList<>();
-  ;
 }

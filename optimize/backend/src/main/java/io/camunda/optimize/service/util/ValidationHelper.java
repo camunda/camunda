@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(ValidationHelper.class);
 
   public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
@@ -128,7 +128,7 @@ public class ValidationHelper {
       validate(dataDto);
       return true;
     } catch (final Exception e) {
-      logger.debug("Report Data Validation failed", e);
+      LOGGER.debug("Report Data Validation failed", e);
       return false;
     }
   }

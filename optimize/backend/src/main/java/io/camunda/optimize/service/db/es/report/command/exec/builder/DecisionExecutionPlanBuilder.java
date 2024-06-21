@@ -45,7 +45,7 @@ public class DecisionExecutionPlanBuilder {
     }
   }
 
-  public class AddGroupByBuilder {
+  public final class AddGroupByBuilder {
 
     private final Class<? extends DecisionViewPart> viewPartClass;
 

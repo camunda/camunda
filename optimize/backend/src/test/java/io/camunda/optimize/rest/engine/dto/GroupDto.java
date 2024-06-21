@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class GroupDto {
+
   private String id;
   private String name;
   private String type;

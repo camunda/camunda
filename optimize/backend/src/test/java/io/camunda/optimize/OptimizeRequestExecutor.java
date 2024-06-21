@@ -430,11 +430,11 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildUpdateSingleReportRequest(
       final String id, final ReportDefinitionDto entity) {
     switch (entity.getReportType()) {
-      default:
-      case PROCESS:
-        return buildUpdateSingleProcessReportRequest(id, entity, null);
       case DECISION:
         return buildUpdateSingleDecisionReportRequest(id, entity, null);
+      case PROCESS:
+      default:
+        return buildUpdateSingleProcessReportRequest(id, entity, null);
     }
   }
 

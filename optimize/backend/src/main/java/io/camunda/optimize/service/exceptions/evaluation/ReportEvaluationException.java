@@ -13,6 +13,7 @@ import io.camunda.optimize.util.SuppressionConstants;
 
 public class ReportEvaluationException extends OptimizeRuntimeException {
 
+  @SuppressWarnings("checkstyle:mutableexception")
   protected AuthorizedReportDefinitionResponseDto reportDefinition;
 
   @SuppressWarnings(SuppressionConstants.UNUSED)

@@ -33,7 +33,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterQueryUtil {
 
-  private static final DateTimeFormatter formatter =
+  private static final DateTimeFormatter FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static void addFilters(
@@ -79,12 +79,12 @@ public class DateFilterQueryUtil {
     if (end != null) {
       final OffsetDateTime endDateWithCorrectTimezone =
           end.atZoneSameInstant(timezone).toOffsetDateTime();
-      queryDate.lte(formatter.format(endDateWithCorrectTimezone));
+      queryDate.lte(FORMATTER.format(endDateWithCorrectTimezone));
     }
     if (start != null) {
       final OffsetDateTime startDateWithCorrectTimezone =
           start.atZoneSameInstant(timezone).toOffsetDateTime();
-      queryDate.gte(formatter.format(startDateWithCorrectTimezone));
+      queryDate.gte(FORMATTER.format(startDateWithCorrectTimezone));
     }
     queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
@@ -98,7 +98,7 @@ public class DateFilterQueryUtil {
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
-    queryDate.lte(formatter.format(now));
+    queryDate.lte(FORMATTER.format(now));
 
     if (QUARTERS.equals(startDto.getUnit())) {
       log.warn(
@@ -111,7 +111,7 @@ public class DateFilterQueryUtil {
     final OffsetDateTime dateBeforeGivenFilter =
         now.minus(
             startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase()));
-    queryDate.gte(formatter.format(dateBeforeGivenFilter));
+    queryDate.gte(FORMATTER.format(dateBeforeGivenFilter));
     queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);
   }
@@ -125,17 +125,17 @@ public class DateFilterQueryUtil {
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
     if (startDto.getValue() == 0) {
-      queryDate.lte(formatter.format(now));
+      queryDate.lte(FORMATTER.format(now));
       queryDate.gte(
-          formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
+          FORMATTER.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
     } else {
       final OffsetDateTime startOfCurrentInterval =
           DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
       final OffsetDateTime startOfPreviousInterval =
           DateFilterUtil.getStartOfPreviousInterval(
               startOfCurrentInterval, startDto.getUnit(), startDto.getValue());
-      queryDate.lt(formatter.format(startOfCurrentInterval));
-      queryDate.gte(formatter.format(startOfPreviousInterval));
+      queryDate.lt(FORMATTER.format(startOfCurrentInterval));
+      queryDate.gte(FORMATTER.format(startOfPreviousInterval));
     }
     queryDate.format(OPTIMIZE_DATE_FORMAT);
     return Optional.of(queryDate);

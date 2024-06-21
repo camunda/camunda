@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public interface AbstractIncidentWriter {
 
+  @SuppressWarnings("checkstyle:constantname")
   Logger log = LoggerFactory.getLogger(AbstractIncidentWriter.class);
 
   default List<ImportRequestDto> generateIncidentImports(final List<IncidentDto> incidents) {

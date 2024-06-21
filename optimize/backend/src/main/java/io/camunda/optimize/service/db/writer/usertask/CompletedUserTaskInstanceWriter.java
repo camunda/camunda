@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
 
+  @SuppressWarnings("checkstyle:membername")
   ImmutableSet<String> FIELDS_TO_UPDATE =
       ImmutableSet.of(
           FLOW_NODE_ID,
@@ -46,6 +47,8 @@ public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
           FLOW_NODE_END_DATE,
           USER_TASK_DUE_DATE,
           USER_TASK_DELETE_REASON);
+
+  @SuppressWarnings("checkstyle:membername")
   String UPDATE_USER_TASK_FIELDS_SCRIPT =
       FIELDS_TO_UPDATE.stream()
           .map(fieldKey -> String.format("existingTask.%s = newFlowNode.%s;%n", fieldKey, fieldKey))

@@ -350,7 +350,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
 
   @AllArgsConstructor
   @Getter
-  private static class ProcessBucket {
+  private static final class ProcessBucket {
 
     private final String procDefKey;
     private final String version;

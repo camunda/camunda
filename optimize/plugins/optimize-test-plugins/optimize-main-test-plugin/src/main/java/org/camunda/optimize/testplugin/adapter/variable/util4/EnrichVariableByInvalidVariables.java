@@ -15,59 +15,62 @@ import java.util.List;
 public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
     list.add(null);
     list.add(new PluginVariableDto());
 
     final PluginVariableDto validVariableInstance = list.get(0);
 
     // engine alias is missing
-    PluginVariableDto engineAliasMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto engineAliasMissing = createPluginVariableDto(validVariableInstance);
     engineAliasMissing.setEngineAlias(null);
     list.add(engineAliasMissing);
 
     // process definition id is missing
-    PluginVariableDto processDefinitionIdMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto processDefinitionIdMissing = createPluginVariableDto(
+        validVariableInstance);
     processDefinitionIdMissing.setProcessDefinitionId(null);
     list.add(processDefinitionIdMissing);
 
     // process definition key is missing
-    PluginVariableDto processDefinitionKeyMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto processDefinitionKeyMissing = createPluginVariableDto(
+        validVariableInstance);
     processDefinitionKeyMissing.setProcessDefinitionKey(null);
     list.add(processDefinitionKeyMissing);
 
     // process instance id is missing
-    PluginVariableDto processInstanceIdMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto processInstanceIdMissing = createPluginVariableDto(
+        validVariableInstance);
     processInstanceIdMissing.setProcessInstanceId(null);
     list.add(processInstanceIdMissing);
 
     // type is missing
-    PluginVariableDto typeMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto typeMissing = createPluginVariableDto(validVariableInstance);
     typeMissing.setType(null);
     list.add(typeMissing);
 
     // type is invalid
-    PluginVariableDto typeInvalid = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto typeInvalid = createPluginVariableDto(validVariableInstance);
     typeInvalid.setType("asgasdfad");
     list.add(typeInvalid);
 
     // version is missing
-    PluginVariableDto versionMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto versionMissing = createPluginVariableDto(validVariableInstance);
     versionMissing.setVersion(null);
     list.add(versionMissing);
 
     // name is missing
-    PluginVariableDto nameMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto nameMissing = createPluginVariableDto(validVariableInstance);
     nameMissing.setName(null);
     list.add(nameMissing);
 
     // timestamp is missing
-    PluginVariableDto timestampMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto timestampMissing = createPluginVariableDto(validVariableInstance);
     timestampMissing.setTimestamp(null);
     list.add(timestampMissing);
 
     // id is missing
-    PluginVariableDto idMissing = createPluginVariableDto(validVariableInstance);
+    final PluginVariableDto idMissing = createPluginVariableDto(validVariableInstance);
     idMissing.setId(null);
     list.add(idMissing);
 

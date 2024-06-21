@@ -109,7 +109,7 @@ public class IngestionRestService {
   }
 
   @Data
-  private static class ValidList<E> implements List<E> {
+  private static final class ValidList<E> implements List<E> {
 
     @Delegate
     private List<E> list = new ArrayList<>();

@@ -16,7 +16,7 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
 
 public class AuthorizationRequestCookieValueMapperTest {
 
-  private AuthorizationRequestCookieValueMapper underTest =
+  private final AuthorizationRequestCookieValueMapper underTest =
       new AuthorizationRequestCookieValueMapper();
 
   @Test

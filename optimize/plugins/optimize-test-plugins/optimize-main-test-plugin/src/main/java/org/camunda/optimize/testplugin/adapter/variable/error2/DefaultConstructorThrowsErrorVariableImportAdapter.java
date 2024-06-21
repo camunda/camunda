@@ -19,7 +19,7 @@ public class DefaultConstructorThrowsErrorVariableImportAdapter implements Varia
   }
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
     return new ArrayList<>();
   }
 }

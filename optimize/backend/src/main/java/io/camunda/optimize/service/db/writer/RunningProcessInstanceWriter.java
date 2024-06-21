@@ -37,6 +37,8 @@ import org.springframework.stereotype.Component;
 public class RunningProcessInstanceWriter {
 
   private static final Set<String> READ_ONLY_ALIASES = Set.of(PROCESS_INSTANCE_MULTI_ALIAS);
+
+  @SuppressWarnings("checkstyle:membername")
   Set<String> UPDATABLE_FIELDS =
       Set.of(
           PROCESS_DEFINITION_KEY,
@@ -47,7 +49,10 @@ public class RunningProcessInstanceWriter {
           STATE,
           DATA_SOURCE,
           TENANT_ID);
+
+  @SuppressWarnings("checkstyle:membername")
   String IMPORT_ITEM_NAME = "running process instances";
+
   private final ProcessInstanceRepository processInstanceRepository;
   private final IndexRepository indexRepository;
   private final ImportRequestDtoFactory importRequestDtoFactory;

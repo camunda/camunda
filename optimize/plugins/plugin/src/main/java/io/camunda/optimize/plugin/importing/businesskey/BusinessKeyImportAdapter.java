@@ -8,6 +8,7 @@
 package io.camunda.optimize.plugin.importing.businesskey;
 
 public interface BusinessKeyImportAdapter {
+
   /**
    * Adapts the business key a process instance to be imported.
    *

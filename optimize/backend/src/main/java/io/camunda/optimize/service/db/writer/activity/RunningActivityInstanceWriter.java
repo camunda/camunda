@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class RunningActivityInstanceWriter extends AbstractActivityInstanceWriter {
 
+  @SuppressWarnings("checkstyle:membername")
   String UPDATE_USER_TASK_FIELDS_SCRIPT =
       Stream.of(
               FLOW_NODE_ID,

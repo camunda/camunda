@@ -16,7 +16,7 @@ public interface DecisionInputImportAdapter {
    * that should not be analyzed by Optimize.
    *
    * @param inputs The decision input instances that would be imported by Optimize, which represent
-   *     instances from the engine.
+   * instances from the engine.
    * @return An adapted list that is imported to Optimize.
    */
   List<PluginDecisionInputDto> adaptInputs(List<PluginDecisionInputDto> inputs);

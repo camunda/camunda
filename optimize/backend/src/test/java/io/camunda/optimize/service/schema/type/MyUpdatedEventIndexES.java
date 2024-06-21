@@ -20,7 +20,7 @@ public class MyUpdatedEventIndexES extends MyUpdatedEventIndex<XContentBuilder> 
 
   @Override
   public XContentBuilder getStaticSettings(
-      XContentBuilder xContentBuilder, ConfigurationService configurationService)
+      final XContentBuilder xContentBuilder, final ConfigurationService configurationService)
       throws IOException {
     return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, DEFAULT_SHARD_NUMBER);
   }

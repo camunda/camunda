@@ -17,7 +17,7 @@ public class ExtendedFlowNodeEventDto extends FlowNodeEventDto {
     return myNewForbiddenField;
   }
 
-  public void setMyNewForbiddenField(String myNewForbiddenField) {
+  public void setMyNewForbiddenField(final String myNewForbiddenField) {
     this.myNewForbiddenField = myNewForbiddenField;
   }
 }

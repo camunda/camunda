@@ -46,7 +46,7 @@ public class ProcessExecutionPlanBuilder {
     }
   }
 
-  public class AddGroupByBuilder {
+  public final class AddGroupByBuilder {
 
     private final Class<? extends ProcessViewPart> viewPartClass;
 

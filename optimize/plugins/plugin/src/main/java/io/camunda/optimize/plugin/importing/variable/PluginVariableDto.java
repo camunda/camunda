@@ -43,7 +43,9 @@ public class PluginVariableDto {
    */
   private String type;
 
-  /** The value of the variable. */
+  /**
+   * The value of the variable.
+   */
   private String value;
 
   /**

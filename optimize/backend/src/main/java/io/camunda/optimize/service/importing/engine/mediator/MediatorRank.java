@@ -14,6 +14,5 @@ public enum MediatorRank {
   DEFINITION_XML,
   INSTANCE,
   INSTANCE_SUB_ENTITIES,
-  IMPORT_META_DATA,
-  ;
+  IMPORT_META_DATA;
 }

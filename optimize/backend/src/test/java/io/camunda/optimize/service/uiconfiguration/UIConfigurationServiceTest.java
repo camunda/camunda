@@ -48,21 +48,28 @@ import org.springframework.core.env.Environment;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
-  @InjectMocks UIConfigurationService underTest;
+  @InjectMocks
+  UIConfigurationService underTest;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
-  @Mock private PlatformOptimizeVersionService versionService;
-  @Mock private TenantService tenantService;
+  @Mock
+  private PlatformOptimizeVersionService versionService;
+  @Mock
+  private TenantService tenantService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private SettingsService settingService;
 
-  @Mock private Environment environment;
-  @Mock private Optional<CloudSaasMetaInfoService> metaInfoService = Optional.empty();
-  @Mock private Identity identity;
-  @Mock private Users identityUsers;
+  @Mock
+  private Environment environment;
+  @Mock
+  private Optional<CloudSaasMetaInfoService> metaInfoService = Optional.empty();
+  @Mock
+  private Identity identity;
+  @Mock
+  private Users identityUsers;
 
   private static Stream<Arguments> optimizeProfiles() {
     return Stream.of(
@@ -81,7 +88,7 @@ public class UIConfigurationServiceTest {
   public void testProfileReadCorrectly(final String activeProfile) {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {activeProfile});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
@@ -95,7 +102,7 @@ public class UIConfigurationServiceTest {
   public void testDefaultProfileUsed() {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{});
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
@@ -108,7 +115,7 @@ public class UIConfigurationServiceTest {
   public void testMultipleProfilesDoesNotWork() {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE, CCSM_PROFILE});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{CLOUD_PROFILE, CCSM_PROFILE});
 
     // then
     assertThatThrownBy(() -> underTest.getUIConfiguration())
@@ -120,7 +127,7 @@ public class UIConfigurationServiceTest {
   public void testUnknownProfileUsesDefault() {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {"someUnknownProfile"});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{"someUnknownProfile"});
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
@@ -135,7 +142,7 @@ public class UIConfigurationServiceTest {
       final String activeProfile, final boolean expectedIsEnterprise) {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {activeProfile});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{activeProfile});
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
@@ -148,7 +155,7 @@ public class UIConfigurationServiceTest {
   public void testMaximumNumberOfDataSourcesForReportIsReturned() {
     // given
     initializeMocks();
-    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+    when(environment.getActiveProfiles()).thenReturn(new String[]{CLOUD_PROFILE});
     when(configurationService.getUiConfiguration().getMaxNumDataSourcesForReport()).thenReturn(50);
 
     // when

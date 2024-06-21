@@ -39,8 +39,10 @@ public class DecisionInstanceFetcherTest {
   private final ConfigurationService configurationService =
       ConfigurationServiceBuilder.createDefaultConfiguration();
 
-  @Mock private EngineContext engineContext;
-  @Mock private BackoffCalculator backoffCalculator;
+  @Mock
+  private EngineContext engineContext;
+  @Mock
+  private BackoffCalculator backoffCalculator;
 
   @Mock(answer = Answers.RETURNS_SELF)
   private Client engineClient;

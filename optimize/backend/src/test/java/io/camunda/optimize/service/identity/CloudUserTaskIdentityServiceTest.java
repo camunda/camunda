@@ -39,14 +39,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("checkstyle:methodname")
 public class CloudUserTaskIdentityServiceTest {
+
   public static final String EXTERNAL_ID = "externalId";
   public static final UserDto TEST_USER_1 =
       new UserDto("123", "Donna Noble", "donna@email.com", Collections.emptyList());
   public static final UserDto TEST_USER_2 =
       new UserDto("456", "John Smith", "john@email.com", Collections.emptyList());
 
-  @Mock AbstractIdentityService identityService;
+  @Mock
+  AbstractIdentityService identityService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;

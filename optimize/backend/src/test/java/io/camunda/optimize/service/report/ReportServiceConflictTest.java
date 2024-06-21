@@ -39,19 +39,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ReportServiceConflictTest {
 
-  @Mock ReportWriter reportWriter;
+  @Mock
+  ReportWriter reportWriter;
 
-  @Mock ReportReader reportReader;
+  @Mock
+  ReportReader reportReader;
 
-  @Mock ReportAuthorizationService authorizationService;
+  @Mock
+  ReportAuthorizationService authorizationService;
 
-  @Mock ReportRelationService reportRelationService;
+  @Mock
+  ReportRelationService reportRelationService;
 
-  @Mock AuthorizedCollectionService collectionService;
+  @Mock
+  AuthorizedCollectionService collectionService;
 
-  @Mock AbstractIdentityService abstractIdentityService;
+  @Mock
+  AbstractIdentityService abstractIdentityService;
 
-  @Mock DefinitionService definitionService;
+  @Mock
+  DefinitionService definitionService;
 
   private ReportService underTest;
 

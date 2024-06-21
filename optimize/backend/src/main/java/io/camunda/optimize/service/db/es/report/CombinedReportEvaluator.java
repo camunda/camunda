@@ -168,7 +168,7 @@ public class CombinedReportEvaluator {
     return result;
   }
 
-  private static class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
+  private static final class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
 
     @Setter
     private MinMaxStatDto combinedRangeMinMaxStats;

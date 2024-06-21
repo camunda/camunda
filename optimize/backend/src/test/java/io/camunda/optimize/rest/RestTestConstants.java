@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestTestConstants {
+
   public static final String DEFAULT_USERNAME = "demo";
   public static final String DEFAULT_PASSWORD = "demo";
 }

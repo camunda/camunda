@@ -17,9 +17,10 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 
 @Slf4j
 public class MyUpdatedEventIndexOS extends MyUpdatedEventIndex<IndexSettings.Builder> {
+
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder contentBuilder, ConfigurationService configurationService) {
+      final IndexSettings.Builder contentBuilder, final ConfigurationService configurationService) {
     return addStaticSetting(NUMBER_OF_SHARDS_SETTING, DEFAULT_SHARD_NUMBER, contentBuilder);
   }
 }

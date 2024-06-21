@@ -13,9 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 public class AddNewOutput implements DecisionOutputImportAdapter {
+
   @Override
-  public List<PluginDecisionOutputDto> adaptOutputs(List<PluginDecisionOutputDto> outputs) {
-    PluginDecisionOutputDto output = new PluginDecisionOutputDto();
+  public List<PluginDecisionOutputDto> adaptOutputs(final List<PluginDecisionOutputDto> outputs) {
+    final PluginDecisionOutputDto output = new PluginDecisionOutputDto();
     output.setRuleId(UUID.randomUUID().toString());
     output.setRuleOrder(2);
     output.setVariableName("foo");

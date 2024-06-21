@@ -19,22 +19,23 @@ import java.util.Map;
 public class MapObjectVariableToPrimitiveOne implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
-    List<PluginVariableDto> resultList = new ArrayList<>();
-    for (PluginVariableDto pluginVariableDto : list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
+    final List<PluginVariableDto> resultList = new ArrayList<>();
+    for (final PluginVariableDto pluginVariableDto : list) {
       if (pluginVariableDto.getType().equalsIgnoreCase("object")
           && pluginVariableDto.getValueInfo().get("objectTypeName").equals("org.camunda.foo.Person")
           && pluginVariableDto
-              .getValueInfo()
-              .get("serializationDataFormat")
-              .equals("application/json")) {
-        ObjectMapper objectMapper = new ObjectMapper();
+          .getValueInfo()
+          .get("serializationDataFormat")
+          .equals("application/json")) {
+        final ObjectMapper objectMapper = new ObjectMapper();
         try {
-          Map<String, String> jsonVariable =
+          final Map<String, String> jsonVariable =
               objectMapper.readValue(
-                  pluginVariableDto.getValue(), new TypeReference<Map<String, String>>() {});
+                  pluginVariableDto.getValue(), new TypeReference<Map<String, String>>() {
+                  });
 
-          PluginVariableDto nameVar = new PluginVariableDto();
+          final PluginVariableDto nameVar = new PluginVariableDto();
           nameVar.setEngineAlias(pluginVariableDto.getEngineAlias());
           nameVar.setId(pluginVariableDto.getId());
           nameVar.setProcessDefinitionId(pluginVariableDto.getProcessDefinitionId());
@@ -46,7 +47,7 @@ public class MapObjectVariableToPrimitiveOne implements VariableImportAdapter {
           nameVar.setValue(jsonVariable.get("name"));
           nameVar.setTimestamp(pluginVariableDto.getTimestamp());
           resultList.add(nameVar);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           e.printStackTrace();
         }
       } else {

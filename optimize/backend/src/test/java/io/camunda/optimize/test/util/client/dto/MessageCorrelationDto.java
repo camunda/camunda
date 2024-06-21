@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 public class MessageCorrelationDto {
 
+  Map<String, VariableValueDto> processVariables = new HashMap<>();
   private String messageName;
   private boolean all;
-  Map<String, VariableValueDto> processVariables = new HashMap<>();
 }

@@ -15,6 +15,7 @@ public class OptimizeConflictException extends OptimizeRuntimeException {
 
   public static final String ERROR_CODE = "conflict";
 
+  @SuppressWarnings("checkstyle:mutableexception")
   private Set<ConflictedItemDto> conflictedItems;
 
   public OptimizeConflictException(final String message) {

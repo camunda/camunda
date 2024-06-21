@@ -14,7 +14,8 @@ import java.io.IOException;
 public class AddCustomTokenFilter implements EngineRestFilter {
 
   @Override
-  public void filter(ClientRequestContext requestContext, String engineAlias, String engineName)
+  public void filter(final ClientRequestContext requestContext, final String engineAlias,
+      final String engineName)
       throws IOException {
     requestContext.getHeaders().add("Custom-Token", "SomeCustomToken");
   }

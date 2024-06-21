@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class UserProfileDto {
+
   protected String id;
   protected String firstName;
   protected String lastName;

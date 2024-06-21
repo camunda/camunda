@@ -14,8 +14,8 @@ import java.util.List;
 public class SetAllValuesToFooVariableImportAdapter implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
-    for (PluginVariableDto pluginVariableDto : list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
+    for (final PluginVariableDto pluginVariableDto : list) {
       pluginVariableDto.setValue("foo");
     }
     return list;

@@ -29,7 +29,7 @@ import org.opensearch.client.opensearch._types.Script;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OpenSearchWriterUtil {
 
-  public static final DateTimeFormatter dateTimeFormatter =
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static Script createFieldUpdateScript(
@@ -60,7 +60,7 @@ public class OpenSearchWriterUtil {
       Object fieldValue = entityAsMap.get(fieldName);
       if (fieldValue != null) {
         if (fieldValue instanceof final TemporalAccessor temporalAccessor) {
-          fieldValue = dateTimeFormatter.format(temporalAccessor);
+          fieldValue = DATE_TIME_FORMATTER.format(temporalAccessor);
         }
         params.put(fieldName, JsonData.of(fieldValue));
       }

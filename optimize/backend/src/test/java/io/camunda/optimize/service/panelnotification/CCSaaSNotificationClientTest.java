@@ -27,7 +27,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSaaSNotificationClientTest {
-  @Mock private CCSaaSM2MTokenProvider m2mTokenProvider;
+
+  @Mock
+  private CCSaaSM2MTokenProvider m2mTokenProvider;
   private CCSaaSNotificationClient underTest;
 
   @BeforeEach

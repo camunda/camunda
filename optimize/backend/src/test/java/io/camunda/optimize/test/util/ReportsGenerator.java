@@ -65,8 +65,10 @@ import org.camunda.bpm.model.xml.ModelInstance;
 @Slf4j
 public class ReportsGenerator {
 
+  @SuppressWarnings("checkstyle:constantname")
   private static final Random randomGen = new Random();
   private static final String DOUBLE_VAR = "doubleVar";
+  @SuppressWarnings("checkstyle:constantname")
   private static final SimpleEngineClient client =
       new SimpleEngineClient(IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default");
 
@@ -313,7 +315,7 @@ public class ReportsGenerator {
   @NoArgsConstructor
   @Setter
   @Getter
-  private static class DmnFilterData {
+  private static final class DmnFilterData {
 
     private String inputName;
     private VariableType inputType;

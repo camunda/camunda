@@ -100,7 +100,7 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
   }
 
   @Priority(Integer.MAX_VALUE)
-  private static class LoggingFilter implements ClientRequestFilter {
+  private static final class LoggingFilter implements ClientRequestFilter {
 
     @Override
     public void filter(final ClientRequestContext requestContext) {

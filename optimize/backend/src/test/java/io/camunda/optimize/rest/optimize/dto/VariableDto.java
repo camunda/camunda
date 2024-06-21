@@ -25,6 +25,7 @@ public class VariableDto implements Serializable {
   @Getter
   @Setter
   public static class ValueInfo {
+
     private String objectTypeName;
     private String serializationDataFormat;
   }

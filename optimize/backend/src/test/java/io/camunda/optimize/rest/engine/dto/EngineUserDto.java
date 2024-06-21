@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineUserDto {
+
   private UserProfileDto profile;
   private UserCredentialsDto credentials;
 }

@@ -54,21 +54,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MixpanelClientTest {
 
+  @RegisterExtension
+  protected final LogCapturer logCapturer =
+      LogCapturer.create().captureForType(MixpanelClient.class);
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
   private final ConfigurationService configurationService =
       ConfigurationServiceBuilder.createDefaultConfiguration();
-  @Mock private CloseableHttpClient httpClient;
-
+  @Mock
+  private CloseableHttpClient httpClient;
   private MixpanelClient mixpanelClient;
-
-  @RegisterExtension
-  protected final LogCapturer logCapturer =
-      LogCapturer.create().captureForType(MixpanelClient.class);
 
   @BeforeEach
   public void setup() {
-    this.mixpanelClient = new MixpanelClient(configurationService, objectMapper, httpClient);
+    mixpanelClient = new MixpanelClient(configurationService, objectMapper, httpClient);
   }
 
   @SneakyThrows
@@ -93,7 +92,7 @@ public class MixpanelClientTest {
     // when
     mixpanelClient.importEvent(
         new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelEventProperties));
-    ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
+    final ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
     verify(httpClient, times(1)).execute(requestCaptor.capture());
 
     // then

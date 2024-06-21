@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public interface BusinessKeyWriter {
 
+  @SuppressWarnings("checkstyle:constantname")
   Logger log = LoggerFactory.getLogger(BusinessKeyWriter.class);
 
   void deleteByProcessInstanceIds(final List<String> processInstanceIds);

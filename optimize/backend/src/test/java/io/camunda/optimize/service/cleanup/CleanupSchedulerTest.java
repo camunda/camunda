@@ -98,7 +98,7 @@ public class CleanupSchedulerTest {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private CleanupScheduler createOptimizeCleanupServiceToTest() {

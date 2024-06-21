@@ -34,8 +34,10 @@ public class CCSaaSUserCacheTest {
 
   public static final String ACCESS_TOKEN = "someToken";
 
-  @Mock CCSaaSUserClient ccSaaSUserClient;
-  @Mock AccountsUserAccessTokenProvider accessTokenProvider;
+  @Mock
+  CCSaaSUserClient ccSaaSUserClient;
+  @Mock
+  AccountsUserAccessTokenProvider accessTokenProvider;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;

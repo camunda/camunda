@@ -50,7 +50,7 @@ public class DurationAggregationUtil {
   }
 
   public static AggregationDto[] getSupportedAggregationTypes() {
-    List<AggregationDto> aggregationDtos =
+    final List<AggregationDto> aggregationDtos =
         Arrays.stream(values())
             .filter(aggType -> !aggType.equals(PERCENTILE))
             .map(AggregationDto::new)
@@ -75,8 +75,8 @@ public class DurationAggregationUtil {
   }
 
   public static Map<AggregationDto, Double>
-      calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(
-          final Number... setDuration) {
+  calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(
+      final Number... setDuration) {
     final TDigest tDigest = TDigest.createAvlTreeDigest(100);
     Arrays.stream(setDuration).forEach(duration -> tDigest.add((double) duration));
     return calculateExpectedValueGivenDurationsUsingPercentilesFunction(
@@ -84,7 +84,7 @@ public class DurationAggregationUtil {
   }
 
   public static Map<AggregationDto, Double>
-      calculateExpectedValueGivenDurationsWithPercentileInterpolation(final Number... setDuration) {
+  calculateExpectedValueGivenDurationsWithPercentileInterpolation(final Number... setDuration) {
     return calculateExpectedValueGivenDurationsUsingPercentilesFunction(
         percentile ->
             percentiles().index((int) (percentile * 100)).compute(Arrays.asList(setDuration)),
@@ -92,8 +92,8 @@ public class DurationAggregationUtil {
   }
 
   private static Map<AggregationDto, Double>
-      calculateExpectedValueGivenDurationsUsingPercentilesFunction(
-          final Function<Double, Double> percentileFunction, final Number... setDuration) {
+  calculateExpectedValueGivenDurationsUsingPercentilesFunction(
+      final Function<Double, Double> percentileFunction, final Number... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
     Stream.of(setDuration).map(Number::longValue).forEach(statistics::addValue);
 

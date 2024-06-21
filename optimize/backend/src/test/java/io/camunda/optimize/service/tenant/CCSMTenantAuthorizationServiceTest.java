@@ -41,8 +41,10 @@ public class CCSMTenantAuthorizationServiceTest {
   private static final String TEST_TOKEN = "someAuthToken";
   private static final String TEST_USER_ID = "someUserId";
 
-  @Mock private CCSMTokenService ccsmTokenService;
-  @Mock private ConfigurationService configurationService;
+  @Mock
+  private CCSMTokenService ccsmTokenService;
+  @Mock
+  private ConfigurationService configurationService;
 
   private CamundaCCSMTenantAuthorizationService underTest;
 
@@ -140,36 +142,36 @@ public class CCSMTenantAuthorizationServiceTest {
 
   private void assertTenantAuthorization(final String authorizedTenantId) {
     assertThat(
-            underTest.isAuthorizedToSeeTenant(
-                TEST_USER_ID, IdentityType.USER, authorizedTenantId, ZEEBE_DATA_SOURCE))
+        underTest.isAuthorizedToSeeTenant(
+            TEST_USER_ID, IdentityType.USER, authorizedTenantId, ZEEBE_DATA_SOURCE))
         .isTrue();
     assertThat(
-            underTest.isAuthorizedToSeeTenant(TEST_USER_ID, IdentityType.USER, authorizedTenantId))
+        underTest.isAuthorizedToSeeTenant(TEST_USER_ID, IdentityType.USER, authorizedTenantId))
         .isTrue();
   }
 
   private void assertNoTenantAuthorization(final String unauthorizedTenantId) {
     assertThat(
-            underTest.isAuthorizedToSeeTenant(
-                TEST_USER_ID, IdentityType.USER, unauthorizedTenantId))
+        underTest.isAuthorizedToSeeTenant(
+            TEST_USER_ID, IdentityType.USER, unauthorizedTenantId))
         .isFalse();
     assertThat(
-            underTest.isAuthorizedToSeeTenant(
-                TEST_USER_ID, IdentityType.USER, unauthorizedTenantId, ZEEBE_DATA_SOURCE))
+        underTest.isAuthorizedToSeeTenant(
+            TEST_USER_ID, IdentityType.USER, unauthorizedTenantId, ZEEBE_DATA_SOURCE))
         .isFalse();
   }
 
   private void assertTenantAuthorization(final List<String> authorizedTenantIds) {
     assertThat(
-            underTest.isAuthorizedToSeeAllTenants(
-                TEST_USER_ID, IdentityType.USER, authorizedTenantIds))
+        underTest.isAuthorizedToSeeAllTenants(
+            TEST_USER_ID, IdentityType.USER, authorizedTenantIds))
         .isTrue();
   }
 
   private void assertNoTenantAuthorization(final List<String> unauthorizedTenantIds) {
     assertThat(
-            underTest.isAuthorizedToSeeAllTenants(
-                TEST_USER_ID, IdentityType.USER, unauthorizedTenantIds))
+        underTest.isAuthorizedToSeeAllTenants(
+            TEST_USER_ID, IdentityType.USER, unauthorizedTenantIds))
         .isFalse();
   }
 }

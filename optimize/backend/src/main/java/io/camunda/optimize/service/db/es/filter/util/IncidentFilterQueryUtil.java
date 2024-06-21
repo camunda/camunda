@@ -50,6 +50,7 @@ public class IncidentFilterQueryUtil {
       new NestedDefinitionQueryBuilder(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
+  @SuppressWarnings("checkstyle:constantname")
   private static final Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       incidentViewFilterInstanceQueries =
       ImmutableMap.of(

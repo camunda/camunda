@@ -237,7 +237,7 @@ public class KpiService {
 
   @Data
   @AllArgsConstructor
-  private static class TargetAndUnit {
+  private static final class TargetAndUnit {
 
     private String target;
     private TargetValueUnit targetValueUnit;

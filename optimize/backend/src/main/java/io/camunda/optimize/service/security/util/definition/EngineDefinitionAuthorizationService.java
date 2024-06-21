@@ -365,14 +365,14 @@ public class EngineDefinitionAuthorizationService
   }
 
   @Value
-  private static class TenantAndEnginePair {
+  private static final class TenantAndEnginePair {
 
     String tenantId;
     String engine;
   }
 
   @Value
-  private static class DefinitionTypeAndKey {
+  private static final class DefinitionTypeAndKey {
 
     DefinitionType type;
     String key;

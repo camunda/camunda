@@ -27,9 +27,9 @@ public class InvalidDateFormatVariableReplacer implements VariableImportAdapter 
           "2019-06-16T12:00:00.000+0200");
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
-    List<PluginVariableDto> adaptedVariables = new ArrayList<>();
-    for (PluginVariableDto variable : list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
+    final List<PluginVariableDto> adaptedVariables = new ArrayList<>();
+    for (final PluginVariableDto variable : list) {
       variable.setValue(INVALID_DATE_FORMATS.get(list.indexOf(variable)));
       variable.setTimestamp(OffsetDateTime.now());
       adaptedVariables.add(variable);

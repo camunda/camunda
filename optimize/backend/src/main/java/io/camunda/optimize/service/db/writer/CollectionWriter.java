@@ -186,6 +186,7 @@ public interface CollectionWriter {
           }
           """;
 
+  @SuppressWarnings("checkstyle:constantname")
   Logger log = LoggerFactory.getLogger(CollectionWriter.class);
 
   default IdResponseDto createNewCollectionAndReturnId(

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class ImportJobExecutor {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ImportJobExecutor.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(ImportJobExecutor.class);
   private final String name;
   private ThreadPoolExecutor importExecutor;
 
@@ -35,7 +35,7 @@ public abstract class ImportJobExecutor {
   }
 
   public void executeImportJob(final Runnable dbImportJob) {
-    logger.debug(
+    LOGGER.debug(
         "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
         getClass().getSimpleName(),
         importExecutor.getActiveCount(),
@@ -80,37 +80,37 @@ public abstract class ImportJobExecutor {
       final boolean timeElapsedBeforeTermination =
           !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
       if (timeElapsedBeforeTermination) {
-        logger.warn(
+        LOGGER.warn(
             "{}: Timeout during shutdown of import job executor! "
                 + "The current running jobs could not end within 60 seconds after shutdown operation.",
             getClass().getSimpleName());
       }
     } catch (final InterruptedException e) {
-      logger.error(
+      LOGGER.error(
           "{}: Interrupted while shutting down the import job executor!",
           getClass().getSimpleName(),
           e);
     }
   }
 
-  private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+  private final class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
 
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {
       // this will block if the queue is full
       if (!executor.isShutdown()) {
         try {
-          logger.debug(
+          LOGGER.debug(
               "{}: Max queue capacity is reached and, thus, can't schedule any new jobs. "
                   + "Caller needs to wait until there is new free spot. Job class [{}].",
               super.getClass().getSimpleName(),
               runnable.getClass().getSimpleName());
           executor.getQueue().put(runnable);
-          logger.debug(
+          LOGGER.debug(
               "{}: Added job to queue. Caller can continue working on his tasks.",
               super.getClass().getSimpleName());
         } catch (final InterruptedException e) {
-          logger.error(
+          LOGGER.error(
               "{}: Interrupted while waiting to submit a new job to the job executor!",
               getClass().getSimpleName(),
               e);

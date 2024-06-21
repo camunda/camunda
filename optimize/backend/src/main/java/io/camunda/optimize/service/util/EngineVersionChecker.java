@@ -30,6 +30,7 @@ public class EngineVersionChecker {
       "Engine didn't respond. Can not verify this engine's version";
 
   @Getter
+  @SuppressWarnings("checkstyle:constantname")
   private static final List<String> supportedEngines = new ArrayList<>();
 
   // Any minor or major versions newer than specified here will also be accepted

@@ -11,5 +11,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class DeploymentDto {
-  @Getter @Setter protected String id;
+
+  @Getter
+  @Setter
+  protected String id;
 }

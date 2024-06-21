@@ -14,6 +14,7 @@ import io.camunda.optimize.service.util.SnapshotUtil;
 import org.junit.jupiter.api.Test;
 
 public class SnapshotUtilTest {
+
   @Test
   public void getSnapshotNameForImportIndices() {
     // when/then

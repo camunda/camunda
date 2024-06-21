@@ -11,8 +11,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum IdentityLinkLogOperationType {
   CLAIM_OPERATION_TYPE("add"),
-  UNCLAIM_OPERATION_TYPE("delete"),
-  ;
+  UNCLAIM_OPERATION_TYPE("delete");
 
   private final String id;
 

@@ -16,13 +16,19 @@ import lombok.NoArgsConstructor;
 @Data
 public class PluginDecisionInputDto {
 
-  /** Unique id of the decision input value. */
+  /**
+   * Unique id of the decision input value.
+   */
   private String id;
 
-  /** The id of the clause the input value belongs to. */
+  /**
+   * The id of the clause the input value belongs to.
+   */
   private String clauseId;
 
-  /** The name of the clause the input value belongs to. */
+  /**
+   * The name of the clause the input value belongs to.
+   */
   private String clauseName;
 
   /**
@@ -34,22 +40,34 @@ public class PluginDecisionInputDto {
    */
   private String type;
 
-  /** The string representation of the input variable's value. */
+  /**
+   * The string representation of the input variable's value.
+   */
   private String value;
 
-  /** The key of the decision definition, current input corresponds to. */
+  /**
+   * The key of the decision definition, current input corresponds to.
+   */
   private String decisionDefinitionKey;
 
-  /** The version of the decision definition, current input corresponds to. */
+  /**
+   * The version of the decision definition, current input corresponds to.
+   */
   private String decisionDefinitionVersion;
 
-  /** The ID of the decision definition, current input corresponds to. */
+  /**
+   * The ID of the decision definition, current input corresponds to.
+   */
   private String decisionDefinitionId;
 
-  /** The ID of the decision instance, current input corresponds to. */
+  /**
+   * The ID of the decision instance, current input corresponds to.
+   */
   private String decisionInstanceId;
 
-  /** Alias of the engine, from which the current Decision Instance is imported. */
+  /**
+   * Alias of the engine, from which the current Decision Instance is imported.
+   */
   private String engineAlias;
 
   /**

@@ -58,6 +58,7 @@ public class SearchableIdentityCacheTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void searchUserById_exactIdMatchBoostedOverMatchesOnOtherFields() {
     final UserDto userIdentity1 =
         new UserDto("frodo", "Other", "Other", "other.baggins@camunda.com");
@@ -211,6 +212,7 @@ public class SearchableIdentityCacheTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void searchGroupById_exactIdMatchBoostedOverMatchesOnOtherFields() {
     final GroupDto group1 = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group1);
@@ -223,6 +225,7 @@ public class SearchableIdentityCacheTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void searchGroupById_resultsUnaffectedByMemberCountExists() {
     final GroupDto group1 = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group1);

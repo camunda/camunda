@@ -14,10 +14,11 @@ import java.util.List;
 
 public class NoDefaultConstructorVariableImportAdapter implements VariableImportAdapter {
 
-  public NoDefaultConstructorVariableImportAdapter(String foo) {}
+  public NoDefaultConstructorVariableImportAdapter(final String foo) {
+  }
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
     return new ArrayList<>();
   }
 }

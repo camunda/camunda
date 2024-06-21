@@ -33,8 +33,9 @@ public class OptimizeAlertEmailValidationExceptionMapperTest {
 
     // when
     final Response response = underTest.toResponse(emailValidationException);
-    Map<String, Object> mappedResponse =
-        new ObjectMapper().convertValue(response.getEntity(), new TypeReference<>() {});
+    final Map<String, Object> mappedResponse =
+        new ObjectMapper().convertValue(response.getEntity(), new TypeReference<>() {
+        });
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWriter {
 
+  @SuppressWarnings("checkstyle:membername")
   Set<String> USER_TASK_FIELDS_TO_UPDATE =
       Set.of(
           FLOW_NODE_ID,
@@ -43,6 +44,7 @@ public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWri
           FLOW_NODE_DEFINITION_VERSION,
           FLOW_NODE_TENANT_ID);
 
+  @SuppressWarnings("checkstyle:membername")
   String UPDATE_USER_TASK_FIELDS_SCRIPT =
       USER_TASK_FIELDS_TO_UPDATE.stream()
           .map(fieldKey -> String.format("existingTask.%s = newFlowNode.%s;%n", fieldKey, fieldKey))

@@ -12,8 +12,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum IdentityLinkLogType {
   CANDIDATE("candidate"),
   ASSIGNEE("assignee"),
-  OWNER("owner"),
-  ;
+  OWNER("owner");
 
   private final String id;
 

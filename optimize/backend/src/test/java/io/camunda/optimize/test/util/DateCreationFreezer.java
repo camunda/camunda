@@ -20,7 +20,8 @@ import lombok.NoArgsConstructor;
 /**
  * This class is a util builder that helps to freeze the date for testing, e.g if you want to test
  * that a collection has the right creation date you can set you this class to freeze the time for
- * Optimize. The production code will then use this frozen date to create a new date/OffsetDateTime.
+ * Optimize. The production code will then use this frozen date to create a new
+ * date/OffsetDateTime.
  *
  * <p>For that you can also use {@link LocalDateUtil} but with Java > 11 the OffsetDateTime uses
  * nanoseconds and the handling becomes a bit trickier. This class abstracts all this away so you
@@ -49,7 +50,7 @@ public class DateCreationFreezer {
     private ChronoUnit unitToTruncateTo;
 
     public InnerDateFreezerBuilder setDateToFreezeToNow() {
-      this.dateToFreeze = LocalDateUtil.getCurrentDateTime();
+      dateToFreeze = LocalDateUtil.getCurrentDateTime();
       return this;
     }
 

@@ -131,7 +131,7 @@ public class SimpleEngineClient {
   private static final Set<String> STANDARD_USERS = ImmutableSet.of("mary", "john", "peter");
   private static final Set<String> STANDARD_GROUPS =
       ImmutableSet.of("accounting", "management", "sales");
-  private static final DateTimeFormatter dateTimeFormatter =
+  private static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
   private final EnginePluginClient enginePluginClient;
   private final CloseableHttpClient client;
@@ -170,11 +170,11 @@ public class SimpleEngineClient {
   private static ObjectMapper createObjectMapper() {
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
-        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
+        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(DATE_TIME_FORMATTER));
     javaTimeModule.addSerializer(
         Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
     javaTimeModule.addDeserializer(
-        OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
+        OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(DATE_TIME_FORMATTER));
 
     return Jackson2ObjectMapperBuilder.json()
         .modules(new Jdk8Module(), javaTimeModule)
@@ -189,7 +189,8 @@ public class SimpleEngineClient {
 
   @SneakyThrows
   private String serializeDateTimeToUrlEncodedString(final OffsetDateTime createdAfter) {
-    return URLEncoder.encode(dateTimeFormatter.format(createdAfter), StandardCharsets.UTF_8.name());
+    return URLEncoder.encode(DATE_TIME_FORMATTER.format(createdAfter),
+        StandardCharsets.UTF_8.name());
   }
 
   public List<String> deployProcesses(

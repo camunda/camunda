@@ -11,6 +11,7 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import java.io.IOException;
 
 public interface EngineRestFilter {
+
   /**
    * Filter method called before a request has been dispatched to the REST-API of a process engine.
    *

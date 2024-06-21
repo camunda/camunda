@@ -288,8 +288,14 @@ public class CompositeCommandResult {
 
     final Function<MapResultEntryDto, Comparable> valueToSortByExtractor;
     switch (sortBy) {
-      default:
+      case ReportSortingDto.SORT_BY_VALUE:
+        valueToSortByExtractor = MapResultEntryDto::getValue;
+        break;
+      case ReportSortingDto.SORT_BY_LABEL:
+        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
+        break;
       case ReportSortingDto.SORT_BY_KEY:
+      default:
         valueToSortByExtractor =
             entry -> {
               if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
@@ -305,12 +311,6 @@ public class CompositeCommandResult {
                 }
               }
             };
-        break;
-      case ReportSortingDto.SORT_BY_VALUE:
-        valueToSortByExtractor = MapResultEntryDto::getValue;
-        break;
-      case ReportSortingDto.SORT_BY_LABEL:
-        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
         break;
     }
 
@@ -349,8 +349,11 @@ public class CompositeCommandResult {
               final Function<HyperMapResultEntryDto, Comparable> valueToSortByExtractor;
 
               switch (sortBy) {
-                default:
+                case ReportSortingDto.SORT_BY_LABEL:
+                  valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
+                  break;
                 case ReportSortingDto.SORT_BY_KEY:
+                default:
                   valueToSortByExtractor =
                       entry -> {
                         if (entry.getKey().equals(MISSING_VARIABLE_KEY)) {
@@ -366,9 +369,6 @@ public class CompositeCommandResult {
                           }
                         }
                       };
-                  break;
-                case ReportSortingDto.SORT_BY_LABEL:
-                  valueToSortByExtractor = entry -> entry.getLabel().toLowerCase(Locale.ENGLISH);
                   break;
               }
 

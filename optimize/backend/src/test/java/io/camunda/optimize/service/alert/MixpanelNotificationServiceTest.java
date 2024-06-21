@@ -28,10 +28,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class MixpanelNotificationServiceTest {
-  @Mock private AlertDefinitionDto alertDefinitionDto;
-  @Mock private AlertNotificationDto alertNotificationDto;
-  @Mock private MixpanelReportingService reportingService;
-  @InjectMocks private MixpanelNotificationService underTest;
+
+  @Mock
+  private AlertDefinitionDto alertDefinitionDto;
+  @Mock
+  private AlertNotificationDto alertNotificationDto;
+  @Mock
+  private MixpanelReportingService reportingService;
+  @InjectMocks
+  private MixpanelNotificationService underTest;
 
   @ParameterizedTest
   @MethodSource("alertTypeAndExpectedMixPanelEvent")

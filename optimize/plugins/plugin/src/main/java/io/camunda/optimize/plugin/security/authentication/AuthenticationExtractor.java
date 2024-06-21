@@ -10,6 +10,7 @@ package io.camunda.optimize.plugin.security.authentication;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthenticationExtractor {
+
   /**
    * Checks the request for authentication. May not return null, but always an AuthenticationResult
    * that indicates, whether authentication was successful, and, if true, always provides the

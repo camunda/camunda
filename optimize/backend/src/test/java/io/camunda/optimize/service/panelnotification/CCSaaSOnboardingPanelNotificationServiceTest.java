@@ -38,10 +38,13 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
   private static final String PROCESS_NAME = "aProcessName";
   private static final String ORG_ID = "anOrgId";
   private static final String CLUSTER_ID = "aClusterId";
-  @Mock private CCSaaSNotificationClient notificationClient;
-  @Mock private DefinitionService definitionService;
+  @Mock
+  private CCSaaSNotificationClient notificationClient;
+  @Mock
+  private DefinitionService definitionService;
   private CCSaaSOnboardingPanelNotificationService underTest;
-  @Mock private RootUrlGenerator rootUrlGenerator;
+  @Mock
+  private RootUrlGenerator rootUrlGenerator;
 
   @BeforeEach
   public void setup() {
@@ -66,7 +69,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090/" + CLUSTER_ID);
 
     // when
-    ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
+    final ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
         ArgumentCaptor.forClass(PanelNotificationRequestDto.class);
     underTest.sendOnboardingPanelNotification(PROCESS_KEY);
     verify(notificationClient).sendPanelNotificationToOrg(actualNotification.capture());
@@ -94,7 +97,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
 
   private PanelNotificationMetaDataDto createExpectedPanelNotificationMetadataDto() {
     return PanelNotificationMetaDataDto.builder()
-        .permissions(new String[] {"cluster:optimize:read"})
+        .permissions(new String[]{"cluster:optimize:read"})
         .identifier("initialVisitToInstantDashboard")
         .href(
             String.format(

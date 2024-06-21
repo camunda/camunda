@@ -16,7 +16,7 @@ public interface VariableImportAdapter {
    * should not be analyzed by Optimize.
    *
    * @param variables The variables that would be imported by Optimize, which represent variables
-   *     from the engine.
+   * from the engine.
    * @return An adapted list that is imported to Optimize.
    */
   List<PluginVariableDto> adaptVariables(List<PluginVariableDto> variables);

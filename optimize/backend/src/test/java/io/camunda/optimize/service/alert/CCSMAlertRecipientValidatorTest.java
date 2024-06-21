@@ -26,14 +26,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSMAlertRecipientValidatorTest {
+
   private static final String TEST_EMAIL_1 = "test1@test.com";
   private static final String TEST_EMAIL_2 = "test2@test.com";
   private static final UserDto TEST_USER_1 = new UserDto("id1", "name1", "name1", TEST_EMAIL_1);
   private static final UserDto TEST_USER_2 = new UserDto("id2", "name2", "name2", TEST_EMAIL_2);
 
-  @Mock private CCSMIdentityService identityService;
+  @Mock
+  private CCSMIdentityService identityService;
 
-  @InjectMocks private CCSMAlertRecipientValidator ccsmAlertRecipientValidator;
+  @InjectMocks
+  private CCSMAlertRecipientValidator ccsmAlertRecipientValidator;
 
   @Test
   public void alertValidationSucceedsWhenAllEmailsKnown() {

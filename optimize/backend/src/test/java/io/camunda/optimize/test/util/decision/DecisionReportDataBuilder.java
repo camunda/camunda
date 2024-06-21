@@ -43,7 +43,7 @@ public class DecisionReportDataBuilder {
   }
 
   public DecisionReportDataDto build() {
-    DecisionReportDataDto reportData;
+    final DecisionReportDataDto reportData;
     switch (reportDataType) {
       case RAW_DATA:
         reportData = createDecisionReportDataViewRawAsTable(definitions);
@@ -70,77 +70,78 @@ public class DecisionReportDataBuilder {
       default:
         throw new IllegalStateException("Unsupported type: " + reportDataType);
     }
-    reportData.setFilter(this.filter);
+    reportData.setFilter(filter);
     return reportData;
   }
 
-  public DecisionReportDataBuilder setReportDataType(DecisionReportDataType reportDataType) {
+  public DecisionReportDataBuilder setReportDataType(final DecisionReportDataType reportDataType) {
     this.reportDataType = reportDataType;
     return this;
   }
 
-  public DecisionReportDataBuilder definitions(List<ReportDataDefinitionDto> definitions) {
+  public DecisionReportDataBuilder definitions(final List<ReportDataDefinitionDto> definitions) {
     this.definitions = definitions;
     return this;
   }
 
-  public DecisionReportDataBuilder setDecisionDefinitionKey(String decisionDefinitionKey) {
-    this.definitions.get(0).setKey(decisionDefinitionKey);
+  public DecisionReportDataBuilder setDecisionDefinitionKey(final String decisionDefinitionKey) {
+    definitions.get(0).setKey(decisionDefinitionKey);
     return this;
   }
 
-  public DecisionReportDataBuilder setDecisionDefinitionVersion(String decisionDefinitionVersion) {
-    this.definitions.get(0).setVersion(decisionDefinitionVersion);
+  public DecisionReportDataBuilder setDecisionDefinitionVersion(
+      final String decisionDefinitionVersion) {
+    definitions.get(0).setVersion(decisionDefinitionVersion);
     return this;
   }
 
   public DecisionReportDataBuilder setDecisionDefinitionVersions(
-      List<String> decisionDefinitionVersions) {
-    this.definitions.get(0).setVersions(decisionDefinitionVersions);
+      final List<String> decisionDefinitionVersions) {
+    definitions.get(0).setVersions(decisionDefinitionVersions);
     return this;
   }
 
-  public DecisionReportDataBuilder setTenantId(String tenantId) {
+  public DecisionReportDataBuilder setTenantId(final String tenantId) {
     return setTenantIds(Collections.singletonList(tenantId));
   }
 
-  public DecisionReportDataBuilder setTenantIds(List<String> tenantIds) {
-    this.definitions.get(0).setTenantIds(tenantIds);
+  public DecisionReportDataBuilder setTenantIds(final List<String> tenantIds) {
+    definitions.get(0).setTenantIds(tenantIds);
     return this;
   }
 
-  public DecisionReportDataBuilder setVariableId(String variableId) {
+  public DecisionReportDataBuilder setVariableId(final String variableId) {
     this.variableId = variableId;
     return this;
   }
 
-  public DecisionReportDataBuilder setVariableName(String variableName) {
+  public DecisionReportDataBuilder setVariableName(final String variableName) {
     this.variableName = variableName;
     return this;
   }
 
-  public DecisionReportDataBuilder setVariableType(VariableType variableType) {
+  public DecisionReportDataBuilder setVariableType(final VariableType variableType) {
     this.variableType = variableType;
     return this;
   }
 
-  public DecisionReportDataBuilder setDateInterval(AggregateByDateUnit dateInterval) {
+  public DecisionReportDataBuilder setDateInterval(final AggregateByDateUnit dateInterval) {
     this.dateInterval = dateInterval;
     return this;
   }
 
-  public DecisionReportDataBuilder setFilter(DecisionFilterDto newFilter) {
-    this.filter = Collections.singletonList(newFilter);
+  public DecisionReportDataBuilder setFilter(final DecisionFilterDto newFilter) {
+    filter = Collections.singletonList(newFilter);
     return this;
   }
 
-  public DecisionReportDataBuilder setFilter(List<DecisionFilterDto<?>> newFilter) {
-    this.filter = newFilter;
+  public DecisionReportDataBuilder setFilter(final List<DecisionFilterDto<?>> newFilter) {
+    filter = newFilter;
     return this;
   }
 
   public static DecisionReportDataDto createDecisionReportDataViewRawAsTable(
-      List<ReportDataDefinitionDto> definitions) {
+      final List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -150,7 +151,7 @@ public class DecisionReportDataBuilder {
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByNone(
-      List<ReportDataDefinitionDto> definitions) {
+      final List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.NUMBER);
@@ -160,7 +161,7 @@ public class DecisionReportDataBuilder {
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByEvaluationDate(
-      List<ReportDataDefinitionDto> definitions, AggregateByDateUnit groupByDateUnit) {
+      final List<ReportDataDefinitionDto> definitions, final AggregateByDateUnit groupByDateUnit) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -170,10 +171,10 @@ public class DecisionReportDataBuilder {
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByInputVariable(
-      List<ReportDataDefinitionDto> definitions,
-      String variableId,
-      String variableName,
-      VariableType variableType) {
+      final List<ReportDataDefinitionDto> definitions,
+      final String variableId,
+      final String variableName,
+      final VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -184,10 +185,10 @@ public class DecisionReportDataBuilder {
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByOutputVariable(
-      List<ReportDataDefinitionDto> definitions,
-      String variableId,
-      String variableName,
-      VariableType variableType) {
+      final List<ReportDataDefinitionDto> definitions,
+      final String variableId,
+      final String variableName,
+      final VariableType variableType) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
@@ -198,7 +199,7 @@ public class DecisionReportDataBuilder {
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByMatchedRule(
-      List<ReportDataDefinitionDto> definitions) {
+      final List<ReportDataDefinitionDto> definitions) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDefinitions(definitions);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);

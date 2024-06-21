@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class RemoveOptionalFieldsFromVariables implements VariableImportAdapter {
 
   @Override
-  public List<PluginVariableDto> adaptVariables(List<PluginVariableDto> list) {
+  public List<PluginVariableDto> adaptVariables(final List<PluginVariableDto> list) {
     return list.stream()
         .peek(
             pluginVariableDto -> {

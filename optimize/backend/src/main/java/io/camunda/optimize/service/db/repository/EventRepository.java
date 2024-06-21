@@ -55,7 +55,7 @@ public interface EventRepository {
   String MAX_AGG = "max";
   String KEYWORD_ANALYZER = "keyword";
 
-  Map<String, String> sortableFieldLookup =
+  Map<String, String> SORTABLE_FIELD_LOOKUP =
       ImmutableMap.of(
           EventDto.Fields.group.toLowerCase(), GROUP,
           EventDto.Fields.source.toLowerCase(), SOURCE,
@@ -137,8 +137,8 @@ public interface EventRepository {
   }
 
   default String convertToIndexSortField(final String providedField) {
-    if (sortableFieldLookup.containsKey(providedField.toLowerCase())) {
-      return sortableFieldLookup.get(providedField.toLowerCase());
+    if (SORTABLE_FIELD_LOOKUP.containsKey(providedField.toLowerCase())) {
+      return SORTABLE_FIELD_LOOKUP.get(providedField.toLowerCase());
     } else {
       throw new OptimizeRuntimeException(
           "Could not extract event sort field from " + providedField);
