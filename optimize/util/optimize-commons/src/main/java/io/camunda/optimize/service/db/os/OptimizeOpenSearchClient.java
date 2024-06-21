@@ -124,18 +124,14 @@ import org.springframework.context.ApplicationContext;
 @Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  @Getter
-  private ExtendedOpenSearchClient openSearchClient;
+  @Getter private ExtendedOpenSearchClient openSearchClient;
 
-  @Getter
-  private OpenSearchAsyncClient openSearchAsyncClient;
+  @Getter private OpenSearchAsyncClient openSearchAsyncClient;
 
   private RequestOptionsProvider requestOptionsProvider;
 
-  @Getter
-  private RichOpenSearchClient richOpenSearchClient;
-  @Getter
-  private List<NamedXContentRegistry.Entry> defaultNamedXContents;
+  @Getter private RichOpenSearchClient richOpenSearchClient;
+  @Getter private List<NamedXContentRegistry.Entry> defaultNamedXContents;
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
@@ -161,11 +157,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
     if (containsNestedDocumentLimitErrorMessage) {
       // exception potentially related to nested object limit
-      return
-          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-              + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
-              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-              + "See Optimize documentation for details.";
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
     }
     return "";
   }
@@ -536,7 +531,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public long count(final String indexName, final String errorMessage) {
-    return count(new String[]{indexName}, QueryDSL.matchAll(), errorMessage);
+    return count(new String[] {indexName}, QueryDSL.matchAll(), errorMessage);
   }
 
   // todo rename it in scope of OPT-7469
@@ -550,9 +545,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().scrollValues(requestBuilder, entityClass);
   }
 
-  public <R> ScrollResponse<R> scroll(final String scrollId, final String timeout,
-      final Class<R> entityClass)
-      throws IOException {
+  public <R> ScrollResponse<R> scroll(
+      final String scrollId, final String timeout, final Class<R> entityClass) throws IOException {
     return richOpenSearchClient.doc().scroll(scrollRequest(scrollId, timeout), entityClass);
   }
 
@@ -575,8 +569,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().searchValues(requestBuilder, entityClass);
   }
 
-  public void clearScroll(final String scrollId,
-      final Function<Exception, String> errorMessageSupplier) {
+  public void clearScroll(
+      final String scrollId, final Function<Exception, String> errorMessageSupplier) {
     safe(
         () -> {
           richOpenSearchClient.doc().clearScroll(scrollId);
@@ -709,8 +703,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                         !failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()))
                 .toList();
         if (!nonFailedOperations.isEmpty()) {
-          doBulkRequestWithNestedDocHandling(
-              bulkReqBuilderSupplier, nonFailedOperations, itemName);
+          doBulkRequestWithNestedDocHandling(bulkReqBuilderSupplier, nonFailedOperations, itemName);
         }
       } else {
         throw new OptimizeRuntimeException(

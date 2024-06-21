@@ -21,7 +21,9 @@ public class DatabaseConnection {
   protected Integer responseConsumerBufferLimitInMb;
   protected String pathPrefix;
   protected Boolean skipHostnameVerification;
+
   @JsonProperty("nodes")
   protected List<DatabaseConnectionNodeConfiguration> connectionNodes;
+
   private ProxyConfiguration proxy;
 }

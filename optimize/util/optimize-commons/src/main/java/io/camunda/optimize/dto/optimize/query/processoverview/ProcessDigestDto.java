@@ -30,10 +30,6 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     this.kpiReportResults = kpiReportResults;
   }
 
-  /**
-   * Needed to inherit field name constants from {@link ProcessDigestResponseDto}
-   */
-  public static class Fields extends ProcessDigestResponseDto.Fields {
-
-  }
+  /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */
+  public static class Fields extends ProcessDigestResponseDto.Fields {}
 }

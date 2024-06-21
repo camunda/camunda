@@ -184,8 +184,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
-    final String numberOfReplicasOriginal = getIndexSettingsWithRetries(
-        indexName).numberOfReplicas();
+    final String numberOfReplicasOriginal =
+        getIndexSettingsWithRetries(indexName).numberOfReplicas();
     String numbersOfReplica =
         numberOfReplicasOriginal == null ? defaultValue : numberOfReplicasOriginal;
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
@@ -226,8 +226,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   // TODO check unused
-  public void reindexWithRetries(final ReindexRequest reindexRequest,
-      final boolean checkDocumentCount) {
+  public void reindexWithRetries(
+      final ReindexRequest reindexRequest, final boolean checkDocumentCount) {
     executeWithRetries(
         "Reindex "
             + Arrays.asList(reindexRequest.source().index())

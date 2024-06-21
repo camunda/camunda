@@ -265,7 +265,7 @@ public class OpenSearchClientBuilder {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final org.apache.http.ssl.TrustStrategy trustStrategy =
         Boolean.TRUE.equals(
-            configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
+                configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
             ? new TrustSelfSignedStrategy()
             : null;
     if (truststore.size() > 0) {

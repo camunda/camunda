@@ -44,14 +44,8 @@ public class EventSearchRequestDto {
   @QueryParam("searchTerm")
   private String searchTerm;
 
-  @BeanParam
-  @Valid
-  @NotNull
-  private SortRequestDto sortRequestDto;
-  @BeanParam
-  @Valid
-  @NotNull
-  private PaginationRequestDto paginationRequestDto;
+  @BeanParam @Valid @NotNull private SortRequestDto sortRequestDto;
+  @BeanParam @Valid @NotNull private PaginationRequestDto paginationRequestDto;
 
   public void validateRequest() {
     if (StringUtils.isEmpty(searchTerm)) {
@@ -73,7 +67,7 @@ public class EventSearchRequestDto {
               SortRequestDto.SORT_BY, SortRequestDto.SORT_ORDER));
     } else if (sortBy.isPresent()
         && !EventSearchRequestDto.SORTABLE_FIELDS.contains(
-        sortBy.get().toLowerCase(Locale.ENGLISH))) {
+            sortBy.get().toLowerCase(Locale.ENGLISH))) {
       throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
     }
   }

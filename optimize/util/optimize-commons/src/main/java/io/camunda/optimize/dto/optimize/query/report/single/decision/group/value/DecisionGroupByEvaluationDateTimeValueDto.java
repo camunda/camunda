@@ -24,7 +24,8 @@ public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupB
     if (!(o instanceof DecisionGroupByEvaluationDateTimeValueDto)) {
       return false;
     }
-    final DecisionGroupByEvaluationDateTimeValueDto that = (DecisionGroupByEvaluationDateTimeValueDto) o;
+    final DecisionGroupByEvaluationDateTimeValueDto that =
+        (DecisionGroupByEvaluationDateTimeValueDto) o;
     return Objects.equals(unit, that.unit);
   }
 }

@@ -42,20 +42,23 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     return executeWithRetries("", supplier, null);
   }
 
-  protected <T> T executeWithRetries(final String operationName,
-      final CheckedSupplier<T> supplier) {
+  protected <T> T executeWithRetries(
+      final String operationName, final CheckedSupplier<T> supplier) {
     return executeWithRetries(operationName, supplier, null);
   }
 
   protected <T> T executeWithRetries(
-      final String operationName, final CheckedSupplier<T> supplier,
+      final String operationName,
+      final CheckedSupplier<T> supplier,
       final Predicate<T> retryPredicate) {
     return executeWithGivenRetries(
         DEFAULT_NUMBER_OF_EXECUTIONS, operationName, supplier, retryPredicate);
   }
 
   protected <T> T executeWithGivenRetries(
-      final int retries, final String operationName, final CheckedSupplier<T> operation,
+      final int retries,
+      final String operationName,
+      final CheckedSupplier<T> operation,
       final Predicate<T> predicate) {
     try {
       final RetryPolicy<T> retryPolicy =

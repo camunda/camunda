@@ -30,7 +30,5 @@ public class AlertCreationRequestDto {
 
   // needed to allow inheritance of field name constants
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  public static class Fields {
-
-  }
+  public static class Fields {}
 }

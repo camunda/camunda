@@ -24,10 +24,6 @@ public class AlertDefinitionDto extends AlertCreationRequestDto {
   protected String lastModifier;
   protected boolean triggered;
 
-  /**
-   * Needed to inherit field name constants from {@link AlertCreationRequestDto}
-   */
-  public static class Fields extends AlertCreationRequestDto.Fields {
-
-  }
+  /** Needed to inherit field name constants from {@link AlertCreationRequestDto} */
+  public static class Fields extends AlertCreationRequestDto.Fields {}
 }

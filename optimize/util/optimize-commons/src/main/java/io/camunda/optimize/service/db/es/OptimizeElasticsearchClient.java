@@ -151,8 +151,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           EnumSet.of(IndicesOptions.WildcardStates.OPEN));
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
   private final ObjectMapper objectMapper;
-  @Getter
-  private RestHighLevelClient highLevelClient;
+  @Getter private RestHighLevelClient highLevelClient;
   private RequestOptionsProvider requestOptionsProvider;
 
   @Setter
@@ -189,11 +188,10 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
     if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
       // exception potentially related to nested object limit
-      return
-          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-              + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
-              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-              + "See Optimize documentation for details.";
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
     }
     return "";
   }
@@ -262,7 +260,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   public final boolean exists(final String indexName) throws IOException {
-    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[]{indexName})));
+    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[] {indexName})));
   }
 
   public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
@@ -284,7 +282,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient
         .indices()
         .existsTemplate(
-            new IndexTemplatesExistRequest(convertToPrefixedAliasNames(new String[]{indexName})),
+            new IndexTemplatesExistRequest(convertToPrefixedAliasNames(new String[] {indexName})),
             requestOptions());
   }
 
@@ -366,23 +364,24 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     validateOperationParams(requestDto);
 
     switch (requestDto.getType()) {
-      case INDEX -> bulkRequest.add(
-          new IndexRequest()
-              .id(requestDto.getId())
-              .source(serializeToJson(requestDto), XContentType.JSON)
-              .index(requestDto.getIndexName()));
-      case UPDATE -> bulkRequest.add(
-          new UpdateRequest()
-              .id(requestDto.getId())
-              .index(requestDto.getIndexName())
-              .upsert(serializeToJson(requestDto), XContentType.JSON)
-              .script(
-                  createDefaultScriptWithPrimitiveParams(
-                      requestDto.getScriptData().scriptString(),
-                      requestDto.getScriptData().params()))
-              .retryOnConflict(requestDto.getRetryNumberOnConflict()));
-      default -> {
-      }
+      case INDEX ->
+          bulkRequest.add(
+              new IndexRequest()
+                  .id(requestDto.getId())
+                  .source(serializeToJson(requestDto), XContentType.JSON)
+                  .index(requestDto.getIndexName()));
+      case UPDATE ->
+          bulkRequest.add(
+              new UpdateRequest()
+                  .id(requestDto.getId())
+                  .index(requestDto.getIndexName())
+                  .upsert(serializeToJson(requestDto), XContentType.JSON)
+                  .script(
+                      createDefaultScriptWithPrimitiveParams(
+                          requestDto.getScriptData().scriptString(),
+                          requestDto.getScriptData().params()))
+                  .retryOnConflict(requestDto.getRetryNumberOnConflict()));
+      default -> {}
     }
   }
 

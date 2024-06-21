@@ -136,8 +136,8 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     }
   }
 
-  private static Map<String, String> getFieldValue(final Class<?> klass, final Object object,
-      final String name)
+  private static Map<String, String> getFieldValue(
+      final Class<?> klass, final Object object, final String name)
       throws NoSuchFieldException, IllegalAccessException {
     final Field field = klass.getDeclaredField(name);
     field.setAccessible(true);

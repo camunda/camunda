@@ -390,9 +390,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<CreateIndexRequest.Builder>
-  getDeserializerWithPreconfiguredBuilder(
-      final Supplier<CreateIndexRequest.Builder> builderSupplier)
-      throws OptimizeRuntimeException {
+      getDeserializerWithPreconfiguredBuilder(
+          final Supplier<CreateIndexRequest.Builder> builderSupplier)
+          throws OptimizeRuntimeException {
     final Class<CreateIndexRequest> clazz = CreateIndexRequest.class;
     final String methodName = "setupCreateIndexRequestDeserializer";
     final Method method;
@@ -416,9 +416,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<IndexTemplateMapping.Builder>
-  getDeserializerIndexTemplateMapping(
-      final Supplier<IndexTemplateMapping.Builder> builderSupplier)
-      throws OptimizeRuntimeException {
+      getDeserializerIndexTemplateMapping(
+          final Supplier<IndexTemplateMapping.Builder> builderSupplier)
+          throws OptimizeRuntimeException {
     final Class<IndexTemplateMapping> clazz = IndexTemplateMapping.class;
     final String methodName = "setupIndexTemplateMappingDeserializer";
     final Method method;

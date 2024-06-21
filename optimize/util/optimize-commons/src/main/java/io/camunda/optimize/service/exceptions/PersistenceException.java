@@ -16,8 +16,7 @@ public class PersistenceException extends Exception {
   @SuppressWarnings("checkstyle:mutableexception")
   private Integer failingRequestId;
 
-  public PersistenceException() {
-  }
+  public PersistenceException() {}
 
   public PersistenceException(final String message) {
     super(message);
@@ -27,8 +26,8 @@ public class PersistenceException extends Exception {
     super(message, cause);
   }
 
-  public PersistenceException(final String message, final Throwable cause,
-      final Integer failingRequestId) {
+  public PersistenceException(
+      final String message, final Throwable cause, final Integer failingRequestId) {
     super(message, cause);
     this.failingRequestId = failingRequestId;
   }

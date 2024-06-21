@@ -93,7 +93,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       if (truststore.size() > 0) {
         final TrustStrategy trustStrategy =
             configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
-                == Boolean.TRUE
+                    == Boolean.TRUE
                 ? new TrustSelfSignedStrategy()
                 : null;
         sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();

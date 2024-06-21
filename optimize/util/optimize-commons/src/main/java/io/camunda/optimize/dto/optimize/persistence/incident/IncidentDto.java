@@ -35,11 +35,9 @@ public class IncidentDto implements Serializable, OptimizeDto {
   protected String failedActivityId;
   protected String incidentMessage;
   protected IncidentStatus incidentStatus;
-  @JsonIgnore
-  private String processInstanceId;
+  @JsonIgnore private String processInstanceId;
   private String definitionKey;
   private String definitionVersion;
   private String tenantId;
-  @JsonIgnore
-  private String engineAlias;
+  @JsonIgnore private String engineAlias;
 }

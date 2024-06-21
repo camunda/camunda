@@ -35,14 +35,10 @@ public class TableColumnDto {
   public static final String FLOWNODE_DURATION_PREFIX = "dur:";
   public static final String COUNT_PREFIX = "count:";
 
-  @Builder.Default
-  private final boolean includeNewVariables = false;
-  @Builder.Default
-  private final List<String> excludedColumns = new ArrayList<>();
-  @Builder.Default
-  private final List<String> includedColumns = new ArrayList<>();
-  @Builder.Default
-  private final List<String> columnOrder = new ArrayList<>();
+  @Builder.Default private final boolean includeNewVariables = false;
+  @Builder.Default private final List<String> excludedColumns = new ArrayList<>();
+  @Builder.Default private final List<String> includedColumns = new ArrayList<>();
+  @Builder.Default private final List<String> columnOrder = new ArrayList<>();
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);

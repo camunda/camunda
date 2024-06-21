@@ -24,8 +24,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 @Slf4j
 public class RichOpenSearchClient {
 
-  @Getter
-  private final OptimizeIndexNameService indexNameService;
+  @Getter private final OptimizeIndexNameService indexNameService;
   // TODO slash unused operations with OPT-7352
   private final OpenSearchClusterOperations openSearchClusterOperations;
   private final OpenSearchDocumentOperations openSearchDocumentOperations;

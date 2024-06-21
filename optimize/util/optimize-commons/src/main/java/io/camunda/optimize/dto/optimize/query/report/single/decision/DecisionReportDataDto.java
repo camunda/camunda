@@ -38,9 +38,7 @@ import lombok.experimental.SuperBuilder;
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  @Builder.Default
-  @Valid
-  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
+  @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
 

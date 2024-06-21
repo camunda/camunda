@@ -93,8 +93,8 @@ public class ConfigurationValidatorTest {
             "config-samples/config-alerting-parent-with-leafs-key.yaml",
             "config-samples/config-somethingelse-parent-with-leafs-key.yaml");
     final String[] deletedLocations = {
-        "deletion-samples/deleted-alerting-parent-key.yaml",
-        "deletion-samples/deleted-somethingelse-parent-key.yaml"
+      "deletion-samples/deleted-alerting-parent-key.yaml",
+      "deletion-samples/deleted-somethingelse-parent-key.yaml"
     };
     final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
@@ -201,7 +201,7 @@ public class ConfigurationValidatorTest {
     // given
     final String[] locations = {"config-samples/config-alerting-leaf-key.yaml"};
     final ConfigurationService configurationService = createConfiguration(locations);
-    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
 
     // when
     final Optional<Map<String, String>> deletions =
@@ -215,7 +215,7 @@ public class ConfigurationValidatorTest {
   public void missingWebhookUrlThrowsError() {
     // given
     final ConfigurationService configurationService = createConfiguration();
-    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
     final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWeebhook",
@@ -234,7 +234,7 @@ public class ConfigurationValidatorTest {
   public void missingWebhookPayloadThrowsError() {
     // given
     final ConfigurationService configurationService = createConfiguration();
-    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
     final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration("myWeebhook", "someurl", new HashMap<>(), "POST", "");
     configurationService.setConfiguredWebhooks(webhooks);
@@ -248,7 +248,7 @@ public class ConfigurationValidatorTest {
   public void webhookPayloadWithOnePlaceholderIsAccepted() {
     // given
     final ConfigurationService configurationService = createConfiguration();
-    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
     final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWeebhook", "someurl", new HashMap<>(), "POST", "{{ALERT_NAME}}");
@@ -262,7 +262,7 @@ public class ConfigurationValidatorTest {
   public void webhookPayloadWithoutPlaceholderThrowsError() {
     // given
     final ConfigurationService configurationService = createConfiguration();
-    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
     final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWebhook", "someurl", new HashMap<>(), "POST", "aPayloadWithoutPlaceholder");
@@ -295,7 +295,7 @@ public class ConfigurationValidatorTest {
 
   private ConfigurationService createConfiguration(final String... overwriteConfigFiles) {
     final String[] locations =
-        ArrayUtils.addAll(new String[]{"service-config.yaml"}, overwriteConfigFiles);
+        ArrayUtils.addAll(new String[] {"service-config.yaml"}, overwriteConfigFiles);
     return ConfigurationServiceBuilder.createConfiguration()
         .loadConfigurationFrom(locations)
         .useValidator(createValidatorWithoutDeletions())

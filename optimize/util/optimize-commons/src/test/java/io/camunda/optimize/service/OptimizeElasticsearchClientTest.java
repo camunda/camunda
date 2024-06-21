@@ -38,10 +38,8 @@ public class OptimizeElasticsearchClientTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
   private RestHighLevelClient highLevelRestClient;
 
-  @Mock
-  private OptimizeIndexNameService indexNameService;
-  @Mock
-  private ObjectMapper objectMapper;
+  @Mock private OptimizeIndexNameService indexNameService;
+  @Mock private ObjectMapper objectMapper;
 
   private OptimizeElasticsearchClient underTest;
 
@@ -54,10 +52,10 @@ public class OptimizeElasticsearchClientTest {
             highLevelRestClient, indexNameService, requestOptionsProvider, objectMapper);
     underTest.setSnapshotInProgressRetryDelaySeconds(1);
     given(
-        highLevelRestClient
-            .indices()
-            .delete(
-                any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
+            highLevelRestClient
+                .indices()
+                .delete(
+                    any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
         .willAnswer(
             invocation -> {
               throw new ElasticsearchStatusException(
@@ -76,10 +74,10 @@ public class OptimizeElasticsearchClientTest {
 
     // then it is retried and completes eventually
     given(
-        highLevelRestClient
-            .indices()
-            .delete(
-                any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
+            highLevelRestClient
+                .indices()
+                .delete(
+                    any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
         .willReturn(null);
 
     verify(highLevelRestClient.indices(), timeout(2000).atLeast(2))

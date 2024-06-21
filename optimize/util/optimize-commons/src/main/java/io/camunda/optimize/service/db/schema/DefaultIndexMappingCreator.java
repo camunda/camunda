@@ -27,8 +27,7 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
   protected static final String NORMALIZER = "normalizer";
   private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  @Setter
-  private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
+  @Setter private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 
   public abstract TBuilder addStaticSetting(
       final String key, final int value, TBuilder contentBuilder) throws IOException;

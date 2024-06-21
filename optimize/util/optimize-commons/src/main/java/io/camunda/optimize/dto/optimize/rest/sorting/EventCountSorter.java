@@ -74,7 +74,8 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       eventCountSorter =
-          SORT_COMPARATORS.get(sortBy.toLowerCase(Locale.ENGLISH))
+          SORT_COMPARATORS
+              .get(sortBy.toLowerCase(Locale.ENGLISH))
               .thenComparing(DEFAULT_COMPARATOR);
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         eventCountSorter = eventCountSorter.reversed();

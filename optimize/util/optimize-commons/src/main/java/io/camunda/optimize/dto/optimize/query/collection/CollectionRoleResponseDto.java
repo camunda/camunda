@@ -51,8 +51,8 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
     id = convertIdentityToRoleId(identity);
   }
 
-  public CollectionRoleResponseDto(final IdentityWithMetadataResponseDto identity,
-      final RoleType role) {
+  public CollectionRoleResponseDto(
+      final IdentityWithMetadataResponseDto identity, final RoleType role) {
     this.identity = identity;
     id = convertIdentityToRoleId(this.identity);
     this.role = role;

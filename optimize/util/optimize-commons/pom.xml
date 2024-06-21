@@ -11,6 +11,12 @@
   <artifactId>optimize-commons</artifactId>
 
   <dependencies>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.32</version>
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda.optimize</groupId>
@@ -44,8 +50,8 @@
       <version>${elasticsearch.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>commons-codec</artifactId>
           <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
         </exclusion>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -214,7 +220,6 @@
       <artifactId>auth</artifactId>
       <version>${awssdk.version}</version>
     </dependency>
-
   </dependencies>
 
   <build>

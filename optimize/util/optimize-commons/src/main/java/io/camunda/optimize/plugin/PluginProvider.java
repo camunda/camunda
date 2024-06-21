@@ -109,8 +109,8 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   private void registerPlugin(final Class<?> pluginClass)
       throws InstantiationException, IllegalAccessException {
     try {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor()
-          .newInstance();
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor().newInstance();
       registeredPlugins.add(plugin);
     } catch (final NoSuchMethodException | InvocationTargetException ex) {
       throw new OptimizeRuntimeException("Plugin class [%s] could not be constructed");

@@ -32,15 +32,15 @@ public final class FixedInstanceDateFilterBuilder {
   }
 
   static FixedInstanceDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
-    final FixedInstanceDateFilterBuilder builder = new FixedInstanceDateFilterBuilder(
-        filterBuilder);
+    final FixedInstanceDateFilterBuilder builder =
+        new FixedInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
   static FixedInstanceDateFilterBuilder startDate(final ProcessFilterBuilder filterBuilder) {
-    final FixedInstanceDateFilterBuilder builder = new FixedInstanceDateFilterBuilder(
-        filterBuilder);
+    final FixedInstanceDateFilterBuilder builder =
+        new FixedInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }

@@ -91,8 +91,8 @@ public class OpenSearchOperation {
     }
   }
 
-  protected <R> R safe(final ExceptionSupplier<R> supplier,
-      final Function<Exception, String> errorMessage) {
+  protected <R> R safe(
+      final ExceptionSupplier<R> supplier, final Function<Exception, String> errorMessage) {
     try {
       return supplier.get();
     } catch (final OpenSearchException e) {

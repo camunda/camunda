@@ -26,8 +26,8 @@ public final class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
     return new FlowNodeDurationFilterBuilder(filterBuilder);
   }
 
-  public FlowNodeDurationFilterBuilder flowNode(final String flowNodeId,
-      final DurationFilterDataDto filter) {
+  public FlowNodeDurationFilterBuilder flowNode(
+      final String flowNodeId, final DurationFilterDataDto filter) {
     flowNodeFilters.put(flowNodeId, filter);
     return this;
   }

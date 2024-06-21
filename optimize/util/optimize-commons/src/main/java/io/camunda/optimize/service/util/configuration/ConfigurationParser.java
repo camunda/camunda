@@ -105,10 +105,12 @@ public class ConfigurationParser {
       final Object value, final YAMLMapper yamlMapper) {
     Object newValue = value;
     if (value instanceof Map) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final Map<String, Object> valueMap = (Map<String, Object>) value;
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final Map<String, Object> valueMap = (Map<String, Object>) value;
       newValue = resolveVariablePlaceholders(valueMap, yamlMapper);
     } else if (value instanceof List) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final List<Object> values = ((List<Object>) value);
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final List<Object> values = ((List<Object>) value);
       if (!values.isEmpty()) {
         newValue =
             values.stream()
@@ -185,8 +187,8 @@ public class ConfigurationParser {
     }
   }
 
-  private static void overwriteField(final ObjectNode mainNode, final JsonNode updateNode,
-      final String fieldName) {
+  private static void overwriteField(
+      final ObjectNode mainNode, final JsonNode updateNode, final String fieldName) {
     final JsonNode value = updateNode.get(fieldName);
     mainNode.set(fieldName, value);
   }

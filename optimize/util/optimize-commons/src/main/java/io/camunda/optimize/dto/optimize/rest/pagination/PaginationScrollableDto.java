@@ -48,6 +48,6 @@ public class PaginationScrollableDto extends PaginationDto {
   public boolean isValid() {
     return limit != null
         && ((offset != null && scrollTimeout == null && scrollId == null)
-        || (offset == null && scrollTimeout != null));
+            || (offset == null && scrollTimeout != null));
   }
 }

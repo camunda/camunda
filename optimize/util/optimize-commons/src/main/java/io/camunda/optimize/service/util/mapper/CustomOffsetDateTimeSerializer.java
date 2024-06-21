@@ -31,8 +31,8 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
   }
 
   @Override
-  public void serialize(final OffsetDateTime value, final JsonGenerator gen,
-      final SerializerProvider provider)
+  public void serialize(
+      final OffsetDateTime value, final JsonGenerator gen, final SerializerProvider provider)
       throws IOException {
     final String timezone = (String) provider.getAttribute(X_OPTIMIZE_CLIENT_TIMEZONE);
     OffsetDateTime timeZoneAdjustedDateTime = value;

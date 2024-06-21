@@ -276,7 +276,7 @@ public class ElasticSearchSchemaManager
             Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
         .allMatch(
             indices -> {
-              final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
+              final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[] {}));
               try {
                 return esClient.exists(request);
               } catch (final IOException e) {

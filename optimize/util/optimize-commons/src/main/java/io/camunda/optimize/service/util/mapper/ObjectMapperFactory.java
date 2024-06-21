@@ -37,8 +37,8 @@ public class ObjectMapperFactory {
 
   public static final ObjectMapper OPTIMIZE_MAPPER =
       new ObjectMapperFactory(
-          new OptimizeDateTimeFormatterFactory().getObject(),
-          ConfigurationServiceBuilder.createDefaultConfiguration())
+              new OptimizeDateTimeFormatterFactory().getObject(),
+              ConfigurationServiceBuilder.createDefaultConfiguration())
           .createOptimizeMapper();
 
   private final DateTimeFormatter optimizeDateTimeFormatter;

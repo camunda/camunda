@@ -54,9 +54,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  @Builder.Default
-  @Valid
-  protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @Builder.Default @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
 
@@ -64,10 +62,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessReportDistributedByDto<?> distributedBy = new ProcessReportDistributedByDto<>();
 
   protected ProcessVisualization visualization;
-  @Builder.Default
-  protected boolean managementReport = false;
-  @Builder.Default
-  protected boolean instantPreviewReport = false;
+  @Builder.Default protected boolean managementReport = false;
+  @Builder.Default protected boolean instantPreviewReport = false;
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();
@@ -217,10 +213,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
     return getConfiguration().getCustomBucket().isActive()
-        && that.getConfiguration().getCustomBucket().isActive()
-        && Objects.equals(
-        getConfiguration().getCustomBucket().getBucketSize(),
-        that.getConfiguration().getCustomBucket().getBucketSize())
+            && that.getConfiguration().getCustomBucket().isActive()
+            && Objects.equals(
+                getConfiguration().getCustomBucket().getBucketSize(),
+                that.getConfiguration().getCustomBucket().getBucketSize())
         || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
 
@@ -248,16 +244,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private boolean isGroupByNumberReport() {
     return groupBy != null
         && (ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-        && (VariableType.getNumericTypes()
-        .contains(((VariableGroupByDto) groupBy).getValue().getType()))
-        || ProcessGroupByType.DURATION.equals(groupBy.getType()));
+                && (VariableType.getNumericTypes()
+                    .contains(((VariableGroupByDto) groupBy).getValue().getType()))
+            || ProcessGroupByType.DURATION.equals(groupBy.getType()));
   }
 
   private boolean isModelElementCommand() {
     return nonNull(view)
         && nonNull(view.getEntity())
         && (ProcessViewEntity.USER_TASK.equals(view.getEntity())
-        || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
+            || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
   }
 
   private boolean isInstanceCommand() {
