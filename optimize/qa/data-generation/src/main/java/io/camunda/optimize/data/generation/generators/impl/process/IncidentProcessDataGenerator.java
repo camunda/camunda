@@ -32,7 +32,7 @@ public class IncidentProcessDataGenerator extends ProcessDataGenerator {
 
   @Override
   protected Map<String, Object> createVariables() {
-    final String[] incidentType = new String[] {"noIncident", "incidentToBeResolved", "incident"};
+    final String[] incidentType = new String[]{"noIncident", "incidentToBeResolved", "incident"};
     final Map<String, Object> variables = new HashMap<>();
     variables.put(
         "incidentType", incidentType[ThreadLocalRandom.current().nextInt(0, incidentType.length)]);

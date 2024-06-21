@@ -46,24 +46,25 @@ public class IncidentGenerator {
       "onboarding-data" + "/customer_onboarding_process_instances.json";
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     loadProcessInstances(CUSTOMER_ONBOARDING_PROCESS_INSTANCES);
   }
 
   private static void loadProcessInstances(final String pathToProcessInstances) {
     try {
       if (pathToProcessInstances != null) {
-        InputStream customerOnboardingProcessInstances =
+        final InputStream customerOnboardingProcessInstances =
             IncidentGenerator.class.getClassLoader().getResourceAsStream(pathToProcessInstances);
         if (customerOnboardingProcessInstances != null) {
-          String customerOnboardingProcessInstancesAsString =
+          final String customerOnboardingProcessInstancesAsString =
               new String(customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8);
-          String[] processInstances = customerOnboardingProcessInstancesAsString.split("\\r?\\n");
-          List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
-          for (String processInstance : processInstances) {
-            ElasticDumpEntryDto elasticDumpEntryDto =
+          final String[] processInstances = customerOnboardingProcessInstancesAsString.split(
+              "\\r?\\n");
+          final List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
+          for (final String processInstance : processInstances) {
+            final ElasticDumpEntryDto elasticDumpEntryDto =
                 OBJECT_MAPPER.readValue(processInstance, ElasticDumpEntryDto.class);
-            ProcessInstanceDto rawProcessInstanceFromDump =
+            final ProcessInstanceDto rawProcessInstanceFromDump =
                 elasticDumpEntryDto.getProcessInstanceDto();
             if (rawProcessInstanceFromDump != null) {
               processInstanceDtos.add(elasticDumpEntryDto.getProcessInstanceDto());
@@ -74,7 +75,7 @@ public class IncidentGenerator {
           log.error("Process instance file cannot be null.");
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not load process instances.", e);
     }
   }
@@ -147,9 +148,9 @@ public class IncidentGenerator {
     try {
       OBJECT_MAPPER.writeValue(
           new File("customer_onboarding_process_instances.json"), processInstanceDtos);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.error("The process instance list could not be mapped to json.");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not write process instances to json file.");
     }
   }
@@ -162,8 +163,8 @@ public class IncidentGenerator {
   }
 
   private static ObjectMapper createObjectMapper() {
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
     javaTimeModule.addDeserializer(

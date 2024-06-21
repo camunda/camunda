@@ -31,17 +31,17 @@ public class BookRequestForOneTenantDataGenerator extends ProcessDataGenerator {
   }
 
   @Override
-  protected void generateTenants() {
-    tenants = Lists.newArrayList("library");
-  }
-
-  @Override
   protected Map<String, Object> createVariables() {
     return new HashMap<>();
   }
 
   @Override
+  protected void generateTenants() {
+    tenants = Lists.newArrayList("library");
+  }
+
+  @Override
   protected String[] getCorrelationNames() {
-    return new String[] {"ReceivedBookRequest", "HoldBook", "DeclineHold"};
+    return new String[]{"ReceivedBookRequest", "HoldBook", "DeclineHold"};
   }
 }

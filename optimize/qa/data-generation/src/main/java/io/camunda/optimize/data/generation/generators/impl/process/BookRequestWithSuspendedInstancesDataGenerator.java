@@ -17,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataGenerator {
+
   private static final String DIAGRAM = "/diagrams/process/book-request-suspended-instances.bpmn";
 
   public BookRequestWithSuspendedInstancesDataGenerator(
@@ -32,7 +33,7 @@ public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataG
     final ProcessInstanceEngineDto processInstance =
         engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
     // randomly suspend some process instances
-    Random rnd = ThreadLocalRandom.current();
+    final Random rnd = ThreadLocalRandom.current();
     if (rnd.nextBoolean()) {
       engineClient.suspendProcessInstance(processInstance.getId());
     }

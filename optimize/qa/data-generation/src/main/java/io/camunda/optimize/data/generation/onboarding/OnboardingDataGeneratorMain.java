@@ -16,7 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class OnboardingDataGeneratorMain {
 
-  private static final Map<String, OnboardingDataGeneratorParameters> defaultParams =
+  private static final Map<String, OnboardingDataGeneratorParameters> DEFAULT_PARAMS =
       Map.of(
           "numberOfProcessInstancesEndEvent1",
           new OnboardingDataGeneratorParameters(
@@ -28,9 +28,9 @@ public class OnboardingDataGeneratorMain {
           new OnboardingDataGeneratorParameters(
               String.valueOf(333), "onboarding-data/process-instance-endEvent3.json"));
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final Map<String, OnboardingDataGeneratorParameters> arguments = extractArguments(args);
-    OnboardingDataGenerator onboardingDataGenerator = new OnboardingDataGenerator();
+    final OnboardingDataGenerator onboardingDataGenerator = new OnboardingDataGenerator();
     onboardingDataGenerator.executeDataGeneration(arguments);
   }
 
@@ -50,12 +50,12 @@ public class OnboardingDataGeneratorMain {
   }
 
   private static Map<String, OnboardingDataGeneratorParameters> fillArgumentMapWithDefaultValues() {
-    return defaultParams.entrySet().stream()
+    return DEFAULT_PARAMS.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private static String stripLeadingHyphens(String str) {
-    int index = str.lastIndexOf("-");
+  private static String stripLeadingHyphens(final String str) {
+    final int index = str.lastIndexOf("-");
     if (index != -1) {
       return str.substring(index + 1);
     } else {
@@ -63,8 +63,8 @@ public class OnboardingDataGeneratorMain {
     }
   }
 
-  private static void ensureIdentifierIsKnown(String identifier) {
-    if (!defaultParams.containsKey(identifier)) {
+  private static void ensureIdentifierIsKnown(final String identifier) {
+    if (!DEFAULT_PARAMS.containsKey(identifier)) {
       throw new DataGenerationException("Unknown argument [" + identifier + "]!");
     }
   }

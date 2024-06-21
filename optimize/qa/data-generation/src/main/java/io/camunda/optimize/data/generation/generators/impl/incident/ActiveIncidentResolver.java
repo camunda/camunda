@@ -30,7 +30,7 @@ public class ActiveIncidentResolver implements IncidentResolver {
     // we take only half of the incidents to complete to have some open ones left
     final List<EngineIncidentDto> incidentsToComplete =
         first100Incidents.subList(0, first100Incidents.size() / 2);
-    List<String> processInstanceIdsToRetry = new ArrayList<>();
+    final List<String> processInstanceIdsToRetry = new ArrayList<>();
     incidentsToComplete.stream()
         .peek(incident -> processInstanceIdsToRetry.add(incident.getProcessInstanceId()))
         .forEach(

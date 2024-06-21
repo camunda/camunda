@@ -22,13 +22,13 @@ public abstract class DecisionDataGenerator extends DataGenerator<DmnModelInstan
   }
 
   @Override
-  protected void startInstance(final String definitionId, final Map<String, Object> variables) {
-    engineClient.startDecisionInstance(definitionId, variables);
+  protected List<String> deployDiagrams(final DmnModelInstance instance) {
+    return engineClient.deployDecisions(instance, nVersions, tenants);
   }
 
   @Override
-  protected List<String> deployDiagrams(final DmnModelInstance instance) {
-    return engineClient.deployDecisions(instance, nVersions, tenants);
+  protected void startInstance(final String definitionId, final Map<String, Object> variables) {
+    engineClient.startDecisionInstance(definitionId, variables);
   }
 
   protected DmnModelInstance readDecisionDiagram(final String dmnPath) {

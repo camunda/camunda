@@ -8,6 +8,7 @@
 package io.camunda.optimize.data.generation;
 
 public interface UserAndGroupProvider {
+
   String getRandomUserId();
 
   String getRandomGroupId();

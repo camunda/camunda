@@ -43,13 +43,13 @@ import org.slf4j.LoggerFactory;
 
 public abstract class DataGenerator<ModelType extends ModelInstance> implements Runnable {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
   protected int nVersions;
+  protected List<String> tenants = new ArrayList<>();
+  protected final SimpleEngineClient engineClient;
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
-  protected List<String> tenants = new ArrayList<>();
   private final List<String> objectVarNames =
       List.of(
           "Meggle",
@@ -74,8 +74,6 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
           "Planking",
           "Tapdancing",
           "Armwrestling");
-
-  protected final SimpleEngineClient engineClient;
   private final UserAndGroupProvider userAndGroupProvider;
   private final AtomicInteger startedInstanceCount = new AtomicInteger(0);
   private final ObjectMapper objectMapper;
@@ -87,7 +85,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     this.nVersions = nVersions == null ? generateVersionNumber() : nVersions;
     this.engineClient = engineClient;
     this.userAndGroupProvider = userAndGroupProvider;
-    this.objectMapper =
+    objectMapper =
         new ObjectMapper().setDateFormat(new SimpleDateFormat(OPTIMIZE_DATE_FORMAT));
     generateTenants();
   }
@@ -104,12 +102,12 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     return instanceCountToGenerate;
   }
 
-  public void setInstanceCountToGenerate(int instanceCountToGenerate) {
+  public void setInstanceCountToGenerate(final int instanceCountToGenerate) {
     this.instanceCountToGenerate = instanceCountToGenerate;
   }
 
-  public void addToInstanceCount(int numberOfInstancesToAdd) {
-    this.instanceCountToGenerate += numberOfInstancesToAdd;
+  public void addToInstanceCount(final int numberOfInstancesToAdd) {
+    instanceCountToGenerate += numberOfInstancesToAdd;
   }
 
   private int generateVersionNumber() {
@@ -121,13 +119,13 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     logger.info("Start {}...", getClass().getSimpleName());
     final ModelType instance = retrieveDiagram();
     try {
-      this.tenants.stream().filter(Objects::nonNull).forEach(engineClient::createTenant);
+      tenants.stream().filter(Objects::nonNull).forEach(engineClient::createTenant);
       createMessageEventCorrelater();
-      List<String> definitionIds = deployDiagrams(instance);
+      final List<String> definitionIds = deployDiagrams(instance);
       deployAdditionalDiagrams();
-      List<Integer> instanceSizePerDefinition = createInstanceSizePerDefinition();
+      final List<Integer> instanceSizePerDefinition = createInstanceSizePerDefinition();
       startInstances(instanceSizePerDefinition, definitionIds);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Error while generating the data", e);
     } finally {
       logger.info("{} finished data generation!", getClass().getSimpleName());
@@ -137,7 +135,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   protected abstract List<String> deployDiagrams(final ModelType instance);
 
   protected void generateTenants() {
-    this.tenants = Collections.singletonList(null);
+    tenants = Collections.singletonList(null);
   }
 
   protected void deployAdditionalDiagrams() {
@@ -147,7 +145,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   }
 
   private Map<String, Object> createDefaultVariables() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("person", createPersonObjectVariable());
     variables.put("stringVar", "aStringValue");
     variables.put("boolVar", RandomUtils.nextBoolean());
@@ -206,10 +204,10 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     String personAsString = null;
     try {
       personAsString = objectMapper.writeValueAsString(person);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       logger.warn("Could not serialize object variable!", e);
     }
-    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
+    final VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName("java.lang.Object");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
 
@@ -223,10 +221,10 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
     String listVarAsString = null;
     try {
       listVarAsString = objectMapper.writeValueAsString(listValues);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       logger.warn("Could not serialize object variable!", e);
     }
-    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
+    final VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName("java.util.ArrayList");
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
 
@@ -249,7 +247,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   }
 
   protected String[] getCorrelationNames() {
-    return new String[] {};
+    return new String[]{};
   }
 
   private void startInstances(final List<Integer> batchSizes, final List<String> definitionIds) {
@@ -269,7 +267,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
                   startInstanceWithBackoff(definitionId, variables);
                   try {
                     Thread.sleep(5L);
-                  } catch (InterruptedException e) {
+                  } catch (final InterruptedException e) {
                     logger.warn(
                         "Got interrupted while sleeping starting single instance for definition id: {}",
                         definitionId);
@@ -289,7 +287,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
           logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
           userTaskCompleter.shutdown();
           userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           logger.warn("Got interrupted while waiting for userTask completion");
           Thread.currentThread().interrupt();
         }
@@ -312,9 +310,9 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
       try {
         startInstance(definitionId, variables);
         couldStartInstance = true;
-      } catch (Exception exception) {
+      } catch (final Exception exception) {
         logError(exception);
-        long timeToSleep = backoffCalculator.calculateSleepTime();
+        final long timeToSleep = backoffCalculator.calculateSleepTime();
         logDebugSleepInformation(timeToSleep);
         sleep(timeToSleep);
       }
@@ -325,28 +323,28 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
   protected abstract void startInstance(
       final String definitionId, final Map<String, Object> variables);
 
-  private void sleep(long timeToSleep) {
+  private void sleep(final long timeToSleep) {
     try {
       Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
       Thread.currentThread().interrupt();
     }
   }
 
-  private void logDebugSleepInformation(long sleepTime) {
+  private void logDebugSleepInformation(final long sleepTime) {
     logger.debug("Sleeping for [{}] ms and retrying to start instance afterwards.", sleepTime);
   }
 
-  private void logError(Exception e) {
+  private void logError(final Exception e) {
     logger.error("Error during start of instance. Please check the connection!", e);
   }
 
   private List<Integer> createInstanceSizePerDefinition() {
-    int deploymentCount = nVersions * tenants.size();
-    int maxBulkSizeCount = instanceCountToGenerate / deploymentCount;
-    int finalBulkSize = instanceCountToGenerate % deploymentCount;
-    LinkedList<Integer> bulkSizes =
+    final int deploymentCount = nVersions * tenants.size();
+    final int maxBulkSizeCount = instanceCountToGenerate / deploymentCount;
+    final int finalBulkSize = instanceCountToGenerate % deploymentCount;
+    final LinkedList<Integer> bulkSizes =
         new LinkedList<>(Collections.nCopies(deploymentCount, maxBulkSizeCount));
     if (finalBulkSize > 0) {
       bulkSizes.addLast(bulkSizes.removeLast() + finalBulkSize);

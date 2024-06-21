@@ -36,8 +36,8 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
     final OffsetDateTime importStart = OffsetDateTime.now();
     logger.info("Starting import of engine data to Optimize...");
     importEngineData();
-    OffsetDateTime afterImport = OffsetDateTime.now();
-    long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
+    final OffsetDateTime afterImport = OffsetDateTime.now();
+    final long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
 
     // then all data from the engine should be in Elasticsearch
@@ -49,9 +49,9 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
     final ExecutorService importExecutorService = Executors.newSingleThreadExecutor();
     importExecutorService.execute(() -> embeddedOptimizeExtension.importAllEngineData());
 
-    ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
+    final ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
     importExecutorService.shutdown();
-    boolean wasAbleToFinishImportInTime =
+    final boolean wasAbleToFinishImportInTime =
         importExecutorService.awaitTermination(maxImportDurationInMin, TimeUnit.MINUTES);
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException(

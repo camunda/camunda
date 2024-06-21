@@ -27,6 +27,7 @@ public class ConnectToElasticsearchBasicAuthSslCustomCertAndCaIT
 
   @TestConfiguration
   static class Configuration {
+
     @Bean
     @Primary
     public ConfigurationService configurationService() {

@@ -28,26 +28,25 @@ import org.apache.commons.lang3.StringUtils;
 @RequiredArgsConstructor
 public class DataGenerationMain {
 
-  private final DataGenerationInformation dataGenerationInformation;
-
   private static final String DB_URL_H2_TEMPLATE =
       "jdbc:h2:tcp://localhost:9092/./camunda-h2-dbs/process-engine";
   private static final String JDBC_DRIVER = "org.h2.Driver";
   private static final String USER_H2 = "sa";
   private static final String PASS_H2 = "sa";
+  private final DataGenerationInformation dataGenerationInformation;
 
-  public static void main(String[] args) throws ParseException {
+  public static void main(final String[] args) throws ParseException {
     final Map<String, String> arguments = extractArguments(args);
-    DataGenerationInformation dataGenerationInformation =
+    final DataGenerationInformation dataGenerationInformation =
         extractDataGenerationInformation(arguments);
-    DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
+    final DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     validateProcessInstanceDateParameters(arguments);
     main.generateData();
     updateProcessInstanceDatesIfRequired(arguments);
   }
 
   public void generateData() {
-    DataGenerationExecutor dataGenerationExecutor =
+    final DataGenerationExecutor dataGenerationExecutor =
         new DataGenerationExecutor(dataGenerationInformation);
     log.info("Start generating data...");
     dataGenerationExecutor.executeDataGeneration();
@@ -63,15 +62,17 @@ public class DataGenerationMain {
   }
 
   private static DataGenerationInformation extractDataGenerationInformation(
-      Map<String, String> arguments) {
+      final Map<String, String> arguments) {
     // argument is being adjusted
-    long processInstanceCountToGenerate = Long.parseLong(arguments.get("numberOfProcessInstances"));
-    long decisionInstanceCountToGenerate =
+    final long processInstanceCountToGenerate = Long.parseLong(
+        arguments.get("numberOfProcessInstances"));
+    final long decisionInstanceCountToGenerate =
         Long.parseLong(arguments.get("numberOfDecisionInstances"));
-    String engineRestEndpoint = arguments.get("engineRest");
-    boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
-    Map<String, Integer> processDefinitions = parseDefinitions(arguments.get("processDefinitions"));
-    Map<String, Integer> decisionDefinitions =
+    final String engineRestEndpoint = arguments.get("engineRest");
+    final boolean removeDeployments = Boolean.parseBoolean(arguments.get("removeDeployments"));
+    final Map<String, Integer> processDefinitions = parseDefinitions(
+        arguments.get("processDefinitions"));
+    final Map<String, Integer> decisionDefinitions =
         parseDefinitions(arguments.get("decisionDefinitions"));
 
     return DataGenerationInformation.builder()
@@ -84,12 +85,12 @@ public class DataGenerationMain {
         .build();
   }
 
-  public static Map<String, Integer> parseDefinitions(String definitions) {
+  public static Map<String, Integer> parseDefinitions(final String definitions) {
     final Map<String, Integer> res = new HashMap<>();
-    String[] defs = definitions.split(",");
-    for (String def : defs) {
-      String[] strings = def.split(":");
-      String key = strings[0] + "DataGenerator";
+    final String[] defs = definitions.split(",");
+    for (final String def : defs) {
+      final String[] strings = def.split(":");
+      final String key = strings[0] + "DataGenerator";
       if (strings.length == 1) {
         res.put(key, null);
       } else {
@@ -115,27 +116,29 @@ public class DataGenerationMain {
     return arguments;
   }
 
-  private static void checkDateSpectrum(String startDate, String endDate) throws ParseException {
-    SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+  private static void checkDateSpectrum(final String startDate, final String endDate)
+      throws ParseException {
+    final SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
     try {
-      Date startDateObject = format.parse(startDate);
-      Date endDateObject = format.parse(endDate);
+      final Date startDateObject = format.parse(startDate);
+      final Date endDateObject = format.parse(endDate);
 
       if (startDateObject.compareTo(endDateObject) >= 0) {
         throw new IllegalArgumentException("startDate argument cannot be greater than endDate");
       }
-    } catch (ParseException e) {
+    } catch (final ParseException e) {
       throw new ParseException("There was an error while parsing the dates", e.getErrorOffset());
     }
   }
 
-  private static void ensureIdentifierIsKnown(Map<String, String> arguments, String identifier) {
+  private static void ensureIdentifierIsKnown(final Map<String, String> arguments,
+      final String identifier) {
     if (!arguments.containsKey(identifier)) {
       throw new RuntimeException("Unknown argument [" + identifier + "]!");
     }
   }
 
-  private static void fillArgumentMapWithDefaultValues(Map<String, String> arguments) {
+  private static void fillArgumentMapWithDefaultValues(final Map<String, String> arguments) {
     arguments.put("numberOfProcessInstances", String.valueOf(100_000));
     arguments.put("numberOfDecisionInstances", String.valueOf(10_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
@@ -152,21 +155,22 @@ public class DataGenerationMain {
   }
 
   public static String getDefaultDefinitionsOfClass(
-      Class<? extends DataGenerator<?>> classToExtractDefinitionsFor) {
-    try (ScanResult scanResult =
+      final Class<? extends DataGenerator<?>> classToExtractDefinitionsFor) {
+    try (final ScanResult scanResult =
         new ClassGraph()
             .enableClassInfo()
             .acceptPackages(DataGenerator.class.getPackage().getName())
             .scan()) {
-      ClassInfoList subclasses = scanResult.getSubclasses(classToExtractDefinitionsFor.getName());
+      final ClassInfoList subclasses = scanResult.getSubclasses(
+          classToExtractDefinitionsFor.getName());
       return subclasses.stream()
           .map(c -> c.getSimpleName().replace("DataGenerator", ""))
           .reduce("", (a, b) -> a + b + ":,", (a, b) -> a + b);
     }
   }
 
-  private static String stripLeadingHyphens(String str) {
-    int index = str.lastIndexOf("-");
+  private static String stripLeadingHyphens(final String str) {
+    final int index = str.lastIndexOf("-");
     if (index != -1) {
       return str.substring(index + 1);
     } else {
@@ -176,7 +180,7 @@ public class DataGenerationMain {
 
   private static void updateProcessInstanceDatesIfRequired(final Map<String, String> arguments) {
     if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
-      DBConnector dbConnector =
+      final DBConnector dbConnector =
           new DBConnector(
               arguments.get("jdbcDriver"),
               arguments.get("dbUrl"),

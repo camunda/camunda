@@ -28,12 +28,6 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
     super(engineClient, nVersions, userAndGroupProvider);
   }
 
-  @Override
-  protected void startInstance(final String definitionId, final Map<String, Object> variables) {
-    addCorrelatingVariable(variables);
-    engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
-  }
-
   protected void addCorrelatingVariable(final Map<String, Object> variables) {
     variables.put(getCorrelatingVariableName(), getCorrelatingValue());
   }
@@ -53,6 +47,12 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
   @Override
   protected List<String> deployDiagrams(final BpmnModelInstance instance) {
     return engineClient.deployProcesses(instance, nVersions, tenants);
+  }
+
+  @Override
+  protected void startInstance(final String definitionId, final Map<String, Object> variables) {
+    addCorrelatingVariable(variables);
+    engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
   }
 
   public BpmnModelInstance readProcessDiagramAsInstance(final String diagramPath) {

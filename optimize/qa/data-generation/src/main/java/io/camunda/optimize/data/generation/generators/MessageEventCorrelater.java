@@ -12,17 +12,19 @@ import lombok.Getter;
 
 public class MessageEventCorrelater {
 
-  private SimpleEngineClient engineClient;
+  private final SimpleEngineClient engineClient;
 
-  @Getter private String[] messagesToCorrelate;
+  @Getter
+  private final String[] messagesToCorrelate;
 
-  public MessageEventCorrelater(SimpleEngineClient engineClient, String[] messagesToCorrelate) {
+  public MessageEventCorrelater(final SimpleEngineClient engineClient,
+      final String[] messagesToCorrelate) {
     this.engineClient = engineClient;
     this.messagesToCorrelate = messagesToCorrelate;
   }
 
   public void correlateMessages() {
-    for (String messageName : messagesToCorrelate) {
+    for (final String messageName : messagesToCorrelate) {
       engineClient.correlateMessage(messageName);
     }
   }

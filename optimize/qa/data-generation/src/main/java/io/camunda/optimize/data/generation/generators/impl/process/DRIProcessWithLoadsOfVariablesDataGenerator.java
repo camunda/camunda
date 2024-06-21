@@ -21,7 +21,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 public class DRIProcessWithLoadsOfVariablesDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/dri-process.bpmn";
-  private static final String[] REVIEW_GATEWAY_OPTIONS = new String[] {"yes", "no"};
+  private static final String[] REVIEW_GATEWAY_OPTIONS = new String[]{"yes", "no"};
 
   private final String[] variableNames;
 

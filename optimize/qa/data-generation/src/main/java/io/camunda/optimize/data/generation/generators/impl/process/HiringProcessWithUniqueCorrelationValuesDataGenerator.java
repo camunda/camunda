@@ -24,13 +24,13 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
   private static final String TASK_ONSITE_INTERVIEW = "Task_onsite_interview";
   private static final String TASK_MAKE_OFFER = "Task_make_offer";
   private static final String TASK_OFFER_ACCEPTED = "Task_offer_accepted";
-  private static final String[] allVariableNames = {
-    TASK_AUTOMATICALLY_ASSIGNED,
-    TASK_SCREEN_PROCEED,
-    TASK_PHONE_PROCEED,
-    TASK_ONSITE_INTERVIEW,
-    TASK_MAKE_OFFER,
-    TASK_OFFER_ACCEPTED
+  private static final String[] ALL_VARIABLE_NAMES = {
+      TASK_AUTOMATICALLY_ASSIGNED,
+      TASK_SCREEN_PROCEED,
+      TASK_PHONE_PROCEED,
+      TASK_ONSITE_INTERVIEW,
+      TASK_MAKE_OFFER,
+      TASK_OFFER_ACCEPTED
   };
 
   public HiringProcessWithUniqueCorrelationValuesDataGenerator(
@@ -46,6 +46,14 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
   }
 
   @Override
+  protected Map<String, Object> createVariables() {
+    final Map<String, Object> variables = new HashMap<>();
+    Arrays.stream(ALL_VARIABLE_NAMES)
+        .forEach(v -> variables.put(v, ThreadLocalRandom.current().nextDouble()));
+    return variables;
+  }
+
+  @Override
   protected String getBusinessKey() {
     return super.getCorrelatingValue();
   }
@@ -53,13 +61,5 @@ public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends Proce
   @Override
   protected String getCorrelatingValue() {
     return "ValueUniqueToThisProcess_" + getStartedInstanceCount();
-  }
-
-  @Override
-  protected Map<String, Object> createVariables() {
-    final Map<String, Object> variables = new HashMap<>();
-    Arrays.stream(allVariableNames)
-        .forEach(v -> variables.put(v, ThreadLocalRandom.current().nextDouble()));
-    return variables;
   }
 }

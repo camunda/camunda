@@ -18,8 +18,8 @@ public class GroupElementsDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "/diagrams/process/group-elements.bpmn";
   private final Random r = new Random();
-  private final String[] firstGatewayOptions = new String[] {"a", "b"};
-  private final String[] secondGatewayOptions = new String[] {"c", "d"};
+  private final String[] firstGatewayOptions = new String[]{"a", "b"};
+  private final String[] secondGatewayOptions = new String[]{"c", "d"};
 
   public GroupElementsDataGenerator(
       final SimpleEngineClient engineClient,

@@ -30,17 +30,17 @@ public class BookRequestNoBusinessKeyDataGenerator extends ProcessDataGenerator 
   }
 
   @Override
-  protected String getBusinessKey() {
-    return null;
-  }
-
-  @Override
   protected Map<String, Object> createVariables() {
     return new HashMap<>();
   }
 
   @Override
   protected String[] getCorrelationNames() {
-    return new String[] {"ReceivedBookRequest", "HoldBook", "DeclineHold"};
+    return new String[]{"ReceivedBookRequest", "HoldBook", "DeclineHold"};
+  }
+
+  @Override
+  protected String getBusinessKey() {
+    return null;
   }
 }

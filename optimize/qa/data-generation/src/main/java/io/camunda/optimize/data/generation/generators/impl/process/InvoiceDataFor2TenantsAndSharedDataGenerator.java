@@ -32,15 +32,10 @@ public class InvoiceDataFor2TenantsAndSharedDataGenerator extends ProcessDataGen
   }
 
   @Override
-  protected void generateTenants() {
-    tenants = Lists.newArrayList(null, "sales", "engineering");
-  }
-
-  @Override
   protected Map<String, Object> createVariables() {
-    final String[] invoiceType = new String[] {"day-to-day expense", "budget", "exceptional"};
+    final String[] invoiceType = new String[]{"day-to-day expense", "budget", "exceptional"};
     final String[] invoiceCategory =
-        new String[] {"Misc", "Travel Expenses", "Software License Costs"};
+        new String[]{"Misc", "Travel Expenses", "Software License Costs"};
     final HashMap<String, Object> variables = new HashMap<>();
     variables.put("invoiceClassification", invoiceType[ThreadLocalRandom.current().nextInt(0, 3)]);
     variables.put("amount", ThreadLocalRandom.current().nextDouble(0, 2000));
@@ -48,5 +43,10 @@ public class InvoiceDataFor2TenantsAndSharedDataGenerator extends ProcessDataGen
         "invoiceCategory",
         invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]);
     return variables;
+  }
+
+  @Override
+  protected void generateTenants() {
+    tenants = Lists.newArrayList(null, "sales", "engineering");
   }
 }

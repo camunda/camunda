@@ -71,7 +71,7 @@ public class UserTaskCompleter {
                         BACKOFF_SECONDS);
                     try {
                       Thread.sleep(BACKOFF_SECONDS * 1000);
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                       log.debug(
                           "[process-definition-id:{}] Was Interrupted while sleeping",
                           processDefinitionId);
@@ -100,7 +100,7 @@ public class UserTaskCompleter {
                           processDefinitionId,
                           currentTasksPage.size());
                     }
-                  } catch (Exception e) {
+                  } catch (final Exception e) {
                     log.error(
                         "[process-definition-id:{}] User Task batch failed with [{}], will be retried.",
                         processDefinitionId,
@@ -120,12 +120,12 @@ public class UserTaskCompleter {
   }
 
   public synchronized void shutdown() {
-    this.shouldShutdown = true;
+    shouldShutdown = true;
   }
 
-  public synchronized boolean awaitUserTaskCompletion(long timeout, TimeUnit unit)
+  public synchronized boolean awaitUserTaskCompletion(final long timeout, final TimeUnit unit)
       throws InterruptedException {
-    return this.finished.await(timeout, unit);
+    return finished.await(timeout, unit);
   }
 
   private boolean isDateFilterInBackOffWindow() {
@@ -158,7 +158,7 @@ public class UserTaskCompleter {
       } else {
         engineClient.setAssignee(task, userAndGroupProvider.getRandomUserId());
         if (randomDouble() < 0.97) {
-          boolean executionDelayed =
+          final boolean executionDelayed =
               engineClient
                   .getProcessInstanceDelayVariable(task.getProcessInstanceId())
                   .orElse(false);
@@ -168,7 +168,7 @@ public class UserTaskCompleter {
           engineClient.completeUserTask(task);
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not claim user task!", e);
     }
   }
@@ -181,7 +181,7 @@ public class UserTaskCompleter {
     log.info("Creating an outlier instance, sleeping for " + OUTLIER_DELAY + " ms");
     try {
       Thread.sleep(OUTLIER_DELAY);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.warn("Was Interrupted while doing outlier delay wait.");
       Thread.currentThread().interrupt();
     }

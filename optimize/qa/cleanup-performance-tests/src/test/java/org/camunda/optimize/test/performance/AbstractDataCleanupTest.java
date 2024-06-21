@@ -33,23 +33,20 @@ import org.springframework.context.ApplicationContext;
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     properties = {INTEGRATION_TESTS + "=true"})
 public abstract class AbstractDataCleanupTest {
+
   protected static final Logger logger = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
-
-  private static final Properties properties =
-      PropertyUtil.loadProperties("static-cleanup-test.properties");
-
-  @Autowired protected static ApplicationContext applicationContext;
-
+  @Autowired
+  protected static ApplicationContext applicationContext;
   @RegisterExtension
   @Order(1)
   protected static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
       new DatabaseIntegrationTestExtension(false);
-
   @RegisterExtension
   @Order(2)
   protected static EmbeddedOptimizeExtension embeddedOptimizeExtension =
       new EmbeddedOptimizeExtension();
-
+  private static final Properties properties =
+      PropertyUtil.loadProperties("static-cleanup-test.properties");
   protected static long maxCleanupDurationInMin =
       Long.parseLong(properties.getProperty("cleanup.test.max.duration.in.min", "240"));
 
@@ -64,8 +61,8 @@ public abstract class AbstractDataCleanupTest {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.importAllEngineData();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    OffsetDateTime afterImport = OffsetDateTime.now();
-    long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
+    final OffsetDateTime afterImport = OffsetDateTime.now();
+    final long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
   }
 
@@ -76,7 +73,7 @@ public abstract class AbstractDataCleanupTest {
     cleanupExecutorService.execute(
         () -> embeddedOptimizeExtension.getCleanupScheduler().runCleanup());
     cleanupExecutorService.shutdown();
-    boolean wasAbleToFinishImportInTime =
+    final boolean wasAbleToFinishImportInTime =
         cleanupExecutorService.awaitTermination(maxCleanupDurationInMin, TimeUnit.MINUTES);
     logger.info(".. History cleanup finished, timed out {} ", !wasAbleToFinishImportInTime);
     if (!wasAbleToFinishImportInTime) {

@@ -59,6 +59,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 
 @Slf4j
+@SuppressWarnings("checkstyle:methodname")
 public class ForceReimportIT extends AbstractEventProcessIT {
 
   public static final List<String> TENANTS = Collections.singletonList(null);

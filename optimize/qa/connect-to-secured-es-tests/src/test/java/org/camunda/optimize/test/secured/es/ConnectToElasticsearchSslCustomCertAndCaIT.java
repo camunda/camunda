@@ -25,6 +25,7 @@ public class ConnectToElasticsearchSslCustomCertAndCaIT extends AbstractConnectT
 
   @TestConfiguration
   static class Configuration {
+
     @Bean
     @Primary
     public ConfigurationService configurationService() {

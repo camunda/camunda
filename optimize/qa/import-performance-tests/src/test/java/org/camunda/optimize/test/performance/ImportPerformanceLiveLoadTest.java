@@ -34,7 +34,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
   @Test
   public void importWhileGeneratingDataTestPlusAlreadyExistingData() throws Exception {
-    int totalInstanceCountPerGenerationBatch = 5_000;
+    final int totalInstanceCountPerGenerationBatch = 5_000;
     // GIVEN I have data in the engine before optimize starts
     final Future<Long> dataGenerationTask =
         startDataGeneration(totalInstanceCountPerGenerationBatch);
@@ -43,7 +43,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     // AND I start optimize & schedule imports
     logger.info("Starting import of engine data to Optimize...");
     embeddedOptimizeExtension.startContinuousImportScheduling();
-    ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
+    final ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
 
     // WHEN I start another data generation and wait for it to finish
     final Future<Long> dataGenerationTask1 =
@@ -67,13 +67,13 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     assertThatEngineAndElasticDataMatch();
   }
 
-  private void waitForDataGenerationTaskToComplete(Future<Long> dataGenerationTask)
+  private void waitForDataGenerationTaskToComplete(final Future<Long> dataGenerationTask)
       throws Exception {
     final Long dataGenerationDurationMinutes = dataGenerationTask.get(40, TimeUnit.MINUTES);
     logger.info("Data generation took [{}] min", dataGenerationDurationMinutes);
   }
 
-  private Future<Long> startDataGeneration(int instanceCountToGenerate) {
+  private Future<Long> startDataGeneration(final int instanceCountToGenerate) {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     // when I start data generation and wait for it to finish
     return executor.submit(

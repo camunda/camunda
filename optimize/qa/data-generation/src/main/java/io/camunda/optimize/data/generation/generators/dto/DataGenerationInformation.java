@@ -14,9 +14,11 @@ import lombok.Data;
 @Data
 @Builder
 public class DataGenerationInformation {
+
   private Long processInstanceCountToGenerate;
   private Long decisionInstanceCountToGenerate;
-  @Builder.Default private String engineRestEndpoint = "http://localhost:8080/engine-rest";
+  @Builder.Default
+  private String engineRestEndpoint = "http://localhost:8080/engine-rest";
   private boolean removeDeployments;
   private Map<String, Integer> processDefinitionsAndNumberOfVersions;
   private Map<String, Integer> decisionDefinitionsAndNumberOfVersions;

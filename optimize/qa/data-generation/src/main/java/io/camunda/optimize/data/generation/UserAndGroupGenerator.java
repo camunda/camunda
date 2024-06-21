@@ -25,8 +25,10 @@ import org.apache.commons.io.IOUtils;
 
 @AllArgsConstructor
 public class UserAndGroupGenerator implements UserAndGroupProvider {
+
   private final SimpleEngineClient engineClient;
-  @Getter private final List<UserProfileDto> users;
+  @Getter
+  private final List<UserProfileDto> users;
   private final List<GroupDto> groups;
 
   @SneakyThrows
@@ -84,14 +86,14 @@ public class UserAndGroupGenerator implements UserAndGroupProvider {
     return users.get(ThreadLocalRandom.current().nextInt(limitedRandomEntryIndex(users))).getId();
   }
 
-  @SneakyThrows
-  public void generateGroups() {
-    groups.stream().parallel().forEach(engineClient::createGroup);
-  }
-
   @Override
   public String getRandomGroupId() {
     return groups.get(ThreadLocalRandom.current().nextInt(limitedRandomEntryIndex(groups))).getId();
+  }
+
+  @SneakyThrows
+  public void generateGroups() {
+    groups.stream().parallel().forEach(engineClient::createGroup);
   }
 
   private int limitedRandomEntryIndex(final Collection<?> sourceCollection) {

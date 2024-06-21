@@ -43,11 +43,6 @@ public class InvoiceBusinessDecisionsFor2TenantsAndSharedDataGenerator
   }
 
   @Override
-  protected void generateTenants() {
-    tenants = Lists.newArrayList(null, "sales", "engineering");
-  }
-
-  @Override
   protected Map<String, Object> createVariables() {
     final int nextCombinationIndex = RandomUtils.nextInt(0, possibleInputCombinations.size());
     final Pair<String, Integer> nextCombination =
@@ -56,5 +51,10 @@ public class InvoiceBusinessDecisionsFor2TenantsAndSharedDataGenerator
     variables.put(inputVarNames.getLeft(), nextCombination.getLeft());
     variables.put(inputVarNames.getRight(), nextCombination.getRight());
     return variables;
+  }
+
+  @Override
+  protected void generateTenants() {
+    tenants = Lists.newArrayList(null, "sales", "engineering");
   }
 }

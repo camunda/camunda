@@ -72,6 +72,7 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 
 @Slf4j
 public class Generator {
+
   private static final String DEFAULT_USER = "demo";
   private static final String API_SECRET = "secret";
 
@@ -106,7 +107,7 @@ public class Generator {
     eventProcessClient = new EventProcessClient(() -> requestExecutor);
   }
 
-  public static void main(String[] args) throws InterruptedException, IOException {
+  public static void main(final String[] args) throws InterruptedException, IOException {
     final Generator generator = new Generator();
     try {
       generator.ingestExternalEvents();
@@ -138,7 +139,7 @@ public class Generator {
       elasticsearchClient.getLowLevelClient().close();
       log.info("Shutting down generator.");
       System.exit(0);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.info("Exception while closing ES client", e);
       System.exit(-1);
     }
@@ -190,7 +191,7 @@ public class Generator {
     log.info("Generate alert on definition {} in collection {}.", definitionKey, collectionId);
     final String collectionNumberReportId =
         createSingleNumberReportInCollection(collectionId, definitionKey);
-    AlertCreationRequestDto alertCreation = prepareAlertCreation(collectionNumberReportId);
+    final AlertCreationRequestDto alertCreation = prepareAlertCreation(collectionNumberReportId);
     alertClient.createAlert(alertCreation);
     log.info("Done generating alert.");
   }
@@ -251,7 +252,7 @@ public class Generator {
         reportClient.createCombinedReport(
             collectionId, Lists.newArrayList(combinableReport1, combinableReport2)));
 
-    List<String> generatedReports =
+    final List<String> generatedReports =
         ReportsGenerator.createAllReportTypesForDefinitions(
                 Collections.singletonList(processDefinition),
                 Collections.singletonList(decisionDefinition))
@@ -367,8 +368,8 @@ public class Generator {
     return eventProcessMappingId;
   }
 
-  private static AlertCreationRequestDto prepareAlertCreation(String id) {
-    AlertCreationRequestDto alertCreation = new AlertCreationRequestDto();
+  private static AlertCreationRequestDto prepareAlertCreation(final String id) {
+    final AlertCreationRequestDto alertCreation = new AlertCreationRequestDto();
 
     alertCreation.setReportId(id);
     alertCreation.setThreshold(700.0);
@@ -377,7 +378,7 @@ public class Generator {
     alertCreation.setThresholdOperator(AlertThresholdOperator.LESS);
     alertCreation.setFixNotification(true);
 
-    AlertInterval interval = new AlertInterval();
+    final AlertInterval interval = new AlertInterval();
     interval.setValue(17);
     interval.setUnit(AlertIntervalUnit.MINUTES);
 
@@ -389,20 +390,20 @@ public class Generator {
 
   private static DashboardDefinitionRestDto prepareDashboard(
       final List<String> reportIds, final String collectionId) {
-    List<DashboardReportTileDto> reportLocations =
+    final List<DashboardReportTileDto> reportLocations =
         reportIds.stream()
             .map(
                 reportId -> {
-                  DashboardReportTileDto report = new DashboardReportTileDto();
+                  final DashboardReportTileDto report = new DashboardReportTileDto();
                   report.setId(reportId);
                   report.setType(DashboardTileType.OPTIMIZE_REPORT);
 
-                  PositionDto position = new PositionDto();
+                  final PositionDto position = new PositionDto();
                   position.setX((reportIds.indexOf(reportId) % 3) * 6);
                   position.setY((reportIds.indexOf(reportId) / 3) * 4);
                   report.setPosition(position);
 
-                  DimensionDto dimensions = new DimensionDto();
+                  final DimensionDto dimensions = new DimensionDto();
                   dimensions.setHeight(4);
                   dimensions.setWidth(6);
                   report.setDimensions(dimensions);
@@ -411,7 +412,7 @@ public class Generator {
                 })
             .collect(Collectors.toList());
 
-    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
+    final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setCollectionId(collectionId);
     dashboard.setTiles(reportLocations);
 

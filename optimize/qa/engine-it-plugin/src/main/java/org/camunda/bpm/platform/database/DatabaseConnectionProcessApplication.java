@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 @ProcessApplication
 public class DatabaseConnectionProcessApplication extends ServletProcessApplication {
 
-  private static Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(DatabaseConnectionProcessApplication.class);
 
   @PostDeploy
@@ -30,8 +30,8 @@ public class DatabaseConnectionProcessApplication extends ServletProcessApplicat
     shutdownExistingServer();
     try {
       Server.createTcpServer("-tcpPort", "9092", "-tcpAllowOthers").start();
-    } catch (SQLException e) {
-      logger.error("Was not able to start tcp server!", e);
+    } catch (final SQLException e) {
+      LOGGER.error("Was not able to start tcp server!", e);
     }
   }
 
@@ -43,8 +43,8 @@ public class DatabaseConnectionProcessApplication extends ServletProcessApplicat
   private void shutdownExistingServer() {
     try {
       Server.shutdownTcpServer("tcp://localhost:9092", "", true, true);
-    } catch (SQLException e) {
-      logger.debug("There was no server to shutdown", e);
+    } catch (final SQLException e) {
+      LOGGER.debug("There was no server to shutdown", e);
     }
   }
 }

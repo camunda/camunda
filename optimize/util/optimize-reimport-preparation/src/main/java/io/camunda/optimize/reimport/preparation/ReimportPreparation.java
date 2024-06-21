@@ -73,10 +73,10 @@ public class ReimportPreparation {
           new EventProcessPublishStateIndexES(),
           new ExternalProcessVariableIndexES());
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     log.info("Start to prepare Elasticsearch such that Optimize reimports engine data!");
     log.info("Reading configuration...");
-    LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
+    final LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
     log.info("Successfully read configuration.");
     performReimport(ConfigurationServiceBuilder.createDefaultConfiguration());
@@ -87,7 +87,7 @@ public class ReimportPreparation {
     try (final RestHighLevelClient restHighLevelClient =
         ElasticsearchHighLevelRestClientBuilder.build(configurationService)) {
       log.info("Successfully created connection to Elasticsearch.");
-      ElasticsearchCustomHeaderProvider customHeaderProvider =
+      final ElasticsearchCustomHeaderProvider customHeaderProvider =
           new ElasticsearchCustomHeaderProvider(
               configurationService, new PluginJarFileLoader(configurationService));
       customHeaderProvider.initPlugins();
@@ -103,7 +103,7 @@ public class ReimportPreparation {
 
       log.info(
           "Optimize was successfully prepared such it can reimport the engine data. Feel free to start Optimize again!");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Failed preparing Optimize for reimport.", e);
     }
   }
@@ -152,17 +152,17 @@ public class ReimportPreparation {
                 index ->
                     !index.contains(EXTERNAL_EVENTS_INDEX_SUFFIX)
                         && (index.contains(EVENT_SEQUENCE_COUNT_INDEX_PREFIX)
-                            || index.contains(EVENT_TRACE_STATE_INDEX_PREFIX)))
+                        || index.contains(EVENT_TRACE_STATE_INDEX_PREFIX)))
             .toArray(String[]::new));
     log.info("Finished Camunda event count/trace indices from Elasticsearch.");
   }
 
   @NotNull
   private static List<String> getAllIndices(final OptimizeElasticsearchClient prefixAwareClient) {
-    List<String> indices;
+    final List<String> indices;
     try {
       indices = prefixAwareClient.getAllIndexNames();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           "Error while fetching indices. Could not perform Reimport", e);
     }
@@ -170,7 +170,7 @@ public class ReimportPreparation {
   }
 
   private static void deleteIndices(
-      final OptimizeElasticsearchClient prefixAwareClient, String[] indexNames) {
+      final OptimizeElasticsearchClient prefixAwareClient, final String[] indexNames) {
     if (indexNames.length > 0) {
       prefixAwareClient.deleteIndexByRawIndexNames(indexNames);
     }

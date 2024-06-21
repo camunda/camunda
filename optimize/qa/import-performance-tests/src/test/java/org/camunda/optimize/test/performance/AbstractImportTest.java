@@ -32,25 +32,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public abstract class AbstractImportTest {
+
   @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
       new EmbeddedOptimizeExtension();
-
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
-  private final Properties properties = getProperties();
-
   @RegisterExtension
   @Order(1)
   public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
       new DatabaseIntegrationTestExtension();
-
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  protected long maxImportDurationInMin;
+  protected ConfigurationService configurationService;
+  private final Properties properties = getProperties();
   @RegisterExtension
   @Order(3)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(properties);
-
-  protected long maxImportDurationInMin;
-  protected ConfigurationService configurationService;
 
   abstract Properties getProperties();
 

@@ -17,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 public class AnalysisTestingDataGenerator extends ProcessDataGenerator {
+
   private static final String DIAGRAM = "/diagrams/process/analysis-testing.bpmn";
 
   public AnalysisTestingDataGenerator(

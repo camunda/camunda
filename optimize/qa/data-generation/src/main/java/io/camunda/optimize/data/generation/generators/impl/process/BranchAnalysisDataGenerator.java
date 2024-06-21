@@ -26,13 +26,18 @@ public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
   }
 
   @Override
-  public void setInstanceCountToGenerate(final int instanceCountToGenerate) {
-    super.setInstanceCountToGenerate(instanceCountToGenerate / 2);
+  protected BpmnModelInstance retrieveDiagram() {
+    return readProcessDiagramAsInstance(CALLER_DIAGRAM);
   }
 
   @Override
-  protected BpmnModelInstance retrieveDiagram() {
-    return readProcessDiagramAsInstance(CALLER_DIAGRAM);
+  protected Map<String, Object> createVariables() {
+    return new HashMap<>();
+  }
+
+  @Override
+  public void setInstanceCountToGenerate(final int instanceCountToGenerate) {
+    super.setInstanceCountToGenerate(instanceCountToGenerate / 2);
   }
 
   @Override
@@ -40,10 +45,5 @@ public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
     super.deployAdditionalDiagrams();
     final BpmnModelInstance bpmnModelInstance = readProcessDiagramAsInstance(CALLEE_DIAGRAM);
     engineClient.deployProcesses(bpmnModelInstance, 1, tenants);
-  }
-
-  @Override
-  protected Map<String, Object> createVariables() {
-    return new HashMap<>();
   }
 }

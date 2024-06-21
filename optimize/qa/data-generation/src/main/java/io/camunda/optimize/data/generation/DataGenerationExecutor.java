@@ -39,7 +39,7 @@ public class DataGenerationExecutor {
 
   private SimpleEngineClient engineClient;
 
-  private List<DataGenerator<?>> allDataGenerators = new ArrayList<>();
+  private final List<DataGenerator<?>> allDataGenerators = new ArrayList<>();
   private ThreadPoolExecutor importExecutor;
 
   private ScheduledExecutorService progressReporter;
@@ -68,7 +68,7 @@ public class DataGenerationExecutor {
 
   private void initGenerators() {
     userAndGroupGenerator = new UserAndGroupGenerator(engineClient);
-    List<DataGenerator<?>> processDataGenerators =
+    final List<DataGenerator<?>> processDataGenerators =
         createGenerators(
             dataGenerationInformation.getProcessDefinitionsAndNumberOfVersions(),
             dataGenerationInformation.getProcessInstanceCountToGenerate());
@@ -78,7 +78,7 @@ public class DataGenerationExecutor {
             .map(Object::getClass)
             .map(Class::getSimpleName)
             .collect(toList()));
-    List<DataGenerator<?>> decisionDataGenerators =
+    final List<DataGenerator<?>> decisionDataGenerators =
         createGenerators(
             dataGenerationInformation.getDecisionDefinitionsAndNumberOfVersions(),
             dataGenerationInformation.getDecisionInstanceCountToGenerate());
@@ -95,7 +95,7 @@ public class DataGenerationExecutor {
   private List<DataGenerator<?>> createGenerators(
       final Map<String, Integer> definitions, final Long instanceCountToGenerate) {
     final List<DataGenerator<?>> dataGenerators = new ArrayList<>();
-    try (ScanResult scanResult =
+    try (final ScanResult scanResult =
         new ClassGraph()
             .enableClassInfo()
             .acceptPackages(DataGenerator.class.getPackage().getName())
@@ -133,9 +133,9 @@ public class DataGenerationExecutor {
 
   private void addInstanceCountToGenerators(
       final List<DataGenerator<?>> dataGenerators, final Long instanceCountToGenerate) {
-    int nGenerators = dataGenerators.size();
-    int stepSize = instanceCountToGenerate.intValue() / nGenerators;
-    int missingCount = instanceCountToGenerate.intValue() % nGenerators;
+    final int nGenerators = dataGenerators.size();
+    final int stepSize = instanceCountToGenerate.intValue() / nGenerators;
+    final int missingCount = instanceCountToGenerate.intValue() % nGenerators;
     dataGenerators.forEach(generator -> generator.setInstanceCountToGenerate(stepSize));
     dataGenerators.get(0).addToInstanceCount(missingCount);
   }
@@ -143,7 +143,7 @@ public class DataGenerationExecutor {
   public void executeDataGeneration() {
     userAndGroupGenerator.generateGroups();
     userAndGroupGenerator.generateUsers();
-    for (DataGenerator<?> dataGenerator : allDataGenerators) {
+    for (final DataGenerator<?> dataGenerator : allDataGenerators) {
       importExecutor.execute(dataGenerator);
     }
     progressReporter = reportDataGenerationProgress();
@@ -152,13 +152,13 @@ public class DataGenerationExecutor {
   public void awaitDataGenerationTermination() {
     importExecutor.shutdown();
     try {
-      boolean finishedGeneration =
+      final boolean finishedGeneration =
           importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
       if (!finishedGeneration) {
         log.error("Could not finish data generation in time. Trying to interrupt!");
         importExecutor.shutdownNow();
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       log.error("Data generation has been interrupted!", e);
     } finally {
@@ -168,26 +168,26 @@ public class DataGenerationExecutor {
     }
   }
 
-  private void stopReportingProgress(ScheduledExecutorService exec) {
+  private void stopReportingProgress(final ScheduledExecutorService exec) {
     exec.shutdownNow();
   }
 
   private ScheduledExecutorService reportDataGenerationProgress() {
-    ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
-    Runnable reportFunc =
+    final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+    final Runnable reportFunc =
         () -> {
-          RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
+          final RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
           log.info(
               "Progress report for running data generators (total: {} generators)",
               allDataGenerators.size());
           int totalInstancesToGenerate = 0;
           int finishedInstances = 0;
-          for (DataGenerator<?> dataGenerator : allDataGenerators) {
+          for (final DataGenerator<?> dataGenerator : allDataGenerators) {
             totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
             finishedInstances += dataGenerator.getStartedInstanceCount();
             if (dataGenerator.getStartedInstanceCount() > 0
                 && dataGenerator.getInstanceCountToGenerate()
-                    != dataGenerator.getStartedInstanceCount()) {
+                != dataGenerator.getStartedInstanceCount()) {
               log.info(
                   "[{}/{}] {}",
                   dataGenerator.getStartedInstanceCount(),
@@ -195,14 +195,14 @@ public class DataGenerationExecutor {
                   dataGenerator.getClass().getSimpleName().replaceAll("DataGenerator", ""));
             }
           }
-          double finishedAmountInPercentage =
+          final double finishedAmountInPercentage =
               Math.round((double) finishedInstances / (double) totalInstancesToGenerate * 1000.0)
                   / 10.0;
-          long timeETAFromNow =
+          final long timeETAFromNow =
               Math.round(
                   ((double) rb.getUptime() / finishedAmountInPercentage)
                       * (100.0 - finishedAmountInPercentage));
-          Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
+          final Date timeETA = new Date(System.currentTimeMillis() + timeETAFromNow);
           log.info(
               "Overall data generation progress: {}% ({}/{}) ETA: {}",
               finishedAmountInPercentage, finishedInstances, totalInstancesToGenerate, timeETA);
@@ -213,12 +213,13 @@ public class DataGenerationExecutor {
     return exec;
   }
 
-  private static class WaitHandler implements RejectedExecutionHandler {
+  private static final class WaitHandler implements RejectedExecutionHandler {
+
     @Override
-    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+    public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
       try {
         executor.getQueue().put(r);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         log.error("interrupted generation", e);
       }
     }

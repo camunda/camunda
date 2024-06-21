@@ -17,13 +17,15 @@ import javax.servlet.http.HttpServletResponse;
 import org.camunda.bpm.engine.rest.security.auth.ProcessEngineAuthenticationFilter;
 
 public class CustomAuthFilter extends ProcessEngineAuthenticationFilter {
-  @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
-    HttpServletRequest req = (HttpServletRequest) request;
-    HttpServletResponse resp = (HttpServletResponse) response;
 
-    String customToken = req.getHeader("Custom-Token");
+  @Override
+  public void doFilter(final ServletRequest request, final ServletResponse response,
+      final FilterChain chain)
+      throws IOException, ServletException {
+    final HttpServletRequest req = (HttpServletRequest) request;
+    final HttpServletResponse resp = (HttpServletResponse) response;
+
+    final String customToken = req.getHeader("Custom-Token");
     if (!"SomeCustomToken".equals(customToken)) {
       resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     } else {

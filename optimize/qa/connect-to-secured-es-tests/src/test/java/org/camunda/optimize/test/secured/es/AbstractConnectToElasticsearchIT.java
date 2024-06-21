@@ -46,10 +46,10 @@ public abstract class AbstractConnectToElasticsearchIT {
   @Test
   public void connectToSecuredElasticsearch() {
     // given a license and a secured optimize -> es connection
-    String license = FileReaderUtil.readValidTestLicense();
+    final String license = FileReaderUtil.readValidTestLicense();
 
     // when doing a request to add the license to optimize
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildValidateAndStoreLicenseRequest(license)

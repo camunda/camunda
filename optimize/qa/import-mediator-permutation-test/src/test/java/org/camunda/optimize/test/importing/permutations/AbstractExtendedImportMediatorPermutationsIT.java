@@ -18,11 +18,12 @@ import org.slf4j.Logger;
 
 public abstract class AbstractExtendedImportMediatorPermutationsIT
     extends AbstractImportMediatorPermutationsIT {
+
   private static final int MAX_MEDIATORS_TO_PERMUTATE = 8;
 
   protected void logMediatorOrder(
-      final Logger logger, List<Class<? extends ImportMediator>> mediatorOrder) {
-    StringBuilder order = new StringBuilder();
+      final Logger logger, final List<Class<? extends ImportMediator>> mediatorOrder) {
+    final StringBuilder order = new StringBuilder();
     mediatorOrder.forEach(mediator -> order.append(mediator.getSimpleName()).append("\n"));
 
     logger.warn("Testing the following mediators order: \n" + order);
@@ -37,7 +38,7 @@ public abstract class AbstractExtendedImportMediatorPermutationsIT
         additionalMediatorClasses.subList(
             0, MAX_MEDIATORS_TO_PERMUTATE - requiredMediatorClasses.size());
 
-    List<Class<? extends ImportMediator>> importMediatorsToUse =
+    final List<Class<? extends ImportMediator>> importMediatorsToUse =
         new ArrayList<>(requiredMediatorClasses);
     importMediatorsToUse.addAll(additionalMediatorClasses);
 

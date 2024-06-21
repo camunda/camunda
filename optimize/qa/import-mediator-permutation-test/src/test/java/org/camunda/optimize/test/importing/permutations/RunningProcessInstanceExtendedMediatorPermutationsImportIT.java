@@ -56,7 +56,7 @@ public class RunningProcessInstanceExtendedMediatorPermutationsImportIT
 
               // includes completed events in case CompletedActivityInstanceEngineImportMediator is
               // present
-              int numberOfEventsToImport =
+              final int numberOfEventsToImport =
                   mediatorOrder.contains(CompletedActivityInstanceEngineImportMediator.class)
                       ? 2
                       : 1;

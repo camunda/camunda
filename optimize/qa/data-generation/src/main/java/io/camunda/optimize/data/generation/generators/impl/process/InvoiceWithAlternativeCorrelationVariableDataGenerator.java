@@ -31,15 +31,10 @@ public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends Proc
   }
 
   @Override
-  protected String getCorrelatingVariableName() {
-    return "alternativeCorrelationVariable";
-  }
-
-  @Override
   protected Map<String, Object> createVariables() {
-    final String[] invoiceType = new String[] {"day-to-day expense", "budget", "exceptional"};
+    final String[] invoiceType = new String[]{"day-to-day expense", "budget", "exceptional"};
     final String[] invoiceCategory =
-        new String[] {"Misc", "Travel Expenses", "Software License Costs"};
+        new String[]{"Misc", "Travel Expenses", "Software License Costs"};
     final HashMap<String, Object> variables = new HashMap<>();
     variables.put("invoiceClassification", invoiceType[ThreadLocalRandom.current().nextInt(0, 3)]);
     variables.put("amount", ThreadLocalRandom.current().nextDouble(0, 2000));
@@ -47,5 +42,10 @@ public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends Proc
         "invoiceCategory",
         invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]);
     return variables;
+  }
+
+  @Override
+  protected String getCorrelatingVariableName() {
+    return "alternativeCorrelationVariable";
   }
 }

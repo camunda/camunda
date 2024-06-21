@@ -32,15 +32,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class ImportPerformanceZeebeDataTest {
 
   @RegisterExtension
-  @Order(1)
-  public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
-      new DatabaseIntegrationTestExtension();
-
-  @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
       new EmbeddedOptimizeExtension();
-
+  @RegisterExtension
+  @Order(1)
+  public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+      new DatabaseIntegrationTestExtension();
   private OffsetDateTime zeebeImportTestStart;
   private Integer expectedDefinitionCount;
   private Integer expectedInstanceCount;

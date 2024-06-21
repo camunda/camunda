@@ -61,17 +61,17 @@ public class OnboardingDataGenerator {
   public OnboardingDataGenerator() {
     final ConfigurationService configurationService =
         ConfigurationServiceBuilder.createDefaultConfiguration();
-    this.optimizeIndexNameService =
+    optimizeIndexNameService =
         new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
-    ElasticSearchMetadataService elasticsearchMetadataService =
+    final ElasticSearchMetadataService elasticsearchMetadataService =
         new ElasticSearchMetadataService(OBJECT_MAPPER);
-    this.elasticSearchSchemaManager =
+    elasticSearchSchemaManager =
         new ElasticSearchSchemaManager(
             elasticsearchMetadataService,
             configurationService,
             optimizeIndexNameService,
             List.of(new ProcessDefinitionIndexES()));
-    this.elasticsearchClient =
+    elasticsearchClient =
         new OptimizeElasticsearchClient(
             ElasticsearchHighLevelRestClientBuilder.build(configurationService),
             optimizeIndexNameService,
@@ -79,10 +79,11 @@ public class OnboardingDataGenerator {
     elasticSearchSchemaManager.initializeSchema(elasticsearchClient);
   }
 
-  public void executeDataGeneration(Map<String, OnboardingDataGeneratorParameters> arguments) {
+  public void executeDataGeneration(
+      final Map<String, OnboardingDataGeneratorParameters> arguments) {
     addCustomerOnboardingDefinitionToElasticSearch();
-    for (Map.Entry<String, OnboardingDataGeneratorParameters> argument : arguments.entrySet()) {
-      ProcessInstanceDto processInstanceDto = readProcessInstanceJson(argument.getValue());
+    for (final Map.Entry<String, OnboardingDataGeneratorParameters> argument : arguments.entrySet()) {
+      final ProcessInstanceDto processInstanceDto = readProcessInstanceJson(argument.getValue());
       if (processInstanceDto != null) {
         addProcessInstanceCopiesToElasticSearch(
             Integer.parseInt(argument.getValue().getNumberOfProcessInstances()),
@@ -97,18 +98,18 @@ public class OnboardingDataGenerator {
 
   private void addCustomerOnboardingDefinitionToElasticSearch() {
     try {
-      ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
-      URL resource = classLoader.getResource(CUSTOMER_ONBOARDING_DEFINITION);
+      final ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
+      final URL resource = classLoader.getResource(CUSTOMER_ONBOARDING_DEFINITION);
       if (resource != null) {
-        File file = new File(resource.getFile());
-        ProcessDefinitionOptimizeDto processDefinitionDto =
+        final File file = new File(resource.getFile());
+        final ProcessDefinitionOptimizeDto processDefinitionDto =
             OBJECT_MAPPER.readValue(file, ProcessDefinitionOptimizeDto.class);
         if (processDefinitionDto != null) {
-          String json = OBJECT_MAPPER.writeValueAsString(processDefinitionDto);
-          IndexRequest request =
+          final String json = OBJECT_MAPPER.writeValueAsString(processDefinitionDto);
+          final IndexRequest request =
               new IndexRequest(
-                      optimizeIndexNameService.getOptimizeIndexAliasForIndex(
-                          PROCESS_DEFINITION_INDEX_NAME))
+                  optimizeIndexNameService.getOptimizeIndexAliasForIndex(
+                      PROCESS_DEFINITION_INDEX_NAME))
                   .id(processDefinitionDto.getId())
                   .source(json, XContentType.JSON);
           elasticsearchClient.index(request);
@@ -124,44 +125,44 @@ public class OnboardingDataGenerator {
                 + " does not contain a "
                 + "process definition.");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new DataGenerationException("Unable to add a process definition to elasticsearch", e);
     }
   }
 
   private void addProcessInstanceCopiesToElasticSearch(
       final int amountOfProcessInstances, final ProcessInstanceDto processInstanceDto) {
-    BulkRequest bulkRequest = new BulkRequest();
+    final BulkRequest bulkRequest = new BulkRequest();
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
         elasticsearchClient,
         new ProcessInstanceIndexES(processInstanceDto.getProcessDefinitionKey()),
         Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS));
     try {
       for (int counter = 0; counter < amountOfProcessInstances; counter++) {
-        String processInstanceId = UUID.randomUUID().toString();
+        final String processInstanceId = UUID.randomUUID().toString();
         processInstanceDto.setProcessInstanceId(processInstanceId);
         processInstanceDto
             .getFlowNodeInstances()
             .forEach(
                 flowNodeInstanceDto -> flowNodeInstanceDto.setProcessInstanceId(processInstanceId));
-        String json = OBJECT_MAPPER.writeValueAsString(processInstanceDto);
-        IndexRequest request =
+        final String json = OBJECT_MAPPER.writeValueAsString(processInstanceDto);
+        final IndexRequest request =
             new IndexRequest(
-                    ProcessInstanceIndex.constructIndexName(
-                        processInstanceDto.getProcessDefinitionKey()))
+                ProcessInstanceIndex.constructIndexName(
+                    processInstanceDto.getProcessDefinitionKey()))
                 .id(processInstanceDto.getProcessInstanceId())
                 .source(json, XContentType.JSON);
         bulkRequest.add(request);
       }
       elasticsearchClient.bulk(bulkRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new DataGenerationException("Unable to add process instances to elasticsearch", e);
     }
   }
 
   private static ObjectMapper createObjectMapper() {
-    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
     javaTimeModule.addDeserializer(
@@ -185,19 +186,19 @@ public class OnboardingDataGenerator {
 
   private ProcessInstanceDto readProcessInstanceJson(
       final OnboardingDataGeneratorParameters onboardingDataGeneratorParameter) {
-    ProcessInstanceDto processInstanceDto;
+    final ProcessInstanceDto processInstanceDto;
     try {
-      ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
-      URL resource = classLoader.getResource(onboardingDataGeneratorParameter.getFilePath());
+      final ClassLoader classLoader = OnboardingDataGeneratorMain.class.getClassLoader();
+      final URL resource = classLoader.getResource(onboardingDataGeneratorParameter.getFilePath());
       if (resource != null) {
-        File file = new File(resource.getFile());
+        final File file = new File(resource.getFile());
         processInstanceDto = OBJECT_MAPPER.readValue(file, ProcessInstanceDto.class);
       } else {
         throw new DataGenerationException(
             "Could not read process instance json file in path: "
                 + onboardingDataGeneratorParameter.getFilePath());
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new DataGenerationException(
           "Could not read process instance json file in path: "
               + onboardingDataGeneratorParameter.getFilePath());

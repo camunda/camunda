@@ -43,7 +43,7 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Test
   public void fixedElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
-    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
+    final String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
@@ -57,7 +57,7 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Test
   public void dynamicElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
-    String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
+    final String basePackage = "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
@@ -83,9 +83,9 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Test
   public void multipleElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
-    String[] basePackages = {
-      "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
-      "io.camunda.optimize.testplugin.elasticsearch.custom"
+    final String[] basePackages = {
+        "io.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
+        "io.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
     final ClientAndServer dbMockServer = useAndGetDbMockServer();
@@ -110,8 +110,8 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   }
 
   private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(
-      String... basePackages) {
-    List<String> basePackagesList = Arrays.asList(basePackages);
+      final String... basePackages) {
+    final List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
     embeddedOptimizeExtension.reloadConfiguration();
   }
@@ -119,10 +119,11 @@ public class ForceReimportPluginIT extends AbstractEventProcessIT {
   @Import(io.camunda.optimize.Main.class)
   @TestConfiguration
   public class Configuration {
+
     @Bean
     @Primary
     public ConfigurationService configurationService() {
-      ConfigurationService configurationService =
+      final ConfigurationService configurationService =
           createConfigurationFromLocations("service-config.yaml", "it/it-config.yaml");
       return configurationService;
     }

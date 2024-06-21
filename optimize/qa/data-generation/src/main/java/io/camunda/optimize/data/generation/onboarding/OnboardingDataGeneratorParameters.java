@@ -13,6 +13,7 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class OnboardingDataGeneratorParameters {
+
   private String numberOfProcessInstances;
   private String filePath;
 }

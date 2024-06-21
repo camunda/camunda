@@ -26,7 +26,8 @@ import org.camunda.bpm.engine.impl.management.PurgeReport;
     name = "PurgeEngineServlet",
     urlPatterns = {"/purge"})
 public class PurgeServlet extends HttpServlet {
-  private ObjectMapper objectMapper = new ObjectMapper();
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp)
@@ -45,8 +46,8 @@ public class PurgeServlet extends HttpServlet {
             .map(managementService -> (ManagementServiceImpl) managementService)
             .collect(toList());
 
-    for (ManagementServiceImpl managementService : managementServices) {
-      PurgeReport purgeReport = managementService.purge();
+    for (final ManagementServiceImpl managementService : managementServices) {
+      final PurgeReport purgeReport = managementService.purge();
       resp.setCharacterEncoding("UTF-8");
       resp.getWriter().println(objectMapper.writeValueAsString(purgeReport));
     }

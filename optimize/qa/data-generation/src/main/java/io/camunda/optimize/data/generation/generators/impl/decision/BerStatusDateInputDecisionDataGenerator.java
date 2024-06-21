@@ -29,7 +29,7 @@ public class BerStatusDateInputDecisionDataGenerator extends DecisionDataGenerat
   private final List<Pair<String, Date>> possibleInputCombinations;
 
   public BerStatusDateInputDecisionDataGenerator(
-      SimpleEngineClient engineClient, Integer nVersions) {
+      final SimpleEngineClient engineClient, final Integer nVersions) {
     super(engineClient, nVersions);
 
     // create some date vars within the last 10 years and the last
@@ -61,7 +61,7 @@ public class BerStatusDateInputDecisionDataGenerator extends DecisionDataGenerat
   protected Map<String, Object> createVariables() {
     final int nextCombinationIndex = RandomUtils.nextInt(0, possibleInputCombinations.size());
     final Pair<String, Date> nextCombination = possibleInputCombinations.get(nextCombinationIndex);
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put(inputVarNames.getLeft(), nextCombination.getLeft());
     variables.put(inputVarNames.getRight(), nextCombination.getRight());
     return variables;
