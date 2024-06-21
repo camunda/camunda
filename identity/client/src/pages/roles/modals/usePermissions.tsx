@@ -18,11 +18,12 @@ type RoleListItem = {
 const usePermissions = (initialPermissions: Role["permissions"] = []) => {
   const { t } = useTranslate("permissions");
   const [permissions, setPermissions] = useState<string[]>(initialPermissions);
-
-  const availableItems: RoleListItem[] = allPermissions.map((permission) => ({
-    permission,
-    description: t(`${permissions}.description`),
-  }));
+  const availableItems: RoleListItem[] = allPermissions.map(
+    (permission: string) => ({
+      permission,
+      description: t(`${permission}.description`),
+    }),
+  );
 
   const onSelect = (entity: (typeof availableItems)[0]) => {
     setPermissions([...permissions, entity.permission]);
