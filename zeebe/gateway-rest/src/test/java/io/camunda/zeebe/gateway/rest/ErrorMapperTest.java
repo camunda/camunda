@@ -34,7 +34,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -43,6 +42,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -52,8 +52,10 @@ import reactor.core.publisher.Mono;
       TestErrorMapperConfiguration.class,
       UserTaskController.class
     },
-    webEnvironment = WebEnvironment.RANDOM_PORT)
-@AutoConfigureMockMvc(addFilters = false)
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = {
+      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+    })
 public class ErrorMapperTest {
 
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
@@ -287,6 +289,11 @@ public class ErrorMapperTest {
     @Bean
     public UserController userController() {
       return Mockito.mock(UserController.class);
+    }
+
+    @Bean
+    public HttpSecurity httpSecurity() {
+      return Mockito.mock(HttpSecurity.class);
     }
   }
 }
