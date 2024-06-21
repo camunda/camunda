@@ -84,9 +84,9 @@ public class RoleMembershipService {
   }
 
   public List<String> getRolesOfGroupByGroupId(final Long groupId) {
-    final CamundaGroup group = groupService.findGroupById(groupId);
+    final CamundaGroup camundaGroup = groupService.findGroupById(groupId);
 
-    return camundaUserDetailsManager.findGroupAuthorities(group.name()).stream()
+    return camundaUserDetailsManager.findGroupAuthorities(camundaGroup.name()).stream()
         .map(GrantedAuthority::getAuthority)
         .map(authorityName -> authorityName.replace("ROLE_", ""))
         .toList();
@@ -96,20 +96,20 @@ public class RoleMembershipService {
     if (!roleRepository.existsById(roleName)) {
       throw new RuntimeException("role.notFound");
     }
-    final CamundaGroup group = groupService.findGroupById(groupId);
+    final CamundaGroup camundaGroup = groupService.findGroupById(groupId);
 
     camundaUserDetailsManager.addGroupAuthority(
-        group.name(), new SimpleGrantedAuthority("ROLE_" + roleName));
+        camundaGroup.name(), new SimpleGrantedAuthority("ROLE_" + roleName));
   }
 
   public void unassignRoleFromGroup(final String roleName, final long groupId) {
     if (!roleRepository.existsById(roleName)) {
       throw new RuntimeException("role.notFound");
     }
-    final CamundaGroup group = groupService.findGroupById(groupId);
+    final CamundaGroup camundaGroup = groupService.findGroupById(groupId);
 
     camundaUserDetailsManager.removeGroupAuthority(
-        group.name(), new SimpleGrantedAuthority("ROLE_" + roleName));
+        camundaGroup.name(), new SimpleGrantedAuthority("ROLE_" + roleName));
   }
 
   private void saveUserDetailsWithRoles(

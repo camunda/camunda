@@ -13,15 +13,14 @@ import io.camunda.identity.usermanagement.model.Group;
 import io.camunda.identity.usermanagement.repository.GroupRepository;
 import java.util.Collections;
 import java.util.List;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class GroupService {
-  private final CamundaUserDetailsManager camundaUserDetailsManager;
 
+  private final CamundaUserDetailsManager camundaUserDetailsManager;
   private final GroupRepository groupRepository;
 
   public GroupService(
@@ -50,9 +49,9 @@ public class GroupService {
     return new CamundaGroup(group.getId(), group.getName());
   }
 
-  public CamundaGroup createGroup(final CamundaGroup group) {
-    camundaUserDetailsManager.createGroup(group.name(), Collections.emptyList());
-    return findGroupByName(group.name());
+  public CamundaGroup createGroup(final CamundaGroup camundaGroup) {
+    camundaUserDetailsManager.createGroup(camundaGroup.name(), Collections.emptyList());
+    return findGroupByName(camundaGroup.name());
   }
 
   public void deleteGroup(final CamundaGroup group) {
@@ -66,13 +65,13 @@ public class GroupService {
     groupRepository.deleteById(groupId);
   }
 
-  public CamundaGroup updateGroup(final Long groupId, final CamundaGroup updatedGroup) {
-    if (groupId == null || !groupId.equals(updatedGroup.id())) {
+  public CamundaGroup updateGroup(final Long groupId, final CamundaGroup updatedCamundaGroup) {
+    if (groupId == null || !groupId.equals(updatedCamundaGroup.id())) {
       throw new RuntimeException("group.notFound");
     }
 
     Group group = findById(groupId);
-    group.setName(updatedGroup.name());
+    group.setName(updatedCamundaGroup.name());
     group = groupRepository.save(group);
 
     return new CamundaGroup(groupId, group.getName());
@@ -82,17 +81,5 @@ public class GroupService {
     return groupRepository
         .findById(groupId)
         .orElseThrow(() -> new RuntimeException("group.notFound"));
-  }
-
-  public void assignRoleToGroup(final Long groupId, final String roleName) {
-    final Group group = groupRepository.findById(groupId).orElseThrow();
-    camundaUserDetailsManager.addGroupAuthority(
-        group.getName(), new SimpleGrantedAuthority(roleName));
-  }
-
-  public void unassignRoleFromGroup(final Long groupId, final String roleName) {
-    final Group group = groupRepository.findById(groupId).orElseThrow();
-    camundaUserDetailsManager.removeGroupAuthority(
-        group.getName(), new SimpleGrantedAuthority(roleName));
   }
 }
