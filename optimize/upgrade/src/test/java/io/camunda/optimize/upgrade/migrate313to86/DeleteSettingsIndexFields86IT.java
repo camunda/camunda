@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.upgrade.migrate313to314;
+package io.camunda.optimize.upgrade.migrate313to86;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,7 +13,7 @@ import io.camunda.optimize.service.db.DatabaseConstants;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class DeleteSettingsIndexFields314IT extends AbstractUpgrade314IT {
+public class DeleteSettingsIndexFields86IT extends AbstractUpgrade86IT {
 
   @Test
   public void deleteTelemetryFieldAndLastModifierFieldsFromSettingIndex() {
