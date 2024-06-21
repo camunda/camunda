@@ -54,6 +54,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       statisticsByFlowNode: computed,
       willAllFlowNodesBeCanceled: computed,
       selectableFlowNodes: computed,
+      executedFlowNodes: computed,
       reset: override,
     });
   }
@@ -210,6 +211,12 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
       return statistics;
     }, {});
+  }
+
+  get executedFlowNodes() {
+    return this.state.statistics.filter(({completed}) => {
+      return completed > 0;
+    });
   }
 
   getTotalRunningInstancesForFlowNode = (flowNodeId: string) => {
