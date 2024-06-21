@@ -25,6 +25,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@Profile("auth-basic")
 public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {"/login**", "/logout**", "/error**", "/actuator**"};
@@ -40,7 +41,6 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
   @Primary
   public HttpSecurity localHttpSecurity(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
@@ -49,18 +49,6 @@ public class WebSecurityConfig {
     return baseHttpSecurity(httpSecurity, authFailureHandler)
         .httpBasic(withDefaults())
         .logout((logout) -> logout.logoutSuccessUrl("/"));
-  }
-
-  @Bean
-  @Profile("!auth-basic")
-  @Primary
-  public HttpSecurity localHttpSecurityNoAuth(final HttpSecurity httpSecurity) throws Exception {
-    LOG.info("Configuring no auth");
-    return httpSecurity
-        .authorizeHttpRequests(
-            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-        .csrf(AbstractHttpConfigurer::disable)
-        .cors(AbstractHttpConfigurer::disable);
   }
 
   private HttpSecurity baseHttpSecurity(
