@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
@@ -61,7 +62,23 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<CompleteJobResponse> send() {
+    final CompleteJobRequest request = builder.build();
+
+    final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                CompleteJobResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<CompleteJobResponse> sendCommand() {
     final CompleteJobRequest request = builder.build();
 
     final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>

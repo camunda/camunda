@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -42,6 +44,21 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   private final PublishMessageRequest.Builder builder;
   private Duration requestTimeout;
 
+  public PublishMessageCommandImpl(
+      final GatewayStub asyncStub,
+      final CamundaClientConfiguration configuration,
+      final JsonMapper jsonMapper,
+      final Predicate<StatusCode> retryPredicate) {
+    super(jsonMapper);
+    this.asyncStub = asyncStub;
+    this.retryPredicate = retryPredicate;
+    builder = PublishMessageRequest.newBuilder();
+    requestTimeout = configuration.getDefaultRequestTimeout();
+    builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
+    tenantId(configuration.getDefaultTenantId());
+  }
+
+  @Deprecated
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
@@ -104,7 +121,23 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<PublishMessageResponse> send() {
+    final PublishMessageRequest request = builder.build();
+    final RetriableClientFutureImpl<
+            PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                PublishMessageResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<PublishMessageResponse> sendCommand() {
     final PublishMessageRequest request = builder.build();
     final RetriableClientFutureImpl<
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>

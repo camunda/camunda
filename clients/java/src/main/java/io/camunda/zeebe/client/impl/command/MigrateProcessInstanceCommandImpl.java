@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
@@ -99,7 +100,25 @@ public final class MigrateProcessInstanceCommandImpl
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<MigrateProcessInstanceResponse> send() {
+    final MigrateProcessInstanceRequest request = requestBuilder.build();
+
+    final RetriableClientFutureImpl<
+            MigrateProcessInstanceResponse, GatewayOuterClass.MigrateProcessInstanceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                MigrateProcessInstanceResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<MigrateProcessInstanceResponse> sendCommand() {
     final MigrateProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

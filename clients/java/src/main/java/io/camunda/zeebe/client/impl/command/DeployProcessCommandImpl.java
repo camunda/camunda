@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -153,7 +154,24 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<DeploymentEvent> send() {
+    final DeployProcessRequest request = requestBuilder.build();
+
+    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                DeploymentEventImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<DeploymentEvent> sendCommand() {
     final DeployProcessRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>

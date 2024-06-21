@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
@@ -42,6 +44,20 @@ public final class BroadcastSignalCommandImpl
   private final BroadcastSignalRequest.Builder builder;
   private Duration requestTimeout;
 
+  public BroadcastSignalCommandImpl(
+      final GatewayStub asyncStub,
+      final CamundaClientConfiguration configuration,
+      final JsonMapper jsonMapper,
+      final Predicate<StatusCode> retryPredicate) {
+    super(jsonMapper);
+    this.asyncStub = asyncStub;
+    this.retryPredicate = retryPredicate;
+    builder = BroadcastSignalRequest.newBuilder();
+    requestTimeout = configuration.getDefaultRequestTimeout();
+    tenantId(configuration.getDefaultTenantId());
+  }
+
+  @Deprecated
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
@@ -80,7 +96,23 @@ public final class BroadcastSignalCommandImpl
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<BroadcastSignalResponse> send() {
+    final BroadcastSignalRequest request = builder.build();
+    final RetriableClientFutureImpl<
+            BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                BroadcastSignalResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<BroadcastSignalResponse> sendCommand() {
     final BroadcastSignalRequest request = builder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
@@ -71,7 +72,24 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<UpdateTimeoutJobResponse> send() {
+    final UpdateJobTimeoutRequest request = builder.build();
+
+    final RetriableClientFutureImpl<
+            UpdateTimeoutJobResponse, GatewayOuterClass.UpdateJobTimeoutResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                UpdateTimeoutJobResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<UpdateTimeoutJobResponse> sendCommand() {
     final UpdateJobTimeoutRequest request = builder.build();
 
     final RetriableClientFutureImpl<

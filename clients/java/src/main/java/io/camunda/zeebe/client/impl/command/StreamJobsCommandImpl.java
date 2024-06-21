@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -61,6 +63,24 @@ public final class StreamJobsCommandImpl
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
+      final CamundaClientConfiguration config) {
+    this.asyncStub = asyncStub;
+    this.jsonMapper = jsonMapper;
+    this.retryPredicate = retryPredicate;
+    builder = StreamActivatedJobsRequest.newBuilder();
+
+    timeout(config.getDefaultJobTimeout());
+    workerName(config.getDefaultJobWorkerName());
+
+    defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
+    customTenantIds = new HashSet<>();
+  }
+
+  @Deprecated
+  public StreamJobsCommandImpl(
+      final GatewayStub asyncStub,
+      final JsonMapper jsonMapper,
+      final Predicate<StatusCode> retryPredicate,
       final ZeebeClientConfiguration config) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
@@ -81,7 +101,29 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
+  @Deprecated
   public ZeebeFuture<StreamJobsResponse> send() {
+    builder.clearTenantIds();
+    if (customTenantIds.isEmpty()) {
+      builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
+    }
+
+    final StreamActivatedJobsRequest request = builder.build();
+    final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> result =
+        new RetriableStreamingFutureImpl<>(
+            new StreamJobsResponseImpl(),
+            this::consumeJob,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
+
+    send(request, result);
+    return result;
+  }
+
+  @Override
+  public CamundaFuture<StreamJobsResponse> sendCommand() {
     builder.clearTenantIds();
     if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);
