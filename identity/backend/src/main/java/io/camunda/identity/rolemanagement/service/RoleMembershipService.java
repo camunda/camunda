@@ -16,6 +16,7 @@ import io.camunda.identity.usermanagement.service.UserService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -43,7 +44,7 @@ public class RoleMembershipService {
     this.roleRepository = roleRepository;
   }
 
-  public List<String> getRolesOfUserByUserId(final long userId) {
+  public List<String> getRolesByUserId(final long userId) {
     final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
     return camundaUserDetails.getRoles();
   }
@@ -55,9 +56,8 @@ public class RoleMembershipService {
 
     final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
 
-    final List<String> roles = new ArrayList<>();
-    roles.addAll(camundaUserDetails.getRoles());
-    roles.add(roleName);
+    final List<String> roles =
+        Stream.concat(camundaUserDetails.getRoles().stream(), Stream.of(roleName)).toList();
 
     saveUserDetailsWithRoles(camundaUserDetails, roles);
   }
@@ -76,7 +76,7 @@ public class RoleMembershipService {
     saveUserDetailsWithRoles(camundaUserDetails, roles);
   }
 
-  public List<String> getRolesOfGroupByGroupId(final Long groupId) {
+  public List<String> getRolesByGroupId(final Long groupId) {
     final CamundaGroup camundaGroup = groupService.findGroupById(groupId);
 
     return camundaUserDetailsManager.findGroupAuthorities(camundaGroup.name()).stream()

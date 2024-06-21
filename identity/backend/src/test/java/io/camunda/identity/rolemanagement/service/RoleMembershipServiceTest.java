@@ -81,14 +81,14 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void getRolesOfUserByUserId_Works() {
+  void getRolesByUserId_Works() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
     final Role role1 = TestHelper.createAndSaveRandomRole(roleService);
     final Role role2 = TestHelper.createAndSaveRandomRole(roleService);
     roleMembershipService.assignRoleToUser(role1.getName(), user.getId());
     roleMembershipService.assignRoleToUser(role2.getName(), user.getId());
 
-    final List<String> roles = roleMembershipService.getRolesOfUserByUserId(user.getId());
+    final List<String> roles = roleMembershipService.getRolesByUserId(user.getId());
 
     assertEquals(3, roles.size());
     assertTrue(roles.contains(TestHelper.DEFAULT_USER_ROLE));
@@ -102,7 +102,7 @@ class RoleMembershipServiceTest {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
     roleMembershipService.assignRoleToUser(role.getName(), user.getId());
 
-    final List<String> roles = roleMembershipService.getRolesOfUserByUserId(user.getId());
+    final List<String> roles = roleMembershipService.getRolesByUserId(user.getId());
 
     assertEquals(2, roles.size());
     assertTrue(roles.contains(TestHelper.DEFAULT_USER_ROLE));
@@ -171,13 +171,13 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void getRolesOfGroupByGroupId_Works() {
+  void getRolesByGroupId_Works() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
     roleMembershipService.assignRoleToGroup(role.getName(), group.id());
 
-    final List<String> roles = roleMembershipService.getRolesOfGroupByGroupId(group.id());
+    final List<String> roles = roleMembershipService.getRolesByGroupId(group.id());
 
     assertEquals(1, roles.size());
     assertTrue(roles.contains(role.getName()));
@@ -191,7 +191,7 @@ class RoleMembershipServiceTest {
     roleMembershipService.assignRoleToGroup(role.getName(), group.id());
     roleMembershipService.unassignRoleFromGroup(role.getName(), group.id());
 
-    final List<String> roles = roleMembershipService.getRolesOfGroupByGroupId(group.id());
+    final List<String> roles = roleMembershipService.getRolesByGroupId(group.id());
 
     assertEquals(0, roles.size());
   }
