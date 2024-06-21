@@ -50,7 +50,6 @@ public class CallActivityInterruptionTest {
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
             .serviceTask("child-task", t -> t.zeebeJobType(jobType))
-            .endEvent()
             .done();
 
     ENGINE
@@ -93,11 +92,11 @@ public class CallActivityInterruptionTest {
     // when trigger the boundary event and complete the child instance concurrently
     ENGINE.writeRecords(
         RecordToWrite.command()
-            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, childTaskActivated.getValue())
-            .key(childTaskActivated.getKey()),
-        RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
-            .key(timerCreated.getKey()));
+            .key(timerCreated.getKey()),
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, childTaskActivated.getValue())
+            .key(childTaskActivated.getKey()));
 
     // then
     assertThat(
