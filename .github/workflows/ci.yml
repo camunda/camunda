@@ -92,7 +92,7 @@ jobs:
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
-          -pl '!testing/camunda-process-test-java,!spring-boot-starter-camunda-sdk'
+          -pl '!testing/camunda-process-test-java'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
