@@ -47,6 +47,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("checkstyle:methodname")
 public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   private static final String FROM_VERSION = "2.6.0";
