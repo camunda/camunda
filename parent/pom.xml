@@ -119,10 +119,10 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
     <version.zpt>8.5.3</version.zpt>
-    <version.feign>13.2.1</version.feign>
+    <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.6</version.awssdk>
+    <version.awssdk>2.26.7</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -152,7 +152,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.747</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.748</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
