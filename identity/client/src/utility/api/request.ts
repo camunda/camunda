@@ -100,9 +100,9 @@ const apiRequest: <R, P>(
   }
 };
 
-export type ApiCall<R, P = undefined> = (
-  params: P extends undefined ? never : P,
-) => ApiPromise<R>;
+export type ApiCall<R, P = undefined> = P extends undefined
+  ? () => ApiPromise<R>
+  : (params: P) => ApiPromise<R>;
 
 export type ApiDefinition<R, P = undefined> = (
   params: P,

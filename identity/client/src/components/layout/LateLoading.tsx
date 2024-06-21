@@ -12,7 +12,7 @@ const LateLoading: FC<LateLoadingProps> = ({ timeout = 300 }) => {
 
   useEffect(() => {
     debounce(() => setVisible(true));
-  }, []);
+  }, [debounce]);
 
   if (visible) {
     return <Loading />;
