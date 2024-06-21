@@ -10,13 +10,15 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 
-@Import(WebSecurityConfig.class)
+@TestPropertySource(
+    properties = {
+      "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+    })
 abstract class RestControllerTest {
 
   @Autowired protected MockMvc webClient;
