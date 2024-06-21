@@ -20,6 +20,18 @@ outputs:
         steps.filter-common.outputs.java-code-change ||
         steps.filter-common.outputs.maven-change
       }}
+  docker-ci:
+    description:
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change ||
+        steps.filter-common.outputs.java-code-change ||
+        steps.filter-common.outputs.maven-change ||
+        steps.filter-common.outputs.docker-change ||
+        steps.filter-common.outputs.frontend-change
+      }}
+
 
 runs:
   using: composite
@@ -43,10 +55,18 @@ runs:
         java-code-change:
           - '**/src/main/**'
           - '**/src/test/**'
-          
+
         maven-change:
           - 'bom/*'
           - 'build-tools/**'
           - 'dist/**'
           - 'parent/*'
           - 'pom.xml'
+
+        docker-change:
+          - 'Dockerfile'
+          - '*.Dockerfile'
+
+        frontend-change:
+          - 'operate/client/**'
+          - 'tasklist/client/**'

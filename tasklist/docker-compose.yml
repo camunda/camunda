@@ -237,16 +237,14 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:local-hb
+    image: camunda/camunda:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - SPRING_PROFILES_ACTIVE=operate,tasklist,broker,dev,dev-data,auth
-      - ZEEBE_BROKER_NETWORK_HOST=camunda
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
       - ZEEBE_BROKER_GATEWAY_ENABLE=true
       - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200

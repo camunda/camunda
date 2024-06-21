@@ -1,0 +1,31 @@
+name: Build Frontend
+description: Builds the frontend
+
+inputs:
+  directory:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+    - name: Setup yarn
+      run: npm install -g yarn
+      shell: bash
+    - name: Setup yarn cache
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: "yarn"
+        cache-dependency-path: ${{ inputs.directory }}/yarn.lock
+    - name: Install node dependencies
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn
+    - name: Build frontend
+      working-directory: ${{ inputs.directory }}
+      run: yarn build
+      shell: bash

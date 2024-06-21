@@ -21,11 +21,15 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+
 jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-unit-tests: ${{ steps.filter.outputs.java-unit-tests }}
+      docker-ci: ${{ steps.filter.outputs.docker-ci }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -116,6 +120,90 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  docker-checks:
+    if: needs.detect-changes.outputs.docker-ci == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    services:
+      # local registry is used as this job needs to push as it builds multi-platform images
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    env:
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          config: ./.hadolint.yaml
+          dockerfile: ./camunda.Dockerfile
+          format: sarif
+          output-file: ./hadolint.sarif
+          no-color: true
+          verbose: true
+      - name: Upload Hadolint Results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ./hadolint.sarif
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
+          docker-secret-path: secret/data/products/camunda/ci/github-actions
+      - uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+      - uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+          go: false
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          # we use a local registry for pushing
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+          # push is needed for multi-arch images as buildkit does not support loading them locally
+          push: true
+      - name: Verify Docker image
+        uses: ./.github/actions/verify-platform-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-camunda-docker.outputs.date }}
+          revision: ${{ github.sha }}
+          version: ${{ steps.build-camunda-docker.outputs.version }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          goldenfile: camunda-docker-labels.golden.json
+      - name: Run Docker tests
+        run: |
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          -Dcamunda.docker.test.enabled=true \
+          -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
+          -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
+          test
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -127,6 +215,7 @@ jobs:
     needs:
       - actionlint
       - java-unit-tests
+      - docker-checks
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
@@ -175,3 +264,44 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
+
+
+  deploy-camunda-docker-snapshot:
+    name: Deploy snapshot Camunda Docker image
+    needs: [ detect-changes, check-results ]
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.docker-ci == 'true' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-camunda-docker-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
+          docker-secret-path: secret/data/products/camunda/ci/github-actions
+      - uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+      - uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+          go: false
+      - uses: ./.github/actions/build-platform-docker
+        id: build-camunda-docker
+        with:
+          repository: camunda/camunda
+          version: SNAPSHOT
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: camunda.Dockerfile
+          push: true
