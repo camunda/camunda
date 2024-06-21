@@ -60,10 +60,11 @@ public final class RocksDbInternal {
     nativeHandle.setAccessible(true);
   }
 
-  //    private native void put(final long handle, final byte[] key,
-  //      final int keyLength, final byte[] value, final int valueLength,
-  //      final long columnFamilyHandle)
-
+  /*
+   private native void put(final long handle, final byte[] key, final int keyOffset,
+        final int keyLength, final byte[] value, final int valueOffset, final int valueLength,
+        final long columnFamilyHandle, final boolean assumeTracked) throws RocksDBException;
+  */
   private static void putWithHandle() throws NoSuchMethodException {
     putWithHandle =
         Transaction.class.getDeclaredMethod(
@@ -71,17 +72,24 @@ public final class RocksDbInternal {
             Long.TYPE,
             byte[].class,
             Integer.TYPE,
+            Integer.TYPE,
             byte[].class,
+            Integer.TYPE,
             Integer.TYPE,
             Long.TYPE,
             Boolean.TYPE);
     putWithHandle.setAccessible(true);
   }
 
+  /*
+   private native byte[] get(final long handle, final long readOptionsHandle, final byte[] key,
+      final int keyOffset, final int keyLength, final long columnFamilyHandle)
+      throws RocksDBException;
+  */
   private static void getWithHandle() throws NoSuchMethodException {
     getWithHandle =
         Transaction.class.getDeclaredMethod(
-            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
+            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Integer.TYPE, Long.TYPE);
     getWithHandle.setAccessible(true);
   }
 
