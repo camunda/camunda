@@ -111,7 +111,7 @@ public class RoleMembershipService {
         User.withUsername(camundaUserDetails.getUsername())
             .password(camundaUserDetails.getPassword())
             .passwordEncoder(Function.identity())
-            .roles(roles.toArray(roles.toArray(new String[0])))
+            .roles(roles.toArray(new String[0]))
             .disabled(!camundaUserDetails.isEnabled())
             .build();
 
