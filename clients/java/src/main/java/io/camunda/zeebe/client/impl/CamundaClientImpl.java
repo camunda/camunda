@@ -48,6 +48,7 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
+import io.camunda.zeebe.client.impl.search.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -461,6 +463,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public ProcessInstanceQuery newProcessInstanceQuery() {
+    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
 
   @Override

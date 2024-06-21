@@ -15,6 +15,4 @@
  */
 package io.camunda.zeebe.client.impl;
 
-public class CamundaClientCloudBuilderImpl
-    extends ZeebeClientCloudBuilderImpl {
-}
+public class CamundaClientCloudBuilderImpl extends ZeebeClientCloudBuilderImpl {}
