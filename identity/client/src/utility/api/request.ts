@@ -73,6 +73,7 @@ const apiRequest: <R, P>(
         method,
         body,
         headers,
+        credentials: "include",
       },
     );
     let data = null;
