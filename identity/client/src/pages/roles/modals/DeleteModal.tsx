@@ -1,10 +1,3 @@
-/*
- * @license Identity
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license
- * agreements. Licensed under a proprietary license. See the License.txt file for more information. You may not use this
- * file except in compliance with the proprietary license.
- */
-
 import { FC } from "react";
 import {
   DeleteModal as Modal,
@@ -16,7 +9,7 @@ import { useNotifications } from "src/components/notifications";
 import { deleteRole, Role } from "src/utility/api/roles";
 
 const DeleteModal: FC<UseEntityModalProps<Role>> = ({
-  entity: role,
+  entity: { id, name },
   open,
   onClose,
   onSuccess,
@@ -27,18 +20,16 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
   const [callDeleteApi, { loading }] = useApiCall(deleteRole);
 
   const handleSubmit = async () => {
-    if (role) {
-      const { success } = await callDeleteApi({
-        id: role.id,
-      });
+    const { success } = await callDeleteApi({
+      id: id,
+    });
 
-      if (success) {
-        enqueueNotification({
-          kind: "success",
-          title: t("Role has been deleted."),
-        });
-        onSuccess();
-      }
+    if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("Role has been deleted."),
+      });
+      onSuccess();
     }
   };
 
@@ -46,7 +37,7 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
     <Modal
       open={open}
       headline={t('Are you sure you want to delete the role "{{ name }}"?', {
-        name: role?.name,
+        name,
       })}
       onSubmit={handleSubmit}
       loading={loading}
