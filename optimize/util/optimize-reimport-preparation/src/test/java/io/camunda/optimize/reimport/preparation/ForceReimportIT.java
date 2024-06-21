@@ -248,7 +248,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private String createAndStoreNumberReport(
-      String collectionId, ProcessDefinitionEngineDto processDefinition) {
+      final String collectionId, final ProcessDefinitionEngineDto processDefinition) {
     return reportClient.createAndStoreProcessReport(
         collectionId,
         processDefinition.getKey(),
@@ -380,20 +380,20 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private void forceReimportOfEngineData() {
-    ReimportPreparation.main(new String[] {});
+    ReimportPreparation.main(new String[]{});
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {
-    Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
     return deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskWithVariables(
-      Map<String, Object> variables) {
-    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+      final Map<String, Object> variables) {
+    final BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
-    ProcessDefinitionEngineDto processDefinitionEngineDto =
+    final ProcessDefinitionEngineDto processDefinitionEngineDto =
         engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
@@ -401,5 +401,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   @Import(SpringDefaultC7ITConfig.class)
   @TestConfiguration
-  public class Configuration {}
+  public class Configuration {
+
+  }
 }
