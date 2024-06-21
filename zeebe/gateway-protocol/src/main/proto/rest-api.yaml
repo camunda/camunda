@@ -730,7 +730,7 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/UserTask"
+            $ref: "#/components/schemas/UserTaskItem"
     UserTaskFilterRequest:
       description: User task filter request.
       type: object
@@ -770,6 +770,10 @@ components:
           items:
             type: integer
             format: int64
+        creationTime:
+          $ref: "#/components/schemas/DateFilter"
+        completionTime:
+          $ref: "#/components/schemas/DateFilter"
         followUpDate:
           $ref: "#/components/schemas/DateFilter"
         dueDate:
@@ -782,7 +786,7 @@ components:
           type: array
           items:
             type: string
-    UserTask:
+    UserTaskItem:
       type: object
       properties:
         key:
@@ -807,6 +811,12 @@ components:
         processInstanceKey:
           type: integer
           format: int64
+        creationDate:
+          type: string
+          format: date-time
+        completionDate:
+          type: string
+          format: date-time
         followUpDate:
           type: string
           format: date-time

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 public interface UserTaskFilter extends SearchRequestFilter {
 
@@ -37,11 +36,13 @@ public interface UserTaskFilter extends SearchRequestFilter {
 
   UserTaskFilter userTaskAssignees(final List<String> assignees);
 
-  UserTaskFilter userTaskTaskDefinitionIds(final String taskDefinitionId, final String... taskDefinitionIds);
+  UserTaskFilter userTaskTaskDefinitionIds(
+      final String taskDefinitionId, final String... taskDefinitionIds);
 
   UserTaskFilter userTaskTaskDefinitionIds(final List<String> taskDefinitionIds);
 
-  UserTaskFilter userTaskCandidateGroups(final String candidateGroup, final String... candidateGroups);
+  UserTaskFilter userTaskCandidateGroups(
+      final String candidateGroup, final String... candidateGroups);
 
   UserTaskFilter userTaskCandidateGroups(final List<String> candidateGroups);
 
@@ -49,15 +50,23 @@ public interface UserTaskFilter extends SearchRequestFilter {
 
   UserTaskFilter userTaskCandidateUsers(final List<String> candidateUsers);
 
-  UserTaskFilter userTaskProcessDefinitionKeys(final Long processDefinitionKey, final Long... processDefinitionKeys);
+  UserTaskFilter userTaskProcessDefinitionKeys(
+      final Long processDefinitionKey, final Long... processDefinitionKeys);
 
   UserTaskFilter userTaskProcessDefinitionKeys(final List<Long> processDefinitionKeys);
 
-  UserTaskFilter userTaskProcessInstanceKeys(final Long processInstanceKey, final Long... processInstanceKeys);
+  UserTaskFilter userTaskProcessInstanceKeys(
+      final Long processInstanceKey, final Long... processInstanceKeys);
 
   UserTaskFilter userTaskProcessInstanceKeys(final List<Long> processInstanceKeys);
 
   UserTaskFilter userTaskFollowUpDate(final DateFilter dateFilter);
+
+  UserTaskFilter userTaskDueDate(final DateFilter dateFilter);
+
+  UserTaskFilter userTaskCreationDate(final DateFilter dateFilter);
+
+  UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter);
 
   UserTaskFilter userTaskTenantIds(final String tenantId, final String... tenantIds);
 
