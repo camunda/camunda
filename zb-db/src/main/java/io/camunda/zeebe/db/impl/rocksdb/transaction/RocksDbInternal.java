@@ -61,10 +61,11 @@ public final class RocksDbInternal {
     nativeHandle.setAccessible(true);
   }
 
-  //    private native void put(final long handle, final byte[] key,
-  //      final int keyLength, final byte[] value, final int valueLength,
-  //      final long columnFamilyHandle)
-
+  /*
+   private native void put(final long handle, final byte[] key, final int keyOffset,
+        final int keyLength, final byte[] value, final int valueOffset, final int valueLength,
+        final long columnFamilyHandle, final boolean assumeTracked) throws RocksDBException;
+  */
   private static void putWithHandle() throws NoSuchMethodException {
     final var method =
         Transaction.class.getDeclaredMethod(
@@ -72,26 +73,33 @@ public final class RocksDbInternal {
             Long.TYPE,
             byte[].class,
             Integer.TYPE,
+            Integer.TYPE,
             byte[].class,
+            Integer.TYPE,
             Integer.TYPE,
             Long.TYPE,
             Boolean.TYPE);
     method.setAccessible(true);
     try {
       putWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
 
+  /*
+   private native byte[] get(final long handle, final long readOptionsHandle, final byte[] key,
+      final int keyOffset, final int keyLength, final long columnFamilyHandle)
+      throws RocksDBException;
+  */
   private static void getWithHandle() throws NoSuchMethodException {
     final var method =
         Transaction.class.getDeclaredMethod(
-            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
+            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Integer.TYPE, Long.TYPE);
     method.setAccessible(true);
     try {
       getWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
@@ -103,7 +111,7 @@ public final class RocksDbInternal {
     method.setAccessible(true);
     try {
       removeWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
