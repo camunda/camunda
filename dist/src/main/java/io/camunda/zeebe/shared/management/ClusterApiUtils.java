@@ -190,6 +190,12 @@ final class ClusterApiUtils {
               .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
               .partitionId(disableExporterOperation.partitionId())
               .exporterId(disableExporterOperation.exporterId());
+      case final PartitionEnableExporterOperation enableExporterOperation ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_ENABLE_EXPORTER)
+              .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
+              .partitionId(enableExporterOperation.partitionId())
+              .exporterId(enableExporterOperation.exporterId());
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -371,6 +377,12 @@ final class ClusterApiUtils {
                   .brokerId(Integer.parseInt(disableExporterOperation.memberId().id()))
                   .partitionId(disableExporterOperation.partitionId())
                   .exporterId(disableExporterOperation.exporterId());
+          case final PartitionEnableExporterOperation enableExporterOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_ENABLE_EXPORTER)
+                  .brokerId(Integer.parseInt(enableExporterOperation.memberId().id()))
+                  .partitionId(enableExporterOperation.partitionId())
+                  .exporterId(enableExporterOperation.exporterId());
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

@@ -1,0 +1,11 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.camunda</groupId>
+  <artifactId>zeebe-client-java</artifactId>
+  <version>8.6.0-SNAPSHOT</version>
+  <distributionManagement>
+    <relocation>
+      <artifactId>camunda-client-java</artifactId>
+    </relocation>
+  </distributionManagement>
+</project>
