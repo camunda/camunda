@@ -26,12 +26,6 @@ import lombok.experimental.FieldNameConstants;
 @Builder
 public class IncidentDto implements Serializable, OptimizeDto {
 
-  @JsonIgnore private String processInstanceId;
-  private String definitionKey;
-  private String definitionVersion;
-  private String tenantId;
-  @JsonIgnore private String engineAlias;
-
   protected String id;
   protected OffsetDateTime createTime;
   protected OffsetDateTime endTime;
@@ -41,4 +35,11 @@ public class IncidentDto implements Serializable, OptimizeDto {
   protected String failedActivityId;
   protected String incidentMessage;
   protected IncidentStatus incidentStatus;
+  @JsonIgnore
+  private String processInstanceId;
+  private String definitionKey;
+  private String definitionVersion;
+  private String tenantId;
+  @JsonIgnore
+  private String engineAlias;
 }

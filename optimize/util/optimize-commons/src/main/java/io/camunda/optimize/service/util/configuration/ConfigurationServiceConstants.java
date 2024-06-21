@@ -220,6 +220,8 @@ public class ConfigurationServiceConstants {
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";
   public static final String PLATFORM_PROFILE = "platform";
+
+  @SuppressWarnings("checkstyle:constantname")
   public static final List<String> optimizeModeProfiles =
       List.of(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE);
 

@@ -21,7 +21,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptimizeIndexNameService implements ConfigurationReloadable {
 
-  @Getter private String indexPrefix;
+  @Getter
+  private String indexPrefix;
 
   @Autowired
   public OptimizeIndexNameService(
@@ -38,7 +39,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     this.indexPrefix = indexPrefix;
   }
 
-  public String getOptimizeIndexAliasForIndex(String index) {
+  public String getOptimizeIndexAliasForIndex(final String index) {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
@@ -55,7 +56,9 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
   }
 
-  /** This will suffix the indices that are created from templates with their initial suffix */
+  /**
+   * This will suffix the indices that are created from templates with their initial suffix
+   */
   public String getOptimizeIndexNameWithVersion(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator)
         + indexMappingCreator.getIndexNameInitialSuffix();
@@ -91,17 +94,17 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     setIndexPrefix(
         configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
   }
 
   private void setIndexPrefix(
-      ConfigurationService configurationService, DatabaseType databaseProfile) {
+      final ConfigurationService configurationService, final DatabaseType databaseProfile) {
     if (databaseProfile.equals(DatabaseType.OPENSEARCH)) {
-      this.indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
+      indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
-      this.indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
+      indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
     }
   }
 

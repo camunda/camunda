@@ -14,40 +14,40 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ExecutingFlowNodeFilterBuilder {
+public final class ExecutingFlowNodeFilterBuilder {
 
-  private List<String> values = new ArrayList<>();
-  private ProcessFilterBuilder filterBuilder;
+  private final List<String> values = new ArrayList<>();
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private ExecutingFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+  private ExecutingFlowNodeFilterBuilder(final ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
   }
 
   public static ExecutingFlowNodeFilterBuilder construct(
-      ProcessFilterBuilder processFilterBuilder) {
+      final ProcessFilterBuilder processFilterBuilder) {
     return new ExecutingFlowNodeFilterBuilder(processFilterBuilder);
   }
 
-  public ExecutingFlowNodeFilterBuilder id(String flowNodeId) {
+  public ExecutingFlowNodeFilterBuilder id(final String flowNodeId) {
     values.add(flowNodeId);
     return this;
   }
 
-  public ExecutingFlowNodeFilterBuilder ids(String... flowNodeIds) {
+  public ExecutingFlowNodeFilterBuilder ids(final String... flowNodeIds) {
     values.addAll(Arrays.asList(flowNodeIds));
     return this;
   }
 
-  public ExecutingFlowNodeFilterBuilder filterLevel(FilterApplicationLevel filterLevel) {
+  public ExecutingFlowNodeFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    ExecutingFlowNodeFilterDataDto dataDto = new ExecutingFlowNodeFilterDataDto();
+    final ExecutingFlowNodeFilterDataDto dataDto = new ExecutingFlowNodeFilterDataDto();
     dataDto.setValues(new ArrayList<>(values));
-    ExecutingFlowNodeFilterDto executingFlowNodeFilterDto = new ExecutingFlowNodeFilterDto();
+    final ExecutingFlowNodeFilterDto executingFlowNodeFilterDto = new ExecutingFlowNodeFilterDto();
     executingFlowNodeFilterDto.setData(dataDto);
     executingFlowNodeFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(executingFlowNodeFilterDto);

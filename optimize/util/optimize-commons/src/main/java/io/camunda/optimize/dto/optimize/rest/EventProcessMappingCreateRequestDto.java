@@ -29,17 +29,16 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequestDto {
 
-  private boolean autogenerate = false;
-
   private static final String DEFAULT_PROCESS_NAME = "New Process";
+  private boolean autogenerate = false;
 
   @Builder(builderMethodName = "eventProcessMappingCreateBuilder")
   public EventProcessMappingCreateRequestDto(
-      String name,
-      String xml,
-      Map<String, EventMappingDto> mappings,
-      List<EventSourceEntryDto<?>> eventSources,
-      boolean autogenerate) {
+      final String name,
+      final String xml,
+      final Map<String, EventMappingDto> mappings,
+      final List<EventSourceEntryDto<?>> eventSources,
+      final boolean autogenerate) {
     super(name, xml, mappings, eventSources);
     this.autogenerate = autogenerate;
   }

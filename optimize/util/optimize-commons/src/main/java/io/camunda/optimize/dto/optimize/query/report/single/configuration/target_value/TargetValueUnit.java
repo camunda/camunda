@@ -18,8 +18,7 @@ public enum TargetValueUnit {
   DAYS("days"),
   WEEKS("weeks"),
   MONTHS("months"),
-  YEARS("years"),
-  ;
+  YEARS("years");
 
   private final String id;
 

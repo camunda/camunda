@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-public class IdentityLinkFilterBuilder {
+public final class IdentityLinkFilterBuilder {
 
   private MembershipFilterOperator operator = IN;
   private final List<String> values = new ArrayList<>();
@@ -33,24 +33,24 @@ public class IdentityLinkFilterBuilder {
   private List<String> appliedTo;
 
   private IdentityLinkFilterBuilder(
-      ProcessFilterBuilder processFilterBuilder,
-      Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>>
+      final ProcessFilterBuilder processFilterBuilder,
+      final Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>>
           filterCreator) {
-    this.filterBuilder = processFilterBuilder;
+    filterBuilder = processFilterBuilder;
     this.filterCreator = filterCreator;
   }
 
   public static IdentityLinkFilterBuilder constructAssigneeFilterBuilder(
-      ProcessFilterBuilder processFilterBuilder) {
+      final ProcessFilterBuilder processFilterBuilder) {
     return new IdentityLinkFilterBuilder(processFilterBuilder, AssigneeFilterDto::new);
   }
 
   public static IdentityLinkFilterBuilder constructCandidateGroupFilterBuilder(
-      ProcessFilterBuilder processFilterBuilder) {
+      final ProcessFilterBuilder processFilterBuilder) {
     return new IdentityLinkFilterBuilder(processFilterBuilder, CandidateGroupFilterDto::new);
   }
 
-  public IdentityLinkFilterBuilder id(String idToFilterFor) {
+  public IdentityLinkFilterBuilder id(final String idToFilterFor) {
     values.add(idToFilterFor);
     return this;
   }
@@ -60,7 +60,7 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
-  public IdentityLinkFilterBuilder operator(MembershipFilterOperator operator) {
+  public IdentityLinkFilterBuilder operator(final MembershipFilterOperator operator) {
     this.operator = operator;
     return this;
   }
@@ -70,7 +70,7 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
-  public IdentityLinkFilterBuilder ids(String... idsToFilterFor) {
+  public IdentityLinkFilterBuilder ids(final String... idsToFilterFor) {
     values.addAll(Arrays.asList(idsToFilterFor));
     return this;
   }

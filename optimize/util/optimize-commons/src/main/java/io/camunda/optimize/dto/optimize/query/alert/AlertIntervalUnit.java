@@ -16,8 +16,7 @@ public enum AlertIntervalUnit {
   HOURS,
   DAYS,
   WEEKS,
-  MONTHS,
-  ;
+  MONTHS;
 
   @JsonValue
   public String getId() {

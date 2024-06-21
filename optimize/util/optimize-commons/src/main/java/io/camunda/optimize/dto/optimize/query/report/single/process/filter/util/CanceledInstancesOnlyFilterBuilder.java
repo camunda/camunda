@@ -10,20 +10,20 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
-public class CanceledInstancesOnlyFilterBuilder {
+public final class CanceledInstancesOnlyFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private CanceledInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private CanceledInstancesOnlyFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static CanceledInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static CanceledInstancesOnlyFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new CanceledInstancesOnlyFilterBuilder(filterBuilder);
   }
 
-  public CanceledInstancesOnlyFilterBuilder filterLevel(FilterApplicationLevel filterLevel) {
+  public CanceledInstancesOnlyFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }

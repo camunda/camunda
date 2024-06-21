@@ -45,13 +45,37 @@ public class ElasticSearchMetadataService
   }
 
   @Override
+  public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
+    try {
+      final boolean metaDataIndexExists = esClient.exists(METADATA_INDEX_NAME);
+      if (!metaDataIndexExists) {
+        log.info("Optimize Metadata index wasn't found, thus no metadata available.");
+        return Optional.empty();
+      }
+
+      final GetResponse getMetadataResponse =
+          esClient.get(new GetRequest(METADATA_INDEX_NAME, MetadataIndex.ID));
+      if (!getMetadataResponse.isExists()) {
+        log.warn(
+            "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
+        return Optional.empty();
+      }
+      return Optional.ofNullable(
+          objectMapper.readValue(getMetadataResponse.getSourceAsString(), MetadataDto.class));
+    } catch (final IOException | ElasticsearchException e) {
+      log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+    }
+  }
+
+  @Override
   protected void upsertMetadataWithScript(
       final OptimizeElasticsearchClient esClient,
       final String schemaVersion,
       final String newInstallationId,
       final ScriptData scriptData) {
     final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
-    Script updateScript =
+    final Script updateScript =
         new Script(
             ScriptType.INLINE,
             Script.DEFAULT_SCRIPT_LANG,
@@ -70,38 +94,14 @@ public class ElasticSearchMetadataService
       final UpdateResponse response = esClient.update(request);
       if (!response.getResult().equals(DocWriteResponse.Result.CREATED)
           && !response.getResult().equals(DocWriteResponse.Result.UPDATED)) {
-        String errorMsg =
+        final String errorMsg =
             "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
         log.error(errorMsg);
         throw new OptimizeRuntimeException(errorMsg);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error(ERROR_MESSAGE_REQUEST, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
-    }
-  }
-
-  @Override
-  public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
-    try {
-      final boolean metaDataIndexExists = esClient.exists(METADATA_INDEX_NAME);
-      if (!metaDataIndexExists) {
-        log.info("Optimize Metadata index wasn't found, thus no metadata available.");
-        return Optional.empty();
-      }
-
-      final GetResponse getMetadataResponse =
-          esClient.get(new GetRequest(METADATA_INDEX_NAME, MetadataIndex.ID));
-      if (!getMetadataResponse.isExists()) {
-        log.warn(
-            "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
-        return Optional.empty();
-      }
-      return Optional.ofNullable(
-          objectMapper.readValue(getMetadataResponse.getSourceAsString(), MetadataDto.class));
-    } catch (IOException | ElasticsearchException e) {
-      log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
-      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
 }

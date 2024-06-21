@@ -15,23 +15,28 @@ import lombok.Setter;
 
 public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto {
 
-  @Getter @Setter protected String id;
-  @Setter protected String name;
-  @Getter @Setter protected VariableType type;
+  @Getter
+  @Setter
+  protected String id;
+  @Setter
+  protected String name;
+  @Getter
+  @Setter
+  protected VariableType type;
 
   public Optional<String> getName() {
     return Optional.ofNullable(name);
   }
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByVariableValueDto)) {
       return false;
     }
-    DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
+    final DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
     return Objects.equals(id, that.id);
   }
 }

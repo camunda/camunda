@@ -27,23 +27,24 @@ import lombok.Data;
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = DecisionGroupByNoneDto.class, name = GROUP_BY_NONE_TYPE),
-  @JsonSubTypes.Type(
-      value = DecisionGroupByEvaluationDateTimeDto.class,
-      name = GROUP_BY_EVALUATION_DATE_TYPE),
-  @JsonSubTypes.Type(
-      value = DecisionGroupByInputVariableDto.class,
-      name = GROUP_BY_INPUT_VARIABLE_TYPE),
-  @JsonSubTypes.Type(
-      value = DecisionGroupByOutputVariableDto.class,
-      name = GROUP_BY_OUTPUT_VARIABLE_TYPE),
-  @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
+    @JsonSubTypes.Type(value = DecisionGroupByNoneDto.class, name = GROUP_BY_NONE_TYPE),
+    @JsonSubTypes.Type(
+        value = DecisionGroupByEvaluationDateTimeDto.class,
+        name = GROUP_BY_EVALUATION_DATE_TYPE),
+    @JsonSubTypes.Type(
+        value = DecisionGroupByInputVariableDto.class,
+        name = GROUP_BY_INPUT_VARIABLE_TYPE),
+    @JsonSubTypes.Type(
+        value = DecisionGroupByOutputVariableDto.class,
+        name = GROUP_BY_OUTPUT_VARIABLE_TYPE),
+    @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
 })
 @Data
 public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
     implements Combinable {
 
-  @JsonProperty protected DecisionGroupByType type;
+  @JsonProperty
+  protected DecisionGroupByType type;
   protected VALUE value;
 
   @Override
@@ -52,14 +53,14 @@ public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
   }
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByDto)) {
       return false;
     }
-    DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
+    final DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
     return Objects.equals(type, that.type) && Combinable.isCombinable(value, that.value);
   }
 

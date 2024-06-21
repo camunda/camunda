@@ -38,8 +38,8 @@ public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachC
     setProperties(originalProperties);
   }
 
-  private Properties copyOf(Properties source) {
-    Properties copy = new Properties();
+  private Properties copyOf(final Properties source) {
+    final Properties copy = new Properties();
     copy.putAll(source);
     return copy;
   }

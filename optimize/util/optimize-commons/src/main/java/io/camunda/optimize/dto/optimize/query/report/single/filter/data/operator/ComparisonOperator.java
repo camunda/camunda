@@ -16,8 +16,7 @@ public enum ComparisonOperator {
   LESS_THAN(FilterOperatorConstants.LESS_THAN),
   LESS_THAN_EQUALS(FilterOperatorConstants.LESS_THAN_EQUALS),
   GREATER_THAN(FilterOperatorConstants.GREATER_THAN),
-  GREATER_THAN_EQUALS(FilterOperatorConstants.GREATER_THAN_EQUALS),
-  ;
+  GREATER_THAN_EQUALS(FilterOperatorConstants.GREATER_THAN_EQUALS);
 
   private final String id;
 

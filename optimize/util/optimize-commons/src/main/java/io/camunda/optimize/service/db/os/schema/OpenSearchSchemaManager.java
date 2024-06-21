@@ -204,7 +204,7 @@ public class OpenSearchSchemaManager
             mapping,
             indexSettings);
       }
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.status() == HTTP_BAD_REQUEST
           && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug(
@@ -213,8 +213,8 @@ public class OpenSearchSchemaManager
       } else {
         throw e;
       }
-    } catch (Exception e) {
-      String message = String.format("Could not create Index [%s]", suffixedIndexName);
+    } catch (final Exception e) {
+      final String message = String.format("Could not create Index [%s]", suffixedIndexName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -253,7 +253,7 @@ public class OpenSearchSchemaManager
             indices -> {
               try {
                 return osClient.getRichOpenSearchClient().index().indicesExist(indices);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 final String message =
                     String.format(
                         "Could not check if [%s] index(es) already exist.",
@@ -275,8 +275,8 @@ public class OpenSearchSchemaManager
     }
     try {
       createIndex(osClient, createIndexRequest.build(), indexNameWithSuffix);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -390,9 +390,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<CreateIndexRequest.Builder>
-      getDeserializerWithPreconfiguredBuilder(
-          final Supplier<CreateIndexRequest.Builder> builderSupplier)
-          throws OptimizeRuntimeException {
+  getDeserializerWithPreconfiguredBuilder(
+      final Supplier<CreateIndexRequest.Builder> builderSupplier)
+      throws OptimizeRuntimeException {
     final Class<CreateIndexRequest> clazz = CreateIndexRequest.class;
     final String methodName = "setupCreateIndexRequestDeserializer";
     final Method method;
@@ -416,9 +416,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<IndexTemplateMapping.Builder>
-      getDeserializerIndexTemplateMapping(
-          final Supplier<IndexTemplateMapping.Builder> builderSupplier)
-          throws OptimizeRuntimeException {
+  getDeserializerIndexTemplateMapping(
+      final Supplier<IndexTemplateMapping.Builder> builderSupplier)
+      throws OptimizeRuntimeException {
     final Class<IndexTemplateMapping> clazz = IndexTemplateMapping.class;
     final String methodName = "setupIndexTemplateMappingDeserializer";
     final Method method;
@@ -459,7 +459,7 @@ public class OpenSearchSchemaManager
       final IndexMappingCreator<Builder> mappingCreator,
       final String defaultAliasName,
       final Set<String> additionalAliases,
-      IndexSettings indexSettings) {
+      final IndexSettings indexSettings) {
     final String templateName =
         indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
@@ -590,7 +590,7 @@ public class OpenSearchSchemaManager
       final IndexMappingCreator<IndexSettings.Builder> mappingCreator) {
     final String defaultAliasName =
         indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
-    IndexSettings indexSettings = createIndexSettings(mappingCreator);
+    final IndexSettings indexSettings = createIndexSettings(mappingCreator);
     createOrUpdateTemplateWithAliases(
         osClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings);
   }

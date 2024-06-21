@@ -17,9 +17,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocalDateUtil {
 
+  @SuppressWarnings("checkstyle:staticvariablename")
   private static volatile OffsetDateTime CURRENT_TIME = null;
 
-  public static void setCurrentTime(OffsetDateTime currentTime) {
+  public static void setCurrentTime(final OffsetDateTime currentTime) {
     LocalDateUtil.CURRENT_TIME = normalize(currentTime);
   }
 

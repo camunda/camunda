@@ -38,7 +38,9 @@ import lombok.experimental.SuperBuilder;
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
+  @Builder.Default
+  @Valid
+  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
 
@@ -61,7 +63,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   }
 
   @JsonIgnore
-  public void setDecisionDefinitionName(String name) {
+  public void setDecisionDefinitionName(final String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
       definitions.add(new ReportDataDefinitionDto());
@@ -96,16 +98,16 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     return getView().getProperties();
   }
 
-  @Override
-  public List<String> createCommandKeys() {
-    return Collections.singletonList(createCommandKey());
-  }
-
   @JsonIgnore
   @Override
   public String createCommandKey() {
-    String viewCommandKey = view == null ? "null" : view.createCommandKey();
-    String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
+    final String viewCommandKey = view == null ? "null" : view.createCommandKey();
+    final String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
     return viewCommandKey + "_" + groupByCommandKey;
+  }
+
+  @Override
+  public List<String> createCommandKeys() {
+    return Collections.singletonList(createCommandKey());
   }
 }

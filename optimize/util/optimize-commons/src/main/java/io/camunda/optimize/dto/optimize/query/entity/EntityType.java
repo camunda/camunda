@@ -13,8 +13,7 @@ import java.util.Locale;
 public enum EntityType {
   COLLECTION,
   DASHBOARD,
-  REPORT,
-  ;
+  REPORT;
 
   @JsonValue
   public String getId() {

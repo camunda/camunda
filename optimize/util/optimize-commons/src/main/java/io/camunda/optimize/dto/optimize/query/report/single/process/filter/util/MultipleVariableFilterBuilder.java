@@ -17,37 +17,38 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MultipleVariableFilterBuilder {
+public final class MultipleVariableFilterBuilder {
 
+  private static final FilterApplicationLevel FILTER_LEVEL = FilterApplicationLevel.INSTANCE;
   private final ProcessFilterBuilder filterBuilder;
   private List<VariableFilterDataDto<?>> variableFilters = new ArrayList<>();
-  private static final FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private MultipleVariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private MultipleVariableFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static MultipleVariableFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static MultipleVariableFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new MultipleVariableFilterBuilder(filterBuilder);
   }
 
-  public MultipleVariableFilterBuilder type(List<VariableFilterDataDto<?>> variableFilters) {
+  public MultipleVariableFilterBuilder type(final List<VariableFilterDataDto<?>> variableFilters) {
     this.variableFilters = variableFilters;
     return this;
   }
 
-  public MultipleVariableFilterBuilder variableFilters(List<VariableFilterDto> variableFilters) {
+  public MultipleVariableFilterBuilder variableFilters(
+      final List<VariableFilterDto> variableFilters) {
     this.variableFilters =
         variableFilters.stream().map(ProcessFilterDto::getData).collect(Collectors.toList());
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    MultipleVariableFilterDataDto variableFilterDataDto =
+    final MultipleVariableFilterDataDto variableFilterDataDto =
         new MultipleVariableFilterDataDto(variableFilters);
-    MultipleVariableFilterDto variableFilterDto = new MultipleVariableFilterDto();
+    final MultipleVariableFilterDto variableFilterDto = new MultipleVariableFilterDto();
     variableFilterDto.setData(variableFilterDataDto);
-    variableFilterDto.setFilterLevel(filterLevel);
+    variableFilterDto.setFilterLevel(FILTER_LEVEL);
     filterBuilder.addFilter(variableFilterDto);
     return filterBuilder;
   }

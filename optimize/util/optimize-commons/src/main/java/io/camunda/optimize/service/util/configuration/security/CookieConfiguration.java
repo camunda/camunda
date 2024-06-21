@@ -29,7 +29,7 @@ public class CookieConfiguration {
   private Integer maxSize;
 
   public boolean resolveSecureFlagValue(final String requestScheme) {
-    return Optional.ofNullable(this.cookieSecureMode)
+    return Optional.ofNullable(cookieSecureMode)
         .map(mode -> mode.resolveSecureValue(requestScheme))
         .orElse(false);
   }
@@ -37,24 +37,23 @@ public class CookieConfiguration {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("same-site")
   private void unpackSameSite(final Map<String, Boolean> sameSite) {
-    this.sameSiteFlagEnabled = sameSite.get("enabled");
+    sameSiteFlagEnabled = sameSite.get("enabled");
   }
 
   public enum CookieSecureMode {
     AUTO,
     TRUE,
-    FALSE,
-    ;
+    FALSE;
 
     public boolean resolveSecureValue(final String requestScheme) {
       switch (this) {
-        default:
-        case AUTO:
-          return RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme);
         case TRUE:
           return true;
         case FALSE:
           return false;
+        case AUTO:
+        default:
+          return RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme);
       }
     }
 

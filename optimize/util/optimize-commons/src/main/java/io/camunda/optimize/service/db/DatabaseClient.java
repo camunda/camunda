@@ -32,16 +32,16 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   protected static final String NESTED_DOC_LIMIT_MESSAGE =
       "The number of nested documents has exceeded the allowed limit of";
-  @Getter protected OptimizeIndexNameService indexNameService;
+  @Getter
+  protected OptimizeIndexNameService indexNameService;
 
   /**
    * Get all the aliases for the indexes matching the indexNamePattern
    *
    * @param indexNamePattern Pattern for the name of an index, may contain wildcards
    * @return A Map where the keys are the name of the matching indexes and the value is a set
-   *     containing the aliases for the respective index. This map can have multiple keys because
-   *     indexNamePattern may contain wildcards
-   * @throws IOException
+   * containing the aliases for the respective index. This map can have multiple keys because
+   * indexNamePattern may contain wildcards
    */
   public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
       throws IOException;
@@ -127,6 +127,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
               generateErrorMessageForValidationImportRequestDto(
                   RequestType.UPDATE, ImportRequestDto.Fields.scriptData.name()));
         }
+      }
+      default -> {
       }
     }
   }

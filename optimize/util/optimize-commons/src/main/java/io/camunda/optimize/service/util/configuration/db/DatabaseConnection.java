@@ -19,13 +19,9 @@ public class DatabaseConnection {
   protected Integer timeout;
 
   protected Integer responseConsumerBufferLimitInMb;
-
-  private ProxyConfiguration proxy;
-
   protected String pathPrefix;
-
   protected Boolean skipHostnameVerification;
-
   @JsonProperty("nodes")
   protected List<DatabaseConnectionNodeConfiguration> connectionNodes;
+  private ProxyConfiguration proxy;
 }

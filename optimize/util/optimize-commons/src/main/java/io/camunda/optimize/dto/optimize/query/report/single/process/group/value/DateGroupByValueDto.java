@@ -21,14 +21,14 @@ public class DateGroupByValueDto implements ProcessGroupByValueDto {
   protected AggregateByDateUnit unit;
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DateGroupByValueDto)) {
       return false;
     }
-    DateGroupByValueDto that = (DateGroupByValueDto) o;
+    final DateGroupByValueDto that = (DateGroupByValueDto) o;
     return Objects.equals(unit, that.unit);
   }
 }

@@ -42,7 +42,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   public void initPlugins() {
     log.debug("Reloading plugins...");
     registeredPlugins = new ArrayList<>();
-    for (Path pluginJar : pluginJarLoader.getPluginJars()) {
+    for (final Path pluginJar : pluginJarLoader.getPluginJars()) {
       log.debug("Got plugin jar {}", pluginJar.toString());
       try {
         final PluginClassLoader pluginClassLoader =
@@ -51,8 +51,8 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
         validatePluginVersion(pluginClassLoader);
 
         registerPlugins(pluginClassLoader);
-      } catch (IOException e) {
-        String reason = String.format("Cannot register plugin [%s]", pluginJar);
+      } catch (final IOException e) {
+        final String reason = String.format("Cannot register plugin [%s]", pluginJar);
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
@@ -62,7 +62,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   private void registerPlugins(final PluginClassLoader pluginClassLoader) {
 
     if (!getBasePackages().isEmpty()) {
-      try (ScanResult scanResult =
+      try (final ScanResult scanResult =
           new ClassGraph()
               .enableClassInfo()
               .overrideClassLoaders(pluginClassLoader)
@@ -80,23 +80,23 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
                     if (validPluginClass(pluginClass)) {
                       registerPlugin(pluginClass);
                     } else {
-                      String reason =
+                      final String reason =
                           String.format(
                               "Plugin class [%s] is not valid because it has no default constructor!",
                               pluginClass.getSimpleName());
                       log.error(reason);
                       throw new OptimizeRuntimeException(reason);
                     }
-                  } catch (InstantiationException | IllegalAccessException e) {
-                    String reason =
+                  } catch (final InstantiationException | IllegalAccessException e) {
+                    final String reason =
                         String.format(
                             "Cannot register plugin class [%s]", pluginClass.getSimpleName());
                     log.error(reason, e);
                     throw new OptimizeRuntimeException(reason, e);
                   }
                 });
-      } catch (ClassGraphException e) {
-        String reason = "There was an error with ClassGraph scanning a plugin!";
+      } catch (final ClassGraphException e) {
+        final String reason = "There was an error with ClassGraph scanning a plugin!";
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
       }
@@ -109,10 +109,10 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   private void registerPlugin(final Class<?> pluginClass)
       throws InstantiationException, IllegalAccessException {
     try {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-      PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor().newInstance();
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor()
+          .newInstance();
       registeredPlugins.add(plugin);
-    } catch (NoSuchMethodException | InvocationTargetException ex) {
+    } catch (final NoSuchMethodException | InvocationTargetException ex) {
       throw new OptimizeRuntimeException("Plugin class [%s] could not be constructed");
     }
   }
@@ -121,7 +121,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
 
   protected abstract List<String> getBasePackages();
 
-  private boolean validPluginClass(Class<?> pluginClass) {
+  private boolean validPluginClass(final Class<?> pluginClass) {
     return ClassUtils.hasConstructor(pluginClass);
   }
 

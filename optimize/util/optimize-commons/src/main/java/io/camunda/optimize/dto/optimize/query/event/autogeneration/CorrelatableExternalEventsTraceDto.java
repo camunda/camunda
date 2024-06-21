@@ -26,8 +26,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto {
-  private String tracingId;
+public final class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto {
+
+  private final String tracingId;
 
   private CorrelatableExternalEventsTraceDto(
       final String tracingId, final OffsetDateTime startDate) {

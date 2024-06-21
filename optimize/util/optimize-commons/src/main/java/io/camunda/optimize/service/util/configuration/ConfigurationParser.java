@@ -46,6 +46,8 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationParser {
 
+  public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
+      new TypeReference<Map<String, Object>>() {};
   private static final String ENGINES_FIELD = "engines";
   private static final Pattern VARIABLE_PLACEHOLDER_PATTERN =
       Pattern.compile("\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?}");
@@ -55,21 +57,20 @@ public class ConfigurationParser {
   // @formatter:off
   private static final TypeReference<List<Object>> LIST_TYPE_REFERENCE =
       new TypeReference<List<Object>>() {};
-  public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-      new TypeReference<Map<String, Object>>() {};
 
   // @formatter:on
 
-  public static Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources) {
-    YAMLMapper yamlMapper = configureConfigMapper();
+  public static Optional<DocumentContext> parseConfigFromLocations(
+      final List<InputStream> sources) {
+    final YAMLMapper yamlMapper = configureConfigMapper();
     try {
       if (sources.isEmpty()) {
         return Optional.empty();
       }
       // read default values from the first location
-      JsonNode resultNode = yamlMapper.readTree(sources.remove(0));
+      final JsonNode resultNode = yamlMapper.readTree(sources.remove(0));
       // read with overriding default values all locations
-      for (InputStream inputStream : sources) {
+      for (final InputStream inputStream : sources) {
         merge(resultNode, yamlMapper.readTree(inputStream));
       }
 
@@ -80,7 +81,7 @@ public class ConfigurationParser {
 
       // prepare to work with JSON Path
       return Optional.of(JsonPath.parse(configMap));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("error reading configuration", e);
       return Optional.empty();
     }
@@ -104,12 +105,10 @@ public class ConfigurationParser {
       final Object value, final YAMLMapper yamlMapper) {
     Object newValue = value;
     if (value instanceof Map) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-      final Map<String, Object> valueMap = (Map<String, Object>) value;
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final Map<String, Object> valueMap = (Map<String, Object>) value;
       newValue = resolveVariablePlaceholders(valueMap, yamlMapper);
     } else if (value instanceof List) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-      final List<Object> values = ((List<Object>) value);
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final List<Object> values = ((List<Object>) value);
       if (!values.isEmpty()) {
         newValue =
             values.stream()
@@ -125,7 +124,7 @@ public class ConfigurationParser {
         try {
           final List<Object> list = yamlMapper.readValue(newStringValue, LIST_TYPE_REFERENCE);
           newValue = resolveVariablePlaceholders(list, yamlMapper);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           log.debug(
               "Detected array value pattern in [{}] but couldn't parse it", newValue.toString(), e);
         }
@@ -163,16 +162,16 @@ public class ConfigurationParser {
     return resolvedValue;
   }
 
-  private static void merge(JsonNode mainNode, JsonNode updateNode) {
+  private static void merge(final JsonNode mainNode, final JsonNode updateNode) {
     if (updateNode == null) {
       return;
     }
 
-    Iterator<String> fieldNames = updateNode.fieldNames();
+    final Iterator<String> fieldNames = updateNode.fieldNames();
     while (fieldNames.hasNext()) {
 
-      String fieldName = fieldNames.next();
-      JsonNode jsonNode = mainNode.get(fieldName);
+      final String fieldName = fieldNames.next();
+      final JsonNode jsonNode = mainNode.get(fieldName);
       // if field exists and is an embedded object
       if (jsonNode != null && jsonNode.isObject() && !ENGINES_FIELD.equals(fieldName)) {
         merge(jsonNode, updateNode.get(fieldName));
@@ -186,8 +185,9 @@ public class ConfigurationParser {
     }
   }
 
-  private static void overwriteField(ObjectNode mainNode, JsonNode updateNode, String fieldName) {
-    JsonNode value = updateNode.get(fieldName);
+  private static void overwriteField(final ObjectNode mainNode, final JsonNode updateNode,
+      final String fieldName) {
+    final JsonNode value = updateNode.get(fieldName);
     mainNode.set(fieldName, value);
   }
 
@@ -214,13 +214,13 @@ public class ConfigurationParser {
           }
 
           @Override
-          public MappingProvider mappingProvider() {
-            return mappingProvider;
+          public Set<Option> options() {
+            return EnumSet.noneOf(Option.class);
           }
 
           @Override
-          public Set<Option> options() {
-            return EnumSet.noneOf(Option.class);
+          public MappingProvider mappingProvider() {
+            return mappingProvider;
           }
         });
     return yamlMapper;

@@ -29,42 +29,43 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
 
-  private IdentityWithMetadataResponseDto identity;
-  private RoleType role;
+  private final IdentityWithMetadataResponseDto identity;
+  private final RoleType role;
 
-  public CollectionRoleResponseDto(CollectionRoleResponseDto oldRole) {
+  public CollectionRoleResponseDto(final CollectionRoleResponseDto oldRole) {
     if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {
-      UserDto oldUserDto = (UserDto) oldRole.getIdentity();
-      this.identity =
+      final UserDto oldUserDto = (UserDto) oldRole.getIdentity();
+      identity =
           new UserDto(
               oldUserDto.getId(),
               oldUserDto.getFirstName(),
               oldUserDto.getLastName(),
               oldUserDto.getEmail());
     } else {
-      GroupDto oldGroupDto = (GroupDto) oldRole.getIdentity();
-      this.identity =
+      final GroupDto oldGroupDto = (GroupDto) oldRole.getIdentity();
+      identity =
           new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
     }
 
-    this.role = oldRole.role;
-    this.id = convertIdentityToRoleId(this.identity);
+    role = oldRole.role;
+    id = convertIdentityToRoleId(identity);
   }
 
-  public CollectionRoleResponseDto(IdentityWithMetadataResponseDto identity, RoleType role) {
+  public CollectionRoleResponseDto(final IdentityWithMetadataResponseDto identity,
+      final RoleType role) {
     this.identity = identity;
-    this.id = convertIdentityToRoleId(this.identity);
+    id = convertIdentityToRoleId(this.identity);
     this.role = role;
   }
 
   @Override
   public int compareTo(final CollectionRoleResponseDto other) {
-    if (this.identity instanceof UserDto && other.getIdentity() instanceof GroupDto) {
+    if (identity instanceof UserDto && other.getIdentity() instanceof GroupDto) {
       return 1;
-    } else if (this.identity instanceof GroupDto && other.getIdentity() instanceof UserDto) {
+    } else if (identity instanceof GroupDto && other.getIdentity() instanceof UserDto) {
       return -1;
     } else {
-      return StringUtils.compareIgnoreCase(this.identity.getName(), other.getIdentity().getName());
+      return StringUtils.compareIgnoreCase(identity.getName(), other.getIdentity().getName());
     }
   }
 
@@ -73,7 +74,7 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
   }
 
   public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(
-      final CollectionRoleRequestDto roleDto, T identityWithMetaData) {
+      final CollectionRoleRequestDto roleDto, final T identityWithMetaData) {
     return new CollectionRoleResponseDto(identityWithMetaData, roleDto.getRole());
   }
 }

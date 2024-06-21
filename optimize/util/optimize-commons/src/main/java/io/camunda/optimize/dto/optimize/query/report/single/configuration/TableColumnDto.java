@@ -28,16 +28,21 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class TableColumnDto {
+
   public static final String VARIABLE_PREFIX = "variable:";
   public static final String INPUT_PREFIX = "input:";
   public static final String OUTPUT_PREFIX = "output:";
   public static final String FLOWNODE_DURATION_PREFIX = "dur:";
   public static final String COUNT_PREFIX = "count:";
 
-  @Builder.Default private boolean includeNewVariables = false;
-  @Builder.Default private List<String> excludedColumns = new ArrayList<>();
-  @Builder.Default private List<String> includedColumns = new ArrayList<>();
-  @Builder.Default private List<String> columnOrder = new ArrayList<>();
+  @Builder.Default
+  private final boolean includeNewVariables = false;
+  @Builder.Default
+  private final List<String> excludedColumns = new ArrayList<>();
+  @Builder.Default
+  private final List<String> includedColumns = new ArrayList<>();
+  @Builder.Default
+  private final List<String> columnOrder = new ArrayList<>();
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);
@@ -122,7 +127,7 @@ public class TableColumnDto {
     return 0;
   }
 
-  private String getColumnNameWithoutPrefixAndNumbers(String columnName) {
+  private String getColumnNameWithoutPrefixAndNumbers(final String columnName) {
     if (getPrefixOrder(columnName) == 0) {
       // do not sort dto fields to keep them in original order
       return "";
@@ -148,11 +153,11 @@ public class TableColumnDto {
     removeColumns(columnsToRemove);
   }
 
-  private double getNumbersInColumnName(String columnName) {
-    String digitsInString = columnName.replaceAll("\\D+", "");
+  private double getNumbersInColumnName(final String columnName) {
+    final String digitsInString = columnName.replaceAll("\\D+", "");
     try {
       return digitsInString.isEmpty() ? 0 : Double.parseDouble(digitsInString);
-    } catch (NumberFormatException e) {
+    } catch (final NumberFormatException e) {
       log.debug(
           "Cannot parse numbers in variable column names to double, ignoring and sorting by string.",
           e);

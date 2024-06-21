@@ -62,7 +62,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
     indexName = constructIndexName(decisionDefinitionKey);
   }
 
-  public static String constructIndexName(String decisionDefinitionKey) {
+  public static String constructIndexName(final String decisionDefinitionKey) {
     return DECISION_INSTANCE_INDEX_PREFIX + decisionDefinitionKey.toLowerCase(Locale.ENGLISH);
   }
 
@@ -92,9 +92,9 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         builder
             .startObject(DECISION_INSTANCE_ID)
             .field("type", "keyword")
@@ -158,7 +158,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
     return newBuilder;
   }
 
-  private XContentBuilder addNestedInputField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedInputField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
         .startObject(VARIABLE_ID)
@@ -181,7 +181,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
     // @formatter:on
   }
 
-  private XContentBuilder addNestedOutputField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedOutputField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
         .startObject(VARIABLE_ID)

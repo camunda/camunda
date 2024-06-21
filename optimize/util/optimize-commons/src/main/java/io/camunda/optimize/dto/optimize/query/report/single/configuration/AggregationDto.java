@@ -17,10 +17,9 @@ import lombok.NoArgsConstructor;
 @Data
 public class AggregationDto implements OptimizeDto {
 
-  public AggregationDto(final AggregationType aggregationType) {
-    this.type = aggregationType;
-  }
-
   AggregationType type;
   Double value;
+  public AggregationDto(final AggregationType aggregationType) {
+    type = aggregationType;
+  }
 }

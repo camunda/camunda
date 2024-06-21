@@ -13,8 +13,7 @@ import java.util.Locale;
 public enum EventScopeType {
   ALL,
   START_END,
-  PROCESS_INSTANCE,
-  ;
+  PROCESS_INSTANCE;
 
   @JsonValue
   public String getId() {

@@ -12,17 +12,17 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Resol
 import java.util.List;
 import java.util.Optional;
 
-public class ResolvedIncidentFilterBuilder {
+public final class ResolvedIncidentFilterBuilder {
 
   private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
-  private ResolvedIncidentFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private ResolvedIncidentFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static ResolvedIncidentFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static ResolvedIncidentFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new ResolvedIncidentFilterBuilder(filterBuilder);
   }
 

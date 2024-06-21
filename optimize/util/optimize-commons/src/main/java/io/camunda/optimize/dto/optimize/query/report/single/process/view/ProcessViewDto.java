@@ -26,6 +26,7 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants
 public class ProcessViewDto implements Combinable {
+
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES =
       ImmutableSet.of(ProcessViewEntity.FLOW_NODE, ProcessViewEntity.USER_TASK);
   private static final String COMMAND_KEY_SEPARATOR = "-";
@@ -33,13 +34,13 @@ public class ProcessViewDto implements Combinable {
   protected ProcessViewEntity entity;
   protected List<ViewProperty> properties = new ArrayList<>();
 
-  public ProcessViewDto(ViewProperty property) {
+  public ProcessViewDto(final ViewProperty property) {
     this(null, property);
   }
 
   public ProcessViewDto(final ProcessViewEntity entity, final ViewProperty property) {
     this.entity = entity;
-    this.properties.add(property);
+    properties.add(property);
   }
 
   public ProcessViewDto(final ProcessViewEntity entity, final List<ViewProperty> properties) {
@@ -48,14 +49,14 @@ public class ProcessViewDto implements Combinable {
   }
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof ProcessViewDto)) {
       return false;
     }
-    ProcessViewDto viewDto = (ProcessViewDto) o;
+    final ProcessViewDto viewDto = (ProcessViewDto) o;
     if (getProperties().size() != 1 || viewDto.getProperties().size() != 1) {
       // multiple properties are not supported for combined reports
       return false;
@@ -77,7 +78,7 @@ public class ProcessViewDto implements Combinable {
 
   @JsonIgnore
   public ViewProperty getFirstProperty() {
-    return this.properties != null && !this.properties.isEmpty() ? properties.get(0) : null;
+    return properties != null && !properties.isEmpty() ? properties.get(0) : null;
   }
 
   @JsonSetter

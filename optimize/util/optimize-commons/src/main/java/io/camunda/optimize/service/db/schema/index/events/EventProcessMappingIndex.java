@@ -65,7 +65,7 @@ public abstract class EventProcessMappingIndex<TBuilder>
   @Override
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder =
+    final XContentBuilder newXContentBuilder =
         xContentBuilder
             .startObject(ID)
             .field("type", "keyword")
@@ -109,7 +109,7 @@ public abstract class EventProcessMappingIndex<TBuilder>
   private XContentBuilder addNestedFlowNodeMappingsFields(final XContentBuilder xContentBuilder)
       throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder =
+    final XContentBuilder newXContentBuilder =
         xContentBuilder
             .startObject(FLOWNODE_ID)
             .field("type", "keyword")

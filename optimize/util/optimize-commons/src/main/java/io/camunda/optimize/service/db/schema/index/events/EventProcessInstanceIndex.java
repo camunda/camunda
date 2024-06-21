@@ -39,9 +39,9 @@ public abstract class EventProcessInstanceIndex<TBuilder> extends ProcessInstanc
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         super.addProperties(builder)
             .startObject(PENDING_FLOW_NODE_UPDATES)
             .field("type", "object")

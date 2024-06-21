@@ -15,13 +15,12 @@ public enum SortOrder {
   @JsonProperty("asc")
   ASC,
   @JsonProperty("desc")
-  DESC,
-  ;
+  DESC;
 
   // This is used for parameter deserialization under the hood as part of Jersey's
   // TypeFromStringEnum
   @SuppressWarnings(UNUSED)
-  public static SortOrder fromString(String sortOrderParam) {
+  public static SortOrder fromString(final String sortOrderParam) {
     return valueOf(sortOrderParam.toUpperCase());
   }
 }

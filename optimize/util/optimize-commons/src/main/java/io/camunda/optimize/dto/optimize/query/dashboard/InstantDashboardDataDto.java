@@ -16,19 +16,19 @@ import org.apache.commons.lang3.StringUtils;
 @Data
 @FieldNameConstants
 public class InstantDashboardDataDto {
+
+  public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "template1.json";
   private String instantDashboardId;
   private String processDefinitionKey;
   private String templateName = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
   private long templateHash;
   private String dashboardId;
 
-  public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "template1.json";
-
   public String getInstantDashboardId() {
     return processDefinitionKey + "_" + templateName.replace(".", "");
   }
 
-  public void setTemplateName(String templateName) {
+  public void setTemplateName(final String templateName) {
     this.templateName =
         StringUtils.isEmpty(templateName) ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : templateName;
   }

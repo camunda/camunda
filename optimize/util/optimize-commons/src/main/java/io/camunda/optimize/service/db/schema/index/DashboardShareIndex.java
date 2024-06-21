@@ -50,9 +50,9 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         xContentBuilder
             .startObject(ID)
             .field("type", "keyword")
@@ -70,9 +70,9 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
     return newBuilder;
   }
 
-  private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedReportsField(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         builder
             .startObject(REPORT_ID)
             .field("type", "keyword")
@@ -102,7 +102,7 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
     return newBuilder;
   }
 
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedPositionField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         .startObject(X_POSITION)
@@ -114,7 +114,8 @@ public abstract class DashboardShareIndex<TBuilder> extends DefaultIndexMappingC
     // @formatter:on
   }
 
-  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedDimensionField(final XContentBuilder builder)
+      throws IOException {
     // @formatter:off
     return builder
         .startObject(WIDTH)

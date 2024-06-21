@@ -11,11 +11,12 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class IdGenerator {
+
   public static final Pattern ID_PATTERN =
       Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
 
   public static String getNextId() {
-    UUID randomUUID = UUID.randomUUID();
+    final UUID randomUUID = UUID.randomUUID();
     return randomUUID.toString();
   }
 

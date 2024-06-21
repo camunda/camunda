@@ -12,8 +12,7 @@ import java.util.Locale;
 
 public enum DefinitionType {
   PROCESS,
-  DECISION,
-  ;
+  DECISION;
 
   @JsonValue
   public String getId() {

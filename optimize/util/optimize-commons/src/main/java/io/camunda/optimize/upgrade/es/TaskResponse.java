@@ -114,6 +114,7 @@ public class TaskResponse {
   @JsonIgnoreProperties(ignoreUnknown = true)
   @Getter
   public static class Error {
+
     @JsonProperty("type")
     private String type;
 
@@ -128,7 +129,7 @@ public class TaskResponse {
 
     @Override
     public String toString() {
-      String scriptStackString =
+      final String scriptStackString =
           scriptStack == null
               ? null
               : scriptStack.stream()
@@ -164,6 +165,7 @@ public class TaskResponse {
   @Setter
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class TaskResponseDetails {
+
     @JsonProperty("failures")
     private List<Object> failures;
 

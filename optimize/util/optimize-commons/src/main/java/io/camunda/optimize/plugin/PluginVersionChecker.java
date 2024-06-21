@@ -24,12 +24,12 @@ public class PluginVersionChecker {
   static final String OPTIMIZE_VERSION_KEY = "optimize.version";
   static final String OPTIMIZE_VERSION_FILE_NAME = "plugin.version";
 
-  public static void validatePluginVersion(PluginClassLoader pluginClassLoader) {
+  public static void validatePluginVersion(final PluginClassLoader pluginClassLoader) {
     if (pluginClassLoader == null) {
       throw new IllegalArgumentException("The plugin classloader cannot be null.");
     }
 
-    String pluginVersion =
+    final String pluginVersion =
         extractOptimizeVersion(pluginClassLoader)
             .orElseThrow(
                 () ->
@@ -44,21 +44,21 @@ public class PluginVersionChecker {
 
   private static Optional<String> extractOptimizeVersion(
       final PluginClassLoader pluginClassLoader) {
-    Properties property = new Properties();
+    final Properties property = new Properties();
 
-    try (InputStream resourceAsStream =
+    try (final InputStream resourceAsStream =
         pluginClassLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME)) {
       if (resourceAsStream != null) {
         property.load(resourceAsStream);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Exception during opening plugin resource stream!");
     }
 
     return Optional.ofNullable(property.getProperty(OPTIMIZE_VERSION_KEY));
   }
 
-  private static boolean isValidPluginVersion(String pluginVersion) {
+  private static boolean isValidPluginVersion(final String pluginVersion) {
     if (pluginVersion == null) {
       return false;
     }
@@ -66,8 +66,8 @@ public class PluginVersionChecker {
     return pluginVersion.startsWith(optimizeMinorAndMajorVersion);
   }
 
-  public static String buildMissingPluginVersionMessage(String optimizeVersion) {
-    StringBuilder message = new StringBuilder();
+  public static String buildMissingPluginVersionMessage(final String optimizeVersion) {
+    final StringBuilder message = new StringBuilder();
     message.append("There is a plugin with a missing Optimize version. ");
     message.append(
         "This either means that the plugin was built with an old Optimize version, or not built as a fat jar! ");
@@ -79,8 +79,8 @@ public class PluginVersionChecker {
   }
 
   public static String buildUnsupportedPluginVersionMessage(
-      String pluginVersion, String optimizeVersion) {
-    StringBuilder message = new StringBuilder();
+      final String pluginVersion, final String optimizeVersion) {
+    final StringBuilder message = new StringBuilder();
     message
         .append("There is a plugin that was built with Optimize version ")
         .append(pluginVersion)

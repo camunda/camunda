@@ -34,10 +34,11 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class ObjectMapperFactory {
+
   public static final ObjectMapper OPTIMIZE_MAPPER =
       new ObjectMapperFactory(
-              new OptimizeDateTimeFormatterFactory().getObject(),
-              ConfigurationServiceBuilder.createDefaultConfiguration())
+          new OptimizeDateTimeFormatterFactory().getObject(),
+          ConfigurationServiceBuilder.createDefaultConfiguration())
           .createOptimizeMapper();
 
   private final DateTimeFormatter optimizeDateTimeFormatter;
@@ -68,7 +69,7 @@ public class ObjectMapperFactory {
   }
 
   private ObjectMapper buildObjectMapper(final DateTimeFormatter deserializationDateTimeFormatter) {
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(optimizeDateTimeFormatter));
     javaTimeModule.addSerializer(
@@ -77,7 +78,7 @@ public class ObjectMapperFactory {
         OffsetDateTime.class,
         new CustomOffsetDateTimeDeserializer(deserializationDateTimeFormatter));
 
-    ObjectMapper mapper =
+    final ObjectMapper mapper =
         Jackson2ObjectMapperBuilder.json()
             .modules(new Jdk8Module(), javaTimeModule)
             .featuresToDisable(
@@ -94,7 +95,7 @@ public class ObjectMapperFactory {
                 MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .build();
 
-    SimpleModule module = new SimpleModule();
+    final SimpleModule module = new SimpleModule();
     module.addDeserializer(
         DefinitionOptimizeResponseDto.class, new CustomDefinitionDeserializer(mapper));
     module.addDeserializer(

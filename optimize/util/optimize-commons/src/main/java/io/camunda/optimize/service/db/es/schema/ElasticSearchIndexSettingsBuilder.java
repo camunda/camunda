@@ -30,9 +30,9 @@ import org.elasticsearch.xcontent.XContentType;
 
 public class ElasticSearchIndexSettingsBuilder {
 
-  public static Settings buildDynamicSettings(ConfigurationService configurationService)
+  public static Settings buildDynamicSettings(final ConfigurationService configurationService)
       throws IOException {
-    XContentBuilder builder = jsonBuilder();
+    final XContentBuilder builder = jsonBuilder();
     // @formatter:off
     builder.startObject();
     addDynamicSettings(configurationService, builder).endObject();
@@ -41,8 +41,8 @@ public class ElasticSearchIndexSettingsBuilder {
   }
 
   public static Settings buildAllSettings(
-      ConfigurationService configurationService,
-      IndexMappingCreator<XContentBuilder> indexMappingCreator)
+      final ConfigurationService configurationService,
+      final IndexMappingCreator<XContentBuilder> indexMappingCreator)
       throws IOException {
     return Settings.builder()
         .loadFromSource(
@@ -51,10 +51,10 @@ public class ElasticSearchIndexSettingsBuilder {
   }
 
   public static String buildAllSettingsAsJson(
-      ConfigurationService configurationService,
-      IndexMappingCreator<XContentBuilder> indexMappingCreator)
+      final ConfigurationService configurationService,
+      final IndexMappingCreator<XContentBuilder> indexMappingCreator)
       throws IOException {
-    XContentBuilder builder = jsonBuilder();
+    final XContentBuilder builder = jsonBuilder();
     // @formatter:off
     builder.startObject();
     addDynamicSettings(configurationService, builder);
@@ -88,7 +88,7 @@ public class ElasticSearchIndexSettingsBuilder {
             configurationService.getElasticSearchConfiguration().getNestedDocumentsLimit());
   }
 
-  private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
+  private static XContentBuilder addAnalysis(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         .startObject(ANALYSIS_SETTING)

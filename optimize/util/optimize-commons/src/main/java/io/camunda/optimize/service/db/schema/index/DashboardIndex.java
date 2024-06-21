@@ -74,9 +74,9 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         xContentBuilder
             .startObject(ID)
             .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -135,9 +135,9 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
     return newBuilder;
   }
 
-  private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedReportsField(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         builder
             .startObject(REPORT_ID)
             .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -164,7 +164,7 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
     return newBuilder;
   }
 
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedPositionField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         .startObject(X_POSITION)
@@ -176,7 +176,8 @@ public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreato
     // @formatter:on
   }
 
-  private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedDimensionField(final XContentBuilder builder)
+      throws IOException {
     // @formatter:off
     return builder
         .startObject(WIDTH)

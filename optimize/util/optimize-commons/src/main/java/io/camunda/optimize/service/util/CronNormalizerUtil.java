@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CronNormalizerUtil {
 
-  public static String normalizeToSixParts(String cronTrigger) {
-    String[] cronParts = cronTrigger.split(" ");
+  public static String normalizeToSixParts(final String cronTrigger) {
+    final String[] cronParts = cronTrigger.split(" ");
     if (cronParts.length < 6) {
       return "0 " + cronTrigger;
     } else {

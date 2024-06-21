@@ -31,7 +31,7 @@ public class StringViewPropertyDto implements TypedViewPropertyDto {
     if (!(o instanceof StringViewPropertyDto)) {
       return false;
     }
-    StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
+    final StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
     return Objects.equals(getId(), stringViewPropertyDto.getId());
   }
 

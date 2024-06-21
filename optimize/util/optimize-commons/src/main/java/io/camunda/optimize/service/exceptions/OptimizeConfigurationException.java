@@ -14,18 +14,21 @@ import lombok.Getter;
 
 @Getter
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
-  private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
 
-  public OptimizeConfigurationException(String message) {
+  private final Map<String, String> deletedKeysAndDocumentationLink;
+
+  public OptimizeConfigurationException(final String message) {
     super(message);
+    deletedKeysAndDocumentationLink = Collections.emptyMap();
   }
 
-  public OptimizeConfigurationException(String message, Exception e) {
+  public OptimizeConfigurationException(final String message, final Exception e) {
     super(message, e);
+    deletedKeysAndDocumentationLink = Collections.emptyMap();
   }
 
   public OptimizeConfigurationException(
-      String message, Map<String, String> deletedKeysAndDocumentationLink) {
+      final String message, final Map<String, String> deletedKeysAndDocumentationLink) {
     super(message);
     this.deletedKeysAndDocumentationLink =
         Optional.ofNullable(deletedKeysAndDocumentationLink).orElse(Collections.emptyMap());

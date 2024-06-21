@@ -18,14 +18,14 @@ public class VariableGroupByValueDto implements ProcessGroupByValueDto {
   protected VariableType type;
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof VariableGroupByValueDto)) {
       return false;
     }
-    VariableGroupByValueDto that = (VariableGroupByValueDto) o;
+    final VariableGroupByValueDto that = (VariableGroupByValueDto) o;
     return Objects.equals(name, that.name) && Objects.equals(type, that.type);
   }
 }

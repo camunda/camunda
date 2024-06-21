@@ -12,8 +12,7 @@ import java.util.Locale;
 
 public enum EventSourceType {
   EXTERNAL,
-  CAMUNDA,
-  ;
+  CAMUNDA;
 
   @JsonValue
   public String getId() {

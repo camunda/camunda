@@ -21,22 +21,17 @@ import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
 
 @Slf4j
 public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation {
-  public static class SnaphotStatus {
-    public static final String FAILED = "FAILED";
-    public static final String IN_PROGRESS = "IN_PROGRESS";
-    public static final String PARTIAL = "PARTIAL";
-    public static final String SUCCESS = "SUCCESS";
-  }
 
   public OpenSearchAsyncSnapshotOperations(
-      OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
+      final OptimizeIndexNameService indexNameService,
+      final OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService, openSearchAsyncClient);
   }
 
   public CompletableFuture<DeleteSnapshotResponse> delete(
       final String repository,
       final String snapshot,
-      Function<Exception, String> errorMessageSupplier) {
+      final Function<Exception, String> errorMessageSupplier) {
     final DeleteSnapshotRequest request =
         new Builder().repository(repository).snapshot(snapshot).build();
 
@@ -47,8 +42,8 @@ public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation 
       final String repository,
       final String snapshot,
       final List<String> indexNames,
-      Function<Exception, String> errorMessageSupplier) {
-    CreateSnapshotRequest request =
+      final Function<Exception, String> errorMessageSupplier) {
+    final CreateSnapshotRequest request =
         new CreateSnapshotRequest.Builder()
             .repository(repository)
             .snapshot(snapshot)
@@ -58,5 +53,13 @@ public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation 
             .build();
 
     return safe(() -> openSearchAsyncClient.snapshot().create(request), errorMessageSupplier);
+  }
+
+  public static class SnaphotStatus {
+
+    public static final String FAILED = "FAILED";
+    public static final String IN_PROGRESS = "IN_PROGRESS";
+    public static final String PARTIAL = "PARTIAL";
+    public static final String SUCCESS = "SUCCESS";
   }
 }

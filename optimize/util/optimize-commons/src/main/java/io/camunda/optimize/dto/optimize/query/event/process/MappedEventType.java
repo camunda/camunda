@@ -9,6 +9,5 @@ package io.camunda.optimize.dto.optimize.query.event.process;
 
 public enum MappedEventType {
   START,
-  END,
-  ;
+  END;
 }

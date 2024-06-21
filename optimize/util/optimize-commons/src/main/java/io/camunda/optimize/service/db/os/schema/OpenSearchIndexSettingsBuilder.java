@@ -41,8 +41,8 @@ import org.springframework.context.annotation.Conditional;
 public class OpenSearchIndexSettingsBuilder {
 
   public static IndexSettings buildAllSettings(
-      ConfigurationService configurationService,
-      IndexMappingCreator<IndexSettings.Builder> indexMappingCreator)
+      final ConfigurationService configurationService,
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator)
       throws IOException {
     IndexSettings.Builder builder = new IndexSettings.Builder();
     addDynamicSettings(configurationService, builder);
@@ -51,7 +51,8 @@ public class OpenSearchIndexSettingsBuilder {
     return builder.build();
   }
 
-  public static IndexSettings buildDynamicSettings(ConfigurationService configurationService) {
+  public static IndexSettings buildDynamicSettings(
+      final ConfigurationService configurationService) {
     IndexSettings.Builder builder = new IndexSettings.Builder();
     builder = addDynamicSettings(configurationService, builder);
     return builder.build();
@@ -91,7 +92,7 @@ public class OpenSearchIndexSettingsBuilder {
 
   private static IndexSettings.Builder addAnalysis(final IndexSettings.Builder settingsBuilder) {
 
-    Map<String, Analyzer> analyzers = new HashMap<>();
+    final Map<String, Analyzer> analyzers = new HashMap<>();
     analyzers.put(
         LOWERCASE_NGRAM,
         new Analyzer.Builder()
@@ -106,7 +107,7 @@ public class OpenSearchIndexSettingsBuilder {
                 new CustomAnalyzer.Builder().tokenizer("keyword").filter(IS_PRESENT_FILTER).build())
             .build());
 
-    IndexSettingsAnalysis analysis =
+    final IndexSettingsAnalysis analysis =
         new IndexSettingsAnalysis.Builder()
             .analyzer(analyzers)
             .normalizer(

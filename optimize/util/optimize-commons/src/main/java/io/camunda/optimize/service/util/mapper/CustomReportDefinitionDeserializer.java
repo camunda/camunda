@@ -30,19 +30,19 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
 
   private ObjectMapper objectMapper;
 
-  public CustomReportDefinitionDeserializer(ObjectMapper objectMapper) {
+  public CustomReportDefinitionDeserializer(final ObjectMapper objectMapper) {
     this(ReportDefinitionDto.class);
     this.objectMapper = objectMapper;
   }
 
-  public CustomReportDefinitionDeserializer(Class<?> vc) {
+  public CustomReportDefinitionDeserializer(final Class<?> vc) {
     super(vc);
   }
 
   @Override
   public ReportDefinitionDto deserialize(final JsonParser jp, final DeserializationContext ctxt)
       throws IOException {
-    JsonNode node = jp.readValueAsTree();
+    final JsonNode node = jp.readValueAsTree();
     return deserialize(jp, node);
   }
 
@@ -51,11 +51,11 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
     ensureCombinedReportFieldIsProvided(jp, readJsonTree);
     ensureReportTypeFieldIsProvided(jp, readJsonTree);
 
-    boolean isCombined = readJsonTree.get(COMBINED).booleanValue();
-    String reportTypeAsString = readJsonTree.get(REPORT_TYPE).asText();
-    ReportType reportType = valueOf(reportTypeAsString.toUpperCase());
+    final boolean isCombined = readJsonTree.get(COMBINED).booleanValue();
+    final String reportTypeAsString = readJsonTree.get(REPORT_TYPE).asText();
+    final ReportType reportType = valueOf(reportTypeAsString.toUpperCase());
 
-    String json = readJsonTree.toString();
+    final String json = readJsonTree.toString();
     if (isCombined) {
       return objectMapper.readValue(json, CombinedReportDefinitionRequestDto.class);
     } else {
@@ -65,14 +65,14 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
         return objectMapper.readValue(json, SingleDecisionReportDefinitionRequestDto.class);
       }
     }
-    String errorMessage =
+    final String errorMessage =
         String.format(
             "Could not create single report definition since the report with type [%s] is unknown",
             reportTypeAsString);
     throw new JsonParseException(jp, errorMessage);
   }
 
-  private void ensureCombinedReportFieldIsProvided(JsonParser jp, JsonNode node)
+  private void ensureCombinedReportFieldIsProvided(final JsonParser jp, final JsonNode node)
       throws JsonParseException {
     if (!node.hasNonNull(COMBINED)) {
       throw new JsonParseException(
@@ -80,7 +80,7 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
     }
   }
 
-  private void ensureReportTypeFieldIsProvided(JsonParser jp, JsonNode node)
+  private void ensureReportTypeFieldIsProvided(final JsonParser jp, final JsonNode node)
       throws JsonParseException {
     if (!node.hasNonNull(REPORT_TYPE)) {
       throw new JsonParseException(

@@ -41,6 +41,7 @@ import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public interface QueryDSL {
+
   String DEFAULT_SCRIPT_LANG = "painless";
 
   private static <A> List<A> nonNull(final A[] items) {
@@ -145,7 +146,7 @@ public interface QueryDSL {
     return match(field, value, operator, FieldValue::of);
   }
 
-  static Query match(String field, String value) {
+  static Query match(final String field, final String value) {
     return match(field, value, Operator.And);
   }
 
@@ -170,7 +171,7 @@ public interface QueryDSL {
   }
 
   static Query or(final String minimumShouldMatch, final Query... queries) {
-    BoolQuery.Builder builder =
+    final BoolQuery.Builder builder =
         new Builder().should(nonNull(queries)).minimumShouldMatch(minimumShouldMatch);
     return builder.build().toQuery();
   }

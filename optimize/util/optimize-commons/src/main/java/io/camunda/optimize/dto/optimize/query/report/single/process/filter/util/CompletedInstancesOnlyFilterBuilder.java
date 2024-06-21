@@ -12,17 +12,18 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import java.util.List;
 import java.util.Optional;
 
-public class CompletedInstancesOnlyFilterBuilder {
+public final class CompletedInstancesOnlyFilterBuilder {
 
   private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
-  private CompletedInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private CompletedInstancesOnlyFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  public static CompletedInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  public static CompletedInstancesOnlyFilterBuilder construct(
+      final ProcessFilterBuilder filterBuilder) {
     return new CompletedInstancesOnlyFilterBuilder(filterBuilder);
   }
 

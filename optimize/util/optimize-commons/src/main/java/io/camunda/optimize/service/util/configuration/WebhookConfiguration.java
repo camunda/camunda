@@ -14,6 +14,7 @@ import lombok.Data;
 
 @Data
 public class WebhookConfiguration {
+
   private String url;
   private Map<String, String> headers;
   private String httpMethod;
@@ -39,8 +40,7 @@ public class WebhookConfiguration {
         notificationDto ->
             String.valueOf(notificationDto.getAlert().getCheckInterval().getValue())),
     ALERT_INTERVAL_UNIT(
-        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId()),
-    ;
+        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId());
 
     private static final String PLACEHOLDER_TEMPLATE = "{{%s}}";
 
@@ -51,7 +51,7 @@ public class WebhookConfiguration {
     }
 
     public String getPlaceholderString() {
-      return String.format(PLACEHOLDER_TEMPLATE, this.name());
+      return String.format(PLACEHOLDER_TEMPLATE, name());
     }
 
     public String extractValue(final AlertNotificationDto notificationDto) {

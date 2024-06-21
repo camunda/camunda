@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class VariableFilterBuilder {
+public final class VariableFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private VariableType type;
   private List<String> values = new ArrayList<>();
   private FilterOperator operator;
@@ -42,55 +42,55 @@ public class VariableFilterBuilder {
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
-  private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private VariableFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static VariableFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static VariableFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new VariableFilterBuilder(filterBuilder);
   }
 
-  public VariableFilterBuilder type(VariableType type) {
+  public VariableFilterBuilder type(final VariableType type) {
     this.type = type;
     return this;
   }
 
   public VariableFilterBuilder booleanType() {
-    this.type = VariableType.BOOLEAN;
+    type = VariableType.BOOLEAN;
     return this;
   }
 
   public VariableFilterBuilder shortType() {
-    this.type = VariableType.SHORT;
+    type = VariableType.SHORT;
     return this;
   }
 
   public VariableFilterBuilder integerType() {
-    this.type = VariableType.INTEGER;
+    type = VariableType.INTEGER;
     return this;
   }
 
   public VariableFilterBuilder longType() {
-    this.type = VariableType.LONG;
+    type = VariableType.LONG;
     return this;
   }
 
   public VariableFilterBuilder doubleType() {
-    this.type = VariableType.DOUBLE;
+    type = VariableType.DOUBLE;
     return this;
   }
 
   public VariableFilterBuilder stringType() {
-    this.type = VariableType.STRING;
+    type = VariableType.STRING;
     return this;
   }
 
   public VariableFilterBuilder dateType() {
-    this.type = VariableType.DATE;
+    type = VariableType.DATE;
     return this;
   }
 
-  public VariableFilterBuilder name(String name) {
+  public VariableFilterBuilder name(final String name) {
     this.name = name;
     return this;
   }
@@ -121,18 +121,18 @@ public class VariableFilterBuilder {
   }
 
   public VariableFilterBuilder booleanTrue() {
-    this.type = VariableType.BOOLEAN;
-    this.values.add("true");
+    type = VariableType.BOOLEAN;
+    values.add("true");
     return this;
   }
 
   public VariableFilterBuilder booleanFalse() {
-    this.type = VariableType.BOOLEAN;
-    this.values.add("false");
+    type = VariableType.BOOLEAN;
+    values.add("false");
     return this;
   }
 
-  public VariableFilterBuilder operator(FilterOperator operator) {
+  public VariableFilterBuilder operator(final FilterOperator operator) {
     this.operator = operator;
     return this;
   }
@@ -143,19 +143,19 @@ public class VariableFilterBuilder {
   }
 
   public VariableFilterBuilder rollingDate(final Long value, final DateUnit unit) {
-    this.dateFilterDataDto =
+    dateFilterDataDto =
         new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
     return this;
   }
 
   public VariableFilterBuilder relativeDate(final Long value, final DateUnit unit) {
-    this.dateFilterDataDto =
+    dateFilterDataDto =
         new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     return this;
   }
 
   public VariableFilterBuilder fixedDate(final OffsetDateTime start, final OffsetDateTime end) {
-    this.dateFilterDataDto = new FixedDateFilterDataDto(start, end);
+    dateFilterDataDto = new FixedDateFilterDataDto(start, end);
     return this;
   }
 
@@ -201,7 +201,7 @@ public class VariableFilterBuilder {
                             .map(value -> value != null ? Boolean.valueOf(value) : null)
                             .collect(Collectors.toList()))
                 .orElse(null));
-    VariableFilterDto filter = new VariableFilterDto();
+    final VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
     filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
@@ -209,11 +209,11 @@ public class VariableFilterBuilder {
   }
 
   private ProcessFilterBuilder createVariableDateFilter() {
-    DateVariableFilterDataDto dateVariableFilterDataDto =
+    final DateVariableFilterDataDto dateVariableFilterDataDto =
         new DateVariableFilterDataDto(
             name,
             dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null));
-    VariableFilterDto filter = new VariableFilterDto();
+    final VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
     filter.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filter);
@@ -221,7 +221,7 @@ public class VariableFilterBuilder {
   }
 
   private ProcessFilterBuilder createOperatorMultipleValuesFilter() {
-    VariableFilterDto filter = new VariableFilterDto();
+    final VariableFilterDto filter = new VariableFilterDto();
     switch (type) {
       case INTEGER:
         filter.setData(new IntegerVariableFilterDataDto(name, operator, values));

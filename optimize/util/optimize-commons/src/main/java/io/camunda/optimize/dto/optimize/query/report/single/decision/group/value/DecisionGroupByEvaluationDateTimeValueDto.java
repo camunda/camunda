@@ -17,14 +17,14 @@ public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupB
   protected AggregateByDateUnit unit;
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByEvaluationDateTimeValueDto)) {
       return false;
     }
-    DecisionGroupByEvaluationDateTimeValueDto that = (DecisionGroupByEvaluationDateTimeValueDto) o;
+    final DecisionGroupByEvaluationDateTimeValueDto that = (DecisionGroupByEvaluationDateTimeValueDto) o;
     return Objects.equals(unit, that.unit);
   }
 }

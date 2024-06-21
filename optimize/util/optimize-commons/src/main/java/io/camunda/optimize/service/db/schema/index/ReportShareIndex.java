@@ -33,9 +33,9 @@ public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCrea
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         xContentBuilder
             .startObject(ID)
             .field("type", "keyword")
@@ -53,7 +53,7 @@ public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCrea
     return newBuilder;
   }
 
-  private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedPositionField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         .startObject(X_POSITION)

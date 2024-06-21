@@ -18,10 +18,6 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 public class AlertCreationRequestDto {
 
-  // needed to allow inheritance of field name constants
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  public static class Fields {}
-
   private String name;
   private AlertInterval checkInterval;
   private String reportId;
@@ -29,6 +25,12 @@ public class AlertCreationRequestDto {
   private AlertThresholdOperator thresholdOperator;
   private boolean fixNotification;
   private AlertInterval reminder;
-  private List<String> emails = new ArrayList<>();
+  private final List<String> emails = new ArrayList<>();
   private String webhook;
+
+  // needed to allow inheritance of field name constants
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  public static class Fields {
+
+  }
 }

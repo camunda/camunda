@@ -12,22 +12,23 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowN
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 
-public class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
+public final class FlowNodeDurationFilterBuilder extends DurationFilterBuilder {
 
   private final FlowNodeDurationFiltersDataDto flowNodeFilters =
       new FlowNodeDurationFiltersDataDto();
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private FlowNodeDurationFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private FlowNodeDurationFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     super(filterBuilder);
   }
 
-  public static FlowNodeDurationFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  public static FlowNodeDurationFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new FlowNodeDurationFilterBuilder(filterBuilder);
   }
 
-  public FlowNodeDurationFilterBuilder flowNode(String flowNodeId, DurationFilterDataDto filter) {
-    this.flowNodeFilters.put(flowNodeId, filter);
+  public FlowNodeDurationFilterBuilder flowNode(final String flowNodeId,
+      final DurationFilterDataDto filter) {
+    flowNodeFilters.put(flowNodeId, filter);
     return this;
   }
 

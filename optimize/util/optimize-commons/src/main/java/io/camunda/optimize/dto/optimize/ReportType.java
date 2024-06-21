@@ -12,8 +12,7 @@ import java.util.Locale;
 
 public enum ReportType {
   PROCESS,
-  DECISION,
-  ;
+  DECISION;
 
   @JsonValue
   public String getId() {
@@ -26,7 +25,7 @@ public enum ReportType {
   }
 
   public DefinitionType toDefinitionType() {
-    return DefinitionType.fromString(this.name());
+    return DefinitionType.fromString(name());
   }
 
   // This is used by jersey on unmarshalling query/path parameters

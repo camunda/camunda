@@ -15,6 +15,5 @@ public enum EmailSecurityProtocol {
   @JsonProperty("STARTTLS")
   STARTTLS,
   @JsonProperty("SSL/TLS")
-  SSL_TLS,
-  ;
+  SSL_TLS;
 }

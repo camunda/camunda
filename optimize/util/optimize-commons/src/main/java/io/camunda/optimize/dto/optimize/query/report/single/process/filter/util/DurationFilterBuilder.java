@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 
 public class DurationFilterBuilder {
+
   protected final ProcessFilterBuilder filterBuilder;
 
   protected Long value;
@@ -21,25 +22,25 @@ public class DurationFilterBuilder {
   protected ComparisonOperator comparisonOperator;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  protected DurationFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  protected DurationFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  public static DurationFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  public static DurationFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new DurationFilterBuilder(filterBuilder);
   }
 
-  public DurationFilterBuilder value(Long value) {
+  public DurationFilterBuilder value(final Long value) {
     this.value = value;
     return this;
   }
 
-  public DurationFilterBuilder unit(DurationUnit unit) {
+  public DurationFilterBuilder unit(final DurationUnit unit) {
     this.unit = unit;
     return this;
   }
 
-  public DurationFilterBuilder operator(ComparisonOperator comparisonOperator) {
+  public DurationFilterBuilder operator(final ComparisonOperator comparisonOperator) {
     this.comparisonOperator = comparisonOperator;
     return this;
   }
@@ -50,11 +51,11 @@ public class DurationFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    DurationFilterDataDto durationFilterDataDto = new DurationFilterDataDto();
+    final DurationFilterDataDto durationFilterDataDto = new DurationFilterDataDto();
     durationFilterDataDto.setOperator(comparisonOperator);
     durationFilterDataDto.setUnit(unit);
     durationFilterDataDto.setValue(value);
-    DurationFilterDto durationFilterDto = new DurationFilterDto();
+    final DurationFilterDto durationFilterDto = new DurationFilterDto();
     durationFilterDto.setData(durationFilterDataDto);
     durationFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(durationFilterDto);

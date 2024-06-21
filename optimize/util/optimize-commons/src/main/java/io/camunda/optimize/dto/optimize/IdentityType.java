@@ -12,8 +12,7 @@ import java.util.Locale;
 
 public enum IdentityType {
   USER,
-  GROUP,
-  ;
+  GROUP;
 
   @JsonValue
   public String getId() {

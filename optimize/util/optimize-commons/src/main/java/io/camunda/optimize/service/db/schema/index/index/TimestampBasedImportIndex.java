@@ -20,22 +20,16 @@ public abstract class TimestampBasedImportIndex<TBuilder>
     extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 5;
-
-  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
-      ImportIndexDto.Fields.lastImportExecutionTimestamp;
   public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   public static final String DB_TYPE_INDEX_REFERS_TO =
       TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
+  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
+      ImportIndexDto.Fields.lastImportExecutionTimestamp;
 
   @Override
   public String getIndexName() {
     return TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-  }
-
-  @Override
-  public int getVersion() {
-    return VERSION;
   }
 
   @Override
@@ -44,7 +38,12 @@ public abstract class TimestampBasedImportIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public int getVersion() {
+    return VERSION;
+  }
+
+  @Override
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
         .startObject(DATA_SOURCE)

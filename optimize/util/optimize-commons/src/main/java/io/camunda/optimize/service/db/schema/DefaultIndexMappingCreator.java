@@ -22,13 +22,13 @@ import org.slf4j.LoggerFactory;
 public abstract class DefaultIndexMappingCreator<TBuilder>
     implements PropertiesAppender, IndexMappingCreator<TBuilder> {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-  private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
   public static final String LOWERCASE = "lowercase";
   protected static final String ANALYZER = "analyzer";
   protected static final String NORMALIZER = "normalizer";
-
-  @Setter private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
+  private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
+  private final Logger logger = LoggerFactory.getLogger(getClass());
+  @Setter
+  private String dynamic = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 
   public abstract TBuilder addStaticSetting(
       final String key, final int value, TBuilder contentBuilder) throws IOException;

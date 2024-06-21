@@ -20,9 +20,13 @@ public enum FilterOperator {
   LESS_THAN(FilterOperatorConstants.LESS_THAN),
   LESS_THAN_EQUALS(FilterOperatorConstants.LESS_THAN_EQUALS),
   GREATER_THAN(FilterOperatorConstants.GREATER_THAN),
-  GREATER_THAN_EQUALS(FilterOperatorConstants.GREATER_THAN_EQUALS),
-  ;
+  GREATER_THAN_EQUALS(FilterOperatorConstants.GREATER_THAN_EQUALS);
 
+  public static final Set<FilterOperator> RELATIVE_OPERATORS =
+      ImmutableSet.of(LESS_THAN, LESS_THAN_EQUALS, GREATER_THAN, GREATER_THAN_EQUALS);
+  private static final Set<FilterOperator> CONTAINS_OPERATORS =
+      ImmutableSet.of(CONTAINS, NOT_CONTAINS);
+  private static final Set<FilterOperator> EQUALS_OPERATORS = ImmutableSet.of(IN, NOT_IN);
   private final String id;
 
   FilterOperator(final String id) {
@@ -33,14 +37,6 @@ public enum FilterOperator {
   public String getId() {
     return id;
   }
-
-  public static final Set<FilterOperator> RELATIVE_OPERATORS =
-      ImmutableSet.of(LESS_THAN, LESS_THAN_EQUALS, GREATER_THAN, GREATER_THAN_EQUALS);
-
-  private static final Set<FilterOperator> CONTAINS_OPERATORS =
-      ImmutableSet.of(CONTAINS, NOT_CONTAINS);
-
-  private static final Set<FilterOperator> EQUALS_OPERATORS = ImmutableSet.of(IN, NOT_IN);
 
   public static boolean isContainsOperation(final FilterOperator filterOperator) {
     return CONTAINS_OPERATORS.contains(filterOperator);

@@ -69,9 +69,6 @@ import org.opensearch.client.transport.aws.AwsSdk2Transport;
 @Slf4j
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
-  // TODO check unused methods with OPT-7352
-  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {}
-
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
 
   public OpenSearchDocumentOperations(
@@ -285,7 +282,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public <R> List<R> searchValues(
       final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     return search(
-            requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry)
+        requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry)
         .hits()
         .hits()
         .stream()
@@ -428,7 +425,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     try {
       response = openSearchClient.updateByQuery(request);
       status = response.updated();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       status = null;
     }
 
@@ -448,8 +445,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return executeWithRetries(
         () ->
             openSearchClient
-                    .delete(applyIndexPrefix(deleteRequestBuilder(index, id)).build())
-                    .result()
+                .delete(applyIndexPrefix(deleteRequestBuilder(index, id)).build())
+                .result()
                 == Result.Deleted);
   }
 
@@ -507,7 +504,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     try {
       return openSearchClient.get(applyIndexPrefix(requestBuilder).build(), responseClass);
     } catch (final Exception e) {
-      if (e instanceof OpenSearchException osException
+      if (e instanceof final OpenSearchException osException
           && openSearchClient._transport() instanceof AwsSdk2Transport
           && isAwsNotFoundException(osException)) {
         // Making sure the response is consistent with the one from the OpenSearch client due to
@@ -552,7 +549,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return new MultiGetOperation.Builder().id(id).index(index).build();
   }
 
-  private Boolean isAwsNotFoundException(OpenSearchException e) {
+  private Boolean isAwsNotFoundException(final OpenSearchException e) {
     return e.getMessage().contains(Integer.toString(HTTP_NOT_FOUND));
+  }
+
+  // TODO check unused methods with OPT-7352
+  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {
+
   }
 }

@@ -52,7 +52,7 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
               .thenComparing(EVENT_NAME_COMPARATOR)
               .thenComparing(COUNTS_COMPARATOR));
 
-  private static final ImmutableMap<String, Comparator<EventCountResponseDto>> sortComparators =
+  private static final ImmutableMap<String, Comparator<EventCountResponseDto>> SORT_COMPARATORS =
       ImmutableMap.of(
           group.toLowerCase(Locale.ENGLISH), GROUP_COMPARATOR,
           source.toLowerCase(Locale.ENGLISH), SOURCE_COMPARATOR,
@@ -60,21 +60,22 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
           count.toLowerCase(Locale.ENGLISH), COUNTS_COMPARATOR);
 
   public EventCountSorter(final String sortBy, final SortOrder sortOrder) {
-    this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+    sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
   @Override
-  public List<EventCountResponseDto> applySort(List<EventCountResponseDto> eventCounts) {
+  public List<EventCountResponseDto> applySort(final List<EventCountResponseDto> eventCounts) {
     Comparator<EventCountResponseDto> eventCountSorter;
     final Optional<SortOrder> sortOrderOpt = getSortOrder();
     final Optional<String> sortByOpt = getSortBy();
     if (sortByOpt.isPresent()) {
       final String sortBy = sortByOpt.get();
-      if (!sortComparators.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
+      if (!SORT_COMPARATORS.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       eventCountSorter =
-          sortComparators.get(sortBy.toLowerCase(Locale.ENGLISH)).thenComparing(DEFAULT_COMPARATOR);
+          SORT_COMPARATORS.get(sortBy.toLowerCase(Locale.ENGLISH))
+              .thenComparing(DEFAULT_COMPARATOR);
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         eventCountSorter = eventCountSorter.reversed();
       }

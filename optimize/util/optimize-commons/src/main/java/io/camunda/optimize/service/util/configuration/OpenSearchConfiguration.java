@@ -61,6 +61,11 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setRefreshInterval(final String refreshInterval) {
+    settings.getIndex().setRefreshInterval(refreshInterval);
+  }
+
+  @JsonIgnore
   public Integer getNumberOfShards() {
     return settings.getIndex().getNumberOfShards();
   }
@@ -71,10 +76,20 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setNumberOfReplicas(final int replicaCount) {
+    settings.getIndex().setNumberOfReplicas(replicaCount);
+  }
+
+  @JsonIgnore
   public Integer getNestedDocumentsLimit() {
-    Integer values = settings.getIndex().getNestedDocumentsLimit();
+    final Integer values = settings.getIndex().getNestedDocumentsLimit();
     ensureGreaterThanZero(values);
     return values;
+  }
+
+  @JsonIgnore
+  public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
+    settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
   }
 
   @JsonIgnore
@@ -113,7 +128,7 @@ public class OpenSearchConfiguration {
 
   @JsonIgnore
   public List<String> getSecuritySSLCertificateAuthorities() {
-    List<String> securitySSLCertificateAuthorities =
+    final List<String> securitySSLCertificateAuthorities =
         security.getSsl().getCertificateAuthorities().stream()
             .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
             .collect(Collectors.toList());
@@ -131,6 +146,11 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setAggregationBucketLimit(final int bucketLimit) {
+    settings.setAggregationBucketLimit(bucketLimit);
+  }
+
+  @JsonIgnore
   public DatabaseConnectionNodeConfiguration getFirstConnectionNode() {
     return getConnectionNodes().get(0);
   }
@@ -141,27 +161,7 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
-  public void setAggregationBucketLimit(final int bucketLimit) {
-    settings.setAggregationBucketLimit(bucketLimit);
-  }
-
-  @JsonIgnore
   public void setIndexPrefix(final String prefix) {
     settings.getIndex().setPrefix(prefix);
-  }
-
-  @JsonIgnore
-  public void setRefreshInterval(final String refreshInterval) {
-    settings.getIndex().setRefreshInterval(refreshInterval);
-  }
-
-  @JsonIgnore
-  public void setNumberOfReplicas(final int replicaCount) {
-    settings.getIndex().setNumberOfReplicas(replicaCount);
-  }
-
-  @JsonIgnore
-  public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
-    settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
   }
 }

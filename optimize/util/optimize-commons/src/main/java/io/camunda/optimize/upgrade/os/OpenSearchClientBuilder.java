@@ -87,6 +87,7 @@ import software.amazon.awssdk.regions.Region;
 
 public class OpenSearchClientBuilder {
 
+  @SuppressWarnings("checkstyle:constantname")
   private static final Logger log = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
 
   public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
@@ -101,7 +102,7 @@ public class OpenSearchClientBuilder {
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
@@ -112,12 +113,12 @@ public class OpenSearchClientBuilder {
   }
 
   private static boolean isAws() {
-    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     try {
       credentialsProvider.resolveCredentials();
       log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
       return true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
       return false;
     }
@@ -264,7 +265,7 @@ public class OpenSearchClientBuilder {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final org.apache.http.ssl.TrustStrategy trustStrategy =
         Boolean.TRUE.equals(
-                configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
+            configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
             ? new TrustSelfSignedStrategy()
             : null;
     if (truststore.size() > 0) {

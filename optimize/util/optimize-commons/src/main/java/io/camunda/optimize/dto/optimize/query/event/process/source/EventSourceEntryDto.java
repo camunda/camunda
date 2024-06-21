@@ -23,8 +23,8 @@ import lombok.experimental.SuperBuilder;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = ExternalEventSourceEntryDto.class, name = "external"),
-  @JsonSubTypes.Type(value = CamundaEventSourceEntryDto.class, name = "camunda")
+    @JsonSubTypes.Type(value = ExternalEventSourceEntryDto.class, name = "external"),
+    @JsonSubTypes.Type(value = CamundaEventSourceEntryDto.class, name = "camunda")
 })
 @Data
 @NoArgsConstructor
@@ -35,13 +35,15 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
 
   public static final String TYPE = "type";
 
-  @EqualsAndHashCode.Include @NonNull @Builder.Default
+  @EqualsAndHashCode.Include
+  @NonNull
+  @Builder.Default
   protected String id = IdGenerator.getNextId();
+  @NotNull
+  protected CONFIG configuration;
 
   @JsonIgnore
   public abstract EventSourceType getSourceType();
-
-  @NotNull protected CONFIG configuration;
 
   // This source identifier is only used internally by Optimize for logic such as autogeneration
   @JsonIgnore
@@ -59,7 +61,7 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
         return getSourceType()
             + ":"
             + Optional.ofNullable(externalSourceConfig.getGroup())
-                .orElse("optimize_noGroupSpecified");
+            .orElse("optimize_noGroupSpecified");
       }
     }
   }

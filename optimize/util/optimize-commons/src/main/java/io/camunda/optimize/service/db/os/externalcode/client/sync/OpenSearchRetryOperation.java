@@ -27,32 +27,36 @@ import org.opensearch.client.opensearch.tasks.Info;
 
 @Slf4j
 public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
+
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
 
   public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 5; // 5 attempts * 2s backoff = 10s maximum
   private final int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
 
   protected OpenSearchRetryOperation(
-      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
-  protected <T> T executeWithRetries(CheckedSupplier<T> supplier) {
+  protected <T> T executeWithRetries(final CheckedSupplier<T> supplier) {
     return executeWithRetries("", supplier, null);
   }
 
-  protected <T> T executeWithRetries(String operationName, CheckedSupplier<T> supplier) {
+  protected <T> T executeWithRetries(final String operationName,
+      final CheckedSupplier<T> supplier) {
     return executeWithRetries(operationName, supplier, null);
   }
 
   protected <T> T executeWithRetries(
-      String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
+      final String operationName, final CheckedSupplier<T> supplier,
+      final Predicate<T> retryPredicate) {
     return executeWithGivenRetries(
         DEFAULT_NUMBER_OF_EXECUTIONS, operationName, supplier, retryPredicate);
   }
 
   protected <T> T executeWithGivenRetries(
-      int retries, String operationName, CheckedSupplier<T> operation, Predicate<T> predicate) {
+      final int retries, final String operationName, final CheckedSupplier<T> operation,
+      final Predicate<T> predicate) {
     try {
       final RetryPolicy<T> retryPolicy =
           new RetryPolicy<T>()
@@ -73,7 +77,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
         retryPolicy.handleResultIf(predicate);
       }
       return Failsafe.with(retryPolicy).get(operation);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           "Couldn't execute operation "
               + operationName
@@ -86,15 +90,15 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     }
   }
 
-  protected GetTasksResponse task(String id) throws IOException {
+  protected GetTasksResponse task(final String id) throws IOException {
     return openSearchClient.tasks().get(t -> t.taskId(id));
   }
 
-  protected Map<String, Info> tasksWithActions(List<String> actions) throws IOException {
+  protected Map<String, Info> tasksWithActions(final List<String> actions) throws IOException {
     return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
   }
 
-  protected GetTasksResponse waitTaskCompletion(String taskId) {
+  protected GetTasksResponse waitTaskCompletion(final String taskId) {
     final String[] taskIdParts = taskId.split(":");
     final String nodeId = taskIdParts[0];
     final long id;
@@ -135,8 +139,8 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   }
 
   private boolean needsToPollAgain(final GetTasksResponse taskResponse) {
-    var r = taskResponse.response();
-    var allTasksExecuted = r.total() == r.created() + r.updated() + r.deleted();
+    final var r = taskResponse.response();
+    final var allTasksExecuted = r.total() == r.created() + r.updated() + r.deleted();
     return !(taskResponse.completed() && allTasksExecuted);
   }
 }

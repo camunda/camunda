@@ -39,7 +39,7 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
 
   public abstract String getTenantIdFieldName();
 
-  protected XContentBuilder addValueMultifields(XContentBuilder builder) throws IOException {
+  protected XContentBuilder addValueMultifields(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         // search relevant fields
@@ -65,11 +65,11 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
         .startObject(MULTIVALUE_FIELD_DOUBLE)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DOUBLE)
         .field(IGNORE_MALFORMED, true)
-        .endObject()
+        .endObject();
     // boolean is not supported to be ignored if malformed, see
     // https://github.com/elastic/elasticsearch/pull/29522
     // it is enough tough to just filter on the default string value with true/false at query time
-    ;
+
     // @formatter:on
   }
 }

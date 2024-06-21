@@ -15,8 +15,7 @@ public enum EventProcessState {
   MAPPED,
   PUBLISH_PENDING,
   PUBLISHED,
-  UNPUBLISHED_CHANGES,
-  ;
+  UNPUBLISHED_CHANGES;
 
   @JsonValue
   public String getId() {

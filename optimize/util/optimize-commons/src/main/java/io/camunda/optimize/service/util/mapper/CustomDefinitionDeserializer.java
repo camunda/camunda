@@ -37,7 +37,7 @@ public class CustomDefinitionDeserializer extends StdDeserializer<DefinitionOpti
   public DefinitionOptimizeResponseDto deserialize(
       final JsonParser jsonParser, final DeserializationContext deserializationContext)
       throws IOException {
-    JsonNode node = jsonParser.readValueAsTree();
+    final JsonNode node = jsonParser.readValueAsTree();
     return deserialize(jsonParser, node);
   }
 

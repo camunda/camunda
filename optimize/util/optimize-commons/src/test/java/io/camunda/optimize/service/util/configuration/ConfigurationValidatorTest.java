@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@SuppressWarnings("checkstyle:methodname")
 public class ConfigurationValidatorTest {
 
   @RegisterExtension
@@ -37,13 +38,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void testDeletedLeafKeyForConfigurationLeafKey() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-alerting-leaf-key.yaml");
-    String[] deletedLocations = {"deletion-samples/deleted-alerting-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deletion-samples/deleted-alerting-leaf-key.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -53,13 +54,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void testDeletedParentKeyForConfigurationLeafKey() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-alerting-leaf-key.yaml");
-    String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -69,13 +70,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void testDeletedParentKeyForConfigurationParentKey_onlyOneDeletionResult() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-alerting-parent-with-leafs-key.yaml");
-    String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deletion-samples/deleted-alerting-parent-key.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -87,18 +88,18 @@ public class ConfigurationValidatorTest {
   @Test
   public void testAllDeletionsForDistinctPathsArePresent() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration(
             "config-samples/config-alerting-parent-with-leafs-key.yaml",
             "config-samples/config-somethingelse-parent-with-leafs-key.yaml");
-    String[] deletedLocations = {
-      "deletion-samples/deleted-alerting-parent-key.yaml",
-      "deletion-samples/deleted-somethingelse-parent-key.yaml"
+    final String[] deletedLocations = {
+        "deletion-samples/deleted-alerting-parent-key.yaml",
+        "deletion-samples/deleted-somethingelse-parent-key.yaml"
     };
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -111,13 +112,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void testDeletedArrayLeafKey() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-tcpPort-leaf-key.yaml");
-    String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -127,13 +128,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void deletedAuthConfigs() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-deleted-auth-values.yaml");
-    String[] deletedLocations = {"deleted-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deleted-config.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -143,13 +144,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void deletedAccessTokenConfigs() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-deleted-access-tokens.yaml");
-    String[] deletedLocations = {"deleted-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deleted-config.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -162,13 +163,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void deletedUiHeaderConfigs() {
     // given
-    ConfigurationService configurationService =
+    final ConfigurationService configurationService =
         createConfiguration("config-samples/config-deleted-ui-header.yaml");
-    String[] deletedLocations = {"deleted-config.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] deletedLocations = {"deleted-config.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Map<String, String> deletions =
+    final Map<String, String> deletions =
         validateForAndReturnDeletionsFailIfNone(configurationService, underTest);
 
     // then
@@ -182,13 +183,13 @@ public class ConfigurationValidatorTest {
   @Test
   public void testNonDeletedArrayLeafKey_allFine() {
     // given
-    String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};
-    ConfigurationService configurationService = createConfiguration(locations);
-    String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
-    ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
+    final String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};
+    final ConfigurationService configurationService = createConfiguration(locations);
+    final String[] deletedLocations = {"deletion-samples/deleted-tcpPort-wildcard-leaf-key.yaml"};
+    final ConfigurationValidator underTest = new ConfigurationValidator(deletedLocations);
 
     // when
-    Optional<Map<String, String>> deletions =
+    final Optional<Map<String, String>> deletions =
         validateForAndReturnDeletions(configurationService, underTest);
 
     // then
@@ -198,12 +199,12 @@ public class ConfigurationValidatorTest {
   @Test
   public void testAllFineOnEmptyDeletionConfig() {
     // given
-    String[] locations = {"config-samples/config-alerting-leaf-key.yaml"};
-    ConfigurationService configurationService = createConfiguration(locations);
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
+    final String[] locations = {"config-samples/config-alerting-leaf-key.yaml"};
+    final ConfigurationService configurationService = createConfiguration(locations);
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
 
     // when
-    Optional<Map<String, String>> deletions =
+    final Optional<Map<String, String>> deletions =
         validateForAndReturnDeletions(configurationService, underTest);
 
     // then
@@ -213,9 +214,9 @@ public class ConfigurationValidatorTest {
   @Test
   public void missingWebhookUrlThrowsError() {
     // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
-    Map<String, WebhookConfiguration> webhooks =
+    final ConfigurationService configurationService = createConfiguration();
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWeebhook",
             "",
@@ -232,9 +233,9 @@ public class ConfigurationValidatorTest {
   @Test
   public void missingWebhookPayloadThrowsError() {
     // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
-    Map<String, WebhookConfiguration> webhooks =
+    final ConfigurationService configurationService = createConfiguration();
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration("myWeebhook", "someurl", new HashMap<>(), "POST", "");
     configurationService.setConfiguredWebhooks(webhooks);
 
@@ -246,9 +247,9 @@ public class ConfigurationValidatorTest {
   @Test
   public void webhookPayloadWithOnePlaceholderIsAccepted() {
     // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
-    Map<String, WebhookConfiguration> webhooks =
+    final ConfigurationService configurationService = createConfiguration();
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWeebhook", "someurl", new HashMap<>(), "POST", "{{ALERT_NAME}}");
     configurationService.setConfiguredWebhooks(webhooks);
@@ -260,9 +261,9 @@ public class ConfigurationValidatorTest {
   @Test
   public void webhookPayloadWithoutPlaceholderThrowsError() {
     // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[] {});
-    Map<String, WebhookConfiguration> webhooks =
+    final ConfigurationService configurationService = createConfiguration();
+    final ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    final Map<String, WebhookConfiguration> webhooks =
         createSingleWebhookConfiguration(
             "myWebhook", "someurl", new HashMap<>(), "POST", "aPayloadWithoutPlaceholder");
     configurationService.setConfiguredWebhooks(webhooks);
@@ -283,7 +284,7 @@ public class ConfigurationValidatorTest {
       final String httpMethod,
       final String payload) {
     final HashMap<String, WebhookConfiguration> webhookMap = new HashMap<>();
-    WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
+    final WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
     webhookConfiguration.setUrl(url);
     webhookConfiguration.setHeaders(headers);
     webhookConfiguration.setHttpMethod(httpMethod);
@@ -293,8 +294,8 @@ public class ConfigurationValidatorTest {
   }
 
   private ConfigurationService createConfiguration(final String... overwriteConfigFiles) {
-    String[] locations =
-        ArrayUtils.addAll(new String[] {"service-config.yaml"}, overwriteConfigFiles);
+    final String[] locations =
+        ArrayUtils.addAll(new String[]{"service-config.yaml"}, overwriteConfigFiles);
     return ConfigurationServiceBuilder.createConfiguration()
         .loadConfigurationFrom(locations)
         .useValidator(createValidatorWithoutDeletions())
@@ -302,18 +303,18 @@ public class ConfigurationValidatorTest {
   }
 
   private Map<String, String> validateForAndReturnDeletionsFailIfNone(
-      ConfigurationService configurationService, ConfigurationValidator underTest) {
+      final ConfigurationService configurationService, final ConfigurationValidator underTest) {
     return validateForAndReturnDeletions(configurationService, underTest)
         .orElseThrow(
             () -> new RuntimeException("Validation succeeded although it should have failed"));
   }
 
   private Optional<Map<String, String>> validateForAndReturnDeletions(
-      ConfigurationService configurationService, ConfigurationValidator validator) {
+      final ConfigurationService configurationService, final ConfigurationValidator validator) {
     try {
       validator.validate(configurationService);
       return Optional.empty();
-    } catch (OptimizeConfigurationException e) {
+    } catch (final OptimizeConfigurationException e) {
       return Optional.of(e.getDeletedKeysAndDocumentationLink());
     }
   }

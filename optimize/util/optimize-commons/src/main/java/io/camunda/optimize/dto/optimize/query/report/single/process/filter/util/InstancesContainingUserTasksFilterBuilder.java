@@ -10,16 +10,17 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 
-public class InstancesContainingUserTasksFilterBuilder {
+public final class InstancesContainingUserTasksFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private InstancesContainingUserTasksFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private InstancesContainingUserTasksFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static InstancesContainingUserTasksFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static InstancesContainingUserTasksFilterBuilder construct(
+      final ProcessFilterBuilder filterBuilder) {
     return new InstancesContainingUserTasksFilterBuilder(filterBuilder);
   }
 

@@ -71,7 +71,7 @@ public abstract class EventProcessPublishStateIndex<TBuilder>
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     final XContentBuilder newXContentBuilder =
         xContentBuilder
@@ -119,7 +119,7 @@ public abstract class EventProcessPublishStateIndex<TBuilder>
   private XContentBuilder addMappingFields(final XContentBuilder xContentBuilder)
       throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder =
+    final XContentBuilder newXContentBuilder =
         xContentBuilder
             .startObject(FLOWNODE_ID)
             .field("type", "keyword")
