@@ -44,10 +44,7 @@ public class RoleMembershipService {
   }
 
   public List<String> getRolesOfUserByUserId(final long userId) {
-    final CamundaUserDetails camundaUserDetails =
-        camundaUserDetailsManager.loadUserByUsername(
-            userService.findUserById(userId).getUsername());
-
+    final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
     return camundaUserDetails.getRoles();
   }
 
@@ -56,9 +53,7 @@ public class RoleMembershipService {
       throw new RuntimeException("role.notFound");
     }
 
-    final CamundaUserDetails camundaUserDetails =
-        camundaUserDetailsManager.loadUserByUsername(
-            userService.findUserById(userId).getUsername());
+    final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
 
     final List<String> roles = new ArrayList<>();
     roles.addAll(camundaUserDetails.getRoles());
@@ -72,9 +67,7 @@ public class RoleMembershipService {
       throw new RuntimeException("role.notFound");
     }
 
-    final CamundaUserDetails camundaUserDetails =
-        camundaUserDetailsManager.loadUserByUsername(
-            userService.findUserById(userId).getUsername());
+    final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
 
     final List<String> roles = new ArrayList<>();
     roles.addAll(
@@ -123,5 +116,10 @@ public class RoleMembershipService {
             .build();
 
     camundaUserDetailsManager.updateUser(userDetails);
+  }
+
+  private CamundaUserDetails retrieveCamundaUserDetails(final long userId) {
+    final String username = userService.findUserById(userId).getUsername();
+    return camundaUserDetailsManager.loadUserByUsername(username);
   }
 }
