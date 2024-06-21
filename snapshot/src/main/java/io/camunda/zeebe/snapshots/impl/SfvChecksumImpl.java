@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,6 +19,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -89,6 +91,11 @@ final class SfvChecksumImpl implements MutableChecksumsSFV {
     if (writer.checkError()) {
       throw new IOException("Expected to write the SFV Checksum, but failed during writing.");
     }
+  }
+
+  @Override
+  public SortedMap<String, Long> getChecksums() {
+    return checksums;
   }
 
   public void setSnapshotDirectoryComment(final String headerComment) {
