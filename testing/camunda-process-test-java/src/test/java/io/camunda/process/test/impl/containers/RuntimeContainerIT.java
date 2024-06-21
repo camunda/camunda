@@ -72,17 +72,13 @@ public class RuntimeContainerIT {
   void shouldConnectWithZeebeClient() {
     // given
     final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
-    final URI grpcAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getGrpcApiPort());
-    final URI restAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getRestApiPort());
 
     // when
     final ZeebeClient zeebeClient =
         ZeebeClient.newClientBuilder()
             .usePlaintext()
-            .grpcAddress(grpcAddress)
-            .restAddress(restAddress)
+            .grpcAddress(zeebeContainer.getGrpcApiAddress())
+            .restAddress(zeebeContainer.getRestApiAddress())
             .build();
 
     // then
@@ -201,15 +197,10 @@ public class RuntimeContainerIT {
 
   private static ZeebeClient createZeebeClient(final CamundaContainerRuntime runtime) {
     final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
-    final URI grpcAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getGrpcApiPort());
-    final URI restAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getRestApiPort());
-
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
-        .grpcAddress(grpcAddress)
-        .restAddress(restAddress)
+        .grpcAddress(zeebeContainer.getGrpcApiAddress())
+        .restAddress(zeebeContainer.getRestApiAddress())
         .build();
   }
 
