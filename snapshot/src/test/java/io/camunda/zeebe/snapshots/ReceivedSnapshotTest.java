@@ -363,7 +363,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
         final var originalChunk = snapshotChunkReader.next();
