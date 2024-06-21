@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "groups")
 public class Group {
+
   @Id private Long id;
 
   @Column(name = "group_name")
