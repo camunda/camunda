@@ -155,7 +155,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   private RequestOptionsProvider requestOptionsProvider;
 
   @Setter
-  private final int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
+  private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(
       final RestHighLevelClient highLevelClient,

@@ -23,7 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(force = true)
 @Data
 @EqualsAndHashCode(callSuper = true)
 public final class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto {

@@ -20,7 +20,7 @@ import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
 @FieldNameConstants(asEnum = true)
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
 

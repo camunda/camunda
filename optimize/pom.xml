@@ -392,9 +392,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>3.12.1</version>
         <configuration>
-          <release>17</release>
+          <release>21</release>
         </configuration>
       </plugin>
     </plugins>

@@ -18,7 +18,7 @@ import lombok.experimental.FieldNameConstants;
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(force = true)
 public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   // This is the baseline results, or in other words the results that were included in the
