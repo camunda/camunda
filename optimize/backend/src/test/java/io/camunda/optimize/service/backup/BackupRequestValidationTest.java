@@ -28,10 +28,11 @@ public class BackupRequestValidationTest {
   public void triggerBackupWithInvalidBackupId(
       final Long invalidBackupId, final String expectedErrorMsg) {
     // when
-    ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-    Validator validator = factory.getValidator();
-    BackupRequestDto backupRequestDto = new BackupRequestDto(invalidBackupId);
-    Set<ConstraintViolation<BackupRequestDto>> violations = validator.validate(backupRequestDto);
+    final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+    final Validator validator = factory.getValidator();
+    final BackupRequestDto backupRequestDto = new BackupRequestDto(invalidBackupId);
+    final Set<ConstraintViolation<BackupRequestDto>> violations = validator.validate(
+        backupRequestDto);
 
     // then
     assertThat(violations)

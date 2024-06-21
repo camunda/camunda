@@ -38,22 +38,27 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class DefinitionXmlImportMediatorTest {
 
-  @InjectMocks private DecisionDefinitionXmlEngineImportMediator underTest;
+  @InjectMocks
+  private DecisionDefinitionXmlEngineImportMediator underTest;
 
-  @Mock private DecisionDefinitionXmlFetcher engineEntityFetcher;
+  @Mock
+  private DecisionDefinitionXmlFetcher engineEntityFetcher;
 
-  @Mock private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
+  @Mock
+  private DecisionDefinitionXmlImportIndexHandler importIndexHandler;
 
-  @Mock private DecisionDefinitionXmlImportService importService;
+  @Mock
+  private DecisionDefinitionXmlImportService importService;
 
-  @Mock private BackoffCalculator idleBackoffCalculator;
+  @Mock
+  private BackoffCalculator idleBackoffCalculator;
 
   private final ConfigurationService configurationService =
       ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    this.underTest =
+    underTest =
         new DecisionDefinitionXmlEngineImportMediator(
             importIndexHandler,
             engineEntityFetcher,
@@ -65,12 +70,13 @@ public class DefinitionXmlImportMediatorTest {
   @Test
   public void testImportNextEnginePageWithEmptyIdSet() {
     // given
-    IdSetBasedImportPage page = new IdSetBasedImportPage();
+    final IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(new HashSet<>());
     when(importIndexHandler.getNextPage()).thenReturn(page);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result).isFalse();
@@ -81,19 +87,20 @@ public class DefinitionXmlImportMediatorTest {
   @Test
   public void testImportNextEnginePageWithNotEmptyIdSet() {
     // given
-    IdSetBasedImportPage page = new IdSetBasedImportPage();
-    Set<String> testIds = new HashSet<>();
+    final IdSetBasedImportPage page = new IdSetBasedImportPage();
+    final Set<String> testIds = new HashSet<>();
     testIds.add("testID");
     testIds.add("testID2");
     page.setIds(testIds);
     when(importIndexHandler.getNextPage()).thenReturn(page);
 
-    List<DecisionDefinitionXmlEngineDto> resultList = new ArrayList<>();
+    final List<DecisionDefinitionXmlEngineDto> resultList = new ArrayList<>();
     resultList.add(new DecisionDefinitionXmlEngineDto());
     when(engineEntityFetcher.fetchXmlsForDefinitions(page)).thenReturn(resultList);
 
     // when
-    final Runnable importCompleteCallback = () -> {};
+    final Runnable importCompleteCallback = () -> {
+    };
     final boolean result = underTest.importNextPage(importCompleteCallback);
 
     // then

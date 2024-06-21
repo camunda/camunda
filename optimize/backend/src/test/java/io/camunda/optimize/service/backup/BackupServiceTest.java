@@ -42,16 +42,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BackupServiceTest {
 
-  @Mock private BackupReader backupReader;
-
-  @Mock private BackupWriter backupWriter;
-
-  @Mock private ElasticSearchConfiguration databaseConfiguration;
-
-  @Mock private ConfigurationService configurationService;
-
-  @InjectMocks private BackupService backupService;
   private static MockedStatic<StringUtils> stringUtils;
+  @Mock
+  private BackupReader backupReader;
+  @Mock
+  private BackupWriter backupWriter;
+  @Mock
+  private ElasticSearchConfiguration databaseConfiguration;
+  @Mock
+  private ConfigurationService configurationService;
+  @InjectMocks
+  private BackupService backupService;
 
   @BeforeAll
   public static void beforeAll() {
@@ -87,8 +88,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-            new OptimizeSnapshotRepositoryNotFoundException(
-                "No repository with name [does_not_exist] could be found."))
+        new OptimizeSnapshotRepositoryNotFoundException(
+            "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExistsOrFail();
 
@@ -108,8 +109,8 @@ public class BackupServiceTest {
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
     // Mock existence of other backup with the same ID
     doThrow(
-            new OptimizeConflictException(
-                "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
+        new OptimizeConflictException(
+            "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
         .when(backupReader)
         .validateNoDuplicateBackupId(any());
 
@@ -143,8 +144,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-            new OptimizeSnapshotRepositoryNotFoundException(
-                "No repository with name [does_not_exist] could be found."))
+        new OptimizeSnapshotRepositoryNotFoundException(
+            "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExistsOrFail();
 
@@ -190,8 +191,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-            new OptimizeSnapshotRepositoryNotFoundException(
-                "No repository with name [does_not_exist] could be found."))
+        new OptimizeSnapshotRepositoryNotFoundException(
+            "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExistsOrFail();
 
@@ -234,8 +235,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-            new OptimizeSnapshotRepositoryNotFoundException(
-                "No repository with name [does_not_exist] could be found."))
+        new OptimizeSnapshotRepositoryNotFoundException(
+            "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExistsOrFail();
 

@@ -43,19 +43,26 @@ public class DecisionInstanceImportServiceTest {
 
   private static final String VERSION_RESULT = "VERSION";
 
-  @Mock private DecisionInstanceWriter decisionInstanceWriter;
+  @Mock
+  private DecisionInstanceWriter decisionInstanceWriter;
 
-  @Mock private DatabaseClient databaseClient;
+  @Mock
+  private DatabaseClient databaseClient;
 
-  @Mock private ConfigurationService configurationService;
+  @Mock
+  private ConfigurationService configurationService;
 
-  @Mock private EngineContext engineContext;
+  @Mock
+  private EngineContext engineContext;
 
-  @Mock private DecisionDefinitionResolverService decisionDefinitionResolverService;
+  @Mock
+  private DecisionDefinitionResolverService decisionDefinitionResolverService;
 
-  @Mock private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
+  @Mock
+  private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
 
-  @Mock private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
+  @Mock
+  private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
   private DecisionInstanceImportService underTest;
 
@@ -75,7 +82,7 @@ public class DecisionInstanceImportServiceTest {
                     .dataSource(new EngineDataSourceDto(""))
                     .tenantId("")
                     .build()));
-    this.underTest =
+    underTest =
         new DecisionInstanceImportService(
             configurationService,
             engineContext,
@@ -88,13 +95,13 @@ public class DecisionInstanceImportServiceTest {
 
   @AfterEach
   public void after() {
-    this.underTest.shutdown();
+    underTest.shutdown();
   }
 
   @Test
   public void testMappingOfAllFieldToOptimizeDto() throws OptimizeDecisionDefinitionFetchException {
     // given
-    HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
+    final HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
     historicDecisionInstanceDto.setId(UUID.randomUUID().toString());
     historicDecisionInstanceDto.setDecisionDefinitionId(UUID.randomUUID().toString());
     historicDecisionInstanceDto.setDecisionDefinitionKey("decisionDefinitionKey");
@@ -160,7 +167,7 @@ public class DecisionInstanceImportServiceTest {
   public void testSkipUnsupportedInputTypesWhenMappingToOptimizeDto()
       throws OptimizeDecisionDefinitionFetchException {
     // given
-    HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
+    final HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
     addAllSupportedInputVariables(historicDecisionInstanceDto);
 
@@ -204,7 +211,7 @@ public class DecisionInstanceImportServiceTest {
   public void testSkipUnsupportedOutputTypesWhenMappingToOptimizeDto()
       throws OptimizeDecisionDefinitionFetchException {
     // given
-    HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
+    final HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
     addAllSupportedOutputVariables(historicDecisionInstanceDto);
 
@@ -260,7 +267,7 @@ public class DecisionInstanceImportServiceTest {
   public void testInstanceDoesNotGetMappedIfDefinitionNotResolvable() {
     // when
     final String definitionId = "someDefinitionId";
-    HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
+    final HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
     historicDecisionInstanceDto.setId(UUID.randomUUID().toString());
     historicDecisionInstanceDto.setDecisionDefinitionId(definitionId);
     historicDecisionInstanceDto.setDecisionDefinitionKey("decisionDefinitionKey");
@@ -344,8 +351,8 @@ public class DecisionInstanceImportServiceTest {
 
   private void addAllSupportedInputVariables(
       final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
-      HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
+    for (final VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
+      final HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
       input.setId(UUID.randomUUID().toString());
       input.setClauseId(UUID.randomUUID().toString());
       input.setClauseName("clauseName_" + type);
@@ -357,8 +364,8 @@ public class DecisionInstanceImportServiceTest {
 
   private void addAllSupportedOutputVariables(
       final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
-      HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
+    for (final VariableType type : ReportConstants.ALL_SUPPORTED_DECISION_VARIABLE_TYPES) {
+      final HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
       output.setClauseId(UUID.randomUUID().toString());
       output.setClauseName("clauseName_" + type);

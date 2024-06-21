@@ -33,12 +33,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CsvExportServiceTest {
 
-  @Mock private AuthorizationCheckReportEvaluationHandler reportService;
+  @Mock
+  private AuthorizationCheckReportEvaluationHandler reportService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
-  @InjectMocks private CsvExportService CSVExportService;
+  @InjectMocks
+  @SuppressWarnings("checkstyle:membername")
+  private CsvExportService CSVExportService;
 
   @BeforeEach
   public void init() {
@@ -49,7 +52,7 @@ public class CsvExportServiceTest {
   @Test
   public void rawProcessReportCsvExport() {
     // given
-    RawDataCommandResult rawDataReportResult =
+    final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(
             RawDataHelper.getRawDataProcessInstanceDtos(), new ProcessReportDataDto());
     when(reportService.evaluateReport(any()))
@@ -60,11 +63,11 @@ public class CsvExportServiceTest {
                 RoleType.VIEWER));
 
     // when
-    byte[] csvContent =
+    final byte[] csvContent =
         CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.of("+1"))
             .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
-    String actualContent = new String(csvContent);
-    String expectedContent =
+    final String actualContent = new String(csvContent);
+    final String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/process/single/raw_process_data.csv");
 
     assertThat(actualContent).isEqualTo(expectedContent);
@@ -73,7 +76,7 @@ public class CsvExportServiceTest {
   @Test
   public void rawDecisionReportCsvExport() {
     // given
-    RawDataCommandResult rawDataReportResult =
+    final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(
             RawDataHelper.getRawDataDecisionInstanceDtos(), new ProcessReportDataDto());
     when(reportService.evaluateReport(any()))
@@ -84,11 +87,11 @@ public class CsvExportServiceTest {
                 RoleType.VIEWER));
 
     // when
-    byte[] csvContent =
+    final byte[] csvContent =
         CSVExportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.of("+1"))
             .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
-    String actualContent = new String(csvContent);
-    String expectedContent =
+    final String actualContent = new String(csvContent);
+    final String expectedContent =
         FileReaderUtil.readFileWithWindowsLineSeparator("/csv/decision/raw_decision_data.csv");
     assertThat(actualContent).isEqualTo(expectedContent);
   }

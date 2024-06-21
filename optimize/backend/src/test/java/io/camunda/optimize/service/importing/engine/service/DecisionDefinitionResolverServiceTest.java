@@ -35,15 +35,17 @@ public class DecisionDefinitionResolverServiceTest {
 
   private static final String TEST_KEY = "key";
 
-  @Mock private DecisionDefinitionReader decisionDefinitionReader;
+  @Mock
+  private DecisionDefinitionReader decisionDefinitionReader;
 
-  @Mock private EngineContext engineContext;
+  @Mock
+  private EngineContext engineContext;
 
   private DecisionDefinitionResolverService underTest;
 
   @BeforeEach
   public void init() {
-    this.underTest = new DecisionDefinitionResolverService(decisionDefinitionReader);
+    underTest = new DecisionDefinitionResolverService(decisionDefinitionReader);
   }
 
   @Test
@@ -88,6 +90,7 @@ public class DecisionDefinitionResolverServiceTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void noCacheOrReaderHit_retrieveFromEngine() {
     // given
     final String id = UUID.randomUUID().toString();
@@ -112,6 +115,7 @@ public class DecisionDefinitionResolverServiceTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void noCacheOrReaderHit_retrieveFromEngineAndAfterwardsFromCache() {
     // given
     final String id = UUID.randomUUID().toString();
@@ -154,7 +158,7 @@ public class DecisionDefinitionResolverServiceTest {
   }
 
   private void mockDecisionDefinitionsOnReaderLevel(final String id, final String version) {
-    List<DecisionDefinitionOptimizeDto> mockedDefinitions =
+    final List<DecisionDefinitionOptimizeDto> mockedDefinitions =
         Lists.newArrayList(
             DecisionDefinitionOptimizeDto.builder()
                 .id(id)
@@ -170,7 +174,7 @@ public class DecisionDefinitionResolverServiceTest {
   }
 
   private void mockDecisionDefinitionForEngineContext(final String id, final String version) {
-    DecisionDefinitionOptimizeDto mockedDefinition =
+    final DecisionDefinitionOptimizeDto mockedDefinition =
         DecisionDefinitionOptimizeDto.builder()
             .id(id)
             .key(TEST_KEY)

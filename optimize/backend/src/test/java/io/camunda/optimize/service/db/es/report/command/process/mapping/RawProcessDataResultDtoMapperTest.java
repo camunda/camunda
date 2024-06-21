@@ -31,6 +31,7 @@ public class RawProcessDataResultDtoMapperTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
     // given
     final int rawDataLimit = 2;
@@ -52,6 +53,7 @@ public class RawProcessDataResultDtoMapperTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testMapFromSearchResponse_additionalVariablesAddedToResults() {
     // given
     final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper();

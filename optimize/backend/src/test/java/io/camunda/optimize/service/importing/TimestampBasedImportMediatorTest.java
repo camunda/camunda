@@ -42,25 +42,30 @@ public class TimestampBasedImportMediatorTest {
 
   // we test using one particular implementation
   protected TimestampBasedImportMediator<
-          CompletedActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto>
+      CompletedActivityInstanceImportIndexHandler, HistoricActivityInstanceEngineDto>
       underTest;
 
-  @Mock protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
+  @Mock
+  protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
 
-  @Mock protected CompletedActivityInstanceImportService importService;
+  @Mock
+  protected CompletedActivityInstanceImportService importService;
 
-  @Captor private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
+  @Captor
+  private ArgumentCaptor<List<HistoricActivityInstanceEngineDto>> importEntitiesCaptor;
 
-  @Mock private CompletedActivityInstanceFetcher engineEntityFetcher;
+  @Mock
+  private CompletedActivityInstanceFetcher engineEntityFetcher;
 
-  @Mock private BackoffCalculator idleBackoffCalculator;
+  @Mock
+  private BackoffCalculator idleBackoffCalculator;
 
-  private ConfigurationService configurationService =
+  private final ConfigurationService configurationService =
       ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @BeforeEach
   public void init() {
-    this.underTest =
+    underTest =
         new CompletedActivityInstanceEngineImportMediator(
             importIndexHandler,
             engineEntityFetcher,
@@ -82,40 +87,45 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePage_returnsFalse() {
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result).isFalse();
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePage_returnsTrue() {
     // given
-    List<HistoricActivityInstanceEngineDto> engineResultList = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> engineResultList = new ArrayList<>();
     engineResultList.add(createHistoricActivityInstance(OffsetDateTime.now()));
     when(engineEntityFetcher.fetchCompletedActivityInstances(any())).thenReturn(engineResultList);
     configurationService.setEngineImportActivityInstanceMaxPageSize(1);
 
     // when
-    final boolean result = underTest.importNextPage(() -> {});
+    final boolean result = underTest.importNextPage(() -> {
+    });
 
     // then
     assertThat(result).isTrue();
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_noNewDataForSameTimestamp_butNewNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
     final OffsetDateTime firstNewPageEntityTimestamp =
         otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
     entitiesNextPage1.add(createHistoricActivityInstance(firstNewPageEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
@@ -125,11 +135,11 @@ public class TimestampBasedImportMediatorTest {
     Mockito.clearInvocations(importService, importIndexHandler);
 
     // when
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
     entitiesLastTimestamp2.add(entitiesNextPage1.get(1));
     entitiesLastTimestamp2.add(entitiesNextPage1.get(2));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
     entitiesNextPage2.add(createHistoricActivityInstance(OffsetDateTime.now().plusSeconds(2)));
 
     runAndFinishImport(entitiesLastTimestamp2, entitiesNextPage2);
@@ -146,16 +156,17 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_newDataForSameTimestamp_emptyNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
     final OffsetDateTime firstNewPageEntityTimestamp =
         otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
     entitiesNextPage1.add(createHistoricActivityInstance(firstNewPageEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
@@ -165,12 +176,12 @@ public class TimestampBasedImportMediatorTest {
     Mockito.clearInvocations(importService, importIndexHandler);
 
     // when
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
     entitiesLastTimestamp2.add(entitiesNextPage1.get(1));
     entitiesLastTimestamp2.add(entitiesNextPage1.get(2));
     entitiesLastTimestamp2.add(createHistoricActivityInstance(lastEntityTimestamp));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
 
     runAndFinishImport(entitiesLastTimestamp2, entitiesNextPage2);
 
@@ -185,10 +196,11 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testRunImport_verifyCorrectBackoff() {
     // given
     final OffsetDateTime now = OffsetDateTime.now();
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
     entitiesLastTimestamp.add(createHistoricActivityInstance(now));
 
     Mockito.when(underTest.getEntitiesLastTimestamp()).thenReturn(entitiesLastTimestamp);
@@ -206,7 +218,7 @@ public class TimestampBasedImportMediatorTest {
 
     // given
     final OffsetDateTime entityTimestamp = OffsetDateTime.now().plusSeconds(1);
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     for (int i = 0; i < configurationService.getEngineImportActivityInstanceMaxPageSize(); i++) {
       entitiesNextPage.add(createHistoricActivityInstance(entityTimestamp));
@@ -222,16 +234,17 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_noNewDataForSameTimestamp_emptyNextPage() {
     // given
     final OffsetDateTime otherEntityTimestamp = OffsetDateTime.now();
     final OffsetDateTime firstNewPageEntityTimestamp =
         otherEntityTimestamp.plus(500, ChronoUnit.MILLIS);
     final OffsetDateTime lastEntityTimestamp = OffsetDateTime.now().plusSeconds(1);
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp1 = new ArrayList<>();
     entitiesLastTimestamp1.add(createHistoricActivityInstance(otherEntityTimestamp));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage1 = new ArrayList<>();
     entitiesNextPage1.add(createHistoricActivityInstance(firstNewPageEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
     entitiesNextPage1.add(createHistoricActivityInstance(lastEntityTimestamp));
@@ -241,11 +254,11 @@ public class TimestampBasedImportMediatorTest {
     Mockito.clearInvocations(importService, importIndexHandler);
 
     // when
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp2 = new ArrayList<>();
     entitiesLastTimestamp2.add(entitiesNextPage1.get(1));
     entitiesLastTimestamp2.add(entitiesNextPage1.get(2));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage2 = new ArrayList<>();
 
     runAndFinishImport(entitiesLastTimestamp2, entitiesNextPage2);
 
@@ -257,10 +270,11 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_noEntitiesOfLastTimestamp() {
     // given
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
     runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
@@ -271,12 +285,13 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_withEntitiesOfLastTimestamp() {
     // given
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
     entitiesLastTimestamp.add(createHistoricActivityInstance(OffsetDateTime.now()));
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
     runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
@@ -289,11 +304,12 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_timestampNeedsToBeSetTrue() {
     // given
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
 
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
     entitiesNextPage.add(createHistoricActivityInstance(OffsetDateTime.now()));
 
     // when
@@ -307,9 +323,10 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_returnsFalse() {
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
     final boolean result = runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
@@ -320,9 +337,10 @@ public class TimestampBasedImportMediatorTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void testImportNextEnginePageTimestampBased_returnsTrue() {
-    List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
-    List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp = new ArrayList<>();
+    final List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
     entitiesNextPage.add(createHistoricActivityInstance(OffsetDateTime.now()));
 
     // when

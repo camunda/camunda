@@ -38,16 +38,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ZeebeRecordFetcherTest {
 
   public static final int TEST_CONFIGURED_BATCH_SIZE = 5;
-  // We test using a single specific implementation of the abstract record fetcher
-  private ZeebeProcessInstanceFetcher underTest;
-
-  @Mock private OptimizeElasticsearchClient optimizeElasticsearchClient;
-  @Mock ObjectMapper objectMapper;
-
+  @Mock
+  ObjectMapper objectMapper;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
-
-  @Mock SearchResponse searchResponse;
+  @Mock
+  SearchResponse searchResponse;
+  // We test using a single specific implementation of the abstract record fetcher
+  private ZeebeProcessInstanceFetcher underTest;
+  @Mock
+  private OptimizeElasticsearchClient optimizeElasticsearchClient;
 
   @Test
   @SneakyThrows
@@ -56,9 +56,9 @@ public class ZeebeRecordFetcherTest {
     when(configurationService.getConfiguredZeebe().getMaxImportPageSize())
         .thenReturn(TEST_CONFIGURED_BATCH_SIZE);
     when(configurationService
-            .getConfiguredZeebe()
-            .getImportConfig()
-            .getDynamicBatchSuccessAttempts())
+        .getConfiguredZeebe()
+        .getImportConfig()
+        .getDynamicBatchSuccessAttempts())
         .thenReturn(10);
     initalizeClassUnderTest();
     // the class is initialized with the default batch size and number of successful requests
@@ -93,7 +93,7 @@ public class ZeebeRecordFetcherTest {
     assertThat(underTest.getBatchSizeDeque()).containsExactly(1, 2);
 
     // given that search is successful
-    try (MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
+    try (final MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
         Mockito.mockStatic(ElasticsearchReaderUtil.class)) {
       mockEsReaderUtil
           .when(() -> ElasticsearchReaderUtil.mapHits(any(), any(), any()))
@@ -195,7 +195,7 @@ public class ZeebeRecordFetcherTest {
     assertThat(underTest.getConsecutiveEmptyPages()).isZero();
 
     // given that search is successfully executed but returning empty pages
-    try (MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
+    try (final MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
         Mockito.mockStatic(ElasticsearchReaderUtil.class)) {
       mockEsReaderUtil
           .when(() -> ElasticsearchReaderUtil.mapHits(any(), any(), any()))
@@ -245,7 +245,7 @@ public class ZeebeRecordFetcherTest {
   }
 
   private void initalizeClassUnderTest() {
-    this.underTest =
+    underTest =
         new ZeebeProcessInstanceFetcherES(
             1, optimizeElasticsearchClient, objectMapper, configurationService);
   }

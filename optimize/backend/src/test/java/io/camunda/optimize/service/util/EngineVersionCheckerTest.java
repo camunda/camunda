@@ -59,14 +59,14 @@ public class EngineVersionCheckerTest {
         EngineVersionChecker.isVersionSupported(
             version, EngineVersionChecker.getSupportedEngines());
 
-    String expectedInfoMessage = "You are using a development version of the engine";
+    final String expectedInfoMessage = "You are using a development version of the engine";
     assertThat(isSupported).isTrue();
     logCapturer.assertContains(expectedInfoMessage);
   }
 
   private static Stream<String> validVersions() {
-    List<String> validVersionsToTest = new ArrayList<>();
-    for (String supportedVersion : SUPPORTED_ENGINES) {
+    final List<String> validVersionsToTest = new ArrayList<>();
+    for (final String supportedVersion : SUPPORTED_ENGINES) {
       validVersionsToTest.add(supportedVersion);
       final String major = getMajorVersionFrom(supportedVersion);
       final String minor = getMinorVersionFrom(supportedVersion);
@@ -79,7 +79,7 @@ public class EngineVersionCheckerTest {
   }
 
   private static Stream<String> invalidVersions() {
-    List<String> invalidVersions = new ArrayList<>();
+    final List<String> invalidVersions = new ArrayList<>();
     invalidVersions.addAll(findUnsupportedMajorVersions());
     invalidVersions.addAll(findUnsupportedMinorVersions());
     invalidVersions.addAll(findUnsupportedPatchVersions());
@@ -145,7 +145,7 @@ public class EngineVersionCheckerTest {
   }
 
   private static List<String> findUnsupportedMajorVersions() {
-    long oldestSupportedMajor =
+    final long oldestSupportedMajor =
         SUPPORTED_ENGINES.stream()
             .mapToLong(version -> Long.parseLong(getMajorVersionFrom(version)))
             .min()

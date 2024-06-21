@@ -36,7 +36,7 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
     XContentBuilder source = null;
     try {
       // @formatter:off
-      XContentBuilder content =
+      final XContentBuilder content =
           jsonBuilder()
               .startObject()
               .startObject("properties")
@@ -50,8 +50,8 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
               .endObject();
       source = content;
       // @formatter:on
-    } catch (IOException e) {
-      String message = "Could not add mapping for type '" + getIndexName() + "'!";
+    } catch (final IOException e) {
+      final String message = "Could not add mapping for type '" + getIndexName() + "'!";
       log.error(message, e);
     }
     return source;

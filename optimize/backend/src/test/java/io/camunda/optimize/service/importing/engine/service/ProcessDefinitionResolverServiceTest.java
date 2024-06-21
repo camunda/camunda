@@ -36,17 +36,20 @@ public class ProcessDefinitionResolverServiceTest {
 
   private static final String TEST_KEY = "key";
 
-  @Mock private ProcessDefinitionReader processDefinitionReader;
+  @Mock
+  private ProcessDefinitionReader processDefinitionReader;
 
-  @Mock private DatabaseClient databaseClient;
+  @Mock
+  private DatabaseClient databaseClient;
 
-  @Mock private EngineContext engineContext;
+  @Mock
+  private EngineContext engineContext;
 
   private ProcessDefinitionResolverService underTest;
 
   @BeforeEach
   public void init() {
-    this.underTest = new ProcessDefinitionResolverService(databaseClient, processDefinitionReader);
+    underTest = new ProcessDefinitionResolverService(databaseClient, processDefinitionReader);
   }
 
   @Test
@@ -90,6 +93,7 @@ public class ProcessDefinitionResolverServiceTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void noCacheOrReaderHit_retrieveFromEngine() {
     // given
     final String id = UUID.randomUUID().toString();
@@ -111,6 +115,7 @@ public class ProcessDefinitionResolverServiceTest {
   }
 
   @Test
+  @SuppressWarnings("checkstyle:methodname")
   public void noCacheOrReaderHit_retrieveFromEngineAndAfterwardsFromCache() {
     // given
     final String id = UUID.randomUUID().toString();
@@ -153,7 +158,7 @@ public class ProcessDefinitionResolverServiceTest {
   }
 
   private void mockProcessDefinitionsOnReaderLevel(final String id) {
-    List<ProcessDefinitionOptimizeDto> mockedDefinitions =
+    final List<ProcessDefinitionOptimizeDto> mockedDefinitions =
         Lists.newArrayList(
             ProcessDefinitionOptimizeDto.builder()
                 .id(id)
@@ -167,7 +172,7 @@ public class ProcessDefinitionResolverServiceTest {
   }
 
   private void mockProcessDefinitionForEngineContext(final String id) {
-    ProcessDefinitionOptimizeDto mockedDefinition =
+    final ProcessDefinitionOptimizeDto mockedDefinition =
         new ProcessDefinitionOptimizeDto(
             id,
             TEST_KEY,
