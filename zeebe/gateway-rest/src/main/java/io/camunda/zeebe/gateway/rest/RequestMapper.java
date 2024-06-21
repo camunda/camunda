@@ -9,11 +9,11 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -96,26 +96,25 @@ public class RequestMapper {
                         getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction))));
   }
 
-  public static Either<ProblemDetail, BrokerActivateJobsRequest> toJobsActivationRequest(
+  public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest) {
 
     final var validationErrorResponse = validateJobActivationRequest(activationRequest);
     return validationErrorResponse
-        .<Either<ProblemDetail, BrokerActivateJobsRequest>>map(Either::left)
+        .<Either<ProblemDetail, ActivateJobsRequest>>map(Either::left)
         .orElseGet(
             () ->
                 Either.right(
-                    new BrokerActivateJobsRequest(activationRequest.getType())
-                        .setMaxJobsToActivate(activationRequest.getMaxJobsToActivate())
-                        .setTenantIds(
-                            getStringListOrEmpty(
-                                activationRequest, JobActivationRequest::getTenantIds))
-                        .setTimeout(activationRequest.getTimeout())
-                        .setWorker(
-                            getStringOrEmpty(activationRequest, JobActivationRequest::getWorker))
-                        .setVariables(
-                            getStringListOrEmpty(
-                                activationRequest, JobActivationRequest::getFetchVariable))));
+                    new ActivateJobsRequest(
+                        activationRequest.getType(),
+                        activationRequest.getMaxJobsToActivate(),
+                        getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                        activationRequest.getTimeout(),
+                        getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+                        getStringListOrEmpty(
+                            activationRequest, JobActivationRequest::getFetchVariable),
+                        getLongOrZero(
+                            activationRequest, JobActivationRequest::getRequestTimeout))));
   }
 
   private static Optional<ProblemDetail> validateAssignmentRequest(
@@ -258,6 +257,11 @@ public class RequestMapper {
       final R request, final Function<R, String> valueExtractor) {
     final String value = request == null ? null : valueExtractor.apply(request);
     return value == null ? "" : value;
+  }
+
+  private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
+    final Long value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? 0L : value;
   }
 
   private static <R> List<String> getStringListOrEmpty(

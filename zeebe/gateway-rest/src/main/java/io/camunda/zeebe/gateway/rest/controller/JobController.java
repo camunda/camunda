@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -23,14 +23,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 @ZeebeRestController
 public class JobController {
 
-  private final ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
   private final ResponseObserverProvider responseObserverProvider;
+  private final JobServices<JobActivationResponse> jobServices;
 
   @Autowired
   public JobController(
-      final ActivateJobsHandler<JobActivationResponse> activateJobsHandler,
+      final JobServices<JobActivationResponse> jobServices,
       final ResponseObserverProvider responseObserverProvider) {
-    this.activateJobsHandler = activateJobsHandler;
+    this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
   }
 
@@ -41,20 +41,15 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(activationRequest)
-        .fold(
-            brokerRequest -> sendBrokerRequest(brokerRequest, activationRequest),
-            RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(this::activateJobs, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
-      final BrokerActivateJobsRequest brokerRequest, final JobActivationRequest activationRequest) {
+  private CompletableFuture<ResponseEntity<Object>> activateJobs(
+      final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
-    activateJobsHandler.activateJobs(
-        brokerRequest,
-        responseObserver,
-        responseObserver::setCancelationHandler,
-        activationRequest.getRequestTimeout() == null ? 0 : activationRequest.getRequestTimeout());
+    jobServices.activateJobs(
+        activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
