@@ -41,19 +41,19 @@ public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   public List<HistoricProcessInstanceDto> fetchRunningProcessInstances(
-      TimestampBasedImportPage page) {
+      final TimestampBasedImportPage page) {
     return fetchRunningProcessInstances(
         page.getTimestampOfLastEntity(),
         configurationService.getEngineImportProcessInstanceMaxPageSize());
   }
 
   public List<HistoricProcessInstanceDto> fetchRunningProcessInstances(
-      OffsetDateTime startTimeOfLastInstance) {
+      final OffsetDateTime startTimeOfLastInstance) {
     logger.debug("Fetching running historic process instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricProcessInstanceDto> secondEntries =
         fetchWithRetry(() -> performRunningProcessInstanceRequest(startTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running historic process instances for set start time within [{}] ms",
         secondEntries.size(),
@@ -62,12 +62,12 @@ public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   private List<HistoricProcessInstanceDto> fetchRunningProcessInstances(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching running historic process instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricProcessInstanceDto> entries =
         fetchWithRetry(() -> performRunningProcessInstanceRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running historic process instances which started after set timestamp with page size [{}] within "
             + "[{}] ms",
@@ -78,7 +78,7 @@ public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   private List<HistoricProcessInstanceDto> performRunningProcessInstanceRequest(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(RUNNING_PROCESS_INSTANCE_ENDPOINT)
@@ -86,11 +86,12 @@ public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetch
         .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<List<HistoricProcessInstanceDto>>() {});
+        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+        });
   }
 
   private List<HistoricProcessInstanceDto> performRunningProcessInstanceRequest(
-      OffsetDateTime startTimeOfLastInstance) {
+      final OffsetDateTime startTimeOfLastInstance) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(RUNNING_PROCESS_INSTANCE_ENDPOINT)
@@ -99,6 +100,7 @@ public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetch
             MAX_RESULTS_TO_RETURN, configurationService.getEngineImportProcessInstanceMaxPageSize())
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<List<HistoricProcessInstanceDto>>() {});
+        .get(new GenericType<List<HistoricProcessInstanceDto>>() {
+        });
   }
 }

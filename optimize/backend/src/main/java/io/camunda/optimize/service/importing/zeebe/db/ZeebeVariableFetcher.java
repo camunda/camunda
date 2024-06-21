@@ -12,6 +12,7 @@ import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import java.util.List;
 
 public interface ZeebeVariableFetcher extends ZeebeFetcher {
+
   List<ZeebeVariableRecordDto> getZeebeRecordsForPrefixAndPartitionFrom(
       PositionBasedImportPage positionBasedImportPage);
 }

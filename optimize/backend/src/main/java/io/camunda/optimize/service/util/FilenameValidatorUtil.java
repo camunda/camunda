@@ -9,7 +9,8 @@ package io.camunda.optimize.service.util;
 
 public final class FilenameValidatorUtil {
 
-  private FilenameValidatorUtil() {}
+  private FilenameValidatorUtil() {
+  }
 
   public static void validateFilename(final String filename) {
     if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {

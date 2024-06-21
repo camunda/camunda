@@ -24,6 +24,7 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
+
   private String collectionId;
 
   protected ReportDefinitionExportDto(

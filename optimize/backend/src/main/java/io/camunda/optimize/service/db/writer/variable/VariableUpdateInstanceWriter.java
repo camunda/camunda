@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class VariableUpdateInstanceWriter {
+
   private final VariableRepository variableRepository;
 
   public List<ImportRequestDto> generateVariableUpdateImports(
@@ -34,7 +35,7 @@ public class VariableUpdateInstanceWriter {
     final List<VariableUpdateInstanceDto> variableUpdateInstances =
         variableUpdates.stream().map(this::mapToVariableUpdateInstance).toList();
 
-    String importItemName = "variable instances";
+    final String importItemName = "variable instances";
     log.debug("Creating imports for {} [{}].", variableUpdates.size(), importItemName);
 
     return variableUpdateInstances.stream()
@@ -66,7 +67,7 @@ public class VariableUpdateInstanceWriter {
   }
 
   private ImportRequestDto createIndexRequestForVariableUpdate(
-      VariableUpdateInstanceDto variableUpdateInstanceDto, final String importItemName) {
+      final VariableUpdateInstanceDto variableUpdateInstanceDto, final String importItemName) {
     return ImportRequestDto.builder()
         .indexName(VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
         .id(IdGenerator.getNextId())

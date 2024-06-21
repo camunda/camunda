@@ -40,8 +40,30 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  @Override
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    processOverviewDtos.forEach(
+        processOverviewDto ->
+            bulkRequest.add(
+                new UpdateRequest()
+                    .index(PROCESS_OVERVIEW_INDEX_NAME)
+                    .id(processOverviewDto.getProcessDefinitionKey())
+                    .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
+                    .script(
+                        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+                            ProcessOverviewScriptFactory.createUpdateKpisScript(),
+                            Map.of(
+                                "lastKpiEvaluationResults",
+                                processOverviewDto.getLastKpiEvaluationResults())))
+                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)));
+
+    esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
+  }
 
   @Override
   public void updateProcessConfiguration(
@@ -65,7 +87,7 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format("There was a problem while updating the process: [%s].", overviewDto);
       log.error(errorMessage, e);
@@ -90,7 +112,7 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format(
               "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
@@ -118,7 +140,7 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
               .setRefreshPolicy(IMMEDIATE)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format(
               "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
@@ -129,33 +151,12 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   }
 
   @Override
-  public void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    processOverviewDtos.forEach(
-        processOverviewDto ->
-            bulkRequest.add(
-                new UpdateRequest()
-                    .index(PROCESS_OVERVIEW_INDEX_NAME)
-                    .id(processOverviewDto.getProcessDefinitionKey())
-                    .upsert(objectMapper.convertValue(processOverviewDto, Map.class))
-                    .script(
-                        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                            ProcessOverviewScriptFactory.createUpdateKpisScript(),
-                            Map.of(
-                                "lastKpiEvaluationResults",
-                                processOverviewDto.getLastKpiEvaluationResults())))
-                    .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)));
-
-    esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
-  }
-
-  @Override
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
     try {
       final DeleteRequest deleteRequest =
           new DeleteRequest().index(PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey);
       esClient.delete(deleteRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "There was a problem while deleting process owner entry for %s",

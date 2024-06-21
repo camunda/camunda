@@ -47,19 +47,19 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   public List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(
-      TimestampBasedImportPage page) {
+      final TimestampBasedImportPage page) {
     return fetchVariableInstanceUpdates(
         page.getTimestampOfLastEntity(),
         configurationService.getEngineImportVariableInstanceMaxPageSize());
   }
 
   public List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(
-      OffsetDateTime endTimeOfLastInstance) {
+      final OffsetDateTime endTimeOfLastInstance) {
     logger.debug("Fetching historic variable instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricVariableUpdateInstanceDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricVariableUpdateInstanceDto> secondEntries =
         fetchWithRetry(() -> performGetVariableInstanceUpdateRequest(endTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running historic variable instances for set start time within [{}] ms",
         secondEntries.size(),
@@ -68,12 +68,12 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   private List<HistoricVariableUpdateInstanceDto> fetchVariableInstanceUpdates(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching historic variable instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricVariableUpdateInstanceDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricVariableUpdateInstanceDto> entries =
         fetchWithRetry(() -> performGetVariableInstanceUpdateRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running historic variable instances which started after "
             + "set timestamp with page size [{}] within [{}] ms",
@@ -84,7 +84,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(VARIABLE_UPDATE_ENDPOINT)
@@ -99,7 +99,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
   }
 
   private List<HistoricVariableUpdateInstanceDto> performGetVariableInstanceUpdateRequest(
-      OffsetDateTime endTimeOfLastInstance) {
+      final OffsetDateTime endTimeOfLastInstance) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(VARIABLE_UPDATE_ENDPOINT)

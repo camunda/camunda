@@ -208,23 +208,23 @@ public class ReportReaderES implements ReportReader {
   }
 
   @Override
+  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
+    return getReportsForCollection(collectionId, true);
+  }
+
+  @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
     final Class<SingleProcessReportDefinitionRequestDto> reportType =
         SingleProcessReportDefinitionRequestDto.class;
-    final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
+    final String[] indices = new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME};
     return getReportDefinitionDtos(reportIds, reportType, indices);
   }
 
   @Override
   public List<ReportDefinitionDto> getReportsForCollectionOmitXml(final String collectionId) {
     return getReportsForCollection(collectionId, false);
-  }
-
-  @Override
-  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
-    return getReportsForCollection(collectionId, true);
   }
 
   @Override
@@ -239,7 +239,7 @@ public class ReportReaderES implements ReportReader {
     if (ReportType.PROCESS.equals(reportType)) {
       countRequest =
           new CountRequest(
-              new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME},
+              new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
               boolQuery()
                   .mustNot(termQuery(DATA + "." + MANAGEMENT_REPORT, true))
                   .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true)));
@@ -260,7 +260,7 @@ public class ReportReaderES implements ReportReader {
             .mustNot(termQuery(DATA + "." + MANAGEMENT_REPORT, true))
             .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true));
     final SearchRequest searchRequest =
-        getSearchRequestOmitXml(query, new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME});
+        getSearchRequestOmitXml(query, new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME});
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
@@ -291,7 +291,7 @@ public class ReportReaderES implements ReportReader {
                     definitionKey));
     final SearchResponse searchResponse =
         performGetReportRequestOmitXml(
-            processReportQuery, new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME}, LIST_FETCH_LIMIT);
+            processReportQuery, new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME}, LIST_FETCH_LIMIT);
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
         searchResponse,
         ReportDefinitionDto.class,
@@ -314,7 +314,7 @@ public class ReportReaderES implements ReportReader {
             ScoreMode.None);
     final SearchRequest searchRequest =
         getSearchRequestOmitXml(
-            getCombinedReportsBySimpleReportIdQuery, new String[] {COMBINED_REPORT_INDEX_NAME});
+            getCombinedReportsBySimpleReportIdQuery, new String[]{COMBINED_REPORT_INDEX_NAME});
 
     final SearchResponse searchResponse;
     try {
@@ -342,9 +342,9 @@ public class ReportReaderES implements ReportReader {
             .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true));
     final SearchRequest searchRequest;
     final String[] indices = {
-      COMBINED_REPORT_INDEX_NAME,
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME
+        COMBINED_REPORT_INDEX_NAME,
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SINGLE_DECISION_REPORT_INDEX_NAME
     };
     if (includeXml) {
       searchRequest = getSearchRequestIncludingXml(qb, indices);
@@ -440,7 +440,7 @@ public class ReportReaderES implements ReportReader {
 
   private SearchRequest getSearchRequestIncludingXml(
       final QueryBuilder query, final String[] indices) {
-    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[] {});
+    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[]{});
   }
 
   private SearchRequest getSearchRequestOmitXml(

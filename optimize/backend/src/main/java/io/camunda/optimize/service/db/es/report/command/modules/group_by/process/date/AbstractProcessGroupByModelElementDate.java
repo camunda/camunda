@@ -53,25 +53,6 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      final AggregateByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
-      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
-        return Optional.of(
-            minMaxStatsService.getMinMaxDateRangeForNestedField(
-                context,
-                baseQuery,
-                getIndexNames(context),
-                getDateField(),
-                getPathToElementField(),
-                getFilterQuery(context)));
-      }
-    }
-    return Optional.empty();
-  }
-
   protected abstract String getPathToElementField();
 
   @Override
@@ -113,6 +94,38 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
     return Collections.emptyList();
   }
 
+  @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      final AggregateByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
+        return Optional.of(
+            minMaxStatsService.getMinMaxDateRangeForNestedField(
+                context,
+                baseQuery,
+                getIndexNames(context),
+                getDateField(),
+                getPathToElementField(),
+                getFilterQuery(context)));
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    result.setGroups(processAggregations(response, context));
+    result.setGroupBySorting(
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
+  }
+
   private NestedAggregationBuilder wrapInNestedElementAggregation(
       final ExecutionContext<ProcessReportDataDto> context,
       final AggregationBuilder aggregationToWrap,
@@ -130,19 +143,6 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
 
     return nested(ELEMENT_AGGREGATION, getPathToElementField())
         .subAggregation(filteredElementsAggregation);
-  }
-
-  @Override
-  public void addQueryResult(
-      final CompositeCommandResult result,
-      final SearchResponse response,
-      final ExecutionContext<ProcessReportDataDto> context) {
-    result.setGroups(processAggregations(response, context));
-    result.setGroupBySorting(
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
   }
 
   private List<GroupByResult> processAggregations(
@@ -165,7 +165,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
     distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
         context, filteredFlowNodesByType.getAggregations());
 
-    Map<String, Aggregations> keyToAggregationMap;
+    final Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(

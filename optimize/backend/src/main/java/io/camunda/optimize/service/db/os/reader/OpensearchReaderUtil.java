@@ -37,7 +37,7 @@ public class OpensearchReaderUtil {
         .map(hits -> hits.stream().map(Hit::source).toList())
         .orElseThrow(
             () -> {
-              String reason = "Was not able to parse response values from OpenSearch";
+              final String reason = "Was not able to parse response values from OpenSearch";
               log.error(reason);
               return new OptimizeRuntimeException(reason);
             });
@@ -51,7 +51,7 @@ public class OpensearchReaderUtil {
         .map(hits -> hits.stream().map(mappingFunction).toList())
         .orElseThrow(
             () -> {
-              String reason = "Was not able to parse response values from OpenSearch";
+              final String reason = "Was not able to parse response values from OpenSearch";
               log.error(reason);
               return new OptimizeRuntimeException(reason);
             });
@@ -69,7 +69,7 @@ public class OpensearchReaderUtil {
         .map(streamBuckets -> streamBuckets.map(StringTermsBucket::key).collect(Collectors.toSet()))
         .orElseThrow(
             () -> {
-              String reason =
+              final String reason =
                   String.format(
                       "Was not able to parse aggregated sterm response values from OpenSearch with path %s",
                       aggPath);
@@ -91,13 +91,13 @@ public class OpensearchReaderUtil {
         .map(hits -> hits.stream().map(mappingFunction).collect(Collectors.toList()))
         .orElseThrow(
             () -> {
-              String reason = "Was not able to parse response aggregations from OpenSearch";
+              final String reason = "Was not able to parse response aggregations from OpenSearch";
               log.error(reason);
               return new OptimizeRuntimeException(reason);
             });
   }
 
-  public static <T> Optional<T> processGetResponse(GetResult<T> getResponse) {
+  public static <T> Optional<T> processGetResponse(final GetResult<T> getResponse) {
     return Optional.ofNullable(getResponse).filter(GetResult::found).map(GetResult::source);
   }
 
@@ -107,7 +107,7 @@ public class OpensearchReaderUtil {
       final Class<T> typeClass,
       final Function<Hit<T>, T> mappingFunction) {
     final List<T> results = new ArrayList<>();
-    for (Hit<JsonData> hit : searchHits.hits()) {
+    for (final Hit<JsonData> hit : searchHits.hits()) {
       if (results.size() >= resultLimit) {
         break;
       }
@@ -116,12 +116,12 @@ public class OpensearchReaderUtil {
         optionalMappedHit.ifPresent(
             hitValue -> {
               try {
-                T definitionDto = hitValue.to(typeClass);
-                Hit<T> adaptedHit =
+                final T definitionDto = hitValue.to(typeClass);
+                final Hit<T> adaptedHit =
                     new Hit.Builder<T>().index(hit.index()).source(definitionDto).build();
-                T enrichedDto = mappingFunction.apply(adaptedHit);
+                final T enrichedDto = mappingFunction.apply(adaptedHit);
                 results.add(enrichedDto);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 final String reason =
                     "While mapping search results to class {} "
                         + "it was not possible to deserialize a hit from OpenSearch!";
@@ -129,7 +129,7 @@ public class OpensearchReaderUtil {
                 throw new OptimizeRuntimeException(reason);
               }
             });
-      } catch (Exception e) {
+      } catch (final Exception e) {
         final String reason =
             "While mapping search results to class {} "
                 + "it was not possible to deserialize a hit from Opensearch!";

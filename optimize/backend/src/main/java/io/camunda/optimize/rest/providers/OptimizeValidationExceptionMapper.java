@@ -38,10 +38,11 @@ public class OptimizeValidationExceptionMapper
         .build();
   }
 
-  private ErrorResponseDto getErrorResponseDto(OptimizeValidationException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+  private ErrorResponseDto getErrorResponseDto(final OptimizeValidationException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }

@@ -88,26 +88,6 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
-  public void persistCollection(
-      final String id, final CollectionDefinitionDto collectionDefinitionDto) {
-    final IndexRequest.Builder<CollectionDefinitionDto> request =
-        new IndexRequest.Builder<CollectionDefinitionDto>()
-            .index(COLLECTION_INDEX_NAME)
-            .id(id)
-            .document(collectionDefinitionDto)
-            .refresh(Refresh.True);
-
-    final IndexResponse indexResponse = osClient.index(request);
-
-    if (!indexResponse.result().equals(Result.Created)) {
-      final String message = "Could not write collection to Opensearch. ";
-      log.error(message);
-      throw new OptimizeRuntimeException(message);
-    }
-    log.debug("Collection with id [{}] has successfully been created.", id);
-  }
-
-  @Override
   public void deleteCollection(final String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
     final DeleteRequest.Builder request =
@@ -190,6 +170,42 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
+  public void updateScopeEntity(
+      final String collectionId,
+      final CollectionScopeEntryUpdateDto scopeEntry,
+      final String userId,
+      final String scopeEntryId) {
+    final Map<String, JsonData> params = new HashMap<>();
+    params.put("entryDto", JsonData.of(scopeEntry));
+    params.put("entryId", JsonData.of(scopeEntryId));
+    params.put("lastModifier", JsonData.of(userId));
+    params.put("lastModified", JsonData.of(formatter.format(LocalDateUtil.getCurrentDateTime())));
+
+    final Script updateEntityScript =
+        OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
+            UPDATE_SCOPE_ENTITY_SCRIPT_CODE, params);
+
+    executeUpdateRequest(
+        collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
+  }
+
+  @Override
+  public void removeScopeEntries(
+      final String collectionId, final List<String> scopeEntryIds, final String userId)
+      throws NotFoundException {
+    final Map<String, JsonData> params = new HashMap<>();
+    params.put("ids", JsonData.of(scopeEntryIds));
+    params.put("lastModifier", JsonData.of(userId));
+    params.put("lastModified", JsonData.of(formatter.format(LocalDateUtil.getCurrentDateTime())));
+
+    final Script updateEntityScript =
+        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+            REMOVE_SCOPE_ENTRIES_SCRIPT_CODE, params);
+    executeUpdateRequest(
+        collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
+  }
+
+  @Override
   public void removeScopeEntry(
       final String collectionId, final String scopeEntryId, final String userId)
       throws NotFoundException {
@@ -211,62 +227,6 @@ public class CollectionWriterOS implements CollectionWriter {
       log.warn(message);
       throw new NotFoundException(message);
     }
-  }
-
-  @Override
-  public void removeScopeEntries(
-      final String collectionId, final List<String> scopeEntryIds, final String userId)
-      throws NotFoundException {
-    final Map<String, JsonData> params = new HashMap<>();
-    params.put("ids", JsonData.of(scopeEntryIds));
-    params.put("lastModifier", JsonData.of(userId));
-    params.put("lastModified", JsonData.of(formatter.format(LocalDateUtil.getCurrentDateTime())));
-
-    final Script updateEntityScript =
-        OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-            REMOVE_SCOPE_ENTRIES_SCRIPT_CODE, params);
-    executeUpdateRequest(
-        collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
-  }
-
-  @Override
-  public void updateScopeEntity(
-      final String collectionId,
-      final CollectionScopeEntryUpdateDto scopeEntry,
-      final String userId,
-      final String scopeEntryId) {
-    final Map<String, JsonData> params = new HashMap<>();
-    params.put("entryDto", JsonData.of(scopeEntry));
-    params.put("entryId", JsonData.of(scopeEntryId));
-    params.put("lastModifier", JsonData.of(userId));
-    params.put("lastModified", JsonData.of(formatter.format(LocalDateUtil.getCurrentDateTime())));
-
-    final Script updateEntityScript =
-        OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
-            UPDATE_SCOPE_ENTITY_SCRIPT_CODE, params);
-
-    executeUpdateRequest(
-        collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
-  }
-
-  private UpdateResponse executeUpdateRequest(
-      final String collectionId, final Script updateEntityScript, final String errorMessage) {
-    final UpdateRequest.Builder request =
-        new UpdateRequest.Builder<>()
-            .index(COLLECTION_INDEX_NAME)
-            .id(collectionId)
-            .script(updateEntityScript)
-            .refresh(Refresh.True)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    final UpdateResponse updateResponse = osClient.update(request, errorMessage);
-
-    if (updateResponse.shards().failed().intValue() > 0) {
-      final String message = String.format(errorMessage, collectionId);
-      log.error(message, collectionId);
-      throw new OptimizeRuntimeException(message);
-    }
-    return updateResponse;
   }
 
   @Override
@@ -332,6 +292,12 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
+  public void removeRoleFromCollection(final String collectionId, final String roleEntryId) {
+    final Map<String, JsonData> params = constructParamsForRoleUpdateScript(roleEntryId, null);
+    removeRoleFromCollection(collectionId, roleEntryId, params);
+  }
+
+  @Override
   public void removeRoleFromCollectionUnlessIsLastManager(
       final String collectionId, final String roleEntryId, final String userId)
       throws OptimizeConflictException {
@@ -340,9 +306,43 @@ public class CollectionWriterOS implements CollectionWriter {
   }
 
   @Override
-  public void removeRoleFromCollection(final String collectionId, final String roleEntryId) {
-    final Map<String, JsonData> params = constructParamsForRoleUpdateScript(roleEntryId, null);
-    removeRoleFromCollection(collectionId, roleEntryId, params);
+  public void persistCollection(
+      final String id, final CollectionDefinitionDto collectionDefinitionDto) {
+    final IndexRequest.Builder<CollectionDefinitionDto> request =
+        new IndexRequest.Builder<CollectionDefinitionDto>()
+            .index(COLLECTION_INDEX_NAME)
+            .id(id)
+            .document(collectionDefinitionDto)
+            .refresh(Refresh.True);
+
+    final IndexResponse indexResponse = osClient.index(request);
+
+    if (!indexResponse.result().equals(Result.Created)) {
+      final String message = "Could not write collection to Opensearch. ";
+      log.error(message);
+      throw new OptimizeRuntimeException(message);
+    }
+    log.debug("Collection with id [{}] has successfully been created.", id);
+  }
+
+  private UpdateResponse executeUpdateRequest(
+      final String collectionId, final Script updateEntityScript, final String errorMessage) {
+    final UpdateRequest.Builder request =
+        new UpdateRequest.Builder<>()
+            .index(COLLECTION_INDEX_NAME)
+            .id(collectionId)
+            .script(updateEntityScript)
+            .refresh(Refresh.True)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    final UpdateResponse updateResponse = osClient.update(request, errorMessage);
+
+    if (updateResponse.shards().failed().intValue() > 0) {
+      final String message = String.format(errorMessage, collectionId);
+      log.error(message, collectionId);
+      throw new OptimizeRuntimeException(message);
+    }
+    return updateResponse;
   }
 
   private void removeRoleFromCollection(

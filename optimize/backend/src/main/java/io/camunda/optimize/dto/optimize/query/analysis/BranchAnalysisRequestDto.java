@@ -18,6 +18,7 @@ import lombok.Data;
 
 @Data
 public class BranchAnalysisRequestDto {
+
   private String end;
   private String gateway;
   private String processDefinitionKey;
@@ -27,8 +28,8 @@ public class BranchAnalysisRequestDto {
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
   @JsonIgnore
-  public void setProcessDefinitionVersion(String definitionVersion) {
-    this.processDefinitionVersions = Lists.newArrayList(definitionVersion);
+  public void setProcessDefinitionVersion(final String definitionVersion) {
+    processDefinitionVersions = Lists.newArrayList(definitionVersion);
   }
 
   public List<String> getTenantIds() {

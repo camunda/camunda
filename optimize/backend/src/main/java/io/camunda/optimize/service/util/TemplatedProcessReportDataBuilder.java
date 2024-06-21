@@ -52,7 +52,7 @@ public class TemplatedProcessReportDataBuilder {
   }
 
   public ProcessReportDataDto build() {
-    ProcessReportDataDto reportData;
+    final ProcessReportDataDto reportData;
     switch (reportDataType) {
       case RAW_DATA:
         reportData =
@@ -1315,11 +1315,11 @@ public class TemplatedProcessReportDataBuilder {
                 .build();
         break;
       default:
-        String errorMessage =
+        final String errorMessage =
             String.format("Unknown ProcessReportDataType: [%s]", reportDataType.name());
         throw new OptimizeRuntimeException(errorMessage);
     }
-    reportData.setFilter(this.filter);
+    reportData.setFilter(filter);
     reportData.setVisualization(
         visualization == null ? reportData.getVisualization() : visualization);
     reportData.getConfiguration().setUserTaskDurationTimes(userTaskDurationTime);
@@ -1327,87 +1327,91 @@ public class TemplatedProcessReportDataBuilder {
     return reportData;
   }
 
-  public TemplatedProcessReportDataBuilder setReportDataType(ProcessReportDataType reportDataType) {
+  public TemplatedProcessReportDataBuilder setReportDataType(
+      final ProcessReportDataType reportDataType) {
     this.reportDataType = reportDataType;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder definitions(List<ReportDataDefinitionDto> definitions) {
+  public TemplatedProcessReportDataBuilder definitions(
+      final List<ReportDataDefinitionDto> definitions) {
     this.definitions = definitions;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setProcessDefinitionKey(String processDefinitionKey) {
-    this.definitions.get(0).setKey(processDefinitionKey);
+  public TemplatedProcessReportDataBuilder setProcessDefinitionKey(
+      final String processDefinitionKey) {
+    definitions.get(0).setKey(processDefinitionKey);
     return this;
   }
 
   public TemplatedProcessReportDataBuilder setProcessDefinitionVersion(
-      String processDefinitionVersion) {
-    this.definitions.get(0).setVersion(processDefinitionVersion);
+      final String processDefinitionVersion) {
+    definitions.get(0).setVersion(processDefinitionVersion);
     return this;
   }
 
   public TemplatedProcessReportDataBuilder setProcessDefinitionVersions(
-      List<String> processDefinitionVersions) {
-    this.definitions.get(0).setVersions(processDefinitionVersions);
+      final List<String> processDefinitionVersions) {
+    definitions.get(0).setVersions(processDefinitionVersions);
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setTenantIds(List<String> tenantIds) {
-    this.definitions.get(0).setTenantIds(tenantIds);
+  public TemplatedProcessReportDataBuilder setTenantIds(final List<String> tenantIds) {
+    definitions.get(0).setTenantIds(tenantIds);
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setVariableName(String variableName) {
+  public TemplatedProcessReportDataBuilder setVariableName(final String variableName) {
     this.variableName = variableName;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setVariableType(VariableType variableType) {
+  public TemplatedProcessReportDataBuilder setVariableType(final VariableType variableType) {
     this.variableType = variableType;
     return this;
   }
 
   public TemplatedProcessReportDataBuilder setGroupByDateInterval(
-      AggregateByDateUnit groupByDateInterval) {
+      final AggregateByDateUnit groupByDateInterval) {
     this.groupByDateInterval = groupByDateInterval;
     return this;
   }
 
   public TemplatedProcessReportDataBuilder setDistributeByDateInterval(
-      AggregateByDateUnit distributeByDateInterval) {
+      final AggregateByDateUnit distributeByDateInterval) {
     this.distributeByDateInterval = distributeByDateInterval;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setStartFlowNodeId(String startFlowNodeId) {
+  public TemplatedProcessReportDataBuilder setStartFlowNodeId(final String startFlowNodeId) {
     this.startFlowNodeId = startFlowNodeId;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setEndFlowNodeId(String endFlowNodeId) {
+  public TemplatedProcessReportDataBuilder setEndFlowNodeId(final String endFlowNodeId) {
     this.endFlowNodeId = endFlowNodeId;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setFilter(ProcessFilterDto<?> newFilter) {
-    this.filter = Collections.singletonList(newFilter);
+  public TemplatedProcessReportDataBuilder setFilter(final ProcessFilterDto<?> newFilter) {
+    filter = Collections.singletonList(newFilter);
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setFilter(List<ProcessFilterDto<?>> newFilter) {
-    this.filter = newFilter;
+  public TemplatedProcessReportDataBuilder setFilter(final List<ProcessFilterDto<?>> newFilter) {
+    filter = newFilter;
     return this;
   }
 
   public TemplatedProcessReportDataBuilder setUserTaskDurationTime(
-      UserTaskDurationTime userTaskDurationTime) {
+      final UserTaskDurationTime userTaskDurationTime) {
     this.userTaskDurationTime = userTaskDurationTime;
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setVisualization(ProcessVisualization visualization) {
+  public TemplatedProcessReportDataBuilder setVisualization(
+      final ProcessVisualization visualization) {
     this.visualization = visualization;
     return this;
   }

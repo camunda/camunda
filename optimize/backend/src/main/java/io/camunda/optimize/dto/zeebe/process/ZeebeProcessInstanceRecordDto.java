@@ -13,4 +13,6 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 public class ZeebeProcessInstanceRecordDto
-    extends ZeebeRecordDto<ZeebeProcessInstanceDataDto, ProcessInstanceIntent> {}
+    extends ZeebeRecordDto<ZeebeProcessInstanceDataDto, ProcessInstanceIntent> {
+
+}

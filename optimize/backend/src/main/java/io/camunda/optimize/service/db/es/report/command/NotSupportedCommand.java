@@ -34,7 +34,7 @@ public class NotSupportedCommand implements Command<Object, ReportDefinitionDto<
               + "{} \n "
               + "Therefore returning error result.",
           objectMapper.writeValueAsString(reportEvaluationContext.getReportDefinition()));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.error("can't serialize report data", e);
     }
     throw new OptimizeValidationException(

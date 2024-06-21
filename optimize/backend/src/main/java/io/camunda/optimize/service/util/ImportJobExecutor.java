@@ -61,10 +61,14 @@ public abstract class ImportJobExecutor {
     }
   }
 
-  /** Number of threads that should be used in the thread pool executor. */
+  /**
+   * Number of threads that should be used in the thread pool executor.
+   */
   protected abstract int getExecutorThreadCount();
 
-  /** Number of jobs that should be able to accumulate until new submission is blocked. */
+  /**
+   * Number of jobs that should be able to accumulate until new submission is blocked.
+   */
   protected abstract int getMaxQueueSize();
 
   public void stopExecutingImportJobs() {
@@ -90,6 +94,7 @@ public abstract class ImportJobExecutor {
   }
 
   private class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {
       // this will block if the queue is full

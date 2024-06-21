@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?, ?>, DTO>
     implements ImportMediator {
 
-  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   protected Logger logger = LoggerFactory.getLogger(getClass());
   protected ConfigurationService configurationService;
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
   protected List<String> excludedTenantIds;
+  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   protected BackoffImportMediator(
       final ConfigurationService configurationService,
@@ -81,10 +81,6 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
     return canImportNewPage;
   }
 
-  public T getImportIndexHandler() {
-    return importIndexHandler;
-  }
-
   @Override
   public boolean hasPendingImportJobs() {
     return importService.hasPendingImportJobs();
@@ -93,6 +89,10 @@ public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?
   @Override
   public void shutdown() {
     importService.shutdown();
+  }
+
+  public T getImportIndexHandler() {
+    return importIndexHandler;
   }
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);

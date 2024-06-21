@@ -73,7 +73,7 @@ public class OptimizeElasticsearchClientFactory {
             e);
       } finally {
         if (!isConnected) {
-          long sleepTime = backoffCalculator.calculateSleepTime();
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           log.info(
               "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {

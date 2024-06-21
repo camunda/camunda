@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import java.util.Set;
 
 public interface IndexRepository {
+
   void createMissingIndices(
       final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
       final Set<String> readOnlyAliases,

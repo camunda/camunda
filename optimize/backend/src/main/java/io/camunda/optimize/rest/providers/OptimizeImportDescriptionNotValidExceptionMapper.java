@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OptimizeImportDescriptionNotValidExceptionMapper
     implements ExceptionMapper<OptimizeImportDescriptionNotValidException> {
+
   public static final String ERROR_CODE = "importDescriptionInvalid";
 
   private final LocalizationService localizationService;
@@ -41,10 +42,11 @@ public class OptimizeImportDescriptionNotValidExceptionMapper
   }
 
   private ErrorResponseDto getDescriptionNotValidResponseDto(
-      OptimizeImportDescriptionNotValidException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+      final OptimizeImportDescriptionNotValidException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = exception.getMessage();
     return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }
 }

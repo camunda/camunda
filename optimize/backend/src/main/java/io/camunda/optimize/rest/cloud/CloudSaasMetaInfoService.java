@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 @RequiredArgsConstructor
 public class CloudSaasMetaInfoService {
+
   private final CCSaaSOrganizationsClient organizationsClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
   private final CCSaasClusterClient clusterClient;
@@ -32,7 +33,7 @@ public class CloudSaasMetaInfoService {
     if (accessToken.isPresent()) {
       try {
         return organizationsClient.getSalesPlanType(accessToken.get());
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.warn("Failed retrieving salesPlanType.", e);
         return Optional.empty();
       }
@@ -47,7 +48,7 @@ public class CloudSaasMetaInfoService {
     if (accessToken.isPresent()) {
       try {
         return clusterClient.getWebappLinks(accessToken.get());
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.warn("Failed retrieving webapp links  .", e);
         return Collections.emptyMap();
       }

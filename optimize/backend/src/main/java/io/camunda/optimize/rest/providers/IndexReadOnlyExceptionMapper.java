@@ -16,19 +16,20 @@ import org.elasticsearch.cluster.block.ClusterBlockException;
 
 @Provider
 public class IndexReadOnlyExceptionMapper implements ExceptionMapper<ClusterBlockException> {
+
   private static final String ES_READ_ONLY_ERROR = "index read-only";
 
   @Override
-  public Response toResponse(ClusterBlockException e) {
+  public Response toResponse(final ClusterBlockException e) {
     return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
         .type(MediaType.APPLICATION_JSON_TYPE)
         .entity(getErrorMessage(e))
         .build();
   }
 
-  private static ErrorResponseDto getErrorMessage(ClusterBlockException e) {
+  private static ErrorResponseDto getErrorMessage(final ClusterBlockException e) {
     if (e.getMessage().contains(ES_READ_ONLY_ERROR)) {
-      String message =
+      final String message =
           "Your Elasticsearch index is set to read-only mode. "
               + "The reason could be running out of free hard disk storage. "
               + "You might need to reach out to your system administrator to fix the issue.";

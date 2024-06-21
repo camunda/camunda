@@ -44,15 +44,15 @@ public class CollectionReaderES implements CollectionReader {
   private final ObjectMapper objectMapper;
 
   @Override
-  public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
+  public Optional<CollectionDefinitionDto> getCollection(final String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
+    final GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
 
-    GetResponse getResponse;
+    final GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch collection with id [%s]", collectionId);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch collection with id [%s]", collectionId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -61,12 +61,13 @@ public class CollectionReaderES implements CollectionReader {
       return Optional.empty();
     }
 
-    String responseAsString = getResponse.getSourceAsString();
+    final String responseAsString = getResponse.getSourceAsString();
     try {
       return Optional.ofNullable(
           objectMapper.readValue(responseAsString, CollectionDefinitionDto.class));
-    } catch (IOException e) {
-      String reason = "Could not deserialize collection information for collection " + collectionId;
+    } catch (final IOException e) {
+      final String reason =
+          "Could not deserialize collection information for collection " + collectionId;
       log.error(
           "Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: {}",
           collectionId,
@@ -79,12 +80,12 @@ public class CollectionReaderES implements CollectionReader {
   public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(QueryBuilders.matchAllQuery())
             .sort(CollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
             .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(COLLECTION_INDEX_NAME)
             .source(searchSourceBuilder)
             .scroll(
@@ -93,10 +94,10 @@ public class CollectionReaderES implements CollectionReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse scrollResp;
+    final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve collections!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);
     }

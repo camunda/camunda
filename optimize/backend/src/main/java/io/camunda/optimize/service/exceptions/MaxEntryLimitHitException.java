@@ -7,4 +7,6 @@
  */
 package io.camunda.optimize.service.exceptions;
 
-public class MaxEntryLimitHitException extends RuntimeException {}
+public class MaxEntryLimitHitException extends RuntimeException {
+
+}

@@ -51,7 +51,7 @@ public class CollectionRoleService {
   }
 
   private List<CollectionRoleRequestDto> validateAndResolveIdentities(
-      final String userId, List<CollectionRoleRequestDto> rolesToAdd) {
+      final String userId, final List<CollectionRoleRequestDto> rolesToAdd) {
     return rolesToAdd.stream()
         .map(
             roleData -> {
@@ -64,7 +64,7 @@ public class CollectionRoleService {
         .collect(Collectors.toList());
   }
 
-  private void enrichWithIdentityIfMissing(CollectionRoleRequestDto role) {
+  private void enrichWithIdentityIfMissing(final CollectionRoleRequestDto role) {
     final IdentityDto requestIdentityDto = role.getIdentity();
     if (requestIdentityDto.getType() == null) {
       final IdentityDto resolvedIdentityDto =
@@ -99,23 +99,23 @@ public class CollectionRoleService {
   }
 
   public void removeRoleFromCollectionUnlessIsLastManager(
-      String userId, String collectionId, String roleEntryId) {
+      final String userId, final String collectionId, final String roleEntryId) {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
   public void removeRolesFromCollection(
-      String userId, String collectionId, List<String> roleEntryIds) {
+      final String userId, final String collectionId, final List<String> roleEntryIds) {
     verifyCollectionExists(collectionId);
     roleEntryIds.forEach(
         roleEntryId ->
             authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(
                 userId, collectionId, roleEntryId));
-    for (String roleId : roleEntryIds) {
+    for (final String roleId : roleEntryIds) {
       try {
         collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleId, userId);
-      } catch (NotFoundException e) {
+      } catch (final NotFoundException e) {
         log.debug("Could not delete role with id {}. The role is already deleted.", roleId);
-      } catch (OptimizeCollectionConflictException e) {
+      } catch (final OptimizeCollectionConflictException e) {
         log.debug(
             "Could not delete role with id {}, because the user with that id is a manager.",
             roleId);
@@ -123,7 +123,7 @@ public class CollectionRoleService {
     }
   }
 
-  private void verifyCollectionExists(String collectionId) {
+  private void verifyCollectionExists(final String collectionId) {
     final Optional<CollectionDefinitionDto> collectionDefinition =
         collectionReader.getCollection(collectionId);
     if (collectionDefinition.isEmpty()) {
@@ -135,8 +135,8 @@ public class CollectionRoleService {
   }
 
   public List<CollectionRoleResponseDto> getAllRolesOfCollectionSorted(
-      String userId, String collectionId) {
-    AuthorizedCollectionDefinitionDto authCollectionDto =
+      final String userId, final String collectionId) {
+    final AuthorizedCollectionDefinitionDto authCollectionDto =
         authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
     return authCollectionDto.getDefinitionDto().getData().getRoles().stream()

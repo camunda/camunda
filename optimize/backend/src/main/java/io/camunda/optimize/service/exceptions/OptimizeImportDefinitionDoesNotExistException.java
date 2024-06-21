@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import java.util.Set;
 
 public class OptimizeImportDefinitionDoesNotExistException extends OptimizeValidationException {
+
   public static final String ERROR_CODE = "importDefinitionDoesNotExist";
 
   private final Set<DefinitionExceptionItemDto> missingDefinitions;

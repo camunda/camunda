@@ -11,7 +11,9 @@ import io.camunda.optimize.service.importing.page.ImportPage;
 
 public interface ImportIndexHandler<PAGE extends ImportPage, INDEX_DTO> {
 
-  /** Retrieves all information of the next page to import. */
+  /**
+   * Retrieves all information of the next page to import.
+   */
   default PAGE getNextPage() {
     return null;
   }

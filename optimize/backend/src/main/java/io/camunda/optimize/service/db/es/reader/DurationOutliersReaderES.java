@@ -158,30 +158,30 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final FlowNodeOutlierParametersDto outlierParams =
         outlierAnalysisParams.getProcessDefinitionParametersDto();
-    long interval =
+    final long interval =
         getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
-    HistogramAggregationBuilder histogram =
+    final HistogramAggregationBuilder histogram =
         AggregationBuilders.histogram(AGG_HISTOGRAM)
             .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
             .interval(interval);
 
-    NestedAggregationBuilder termsAgg =
+    final NestedAggregationBuilder termsAgg =
         buildNestedFlowNodeFilterAggregation(outlierParams.getFlowNodeId(), histogram);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).fetchSource(false).aggregation(termsAgg).size(0);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
             .source(searchSourceBuilder);
 
-    SearchResponse search;
+    final SearchResponse search;
     try {
       search = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. "
@@ -193,30 +193,30 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     }
 
     return ((Histogram)
-            ((Filter)
-                    ((Nested) search.getAggregations().get(FLOW_NODE_INSTANCES))
-                        .getAggregations()
-                        .get(AGG_FILTERED_FLOW_NODES))
+        ((Filter)
+            ((Nested) search.getAggregations().get(FLOW_NODE_INSTANCES))
                 .getAggregations()
-                .get(AGG_HISTOGRAM))
+                .get(AGG_FILTERED_FLOW_NODES))
+            .getAggregations()
+            .get(AGG_HISTOGRAM))
         .getBuckets().stream()
-            .map(
-                b -> {
-                  try {
-                    final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
-                    return new DurationChartEntryDto(
-                        durationKey,
-                        b.getDocCount(),
-                        isOutlier(
-                            outlierParams.getLowerOutlierBound(),
-                            outlierParams.getHigherOutlierBound(),
-                            durationKey));
-                  } catch (final NumberFormatException exception) {
-                    throw new OptimizeRuntimeException(
-                        "Error mapping key to numerical value: " + b.getKeyAsString());
-                  }
-                })
-            .collect(Collectors.toList());
+        .map(
+            b -> {
+              try {
+                final Long durationKey = Double.valueOf(b.getKeyAsString()).longValue();
+                return new DurationChartEntryDto(
+                    durationKey,
+                    b.getDocCount(),
+                    isOutlier(
+                        outlierParams.getLowerOutlierBound(),
+                        outlierParams.getHigherOutlierBound(),
+                        durationKey));
+              } catch (final NumberFormatException exception) {
+                throw new OptimizeRuntimeException(
+                    "Error mapping key to numerical value: " + b.getKeyAsString());
+              }
+            })
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -224,7 +224,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto>
           outlierAnalysisParams) {
     final BoolQueryBuilder processInstanceQuery = buildBaseQuery(outlierAnalysisParams);
-    ExtendedStatsAggregationBuilder stats =
+    final ExtendedStatsAggregationBuilder stats =
         AggregationBuilders.extendedStats(AGG_STATS)
             .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
@@ -243,7 +243,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                       generateListOfStandardExcludedFlowNodeTypes())));
     }
 
-    AggregationBuilder aggregationFlowNodeTypeAndId =
+    final AggregationBuilder aggregationFlowNodeTypeAndId =
         AggregationBuilders.filter(FLOW_NODE_TYPE_FILTER, query)
             .subAggregation(
                 AggregationBuilders.terms(FLOW_NODE_ID_AGG)
@@ -254,31 +254,31 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                             .getAggregationBucketLimit())
                     .subAggregation(stats));
 
-    NestedAggregationBuilder nested =
+    final NestedAggregationBuilder nested =
         AggregationBuilders.nested(AGG_NESTED, FLOW_NODE_INSTANCES)
             .subAggregation(aggregationFlowNodeTypeAndId);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(processInstanceQuery)
             .fetchSource(false)
             .aggregation(nested)
             .size(0);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(
-                getProcessInstanceIndexAliasName(
-                    processDefinitionParametersDto.getProcessDefinitionKey()))
+            getProcessInstanceIndexAliasName(
+                processDefinitionParametersDto.getProcessDefinitionKey()))
             .source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. "
@@ -359,10 +359,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           nonOutlierProcessInstanceCount,
           totalProcessInstanceCount);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.warn("Couldn't determine significant outlier variable terms.");
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to determine significant outlier variable terms because instance index with name {} does not "
@@ -408,8 +408,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final SearchRequest scrollSearchRequest =
         new SearchRequest(
-                getProcessInstanceIndexAliasName(
-                    flowNodeOutlierVariableParams.getProcessDefinitionKey()))
+            getProcessInstanceIndexAliasName(
+                flowNodeOutlierVariableParams.getProcessDefinitionKey()))
             .source(searchSourceBuilder)
             .scroll(
                 timeValueSeconds(
@@ -426,9 +426,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           esClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           recordLimit);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. "
@@ -604,7 +604,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                             .field(VARIABLES + "." + VARIABLE_VALUE)
                             // only include provided terms
                             .includeExclude(
-                                new IncludeExclude(value.toArray(new String[] {}), null)))));
+                                new IncludeExclude(value.toArray(new String[]{}), null)))));
 
     return createFilteredFlowNodeVariableAggregation(
         outlierParameters, flowNodeFilterQuery, nestedVariableAggregation);
@@ -631,8 +631,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
             .size(0);
 
     return new SearchRequest(
-            getProcessInstanceIndexAliasName(
-                outlierParams.getProcessDefinitionParametersDto().getProcessDefinitionKey()))
+        getProcessInstanceIndexAliasName(
+            outlierParams.getProcessDefinitionParametersDto().getProcessDefinitionKey()))
         .source(searchSourceBuilder);
   }
 
@@ -667,10 +667,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
                             final boolean isSignificant =
                                 TestUtils.chiSquareTestDataSetsComparison(
-                                    new long[] {
-                                      nonOutlierTermCount, nonOutlierProcessInstanceCount
+                                    new long[]{
+                                        nonOutlierTermCount, nonOutlierProcessInstanceCount
                                     },
-                                    new long[] {outlierTermCount, outlierProcessInstanceCount},
+                                    new long[]{outlierTermCount, outlierProcessInstanceCount},
                                     // This is the confidence level or alpha that defines the degree
                                     // of confidence of the test result.
                                     // The test returns true if the null hypothesis (both datasets
@@ -741,7 +741,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                 statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
             double stdDeviationBoundHigher =
                 statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
-            double average = statsAgg.getAvg();
+            final double average = statsAgg.getAvg();
             stdDeviationBoundLower =
                 Math.min(
                     stdDeviationBoundLower,
@@ -774,7 +774,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final SearchRequest searchRequest =
         new SearchRequest(
-                getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
+            getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
             .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks =
@@ -782,9 +782,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final Aggregations allFlowNodeFilterAggs =
           ((Nested) allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES)).getAggregations();
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. "
@@ -812,7 +812,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
                   if (stats.getStdDeviation() != 0.0D
                       && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId))
-                          != null) {
+                      != null) {
                     final Filter flowNodeFilterAgg =
                         allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId));
                     final Filter lowerOutlierFilterAgg =
@@ -820,16 +820,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     final Filter higherOutlierFilterAgg =
                         flowNodeFilterAgg.getAggregations().get(HIGHER_DURATION_AGG);
 
-                    double avg = stats.getAvg();
-                    double stdDeviationBoundLower =
+                    final double avg = stats.getAvg();
+                    final double stdDeviationBoundLower =
                         stats.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
-                    double stdDeviationBoundHigher =
+                    final double stdDeviationBoundHigher =
                         stats.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
 
                     if (stdDeviationBoundLower > stats.getMin()
                         && lowerOutlierFilterAgg.getDocCount() > 0L) {
                       final long count = lowerOutlierFilterAgg.getDocCount();
-                      double percent = (double) count / flowNodeFilterAgg.getDocCount();
+                      final double percent = (double) count / flowNodeFilterAgg.getDocCount();
                       finding.setLowerOutlier(
                           (long) stdDeviationBoundLower,
                           percent,
@@ -841,7 +841,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     if (stdDeviationBoundHigher < stats.getMax()
                         && higherOutlierFilterAgg.getDocCount() > 0) {
                       final long count = higherOutlierFilterAgg.getDocCount();
-                      double percent = (double) count / flowNodeFilterAgg.getDocCount();
+                      final double percent = (double) count / flowNodeFilterAgg.getDocCount();
                       finding.setHigherOutlier(
                           (long) stdDeviationBoundHigher,
                           percent,
@@ -886,31 +886,32 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final Long lowerOutlierBound, final Long higherOutlierBound, final Long durationValue) {
     return Optional.ofNullable(lowerOutlierBound).map(value -> durationValue < value).orElse(false)
         || Optional.ofNullable(higherOutlierBound)
-            .map(value -> durationValue > value)
-            .orElse(false);
+        .map(value -> durationValue > value)
+        .orElse(false);
   }
 
   private long getInterval(
       final BoolQueryBuilder query, final String flowNodeId, final String processDefinitionKey) {
-    StatsAggregationBuilder statsAgg =
+    final StatsAggregationBuilder statsAgg =
         AggregationBuilders.stats(AGG_STATS)
             .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
-    NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId, statsAgg);
+    final NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId,
+        statsAgg);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).fetchSource(false).aggregation(termsAgg).size(0);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
             .source(searchSourceBuilder);
 
-    SearchResponse search;
+    final SearchResponse search;
     try {
       search = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to determine interval because instance index {} does not exist. Returning 0.",
@@ -922,13 +923,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final Stats stats =
         ((Filter)
-                ((Nested) search.getAggregations().get(FLOW_NODE_INSTANCES))
-                    .getAggregations()
-                    .get(AGG_FILTERED_FLOW_NODES))
+            ((Nested) search.getAggregations().get(FLOW_NODE_INSTANCES))
+                .getAggregations()
+                .get(AGG_FILTERED_FLOW_NODES))
             .getAggregations()
             .get(AGG_STATS);
-    double min = stats.getMin();
-    double max = stats.getMax();
+    final double min = stats.getMin();
+    final double max = stats.getMax();
 
     if ((max == min) || stats.getCount() == 0) {
       // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
@@ -941,9 +942,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   private NestedAggregationBuilder buildNestedFlowNodeFilterAggregation(
       final String flowNodeId, final AggregationBuilder subAggregation) {
-    TermQueryBuilder terms = termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId);
+    final TermQueryBuilder terms = termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId);
 
-    FilterAggregationBuilder filteredFlowNodes =
+    final FilterAggregationBuilder filteredFlowNodes =
         AggregationBuilders.filter(AGG_FILTERED_FLOW_NODES, terms);
     filteredFlowNodes.subAggregation(subAggregation);
 
@@ -954,10 +955,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private ParsedReverseNested extractNestedProcessInstanceAgg(
       final SearchResponse outlierTopVariableTermsResponse) {
     return ((HasAggregations)
-            ((HasAggregations)
-                    outlierTopVariableTermsResponse.getAggregations().get(FLOW_NODE_INSTANCES))
-                .getAggregations()
-                .get(AGG_FILTERED_FLOW_NODES))
+        ((HasAggregations)
+            outlierTopVariableTermsResponse.getAggregations().get(FLOW_NODE_INSTANCES))
+            .getAggregations()
+            .get(AGG_FILTERED_FLOW_NODES))
         .getAggregations()
         .get(AGG_REVERSE_NESTED_PROCESS_INSTANCE);
   }

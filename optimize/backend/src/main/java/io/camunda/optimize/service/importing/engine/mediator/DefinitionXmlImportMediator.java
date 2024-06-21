@@ -34,9 +34,9 @@ public abstract class DefinitionXmlImportMediator<T extends DefinitionXmlImportI
 
   @Override
   protected boolean importNextPage(final Runnable importCompleteCallback) {
-    IdSetBasedImportPage page = importIndexHandler.getNextPage();
+    final IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
-      List<DTO> entities = getEntities(page);
+      final List<DTO> entities = getEntities(page);
       if (!entities.isEmpty()) {
         importIndexHandler.updateIndex(page.getIds().size());
         importService.executeImport(

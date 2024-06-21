@@ -22,13 +22,15 @@ import lombok.NonNull;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
-  @NonNull private List<CommandEvaluationResult<T>> commandEvaluationResults;
+
+  @NonNull
+  private List<CommandEvaluationResult<T>> commandEvaluationResults;
 
   public SingleReportEvaluationResult(
       @NonNull final SingleReportDefinitionDto<?> reportDefinition,
       @NonNull final CommandEvaluationResult<T> commandEvaluationResult) {
     super(reportDefinition);
-    this.commandEvaluationResults = Collections.singletonList(commandEvaluationResult);
+    commandEvaluationResults = Collections.singletonList(commandEvaluationResult);
   }
 
   public SingleReportEvaluationResult(
@@ -51,7 +53,7 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   @Override
   public PaginatedDataExportDto getResult() {
     final CommandEvaluationResult<?> commandResult = getFirstCommandResult();
-    PaginatedDataExportDto result = new PaginatedDataExportDto();
+    final PaginatedDataExportDto result = new PaginatedDataExportDto();
     result.setData(commandResult.getResult());
     if (commandResult instanceof RawDataCommandResult) {
       result.setTotalNumberOfRecords(commandResult.getInstanceCount());
@@ -62,8 +64,8 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
         result.setSearchRequestId(null);
       }
     } else {
-      Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
-      int payloadSize = (data instanceof List ? ((List<?>) data).size() : 1);
+      final Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
+      final int payloadSize = (data instanceof List ? ((List<?>) data).size() : 1);
       result.setTotalNumberOfRecords(payloadSize);
     }
     return result;

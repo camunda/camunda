@@ -17,6 +17,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DefinitionExceptionResponseDto extends ErrorResponseDto {
+
   private Set<DefinitionExceptionItemDto> definitions;
 
   protected DefinitionExceptionResponseDto() {

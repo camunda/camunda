@@ -53,14 +53,14 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
     final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportData);
     final String[] operations =
-        new String[] {
-          "",
-          CSVUtils.mapAggregationType(
-              singleReportData.getConfiguration().getAggregationTypes().iterator().next())
+        new String[]{
+            "",
+            CSVUtils.mapAggregationType(
+                singleReportData.getConfiguration().getAggregationTypes().iterator().next())
         };
     csvStrings.add(0, operations);
     final String[] header =
-        new String[] {getGroupByIdentifier(singleReportData), normalizedCommandKey};
+        new String[]{getGroupByIdentifier(singleReportData), normalizedCommandKey};
     csvStrings.add(0, header);
   }
 
@@ -68,6 +68,6 @@ public class MapCommandResult extends CommandEvaluationResult<List<MapResultEntr
     final SingleReportDataDto singleReportDataDto = getReportDataAs(SingleReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportDataDto);
     csvStrings.add(
-        0, new String[] {getGroupByIdentifier(singleReportDataDto), normalizedCommandKey});
+        0, new String[]{getGroupByIdentifier(singleReportDataDto), normalizedCommandKey});
   }
 }

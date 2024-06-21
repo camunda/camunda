@@ -43,12 +43,12 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
 
   @Override
   public boolean isConnectedToDatabase() {
-    boolean isConnected = false;
+    final boolean isConnected = false;
     try {
       final HealthResponse clusterHealthResponse =
           osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
       return clusterHealthResponse.status() != HealthStatus.Red;
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       // do nothing
     }
     return isConnected;

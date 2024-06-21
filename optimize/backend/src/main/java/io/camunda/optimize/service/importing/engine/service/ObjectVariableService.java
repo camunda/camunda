@@ -53,7 +53,7 @@ public class ObjectVariableService {
   private final ObjectMapper objectMapper;
 
   public ObjectVariableService() {
-    this.objectMapper = new ObjectMapper();
+    objectMapper = new ObjectMapper();
     objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
     objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
     objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -61,8 +61,8 @@ public class ObjectVariableService {
 
   public List<ProcessVariableDto> convertToProcessVariableDtos(
       final List<ProcessVariableUpdateDto> variables) {
-    List<ProcessVariableDto> resultList = new ArrayList<>();
-    for (ProcessVariableUpdateDto variableUpdateDto : variables) {
+    final List<ProcessVariableDto> resultList = new ArrayList<>();
+    for (final ProcessVariableUpdateDto variableUpdateDto : variables) {
       if (isNonNullNativeJsonVariable(variableUpdateDto)
           || isNonNullObjectVariable(variableUpdateDto)) {
         if (isSupportedSerializationFormat(variableUpdateDto)) {
@@ -112,7 +112,7 @@ public class ObjectVariableService {
               .setName(variableUpdate.getName())
               .setType(OBJECT.getId())
               .setValue(Collections.singletonList(objectMapper.writeValueAsString(jsonObject))));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.error(
           "Error while formatting json object variable with name '{}'.",
           variableUpdate.getName(),
@@ -125,12 +125,12 @@ public class ObjectVariableService {
     if (jsonObject instanceof ArrayList && !((ArrayList<?>) jsonObject).isEmpty()) {
       return ((ArrayList<Object>) jsonObject)
           .stream()
-              .filter(Objects::nonNull)
-              .findFirst()
-              .map(
-                  item ->
-                      item instanceof String || item instanceof Number || item instanceof Boolean)
-              .orElse(true);
+          .filter(Objects::nonNull)
+          .findFirst()
+          .map(
+              item ->
+                  item instanceof String || item instanceof Number || item instanceof Boolean)
+          .orElse(true);
     }
     return jsonObject instanceof String
         || jsonObject instanceof Number
@@ -142,9 +142,9 @@ public class ObjectVariableService {
     try {
       new JsonFlattener(new JacksonJsonCore(objectMapper), variable.getValue())
           .withFlattenMode(FlattenMode.KEEP_ARRAYS).flattenAsMap().entrySet().stream()
-              .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
-              .forEach(resultList::addAll);
-    } catch (Exception exception) {
+          .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
+          .forEach(resultList::addAll);
+    } catch (final Exception exception) {
       log.error(
           "Error while flattening json object variable with name '{}'.",
           variable.getName(),
@@ -162,8 +162,8 @@ public class ObjectVariableService {
       return Collections.emptyList();
     }
 
-    List<ProcessVariableDto> resultList = new ArrayList<>();
-    ProcessVariableDto newVariable = createSkeletonVariableDto(origin);
+    final List<ProcessVariableDto> resultList = new ArrayList<>();
+    final ProcessVariableDto newVariable = createSkeletonVariableDto(origin);
     addNameToSkeletonVariable(name, newVariable, origin);
 
     if (value instanceof JsonifyArrayList) {
@@ -196,8 +196,7 @@ public class ObjectVariableService {
       final Object value,
       final ProcessVariableUpdateDto origin,
       final List<ProcessVariableDto> resultList) {
-    @SuppressWarnings(UNCHECKED_CAST)
-    final ArrayList<Object> originList = (ArrayList<Object>) value;
+    @SuppressWarnings(UNCHECKED_CAST) final ArrayList<Object> originList = (ArrayList<Object>) value;
     if (originList.isEmpty()) {
       return;
     }
@@ -298,7 +297,7 @@ public class ObjectVariableService {
   private Optional<OffsetDateTime> parsePossibleDate(final String dateAsString) {
     try {
       return Optional.of(DateParserUtils.parseOffsetDateTime(dateAsString));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Optional.empty();
     }
   }

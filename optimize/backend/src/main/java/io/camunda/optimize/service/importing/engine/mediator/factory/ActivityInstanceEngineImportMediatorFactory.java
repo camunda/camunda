@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ActivityInstanceEngineImportMediatorFactory
     extends AbstractEngineImportMediatorFactory {
+
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
@@ -58,7 +59,7 @@ public class ActivityInstanceEngineImportMediatorFactory
   }
 
   private CompletedActivityInstanceEngineImportMediator
-      createCompletedActivityInstanceEngineImportMediator(EngineContext engineContext) {
+  createCompletedActivityInstanceEngineImportMediator(final EngineContext engineContext) {
 
     return new CompletedActivityInstanceEngineImportMediator(
         importIndexHandlerRegistry.getCompletedActivityInstanceImportIndexHandler(
@@ -76,7 +77,7 @@ public class ActivityInstanceEngineImportMediatorFactory
   }
 
   private RunningActivityInstanceEngineImportMediator
-      createRunningActivityInstanceEngineImportMediator(EngineContext engineContext) {
+  createRunningActivityInstanceEngineImportMediator(final EngineContext engineContext) {
     return new RunningActivityInstanceEngineImportMediator(
         importIndexHandlerRegistry.getRunningActivityInstanceImportIndexHandler(
             engineContext.getEngineAlias()),

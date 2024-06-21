@@ -140,7 +140,7 @@ public class AuthCookieService {
     final int maxCookieLength =
         configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
     final int numberOfCookies = (int) Math.ceil((double) tokenValue.length() / maxCookieLength);
-    List<jakarta.servlet.http.Cookie> cookies = new ArrayList<>();
+    final List<jakarta.servlet.http.Cookie> cookies = new ArrayList<>();
     for (int i = 0; i < numberOfCookies; i++) {
       cookies.add(
           createCookie(
@@ -208,7 +208,7 @@ public class AuthCookieService {
         .build();
   }
 
-  public static Optional<String> getAuthCookieToken(HttpServletRequest servletRequest) {
+  public static Optional<String> getAuthCookieToken(final HttpServletRequest servletRequest) {
     return Optional.ofNullable((String) servletRequest.getAttribute(OPTIMIZE_AUTHORIZATION))
         .or(() -> extractAuthorizationValueFromCookies(servletRequest))
         .or(() -> extractAuthorizationValueFromCookieHeader(servletRequest))
@@ -219,7 +219,7 @@ public class AuthCookieService {
       final HttpServletRequest servletRequest) {
     final jakarta.servlet.http.Cookie[] cookies = servletRequest.getCookies();
     if (cookies != null) {
-      for (jakarta.servlet.http.Cookie cookie : cookies) {
+      for (final jakarta.servlet.http.Cookie cookie : cookies) {
         if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
           return Optional.of(cookie.getValue());
         }
@@ -230,17 +230,17 @@ public class AuthCookieService {
 
   private static Optional<String> extractAuthorizationValueFromCookieHeader(
       final HttpServletRequest servletRequest) {
-    String cookieHeader = servletRequest.getHeader("Cookie");
+    final String cookieHeader = servletRequest.getHeader("Cookie");
     if (cookieHeader != null) {
       // In the header we have a series of values of the type a=b;c=d;d=e
-      String[] cookiePairs = cookieHeader.split(";");
-      for (String cookiePair : cookiePairs) {
+      final String[] cookiePairs = cookieHeader.split(";");
+      for (final String cookiePair : cookiePairs) {
         // We are looking for "foo" in something like X-Optimize-Authorization=foo
-        Pattern pattern = Pattern.compile("\\s*" + OPTIMIZE_AUTHORIZATION + "\\s*=\\s*(.*)");
-        Matcher matcher = pattern.matcher(cookiePair);
+        final Pattern pattern = Pattern.compile("\\s*" + OPTIMIZE_AUTHORIZATION + "\\s*=\\s*(.*)");
+        final Matcher matcher = pattern.matcher(cookiePair);
         if (matcher.find()) {
           // We found it, so now we extract the value
-          String value = matcher.group(1);
+          final String value = matcher.group(1);
           // Trim white spaces and tabs to get only the value
           return Optional.of(value.replace("\"", "").trim());
         }
@@ -249,11 +249,11 @@ public class AuthCookieService {
     return Optional.empty();
   }
 
-  public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
+  public static Optional<String> getAuthCookieToken(final ContainerRequestContext requestContext) {
     // load just issued token if set by previous filter
     String authorizationValue = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
     if (authorizationValue == null) {
-      for (Map.Entry<String, Cookie> cookieEntry : requestContext.getCookies().entrySet()) {
+      for (final Map.Entry<String, Cookie> cookieEntry : requestContext.getCookies().entrySet()) {
         if (OPTIMIZE_AUTHORIZATION.equals(cookieEntry.getKey())) {
           authorizationValue = cookieEntry.getValue().getValue();
         }
@@ -263,15 +263,15 @@ public class AuthCookieService {
         .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
   }
 
-  public static Optional<String> getServiceAccessToken(HttpServletRequest servletRequest) {
+  public static Optional<String> getServiceAccessToken(final HttpServletRequest servletRequest) {
     boolean serviceTokenExtracted = false;
     int serviceTokenSuffixToExtract = 0;
-    StringBuilder serviceAccessToken = new StringBuilder();
+    final StringBuilder serviceAccessToken = new StringBuilder();
     while (!serviceTokenExtracted) {
       final String serviceCookieName = getServiceCookieNameWithSuffix(serviceTokenSuffixToExtract);
       String authorizationValue = null;
       if (servletRequest.getCookies() != null) {
-        for (jakarta.servlet.http.Cookie cookie : servletRequest.getCookies()) {
+        for (final jakarta.servlet.http.Cookie cookie : servletRequest.getCookies()) {
           if (serviceCookieName.equals(cookie.getName())) {
             authorizationValue = cookie.getValue();
           }
@@ -290,7 +290,7 @@ public class AuthCookieService {
     return Optional.empty();
   }
 
-  public static Optional<String> getTokenSubject(String token) {
+  public static Optional<String> getTokenSubject(final String token) {
     return getTokenAttribute(token, DecodedJWT::getSubject);
   }
 
@@ -307,7 +307,7 @@ public class AuthCookieService {
       final String cookieValue,
       final String requestScheme,
       final Date expiryDate) {
-    NewCookie newCookie =
+    final NewCookie newCookie =
         new NewCookie.Builder(cookieName)
             .value(cookieValue)
             .path(getCookiePath())
@@ -344,12 +344,12 @@ public class AuthCookieService {
     return configurationService.getAuthConfiguration();
   }
 
-  private String addSameSiteCookieFlag(String newCookieAsString) {
+  private String addSameSiteCookieFlag(final String newCookieAsString) {
     return newCookieAsString
         + String.format(";%s=%s", SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
   }
 
-  private static Optional<Date> getTokenIssuedAt(String token) {
+  private static Optional<Date> getTokenIssuedAt(final String token) {
     return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
 
@@ -358,7 +358,7 @@ public class AuthCookieService {
     try {
       final DecodedJWT decoded = JWT.decode(token);
       return Optional.of(getTokenAttributeFunction.apply(decoded));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.debug("Could not decode security token to extract attribute!", e);
     }
     return Optional.empty();

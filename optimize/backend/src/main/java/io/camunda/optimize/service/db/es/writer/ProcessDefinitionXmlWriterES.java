@@ -35,14 +35,15 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionXmlWriterES implements ProcessDefinitionXmlWriter {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   @Override
   public void importProcessDefinitionXmls(
-      List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
-    String importItemName = "process definition information";
+      final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
+    final String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", processDefinitionOptimizeDtos.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,

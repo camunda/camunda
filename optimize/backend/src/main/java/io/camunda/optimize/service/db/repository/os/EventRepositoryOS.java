@@ -146,6 +146,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class EventRepositoryOS implements EventRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter formatter;
   private final ConfigurationService configurationService;
@@ -154,7 +155,7 @@ public class EventRepositoryOS implements EventRepository {
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
-  public void upsertEvents(List<EventDto> eventDtos) {
+  public void upsertEvents(final List<EventDto> eventDtos) {
     final List<BulkOperation> bulkOperations =
         eventDtos.stream()
             .map(
@@ -195,6 +196,182 @@ public class EventRepositoryOS implements EventRepository {
         osClient
             .getIndexNameService()
             .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndexOS()));
+  }
+
+  @Override
+  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+    final Query timestampQuery = QueryDSL.gt(INGESTION_TIMESTAMP, ingestTimestamp);
+    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, limit);
+  }
+
+  @Override
+  public List<EventDto> getEventsIngestedAfterForGroups(
+      final Long ingestTimestamp, final int limit, final List<String> groups) {
+    final Query query =
+        QueryDSL.and(
+            QueryDSL.gt(INGESTION_TIMESTAMP, ingestTimestamp), buildGroupFilterQuery(groups));
+    return getPageOfEventsSortedByIngestionTimestamp(query, limit);
+  }
+
+  @Override
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
+    return getMinAndMaxIngestedTimestampsForQuery(QueryDSL.matchAll());
+  }
+
+  @Override
+  public List<EventDto> getEventsIngestedAtForGroups(
+      final Long ingestTimestamp, final List<String> groups) {
+    final Query query =
+        QueryDSL.and(
+            buildGroupFilterQuery(groups),
+            QueryDSL.gteLte(INGESTION_TIMESTAMP, ingestTimestamp, ingestTimestamp));
+    return getPageOfEventsSortedByIngestionTimestamp(query, MAX_RESPONSE_SIZE_LIMIT);
+  }
+
+  @Override
+  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+    final Query timestampQuery =
+        QueryDSL.gteLte(INGESTION_TIMESTAMP, ingestTimestamp, ingestTimestamp);
+    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
+  }
+
+  @Override
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
+  getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
+    return getMinAndMaxIngestedTimestampsForQuery(buildGroupFilterQuery(groups));
+  }
+
+  @Override
+  public Page<DeletableEventDto> getEventsForRequest(
+      final EventSearchRequestDto eventSearchRequestDto) {
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(EXTERNAL_EVENTS_INDEX_NAME)
+            .query(getSearchQueryForEventRequest(eventSearchRequestDto))
+            .from(eventSearchRequestDto.getPaginationRequestDto().getOffset())
+            .size(eventSearchRequestDto.getPaginationRequestDto().getLimit());
+    getSortForEventRequest(eventSearchRequestDto.getSortRequestDto())
+        .ifPresent(searchRequest::sort);
+    // add secondary sort order
+    searchRequest.sort(
+        new SortOptions.Builder()
+            .field(new FieldSort.Builder().field(TIMESTAMP).order(SortOrder.Desc).build())
+            .build());
+
+    return toPage(
+        eventSearchRequestDto,
+        osClient.search(searchRequest, EventDto.class, "Was not able to retrieve events!"));
+  }
+
+  @Override
+  public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
+    final String searchTerm = eventGroupRequestDto.getSearchTerm();
+    final Query query;
+    if (searchTerm == null) {
+      query = QueryDSL.matchAll();
+    } else if (searchTerm.length() > MAX_GRAM) {
+      query = QueryDSL.prefix(GROUP, searchTerm);
+    } else {
+      query =
+          new MatchQuery.Builder()
+              .field(getNgramSearchField(GROUP))
+              .query(FieldValue.of(searchTerm.toLowerCase()))
+              .analyzer(KEYWORD_ANALYZER)
+              .build()
+              .toQuery();
+    }
+
+    final List<String> groups = new ArrayList<>();
+    OpenSearchCompositeAggregationScroller.create()
+        .setClient(osClient)
+        .query(query)
+        .index(List.of(EXTERNAL_EVENTS_INDEX_NAME))
+        .aggregations(
+            Collections.singletonMap(
+                GROUP_COMPOSITE_AGG,
+                buildCompositeGroupAggregation(eventGroupRequestDto)._toAggregation()))
+        .size(0)
+        .setPathToAggregation(GROUP_COMPOSITE_AGG)
+        .setCompositeBucketConsumer(
+            bucket -> groups.add((bucket.key().get(EVENT_GROUP_AGG)).to(String.class)))
+        .consumePage();
+    return groups;
+  }
+
+  @Override
+  public List<String> getCorrelationValueSampleForEventSources(
+      final List<CamundaEventSourceEntryDto> camundaSources) {
+    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
+    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
+    camundaSources.forEach(
+        source -> matchesSourceQuery.should(queryForEventSourceInstances(source)));
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
+            .query(
+                new BoolQuery.Builder()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery.build().toQuery())
+                    .must(createFunctionScoreQuery())
+                    .build()
+                    .toQuery())
+            .size(0);
+
+    addCorrelationValuesAggregation(searchRequest, camundaSources);
+
+    final SearchResponse<String> searchResponse =
+        osClient.search(
+            searchRequest, String.class, "Was not able to fetch sample correlation values");
+    return extractCorrelationValues(searchResponse.aggregations(), camundaSources);
+  }
+
+  @Override
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
+      final List<CamundaEventSourceEntryDto> camundaSources, final List<String> correlationValues) {
+    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
+    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
+    camundaSources.forEach(
+        eventSource ->
+            matchesSourceQuery.should(
+                queryForEventSourceInstancesWithCorrelationValues(eventSource, correlationValues)));
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
+            .query(
+                new BoolQuery.Builder()
+                    .filter(completedInstanceQuery)
+                    .filter(matchesSourceQuery.build().toQuery())
+                    .must(createFunctionScoreQuery())
+                    .build()
+                    .toQuery())
+            .size(MAX_RESPONSE_SIZE_LIMIT)
+            .scroll(
+                RequestDSL.time(
+                    String.valueOf(
+                        configurationService
+                            .getOpenSearchConfiguration()
+                            .getScrollTimeoutInSeconds())));
+
+    try {
+      final AggregatedResult<Hit<CorrelatableProcessInstanceDto>> scrollResp =
+          osClient.retrieveAllScrollResults(searchRequest, CorrelatableProcessInstanceDto.class);
+      return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp).stream().toList();
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch instances for correlation values";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    } catch (final RuntimeException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+            "Was not able to fetch instances for correlation values because no instance indices exist. "
+                + "Returning empty list.");
+        return Collections.emptyList();
+      }
+      throw e;
+    }
   }
 
   @Override
@@ -260,7 +437,7 @@ public class EventRepositoryOS implements EventRepository {
 
   @Override
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
+  getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
     log.debug("Fetching min and max timestamp for ingested camunda events");
     final SearchRequest.Builder request =
         RequestDSL.searchRequestBuilder(
@@ -301,7 +478,7 @@ public class EventRepositoryOS implements EventRepository {
       final String eventProcessMappingId) {
     final String errorMessage =
         String.format("Could not fetch event-based process with id [%s].", eventProcessMappingId);
-    GetResponse<DbEventProcessMappingDto> response =
+    final GetResponse<DbEventProcessMappingDto> response =
         osClient.get(
             EVENT_PROCESS_MAPPING_INDEX_NAME,
             eventProcessMappingId,
@@ -333,7 +510,7 @@ public class EventRepositoryOS implements EventRepository {
   @Override
   public List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(
       final String eventProcessMappingId) {
-    GetRequest.Builder getRequest =
+    final GetRequest.Builder getRequest =
         new GetRequest.Builder()
             .sourceIncludes(EventProcessMappingIndex.ROLES)
             .index(EVENT_PROCESS_MAPPING_INDEX_NAME)
@@ -343,7 +520,7 @@ public class EventRepositoryOS implements EventRepository {
         String.format(
             "Could not fetch roles for event-based process with id [%s].", eventProcessMappingId);
 
-    GetResponse<DbEventProcessMappingDto> response =
+    final GetResponse<DbEventProcessMappingDto> response =
         osClient.get(getRequest, DbEventProcessMappingDto.class, errorMessage);
 
     List<EventProcessRoleRequestDto<IdentityDto>> result = Collections.emptyList();
@@ -356,14 +533,14 @@ public class EventRepositoryOS implements EventRepository {
   @Override
   public IdResponseDto createEventProcessPublishState(
       final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    String id = eventProcessPublishStateDto.getId();
-    Builder<Object> indexRequest =
+    final String id = eventProcessPublishStateDto.getId();
+    final Builder<Object> indexRequest =
         RequestDSL.indexRequestBuilder(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
             .id(id)
             .document(
                 DbEventProcessPublishStateDto.fromEventProcessPublishStateDto(
                     eventProcessPublishStateDto));
-    IndexResponse response = osClient.getRichOpenSearchClient().doc().index(indexRequest);
+    final IndexResponse response = osClient.getRichOpenSearchClient().doc().index(indexRequest);
     if (!response.result().equals(Result.Created)) {
       final String errorMessage =
           String.format("Could not write event process publish state [%s].", id);
@@ -380,9 +557,9 @@ public class EventRepositoryOS implements EventRepository {
       final String idFieldName,
       final String indexName) {
     return osClient.updateByQuery(
-            indexName,
-            QueryDSL.term(idFieldName, eventProcessMappingId),
-            QueryDSL.script(scriptData.scriptString(), scriptData.params()))
+        indexName,
+        QueryDSL.term(idFieldName, eventProcessMappingId),
+        QueryDSL.script(scriptData.scriptString(), scriptData.params()))
         > 0L;
   }
 
@@ -393,11 +570,11 @@ public class EventRepositoryOS implements EventRepository {
       final ScriptData scriptData,
       final String indexName,
       final String publishStateIdToExclude) {
-    Query mustMatchQuery =
+    final Query mustMatchQuery =
         QueryDSL.term(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId);
-    Query mustNotMatchQuery =
+    final Query mustNotMatchQuery =
         QueryDSL.not(QueryDSL.term(EventProcessPublishStateIndex.ID, publishStateIdToExclude));
-    Query finalQuery = QueryDSL.and(mustMatchQuery, mustNotMatchQuery);
+    final Query finalQuery = QueryDSL.and(mustMatchQuery, mustNotMatchQuery);
     osClient.updateByQuery(
         indexName, finalQuery, QueryDSL.script(scriptData.scriptString(), scriptData.params()));
   }
@@ -405,11 +582,11 @@ public class EventRepositoryOS implements EventRepository {
   @Override
   public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
       final String eventProcessMappingId) {
-    Query query =
+    final Query query =
         QueryDSL.and(
             QueryDSL.term(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId),
             QueryDSL.term(EventProcessPublishStateIndex.DELETED, false));
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         RequestDSL.searchRequestBuilder(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
             .query(query)
             .sort(
@@ -424,7 +601,7 @@ public class EventRepositoryOS implements EventRepository {
     final String errorMessage =
         String.format(
             "Could not fetch event process publish state with id [%s].", eventProcessMappingId);
-    SearchResponse<DbEventProcessPublishStateDto> response =
+    final SearchResponse<DbEventProcessPublishStateDto> response =
         osClient.search(searchRequest, DbEventProcessPublishStateDto.class, errorMessage);
     if (!response.hits().hits().isEmpty() && response.hits().hits().get(0).source() != null) {
       return Optional.of(response.hits().hits().get(0).source().toEventProcessPublishStateDto());
@@ -433,10 +610,15 @@ public class EventRepositoryOS implements EventRepository {
   }
 
   @Override
+  public void updateEntry(final String indexName, final String entityId, final ScriptData script) {
+    osClient.update(indexName, entityId, script);
+  }
+
+  @Override
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(
       final boolean deleted) {
-    Query query = QueryDSL.term(EventProcessPublishStateIndex.DELETED, deleted);
-    SearchRequest.Builder searchRequest =
+    final Query query = QueryDSL.term(EventProcessPublishStateIndex.DELETED, deleted);
+    final SearchRequest.Builder searchRequest =
         RequestDSL.searchRequestBuilder(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
             .query(query)
             .size(LIST_FETCH_LIMIT)
@@ -461,11 +643,6 @@ public class EventRepositoryOS implements EventRepository {
   }
 
   @Override
-  public void updateEntry(String indexName, String entityId, ScriptData script) {
-    osClient.update(indexName, entityId, script);
-  }
-
-  @Override
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
       final String eventProcessDefinitionKey) {
     final Query query = QueryDSL.term(DEFINITION_KEY, eventProcessDefinitionKey);
@@ -475,7 +652,7 @@ public class EventRepositoryOS implements EventRepository {
             .filter(new SourceFilter.Builder().excludes(PROCESS_DEFINITION_XML).build())
             .build();
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(EVENT_PROCESS_DEFINITION_INDEX_NAME)
             .query(query)
@@ -487,7 +664,7 @@ public class EventRepositoryOS implements EventRepository {
             "Could not fetch event-based process definition with key [%s].",
             eventProcessDefinitionKey);
 
-    SearchResponse<EventProcessDefinitionDto> searchResponse =
+    final SearchResponse<EventProcessDefinitionDto> searchResponse =
         osClient.search(searchRequest, EventProcessDefinitionDto.class, errorMessage);
 
     if (!searchResponse.hits().hits().isEmpty()) {
@@ -512,137 +689,8 @@ public class EventRepositoryOS implements EventRepository {
     return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp).stream().toList();
   }
 
-  @Override
-  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
-    final Query timestampQuery = QueryDSL.gt(INGESTION_TIMESTAMP, ingestTimestamp);
-    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, limit);
-  }
-
-  @Override
-  public List<EventDto> getEventsIngestedAfterForGroups(
-      final Long ingestTimestamp, final int limit, final List<String> groups) {
-    final Query query =
-        QueryDSL.and(
-            QueryDSL.gt(INGESTION_TIMESTAMP, ingestTimestamp), buildGroupFilterQuery(groups));
-    return getPageOfEventsSortedByIngestionTimestamp(query, limit);
-  }
-
-  @Override
-  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
-    final Query timestampQuery =
-        QueryDSL.gteLte(INGESTION_TIMESTAMP, ingestTimestamp, ingestTimestamp);
-    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
-  }
-
-  @Override
-  public List<EventDto> getEventsIngestedAtForGroups(
-      final Long ingestTimestamp, final List<String> groups) {
-    final Query query =
-        QueryDSL.and(
-            buildGroupFilterQuery(groups),
-            QueryDSL.gteLte(INGESTION_TIMESTAMP, ingestTimestamp, ingestTimestamp));
-    return getPageOfEventsSortedByIngestionTimestamp(query, MAX_RESPONSE_SIZE_LIMIT);
-  }
-
-  @Override
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
-    return getMinAndMaxIngestedTimestampsForQuery(QueryDSL.matchAll());
-  }
-
-  @Override
-  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
-    return getMinAndMaxIngestedTimestampsForQuery(buildGroupFilterQuery(groups));
-  }
-
-  @Override
-  public Page<DeletableEventDto> getEventsForRequest(
-      final EventSearchRequestDto eventSearchRequestDto) {
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(EXTERNAL_EVENTS_INDEX_NAME)
-            .query(getSearchQueryForEventRequest(eventSearchRequestDto))
-            .from(eventSearchRequestDto.getPaginationRequestDto().getOffset())
-            .size(eventSearchRequestDto.getPaginationRequestDto().getLimit());
-    getSortForEventRequest(eventSearchRequestDto.getSortRequestDto())
-        .ifPresent(searchRequest::sort);
-    // add secondary sort order
-    searchRequest.sort(
-        new SortOptions.Builder()
-            .field(new FieldSort.Builder().field(TIMESTAMP).order(SortOrder.Desc).build())
-            .build());
-
-    return toPage(
-        eventSearchRequestDto,
-        osClient.search(searchRequest, EventDto.class, "Was not able to retrieve events!"));
-  }
-
-  @Override
-  public List<String> getEventGroups(final EventGroupRequestDto eventGroupRequestDto) {
-    final String searchTerm = eventGroupRequestDto.getSearchTerm();
-    Query query;
-    if (searchTerm == null) {
-      query = QueryDSL.matchAll();
-    } else if (searchTerm.length() > MAX_GRAM) {
-      query = QueryDSL.prefix(GROUP, searchTerm);
-    } else {
-      query =
-          new MatchQuery.Builder()
-              .field(getNgramSearchField(GROUP))
-              .query(FieldValue.of(searchTerm.toLowerCase()))
-              .analyzer(KEYWORD_ANALYZER)
-              .build()
-              .toQuery();
-    }
-
-    List<String> groups = new ArrayList<>();
-    OpenSearchCompositeAggregationScroller.create()
-        .setClient(osClient)
-        .query(query)
-        .index(List.of(EXTERNAL_EVENTS_INDEX_NAME))
-        .aggregations(
-            Collections.singletonMap(
-                GROUP_COMPOSITE_AGG,
-                buildCompositeGroupAggregation(eventGroupRequestDto)._toAggregation()))
-        .size(0)
-        .setPathToAggregation(GROUP_COMPOSITE_AGG)
-        .setCompositeBucketConsumer(
-            bucket -> groups.add((bucket.key().get(EVENT_GROUP_AGG)).to(String.class)))
-        .consumePage();
-    return groups;
-  }
-
-  @Override
-  public List<String> getCorrelationValueSampleForEventSources(
-      List<CamundaEventSourceEntryDto> camundaSources) {
-    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
-    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
-    camundaSources.forEach(
-        source -> matchesSourceQuery.should(queryForEventSourceInstances(source)));
-
-    SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
-            .query(
-                new BoolQuery.Builder()
-                    .filter(completedInstanceQuery)
-                    .filter(matchesSourceQuery.build().toQuery())
-                    .must(createFunctionScoreQuery())
-                    .build()
-                    .toQuery())
-            .size(0);
-
-    addCorrelationValuesAggregation(searchRequest, camundaSources);
-
-    SearchResponse<String> searchResponse =
-        osClient.search(
-            searchRequest, String.class, "Was not able to fetch sample correlation values");
-    return extractCorrelationValues(searchResponse.aggregations(), camundaSources);
-  }
-
   private static Query createFunctionScoreQuery() {
-    Query functionScoreQuery =
+    final Query functionScoreQuery =
         new FunctionScoreQuery.Builder()
             .query(QueryDSL.matchAll())
             .functions(
@@ -654,61 +702,14 @@ public class EventRepositoryOS implements EventRepository {
     return functionScoreQuery;
   }
 
-  @Override
-  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
-      List<CamundaEventSourceEntryDto> camundaSources, List<String> correlationValues) {
-    final Query completedInstanceQuery = QueryDSL.exists(END_DATE);
-    final BoolQuery.Builder matchesSourceQuery = new BoolQuery.Builder().minimumShouldMatch("1");
-    camundaSources.forEach(
-        eventSource ->
-            matchesSourceQuery.should(
-                queryForEventSourceInstancesWithCorrelationValues(eventSource, correlationValues)));
-
-    SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(Arrays.asList(getInstanceIndexNames(camundaSources)))
-            .query(
-                new BoolQuery.Builder()
-                    .filter(completedInstanceQuery)
-                    .filter(matchesSourceQuery.build().toQuery())
-                    .must(createFunctionScoreQuery())
-                    .build()
-                    .toQuery())
-            .size(MAX_RESPONSE_SIZE_LIMIT)
-            .scroll(
-                RequestDSL.time(
-                    String.valueOf(
-                        configurationService
-                            .getOpenSearchConfiguration()
-                            .getScrollTimeoutInSeconds())));
-
-    try {
-      AggregatedResult<Hit<CorrelatableProcessInstanceDto>> scrollResp =
-          osClient.retrieveAllScrollResults(searchRequest, CorrelatableProcessInstanceDto.class);
-      return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp).stream().toList();
-    } catch (IOException e) {
-      String reason = "Was not able to fetch instances for correlation values";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
-      if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
-            "Was not able to fetch instances for correlation values because no instance indices exist. "
-                + "Returning empty list.");
-        return Collections.emptyList();
-      }
-      throw e;
-    }
-  }
-
   private List<String> extractCorrelationValues(
       final Map<String, Aggregate> aggregations,
       final List<CamundaEventSourceEntryDto> eventSources) {
     final Aggregate valuesByProcessDefinition = aggregations.get(EVENT_SOURCE_AGG);
-    List<String> correlationValues = new ArrayList<>();
-    for (StringTermsBucket eventSourceBucket :
+    final List<String> correlationValues = new ArrayList<>();
+    for (final StringTermsBucket eventSourceBucket :
         valuesByProcessDefinition.sterms().buckets().array()) {
-      CamundaEventSourceEntryDto eventSourceForCurrentBucket =
+      final CamundaEventSourceEntryDto eventSourceForCurrentBucket =
           eventSources.stream()
               .filter(
                   source ->
@@ -723,10 +724,11 @@ public class EventRepositoryOS implements EventRepository {
                           String.format(
                               "Could not find event source for bucket with key %s when sampling for correlation values",
                               eventSourceBucket.key())));
-      TopHitsAggregate topHits = eventSourceBucket.aggregations().get(BUCKET_HITS_AGG).topHits();
-      for (Hit<JsonData> hit : topHits.hits().hits()) {
+      final TopHitsAggregate topHits = eventSourceBucket.aggregations().get(BUCKET_HITS_AGG)
+          .topHits();
+      for (final Hit<JsonData> hit : topHits.hits().hits()) {
         final CorrelationValueDto correlationValueDto = hit.source().to(CorrelationValueDto.class);
-        Optional<String> correlationValueToAdd =
+        final Optional<String> correlationValueToAdd =
             extractCorrelationValue(eventSourceForCurrentBucket, correlationValueDto);
         if (correlationValueToAdd.isPresent()) {
           correlationValues.add(correlationValueToAdd.get());
@@ -742,12 +744,12 @@ public class EventRepositoryOS implements EventRepository {
   private void addCorrelationValuesAggregation(
       final SearchRequest.Builder searchSourceBuilder,
       final List<CamundaEventSourceEntryDto> eventSources) {
-    TermsAggregation correlationValuesAggregation =
+    final TermsAggregation correlationValuesAggregation =
         new TermsAggregation.Builder()
             .field(PROCESS_DEFINITION_KEY)
             .size(eventSources.size())
             .build();
-    Map<String, Aggregation> subAggregations = new HashMap<>();
+    final Map<String, Aggregation> subAggregations = new HashMap<>();
     // We use top hits only to access the documents in the bucket, which will be random
     // rather than scored
     subAggregations.put(
@@ -852,16 +854,16 @@ public class EventRepositoryOS implements EventRepository {
   }
 
   private Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForQuery(Query query) {
+  getMinAndMaxIngestedTimestampsForQuery(final Query query) {
 
     final SourceConfig searchSourceBuilder = new SourceConfig.Builder().fetch(false).build();
 
-    HashMap<String, Aggregation> aggs = new HashMap<>();
+    final HashMap<String, Aggregation> aggs = new HashMap<>();
     aggs.put(
         MIN_AGG, new MinAggregation.Builder().field(INGESTION_TIMESTAMP).build()._toAggregation());
     aggs.put(
         MAX_AGG, new MaxAggregation.Builder().field(INGESTION_TIMESTAMP).build()._toAggregation());
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .query(query)
             .index(EXTERNAL_EVENTS_INDEX_NAME)
@@ -869,7 +871,7 @@ public class EventRepositoryOS implements EventRepository {
             .aggregations(aggs)
             .size(0);
 
-    SearchResponse<EventDto> searchResponse =
+    final SearchResponse<EventDto> searchResponse =
         osClient.search(
             searchRequest,
             EventDto.class,
@@ -883,7 +885,7 @@ public class EventRepositoryOS implements EventRepository {
       final EventGroupRequestDto eventGroupRequestDto) {
     // We aggregate on the group name to return to user and the lower case name so we can sort
     // properly
-    List<Map<String, CompositeAggregationSource>> eventGroupsAndLowercaseGroups = new ArrayList<>();
+    final List<Map<String, CompositeAggregationSource>> eventGroupsAndLowercaseGroups = new ArrayList<>();
     eventGroupsAndLowercaseGroups.add(
         Map.of(
             LOWERCASE_GROUP_AGG,
@@ -897,7 +899,7 @@ public class EventRepositoryOS implements EventRepository {
             EVENT_GROUP_AGG,
             AggregationDSL.compositeTermsAggregationSource(
                 new TermsAggregation.Builder().field(GROUP).missingBucket(true).build())));
-    int size =
+    final int size =
         Math.min(
             eventGroupRequestDto.getLimit(),
             configurationService.getOpenSearchConfiguration().getAggregationBucketLimit());
@@ -911,7 +913,7 @@ public class EventRepositoryOS implements EventRepository {
       final EventSearchRequestDto eventSearchRequestDto,
       final SearchResponse<EventDto> searchResponse) {
 
-    long totalHits;
+    final long totalHits;
     final List<EventDto> eventsForRequest;
     if (Objects.isNull(searchResponse.hits().total())) {
       log.warn("Could not extract the total hits from SearchResponse");
@@ -963,7 +965,7 @@ public class EventRepositoryOS implements EventRepository {
   private Optional<SortOptions> getSortForEventRequest(final SortRequestDto sortRequestDto) {
     final Optional<String> sortByOpt = sortRequestDto.getSortBy();
     if (sortByOpt.isPresent()) {
-      FieldSort.Builder fieldSortBuilder =
+      final FieldSort.Builder fieldSortBuilder =
           new FieldSort.Builder().field(convertToIndexSortField(sortByOpt.get()));
 
       sortRequestDto
@@ -987,7 +989,7 @@ public class EventRepositoryOS implements EventRepository {
   }
 
   private SortOrder optimizeToOpenSearchSortOrder(
-      io.camunda.optimize.dto.optimize.query.sorting.SortOrder order) {
+      final io.camunda.optimize.dto.optimize.query.sorting.SortOrder order) {
     if (order.equals(DESC)) {
       return SortOrder.Desc;
     }
@@ -1013,7 +1015,7 @@ public class EventRepositoryOS implements EventRepository {
                             .order(SortOrder.Asc)
                             .build())
                     .build());
-    SearchResponse<EventDto> searchResponse =
+    final SearchResponse<EventDto> searchResponse =
         osClient.search(
             searchRequest,
             EventDto.class,
@@ -1023,8 +1025,8 @@ public class EventRepositoryOS implements EventRepository {
   }
 
   private SearchRequest.Builder createSearchRequestForEventOmitXml(
-      String eventProcessDefinitionIndexName) {
-    List<String> fieldsToExclude = List.of(DbEventProcessMappingDto.Fields.xml);
+      final String eventProcessDefinitionIndexName) {
+    final List<String> fieldsToExclude = List.of(DbEventProcessMappingDto.Fields.xml);
 
     final SourceConfig searchSourceBuilder =
         new SourceConfig.Builder()
@@ -1050,7 +1052,7 @@ public class EventRepositoryOS implements EventRepository {
 
   private Optional<OffsetDateTime> extractTimestampForAggregation(final Double timestamp) {
     try {
-      Instant instant = Instant.ofEpochMilli(timestamp.longValue());
+      final Instant instant = Instant.ofEpochMilli(timestamp.longValue());
       return Optional.of(OffsetDateTime.ofInstant(instant, ZoneId.systemDefault()));
     } catch (final Exception ex) {
       log.warn(

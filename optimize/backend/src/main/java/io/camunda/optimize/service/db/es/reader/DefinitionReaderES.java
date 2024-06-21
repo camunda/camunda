@@ -162,11 +162,11 @@ public class DefinitionReaderES implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
-          final DefinitionType type,
-          final String definitionKey,
-          final List<String> definitionVersions,
-          final List<String> tenantIds) {
+  Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+      final DefinitionType type,
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds) {
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }
@@ -176,7 +176,7 @@ public class DefinitionReaderES implements DefinitionReader {
             definitionVersions, () -> getLatestVersionToKey(type, definitionKey));
 
     Optional<T> definition = Optional.empty();
-    for (String tenantId : tenantIds) {
+    for (final String tenantId : tenantIds) {
       definition =
           getFullyImportedDefinition(type, definitionKey, mostRecentValidVersion, tenantId);
       if (definition.isPresent()) {
@@ -189,8 +189,8 @@ public class DefinitionReaderES implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
-          final DefinitionType type, final String definitionKey) {
+  List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+      final DefinitionType type, final String definitionKey) {
     if (definitionKey == null) {
       return Collections.emptyList();
     }
@@ -216,15 +216,15 @@ public class DefinitionReaderES implements DefinitionReader {
 
     final SearchRequest searchRequest =
         new SearchRequest(
-                DefinitionType.PROCESS.equals(type)
-                    ? PROCESS_DEFINITION_INDEX_NAME
-                    : DECISION_DEFINITION_INDEX_NAME)
+            DefinitionType.PROCESS.equals(type)
+                ? PROCESS_DEFINITION_INDEX_NAME
+                : DECISION_DEFINITION_INDEX_NAME)
             .source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Was not able to fetch engines for definition key [%s] and type [%s]",
@@ -249,7 +249,7 @@ public class DefinitionReaderES implements DefinitionReader {
             .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
             .size(LIST_FETCH_LIMIT);
     // 1. group by key, type and tenant (composite aggregation)
-    List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
+    final List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
     keyAndTypeAndTenantSources.add(
         new TermsValuesSourceBuilder(TENANT_AGGREGATION)
             .field(DEFINITION_TENANT_ID)
@@ -260,20 +260,20 @@ public class DefinitionReaderES implements DefinitionReader {
     keyAndTypeAndTenantSources.add(
         new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(DatabaseConstants.INDEX));
 
-    CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
+    final CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
         new CompositeAggregationBuilder(
-                DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
+            DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
             .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
             .subAggregation(nameAggregation)
             .subAggregation(enginesAggregation);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(termQuery(DEFINITION_DELETED, false))
             .aggregation(keyAndTypeAndTenantAggregation)
             .size(0);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(ALL_DEFINITION_INDEXES).source(searchSourceBuilder);
 
     final Map<String, List<ParsedComposite.ParsedBucket>> keyAndTypeAggBucketsByTenantId =
@@ -292,12 +292,12 @@ public class DefinitionReaderES implements DefinitionReader {
             })
         .consumeAllPages();
 
-    Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
+    final Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
     keyAndTypeAggBucketsByTenantId.forEach(
         (key, value) -> {
           // convert not defined bucket back to a `null` id
           final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(key) ? null : key;
-          List<SimpleDefinitionDto> simpleDefinitionDtos =
+          final List<SimpleDefinitionDto> simpleDefinitionDtos =
               value.stream()
                   .map(
                       parsedBucket -> {
@@ -308,9 +308,9 @@ public class DefinitionReaderES implements DefinitionReader {
                         final String definitionName =
                             ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
                                 .getBuckets().stream()
-                                    .findFirst()
-                                    .map(Terms.Bucket::getKeyAsString)
-                                    .orElse(null);
+                                .findFirst()
+                                .map(Terms.Bucket::getKeyAsString)
+                                .orElse(null);
                         final Terms enginesResult =
                             parsedBucket.getAggregations().get(ENGINE_AGGREGATION);
                         return new SimpleDefinitionDto(
@@ -333,10 +333,10 @@ public class DefinitionReaderES implements DefinitionReader {
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
     log.debug("Fetching latest [{}] definition for key [{}]", type, key);
 
-    Script script =
+    final Script script =
         createDefaultScript(
             "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)");
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(
                 boolQuery()
@@ -347,21 +347,21 @@ public class DefinitionReaderES implements DefinitionReader {
                     .order(SortOrder.DESC))
             .size(1);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch latest [%s] definition for key [%s]", type, key);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     if (searchResponse.getHits().getHits().length == 1) {
-      Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
+      final Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
       if (sourceAsMap.containsKey(resolveVersionFieldFromType(type))) {
         return sourceAsMap.get(resolveVersionFieldFromType(type)).toString();
       }
@@ -399,7 +399,7 @@ public class DefinitionReaderES implements DefinitionReader {
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Was not able to fetch [%s] definition versions with key [%s], tenantIds [%s]",
@@ -458,7 +458,7 @@ public class DefinitionReaderES implements DefinitionReader {
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type, final BoolQueryBuilder filteredQuery, final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
-    final String[] fieldsToExclude = withXml ? null : new String[] {xmlField};
+    final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(filteredQuery)
@@ -476,7 +476,7 @@ public class DefinitionReaderES implements DefinitionReader {
     final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMsg =
           String.format("Was not able to retrieve definitions of type %s", type);
       log.error(errorMsg, e);
@@ -534,17 +534,17 @@ public class DefinitionReaderES implements DefinitionReader {
       query.mustNot(existsQuery(TENANT_ID));
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Was not able to fetch [%s] definition with key [%s], version [%s] and tenantId [%s]",
               type, definitionKey, validVersion, tenantId);
@@ -576,8 +576,8 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionPerTenant(
-          final DefinitionType type, final String key) {
+  List<T> getLatestFullyImportedDefinitionPerTenant(
+      final DefinitionType type, final String key) {
     log.debug(
         "Fetching latest fully imported [{}] definitions for key [{}] on each tenant", type, key);
 
@@ -620,10 +620,10 @@ public class DefinitionReaderES implements DefinitionReader {
     final SearchRequest searchRequest =
         new SearchRequest(resolveIndexNameForType(type)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format("Was not able to fetch latest [%s] definitions for key [%s]", type, key);
       log.error(reason, e);
@@ -665,13 +665,13 @@ public class DefinitionReaderES implements DefinitionReader {
             .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
             .size(LIST_FETCH_LIMIT);
     // 1. group by key and type
-    List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
+    final List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
     keyAndTypeSources.add(
         new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
     keyAndTypeSources.add(
         new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field(DatabaseConstants.INDEX));
 
-    CompositeAggregationBuilder keyAndTypeAggregation =
+    final CompositeAggregationBuilder keyAndTypeAggregation =
         new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
             .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
             .subAggregation(tenantsAggregation)
@@ -740,7 +740,7 @@ public class DefinitionReaderES implements DefinitionReader {
     SearchRequest searchRequest =
         new SearchRequest(definitionIndexNames).source(searchSourceBuilder);
 
-    List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets = new ArrayList<>();
+    final List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets = new ArrayList<>();
     try {
       SearchResponse searchResponse = esClient.search(searchRequest);
       ParsedComposite keyAndTypeAggregationResult =
@@ -756,7 +756,7 @@ public class DefinitionReaderES implements DefinitionReader {
         keyAndTypeAggregationResult =
             searchResponse.getAggregations().get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Was not able to fetch definitions.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -766,19 +766,19 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> retrieveResultsFromLatestDefinitionPerTenant(
-          final DefinitionType type, final SearchResponse searchResponse) {
+  List<T> retrieveResultsFromLatestDefinitionPerTenant(
+      final DefinitionType type, final SearchResponse searchResponse) {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    List<T> results = new ArrayList<>();
+    final List<T> results = new ArrayList<>();
     final ParsedFilter filteredDefsAgg =
         searchResponse.getAggregations().get(DEFINITION_KEY_FILTER_AGGREGATION);
     final ParsedStringTerms tenantsAgg = filteredDefsAgg.getAggregations().get(TENANT_AGGREGATION);
 
     // There should be max. one version bucket in each tenant bucket containing the latest
     // definition for this tenant
-    for (Terms.Bucket tenantBucket : tenantsAgg.getBuckets()) {
+    for (final Terms.Bucket tenantBucket : tenantsAgg.getBuckets()) {
       final ParsedStringTerms versionsAgg = tenantBucket.getAggregations().get(VERSION_AGGREGATION);
-      for (Terms.Bucket b : versionsAgg.getBuckets()) {
+      for (final Terms.Bucket b : versionsAgg.getBuckets()) {
         final ParsedTopHits topHits = b.getAggregations().get(TOP_HITS_AGGREGATION);
         results.addAll(
             ElasticsearchReaderUtil.mapHits(
@@ -792,13 +792,13 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      Function<SearchHit, T> createMappingFunctionForDefinitionType(final Class<T> type) {
+  Function<SearchHit, T> createMappingFunctionForDefinitionType(final Class<T> type) {
     return hit -> {
       final String sourceAsString = hit.getSourceAsString();
       try {
-        T definitionDto = objectMapper.readValue(sourceAsString, type);
+        final T definitionDto = objectMapper.readValue(sourceAsString, type);
         if (ProcessDefinitionOptimizeDto.class.equals(type)) {
-          ProcessDefinitionOptimizeDto processDefinition =
+          final ProcessDefinitionOptimizeDto processDefinition =
               (ProcessDefinitionOptimizeDto) definitionDto;
           processDefinition.setType(DefinitionType.PROCESS);
           processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
@@ -806,7 +806,7 @@ public class DefinitionReaderES implements DefinitionReader {
           definitionDto.setType(DefinitionType.DECISION);
         }
         return definitionDto;
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String reason =
             "While mapping search results to class {} "
                 + "it was not possible to deserialize a hit from Elasticsearch!"
@@ -818,7 +818,7 @@ public class DefinitionReaderES implements DefinitionReader {
     };
   }
 
-  private DefinitionType resolveDefinitionTypeFromIndexAlias(String indexName) {
+  private DefinitionType resolveDefinitionTypeFromIndexAlias(final String indexName) {
     if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexES()))
         || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()))) {
       return DefinitionType.PROCESS;
@@ -829,7 +829,7 @@ public class DefinitionReaderES implements DefinitionReader {
     }
   }
 
-  private boolean resolveIsEventProcessFromIndexAlias(String indexName) {
+  private boolean resolveIsEventProcessFromIndexAlias(final String indexName) {
     return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()));
   }
 

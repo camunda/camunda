@@ -24,12 +24,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataRepositoryES implements MappingMetadataRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final OptimizeIndexNameService indexNameService;
 
   @Override
   public List<IndexMappingCreator<?>> getAllMappings() {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     return mappingUtil.getAllMappings(indexNameService.getIndexPrefix());
   }
 }

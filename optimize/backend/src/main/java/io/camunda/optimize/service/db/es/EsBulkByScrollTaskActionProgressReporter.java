@@ -21,17 +21,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EsBulkByScrollTaskActionProgressReporter {
+
   private final Logger logger;
   private final ScheduledExecutorService executorService;
   private final String action;
   private final OptimizeElasticsearchClient esClient;
 
   public EsBulkByScrollTaskActionProgressReporter(
-      String loggerName, OptimizeElasticsearchClient esClient, String action) {
-    this.logger = LoggerFactory.getLogger(loggerName);
+      final String loggerName, final OptimizeElasticsearchClient esClient, final String action) {
+    logger = LoggerFactory.getLogger(loggerName);
     this.esClient = esClient;
     this.action = action;
-    this.executorService =
+    executorService =
         Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat(loggerName + "-progress-%d").build());
   }
@@ -40,9 +41,10 @@ public class EsBulkByScrollTaskActionProgressReporter {
     logger.debug("Start reporting progress...");
     executorService.scheduleAtFixedRate(
         () -> {
-          ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
+          final ListTasksRequest request = new ListTasksRequest().setActions(action)
+              .setDetailed(true);
           try {
-            ListTasksResponse response = esClient.getTaskList(request);
+            final ListTasksResponse response = esClient.getTaskList(request);
             final List<BulkByScrollTask.Status> currentTasksStatus =
                 response.getTasks().stream()
                     .filter(taskInfo -> taskInfo.getStatus() instanceof BulkByScrollTask.Status)
@@ -53,17 +55,17 @@ public class EsBulkByScrollTaskActionProgressReporter {
                 status -> {
                   final long sumOfProcessedDocs =
                       status.getDeleted() + status.getCreated() + status.getUpdated();
-                  int progress =
+                  final int progress =
                       status.getTotal() > 0
                           ? Double.valueOf((double) sumOfProcessedDocs / status.getTotal() * 100.0D)
-                              .intValue()
+                          .intValue()
                           : 0;
                   logger.info(
                       "Current {} BulkByScrollTaskTask progress: {}%, total: {}, done: {}",
                       action, progress, status.getTotal(), sumOfProcessedDocs);
                 });
 
-          } catch (IOException e) {
+          } catch (final IOException e) {
             logger.error("Could not retrieve progress from Elasticsearch.", e);
           }
         },
@@ -76,7 +78,7 @@ public class EsBulkByScrollTaskActionProgressReporter {
     try {
       logger.debug("Stop reporting progress!");
       executorService.shutdownNow();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("Failed stopping progress reporting thread");
     }
   }

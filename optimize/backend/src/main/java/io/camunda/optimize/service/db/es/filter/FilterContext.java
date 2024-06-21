@@ -14,6 +14,7 @@ import lombok.Value;
 @Builder
 @Value
 public class FilterContext {
+
   ZoneId timezone;
   boolean userTaskReport;
 }

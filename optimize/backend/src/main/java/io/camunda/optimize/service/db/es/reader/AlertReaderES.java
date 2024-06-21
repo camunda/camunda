@@ -50,7 +50,7 @@ public class AlertReaderES implements AlertReader {
     final CountRequest countRequest = new CountRequest(ALERT_INDEX_NAME);
     try {
       return esClient.count(countRequest).getCount();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve alert count!", e);
     }
   }
@@ -59,10 +59,10 @@ public class AlertReaderES implements AlertReader {
   public List<AlertDefinitionDto> getStoredAlerts() {
     log.debug("getting all stored alerts");
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(ALERT_INDEX_NAME)
             .source(searchSourceBuilder)
             .scroll(
@@ -71,10 +71,10 @@ public class AlertReaderES implements AlertReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse scrollResp;
+    final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve stored alerts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
     }
@@ -88,15 +88,15 @@ public class AlertReaderES implements AlertReader {
   }
 
   @Override
-  public Optional<AlertDefinitionDto> getAlert(String alertId) {
+  public Optional<AlertDefinitionDto> getAlert(final String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
-    GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME).id(alertId);
+    final GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME).id(alertId);
 
-    GetResponse getResponse;
+    final GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch alert with id [%s]", alertId);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch alert with id [%s]", alertId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -105,32 +105,33 @@ public class AlertReaderES implements AlertReader {
       return Optional.empty();
     }
 
-    String responseAsString = getResponse.getSourceAsString();
+    final String responseAsString = getResponse.getSourceAsString();
 
     try {
       return Optional.ofNullable(
           objectMapper.readValue(responseAsString, AlertDefinitionDto.class));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logError(alertId);
       throw new OptimizeRuntimeException("Can't fetch alert");
     }
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+  public List<AlertDefinitionDto> getAlertsForReport(final String reportId) {
     log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(
+        searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch alerts for report with id [%s]", reportId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -141,19 +142,20 @@ public class AlertReaderES implements AlertReader {
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
+  public List<AlertDefinitionDto> getAlertsForReports(final List<String> reportIds) {
     log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
     final QueryBuilder query = QueryBuilders.termsQuery(AlertIndex.REPORT_ID, reportIds);
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(
+        searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -163,7 +165,7 @@ public class AlertReaderES implements AlertReader {
         searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
-  private void logError(String alertId) {
+  private void logError(final String alertId) {
     log.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
   }
 }

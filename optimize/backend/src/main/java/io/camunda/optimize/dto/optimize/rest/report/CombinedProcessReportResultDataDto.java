@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CombinedProcessReportResultDataDto<T> {
+
   protected Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> data;
   private long instanceCount;
 }

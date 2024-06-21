@@ -37,6 +37,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return false;
   }
 
+  @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
   }

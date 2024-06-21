@@ -43,6 +43,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @AllArgsConstructor
 public class ProcessVariableUpdateWriter {
+
   private static final String VARIABLE_UPDATES_FROM_ENGINE = "variableUpdatesFromEngine";
 
   private final ObjectMapper objectMapper;

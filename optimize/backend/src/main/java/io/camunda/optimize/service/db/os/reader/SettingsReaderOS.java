@@ -44,7 +44,7 @@ public class SettingsReaderOS implements SettingsReader {
     final GetResponse<SettingsDto> getResponse =
         osClient.get(getReqBuilder, SettingsDto.class, errorMessage);
     if (getResponse.found()) {
-      SettingsDto result = getResponse.source();
+      final SettingsDto result = getResponse.source();
       if (Objects.nonNull(result)) {
         if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());

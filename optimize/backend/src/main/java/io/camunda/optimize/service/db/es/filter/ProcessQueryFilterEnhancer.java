@@ -61,8 +61,10 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
 
   private final ConfigurationService configurationService;
   private final Environment environment;
-  @Getter private final InstanceStartDateQueryFilter instanceStartDateQueryFilter;
-  @Getter private final InstanceEndDateQueryFilter instanceEndDateQueryFilter;
+  @Getter
+  private final InstanceStartDateQueryFilter instanceStartDateQueryFilter;
+  @Getter
+  private final InstanceEndDateQueryFilter instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
   private final ProcessMultiVariableQueryFilter multiVariableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;

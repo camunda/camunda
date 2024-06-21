@@ -151,7 +151,7 @@ public class EventCountService {
       final String searchTerm,
       final EventCountRequestDto eventCountRequestDto,
       final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourcesByType) {
-    List<EventCountResponseDto> matchingExternalEvents = new ArrayList<>();
+    final List<EventCountResponseDto> matchingExternalEvents = new ArrayList<>();
     final AtomicBoolean includeAllGroups = new AtomicBoolean(false);
     final List<String> externalGroups =
         sourcesByType.get(EventSourceType.EXTERNAL).stream()
@@ -185,8 +185,8 @@ public class EventCountService {
           sourcesByType.get(EventSourceType.EXTERNAL);
       return externalEventSources.size() == 1
           && ((ExternalEventSourceEntryDto) externalEventSources.get(0))
-              .getConfiguration()
-              .isIncludeAllGroups();
+          .getConfiguration()
+          .isIncludeAllGroups();
     }
     return false;
   }
@@ -236,15 +236,15 @@ public class EventCountService {
       final CamundaEventSourceEntryDto camundaEventSourceEntryDto,
       final EventTypeDto labeledEventTypeDto) {
     return labeledEventTypeDto
-            .getEventName()
-            .equalsIgnoreCase(
-                applyCamundaProcessInstanceStartEventSuffix(
-                    camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()))
+        .getEventName()
+        .equalsIgnoreCase(
+            applyCamundaProcessInstanceStartEventSuffix(
+                camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()))
         || labeledEventTypeDto
-            .getEventName()
-            .equalsIgnoreCase(
-                applyCamundaProcessInstanceEndEventSuffix(
-                    camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()));
+        .getEventName()
+        .equalsIgnoreCase(
+            applyCamundaProcessInstanceEndEventSuffix(
+                camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()));
   }
 
   private void addSuggestionsForExternalEventCounts(
@@ -286,7 +286,7 @@ public class EventCountService {
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
       return BpmnModelUtil.parseBpmnModel(xmlString);
-    } catch (ModelParseException ex) {
+    } catch (final ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }
   }
@@ -294,7 +294,7 @@ public class EventCountService {
   private Set<EventTypeDto> getSuggestedExternalEventsForGivenMappings(
       final List<EventTypeDto> eventsMappedToIncomingNodes,
       final List<EventTypeDto> eventsMappedToOutgoingNodes) {
-    List<EventSequenceCountDto> suggestedEventSequenceCandidates =
+    final List<EventSequenceCountDto> suggestedEventSequenceCandidates =
         eventSequenceCountReader.getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
             eventsMappedToIncomingNodes, eventsMappedToOutgoingNodes);
 
@@ -319,12 +319,12 @@ public class EventCountService {
       final EventCountRequestDto eventCountRequestDto,
       final Map<String, EventMappingDto> currentMappings,
       final BpmnModelInstance bpmnModelForXml) {
-    List<FlowNodeDataDto> xmlFlowNodeIds =
+    final List<FlowNodeDataDto> xmlFlowNodeIds =
         eventCountRequestDto.getXml() == null
             ? Collections.emptyList()
             : extractFlowNodeData(bpmnModelForXml);
-    String targetFlowNodeId = eventCountRequestDto.getTargetFlowNodeId();
-    Set<String> flowNodeIds =
+    final String targetFlowNodeId = eventCountRequestDto.getTargetFlowNodeId();
+    final Set<String> flowNodeIds =
         xmlFlowNodeIds.stream().map(flowNode -> flowNode.getId()).collect(Collectors.toSet());
 
     if (targetFlowNodeId != null && !flowNodeIds.contains(targetFlowNodeId)) {
@@ -339,12 +339,12 @@ public class EventCountService {
   private List<EventTypeDto> getNearestIncomingMappedEvents(
       final Map<String, EventMappingDto> currentMappings, final FlowNode targetFlowNode) {
     return getNearestMappedFlowNodeIds(
-            currentMappings,
-            targetFlowNode,
-            target ->
-                target.getIncoming().stream()
-                    .map(SequenceFlow::getSource)
-                    .collect(Collectors.toList()))
+        currentMappings,
+        targetFlowNode,
+        target ->
+            target.getIncoming().stream()
+                .map(SequenceFlow::getSource)
+                .collect(Collectors.toList()))
         .stream()
         .map(Objects.requireNonNull(currentMappings)::get)
         .map(mapping -> Optional.ofNullable(mapping.getEnd()).orElse(mapping.getStart()))
@@ -354,12 +354,12 @@ public class EventCountService {
   private List<EventTypeDto> getNearestOutgoingMappedEvents(
       final Map<String, EventMappingDto> currentMappings, final FlowNode targetFlowNode) {
     return getNearestMappedFlowNodeIds(
-            currentMappings,
-            targetFlowNode,
-            target ->
-                target.getOutgoing().stream()
-                    .map(SequenceFlow::getTarget)
-                    .collect(Collectors.toList()))
+        currentMappings,
+        targetFlowNode,
+        target ->
+            target.getOutgoing().stream()
+                .map(SequenceFlow::getTarget)
+                .collect(Collectors.toList()))
         .stream()
         .map(Objects.requireNonNull(currentMappings)::get)
         .map(mapping -> Optional.ofNullable(mapping.getStart()).orElse(mapping.getEnd()))
@@ -375,7 +375,7 @@ public class EventCountService {
       final Map<String, EventMappingDto> currentMappings,
       final FlowNode targetFlowNode,
       final Function<FlowNode, List<FlowNode>> getNextFlowNodeCandidates) {
-    List<FlowNode> nearestFlowNodes = getNextFlowNodeCandidates.apply(targetFlowNode);
+    final List<FlowNode> nearestFlowNodes = getNextFlowNodeCandidates.apply(targetFlowNode);
     List<String> mappedFlowNodeIds =
         findMappedFlowNodeIdsFromList(currentMappings, nearestFlowNodes);
     if (mappedFlowNodeIds.isEmpty()) {

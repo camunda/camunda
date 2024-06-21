@@ -19,6 +19,8 @@ import lombok.NonNull;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class TenantIdWithDefinitionsDto {
+
   private String id;
-  @NonNull private List<SimpleDefinitionDto> definitions;
+  @NonNull
+  private List<SimpleDefinitionDto> definitions;
 }

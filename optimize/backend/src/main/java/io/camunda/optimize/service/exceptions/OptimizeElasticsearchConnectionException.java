@@ -8,9 +8,10 @@
 package io.camunda.optimize.service.exceptions;
 
 public class OptimizeElasticsearchConnectionException extends OptimizeRuntimeException {
+
   public static final String ERROR_CODE = "elasticsearchConnectionError";
 
-  public OptimizeElasticsearchConnectionException(String message, Throwable e) {
+  public OptimizeElasticsearchConnectionException(final String message, final Throwable e) {
     super(message, e);
   }
 

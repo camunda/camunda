@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlEngineImportMediator
     extends DefinitionXmlImportMediator<
-        ProcessDefinitionXmlImportIndexHandler, ProcessDefinitionXmlEngineDto> {
+    ProcessDefinitionXmlImportIndexHandler, ProcessDefinitionXmlEngineDto> {
 
   private final ProcessDefinitionXmlFetcher engineEntityFetcher;
 

@@ -124,17 +124,17 @@ public class ReportImportService {
         reportExportDto -> {
           try {
             validateReportOrFail(userId, collection, reportExportDto);
-          } catch (OptimizeImportIncorrectIndexVersionException e) {
+          } catch (final OptimizeImportIncorrectIndexVersionException e) {
             indexMismatches.addAll(e.getMismatchingIndices());
-          } catch (OptimizeImportDefinitionDoesNotExistException e) {
+          } catch (final OptimizeImportDefinitionDoesNotExistException e) {
             missingDefinitions.addAll(e.getMissingDefinitions());
-          } catch (OptimizeImportForbiddenException e) {
+          } catch (final OptimizeImportForbiddenException e) {
             forbiddenDefinitions.addAll(e.getForbiddenDefinitions());
-          } catch (OptimizeNonDefinitionScopeCompliantException e) {
+          } catch (final OptimizeNonDefinitionScopeCompliantException e) {
             definitionsNotInScope.addAll(e.getConflictedItems());
-          } catch (OptimizeNonTenantScopeCompliantException e) {
+          } catch (final OptimizeNonTenantScopeCompliantException e) {
             tenantsNotInScope.addAll(e.getConflictedItems());
-          } catch (OptimizeImportDescriptionNotValidException e) {
+          } catch (final OptimizeImportDescriptionNotValidException e) {
             invalidReportIds.addAll(e.getInvalidEntityIds());
           }
         });
@@ -179,27 +179,23 @@ public class ReportImportService {
       final ReportDefinitionExportDto reportToImport,
       final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     switch (reportToImport.getExportEntityType()) {
-      case SINGLE_PROCESS_REPORT ->
-          importProcessReportIntoCollection(
-              Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-              collectionId,
-              (SingleProcessReportDefinitionExportDto) reportToImport,
-              originalIdToNewIdMap);
-      case SINGLE_DECISION_REPORT ->
-          importDecisionReportIntoCollection(
-              Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-              collectionId,
-              (SingleDecisionReportDefinitionExportDto) reportToImport,
-              originalIdToNewIdMap);
-      case COMBINED_REPORT ->
-          importCombinedProcessReportIntoCollection(
-              Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-              collectionId,
-              (CombinedProcessReportDefinitionExportDto) reportToImport,
-              originalIdToNewIdMap);
-      default ->
-          throw new OptimizeRuntimeException(
-              "Unknown single report entity type: " + reportToImport.getExportEntityType());
+      case SINGLE_PROCESS_REPORT -> importProcessReportIntoCollection(
+          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+          collectionId,
+          (SingleProcessReportDefinitionExportDto) reportToImport,
+          originalIdToNewIdMap);
+      case SINGLE_DECISION_REPORT -> importDecisionReportIntoCollection(
+          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+          collectionId,
+          (SingleDecisionReportDefinitionExportDto) reportToImport,
+          originalIdToNewIdMap);
+      case COMBINED_REPORT -> importCombinedProcessReportIntoCollection(
+          Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
+          collectionId,
+          (CombinedProcessReportDefinitionExportDto) reportToImport,
+          originalIdToNewIdMap);
+      default -> throw new OptimizeRuntimeException(
+          "Unknown single report entity type: " + reportToImport.getExportEntityType());
     }
   }
 
@@ -377,7 +373,7 @@ public class ReportImportService {
       final ReportDefinitionExportDto reportToImport) {
     try {
       reportService.validateReportDescription(reportToImport.getDescription());
-    } catch (OptimizeValidationException ex) {
+    } catch (final OptimizeValidationException ex) {
       throw new OptimizeImportDescriptionNotValidException(Set.of(reportToImport.getId()));
     }
     switch (reportToImport.getExportEntityType()) {
@@ -419,7 +415,7 @@ public class ReportImportService {
   }
 
   private String getFullyQualifiedIndexName(final String name, final int version) {
-    String indexName =
+    final String indexName =
         OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
             name, Integer.toString(version));
     return OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix(
@@ -430,7 +426,7 @@ public class ReportImportService {
       final int targetVersion,
       final String rawIndexName,
       final ReportDefinitionExportDto exportDto) {
-    String targetName = getFullyQualifiedIndexName(rawIndexName, targetVersion);
+    final String targetName = getFullyQualifiedIndexName(rawIndexName, targetVersion);
     if (targetVersion != exportDto.getSourceIndexVersion()) {
       throw new OptimizeImportIncorrectIndexVersionException(
           "Could not import because source and target index versions do not match",

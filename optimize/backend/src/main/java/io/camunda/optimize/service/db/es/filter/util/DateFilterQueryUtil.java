@@ -32,6 +32,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterQueryUtil {
+
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
@@ -41,7 +42,7 @@ public class DateFilterQueryUtil {
       final String dateField,
       final ZoneId timezone) {
     if (dates != null) {
-      for (DateFilterDataDto<?> dateDto : dates) {
+      for (final DateFilterDataDto<?> dateDto : dates) {
         createRangeQuery(dateDto, dateField, timezone).ifPresent(query::filter);
       }
     }

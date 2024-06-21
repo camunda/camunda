@@ -71,6 +71,13 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    return Optional.of(
+        retrieveMinMaxDurationStats(context, baseQuery, getUserTaskDurationTime(context)));
+  }
+
+  @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse response,
@@ -95,13 +102,6 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   protected void addGroupByAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new DurationGroupByDto());
-  }
-
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    return Optional.of(
-        retrieveMinMaxDurationStats(context, baseQuery, getUserTaskDurationTime(context)));
   }
 
   private UserTaskDurationTime getUserTaskDurationTime(

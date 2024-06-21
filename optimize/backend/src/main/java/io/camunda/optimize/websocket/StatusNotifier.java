@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StatusNotifier implements ImportObserver {
+
   private static final Logger logger = LoggerFactory.getLogger(StatusNotifier.class);
 
   private final StatusCheckingService statusCheckingService;

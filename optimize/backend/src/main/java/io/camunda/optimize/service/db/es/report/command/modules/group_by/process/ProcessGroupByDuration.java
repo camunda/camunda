@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByDuration extends ProcessGroupByPart {
+
   private final DurationAggregationService durationAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
@@ -52,6 +53,12 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
+  }
+
+  @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse response,
@@ -64,12 +71,6 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
     compositeCommandResult.setGroupByKeyOfNumericType(true);
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByPart.isKeyOfNumericType(context));
-  }
-
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
   @Override

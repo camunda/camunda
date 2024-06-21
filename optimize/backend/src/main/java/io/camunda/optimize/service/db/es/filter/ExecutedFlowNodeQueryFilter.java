@@ -35,16 +35,17 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
       final BoolQueryBuilder query,
       final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
-    for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
+    final List<QueryBuilder> filters = query.filter();
+    for (final ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+  private QueryBuilder createFilterQueryBuilder(
+      final ExecutedFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
             nestedQuery(
                 FLOW_NODE_INSTANCES,
@@ -52,7 +53,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
                 ScoreMode.None));
       }
     } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
             nestedQuery(
                 FLOW_NODE_INSTANCES,

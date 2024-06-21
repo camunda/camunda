@@ -177,8 +177,8 @@ public class ManagementDashboardService {
     dashboardDefinition.setName(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
     dashboardDefinition.setTiles(reportsForDashboard);
 
-    DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
-    RollingDateFilterDataDto rollingFilter =
+    final DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
+    final RollingDateFilterDataDto rollingFilter =
         new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS));
     filterDto.setData(new DashboardDateFilterDataDto(rollingFilter));
 

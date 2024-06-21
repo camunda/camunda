@@ -28,6 +28,7 @@ import org.springframework.context.ApplicationContext;
 
 public abstract class AbstractCachingAuthorizationService<T>
     implements SessionListener, ConfigurationReloadable {
+
   private static final int CACHE_MAXIMUM_SIZE = 1000;
 
   protected final EngineContextFactory engineContextFactory;
@@ -55,13 +56,13 @@ public abstract class AbstractCachingAuthorizationService<T>
     onSessionCreateOrRefresh(userId);
   }
 
-  private void onSessionCreateOrRefresh(final String identityId) {
-    // invalidate to force removal of old entry synchronously
+  @Override
+  public void onSessionDestroy(final String identityId) {
     userAuthorizationLoadingCache.invalidate(identityId);
   }
 
-  @Override
-  public void onSessionDestroy(final String identityId) {
+  private void onSessionCreateOrRefresh(final String identityId) {
+    // invalidate to force removal of old entry synchronously
     userAuthorizationLoadingCache.invalidate(identityId);
   }
 
@@ -228,11 +229,11 @@ public abstract class AbstractCachingAuthorizationService<T>
       final List<String> relevantPermissions,
       final ResolvedResourceTypeAuthorizations resourceAuthorizations,
       final int resourceType) {
-    boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
-    boolean globalGrantPermission = authorization.getType() == AUTHORIZATION_TYPE_GLOBAL;
-    boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
+    final boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
+    final boolean globalGrantPermission = authorization.getType() == AUTHORIZATION_TYPE_GLOBAL;
+    final boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
     if (hasPermissions && globalGrantPermission && processDefinitionResourceType) {
-      String resourceId = authorization.getResourceId();
+      final String resourceId = authorization.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
         resourceAuthorizations.grantToSeeAllResources();
       } else if (!resourceId.isEmpty()) {
@@ -246,11 +247,11 @@ public abstract class AbstractCachingAuthorizationService<T>
       final List<String> relevantPermissions,
       final ResolvedResourceTypeAuthorizations resourceAuthorizations,
       final int resourceType) {
-    boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
-    boolean grantPermission = authorization.getType() == AUTHORIZATION_TYPE_GRANT;
-    boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
+    final boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
+    final boolean grantPermission = authorization.getType() == AUTHORIZATION_TYPE_GRANT;
+    final boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
     if (hasPermissions && grantPermission && processDefinitionResourceType) {
-      String resourceId = authorization.getResourceId();
+      final String resourceId = authorization.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
         resourceAuthorizations.grantToSeeAllResources();
       }
@@ -262,11 +263,11 @@ public abstract class AbstractCachingAuthorizationService<T>
       final List<String> relevantPermissions,
       final ResolvedResourceTypeAuthorizations resourceAuthorizations,
       final int resourceType) {
-    boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
-    boolean grantPermission = authorization.getType() == AUTHORIZATION_TYPE_GRANT;
-    boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
+    final boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
+    final boolean grantPermission = authorization.getType() == AUTHORIZATION_TYPE_GRANT;
+    final boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
     if (hasPermissions && grantPermission && processDefinitionResourceType) {
-      String resourceId = authorization.getResourceId();
+      final String resourceId = authorization.getResourceId();
       if (!resourceId.isEmpty()) {
         resourceAuthorizations.authorizeResource(resourceId);
       }
@@ -278,11 +279,11 @@ public abstract class AbstractCachingAuthorizationService<T>
       final List<String> relevantPermissions,
       final ResolvedResourceTypeAuthorizations resourceAuthorizations,
       final int resourceType) {
-    boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
-    boolean revokePermission = authorization.getType() == AUTHORIZATION_TYPE_REVOKE;
-    boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
+    final boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
+    final boolean revokePermission = authorization.getType() == AUTHORIZATION_TYPE_REVOKE;
+    final boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
     if (hasPermissions && revokePermission && processDefinitionResourceType) {
-      String resourceId = authorization.getResourceId();
+      final String resourceId = authorization.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
         resourceAuthorizations.revokeToSeeAllResources();
       }
@@ -294,11 +295,11 @@ public abstract class AbstractCachingAuthorizationService<T>
       final List<String> relevantPermissions,
       final ResolvedResourceTypeAuthorizations resourceAuthorizations,
       final int resourceType) {
-    boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
-    boolean revokePermission = authorization.getType() == AUTHORIZATION_TYPE_REVOKE;
-    boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
+    final boolean hasPermissions = hasRelevantPermissions(authorization, relevantPermissions);
+    final boolean revokePermission = authorization.getType() == AUTHORIZATION_TYPE_REVOKE;
+    final boolean processDefinitionResourceType = authorization.getResourceType() == resourceType;
     if (hasPermissions && revokePermission && processDefinitionResourceType) {
-      String resourceId = authorization.getResourceId();
+      final String resourceId = authorization.getResourceId();
       if (!resourceId.isEmpty()) {
         resourceAuthorizations.prohibitResource(resourceId);
       }

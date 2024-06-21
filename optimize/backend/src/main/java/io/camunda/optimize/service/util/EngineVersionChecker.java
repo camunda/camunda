@@ -29,7 +29,8 @@ public class EngineVersionChecker {
   private static final String ERROR_CONNECTION_REFUSED =
       "Engine didn't respond. Can not verify this engine's version";
 
-  @Getter private static final List<String> supportedEngines = new ArrayList<>();
+  @Getter
+  private static final List<String> supportedEngines = new ArrayList<>();
 
   // Any minor or major versions newer than specified here will also be accepted
   static {
@@ -103,10 +104,10 @@ public class EngineVersionChecker {
     final Comparator<String> versionComparator =
         (String a, String b) ->
             Integer.parseInt(Version.getMajorVersionFrom(a))
-                        - Integer.parseInt(Version.getMajorVersionFrom(b))
-                    != 0
+                - Integer.parseInt(Version.getMajorVersionFrom(b))
+                != 0
                 ? Integer.parseInt(Version.getMajorVersionFrom(a))
-                    - Integer.parseInt(Version.getMajorVersionFrom(b))
+                - Integer.parseInt(Version.getMajorVersionFrom(b))
                 : Integer.parseInt(Version.getMinorVersionFrom(a))
                     - Integer.parseInt(Version.getMinorVersionFrom(b));
 

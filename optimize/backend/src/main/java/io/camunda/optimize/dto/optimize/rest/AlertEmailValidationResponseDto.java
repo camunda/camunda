@@ -16,6 +16,7 @@ import lombok.experimental.FieldNameConstants;
 @EqualsAndHashCode(callSuper = true)
 @FieldNameConstants
 public class AlertEmailValidationResponseDto extends ErrorResponseDto {
+
   private final String invalidAlertEmails;
 
   public AlertEmailValidationResponseDto(
@@ -24,7 +25,7 @@ public class AlertEmailValidationResponseDto extends ErrorResponseDto {
         optimizeAlertEmailValidationException.getErrorCode(),
         optimizeAlertEmailValidationException.getMessage(),
         optimizeAlertEmailValidationException.getMessage());
-    this.invalidAlertEmails =
+    invalidAlertEmails =
         String.join(", ", optimizeAlertEmailValidationException.getAlertEmails());
   }
 }

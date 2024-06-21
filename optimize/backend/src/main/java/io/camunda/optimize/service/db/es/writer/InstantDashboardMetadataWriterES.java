@@ -45,28 +45,28 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
   private final ObjectMapper objectMapper;
 
   @Override
-  public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
+  public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
     log.debug("Writing new Instant preview dashboard to Elasticsearch");
-    String id = dashboardDataDto.getInstantDashboardId();
+    final String id = dashboardDataDto.getInstantDashboardId();
     try {
-      IndexRequest request =
+      final IndexRequest request =
           new IndexRequest(INSTANT_DASHBOARD_INDEX_NAME)
               .id(id)
               .source(objectMapper.writeValueAsString(dashboardDataDto), XContentType.JSON)
               .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request);
+      final IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)
           && !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
-        String message =
+        final String message =
             "Could not write Instant preview dashboard data to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (IOException e) {
-      String errorMessage = "Could not write Instant preview dashboard data to Elasticsearch.";
+    } catch (final IOException e) {
+      final String errorMessage = "Could not write Instant preview dashboard data to Elasticsearch.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -75,11 +75,11 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
 
   @Override
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
-      List<Long> hashesAllowed) throws IOException {
-    List<String> dashboardIdsToBeDeleted = new ArrayList<>();
-    SearchRequest searchRequest = new SearchRequest(INSTANT_DASHBOARD_INDEX_NAME);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    BoolQueryBuilder boolQueryBuilder =
+      final List<Long> hashesAllowed) throws IOException {
+    final List<String> dashboardIdsToBeDeleted = new ArrayList<>();
+    final SearchRequest searchRequest = new SearchRequest(INSTANT_DASHBOARD_INDEX_NAME);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final BoolQueryBuilder boolQueryBuilder =
         QueryBuilders.boolQuery()
             .mustNot(
                 QueryBuilders.termsQuery(
@@ -87,7 +87,7 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
     searchSourceBuilder.query(boolQueryBuilder);
     searchRequest.source(searchSourceBuilder);
 
-    SearchResponse searchResponse = esClient.search(searchRequest);
+    final SearchResponse searchResponse = esClient.search(searchRequest);
     final BulkRequest bulkRequest = new BulkRequest();
     log.debug(
         "Deleting [{}] instant dashboard documents by id with bulk request.",

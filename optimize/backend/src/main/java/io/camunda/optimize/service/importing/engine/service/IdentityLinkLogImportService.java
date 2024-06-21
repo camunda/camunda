@@ -46,7 +46,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
       final EngineContext engineContext,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.identityLinkLogWriter = identityLinkLogWriter;
     this.platformUserTaskIdentityCache = platformUserTaskIdentityCache;

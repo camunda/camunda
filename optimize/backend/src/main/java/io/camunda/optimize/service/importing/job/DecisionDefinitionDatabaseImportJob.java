@@ -27,7 +27,7 @@ public class DecisionDefinitionDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
+  protected void persistEntities(final List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
     decisionDefinitionWriter.importDecisionDefinitions(newOptimizeEntities);
   }
 }

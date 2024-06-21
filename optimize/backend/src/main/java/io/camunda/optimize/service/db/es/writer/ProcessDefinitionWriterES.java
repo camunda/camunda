@@ -70,7 +70,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   }
 
   @Override
-  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
+  public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
@@ -86,7 +86,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
               .script(MARK_AS_DELETED_SCRIPT)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format(
               "There was a problem when trying to mark process definition with ID %s as deleted",
@@ -156,8 +156,9 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
         FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
-  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
-    String importItemName = "process definition information";
+  private void writeProcessDefinitionInformation(
+      final List<ProcessDefinitionOptimizeDto> procDefs) {
+    final String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
     esClient.doImportBulkRequestWithList(

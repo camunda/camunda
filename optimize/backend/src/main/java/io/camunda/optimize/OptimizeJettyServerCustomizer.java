@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OptimizeJettyServerCustomizer
     implements WebServerFactoryCustomizer<JettyServletWebServerFactory> {
+
   public static final String EXTERNAL_SUB_PATH = "/external";
   private static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
   private final ConfigurationService configurationService;

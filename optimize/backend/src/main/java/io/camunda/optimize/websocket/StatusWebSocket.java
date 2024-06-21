@@ -26,6 +26,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @Slf4j
 @WebSocket
 public class StatusWebSocket {
+
   private static final String ERROR_MESSAGE = "Web socket connection terminated prematurely!";
   private final StatusCheckingService statusCheckingService =
       ApplicationContextProvider.getBean(StatusCheckingService.class);

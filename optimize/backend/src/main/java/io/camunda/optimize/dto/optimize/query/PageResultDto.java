@@ -19,16 +19,18 @@ import lombok.NonNull;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PageResultDto<T> {
+
   private String pagingState;
   private int limit;
-  @NonNull private List<T> entities = new ArrayList<>();
+  @NonNull
+  private List<T> entities = new ArrayList<>();
 
   public PageResultDto(final int limit) {
     this.limit = limit;
   }
 
   public boolean isEmpty() {
-    return this.entities.isEmpty();
+    return entities.isEmpty();
   }
 
   public boolean isLastPage() {

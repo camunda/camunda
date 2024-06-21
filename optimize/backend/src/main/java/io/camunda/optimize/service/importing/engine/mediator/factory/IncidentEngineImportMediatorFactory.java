@@ -56,7 +56,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
   }
 
   private CompletedIncidentEngineImportMediator createCompletedIncidentEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new CompletedIncidentEngineImportMediator(
         importIndexHandlerRegistry.getCompletedIncidentImportIndexHandler(
             engineContext.getEngineAlias()),
@@ -72,7 +72,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
   }
 
   private OpenIncidentEngineImportMediator createOpenIncidentEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new OpenIncidentEngineImportMediator(
         importIndexHandlerRegistry.getOpenIncidentImportIndexHandler(
             engineContext.getEngineAlias()),

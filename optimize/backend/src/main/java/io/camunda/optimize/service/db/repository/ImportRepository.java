@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ImportRepository {
+
   List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
       List<String> indexTypes);
 

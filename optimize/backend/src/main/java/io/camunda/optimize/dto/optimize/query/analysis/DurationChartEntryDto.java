@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DurationChartEntryDto {
+
   private Long key;
   private Long value;
   private boolean outlier;

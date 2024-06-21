@@ -77,8 +77,7 @@ public class AlertJob implements Job {
                               + "] from Elasticsearch. Report does not exist."));
       final ReportEvaluationInfo reportEvaluationInfo =
           ReportEvaluationInfo.builder(reportDefinition).build();
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-      final SingleReportEvaluationResult<Double> evaluationResult =
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final SingleReportEvaluationResult<Double> evaluationResult =
           (SingleReportEvaluationResult<Double>)
               reportEvaluator.evaluateReport(reportEvaluationInfo).getEvaluationResult();
       final Double reportResult = evaluationResult.getFirstCommandResult().getFirstMeasureData();
@@ -95,7 +94,7 @@ public class AlertJob implements Job {
         // got resolved
         jobExecutionContext.setResult(handleAlertResolved(alert, reportDefinition, reportResult));
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(
           "Error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
     }
@@ -127,7 +126,7 @@ public class AlertJob implements Job {
       final AlertDefinitionDto alert,
       final ReportDefinitionDto<?> reportDefinition,
       final Double reportResult) {
-    AlertJobResult alertJobResult;
+    final AlertJobResult alertJobResult;
     alert.setTriggered(false);
     alertJobResult = new AlertJobResult(alert);
     alertJobResult.setStatusChanged(true);
@@ -166,10 +165,10 @@ public class AlertJob implements Job {
   }
 
   private void fanoutNotification(final AlertNotificationDto notification) {
-    for (AlertNotificationService notificationService : notificationServices) {
+    for (final AlertNotificationService notificationService : notificationServices) {
       try {
         notificationService.notify(notification);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         log.error(
             "Exception thrown while trying to send notification: {}",
             notificationService.getNotificationDescription(),
@@ -178,7 +177,7 @@ public class AlertJob implements Job {
     }
   }
 
-  private boolean isReminder(JobKey key) {
+  private boolean isReminder(final JobKey key) {
     return key.getName().toLowerCase(Locale.ENGLISH).contains("reminder");
   }
 
@@ -198,7 +197,7 @@ public class AlertJob implements Job {
       final AlertDefinitionDto alert,
       final ReportDefinitionDto<?> reportDefinition,
       final Double result) {
-    String statusText =
+    final String statusText =
         AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
             ? "has been reached"
             : "is not exceeded anymore";
@@ -229,7 +228,7 @@ public class AlertJob implements Job {
         + createReportViewLink(alert, notificationType);
   }
 
-  private boolean thresholdExceeded(AlertDefinitionDto alert, Double result) {
+  private boolean thresholdExceeded(final AlertDefinitionDto alert, final Double result) {
     boolean exceeded = false;
     if (result != null) {
       if (AlertThresholdOperator.GREATER.equals(alert.getThresholdOperator())) {
@@ -250,7 +249,7 @@ public class AlertJob implements Job {
 
   private boolean isDurationReport(final ReportDefinitionDto<?> reportDefinition) {
     if (reportDefinition.getData() instanceof ProcessReportDataDto) {
-      ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
+      final ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
       return data.getView().getFirstProperty().equals(ViewProperty.DURATION);
     }
     return false;
@@ -271,9 +270,9 @@ public class AlertJob implements Job {
     if (containerAccessUrl.isPresent()) {
       return containerAccessUrl.get() + createReportViewLinkPath(alert, notificationType);
     } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+      final Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+      final String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+      final Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
       return httpPrefix
           + configurationService.getContainerHost()
           + ":"

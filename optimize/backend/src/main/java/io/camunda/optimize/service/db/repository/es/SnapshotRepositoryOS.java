@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class SnapshotRepositoryOS implements SnapshotRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -86,7 +87,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
               backupId);
       log.error(reason, e);
     } else {
-      String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
+      final String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
       log.error(reason, e);
     }
   }
@@ -94,13 +95,13 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   private void onSnapshotDeleted(
       final DeleteSnapshotResponse deleteSnapshotResponse, final Long backupId) {
     if (deleteSnapshotResponse.acknowledged()) {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
               backupId);
       log.info(reason);
     } else {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Opencsearch.",
               backupId);

@@ -43,6 +43,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
+
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "userTaskIds";
 
   private final ConfigurationService configurationService;
@@ -85,13 +86,13 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
                               context, userTaskSubAggregations));
 
               final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
-              List<GroupByResult> groupedData = new ArrayList<>();
-              for (Terms.Bucket b : userTasksAggregation.getBuckets()) {
+              final List<GroupByResult> groupedData = new ArrayList<>();
+              for (final Terms.Bucket b : userTasksAggregation.getBuckets()) {
                 final String userTaskKey = b.getKeyAsString();
                 if (userTaskNames.containsKey(userTaskKey)) {
                   final List<DistributedByResult> singleResult =
                       distributedByPart.retrieveResult(response, b.getAggregations(), context);
-                  String label = userTaskNames.get(userTaskKey);
+                  final String label = userTaskNames.get(userTaskKey);
                   groupedData.add(
                       GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
                   userTaskNames.remove(userTaskKey);
@@ -107,6 +108,12 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
                       .orElseGet(() -> new ReportSortingDto(null, SortOrder.ASC)));
               compositeCommandResult.setGroups(groupedData);
             });
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(new UserTasksGroupByDto());
   }
 
   private void addMissingGroupByResults(
@@ -144,11 +151,5 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
             .map(Optional::get)
             .map(ProcessDefinitionOptimizeDto.class::cast)
             .collect(Collectors.toList()));
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new UserTasksGroupByDto());
   }
 }

@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionInstanceRepositoryOS implements DecisionInstanceRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
@@ -39,7 +40,7 @@ public class DecisionInstanceRepositoryOS implements DecisionInstanceRepository 
 
   @Override
   public void importDecisionInstances(
-      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+      final String importItemName, final List<DecisionInstanceDto> decisionInstanceDtos) {
     osClient.doImportBulkRequestWithList(
         importItemName,
         decisionInstanceDtos,
@@ -73,7 +74,7 @@ public class DecisionInstanceRepositoryOS implements DecisionInstanceRepository 
     return new BulkOperation.Builder().index(indexOperation).build();
   }
 
-  private String aliasForDecisionDefinitionKey(String decisionDefinitionKey) {
+  private String aliasForDecisionDefinitionKey(final String decisionDefinitionKey) {
     return indexNameService.getOptimizeIndexAliasForIndex(
         getDecisionInstanceIndexAliasName(decisionDefinitionKey));
   }

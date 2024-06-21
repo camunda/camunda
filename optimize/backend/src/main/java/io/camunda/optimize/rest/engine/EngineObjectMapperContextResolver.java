@@ -24,11 +24,11 @@ public class EngineObjectMapperContextResolver implements ContextResolver<Object
 
   public EngineObjectMapperContextResolver(
       @Qualifier("engineMapper") final ObjectMapper objectMapper) {
-    this.engineObjectMapper = objectMapper;
+    engineObjectMapper = objectMapper;
   }
 
   @Override
-  public ObjectMapper getContext(Class<?> type) {
+  public ObjectMapper getContext(final Class<?> type) {
     return engineObjectMapper;
   }
 }

@@ -18,10 +18,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ImportIndexWriter {
+
   private final ImportRepository importRepository;
 
-  public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
-    String importItemName = "import index information";
+  public void importIndexes(final List<EngineImportIndexDto> engineImportIndexDtos) {
+    final String importItemName = "import index information";
     log.debug("Writing [{}] {} to database.", engineImportIndexDtos.size(), importItemName);
     importRepository.importIndices(importItemName, engineImportIndexDtos);
   }

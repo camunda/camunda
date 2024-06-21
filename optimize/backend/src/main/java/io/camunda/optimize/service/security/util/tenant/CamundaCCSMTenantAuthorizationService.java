@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAuthorizationService {
+
   private final CCSMTokenService ccsmTokenService;
   private final ConfigurationService configurationService;
   private final Cache<String, List<TenantDto>> userTenantAuthorizations;

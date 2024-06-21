@@ -15,5 +15,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class LastKpiEvaluationResultsDto implements OptimizeDto {
+
   final Map<String, String> reportIdToValue;
 }

@@ -39,7 +39,7 @@ public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
   }
 
   @Override
-  public String getLatestVersionToKey(String key) {
+  public String getLatestVersionToKey(final String key) {
     return definitionReader.getLatestVersionToKey(DefinitionType.DECISION, key);
   }
 }

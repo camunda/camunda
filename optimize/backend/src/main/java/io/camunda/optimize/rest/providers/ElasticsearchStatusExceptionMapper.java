@@ -21,6 +21,7 @@ import org.elasticsearch.ElasticsearchStatusException;
 @Slf4j
 public class ElasticsearchStatusExceptionMapper
     implements ExceptionMapper<ElasticsearchStatusException> {
+
   private static final String ELASTICSEARCH_ERROR_CODE = "elasticsearchError";
 
   private final LocalizationService localizationService;

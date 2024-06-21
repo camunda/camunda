@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class VariableTermDto {
+
   private String variableName;
   private String variableTerm;
   private Long instanceCount;

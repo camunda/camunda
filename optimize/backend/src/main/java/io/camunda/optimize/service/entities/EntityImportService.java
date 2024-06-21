@@ -126,7 +126,7 @@ public class EntityImportService {
 
     final ObjectMapper objectMapper =
         new ObjectMapperFactory(
-                new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+            new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
             .createOptimizeMapper();
 
     try {
@@ -135,7 +135,7 @@ public class EntityImportService {
           objectMapper.readValue(exportedDtoJson, new TypeReference<>() {});
       // @formatter:on
       final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-      Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
+      final Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
       exportDtos.forEach(exportDto -> violations.addAll(validator.validate(exportDto)));
       if (!violations.isEmpty()) {
         throw new OptimizeImportFileInvalidException(
@@ -147,7 +147,7 @@ public class EntityImportService {
                     .collect(joining(","))));
       }
       return exportDtos;
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new OptimizeImportFileInvalidException(
           "Could not import entities because the provided file is not a valid list of OptimizeEntityExportDtos."
               + " Error:"
@@ -167,8 +167,8 @@ public class EntityImportService {
             reportToImport -> {
               if (reportToImport instanceof SingleProcessReportDefinitionExportDto
                   && ((SingleProcessReportDefinitionExportDto) reportToImport)
-                      .getData()
-                      .isManagementReport()) {
+                  .getData()
+                  .isManagementReport()) {
                 throw new OptimizeValidationException("Cannot import management reports");
               }
               return (ReportDefinitionExportDto) reportToImport;
@@ -230,11 +230,11 @@ public class EntityImportService {
         .anyMatch(
             exportDto ->
                 (DASHBOARD.equals(exportDto.getExportEntityType())
-                        && ((DashboardDefinitionExportDto) exportDto).isInstantPreviewDashboard())
+                    && ((DashboardDefinitionExportDto) exportDto).isInstantPreviewDashboard())
                     || (SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType())
-                        && ((SingleProcessReportDefinitionExportDto) exportDto)
-                            .getData()
-                            .isInstantPreviewReport()))) {
+                    && ((SingleProcessReportDefinitionExportDto) exportDto)
+                    .getData()
+                    .isInstantPreviewReport()))) {
       throw new OptimizeValidationException(
           "Cannot import Instant preview dashboards and reports.");
     }

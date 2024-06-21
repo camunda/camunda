@@ -47,7 +47,7 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
     }
-    SearchRequest.Builder searchReqBuilder =
+    final SearchRequest.Builder searchReqBuilder =
         new SearchRequest.Builder()
             .index(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
             .size(LIST_FETCH_LIMIT)
@@ -59,10 +59,10 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<BusinessKeyDto>> searchResponse;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<BusinessKeyDto>> searchResponse;
     try {
       searchResponse = osClient.retrieveAllScrollResults(searchReqBuilder, BusinessKeyDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "Was not able to retrieve business keys!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

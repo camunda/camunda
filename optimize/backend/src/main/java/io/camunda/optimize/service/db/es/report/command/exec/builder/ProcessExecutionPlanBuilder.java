@@ -41,7 +41,7 @@ public class ProcessExecutionPlanBuilder {
 
   public class AddViewPartBuilder {
 
-    public AddGroupByBuilder view(Class<? extends ProcessViewPart> viewPartClass) {
+    public AddGroupByBuilder view(final Class<? extends ProcessViewPart> viewPartClass) {
       return new AddGroupByBuilder(viewPartClass);
     }
   }
@@ -55,7 +55,7 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public AddDistributedByBuilder groupBy(
-        Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass) {
+        final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass) {
       return new AddDistributedByBuilder(viewPartClass, groupByPartClass);
     }
   }
@@ -73,7 +73,7 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public ReportResultTypeBuilder distributedBy(
-        Class<? extends ProcessDistributedByPart> distributedByPartClass) {
+        final Class<? extends ProcessDistributedByPart> distributedByPartClass) {
       return new ReportResultTypeBuilder(viewPartClass, groupByPartClass, distributedByPartClass);
     }
   }
@@ -145,10 +145,10 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public ProcessReportCmdExecutionPlan<T> build() {
-      final ProcessViewPart viewPart = context.getBean(this.viewPartClass);
-      final GroupByPart<ProcessReportDataDto> groupByPart = context.getBean(this.groupByPartClass);
+      final ProcessViewPart viewPart = context.getBean(viewPartClass);
+      final GroupByPart<ProcessReportDataDto> groupByPart = context.getBean(groupByPartClass);
       final ProcessDistributedByPart distributedByPart =
-          context.getBean(this.distributedByPartClass);
+          context.getBean(distributedByPartClass);
       return new ProcessReportCmdExecutionPlan<>(
           viewPart,
           groupByPart,

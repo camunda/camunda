@@ -37,8 +37,8 @@ public class CompletedProcessInstanceDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> completedProcessInstances) {
-    List<ImportRequestDto> imports = new ArrayList<>();
+  protected void persistEntities(final List<ProcessInstanceDto> completedProcessInstances) {
+    final List<ImportRequestDto> imports = new ArrayList<>();
     imports.addAll(
         completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances));
     imports.addAll(

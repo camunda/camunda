@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface MappingRepository {
+
   IdResponseDto createEventProcessMapping(EventProcessMappingDto eventProcessMappingDto);
 
   void updateEventProcessMappingWithScript(

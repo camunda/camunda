@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @RestControllerEndpoint(id = "backups")
 @Conditional(CamundaCloudCondition.class)
 public class BackupRestService {
+
   private final BackupService backupService;
   private final LocalizationService localizationService;
 
@@ -144,7 +145,7 @@ public class BackupRestService {
         .body(getErrorResponseDto(exception));
   }
 
-  private ErrorResponseDto getErrorResponseDto(Throwable e) {
+  private ErrorResponseDto getErrorResponseDto(final Throwable e) {
     final Class<?> errorClass = e.getClass();
     final String errorCode;
 

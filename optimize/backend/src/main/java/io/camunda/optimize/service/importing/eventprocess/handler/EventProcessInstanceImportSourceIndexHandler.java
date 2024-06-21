@@ -44,6 +44,25 @@ public class EventProcessInstanceImportSourceIndexHandler
   }
 
   @Override
+  public OffsetDateTime getTimestampOfLastEntity() {
+    // current tip of time backoff is applied on read based on the relation to the last execution
+    final OffsetDateTime lastImportedEventTimestamp = timestampOfLastEntity;
+    final OffsetDateTime backOffWindowStart =
+        reduceByCurrentTimeBackoff(
+            Optional.ofNullable(eventImportSourceDto.getLastImportExecutionTimestamp())
+                .orElse(LocalDateUtil.getCurrentDateTime()));
+    if (lastImportedEventTimestamp.isAfter(backOffWindowStart)) {
+      logger.info(
+          "Timestamp is in the current time backoff window of {}ms, will return begin of backoff window as last "
+              + "timestamp",
+          getTipOfTimeBackoffMilliseconds());
+      return reduceByCurrentTimeBackoff(lastImportedEventTimestamp);
+    } else {
+      return lastImportedEventTimestamp;
+    }
+  }
+
+  @Override
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     // we store the plain real last entity timestamps for event processes, so progress can be
     // calculated correctly
@@ -65,24 +84,5 @@ public class EventProcessInstanceImportSourceIndexHandler
   @Override
   protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
     eventImportSourceDto.setLastImportExecutionTimestamp(timestamp);
-  }
-
-  @Override
-  public OffsetDateTime getTimestampOfLastEntity() {
-    // current tip of time backoff is applied on read based on the relation to the last execution
-    final OffsetDateTime lastImportedEventTimestamp = timestampOfLastEntity;
-    final OffsetDateTime backOffWindowStart =
-        reduceByCurrentTimeBackoff(
-            Optional.ofNullable(eventImportSourceDto.getLastImportExecutionTimestamp())
-                .orElse(LocalDateUtil.getCurrentDateTime()));
-    if (lastImportedEventTimestamp.isAfter(backOffWindowStart)) {
-      logger.info(
-          "Timestamp is in the current time backoff window of {}ms, will return begin of backoff window as last "
-              + "timestamp",
-          getTipOfTimeBackoffMilliseconds());
-      return reduceByCurrentTimeBackoff(lastImportedEventTimestamp);
-    } else {
-      return lastImportedEventTimestamp;
-    }
   }
 }

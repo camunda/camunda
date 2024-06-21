@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
+
   protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
 
   public static void validate(final BranchAnalysisRequestDto dto) {
@@ -198,8 +199,7 @@ public class ValidationHelper {
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof FlowNodeStartDateFilterDto
             || filterDto instanceof FlowNodeEndDateFilterDto) {
-          @SuppressWarnings(UNCHECKED_CAST)
-          final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
+          @SuppressWarnings(UNCHECKED_CAST) final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
               (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }

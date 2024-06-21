@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 @AllArgsConstructor
 public class ScopeValidator implements OAuth2TokenValidator<Jwt> {
+
   private final String expectedScope;
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
 

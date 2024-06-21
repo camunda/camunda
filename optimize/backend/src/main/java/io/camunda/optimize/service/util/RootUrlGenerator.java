@@ -28,9 +28,9 @@ public class RootUrlGenerator {
     if (containerAccessUrl.isPresent()) {
       return containerAccessUrl.get();
     } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+      final Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+      final String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+      final Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
       return httpPrefix
           + configurationService.getContainerHost()
           + ":"

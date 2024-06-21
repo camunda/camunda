@@ -53,6 +53,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
+
   public IdentityLinkLogWriter(
       final IndexRepository indexRepository, final ObjectMapper objectMapper) {
     super(indexRepository, objectMapper);
@@ -69,7 +70,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
             .collect(groupingByConcurrent(IdentityLinkLogEntryDto::getTaskId));
 
     final List<FlowNodeInstanceDto> userTaskInstances = new ArrayList<>();
-    for (List<IdentityLinkLogEntryDto> identityLinkLogEntryDtoList :
+    for (final List<IdentityLinkLogEntryDto> identityLinkLogEntryDtoList :
         identityLinksByTaskId.values()) {
       final IdentityLinkLogEntryDto firstOperationEntry = identityLinkLogEntryDtoList.get(0);
       final List<AssigneeOperationDto> assigneeOperations =
@@ -78,10 +79,10 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
           mapToCandidateGroupOperationDtos(identityLinkLogEntryDtoList);
       userTaskInstances.add(
           new FlowNodeInstanceDto(
-                  firstOperationEntry.getProcessDefinitionKey(),
-                  firstOperationEntry.getEngine(),
-                  firstOperationEntry.getProcessInstanceId(),
-                  firstOperationEntry.getTaskId())
+              firstOperationEntry.getProcessDefinitionKey(),
+              firstOperationEntry.getEngine(),
+              firstOperationEntry.getProcessInstanceId(),
+              firstOperationEntry.getTaskId())
               .setAssignee(extractAssignee(assigneeOperations))
               .setCandidateGroups(extractCandidateGroups(candidateGroupOperations))
               .setAssigneeOperations(assigneeOperations)
@@ -89,7 +90,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     }
 
     final Map<String, List<FlowNodeInstanceDto>> processInstanceIdToUserTasks = new HashMap<>();
-    for (FlowNodeInstanceDto userTask : userTaskInstances) {
+    for (final FlowNodeInstanceDto userTask : userTaskInstances) {
       processInstanceIdToUserTasks.putIfAbsent(userTask.getProcessInstanceId(), new ArrayList<>());
       processInstanceIdToUserTasks.get(userTask.getProcessInstanceId()).add(userTask);
     }
@@ -136,15 +137,14 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
   private List<String> extractCandidateGroups(
       final List<CandidateGroupOperationDto> identityLinkLogs) {
-    List<String> candidates = new ArrayList<>();
+    final List<String> candidates = new ArrayList<>();
     identityLinkLogs.forEach(
         logEntry -> {
           switch (logEntry.getOperationType()) {
             case IDENTITY_LINK_OPERATION_ADD -> candidates.add(logEntry.getGroupId());
             case IDENTITY_LINK_OPERATION_DELETE -> candidates.remove(logEntry.getGroupId());
-            default ->
-                log.warn(
-                    "Found unknown identity link operation type [{}]", logEntry.getOperationType());
+            default -> log.warn(
+                "Found unknown identity link operation type [{}]", logEntry.getOperationType());
           }
         });
     return candidates;
@@ -158,7 +158,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
         // will have the exact same timestamp.
         .reduce(
             (first, second) -> {
-              boolean sameTimestampAndFirstIsAddOperation =
+              final boolean sameTimestampAndFirstIsAddOperation =
                   first.getTimestamp().equals(second.getTimestamp())
                       && IDENTITY_LINK_OPERATION_ADD.equals(first.getOperationType())
                       && !IDENTITY_LINK_OPERATION_ADD.equals(second.getOperationType());

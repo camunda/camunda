@@ -27,7 +27,7 @@ public class FlowNodeEndDateQueryFilter implements QueryFilter<FlowNodeDateFilte
       final List<FlowNodeDateFilterDataDto<?>> flowNodeEndDateFilters,
       final FilterContext filterContext) {
     final List<QueryBuilder> filters = query.filter();
-    for (FlowNodeDateFilterDataDto<?> flowNodeEndDateFilter : flowNodeEndDateFilters) {
+    for (final FlowNodeDateFilterDataDto<?> flowNodeEndDateFilter : flowNodeEndDateFilters) {
       filters.add(
           nestedQuery(
               FLOW_NODE_INSTANCES,

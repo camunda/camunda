@@ -45,7 +45,7 @@ public class EngineDataDecisionCleanupService extends CleanupService {
             .getDecisionCleanupConfiguration()
             .getAllDecisionSpecificConfigurationKeys());
     int i = 1;
-    for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
+    for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
       log.info("Decision History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForDecisionKey(startTime, currentProcessDefinitionKey);
       i++;
@@ -53,7 +53,7 @@ public class EngineDataDecisionCleanupService extends CleanupService {
   }
 
   private void performCleanupForDecisionKey(
-      OffsetDateTime startTime, String decisionDefinitionKey) {
+      final OffsetDateTime startTime, final String decisionDefinitionKey) {
     final DecisionDefinitionCleanupConfiguration cleanupConfigurationForKey =
         getCleanupConfiguration()
             .getDecisionDefinitionCleanupConfigurationForKey(decisionDefinitionKey);
@@ -81,6 +81,6 @@ public class EngineDataDecisionCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class SnapshotRepositoryES implements SnapshotRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
@@ -62,7 +63,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       final String snapshotName) {
     return new ActionListener<>() {
       @Override
-      public void onResponse(CreateSnapshotResponse createSnapshotResponse) {
+      public void onResponse(final CreateSnapshotResponse createSnapshotResponse) {
         final SnapshotInfo snapshotInfo = createSnapshotResponse.getSnapshotInfo();
         switch (snapshotInfo
             .state()) { // should not be null as waitForCompletion is true on snapshot request
@@ -88,7 +89,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       }
 
       @Override
-      public void onFailure(Exception e) {
+      public void onFailure(final Exception e) {
         if (e instanceof IOException || e instanceof TransportException) {
           final String reason =
               String.format(
@@ -107,15 +108,15 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       final Long backupId) {
     return new ActionListener<>() {
       @Override
-      public void onResponse(AcknowledgedResponse deleteSnapshotResponse) {
+      public void onResponse(final AcknowledgedResponse deleteSnapshotResponse) {
         if (deleteSnapshotResponse.isAcknowledged()) {
-          String reason =
+          final String reason =
               String.format(
                   "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
                   backupId);
           log.info(reason);
         } else {
-          String reason =
+          final String reason =
               String.format(
                   "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Elasticsearch.",
                   backupId);
@@ -124,7 +125,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       }
 
       @Override
-      public void onFailure(Exception e) {
+      public void onFailure(final Exception e) {
         if (e instanceof IOException || e instanceof TransportException) {
           final String reason =
               String.format(
@@ -132,7 +133,8 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                   backupId);
           log.error(reason, e);
         } else {
-          String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
+          final String reason = String.format("Failed to delete snapshots for backupID [%s]",
+              backupId);
           log.error(reason, e);
         }
       }

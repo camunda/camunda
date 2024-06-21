@@ -11,5 +11,6 @@ import java.util.List;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public interface QueryFilterEnhancer<T> {
+
   void addFilterToQuery(BoolQueryBuilder query, List<T> filter, FilterContext filterContext);
 }

@@ -21,7 +21,7 @@ public class OptimizeObjectMapperContextResolver implements ContextResolver<Obje
   private final ObjectMapper optimizeObjectMapper;
 
   @Override
-  public ObjectMapper getContext(Class<?> type) {
+  public ObjectMapper getContext(final Class<?> type) {
     return optimizeObjectMapper;
   }
 }

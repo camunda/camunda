@@ -9,6 +9,7 @@ package io.camunda.optimize.service.exceptions;
 
 @SuppressWarnings("squid:MaximumInheritanceDepth")
 public class OptimizeImportFileInvalidException extends OptimizeValidationException {
+
   public static final String ERROR_CODE = "importFileInvalid";
 
   public OptimizeImportFileInvalidException(final String message) {

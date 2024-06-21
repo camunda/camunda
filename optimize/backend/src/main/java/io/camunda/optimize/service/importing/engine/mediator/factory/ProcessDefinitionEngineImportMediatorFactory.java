@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessDefinitionEngineImportMediatorFactory
     extends AbstractEngineImportMediatorFactory {
+
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -56,7 +57,7 @@ public class ProcessDefinitionEngineImportMediatorFactory
   }
 
   private ProcessDefinitionEngineImportMediator createProcessDefinitionEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new ProcessDefinitionEngineImportMediator(
         importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(
             engineContext.getEngineAlias()),
@@ -72,7 +73,7 @@ public class ProcessDefinitionEngineImportMediatorFactory
   }
 
   private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new ProcessDefinitionXmlEngineImportMediator(
         importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(
             engineContext.getEngineAlias()),

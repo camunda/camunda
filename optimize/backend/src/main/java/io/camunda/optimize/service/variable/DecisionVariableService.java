@@ -32,7 +32,7 @@ public class DecisionVariableService {
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
 
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
-      List<DecisionVariableNameRequestDto> variableRequestDtos) {
+      final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return variableRequestDtos.stream()
         .flatMap(
             entry ->
@@ -47,7 +47,7 @@ public class DecisionVariableService {
   }
 
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
-      List<DecisionVariableNameRequestDto> variableRequestDtos) {
+      final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return variableRequestDtos.stream()
         .flatMap(
             entry ->
@@ -62,7 +62,7 @@ public class DecisionVariableService {
   }
 
   public List<String> getInputVariableValues(
-      String userId, DecisionVariableValueRequestDto requestDto) {
+      final String userId, final DecisionVariableValueRequestDto requestDto) {
     ensureNotEmpty("decision definition key", requestDto.getDecisionDefinitionKey());
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
@@ -76,7 +76,7 @@ public class DecisionVariableService {
   }
 
   public List<String> getOutputVariableValues(
-      String userId, DecisionVariableValueRequestDto requestDto) {
+      final String userId, final DecisionVariableValueRequestDto requestDto) {
     ensureNotEmpty("decision definition key", requestDto.getDecisionDefinitionKey());
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class RepositoryES implements Repository {
+
   @Override
   public String getDeleteByQueryActionName() {
     return DeleteByQueryAction.NAME;

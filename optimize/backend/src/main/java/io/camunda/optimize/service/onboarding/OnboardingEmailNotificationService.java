@@ -43,11 +43,11 @@ public class OnboardingEmailNotificationService {
     final Optional<ProcessOverviewDto> optProcessOverview =
         processOverviewReader.getProcessOverviewByKey(processKey);
     if (optProcessOverview.isPresent()) {
-      ProcessOverviewDto overviewDto = optProcessOverview.get();
-      String ownerId = overviewDto.getOwner();
+      final ProcessOverviewDto overviewDto = optProcessOverview.get();
+      final String ownerId = overviewDto.getOwner();
       final Optional<UserDto> optProcessOwner = identityService.getUserById(ownerId);
       if (optProcessOwner.isPresent()) {
-        UserDto processOwner = optProcessOwner.get();
+        final UserDto processOwner = optProcessOwner.get();
         final String definitionName =
             definitionService
                 .getLatestCachedDefinitionOnAnyTenant(
@@ -88,7 +88,7 @@ public class OnboardingEmailNotificationService {
   }
 
   public String generateDashboardLinkForProcess(final String processKey) {
-    String rootUrl = rootUrlGenerator.getRootUrl() + "/#";
+    final String rootUrl = rootUrlGenerator.getRootUrl() + "/#";
     return String.format(DASHBOARD_LINK_TEMPLATE, rootUrl, processKey);
   }
 }

@@ -41,19 +41,19 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
   }
 
   public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(
-      TimestampBasedImportPage page) {
+      final TimestampBasedImportPage page) {
     return fetchRunningActivityInstances(
         page.getTimestampOfLastEntity(),
         configurationService.getEngineImportActivityInstanceMaxPageSize());
   }
 
   public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstancesForTimestamp(
-      OffsetDateTime startTimeOfLastInstance) {
+      final OffsetDateTime startTimeOfLastInstance) {
     logger.debug("Fetching running activity instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricActivityInstanceEngineDto> secondEntries =
         fetchWithRetry(() -> performRunningActivityInstanceRequest(startTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running activity instances for set end time within [{}] ms",
         secondEntries.size(),
@@ -62,12 +62,12 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
   }
 
   private List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching historic activity instances ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricActivityInstanceEngineDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricActivityInstanceEngineDto> entries =
         fetchWithRetry(() -> performRunningActivityInstanceRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] running activity instances which started after set timestamp with page size [{}] within [{}] ms",
         entries.size(),
@@ -78,7 +78,7 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
   }
 
   private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)
@@ -86,11 +86,12 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
         .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 
   private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(
-      OffsetDateTime startTimeOfLastInstance) {
+      final OffsetDateTime startTimeOfLastInstance) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)
@@ -100,6 +101,7 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
             configurationService.getEngineImportActivityInstanceMaxPageSize())
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 }

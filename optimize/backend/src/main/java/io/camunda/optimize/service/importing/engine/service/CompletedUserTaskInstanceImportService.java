@@ -38,7 +38,7 @@ public class CompletedUserTaskInstanceImportService
       final EngineContext engineContext,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
@@ -50,7 +50,7 @@ public class CompletedUserTaskInstanceImportService
   @Override
   public void executeImport(
       final List<HistoricUserTaskInstanceDto> pageOfEngineEntities,
-      Runnable importCompleteCallback) {
+      final Runnable importCompleteCallback) {
     log.trace("Importing completed user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -101,12 +101,12 @@ public class CompletedUserTaskInstanceImportService
   private FlowNodeInstanceDto mapEngineEntityToOptimizeEntity(
       final HistoricUserTaskInstanceDto engineEntity) {
     return new FlowNodeInstanceDto(
-            engineEntity.getProcessDefinitionKey(),
-            engineContext.getEngineAlias(),
-            engineEntity.getProcessInstanceId(),
-            engineEntity.getTaskDefinitionKey(),
-            engineEntity.getActivityInstanceId(),
-            engineEntity.getId())
+        engineEntity.getProcessDefinitionKey(),
+        engineContext.getEngineAlias(),
+        engineEntity.getProcessInstanceId(),
+        engineEntity.getTaskDefinitionKey(),
+        engineEntity.getActivityInstanceId(),
+        engineEntity.getId())
         .setTotalDurationInMs(engineEntity.getDuration())
         .setStartDate(engineEntity.getStartTime())
         .setEndDate(engineEntity.getEndTime())

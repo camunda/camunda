@@ -63,6 +63,12 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
+  }
+
+  @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final SearchResponse response,
@@ -85,12 +91,6 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   protected void addGroupByAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new DurationGroupByDto());
-  }
-
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
   private MinMaxStatDto retrieveMinMaxDurationStats(

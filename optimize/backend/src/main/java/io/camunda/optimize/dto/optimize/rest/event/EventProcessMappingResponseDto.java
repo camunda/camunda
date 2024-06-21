@@ -32,8 +32,11 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessMappingResponseDto {
-  @EqualsAndHashCode.Include private String id;
-  @NotBlank private String name;
+
+  @EqualsAndHashCode.Include
+  private String id;
+  @NotBlank
+  private String name;
 
   private String lastModifier;
 
@@ -50,12 +53,13 @@ public class EventProcessMappingResponseDto {
 
   private Double publishingProgress;
 
-  @Builder.Default private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @Builder.Default
+  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
   public static EventProcessMappingResponseDto from(
       final EventProcessMappingDto dto,
-      String lastModifierName,
-      List<EventSourceEntryDto<?>> eventSourcesDtos) {
+      final String lastModifierName,
+      final List<EventSourceEntryDto<?>> eventSourcesDtos) {
     return EventProcessMappingResponseDto.builder()
         .id(dto.getId())
         .lastModified(dto.getLastModified())

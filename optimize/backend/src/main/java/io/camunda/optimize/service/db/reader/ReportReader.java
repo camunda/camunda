@@ -32,7 +32,8 @@ public interface ReportReader {
           SingleReportConfigurationDto.Fields.xml);
   String[] REPORT_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
   String[] ALL_REPORT_INDICES = {
-    SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME
+      SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME,
+      COMBINED_REPORT_INDEX_NAME
   };
 
   Optional<ReportDefinitionDto> getReport(String reportId);

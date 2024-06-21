@@ -94,27 +94,27 @@ public class ModelElementFilterQueryUtil {
           FlowNodeEndDateFilterDto.class);
 
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+      Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              RunningFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createRunningFlowNodesOnlyFilterQuery,
-              CompletedFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCompletedFlowNodesOnlyFilterQuery,
-              CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
-              CanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCanceledFlowNodesOnlyFilterQuery);
+      Map.of(
+          RunningFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createRunningFlowNodesOnlyFilterQuery,
+          CompletedFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCompletedFlowNodesOnlyFilterQuery,
+          CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
+          CanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCanceledFlowNodesOnlyFilterQuery);
 
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>,
-          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
+      Class<? extends ProcessFilterDto<?>>,
+      TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
       FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              FlowNodeStartDateFilterDto.class,
-              ModelElementFilterQueryUtil::createFlowNodeStartDateFilterQuery,
-              FlowNodeEndDateFilterDto.class,
-              ModelElementFilterQueryUtil::createFlowNodeEndDateFilterQuery);
+      Map.of(
+          FlowNodeStartDateFilterDto.class,
+          ModelElementFilterQueryUtil::createFlowNodeStartDateFilterQuery,
+          FlowNodeEndDateFilterDto.class,
+          ModelElementFilterQueryUtil::createFlowNodeEndDateFilterQuery);
 
   private static final NestedDefinitionQueryBuilder NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilder(
@@ -131,7 +131,7 @@ public class ModelElementFilterQueryUtil {
             .filter(filter -> FLOW_NODE_VIEW_LEVEL_FILTERS.contains(filter.getClass()))
             .toList();
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      BoolQueryBuilder viewFilterInstanceQuery =
+      final BoolQueryBuilder viewFilterInstanceQuery =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {

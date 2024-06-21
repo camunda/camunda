@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Component
 public class NumberVariableAggregationService {
+
   public Optional<AggregationBuilder> createNumberVariableAggregation(
       final VariableAggregationContext context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {
@@ -64,7 +65,7 @@ public class NumberVariableAggregationService {
       intervalSize =
           Math.abs(maxVariableValue - baseline)
               / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
-                  - 1); // -1 because the end of the loop is
+              - 1); // -1 because the end of the loop is
       // inclusive and would otherwise create 81 buckets
       intervalSize = intervalSize == 0 ? 1 : roundUpToNearestPowerOfTen(intervalSize);
     }

@@ -42,12 +42,6 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
     startScheduling();
   }
 
-  @Override
-  public synchronized boolean startScheduling() {
-    log.info("Scheduling KPI evaluation scheduler.");
-    return super.startScheduling();
-  }
-
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
     log.info("Stopping KPI evaluation scheduler");
@@ -67,14 +61,14 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
             .map(SimpleDefinitionDto::getKey)
             .collect(Collectors.toList());
 
-    Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
-    for (String processDefinitionKey : processDefinitionKeys) {
-      Map<String, String> reportIdToKpiValue = new HashMap<>();
-      List<KpiResultDto> kpiResultDtos = kpiService.evaluateKpiReports(processDefinitionKey);
-      for (KpiResultDto kpi : kpiResultDtos) {
+    final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
+    for (final String processDefinitionKey : processDefinitionKeys) {
+      final Map<String, String> reportIdToKpiValue = new HashMap<>();
+      final List<KpiResultDto> kpiResultDtos = kpiService.evaluateKpiReports(processDefinitionKey);
+      for (final KpiResultDto kpi : kpiResultDtos) {
         reportIdToKpiValue.put(kpi.getReportId(), kpi.getValue());
       }
-      LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto =
+      final LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto =
           new LastKpiEvaluationResultsDto(reportIdToKpiValue);
       definitionKeyToKpis.put(processDefinitionKey, lastKpiEvaluationResultsDto);
     }
@@ -85,5 +79,11 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
         Duration.ofSeconds(configurationService.getEntityConfiguration().getKpiRefreshInterval()));
+  }
+
+  @Override
+  public synchronized boolean startScheduling() {
+    log.info("Scheduling KPI evaluation scheduler.");
+    return super.startScheduling();
   }
 }

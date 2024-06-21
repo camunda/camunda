@@ -22,7 +22,7 @@ public class ProcessViewUserTaskFrequency extends ProcessViewFrequency {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.USER_TASK);
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);

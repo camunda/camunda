@@ -34,8 +34,7 @@ import org.springframework.context.ApplicationContext;
 @RequiredArgsConstructor
 @Slf4j
 public class LicenseFilter implements Filter {
-  private final LicenseManager licenseManager;
-  private final ApplicationContext applicationContext;
+
   private static final Set<String> EXCLUDED_EXTENSIONS = Set.of("css", "html", "js", "ico");
   private static final Set<String> EXCLUDED_API_CALLS =
       Set.of(
@@ -46,9 +45,11 @@ public class LicenseFilter implements Filter {
           "license/validate",
           "status",
           "readyz");
+  private final LicenseManager licenseManager;
+  private final ApplicationContext applicationContext;
 
   @Override
-  public void init(FilterConfig filterConfig) {
+  public void init(final FilterConfig filterConfig) {
     // nothing to do here
   }
 
@@ -57,15 +58,16 @@ public class LicenseFilter implements Filter {
    * invalid or no license, backend returns status code 403.
    */
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(final ServletRequest request, final ServletResponse response,
+      final FilterChain chain)
       throws IOException, ServletException {
-    HttpServletResponse servletResponse = (HttpServletResponse) response;
-    HttpServletRequest servletRequest = (HttpServletRequest) request;
+    final HttpServletResponse servletResponse = (HttpServletResponse) response;
+    final HttpServletRequest servletRequest = (HttpServletRequest) request;
 
     if (isLicenseCheckNeeded(servletRequest, applicationContext)) {
       try {
         licenseManager.validateLicenseStoredInOptimize();
-      } catch (OptimizeLicenseException e) {
+      } catch (final OptimizeLicenseException e) {
         log.warn("Given License is invalid or not available!");
         constructForbiddenResponse(servletResponse, e);
         return;
@@ -74,8 +76,14 @@ public class LicenseFilter implements Filter {
     chain.doFilter(request, response);
   }
 
+  @Override
+  public void destroy() {
+    // nothing to do here
+  }
+
   private void constructForbiddenResponse(
-      HttpServletResponse servletResponse, OptimizeLicenseException ex) throws IOException {
+      final HttpServletResponse servletResponse, final OptimizeLicenseException ex)
+      throws IOException {
     servletResponse.getWriter().write("{\"errorCode\": \"" + ex.getErrorCode() + "\"}");
     servletResponse.setContentType("application/json");
     servletResponse.setCharacterEncoding("UTF-8");
@@ -83,9 +91,9 @@ public class LicenseFilter implements Filter {
   }
 
   private static boolean isLicenseCheckNeeded(
-      HttpServletRequest servletRequest, ApplicationContext applicationContext) {
-    String requestPath = servletRequest.getServletPath().toLowerCase(Locale.ENGLISH);
-    String pathInfo = servletRequest.getPathInfo();
+      final HttpServletRequest servletRequest, final ApplicationContext applicationContext) {
+    final String requestPath = servletRequest.getServletPath().toLowerCase(Locale.ENGLISH);
+    final String pathInfo = servletRequest.getPathInfo();
 
     return !isStaticResource(requestPath)
         && !isRootRequest(requestPath)
@@ -94,32 +102,27 @@ public class LicenseFilter implements Filter {
         && !isStatusRequest(requestPath);
   }
 
-  private static boolean isCloudEnvironment(ApplicationContext applicationContext) {
+  private static boolean isCloudEnvironment(final ApplicationContext applicationContext) {
     return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles())
         .anyMatch(
             profile ->
                 CLOUD_PROFILE.equalsIgnoreCase(profile) || CCSM_PROFILE.equalsIgnoreCase(profile));
   }
 
-  private static boolean isStatusRequest(String requestPath) {
+  private static boolean isStatusRequest(final String requestPath) {
     return requestPath.equals(STATUS_WEBSOCKET_PATH);
   }
 
-  private static boolean isExcludedApiPath(String pathInfo) {
+  private static boolean isExcludedApiPath(final String pathInfo) {
     return pathInfo != null && EXCLUDED_API_CALLS.stream().anyMatch(pathInfo::contains);
   }
 
-  private static boolean isRootRequest(String requestPath) {
+  private static boolean isRootRequest(final String requestPath) {
     return requestPath.equals("/");
   }
 
-  private static boolean isStaticResource(String requestPath) {
+  private static boolean isStaticResource(final String requestPath) {
     return requestPath.contains("^" + STATIC_RESOURCE_PATH + "/.+")
         || EXCLUDED_EXTENSIONS.stream().anyMatch(ext -> requestPath.endsWith("." + ext));
-  }
-
-  @Override
-  public void destroy() {
-    // nothing to do here
   }
 }

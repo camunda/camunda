@@ -29,7 +29,7 @@ public interface EventTraceStateReader {
     return EVENT_TRACE + "." + searchFieldName;
   }
 
-  default String getIndexName(String indexKey) {
+  default String getIndexName(final String indexKey) {
     return EventTraceStateIndex.constructIndexName(indexKey);
   }
 }

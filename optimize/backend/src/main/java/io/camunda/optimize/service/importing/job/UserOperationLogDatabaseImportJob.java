@@ -48,8 +48,8 @@ public class UserOperationLogDatabaseImportJob extends DatabaseImportJob<UserOpe
   }
 
   private List<ProcessInstanceDto>
-      filterAndMapInstanceSuspensionByInstanceIdOperationsLogsToProcessInstanceDtos(
-          final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+  filterAndMapInstanceSuspensionByInstanceIdOperationsLogsToProcessInstanceDtos(
+      final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
     return userOperationLogEntryDtos.stream()
         .filter(userOpLog -> isSuspensionByInstanceIdOperation(userOpLog.getOperationType()))
         .map(
@@ -65,8 +65,8 @@ public class UserOperationLogDatabaseImportJob extends DatabaseImportJob<UserOpe
 
   private Map<String, String> filterAndMapDefinitionKeySuspensionUserOperationsLogsToMap(
       final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
-    Map<String, String> definitionSuspensionOperationMap = new HashMap<>();
-    for (UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
+    final Map<String, String> definitionSuspensionOperationMap = new HashMap<>();
+    for (final UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
       if (isSuspensionByDefinitionKeyOperation(userOpLog.getOperationType())) {
         definitionSuspensionOperationMap.putIfAbsent(
             userOpLog.getProcessDefinitionKey(),
@@ -77,13 +77,13 @@ public class UserOperationLogDatabaseImportJob extends DatabaseImportJob<UserOpe
   }
 
   private Map<String, Map<String, String>>
-      filterAndMapDefinitionIdSuspensionUserOperationsLogsToMap(
-          final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+  filterAndMapDefinitionIdSuspensionUserOperationsLogsToMap(
+      final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
     // definitionSuspensionOperationMap contains <definitionKey, Map<definitionId, newState>>
     // because the key is needed
     // to find the appropriate instance index to update
-    Map<String, Map<String, String>> definitionSuspensionOperationMap = new HashMap<>();
-    for (UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
+    final Map<String, Map<String, String>> definitionSuspensionOperationMap = new HashMap<>();
+    for (final UserOperationLogEntryDto userOpLog : userOperationLogEntryDtos) {
       if (isSuspensionByDefinitionIdOperation(userOpLog.getOperationType())) {
         definitionSuspensionOperationMap.putIfAbsent(
             userOpLog.getProcessDefinitionKey(), new HashMap<>());

@@ -26,19 +26,20 @@ public class OptimizeMetrics {
   public static final String METRICS_ENDPOINT = "metrics";
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
-      List<T> entities) {
-    OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
+      final List<T> entities) {
+    final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
     entities.forEach(
         entity ->
             getTimer(
-                    OVERALL_IMPORT_TIME_METRIC,
-                    entity.getValueType().name(),
-                    entity.getPartitionId())
+                OVERALL_IMPORT_TIME_METRIC,
+                entity.getValueType().name(),
+                entity.getPartitionId())
                 .record(
                     currentTime.toInstant().toEpochMilli() - entity.getTimestamp(), MILLISECONDS));
   }
 
-  public static Timer getTimer(MetricEnum metric, String recordType, Integer partitionId) {
+  public static Timer getTimer(final MetricEnum metric, final String recordType,
+      final Integer partitionId) {
     return Timer.builder(metric.getName())
         .description(metric.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)

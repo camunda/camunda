@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ValidationErrorResponseDto extends ErrorResponseDto {
+
   private List<ValidationError> validationErrors;
 
   public ValidationErrorResponseDto(
@@ -32,6 +33,7 @@ public class ValidationErrorResponseDto extends ErrorResponseDto {
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   @AllArgsConstructor
   public static class ValidationError {
+
     private String property;
     private String errorMessage;
   }

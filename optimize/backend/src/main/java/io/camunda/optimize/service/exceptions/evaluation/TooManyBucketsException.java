@@ -10,15 +10,16 @@ package io.camunda.optimize.service.exceptions.evaluation;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 
 public class TooManyBucketsException extends ReportEvaluationException {
+
   public static final String ERROR_CODE = "tooManyBuckets";
+
+  public TooManyBucketsException(
+      final AuthorizedReportDefinitionResponseDto reportDefinition, final Exception e) {
+    super(reportDefinition, e);
+  }
 
   @Override
   public String getErrorCode() {
     return ERROR_CODE;
-  }
-
-  public TooManyBucketsException(
-      AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
-    super(reportDefinition, e);
   }
 }

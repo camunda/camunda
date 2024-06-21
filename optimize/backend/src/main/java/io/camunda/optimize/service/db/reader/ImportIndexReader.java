@@ -18,9 +18,10 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ImportIndexReader {
+
   private final ImportRepository importRepository;
 
-  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
+  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
     log.debug("Fetching import index of type [{}]", id);
     return importRepository.getImportIndex(id);
   }

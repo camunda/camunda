@@ -29,7 +29,7 @@ public class NoIncidentQueryFilter implements QueryFilter<NoIncidentFilterDataDt
       final List<NoIncidentFilterDataDto> noIncidentFilterData,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       final BoolQueryBuilder instancesWithNoIncidentFilter =
           boolQuery().mustNot(nestedQuery(INCIDENTS, existsQuery(INCIDENTS), ScoreMode.None));
       filters.add(instancesWithNoIncidentFilter);

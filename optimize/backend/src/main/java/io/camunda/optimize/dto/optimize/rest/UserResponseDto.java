@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class UserResponseDto {
-  @JsonUnwrapped private UserDto userDto;
+
+  @JsonUnwrapped
+  private UserDto userDto;
   private List<AuthorizationType> authorizations;
 }

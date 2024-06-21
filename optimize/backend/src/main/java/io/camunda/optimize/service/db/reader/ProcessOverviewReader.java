@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ProcessOverviewReader {
+
   private final ProcessRepository processRepository;
 
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(

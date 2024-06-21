@@ -59,10 +59,10 @@ public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
                             return expiresAt.isAfter(now)
                                 // token reached last third of lifeTime => refresh
                                 && Duration.between(now, expiresAt).toMinutes()
-                                    <= (configurationService
-                                            .getAuthConfiguration()
-                                            .getTokenLifeTimeMinutes()
-                                        / 3);
+                                <= (configurationService
+                                .getAuthConfiguration()
+                                .getTokenLifeTimeMinutes()
+                                / 3);
                           })
                       .orElse(false))
           .flatMap(sessionService::refreshAuthToken)

@@ -38,6 +38,16 @@ public class RawDecisionInstanceDataGroupByNoneCmd
   }
 
   @Override
+  public CommandEvaluationResult<List<RawDataDecisionInstanceDto>> evaluate(
+      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
+          reportEvaluationContext) {
+    final CommandEvaluationResult<List<RawDataDecisionInstanceDto>> commandResult =
+        super.evaluate(reportEvaluationContext);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(reportEvaluationContext, commandResult);
+    return commandResult;
+  }
+
+  @Override
   protected DecisionReportCmdExecutionPlan<List<RawDataDecisionInstanceDto>> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder) {
     return builder
@@ -48,16 +58,6 @@ public class RawDecisionInstanceDataGroupByNoneCmd
         .distributedBy(DecisionDistributedByNone.class)
         .<RawDataDecisionInstanceDto>resultAsRawData()
         .build();
-  }
-
-  @Override
-  public CommandEvaluationResult<List<RawDataDecisionInstanceDto>> evaluate(
-      final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto>
-          reportEvaluationContext) {
-    final CommandEvaluationResult<List<RawDataDecisionInstanceDto>> commandResult =
-        super.evaluate(reportEvaluationContext);
-    addNewVariablesAndDtoFieldsToTableColumnConfig(reportEvaluationContext, commandResult);
-    return commandResult;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -75,13 +75,13 @@ public class RawDecisionInstanceDataGroupByNoneCmd
     variableNames.addAll(
         ((List<RawDataDecisionInstanceDto>) result.getFirstMeasureData())
             .stream()
-                .flatMap(
-                    rawDataDecisionInstanceDto ->
-                        rawDataDecisionInstanceDto.getOutputVariables().values().stream())
-                .map(this::getPrefixedOutputVariableId)
-                .collect(toList()));
+            .flatMap(
+                rawDataDecisionInstanceDto ->
+                    rawDataDecisionInstanceDto.getOutputVariables().values().stream())
+            .map(this::getPrefixedOutputVariableId)
+            .collect(toList()));
 
-    TableColumnDto tableColumns =
+    final TableColumnDto tableColumns =
         reportEvaluationContext
             .getReportDefinition()
             .getData()

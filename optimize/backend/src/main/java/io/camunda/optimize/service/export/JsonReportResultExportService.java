@@ -34,11 +34,12 @@ public class JsonReportResultExportService {
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(
       final String reportId, final ZoneId timezone, final PaginationDto paginationInfo) {
     log.info("Exporting provided report " + reportId + " as JSON.");
-    ReportDefinitionDto<ReportDataDto> reportData = reportService.getReportDefinition(reportId);
+    final ReportDefinitionDto<ReportDataDto> reportData = reportService.getReportDefinition(
+        reportId);
     final ReportDataDto unevaluatedReportData = reportData.getData();
     // If it's a single report (not combined)
     if (unevaluatedReportData instanceof SingleReportDataDto) {
-      boolean isRawDataReport =
+      final boolean isRawDataReport =
           ((SingleReportDataDto) unevaluatedReportData)
               .getViewProperties()
               .contains(ViewProperty.RAW_DATA);

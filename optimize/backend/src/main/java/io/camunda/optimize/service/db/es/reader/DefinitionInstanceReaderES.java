@@ -67,11 +67,11 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format("Was not able to retrieve definition keys for instances of type %s", type),
           e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
         log.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "

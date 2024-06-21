@@ -22,9 +22,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthorizedException> {
 
+  private static final String NOT_AUTHORIZED_ERROR_CODE = "notAuthorizedError";
   private final LocalizationService localizationService;
   private final AuthCookieService cookieService;
-  private static final String NOT_AUTHORIZED_ERROR_CODE = "notAuthorizedError";
 
   public NotAuthorizedExceptionMapper(
       @Context final LocalizationService localizationService,
@@ -34,7 +34,7 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
   }
 
   @Override
-  public Response toResponse(NotAuthorizedException notAuthorizedException) {
+  public Response toResponse(final NotAuthorizedException notAuthorizedException) {
     log.debug("Mapping NotAuthorizedException");
 
     return Response.status(Response.Status.UNAUTHORIZED)
@@ -44,10 +44,10 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
         .build();
   }
 
-  private ErrorResponseDto getErrorResponseDto(NotAuthorizedException exception) {
-    String errorMessage =
+  private ErrorResponseDto getErrorResponseDto(final NotAuthorizedException exception) {
+    final String errorMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(NOT_AUTHORIZED_ERROR_CODE);
-    String detailedErrorMessage = exception.getMessage();
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(NOT_AUTHORIZED_ERROR_CODE, errorMessage, detailedErrorMessage);
   }

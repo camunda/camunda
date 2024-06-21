@@ -40,7 +40,7 @@ public class DecisionExecutionPlanBuilder {
 
   public class AddViewPartBuilder {
 
-    public AddGroupByBuilder view(Class<? extends DecisionViewPart> viewPartClass) {
+    public AddGroupByBuilder view(final Class<? extends DecisionViewPart> viewPartClass) {
       return new AddGroupByBuilder(viewPartClass);
     }
   }
@@ -54,7 +54,7 @@ public class DecisionExecutionPlanBuilder {
     }
 
     public AddDistributedByBuilder groupBy(
-        Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
+        final Class<? extends GroupByPart<DecisionReportDataDto>> groupByPartClass) {
       return new AddDistributedByBuilder(viewPartClass, groupByPartClass);
     }
   }
@@ -72,7 +72,7 @@ public class DecisionExecutionPlanBuilder {
     }
 
     public ReportResultTypeBuilder distributedBy(
-        Class<? extends DecisionDistributedByPart> distributedByPartClass) {
+        final Class<? extends DecisionDistributedByPart> distributedByPartClass) {
       return new ReportResultTypeBuilder(viewPartClass, groupByPartClass, distributedByPartClass);
     }
   }
@@ -136,10 +136,10 @@ public class DecisionExecutionPlanBuilder {
     }
 
     public DecisionReportCmdExecutionPlan<T> build() {
-      final DecisionViewPart viewPart = context.getBean(this.viewPartClass);
-      final GroupByPart<DecisionReportDataDto> groupByPart = context.getBean(this.groupByPartClass);
+      final DecisionViewPart viewPart = context.getBean(viewPartClass);
+      final GroupByPart<DecisionReportDataDto> groupByPart = context.getBean(groupByPartClass);
       final DecisionDistributedByPart distributedByPart =
-          context.getBean(this.distributedByPartClass);
+          context.getBean(distributedByPartClass);
       return new DecisionReportCmdExecutionPlan<>(
           viewPart,
           groupByPart,

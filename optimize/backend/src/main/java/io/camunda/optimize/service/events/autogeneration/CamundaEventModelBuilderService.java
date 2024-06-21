@@ -96,7 +96,7 @@ public class CamundaEventModelBuilderService {
               generatedModelBuilder, startEvents, processDefinitionKey);
     }
 
-    for (EventTypeDto startEvent : startEvents) {
+    for (final EventTypeDto startEvent : startEvents) {
       if (generatedModelBuilder == null) {
         nextBuilder =
             addStartEvent(
@@ -118,7 +118,7 @@ public class CamundaEventModelBuilderService {
       // be the case
       nextBuilder = processBuilder.startEvent();
     }
-    for (EventTypeDto endEvent : endEvents) {
+    for (final EventTypeDto endEvent : endEvents) {
       if (endEvents.size() > 1) {
         nextBuilder = addOrConnectToGateway(nextBuilder, sourceEntryDto, Diverging);
       }

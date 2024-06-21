@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EventTraceImportMediator
     extends TimestampBasedImportMediator<
-        TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
+    TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
 
   private final EventFetcherService eventService;
 

@@ -16,7 +16,7 @@ public class AllEntitiesBasedImportPage implements ImportPage {
     return indexOfFirstResult;
   }
 
-  public void setIndexOfFirstResult(long indexOfFirstResult) {
+  public void setIndexOfFirstResult(final long indexOfFirstResult) {
     this.indexOfFirstResult = indexOfFirstResult;
   }
 
@@ -24,7 +24,7 @@ public class AllEntitiesBasedImportPage implements ImportPage {
     return pageSize;
   }
 
-  public void setPageSize(long pageSize) {
+  public void setPageSize(final long pageSize) {
     this.pageSize = pageSize;
   }
 }

@@ -52,7 +52,7 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
   @Override
   protected DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstances, final Runnable callback) {
-    CompletedProcessInstanceDatabaseImportJob importJob =
+    final CompletedProcessInstanceDatabaseImportJob importJob =
         new CompletedProcessInstanceDatabaseImportJob(
             completedProcessInstanceWriter,
             camundaEventService,

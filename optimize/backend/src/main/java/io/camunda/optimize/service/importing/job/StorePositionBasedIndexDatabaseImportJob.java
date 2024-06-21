@@ -27,7 +27,7 @@ public class StorePositionBasedIndexDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<PositionBasedImportIndexDto> importIndices) {
+  protected void persistEntities(final List<PositionBasedImportIndexDto> importIndices) {
     positionBasedImportIndexWriter.importIndexes(importIndices);
   }
 }

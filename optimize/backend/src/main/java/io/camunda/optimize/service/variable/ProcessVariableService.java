@@ -56,7 +56,7 @@ public class ProcessVariableService {
         convertReportsToVariableQuery(
             reportService.getAllReportsForIds(reportIds), this::convertToProcessToQueryDto);
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }
@@ -67,7 +67,7 @@ public class ProcessVariableService {
         convertAuthorizedReportsToVariableQuery(
             userId, reportIds, this::convertToProcessToQueryDto);
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }
@@ -81,7 +81,7 @@ public class ProcessVariableService {
             .flatMap(Collection::stream)
             .toList();
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }

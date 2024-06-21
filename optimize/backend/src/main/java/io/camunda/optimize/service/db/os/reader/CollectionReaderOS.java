@@ -45,18 +45,18 @@ public class CollectionReaderOS implements CollectionReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
+  public Optional<CollectionDefinitionDto> getCollection(final String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest.Builder getRequest =
+    final GetRequest.Builder getRequest =
         new GetRequest.Builder().index(COLLECTION_INDEX_NAME).id(collectionId);
     final String errorMessage =
         String.format("Could not fetch collection with id [%s]", collectionId);
-    GetResponse<CollectionDefinitionDto> getResponse =
+    final GetResponse<CollectionDefinitionDto> getResponse =
         osClient.get(getRequest, CollectionDefinitionDto.class, errorMessage);
 
     if (getResponse.found()) {
       if (Objects.isNull(getResponse.source())) {
-        String reason =
+        final String reason =
             "Could not deserialize collection information for collection " + collectionId;
         log.error(
             "Was not able to retrieve collection with id [{}] from OpenSearch. Reason: {}",
@@ -74,7 +74,7 @@ public class CollectionReaderOS implements CollectionReader {
   public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(COLLECTION_INDEX_NAME)
             .query(QueryDSL.matchAll())
@@ -94,10 +94,10 @@ public class CollectionReaderOS implements CollectionReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionDefinitionDto>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionDefinitionDto>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchRequest, CollectionDefinitionDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "Was not able to retrieve collections!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

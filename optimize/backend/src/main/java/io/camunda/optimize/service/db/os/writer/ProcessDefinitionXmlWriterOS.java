@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDefinitionXmlWriterOS implements ProcessDefinitionXmlWriter {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
@@ -42,8 +43,8 @@ public class ProcessDefinitionXmlWriterOS implements ProcessDefinitionXmlWriter 
 
   @Override
   public void importProcessDefinitionXmls(
-      List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
-    String importItemName = "process definition information";
+      final List<ProcessDefinitionOptimizeDto> processDefinitionOptimizeDtos) {
+    final String importItemName = "process definition information";
     log.debug("Writing [{}] {} to OS.", processDefinitionOptimizeDtos.size(), importItemName);
     osClient.doImportBulkRequestWithList(
         importItemName,

@@ -26,7 +26,8 @@ public class CacheRequestFilterFactory implements DynamicFeature {
 
   @Override
   public void configure(final ResourceInfo resourceInfo, final FeatureContext context) {
-    CacheRequest cacheRequest = resourceInfo.getResourceMethod().getAnnotation(CacheRequest.class);
+    final CacheRequest cacheRequest = resourceInfo.getResourceMethod()
+        .getAnnotation(CacheRequest.class);
 
     if (cacheRequest != null) {
       context.register(new CacheRequestFilter());
@@ -37,11 +38,11 @@ public class CacheRequestFilterFactory implements DynamicFeature {
 
     @Override
     public void filter(
-        ContainerRequestContext containerRequestContext,
-        ContainerResponseContext containerResponseContext) {
+        final ContainerRequestContext containerRequestContext,
+        final ContainerResponseContext containerResponseContext) {
       if (!containerResponseContext.getHeaders().containsKey(HttpHeaders.CACHE_CONTROL)
           && Response.Status.Family.familyOf(containerResponseContext.getStatus())
-              .equals(Response.Status.Family.SUCCESSFUL)) {
+          .equals(Response.Status.Family.SUCCESSFUL)) {
         containerResponseContext
             .getHeaders()
             .putSingle(HttpHeaders.CACHE_CONTROL, "max-age=" + getSecondsToMidnight());
@@ -51,7 +52,7 @@ public class CacheRequestFilterFactory implements DynamicFeature {
     private String getSecondsToMidnight() {
       final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
       final OffsetDateTime tomorrowDayStart = now.plusDays(1).truncatedTo(ChronoUnit.DAYS);
-      Duration timeToMidnight = Duration.between(now, tomorrowDayStart);
+      final Duration timeToMidnight = Duration.between(now, tomorrowDayStart);
 
       return String.valueOf(timeToMidnight.getSeconds());
     }

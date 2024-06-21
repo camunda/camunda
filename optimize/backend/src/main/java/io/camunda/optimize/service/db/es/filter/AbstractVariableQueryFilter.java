@@ -24,6 +24,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 @Slf4j
 public abstract class AbstractVariableQueryFilter {
+
   protected void validateMultipleValuesFilterDataDto(
       final OperatorMultipleValuesVariableFilterDataDto dto) {
     if (CollectionUtils.isEmpty(dto.getData().getValues())) {
@@ -74,7 +75,7 @@ public abstract class AbstractVariableQueryFilter {
     }
   }
 
-  protected Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
+  protected Object retrieveValue(final OperatorMultipleValuesVariableFilterDataDto dto) {
     final String value = dto.getData().getValues().get(0);
     try {
       if (value != null) {

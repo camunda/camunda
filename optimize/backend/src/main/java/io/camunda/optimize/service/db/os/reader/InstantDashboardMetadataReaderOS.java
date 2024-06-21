@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadataReader {
+
   private final OptimizeOpenSearchClient osClient;
 
   @Override
@@ -37,13 +38,13 @@ public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadat
         processDefinitionKey,
         template);
 
-    InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
+    final InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
 
     final String instantDashboardKey = dashboardDataDto.getInstantDashboardId();
 
-    GetResponse<InstantDashboardDataDto> getResponse =
+    final GetResponse<InstantDashboardDataDto> getResponse =
         osClient.get(
             INSTANT_DASHBOARD_INDEX_NAME,
             instantDashboardKey,
@@ -53,7 +54,7 @@ public class InstantDashboardMetadataReaderOS implements InstantDashboardMetadat
     if (getResponse.found()) {
       return Optional.of(getResponse.source().getDashboardId());
     } else {
-      String reason =
+      final String reason =
           "Could not find dashboard data for key [" + instantDashboardKey + "] in Opensearch.";
       log.error(reason);
       return Optional.empty();

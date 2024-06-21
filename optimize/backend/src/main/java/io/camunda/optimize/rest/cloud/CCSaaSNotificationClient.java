@@ -67,7 +67,7 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
               "Unexpected response when sending notification: " + statusCode);
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem sending the notification.", e);
     }
   }

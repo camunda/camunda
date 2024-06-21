@@ -13,34 +13,37 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants
 public class ErrorResponseDto {
+
   private String errorCode;
   private String errorMessage;
   private String detailedMessage;
   private AuthorizedReportDefinitionResponseDto reportDefinition;
 
-  public ErrorResponseDto() {}
+  public ErrorResponseDto() {
+  }
 
   public ErrorResponseDto(
-      String errorCode,
-      String errorMessage,
-      String detailedMessage,
-      AuthorizedReportDefinitionResponseDto reportDefinition) {
+      final String errorCode,
+      final String errorMessage,
+      final String detailedMessage,
+      final AuthorizedReportDefinitionResponseDto reportDefinition) {
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
     this.detailedMessage = detailedMessage;
     this.reportDefinition = reportDefinition;
   }
 
-  public ErrorResponseDto(String errorMessage) {
+  public ErrorResponseDto(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 
-  public ErrorResponseDto(String errorCode, String errorMessage) {
+  public ErrorResponseDto(final String errorCode, final String errorMessage) {
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
   }
 
-  public ErrorResponseDto(String errorCode, String errorMessage, String detailedMessage) {
+  public ErrorResponseDto(final String errorCode, final String errorMessage,
+      final String detailedMessage) {
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
     this.detailedMessage = detailedMessage;

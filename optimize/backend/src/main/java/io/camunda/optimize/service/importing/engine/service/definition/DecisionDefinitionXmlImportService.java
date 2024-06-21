@@ -33,6 +33,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 @Slf4j
 public class DecisionDefinitionXmlImportService
     implements ImportService<DecisionDefinitionXmlEngineDto> {
+
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
@@ -45,7 +46,7 @@ public class DecisionDefinitionXmlImportService
       final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
       final DecisionDefinitionResolverService decisionDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
@@ -85,7 +86,7 @@ public class DecisionDefinitionXmlImportService
   private DatabaseImportJob<DecisionDefinitionOptimizeDto> createDatabaseImportJob(
       final List<DecisionDefinitionOptimizeDto> optimizeDtos,
       final Runnable importCompleteCallback) {
-    DecisionDefinitionXmlDatabaseImportJob importJob =
+    final DecisionDefinitionXmlDatabaseImportJob importJob =
         new DecisionDefinitionXmlDatabaseImportJob(
             decisionDefinitionXmlWriter, importCompleteCallback, databaseClient);
     importJob.setEntitiesToImport(optimizeDtos);
@@ -119,7 +120,7 @@ public class DecisionDefinitionXmlImportService
       return decisionDefinitionResolverService
           .getDefinition(engineEntity.getId(), engineContext)
           .map(DefinitionOptimizeResponseDto::getKey);
-    } catch (OptimizeDecisionDefinitionNotFoundException ex) {
+    } catch (final OptimizeDecisionDefinitionNotFoundException ex) {
       log.debug("Could not find the definition with ID {}", engineEntity.getId());
       return Optional.empty();
     }

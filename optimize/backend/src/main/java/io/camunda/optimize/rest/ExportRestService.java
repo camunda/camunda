@@ -63,9 +63,9 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_JSON})
   @Path("report/json/{reportId}/{fileName}")
   public Response getJsonReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("reportId") String reportId,
-      @PathParam("fileName") String fileName) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("reportId") final String reportId,
+      @PathParam("fileName") final String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<ReportDefinitionExportDto> jsonReports =
@@ -78,9 +78,9 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_JSON})
   @Path("dashboard/json/{dashboardId}/{fileName}")
   public Response getJsonDashboard(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("dashboardId") String dashboardId,
-      @PathParam("fileName") String fileName) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("dashboardId") final String dashboardId,
+      @PathParam("fileName") final String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<OptimizeEntityExportDto> jsonDashboards =
@@ -94,9 +94,9 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   @Path("csv/{reportId}/{fileName}")
   public Response getCsvReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("reportId") String reportId,
-      @PathParam("fileName") String fileName) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("reportId") final String reportId,
+      @PathParam("fileName") final String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateUserAuthorization(userId);
     final ZoneId timezone = extractTimezone(requestContext);

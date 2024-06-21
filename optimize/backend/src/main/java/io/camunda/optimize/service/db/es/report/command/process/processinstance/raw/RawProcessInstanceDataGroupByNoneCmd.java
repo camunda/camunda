@@ -34,6 +34,16 @@ public class RawProcessInstanceDataGroupByNoneCmd
   }
 
   @Override
+  public CommandEvaluationResult<List<RawDataProcessInstanceDto>> evaluate(
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext) {
+    final CommandEvaluationResult<List<RawDataProcessInstanceDto>> commandResult =
+        super.evaluate(reportEvaluationContext);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(reportEvaluationContext, commandResult);
+    return commandResult;
+  }
+
+  @Override
   protected ProcessReportCmdExecutionPlan<List<RawDataProcessInstanceDto>> buildExecutionPlan(
       final ReportCmdExecutionPlanBuilder builder) {
     return builder
@@ -44,16 +54,6 @@ public class RawProcessInstanceDataGroupByNoneCmd
         .distributedBy(ProcessDistributedByNone.class)
         .<RawDataProcessInstanceDto>resultAsRawData()
         .build();
-  }
-
-  @Override
-  public CommandEvaluationResult<List<RawDataProcessInstanceDto>> evaluate(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
-          reportEvaluationContext) {
-    final CommandEvaluationResult<List<RawDataProcessInstanceDto>> commandResult =
-        super.evaluate(reportEvaluationContext);
-    addNewVariablesAndDtoFieldsToTableColumnConfig(reportEvaluationContext, commandResult);
-    return commandResult;
   }
 
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(
@@ -68,7 +68,7 @@ public class RawProcessInstanceDataGroupByNoneCmd
             .map(varKey -> VARIABLE_PREFIX + varKey)
             .toList();
 
-    TableColumnDto tableColumns =
+    final TableColumnDto tableColumns =
         reportEvaluationContext
             .getReportDefinition()
             .getData()

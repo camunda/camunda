@@ -11,5 +11,6 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.List;
 
 public interface MappingMetadataRepository {
+
   List<IndexMappingCreator<?>> getAllMappings();
 }

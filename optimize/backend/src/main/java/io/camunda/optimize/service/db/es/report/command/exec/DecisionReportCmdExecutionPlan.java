@@ -81,7 +81,7 @@ public class DecisionReportCmdExecutionPlan<T>
 
   @Override
   protected String[] getMultiIndexAlias() {
-    return new String[] {DECISION_INSTANCE_MULTI_ALIAS};
+    return new String[]{DECISION_INSTANCE_MULTI_ALIAS};
   }
 
   @Override

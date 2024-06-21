@@ -21,9 +21,13 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class AssigneeCandidateGroupReportSearchRequestDto {
+
   private String terms;
-  @Builder.Default private int limit = 25;
-  @NotNull @NotEmpty private List<String> reportIds;
+  @Builder.Default
+  private int limit = 25;
+  @NotNull
+  @NotEmpty
+  private List<String> reportIds;
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);

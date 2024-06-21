@@ -103,6 +103,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class VariableRepositoryES implements VariableRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
@@ -239,7 +240,7 @@ public class VariableRepositoryES implements VariableRepository {
             .query(query)
             .sort(SortBuilders.fieldSort(CamundaActivityEventIndex.TIMESTAMP).order(ASC))
             .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
             .source(searchSourceBuilder)
             .scroll(
@@ -248,10 +249,10 @@ public class VariableRepositoryES implements VariableRepository {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve variable instance updates!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve variable instance updates!", e);
     }
@@ -266,7 +267,7 @@ public class VariableRepositoryES implements VariableRepository {
 
   @Override
   public void writeExternalProcessVariables(
-      List<ExternalProcessVariableDto> variables, final String itemName) {
+      final List<ExternalProcessVariableDto> variables, final String itemName) {
     final BulkRequest bulkRequest = new BulkRequest();
     variables.forEach(variable -> addInsertExternalVariableRequest(bulkRequest, variable));
 
@@ -274,7 +275,7 @@ public class VariableRepositoryES implements VariableRepository {
         bulkRequest,
         itemName,
         false // there are no nested documents in the externalProcessVariableIndex
-        );
+    );
   }
 
   @Override
@@ -301,13 +302,13 @@ public class VariableRepositoryES implements VariableRepository {
 
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
-      Long ingestTimestamp, int limit) {
+      final Long ingestTimestamp, final int limit) {
     final RangeQueryBuilder timestampQuery = rangeQuery(INGESTION_TIMESTAMP).gt(ingestTimestamp);
     return getPageOfVariablesSortedByIngestionTimestamp(timestampQuery, limit);
   }
 
   @Override
-  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(Long ingestTimestamp) {
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
     final RangeQueryBuilder timestampQuery =
         rangeQuery(INGESTION_TIMESTAMP).lte(ingestTimestamp).gte(ingestTimestamp);
     return getPageOfVariablesSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
@@ -315,7 +316,7 @@ public class VariableRepositoryES implements VariableRepository {
 
   @Override
   public List<String> getDecisionVariableValues(
-      DecisionVariableValueRequestDto requestDto, String variablesPath) {
+      final DecisionVariableValueRequestDto requestDto, final String variablesPath) {
     final BoolQueryBuilder query =
         createDefinitionQuery(
             requestDto.getDecisionDefinitionKey(),
@@ -339,14 +340,14 @@ public class VariableRepositoryES implements VariableRepository {
       final Aggregations aggregations = searchResponse.getAggregations();
 
       return extractVariableValues(aggregations, requestDto, variablesPath);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Was not able to fetch values for variable [%s] with type [%s] ",
               requestDto.getVariableId(), requestDto.getVariableType());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(DECISION, e)) {
         log.info(
             "Was not able to fetch variable values because no instance index with alias {} exists. "
@@ -362,15 +363,15 @@ public class VariableRepositoryES implements VariableRepository {
       final Aggregations aggregations,
       final DecisionVariableValueRequestDto requestDto,
       final String variableFieldLabel) {
-    Nested variablesFromType = aggregations.get(variableFieldLabel);
-    Filter filteredVariables =
+    final Nested variablesFromType = aggregations.get(variableFieldLabel);
+    final Filter filteredVariables =
         variablesFromType.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
-    List<String> allValues = new ArrayList<>();
-    for (Terms.Bucket valueBucket : valueTerms.getBuckets()) {
+    final Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
+    final List<String> allValues = new ArrayList<>();
+    for (final Terms.Bucket valueBucket : valueTerms.getBuckets()) {
       allValues.add(valueBucket.getKeyAsString());
     }
-    int lastIndex =
+    final int lastIndex =
         Math.min(allValues.size(), requestDto.getResultOffset() + requestDto.getNumResults());
     return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
@@ -406,14 +407,14 @@ public class VariableRepositoryES implements VariableRepository {
       final String variablePath, final String valueFilter, final BoolQueryBuilder filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
-      QueryBuilder filter =
+      final QueryBuilder filter =
           (lowerCaseValue.length() > MAX_GRAM)
               /*
                 using the slow wildcard query for uncommonly large filter strings (> 10 chars)
               */
               ? wildcardQuery(
-                  getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE),
-                  buildWildcardQuery(lowerCaseValue))
+              getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE),
+              buildWildcardQuery(lowerCaseValue))
               /*
                 using Elasticsearch ngrams to filter for strings < 10 chars,
                 because it's fast but increasing the number of chars makes the index bigger
@@ -439,7 +440,7 @@ public class VariableRepositoryES implements VariableRepository {
       final SearchResponse searchResponse = esClient.search(searchRequest);
       return ElasticsearchReaderUtil.mapHits(
           searchResponse.getHits(), ExternalProcessVariableDto.class, objectMapper);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           "Was not able to retrieve ingested variables by timestamp!", e);
     }
@@ -466,7 +467,7 @@ public class VariableRepositoryES implements VariableRepository {
       bulkRequest.add(
           new IndexRequest(EXTERNAL_PROCESS_VARIABLE_INDEX_NAME)
               .source(objectMapper.writeValueAsString(externalVariable), XContentType.JSON));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.warn(
           "Could not serialize external process variable: {}. This variable will not be ingested.",
           externalVariable,

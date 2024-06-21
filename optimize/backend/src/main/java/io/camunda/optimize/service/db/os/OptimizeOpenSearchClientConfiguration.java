@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class OptimizeOpenSearchClientConfiguration {
+
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final OpenSearchSchemaManager openSearchSchemaManager;

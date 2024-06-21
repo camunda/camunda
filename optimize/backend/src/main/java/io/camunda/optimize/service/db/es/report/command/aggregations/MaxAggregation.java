@@ -22,15 +22,15 @@ public class MaxAggregation extends AggregationStrategy<MaxAggregationBuilder> {
   private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Max aggregation = aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public ValuesSourceAggregationBuilder<MaxAggregationBuilder>
+  createAggregationBuilderForAggregation(final String customIdentifier) {
+    return max(createAggregationName(customIdentifier, MAX_AGGREGATION));
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<MaxAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return max(createAggregationName(customIdentifier, MAX_AGGREGATION));
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
+    final Max aggregation = aggs.get(createAggregationName(customIdentifier, MAX_AGGREGATION));
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

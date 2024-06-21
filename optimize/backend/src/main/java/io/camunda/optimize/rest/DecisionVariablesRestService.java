@@ -61,7 +61,7 @@ public class DecisionVariablesRestService {
   public List<String> getInputValues(
       @Context final ContainerRequestContext requestContext,
       final DecisionVariableValueRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
 
@@ -72,7 +72,7 @@ public class DecisionVariablesRestService {
   public List<String> getOutputValues(
       @Context final ContainerRequestContext requestContext,
       final DecisionVariableValueRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
 }

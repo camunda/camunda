@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.security;
 
 public interface SessionListener {
+
   void onSessionCreate(String userId);
 
   void onSessionRefresh(String userId);

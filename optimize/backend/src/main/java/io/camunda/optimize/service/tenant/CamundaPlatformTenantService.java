@@ -102,7 +102,7 @@ public class CamundaPlatformTenantService implements TenantService, Configuratio
   }
 
   private void initDefaultTenants() {
-    this.configuredDefaultTenants =
+    configuredDefaultTenants =
         Stream.concat(
                 Stream.of(TENANT_NOT_DEFINED),
                 configurationService.getConfiguredEngines().entrySet().stream()

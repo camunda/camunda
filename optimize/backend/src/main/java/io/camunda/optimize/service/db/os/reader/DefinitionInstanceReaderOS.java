@@ -40,6 +40,7 @@ import org.springframework.util.CollectionUtils;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
+
   final OptimizeIndexNameService indexNameService;
   final OptimizeOpenSearchClient osClient;
 
@@ -74,11 +75,11 @@ public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
           .stream()
           .map(StringTermsBucket::key)
           .collect(Collectors.toSet());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format("Was not able to retrieve definition keys for instances of type %s", type),
           e);
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
         log.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "

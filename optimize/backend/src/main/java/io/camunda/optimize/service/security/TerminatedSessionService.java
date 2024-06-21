@@ -45,13 +45,13 @@ public class TerminatedSessionService extends AbstractScheduledService {
   }
 
   @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(Duration.ofHours(CLEANUP_INTERVAL_HOURS));
+  protected void run() {
+    cleanup();
   }
 
   @Override
-  protected void run() {
-    cleanup();
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(Duration.ofHours(CLEANUP_INTERVAL_HOURS));
   }
 
   public void terminateUserSession(final String sessionId) {

@@ -50,7 +50,7 @@ public class PublishStateUpdateService {
         .forEach(eventProcessPublishStateWriter::updateEventProcessPublishState);
   }
 
-  private Double getProgressForImportSource(EventImportSourceDto eventImportSourceDto) {
+  private Double getProgressForImportSource(final EventImportSourceDto eventImportSourceDto) {
     if (eventImportSourceDto.getLastImportedEventTimestamp().toInstant().toEpochMilli() == 0) {
       return 0.0D;
     }

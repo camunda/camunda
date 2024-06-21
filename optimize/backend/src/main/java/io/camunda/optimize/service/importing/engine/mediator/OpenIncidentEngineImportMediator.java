@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OpenIncidentEngineImportMediator
     extends TimestampBasedImportMediator<
-        OpenIncidentImportIndexHandler, HistoricIncidentEngineDto> {
+    OpenIncidentImportIndexHandler, HistoricIncidentEngineDto> {
 
   private final OpenIncidentFetcher engineEntityFetcher;
 

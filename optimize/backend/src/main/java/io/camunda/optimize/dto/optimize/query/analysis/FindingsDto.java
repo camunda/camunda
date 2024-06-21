@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 public class FindingsDto {
+
   private Finding lowerOutlier;
   private Finding higherOutlier;
   private Double lowerOutlierHeat = 0.0D;
@@ -29,12 +30,14 @@ public class FindingsDto {
     return Optional.ofNullable(higherOutlier);
   }
 
-  public void setLowerOutlier(Long boundValue, Double percentile, Double relation, Long count) {
-    this.lowerOutlier = new Finding(boundValue, percentile, relation, count);
+  public void setLowerOutlier(final Long boundValue, final Double percentile, final Double relation,
+      final Long count) {
+    lowerOutlier = new Finding(boundValue, percentile, relation, count);
   }
 
-  public void setHigherOutlier(Long boundValue, Double percentile, Double relation, Long count) {
-    this.higherOutlier = new Finding(boundValue, percentile, relation, count);
+  public void setHigherOutlier(final Long boundValue, final Double percentile,
+      final Double relation, final Long count) {
+    higherOutlier = new Finding(boundValue, percentile, relation, count);
   }
 
   public Long getOutlierCount() {
@@ -46,6 +49,7 @@ public class FindingsDto {
   @NoArgsConstructor
   @AllArgsConstructor
   public class Finding {
+
     private Long boundValue;
     private Double percentile;
     private Double relation;

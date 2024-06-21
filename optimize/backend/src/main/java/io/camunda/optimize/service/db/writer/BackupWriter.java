@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class BackupWriter {
+
   private final MappingMetadataRepository mappingMetadataRepository;
   private final SnapshotRepository snapshotRepository;
   private final OptimizeIndexNameService indexNameService;

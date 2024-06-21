@@ -46,14 +46,14 @@ public class StatusCheckingServiceES extends StatusCheckingService {
   public boolean isConnectedToDatabase() {
     boolean isConnected = false;
     try {
-      ClusterHealthRequest request =
+      final ClusterHealthRequest request =
           new ClusterHealthRequest(optimizeIndexNameService.getIndexPrefix() + "*");
       final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
 
       isConnected =
           healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
               && healthResponse.getStatus() != ClusterHealthStatus.RED;
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       // do nothing
     }
     return isConnected;

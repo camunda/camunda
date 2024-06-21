@@ -32,19 +32,20 @@ public class CanceledFlowNodeQueryFilter implements QueryFilter<CanceledFlowNode
       final BoolQueryBuilder query,
       final List<CanceledFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
-    for (CanceledFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
+    final List<QueryBuilder> filters = query.filter();
+    for (final CanceledFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(CanceledFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+  private QueryBuilder createFilterQueryBuilder(
+      final CanceledFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQueryBuilder boolQueryBuilder = boolQuery();
     final BoolQueryBuilder isCanceledQuery =
         boolQuery()
             .must(existsQuery(nestedCanceledFieldLabel()))
             .must(termQuery(nestedCanceledFieldLabel(), true));
-    for (String value : flowNodeFilter.getValues()) {
+    for (final String value : flowNodeFilter.getValues()) {
       boolQueryBuilder.should(
           nestedQuery(
               FLOW_NODE_INSTANCES,

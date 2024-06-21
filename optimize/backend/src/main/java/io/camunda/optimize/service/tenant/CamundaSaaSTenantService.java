@@ -27,13 +27,13 @@ public class CamundaSaaSTenantService implements TenantService {
   }
 
   @Override
-  public List<TenantDto> getTenantsForUser(final String userId) {
-    return Collections.singletonList(
-        new TenantDto(ZEEBE_DEFAULT_TENANT_ID, null, ZEEBE_DATA_SOURCE));
+  public boolean isMultiTenantEnvironment() {
+    return false;
   }
 
   @Override
-  public boolean isMultiTenantEnvironment() {
-    return false;
+  public List<TenantDto> getTenantsForUser(final String userId) {
+    return Collections.singletonList(
+        new TenantDto(ZEEBE_DEFAULT_TENANT_ID, null, ZEEBE_DATA_SOURCE));
   }
 }

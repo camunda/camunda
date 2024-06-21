@@ -10,4 +10,6 @@ package io.camunda.optimize.service.db.es.report.command.modules.view.decision;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 
-public abstract class DecisionViewPart extends ViewPart<DecisionReportDataDto> {}
+public abstract class DecisionViewPart extends ViewPart<DecisionReportDataDto> {
+
+}

@@ -48,7 +48,7 @@ public class IdentityRestService {
       @QueryParam("terms") final String searchTerms,
       @QueryParam("limit") @DefaultValue("25") final int limit,
       @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService.searchForIdentitiesAsUser(
         userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
@@ -58,7 +58,8 @@ public class IdentityRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public IdentityWithMetadataResponseDto getIdentityById(
-      @PathParam("id") final String identityId, @Context ContainerRequestContext requestContext) {
+      @PathParam("id") final String identityId,
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService
         .getIdentityWithMetadataForIdAsUser(userId, identityId)

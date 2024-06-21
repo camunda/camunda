@@ -40,18 +40,19 @@ public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
-  public List<HistoricIncidentEngineDto> fetchCompletedIncidents(TimestampBasedImportPage page) {
+  public List<HistoricIncidentEngineDto> fetchCompletedIncidents(
+      final TimestampBasedImportPage page) {
     return fetchCompletedIncidents(
         page.getTimestampOfLastEntity(), configurationService.getEngineImportIncidentMaxPageSize());
   }
 
   public List<HistoricIncidentEngineDto> fetchCompletedIncidentsForTimestamp(
-      OffsetDateTime endTimeOfLastIncident) {
+      final OffsetDateTime endTimeOfLastIncident) {
     logger.debug("Fetching completed incidents ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricIncidentEngineDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricIncidentEngineDto> secondEntries =
         fetchWithRetry(() -> performCompletedIncidentFinishedAtRequest(endTimeOfLastIncident));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] historic incidents for set end time within [{}] ms",
         secondEntries.size(),
@@ -60,12 +61,12 @@ public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
   }
 
   private List<HistoricIncidentEngineDto> fetchCompletedIncidents(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching historic incidents ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricIncidentEngineDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricIncidentEngineDto> entries =
         fetchWithRetry(() -> performCompletedIncidentFinishedAfterRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] historic incidents which ended after set timestamp with page size [{}] within [{}] ms",
         entries.size(),
@@ -76,7 +77,7 @@ public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
   }
 
   private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAfterRequest(
-      OffsetDateTime finishedAfterTimestamp, long pageSize) {
+      final OffsetDateTime finishedAfterTimestamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(COMPLETED_INCIDENT_ENDPOINT)
@@ -84,11 +85,12 @@ public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
         .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 
   private List<HistoricIncidentEngineDto> performCompletedIncidentFinishedAtRequest(
-      OffsetDateTime finishedAtTimestamp) {
+      final OffsetDateTime finishedAtTimestamp) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(COMPLETED_INCIDENT_ENDPOINT)
@@ -97,6 +99,7 @@ public class CompletedIncidentFetcher extends RetryBackoffEngineEntityFetcher {
             MAX_RESULTS_TO_RETURN, configurationService.getEngineImportIncidentMaxPageSize())
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 }

@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class MixpanelEventProperties {
+
   // Mixpanel default properties, see
   // https://developer.mixpanel.com/reference/import-events#high-level-requirements
   @JsonProperty("time")

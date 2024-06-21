@@ -21,7 +21,7 @@ public class ZeebeProcessDefinitionImportIndexHandler extends PositionBasedImpor
       "zeebeProcessDefinitionImportIndex";
 
   public ZeebeProcessDefinitionImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
-    this.dataSource = dataSourceDto;
+    dataSource = dataSourceDto;
   }
 
   @Override

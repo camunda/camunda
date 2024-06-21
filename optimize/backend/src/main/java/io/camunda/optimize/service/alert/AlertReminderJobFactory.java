@@ -20,13 +20,13 @@ public class AlertReminderJobFactory extends AbstractAlertFactory<AlertJob> {
   }
 
   @Override
-  protected String getTriggerGroup() {
-    return "statusReminder-trigger";
+  protected AlertInterval getInterval(final AlertDefinitionDto alert) {
+    return alert.getReminder();
   }
 
   @Override
-  protected String getTriggerName(final AlertDefinitionDto alert) {
-    return alert.getId() + "-reminder-trigger";
+  protected Class<AlertJob> getJobClass() {
+    return AlertJob.class;
   }
 
   @Override
@@ -40,12 +40,12 @@ public class AlertReminderJobFactory extends AbstractAlertFactory<AlertJob> {
   }
 
   @Override
-  protected AlertInterval getInterval(final AlertDefinitionDto alert) {
-    return alert.getReminder();
+  protected String getTriggerName(final AlertDefinitionDto alert) {
+    return alert.getId() + "-reminder-trigger";
   }
 
   @Override
-  protected Class<AlertJob> getJobClass() {
-    return AlertJob.class;
+  protected String getTriggerGroup() {
+    return "statusReminder-trigger";
   }
 }

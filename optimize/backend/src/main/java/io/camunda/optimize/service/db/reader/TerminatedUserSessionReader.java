@@ -18,7 +18,7 @@ public abstract class TerminatedUserSessionReader {
     log.debug("Fetching terminated user session with id [{}]", sessionId);
     try {
       return sessionIdExists(sessionId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           "Was not able to check for terminated session existence!", e);
     }

@@ -34,24 +34,26 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
   private final ObjectMapper objectMapper;
 
   @Override
-  public Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)
+  public Optional<String> getInstantDashboardIdFor(final String processDefinitionKey,
+      final String template)
       throws OptimizeRuntimeException {
     log.debug(
         "Fetching Instant preview dashboard ID for [{}] with template [{}] ",
         processDefinitionKey,
         template);
-    InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
+    final InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
 
     final String instantDashboardKey = dashboardDataDto.getInstantDashboardId();
-    GetRequest getRequest = new GetRequest(INSTANT_DASHBOARD_INDEX_NAME).id(instantDashboardKey);
+    final GetRequest getRequest = new GetRequest(INSTANT_DASHBOARD_INDEX_NAME).id(
+        instantDashboardKey);
 
-    GetResponse getResponse;
+    final GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey);
       log.error(reason, e);
@@ -63,8 +65,8 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
         final InstantDashboardDataDto dashboardData =
             objectMapper.readValue(getResponse.getSourceAsString(), InstantDashboardDataDto.class);
         return Optional.of(dashboardData.getDashboardId());
-      } catch (IOException e) {
-        String reason =
+      } catch (final IOException e) {
+        final String reason =
             "Could not deserialize dashboard data with key ["
                 + instantDashboardKey
                 + "] from "
@@ -73,7 +75,7 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
-      String reason =
+      final String reason =
           "Could not find dashboard data for key [" + instantDashboardKey + "] in Elasticsearch.";
       log.error(reason);
       return Optional.empty();

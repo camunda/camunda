@@ -36,7 +36,8 @@ public abstract class LicenseManager {
   private static final String OPTIMIZE_LICENSE_FILE = "OptimizeLicense.txt";
   protected final String licenseDocumentId = "license";
 
-  @Setter protected String optimizeLicense;
+  @Setter
+  protected String optimizeLicense;
   private final Map<String, String> requiredUnifiedKeyMap =
       Collections.singletonMap("optimize", "true");
 
@@ -53,7 +54,7 @@ public abstract class LicenseManager {
               log.info("No license stored in the DB, trying to read from file");
               try {
                 readFileToString().ifPresent(this::storeLicense);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 log.warn("Not able to read optimize license from file", e);
               }
             });
@@ -68,14 +69,14 @@ public abstract class LicenseManager {
     return validateOptimizeLicense(optimizeLicense);
   }
 
-  public LicenseInformationResponseDto validateOptimizeLicense(String license) {
+  public LicenseInformationResponseDto validateOptimizeLicense(final String license) {
     if (StringUtils.isBlank(license)) {
       throw new OptimizeInvalidLicenseException(
           "Could not validate given license. Please try to provide another license!");
     }
 
     try {
-      LicenseKey licenseKey = new LicenseKeyImpl(license);
+      final LicenseKey licenseKey = new LicenseKeyImpl(license);
       // check that the license key is a legacy key
       if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
         licenseKey.validate();
@@ -83,21 +84,21 @@ public abstract class LicenseManager {
         licenseKey.validate(requiredUnifiedKeyMap);
       }
       return licenseKeyToDto(licenseKey);
-    } catch (InvalidLicenseException e) {
+    } catch (final InvalidLicenseException e) {
       throw new OptimizeInvalidLicenseException(e);
     }
   }
 
   private Optional<String> readFileToString() throws IOException {
-    InputStream inputStream =
-        this.getClass().getClassLoader().getResourceAsStream(OPTIMIZE_LICENSE_FILE);
+    final InputStream inputStream =
+        getClass().getClassLoader().getResourceAsStream(OPTIMIZE_LICENSE_FILE);
     if (inputStream == null) {
       log.warn("There was an error reading the Optimize license from " + OPTIMIZE_LICENSE_FILE);
       return Optional.empty();
     }
 
-    ByteArrayOutputStream result = new ByteArrayOutputStream();
-    byte[] buffer = new byte[1024];
+    final ByteArrayOutputStream result = new ByteArrayOutputStream();
+    final byte[] buffer = new byte[1024];
     int length;
     while ((length = inputStream.read(buffer)) != -1) {
       result.write(buffer, 0, length);
@@ -109,27 +110,27 @@ public abstract class LicenseManager {
     if (optimizeLicense == null) {
       log.info(
           """
-                ############### Heads up ################
-                You tried to access Optimize, but no valid license could be
-                found. Please enter a valid license key!  If you already have
-                a valid key you can have a look here, how to add it to Optimize:
+              ############### Heads up ################
+              You tried to access Optimize, but no valid license could be
+              found. Please enter a valid license key!  If you already have
+              a valid key you can have a look here, how to add it to Optimize:
 
-                https://docs.camunda.io/docs/next/self-managed/optimize-deployment/configuration/optimize-license/
+              https://docs.camunda.io/docs/next/self-managed/optimize-deployment/configuration/optimize-license/
 
-                In case you don't have a valid license, feel free to contact us at:
+              In case you don't have a valid license, feel free to contact us at:
 
-                https://camunda.com/contact/
+              https://camunda.com/contact/
 
-                You will now be redirected to the license page...
-                """);
+              You will now be redirected to the license page...
+              """);
 
       throw new OptimizeNoLicenseStoredException(
           "No license stored in Optimize. Please provide a valid Optimize license");
     }
   }
 
-  private LicenseInformationResponseDto licenseKeyToDto(LicenseKey licenseKey) {
-    LicenseInformationResponseDto dto = new LicenseInformationResponseDto();
+  private LicenseInformationResponseDto licenseKeyToDto(final LicenseKey licenseKey) {
+    final LicenseInformationResponseDto dto = new LicenseInformationResponseDto();
     dto.setCustomerId(licenseKey.getCustomerId());
     dto.setUnlimited(licenseKey.isUnlimited());
     if (!licenseKey.isUnlimited()) {

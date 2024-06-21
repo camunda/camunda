@@ -28,7 +28,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
   }
 
   @Override
-  public Response toResponse(OptimizeConflictException conflictException) {
+  public Response toResponse(final OptimizeConflictException conflictException) {
     log.info("Mapping OptimizeConflictException");
 
     return Response.status(Response.Status.CONFLICT)
@@ -37,10 +37,12 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
         .build();
   }
 
-  private ConflictResponseDto getConflictResponseDto(OptimizeConflictException conflictException) {
-    String errorCode = conflictException.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = conflictException.getMessage();
+  private ConflictResponseDto getConflictResponseDto(
+      final OptimizeConflictException conflictException) {
+    final String errorCode = conflictException.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = conflictException.getMessage();
 
     return new ConflictResponseDto(
         errorCode, errorMessage, detailedErrorMessage, conflictException.getConflictedItems());

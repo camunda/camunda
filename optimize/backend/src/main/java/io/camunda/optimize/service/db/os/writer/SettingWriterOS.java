@@ -50,7 +50,7 @@ public class SettingWriterOS implements SettingsWriter {
 
   private UpdateRequest.Builder<SettingsDto, Void> createSettingsUpsert(
       final SettingsDto settingsDto) {
-    Set<String> fieldsToUpdate = new HashSet<>();
+    final Set<String> fieldsToUpdate = new HashSet<>();
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }

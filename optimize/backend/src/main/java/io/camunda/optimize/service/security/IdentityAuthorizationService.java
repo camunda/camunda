@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class IdentityAuthorizationService
     extends AbstractCachingAuthorizationService<
-        Map<IdentityType, ResolvedResourceTypeAuthorizations>> {
+    Map<IdentityType, ResolvedResourceTypeAuthorizations>> {
 
   private static final List<String> RELEVANT_PERMISSIONS =
       ImmutableList.of(ALL_PERMISSION, READ_PERMISSION);
@@ -87,10 +87,10 @@ public class IdentityAuthorizationService
 
   private ResolvedResourceTypeAuthorizations fetchIdentityAuthorizationsForUserId(
       final IdentityType identitytype, final String userId) {
-    ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
-    List<String> engineAliases =
+    final ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
+    final List<String> engineAliases =
         applicationAuthorizationService.getAuthorizedEnginesForUser(userId);
-    for (String engineAlias : engineAliases) {
+    for (final String engineAlias : engineAliases) {
       engineContextFactory
           .getConfiguredEngineByAlias(engineAlias)
           .ifPresent(
@@ -103,10 +103,10 @@ public class IdentityAuthorizationService
 
   private ResolvedResourceTypeAuthorizations fetchIdentityAuthorizationsForGroupId(
       final IdentityType identitytype, final String groupId) {
-    ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
-    List<String> engineAliases =
+    final ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
+    final List<String> engineAliases =
         applicationAuthorizationService.getAuthorizedEnginesForUser(groupId);
-    for (String engineAlias : engineAliases) {
+    for (final String engineAlias : engineAliases) {
       engineContextFactory
           .getConfiguredEngineByAlias(engineAlias)
           .ifPresent(

@@ -27,12 +27,13 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class DecisionInstanceWriter {
+
   private final IndexRepository indexRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
   private final DecisionInstanceRepository decisionInstanceRepository;
 
-  public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
+  public void importDecisionInstances(final List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";
     log.debug("Writing [{}] {} to Database.", decisionInstanceDtos.size(), importItemName);
     final Set<String> decisionDefinitionKeys =

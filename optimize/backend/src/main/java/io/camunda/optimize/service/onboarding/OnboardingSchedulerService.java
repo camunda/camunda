@@ -47,7 +47,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   private final ProcessOverviewService processOverviewService;
   private final CustomerOnboardingDataImportService onboardingDataService;
   private CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService;
-  @Autowired private ApplicationContext applicationContext;
+  @Autowired
+  private ApplicationContext applicationContext;
   private int intervalToCheckForOnboardingDataInSeconds;
   private Consumer<String> emailNotificationHandler;
   private Consumer<String> panelNotificationHandler;
@@ -83,7 +84,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
 
   public void setupOnboardingEmailNotifications() {
     if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-      this.setEmailNotificationHandler(
+      setEmailNotificationHandler(
           onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
     } else {
       log.info("Onboarding emails deactivated by configuration");
@@ -94,7 +95,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
     if (applicationContext.containsBeanDefinition(
         CCSaaSOnboardingPanelNotificationService.class.getSimpleName())) {
       if (configurationService.getPanelNotificationConfiguration().isEnabled()) {
-        this.setPanelNotificationHandler(
+        setPanelNotificationHandler(
             processDefKey ->
                 applicationContext
                     .getBean(CCSaaSOnboardingPanelNotificationService.class)
@@ -106,8 +107,8 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   }
 
   public void onboardNewProcesses() {
-    Set<String> processesNewlyOnboarded = new HashSet<>();
-    for (String processToBeOnboarded :
+    final Set<String> processesNewlyOnboarded = new HashSet<>();
+    for (final String processToBeOnboarded :
         processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
       if (processHasStartedInstance(processToBeOnboarded)) {

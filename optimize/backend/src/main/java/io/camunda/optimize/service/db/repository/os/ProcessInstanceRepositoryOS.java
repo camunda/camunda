@@ -78,12 +78,32 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
+
   public static final String INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD = "index_not_found_exception";
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+
+  @Override
+  public void bulkImportProcessInstances(
+      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
+    osClient.doImportBulkRequestWithList(
+        importItemName,
+        processInstanceDtos,
+        dto ->
+            UpdateOperation.<ProcessInstanceDto>of(
+                    operation ->
+                        operation
+                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
+                            .id(dto.getProcessInstanceId())
+                            .script(createUpdateStateScript(dto.getState()))
+                            .upsert(dto)
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                ._toBulkOperation(),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
+  }
 
   @Override
   public void updateProcessInstanceStateForProcessDefinitionId(
@@ -113,28 +133,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-                            .id(dto.getProcessInstanceId())
-                            .script(createUpdateStateScript(dto.getState()))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
   public void deleteByIds(
-      final String index, String itemName, final List<String> processInstanceIds) {
-    List<BulkOperation> bulkOperations =
+      final String index, final String itemName, final List<String> processInstanceIds) {
+    final List<BulkOperation> bulkOperations =
         processInstanceIds.stream()
             .map(
                 id ->
@@ -166,7 +167,8 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       final List<EventProcessGatewayDto> gatewayLookup) {
     final List<Map> gatewayLookupMaps =
         gatewayLookup.stream()
-            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {}))
+            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {
+            }))
             .toList();
     final Function<EventProcessInstanceDto, Script> scriptBuilder =
         dto -> {
@@ -246,13 +248,13 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
     try {
       return osClient
-              .search(
-                  requestBuilder, Object.class, "Failed querying for started process instances!")
-              .hits()
-              .total()
-              .value()
+          .search(
+              requestBuilder, Object.class, "Failed querying for started process instances!")
+          .hits()
+          .total()
+          .value()
           > 0;
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.getMessage().contains(INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD)) {
         // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
         // return false
@@ -267,7 +269,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   public PageResultDto<String> getNextPageOfProcessInstanceIds(
       final PageResultDto<String> previousPage,
       final Supplier<PageResultDto<String>> firstPageFetchFunction) {
-    record Result(String processInstanceId) {}
+    record Result(String processInstanceId) {
+
+    }
     final int limit = previousPage.getLimit();
     if (previousPage.isLastPage()) {
       return new PageResultDto<>(limit);
@@ -308,14 +312,15 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
       return pageResult;
 
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (HttpStatus.NOT_FOUND.value() == e.response().status()) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
       }
       throw e;
-    } catch (IOException e) {
-      String reason = format("Could not close scroll for class [%s].", getClass().getSimpleName());
+    } catch (final IOException e) {
+      final String reason = format("Could not close scroll for class [%s].",
+          getClass().getSimpleName());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -341,7 +346,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
   private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(
       final String processDefinitionKey, final Query filterQuery, final Integer limit) {
-    record Result(String processInstanceId) {}
+    record Result(String processInstanceId) {
+
+    }
     final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
 
@@ -390,7 +397,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         "newState", json(newState));
   }
 
-  private String aliasForProcessDefinitionKey(String processDefinitionKey) {
+  private String aliasForProcessDefinitionKey(final String processDefinitionKey) {
     return indexNameService.getOptimizeIndexAliasForIndex(
         getProcessInstanceIndexAliasName(processDefinitionKey));
   }

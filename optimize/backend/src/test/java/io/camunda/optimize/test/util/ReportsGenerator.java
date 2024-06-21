@@ -100,11 +100,11 @@ public class ReportsGenerator {
   }
 
   private static List<ProcessReportDataDto> createProcessReportsFromDefinition(
-      ProcessDefinitionEngineDto definition) {
-    List<ProcessReportDataDto> reports = new ArrayList<>();
-    ProcessPartDto processPart = createProcessPart(definition);
-    for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
-      TemplatedProcessReportDataBuilder reportDataBuilder =
+      final ProcessDefinitionEngineDto definition) {
+    final List<ProcessReportDataDto> reports = new ArrayList<>();
+    final ProcessPartDto processPart = createProcessPart(definition);
+    for (final ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
+      final TemplatedProcessReportDataBuilder reportDataBuilder =
           TemplatedProcessReportDataBuilder.createReportData()
               .setReportDataType(reportDataType)
               .setProcessDefinitionKey(definition.getKey())
@@ -115,19 +115,19 @@ public class ReportsGenerator {
               .setStartFlowNodeId(processPart.getStart())
               .setEndFlowNodeId(processPart.getEnd())
               .setFilter(createProcessFilter());
-      ProcessReportDataDto reportDataLatestDefinitionVersion = reportDataBuilder.build();
+      final ProcessReportDataDto reportDataLatestDefinitionVersion = reportDataBuilder.build();
       reports.add(reportDataLatestDefinitionVersion);
       reportDataBuilder.setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS);
-      ProcessReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
+      final ProcessReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
       reports.add(reportDataAllDefinitionVersions);
     }
     return reports;
   }
 
   private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(
-      DecisionDefinitionEngineDto definition) {
-    DmnFilterData dmnFilterData = retrieveVariablesForDecision(definition);
-    List<DecisionFilterDto<?>> decisionFilters = createDecisionFilters(dmnFilterData);
+      final DecisionDefinitionEngineDto definition) {
+    final DmnFilterData dmnFilterData = retrieveVariablesForDecision(definition);
+    final List<DecisionFilterDto<?>> decisionFilters = createDecisionFilters(dmnFilterData);
     return Arrays.stream(DecisionReportDataType.values())
         .map(
             type ->
@@ -144,21 +144,21 @@ public class ReportsGenerator {
         .collect(Collectors.toList());
   }
 
-  private static ProcessPartDto createProcessPart(ProcessDefinitionEngineDto definition) {
-    String xml = client.getProcessDefinitionXml(definition.getId()).getBpmn20Xml();
-    ModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
-    String startFlowNodeId =
+  private static ProcessPartDto createProcessPart(final ProcessDefinitionEngineDto definition) {
+    final String xml = client.getProcessDefinitionXml(definition.getId()).getBpmn20Xml();
+    final ModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+    final String startFlowNodeId =
         model.getModelElementsByType(StartEvent.class).stream().findFirst().get().getId();
-    String endFlowNodeId =
+    final String endFlowNodeId =
         model.getModelElementsByType(EndEvent.class).stream().findFirst().get().getId();
-    ProcessPartDto processPart = new ProcessPartDto();
+    final ProcessPartDto processPart = new ProcessPartDto();
     processPart.setStart(startFlowNodeId);
     processPart.setEnd(endFlowNodeId);
     return processPart;
   }
 
-  private static List<DecisionFilterDto<?>> createDecisionFilters(DmnFilterData data) {
-    List<DecisionFilterDto<?>> result = new ArrayList<>();
+  private static List<DecisionFilterDto<?>> createDecisionFilters(final DmnFilterData data) {
+    final List<DecisionFilterDto<?>> result = new ArrayList<>();
 
     result.add(createInputVariableFilter(data));
     result.add(createOutputVariableFilter(data));
@@ -169,7 +169,7 @@ public class ReportsGenerator {
     return result;
   }
 
-  private static DecisionFilterDto createInputVariableFilter(DmnFilterData filterData) {
+  private static DecisionFilterDto createInputVariableFilter(final DmnFilterData filterData) {
     switch (filterData.getInputType()) {
       case STRING:
         return DecisionFilterUtilHelper.createStringInputVariableFilter(
@@ -197,7 +197,7 @@ public class ReportsGenerator {
     }
   }
 
-  private static DecisionFilterDto createOutputVariableFilter(DmnFilterData filterData) {
+  private static DecisionFilterDto createOutputVariableFilter(final DmnFilterData filterData) {
     switch (filterData.getOutputType()) {
       case STRING:
         return DecisionFilterUtilHelper.createStringOutputVariableFilter(
@@ -226,13 +226,13 @@ public class ReportsGenerator {
   }
 
   private static DmnFilterData retrieveVariablesForDecision(
-      DecisionDefinitionEngineDto definition) {
-    DmnFilterData resultData = new DmnFilterData();
+      final DecisionDefinitionEngineDto definition) {
+    final DmnFilterData resultData = new DmnFilterData();
 
-    DecisionTable decisionTable = getDecisionTableForDefinition(definition);
+    final DecisionTable decisionTable = getDecisionTableForDefinition(definition);
 
-    Input input = decisionTable.getInputs().stream().findFirst().get();
-    Output output = decisionTable.getOutputs().stream().findFirst().get();
+    final Input input = decisionTable.getInputs().stream().findFirst().get();
+    final Output output = decisionTable.getOutputs().stream().findFirst().get();
 
     assignPossibleVariableValues(resultData, decisionTable);
 
@@ -242,48 +242,51 @@ public class ReportsGenerator {
     return resultData;
   }
 
-  private static void assignOutputTypeAndName(DmnFilterData resultData, Output output) {
-    String outputTypeString = output.getTypeRef();
-    VariableType outputType = VariableType.getTypeForId(outputTypeString);
+  private static void assignOutputTypeAndName(final DmnFilterData resultData, final Output output) {
+    final String outputTypeString = output.getTypeRef();
+    final VariableType outputType = VariableType.getTypeForId(outputTypeString);
     resultData.setOutputType(outputType);
 
-    String outputName = output.getName();
+    final String outputName = output.getName();
     resultData.setOutputName(outputName);
   }
 
-  private static void assignInputTypeAndName(DmnFilterData resultData, Input input) {
-    InputExpression inputExpression =
+  private static void assignInputTypeAndName(final DmnFilterData resultData, final Input input) {
+    final InputExpression inputExpression =
         input.getChildElementsByType(InputExpression.class).stream().findFirst().get();
 
-    String inputTypeString = inputExpression.getAttributeValue("typeRef");
-    VariableType inputType = VariableType.getTypeForId(inputTypeString);
+    final String inputTypeString = inputExpression.getAttributeValue("typeRef");
+    final VariableType inputType = VariableType.getTypeForId(inputTypeString);
     resultData.setInputType(inputType);
 
-    String inputName = inputExpression.getUniqueChildElementByType(Text.class).getTextContent();
+    final String inputName = inputExpression.getUniqueChildElementByType(Text.class)
+        .getTextContent();
     resultData.setInputName(inputName);
   }
 
   private static void assignPossibleVariableValues(
-      DmnFilterData resultData, DecisionTable decisionTable) {
-    Rule rule = decisionTable.getRules().stream().findFirst().get();
-    InputEntry inputEntry = rule.getInputEntries().stream().findFirst().get();
-    OutputEntry outputEntry = rule.getOutputEntries().stream().findFirst().get();
+      final DmnFilterData resultData, final DecisionTable decisionTable) {
+    final Rule rule = decisionTable.getRules().stream().findFirst().get();
+    final InputEntry inputEntry = rule.getInputEntries().stream().findFirst().get();
+    final OutputEntry outputEntry = rule.getOutputEntries().stream().findFirst().get();
 
-    String possibleInputValue = inputEntry.getTextContent();
-    String possibleOutputValue = outputEntry.getTextContent();
+    final String possibleInputValue = inputEntry.getTextContent();
+    final String possibleOutputValue = outputEntry.getTextContent();
 
     resultData.setPossibleInputValue(possibleInputValue);
     resultData.setPossibleOutputValue(possibleOutputValue);
   }
 
   private static DecisionTable getDecisionTableForDefinition(
-      DecisionDefinitionEngineDto definition) {
-    String xml = client.getDecisionDefinitionXml(definition.getId()).getDmnXml();
-    DmnModelInstance model = Dmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+      final DecisionDefinitionEngineDto definition) {
+    final String xml = client.getDecisionDefinitionXml(definition.getId()).getDmnXml();
+    final DmnModelInstance model = Dmn.readModelFromStream(
+        new ByteArrayInputStream(xml.getBytes()));
 
-    Collection<Decision> decisions = model.getDefinitions().getChildElementsByType(Decision.class);
-    Optional<Decision> optionalDecision = decisions.stream().findFirst();
-    Decision decision = optionalDecision.get();
+    final Collection<Decision> decisions = model.getDefinitions()
+        .getChildElementsByType(Decision.class);
+    final Optional<Decision> optionalDecision = decisions.stream().findFirst();
+    final Decision decision = optionalDecision.get();
     return (DecisionTable) decision.getExpression();
   }
 
@@ -311,6 +314,7 @@ public class ReportsGenerator {
   @Setter
   @Getter
   private static class DmnFilterData {
+
     private String inputName;
     private VariableType inputType;
     private String possibleInputValue;

@@ -33,6 +33,18 @@ public class CamundaCCSMDefinitionAuthorizationService
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
 
   @Override
+  public boolean isAuthorizedToAccessDefinition(
+      final String identityId,
+      final IdentityType identityType,
+      final String definitionKey,
+      final DefinitionType definitionType,
+      final List<String> tenantIds) {
+    return StringUtils.isBlank(definitionKey)
+        || tenantAuthorizationService.isAuthorizedToSeeAllTenants(
+        identityId, identityType, tenantIds);
+  }
+
+  @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(
       final String userId,
       final SimpleDefinitionDto definitionDto,
@@ -45,18 +57,6 @@ public class CamundaCCSMDefinitionAuthorizationService
         .filter(Objects::nonNull)
         .sorted(Comparator.comparing(TenantDto::getId, Comparator.naturalOrder()))
         .toList();
-  }
-
-  @Override
-  public boolean isAuthorizedToAccessDefinition(
-      final String identityId,
-      final IdentityType identityType,
-      final String definitionKey,
-      final DefinitionType definitionType,
-      final List<String> tenantIds) {
-    return StringUtils.isBlank(definitionKey)
-        || tenantAuthorizationService.isAuthorizedToSeeAllTenants(
-            identityId, identityType, tenantIds);
   }
 
   @Override

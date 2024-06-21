@@ -26,7 +26,7 @@ public class StoreIndexesDatabaseImportJob extends DatabaseImportJob<EngineImpor
   }
 
   @Override
-  protected void persistEntities(List<EngineImportIndexDto> newOptimizeEntities) {
+  protected void persistEntities(final List<EngineImportIndexDto> newOptimizeEntities) {
     importIndexWriter.importIndexes(newOptimizeEntities);
   }
 }

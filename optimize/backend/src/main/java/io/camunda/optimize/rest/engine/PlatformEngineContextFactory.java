@@ -44,10 +44,10 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
   @Override
   @PostConstruct
   public void init() {
-    this.configuredEngines = new HashMap<>();
-    for (Map.Entry<String, EngineConfiguration> config :
+    configuredEngines = new HashMap<>();
+    for (final Map.Entry<String, EngineConfiguration> config :
         configurationService.getConfiguredEngines().entrySet()) {
-      EngineContext engineContext = constructEngineContext(config);
+      final EngineContext engineContext = constructEngineContext(config);
       configuredEngines.put(engineContext.getEngineAlias(), engineContext);
     }
   }
@@ -55,9 +55,9 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
   @Override
   @PreDestroy
   public void close() {
-    if (this.configuredEngines != null) {
-      this.configuredEngines.values().forEach(EngineContext::close);
-      this.configuredEngines = null;
+    if (configuredEngines != null) {
+      configuredEngines.values().forEach(EngineContext::close);
+      configuredEngines = null;
     }
   }
 
@@ -71,12 +71,13 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
     return configuredEngines.values();
   }
 
-  private EngineContext constructEngineContext(Map.Entry<String, EngineConfiguration> config) {
+  private EngineContext constructEngineContext(
+      final Map.Entry<String, EngineConfiguration> config) {
     return new EngineContext(config.getKey(), constructClient(config), configurationService);
   }
 
-  private Client constructClient(Map.Entry<String, EngineConfiguration> config) {
-    Client client = ClientBuilder.newClient();
+  private Client constructClient(final Map.Entry<String, EngineConfiguration> config) {
+    final Client client = ClientBuilder.newClient();
     client.property(
         ClientProperties.CONNECT_TIMEOUT, configurationService.getEngineConnectTimeout());
     client.property(ClientProperties.READ_TIMEOUT, configurationService.getEngineReadTimeout());
@@ -87,7 +88,7 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
               configurationService.getDefaultEngineAuthenticationUser(config.getKey()),
               configurationService.getDefaultEngineAuthenticationPassword(config.getKey())));
     }
-    for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
+    for (final EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
       client.register(
           (ClientRequestFilter)
               requestContext ->
@@ -100,10 +101,11 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
 
   @Priority(Integer.MAX_VALUE)
   private static class LoggingFilter implements ClientRequestFilter {
+
     @Override
-    public void filter(ClientRequestContext requestContext) {
+    public void filter(final ClientRequestContext requestContext) {
       if (log.isTraceEnabled()) {
-        Object body = requestContext.getEntity() != null ? requestContext.getEntity() : "";
+        final Object body = requestContext.getEntity() != null ? requestContext.getEntity() : "";
         log.trace("sending request to [{}] with body [{}]", requestContext.getUri(), body);
       }
     }

@@ -33,8 +33,8 @@ public class StorePositionBasedImportProgressMediator
     extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService>
     implements ImportMediator {
 
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
-  private ZeebeDataSourceDto dataSource;
+  private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private final ZeebeDataSourceDto dataSource;
 
   public StorePositionBasedImportProgressMediator(
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -43,7 +43,7 @@ public class StorePositionBasedImportProgressMediator
       final ZeebeDataSourceDto zeebeDataSourceDto) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
-    this.dataSource = zeebeDataSourceDto;
+    dataSource = zeebeDataSourceDto;
   }
 
   @Override
@@ -61,7 +61,7 @@ public class StorePositionBasedImportProgressMediator
               .map(PositionBasedImportIndexDto.class::cast)
               .collect(Collectors.toList());
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing zeebe position based index information!", e);
       importCompleted.complete(null);
     }

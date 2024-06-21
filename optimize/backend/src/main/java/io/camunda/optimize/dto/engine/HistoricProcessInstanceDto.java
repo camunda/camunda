@@ -15,6 +15,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class HistoricProcessInstanceDto implements TenantSpecificEngineDto {
+
   protected String id;
   protected String businessKey;
   protected String processDefinitionId;

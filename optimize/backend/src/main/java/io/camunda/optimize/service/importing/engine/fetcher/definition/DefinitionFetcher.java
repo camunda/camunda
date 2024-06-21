@@ -53,10 +53,10 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto>
   public List<DEF> fetchDefinitionsForTimestamp(
       final OffsetDateTime deploymentTimeOfLastDefinition) {
     logger.debug("Fetching definitions ...");
-    long requestStart = System.currentTimeMillis();
-    List<DEF> definitions =
+    final long requestStart = System.currentTimeMillis();
+    final List<DEF> definitions =
         fetchWithRetry(() -> performDefinitionRequest(deploymentTimeOfLastDefinition));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] definitions for set deployment time within [{}] ms",
         definitions.size(),
@@ -77,9 +77,9 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto>
 
   private List<DEF> fetchDefinitions(final OffsetDateTime timeStamp, final int pageSize) {
     logger.debug("Fetching definitions ...");
-    long requestStart = System.currentTimeMillis();
-    List<DEF> entries = fetchWithRetry(() -> performDefinitionRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestStart = System.currentTimeMillis();
+    final List<DEF> entries = fetchWithRetry(() -> performDefinitionRequest(timeStamp, pageSize));
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] definitions which were deployed after set timestamp with page size [{}] within [{}] ms",
         entries.size(),
@@ -122,7 +122,7 @@ public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto>
         .get(getResponseType());
   }
 
-  private List<DEF> performDefinitionRequest(OffsetDateTime deploymentTimeOfLastDefinition) {
+  private List<DEF> performDefinitionRequest(final OffsetDateTime deploymentTimeOfLastDefinition) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(getDefinitionEndpoint())

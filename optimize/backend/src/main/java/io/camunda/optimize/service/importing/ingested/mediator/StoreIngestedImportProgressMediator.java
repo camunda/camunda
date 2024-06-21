@@ -53,7 +53,7 @@ public class StoreIngestedImportProgressMediator
               .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing ingested import information!", e);
       importCompleted.complete(null);
     }

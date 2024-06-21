@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionVersionResponseDto {
+
   private String version;
   private String versionTag;
 }

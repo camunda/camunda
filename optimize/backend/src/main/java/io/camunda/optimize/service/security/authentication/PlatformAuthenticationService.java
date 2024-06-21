@@ -50,12 +50,13 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
     super(sessionService, authCookieService);
     this.engineAuthenticationProvider = engineAuthenticationProvider;
     this.engineContextFactory = engineContextFactory;
-    this.engineAuthorizationService = applicationAuthorizationService;
+    engineAuthorizationService = applicationAuthorizationService;
   }
 
   @Override
   public Response authenticateUser(
-      @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials) {
+      @Context final ContainerRequestContext requestContext,
+      final CredentialsRequestDto credentials) {
     final String securityToken = authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)
@@ -73,7 +74,7 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
   }
 
   @Override
-  public Response logout(@Context ContainerRequestContext requestContext) {
+  public Response logout(@Context final ContainerRequestContext requestContext) {
     sessionService.invalidateSession(requestContext);
     return Response.status(Response.Status.OK)
         .entity("OK")
@@ -120,7 +121,7 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
         return sessionService.createAuthToken(authenticatedUserId.get());
       } else {
         // could not find an engine that grants optimize permission
-        String errorMessage =
+        final String errorMessage =
             "The user ["
                 + credentials.getUsername()
                 + "] is not authorized to "
@@ -132,14 +133,15 @@ public class PlatformAuthenticationService extends AbstractAuthenticationService
       }
     } else {
       // could not find an engine that authenticates user
-      String authenticationErrorMessage = createNotAuthenticatedErrorMessage(authenticationResults);
+      final String authenticationErrorMessage = createNotAuthenticatedErrorMessage(
+          authenticationResults);
       log.warn(authenticationErrorMessage);
       throw new NotAuthorizedException(authenticationErrorMessage, "ignored");
     }
   }
 
   private String createNotAuthenticatedErrorMessage(
-      List<AuthenticationResultDto> authenticationResults) {
+      final List<AuthenticationResultDto> authenticationResults) {
     String authenticationErrorMessage = "No engine is configured. Can't authenticate a user.";
     if (!authenticationResults.isEmpty()) {
       authenticationErrorMessage = "Could not log you in. \n" + "Error messages from engines: \n";

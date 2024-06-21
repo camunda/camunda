@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
+
   ImmutableSet<String> FIELDS_TO_UPDATE =
       ImmutableSet.of(
           FLOW_NODE_ID,

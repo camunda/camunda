@@ -24,12 +24,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
 
   @Override
   public List<IndexMappingCreator<?>> getAllMappings() {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(osClient);
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(osClient);
     return mappingUtil.getAllMappings(indexNameService.getIndexPrefix());
   }
 }

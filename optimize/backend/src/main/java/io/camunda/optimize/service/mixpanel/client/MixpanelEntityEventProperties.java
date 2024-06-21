@@ -14,6 +14,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MixpanelEntityEventProperties extends MixpanelEventProperties {
+
   @JsonProperty("entityId")
   private String entityId;
 

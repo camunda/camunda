@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 @AllArgsConstructor
 public class CustomClaimValidator implements OAuth2TokenValidator<Jwt> {
+
   private final String claimName;
   private final String expectedClaimValue;
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();

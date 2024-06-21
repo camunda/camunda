@@ -28,9 +28,9 @@ public class SuspendedInstancesOnlyQueryFilter
       final List<SuspendedInstancesOnlyFilterDataDto> suspendedInstancesOnlyFilters,
       final FilterContext filterContext) {
     if (suspendedInstancesOnlyFilters != null && !suspendedInstancesOnlyFilters.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
 
-      BoolQueryBuilder onlySuspendedInstances =
+      final BoolQueryBuilder onlySuspendedInstances =
           boolQuery().should(termQuery(STATE, SUSPENDED_STATE));
 
       filters.add(onlySuspendedInstances);

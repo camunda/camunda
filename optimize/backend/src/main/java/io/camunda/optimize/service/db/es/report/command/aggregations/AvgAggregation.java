@@ -22,15 +22,15 @@ public class AvgAggregation extends AggregationStrategy<AvgAggregationBuilder> {
   private static final String AVG_AGGREGATION = "avgAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Avg aggregation = aggs.get(createAggregationName(customIdentifier, AVG_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public ValuesSourceAggregationBuilder<AvgAggregationBuilder>
+  createAggregationBuilderForAggregation(final String customIdentifier) {
+    return avg(createAggregationName(customIdentifier, AVG_AGGREGATION));
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<AvgAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return avg(createAggregationName(customIdentifier, AVG_AGGREGATION));
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
+    final Avg aggregation = aggs.get(createAggregationName(customIdentifier, AVG_AGGREGATION));
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

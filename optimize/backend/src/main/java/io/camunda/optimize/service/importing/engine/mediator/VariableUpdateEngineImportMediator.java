@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VariableUpdateEngineImportMediator
     extends TimestampBasedImportMediator<
-        VariableUpdateInstanceImportIndexHandler, HistoricVariableUpdateInstanceDto> {
+    VariableUpdateInstanceImportIndexHandler, HistoricVariableUpdateInstanceDto> {
 
   private final VariableUpdateInstanceFetcher engineEntityFetcher;
 

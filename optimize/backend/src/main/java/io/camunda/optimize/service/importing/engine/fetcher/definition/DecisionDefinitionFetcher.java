@@ -27,7 +27,8 @@ public class DecisionDefinitionFetcher extends DefinitionFetcher<DecisionDefinit
 
   @Override
   protected GenericType<List<DecisionDefinitionEngineDto>> getResponseType() {
-    return new GenericType<>() {};
+    return new GenericType<>() {
+    };
   }
 
   @Override

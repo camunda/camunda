@@ -91,6 +91,15 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
   }
 
   @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    final ProcessViewDto view = new ProcessViewDto();
+    view.setEntity(ProcessViewEntity.USER_TASK);
+    view.setProperties(ViewProperty.DURATION);
+    dataForCommandKey.setView(view);
+  }
+
+  @Override
   public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
     context
@@ -109,15 +118,6 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
                                     .value(null)
                                     .build())));
     return viewResultBuilder.build();
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
-    view.setEntity(ProcessViewEntity.USER_TASK);
-    view.setProperties(ViewProperty.DURATION);
-    dataForCommandKey.setView(view);
   }
 
   private Script getScriptedAggregationField(final UserTaskDurationTime userTaskDurationTime) {

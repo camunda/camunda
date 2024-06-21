@@ -131,7 +131,7 @@ public class KpiService {
             measure ->
                 ViewProperty.DURATION.equals(measure)
                     || ViewProperty.PERCENTAGE.equals(measure)
-                        && !containsQualityFilter(singleProcessReportDefinitionRequestDto))
+                    && !containsQualityFilter(singleProcessReportDefinitionRequestDto))
         .map(measure -> KpiType.TIME)
         .orElse(KpiType.QUALITY);
   }
@@ -227,7 +227,7 @@ public class KpiService {
                 processReport ->
                     processReport.getData().getConfiguration().getTargetValue() != null
                         && processReport.getData().getConfiguration().getTargetValue().getIsKpi()
-                            == Boolean.TRUE)
+                        == Boolean.TRUE)
             // KPI reports should only have a single data source
             .filter(processReport -> processReport.getData().getDefinitions().size() == 1)
             .collect(Collectors.toList());
@@ -238,6 +238,7 @@ public class KpiService {
   @Data
   @AllArgsConstructor
   private static class TargetAndUnit {
+
     private String target;
     private TargetValueUnit targetValueUnit;
   }

@@ -92,8 +92,8 @@ public class SharingPublicReaderRestService {
   @Path(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String reportShareId,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String reportShareId,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     return executeIfSharingEnabled(
         () ->
@@ -112,10 +112,10 @@ public class SharingPublicReaderRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String dashboardShareId,
-      @PathParam("reportId") String reportId,
-      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String dashboardShareId,
+      @PathParam("reportId") final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     return executeIfSharingEnabled(
         () ->
@@ -131,8 +131,8 @@ public class SharingPublicReaderRestService {
   @Path(SHARE_PATH + DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionRestDto evaluateDashboard(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String dashboardShareId) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String dashboardShareId) {
     return executeIfSharingEnabled(
         () -> protectedSharingRestService.evaluateDashboard(requestContext, dashboardShareId));
   }
@@ -195,7 +195,7 @@ public class SharingPublicReaderRestService {
     return executeIfSharingEnabled(() -> assigneeRestService.getAssigneesByIds(commaSeparatedIdn));
   }
 
-  private <C> C executeIfSharingEnabled(Supplier<C> supplier) {
+  private <C> C executeIfSharingEnabled(final Supplier<C> supplier) {
     return settingsService
         .getSettings()
         .getSharingEnabled()

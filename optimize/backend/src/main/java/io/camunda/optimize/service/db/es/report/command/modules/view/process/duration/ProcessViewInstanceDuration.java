@@ -35,7 +35,7 @@ public class ProcessViewInstanceDuration extends ProcessViewDuration {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     view.setProperties(ViewProperty.DURATION);
     dataForCommandKey.setView(view);

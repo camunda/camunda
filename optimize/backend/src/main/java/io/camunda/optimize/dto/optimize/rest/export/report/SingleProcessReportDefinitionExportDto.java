@@ -24,7 +24,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExportDto {
-  @NotNull private ProcessReportDataDto data;
+
+  @NotNull
+  private ProcessReportDataDto data;
 
   public SingleProcessReportDefinitionExportDto(
       final SingleProcessReportDefinitionRequestDto reportDefinition) {
@@ -35,7 +37,7 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
         reportDefinition.getName(),
         reportDefinition.getDescription(),
         reportDefinition.getCollectionId());
-    this.data = reportDefinition.getData();
+    data = reportDefinition.getData();
   }
 
   @Override

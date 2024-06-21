@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 @Data
 @NoArgsConstructor
 public class MixpanelImportResponse {
+
   @JsonProperty("error")
   private String error;
 
@@ -24,6 +25,6 @@ public class MixpanelImportResponse {
 
   @JsonIgnore
   public boolean isSuccessful() {
-    return StringUtils.isEmpty(this.error);
+    return StringUtils.isEmpty(error);
   }
 }

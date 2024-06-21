@@ -42,9 +42,9 @@ import org.springframework.stereotype.Component;
 public class CCSaasClusterClient extends AbstractCCSaaSClient {
 
   private static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
-  private Map<AppName, String> webappsLinks;
   private static final Set<AppName> REQUIRED_WEBAPPS_LINKS =
       Set.of(CONSOLE, OPERATE, OPTIMIZE, MODELER, TASKLIST);
+  private Map<AppName, String> webappsLinks;
 
   public CCSaasClusterClient(
       final ConfigurationService configurationService, final ObjectMapper objectMapper) {

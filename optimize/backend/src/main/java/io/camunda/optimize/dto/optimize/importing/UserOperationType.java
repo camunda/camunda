@@ -31,12 +31,12 @@ public enum UserOperationType {
 
   private final boolean suspendOperation;
 
-  public boolean isSuspendOperation() {
-    return suspendOperation;
-  }
-
   UserOperationType(final Boolean suspendOperation) {
     this.suspendOperation = suspendOperation;
+  }
+
+  public boolean isSuspendOperation() {
+    return suspendOperation;
   }
 
   public static UserOperationType fromHistoricUserOperationLog(
@@ -92,7 +92,7 @@ public enum UserOperationType {
   private static boolean isActivateByInstanceIdOperation(
       final HistoricUserOperationLogDto historicUserOpLog) {
     return ACTIVATE_PROCESS_INSTANCE_OPERATION.equalsIgnoreCase(
-            historicUserOpLog.getOperationType())
+        historicUserOpLog.getOperationType())
         && PROCESS_INSTANCE_ENTITY_TYPE.equalsIgnoreCase(historicUserOpLog.getEntityType())
         && historicUserOpLog.getProcessInstanceId() != null;
   }
@@ -108,7 +108,7 @@ public enum UserOperationType {
     final boolean isSuspendProcessDefinitionByIdIncludingInstancesOperation =
         SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
             && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
-                historicUserOpLog.getProperty())
+            historicUserOpLog.getProperty())
             && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
             && historicUserOpLog.getProcessDefinitionId() != null;
 
@@ -127,7 +127,7 @@ public enum UserOperationType {
     final boolean isActivateProcessDefinitionByIdIncludingInstancesOperation =
         ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
             && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
-                historicUserOpLog.getProperty())
+            historicUserOpLog.getProperty())
             && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
             && historicUserOpLog.getProcessDefinitionId() != null;
 
@@ -147,7 +147,7 @@ public enum UserOperationType {
     final boolean isSuspendProcessDefinitionByKeyIncludingInstancesOperation =
         SUSPEND_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
             && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
-                historicUserOpLog.getProperty())
+            historicUserOpLog.getProperty())
             && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
             && historicUserOpLog.getProcessDefinitionId() == null;
 
@@ -167,7 +167,7 @@ public enum UserOperationType {
     final boolean isActivateProcessDefinitionByKeyIncludingInstancesOperation =
         ACTIVATE_PROCESS_DEFINITION_OPERATION.equalsIgnoreCase(historicUserOpLog.getOperationType())
             && INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD.equalsIgnoreCase(
-                historicUserOpLog.getProperty())
+            historicUserOpLog.getProperty())
             && String.valueOf(true).equalsIgnoreCase(historicUserOpLog.getNewValue())
             && historicUserOpLog.getProcessDefinitionId() == null;
 

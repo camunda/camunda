@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ProcessOverviewWriter {
+
   private final ProcessOverviewRepository processOverviewRepository;
 
   public void updateProcessConfiguration(
@@ -58,8 +59,8 @@ public class ProcessOverviewWriter {
         definitionKeyToKpis.entrySet().stream()
             .map(
                 entry -> {
-                  Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
-                  ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
+                  final Map<String, String> reportIdToValue = entry.getValue().getReportIdToValue();
+                  final ProcessOverviewDto processOverviewDto = new ProcessOverviewDto();
                   processOverviewDto.setProcessDefinitionKey(entry.getKey());
                   processOverviewDto.setDigest(new ProcessDigestDto(false, Collections.emptyMap()));
                   processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);

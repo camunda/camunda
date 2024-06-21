@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedProcessInstanceEngineImportMediator
     extends TimestampBasedImportMediator<
-        CompletedProcessInstanceImportIndexHandler, HistoricProcessInstanceDto> {
+    CompletedProcessInstanceImportIndexHandler, HistoricProcessInstanceDto> {
 
   private final CompletedProcessInstanceFetcher engineEntityFetcher;
 

@@ -10,6 +10,7 @@ package io.camunda.optimize.service.importing.zeebe.db;
 import java.util.Deque;
 
 public interface ZeebeFetcher {
+
   int getPartitionId();
 
   int getDynamicBatchSize();

@@ -42,7 +42,7 @@ public class EventProcessAuthorizationService {
    * @param userId to check for authorization
    * @param eventProcessMappingId the id of the event process
    * @return {@code Optional.empty} if no event process for that id exists, otherwise the
-   *     authorization result.
+   * authorization result.
    */
   public Optional<Boolean> isAuthorizedToEventProcess(
       @NonNull final String userId, @NonNull final String eventProcessMappingId) {

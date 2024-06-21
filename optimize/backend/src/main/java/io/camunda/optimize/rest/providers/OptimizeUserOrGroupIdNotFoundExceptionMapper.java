@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OptimizeUserOrGroupIdNotFoundExceptionMapper
     implements ExceptionMapper<OptimizeUserOrGroupIdNotFoundException> {
+
   private final LocalizationService localizationService;
 
   public OptimizeUserOrGroupIdNotFoundExceptionMapper(
@@ -38,10 +39,12 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper
         .build();
   }
 
-  private ErrorResponseDto getErrorResponseDto(OptimizeUserOrGroupIdNotFoundException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+  private ErrorResponseDto getErrorResponseDto(
+      final OptimizeUserOrGroupIdNotFoundException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }

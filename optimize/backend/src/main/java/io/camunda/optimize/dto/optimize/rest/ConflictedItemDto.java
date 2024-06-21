@@ -13,13 +13,15 @@ import lombok.experimental.FieldNameConstants;
 @Getter
 @FieldNameConstants
 public class ConflictedItemDto {
+
   private String id;
   private ConflictedItemType type;
   private String name;
 
-  public ConflictedItemDto() {}
+  public ConflictedItemDto() {
+  }
 
-  public ConflictedItemDto(String id, ConflictedItemType type, String name) {
+  public ConflictedItemDto(final String id, final ConflictedItemType type, final String name) {
     this.id = id;
     this.type = type;
     this.name = name;

@@ -19,15 +19,16 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationResponseType;
 
 public class AuthorizationRequestCookieValueMapper {
+
   private final ObjectMapper objectMapper;
 
   public AuthorizationRequestCookieValueMapper() {
-    this.objectMapper = new ObjectMapper();
-    this.objectMapper.addMixIn(
+    objectMapper = new ObjectMapper();
+    objectMapper.addMixIn(
         OAuth2AuthorizationRequest.class, OAuth2AuthorizationRequestMixin.class);
-    this.objectMapper.addMixIn(
+    objectMapper.addMixIn(
         OAuth2AuthorizationResponseType.class, OAuth2AuthorizationResponseTypeMixin.class);
-    this.objectMapper.addMixIn(AuthorizationGrantType.class, AuthorizationGrantTypeMixin.class);
+    objectMapper.addMixIn(AuthorizationGrantType.class, AuthorizationGrantTypeMixin.class);
   }
 
   @SneakyThrows
@@ -43,17 +44,22 @@ public class AuthorizationRequestCookieValueMapper {
   }
 
   private abstract static class AuthorizationGrantTypeMixin {
+
     @JsonCreator
-    public AuthorizationGrantTypeMixin(@JsonProperty("value") String value) {}
+    public AuthorizationGrantTypeMixin(@JsonProperty("value") final String value) {
+    }
   }
 
   private abstract static class OAuth2AuthorizationRequestMixin {
+
     @JsonProperty("grantType")
     AuthorizationGrantType authorizationGrantType;
   }
 
   private abstract static class OAuth2AuthorizationResponseTypeMixin {
+
     @JsonCreator
-    public OAuth2AuthorizationResponseTypeMixin(@JsonProperty("value") String value) {}
+    public OAuth2AuthorizationResponseTypeMixin(@JsonProperty("value") final String value) {
+    }
   }
 }

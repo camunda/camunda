@@ -17,7 +17,7 @@ import org.elasticsearch.client.transport.NoNodeAvailableException;
 public class ESConnectionExceptionMapper implements ExceptionMapper<NoNodeAvailableException> {
 
   @Override
-  public Response toResponse(NoNodeAvailableException exception) {
+  public Response toResponse(final NoNodeAvailableException exception) {
     return Response.status(exception.status().getStatus())
         .entity(exception.getMessage())
         .type(MediaType.APPLICATION_JSON)

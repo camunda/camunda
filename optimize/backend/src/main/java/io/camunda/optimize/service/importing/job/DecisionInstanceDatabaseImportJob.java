@@ -26,7 +26,8 @@ public class DecisionInstanceDatabaseImportJob extends DatabaseImportJob<Decisio
   }
 
   @Override
-  protected void persistEntities(List<DecisionInstanceDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(final List<DecisionInstanceDto> newOptimizeEntities)
+      throws Exception {
     decisionInstanceWriter.importDecisionInstances(newOptimizeEntities);
   }
 }

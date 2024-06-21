@@ -33,14 +33,14 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     this.localizationService = localizationService;
   }
 
-  private Response buildGenericErrorResponse(Throwable e) {
+  private Response buildGenericErrorResponse(final Throwable e) {
     return Response.status(getStatusForError(e))
         .type(MediaType.APPLICATION_JSON_TYPE)
         .entity(getErrorResponseDto(e))
         .build();
   }
 
-  private static Response.Status getStatusForError(Throwable e) {
+  private static Response.Status getStatusForError(final Throwable e) {
     final Class<?> errorClass = e.getClass();
 
     if (NotFoundException.class.equals(errorClass)) {
@@ -54,7 +54,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     return Response.Status.INTERNAL_SERVER_ERROR;
   }
 
-  private ErrorResponseDto getErrorResponseDto(Throwable e) {
+  private ErrorResponseDto getErrorResponseDto(final Throwable e) {
     final Class<?> errorClass = e.getClass();
     final String errorCode;
 
@@ -67,13 +67,14 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
       errorCode = GENERIC_ERROR_CODE;
     }
 
-    String localizedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String localizedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
 
     return new ErrorResponseDto(errorCode, localizedMessage, e.getMessage());
   }
 
   @Override
-  public Response toResponse(Throwable throwable) {
+  public Response toResponse(final Throwable throwable) {
     log.error("Mapping generic REST error", throwable);
     return buildGenericErrorResponse(throwable);
   }

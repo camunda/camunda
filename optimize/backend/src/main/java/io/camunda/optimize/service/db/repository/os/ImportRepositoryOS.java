@@ -46,6 +46,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ImportRepositoryOS implements ImportRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
@@ -53,7 +54,7 @@ public class ImportRepositoryOS implements ImportRepository {
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
-      List<String> indexTypes) {
+      final List<String> indexTypes) {
     log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
     final SearchRequest.Builder requestBuilder =
@@ -103,29 +104,6 @@ public class ImportRepositoryOS implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private BulkOperation addPositionBasedImportIndexRequest(
-      PositionBasedImportIndexDto optimizeDto) {
-    log.debug(
-        "Writing position based import index of type [{}] with position [{}] to opensearch",
-        optimizeDto.getEsTypeIndexRefersTo(),
-        optimizeDto.getPositionOfLastEntity());
-    // leaving the prefix "es" although it is valid for ES and OS,
-    // since changing this would require data migration and the cost/benefit of the change is not
-    // worth the effort
-    return new BulkOperation.Builder()
-        .index(
-            new IndexOperation.Builder<PositionBasedImportIndexDto>()
-                .index(
-                    indexNameService.getOptimizeIndexAliasForIndex(
-                        POSITION_BASED_IMPORT_INDEX_NAME))
-                .id(
-                    DatabaseHelper.constructKey(
-                        optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
-                .document(optimizeDto)
-                .build())
-        .build();
-  }
-
   @Override
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
     final GetResponse<AllEntitiesBasedImportIndexDto> response =
@@ -155,10 +133,33 @@ public class ImportRepositoryOS implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private BulkOperation addImportIndexRequest(OptimizeDto optimizeDto) {
-    if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
+  private BulkOperation addPositionBasedImportIndexRequest(
+      final PositionBasedImportIndexDto optimizeDto) {
+    log.debug(
+        "Writing position based import index of type [{}] with position [{}] to opensearch",
+        optimizeDto.getEsTypeIndexRefersTo(),
+        optimizeDto.getPositionOfLastEntity());
+    // leaving the prefix "es" although it is valid for ES and OS,
+    // since changing this would require data migration and the cost/benefit of the change is not
+    // worth the effort
+    return new BulkOperation.Builder()
+        .index(
+            new IndexOperation.Builder<PositionBasedImportIndexDto>()
+                .index(
+                    indexNameService.getOptimizeIndexAliasForIndex(
+                        POSITION_BASED_IMPORT_INDEX_NAME))
+                .id(
+                    DatabaseHelper.constructKey(
+                        optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
+                .document(optimizeDto)
+                .build())
+        .build();
+  }
+
+  private BulkOperation addImportIndexRequest(final OptimizeDto optimizeDto) {
+    if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
       return createTimestampBasedRequest(timestampBasedIndexDto);
-    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
+    } else if (optimizeDto instanceof final AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
       return createAllEntitiesBasedRequest(entitiesBasedIndexDto);
     } else {
       throw new OptimizeRuntimeException(
@@ -167,8 +168,10 @@ public class ImportRepositoryOS implements ImportRepository {
     }
   }
 
-  private BulkOperation createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
-    String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+  private BulkOperation createTimestampBasedRequest(
+      final TimestampBasedImportIndexDto importIndex) {
+    final String currentTimeStamp = dateTimeFormatter.format(
+        importIndex.getTimestampOfLastEntity());
     log.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to opensearch",
         currentTimeStamp,
@@ -186,13 +189,16 @@ public class ImportRepositoryOS implements ImportRepository {
         .build();
   }
 
-  private String getId(EngineImportIndexDto importIndex) {
+  private String getId(final EngineImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
         importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 
-  private BulkOperation createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
-    record Doc(String engine, long importIndex) {}
+  private BulkOperation createAllEntitiesBasedRequest(
+      final AllEntitiesBasedImportIndexDto importIndex) {
+    record Doc(String engine, long importIndex) {
+
+    }
     log.debug(
         "Writing all entities based import index type [{}] to opensearch. Starting from [{}]",
         importIndex.getEsTypeIndexRefersTo(),

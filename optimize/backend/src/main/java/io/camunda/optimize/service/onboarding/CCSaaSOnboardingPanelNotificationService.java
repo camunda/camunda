@@ -98,7 +98,7 @@ public class CCSaaSOnboardingPanelNotificationService {
   }
 
   public String generateRootDashboardLink() {
-    String rootUrl = rootUrlGenerator.getRootUrl();
+    final String rootUrl = rootUrlGenerator.getRootUrl();
     return String.format("%s/#", rootUrl);
   }
 
@@ -109,7 +109,7 @@ public class CCSaaSOnboardingPanelNotificationService {
             processKey,
             List.of(ALL_VERSIONS),
             Collections.emptyList() // TODO to be adjusted with OPT-7113
-            )
+        )
         .map(DefinitionOptimizeResponseDto::getName)
         .orElse(processKey);
   }

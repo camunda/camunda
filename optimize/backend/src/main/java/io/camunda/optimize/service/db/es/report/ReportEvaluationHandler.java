@@ -126,9 +126,9 @@ public abstract class ReportEvaluationHandler {
       } else if (processReportData.isInstantPreviewReport()
           && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
-        String key =
+        final String key =
             ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
-        List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
+        final List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
             definitionService
                 .getDefinitionWithAvailableTenants(
                     DefinitionType.PROCESS, key, reportEvaluationInfo.getUserId())
@@ -175,11 +175,11 @@ public abstract class ReportEvaluationHandler {
             .filter(
                 singleReportResult ->
                     singleReportResult
-                            .getFirstCommandResult()
-                            .getClass()
-                            .equals(singleReportResultType.get())
+                        .getFirstCommandResult()
+                        .getClass()
+                        .equals(singleReportResultType.get())
                         || singleReportResultType.compareAndSet(
-                            null, singleReportResult.getFirstCommandResult().getClass()))
+                        null, singleReportResult.getFirstCommandResult().getClass()))
             .collect(Collectors.toList());
     final long instanceCount =
         combinedReportEvaluator.evaluateCombinedReportInstanceCount(singleReportDefinitions);
@@ -187,7 +187,7 @@ public abstract class ReportEvaluationHandler {
         resultList, instanceCount, combinedReportDefinitionDto);
   }
 
-  private boolean isProcessMapOrNumberResult(SingleReportEvaluationResult<?> reportResult) {
+  private boolean isProcessMapOrNumberResult(final SingleReportEvaluationResult<?> reportResult) {
     final ResultType resultType = reportResult.getFirstCommandResult().getType();
     return ResultType.MAP.equals(resultType) || ResultType.NUMBER.equals(resultType);
   }
@@ -197,8 +197,8 @@ public abstract class ReportEvaluationHandler {
     final CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
         (CombinedReportDefinitionRequestDto) evaluationInfo.getReport();
     final String userId = evaluationInfo.getUserId();
-    List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
-    List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
+    final List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
+    final List<SingleProcessReportDefinitionRequestDto> foundSingleReports =
         reportService.getAllSingleProcessReportsForIdsOmitXml(singleReportIds).stream()
             .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
             .peek(
@@ -214,7 +214,9 @@ public abstract class ReportEvaluationHandler {
     return foundSingleReports;
   }
 
-  /** Checks if the user is allowed to see the given report. */
+  /**
+   * Checks if the user is allowed to see the given report.
+   */
   protected abstract Optional<RoleType> getAuthorizedRole(
       final String userId, final ReportDefinitionDto<?> report);
 
@@ -222,14 +224,14 @@ public abstract class ReportEvaluationHandler {
       final ReportEvaluationInfo evaluationInfo, final RoleType currentUserRole) {
     addAdditionalFiltersForReport(evaluationInfo, evaluationInfo.getReport());
     try {
-      ReportEvaluationContext<ReportDefinitionDto<?>> context =
+      final ReportEvaluationContext<ReportDefinitionDto<?>> context =
           ReportEvaluationContext.fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
-    } catch (OptimizeException | OptimizeValidationException e) {
+    } catch (final OptimizeException | OptimizeValidationException e) {
       final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
           new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
           new AuthorizedReportDefinitionResponseDto(evaluationInfo.getReport(), currentUserRole);
       if (Arrays.stream(e.getSuppressed())
@@ -277,10 +279,10 @@ public abstract class ReportEvaluationHandler {
   private void addAdditionalFiltersForReport(
       final ReportDefinitionDto<?> reportDefinitionDto,
       final AdditionalProcessReportEvaluationFilterDto additionalFilters,
-      Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
+      final Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
     if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
       if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto) {
-        SingleProcessReportDefinitionRequestDto definitionDto =
+        final SingleProcessReportDefinitionRequestDto definitionDto =
             (SingleProcessReportDefinitionRequestDto) reportDefinitionDto;
 
         final EnumMap<VariableType, Set<String>> variableFiltersByTypeForReport;

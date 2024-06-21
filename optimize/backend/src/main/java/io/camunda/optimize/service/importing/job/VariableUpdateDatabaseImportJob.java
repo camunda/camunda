@@ -30,14 +30,14 @@ public class VariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVa
       final Runnable callback,
       final DatabaseClient databaseClient) {
     super(callback, databaseClient);
-    this.processVariableUpdateWriter = variableWriter;
+    processVariableUpdateWriter = variableWriter;
     this.camundaEventImportService = camundaEventImportService;
     this.configurationService = configurationService;
   }
 
   @Override
-  protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
-    List<ImportRequestDto> importBulks = new ArrayList<>();
+  protected void persistEntities(final List<ProcessVariableDto> variableUpdates) {
+    final List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(processVariableUpdateWriter.generateVariableUpdateImports(variableUpdates));
     importBulks.addAll(camundaEventImportService.generateVariableUpdateImports(variableUpdates));
     databaseClient.executeImportRequestsAsBulk(

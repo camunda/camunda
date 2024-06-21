@@ -42,7 +42,7 @@ public class ResponseTimezoneFilter implements ContainerResponseFilter {
 
     private final ZoneId timezone;
 
-    public DateMod(ZoneId timezone) {
+    public DateMod(final ZoneId timezone) {
       this.timezone = timezone;
     }
 

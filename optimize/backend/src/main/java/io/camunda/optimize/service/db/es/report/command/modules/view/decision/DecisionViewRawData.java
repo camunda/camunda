@@ -82,11 +82,6 @@ public class DecisionViewRawData extends DecisionViewPart {
       new RawDecisionDataResultDtoMapper();
 
   @Override
-  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
-    return ViewProperty.RAW_DATA;
-  }
-
-  @Override
   public void adjustSearchRequest(
       final SearchRequest searchRequest,
       final BoolQueryBuilder baseQuery,
@@ -117,6 +112,11 @@ public class DecisionViewRawData extends DecisionViewPart {
             });
 
     addSortingToQuery(context.getReportData(), searchRequest.source());
+  }
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewProperty.RAW_DATA;
   }
 
   @Override
@@ -154,6 +154,17 @@ public class DecisionViewRawData extends DecisionViewPart {
     return ViewResult.builder().rawData(rawData).build();
   }
 
+  @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
+  }
+
   private Set<InputVariableEntry> getInputVariableEntries(final SingleReportDataDto reportDataDto) {
     return decisionVariableReader
         .getInputVariableNames(
@@ -183,17 +194,6 @@ public class DecisionViewRawData extends DecisionViewPart {
                     outputVar.getType(),
                     Collections.emptyList()))
         .collect(Collectors.toSet());
-  }
-
-  @Override
-  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
-    return ViewResult.builder().rawData(new ArrayList<>()).build();
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(
-      final DecisionReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addSortingToQuery(
@@ -298,7 +298,7 @@ public class DecisionViewRawData extends DecisionViewPart {
             .map(this::getPrefixedOutputVariableId)
             .collect(toList()));
 
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    final TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }

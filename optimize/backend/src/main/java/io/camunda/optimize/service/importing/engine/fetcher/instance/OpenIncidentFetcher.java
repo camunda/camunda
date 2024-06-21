@@ -40,18 +40,18 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
     dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
-  public List<HistoricIncidentEngineDto> fetchOpenIncidents(TimestampBasedImportPage page) {
+  public List<HistoricIncidentEngineDto> fetchOpenIncidents(final TimestampBasedImportPage page) {
     return fetchOpenIncidents(
         page.getTimestampOfLastEntity(), configurationService.getEngineImportIncidentMaxPageSize());
   }
 
   public List<HistoricIncidentEngineDto> fetchOpenIncidentsForTimestamp(
-      OffsetDateTime startTimeOfLastIncident) {
+      final OffsetDateTime startTimeOfLastIncident) {
     logger.debug("Fetching open incidents ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricIncidentEngineDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricIncidentEngineDto> secondEntries =
         fetchWithRetry(() -> performOpenIncidentsCreatedAtRequest(startTimeOfLastIncident));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] open incidents which were created at set timestamp within [{}] ms",
         secondEntries.size(),
@@ -60,12 +60,12 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
   }
 
   private List<HistoricIncidentEngineDto> fetchOpenIncidents(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching open incidents ...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricIncidentEngineDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricIncidentEngineDto> entries =
         fetchWithRetry(() -> performOpenIncidentsCreatedAfterRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] open incidents which started after set timestamp with page size [{}] within [{}] ms",
         entries.size(),
@@ -76,7 +76,7 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
   }
 
   private List<HistoricIncidentEngineDto> performOpenIncidentsCreatedAfterRequest(
-      OffsetDateTime createdAfterTimestamp, long pageSize) {
+      final OffsetDateTime createdAfterTimestamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(OPEN_INCIDENT_ENDPOINT)
@@ -84,17 +84,19 @@ public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
         .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 
   private List<HistoricIncidentEngineDto> performOpenIncidentsCreatedAtRequest(
-      OffsetDateTime createdAtTimestamp) {
+      final OffsetDateTime createdAtTimestamp) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(OPEN_INCIDENT_ENDPOINT)
         .queryParam(CREATED_AT, dateTimeFormatter.format(createdAtTimestamp))
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 }

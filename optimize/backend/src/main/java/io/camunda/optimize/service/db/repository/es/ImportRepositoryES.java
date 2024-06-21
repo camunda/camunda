@@ -55,6 +55,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ImportRepositoryES implements ImportRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
@@ -62,7 +63,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
-      List<String> indexTypes) {
+      final List<String> indexTypes) {
     log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
     final SearchRequest searchRequest =
@@ -75,7 +76,7 @@ public class ImportRepositoryES implements ImportRepository {
     final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to get timestamp based import indices!", e);
       throw new OptimizeRuntimeException("Was not able to get timestamp based import indices!", e);
     }
@@ -85,28 +86,28 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public <T extends ImportIndexDto<D>, D extends DataSourceDto> Optional<T> getImportIndex(
-      String indexName,
-      String indexType,
-      Class<T> importDTOClass,
-      String typeIndexComesFrom,
-      D dataSourceDto) {
+      final String indexName,
+      final String indexType,
+      final Class<T> importDTOClass,
+      final String typeIndexComesFrom,
+      final D dataSourceDto) {
     log.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
 
     GetResponse getResponse = null;
-    GetRequest getRequest =
+    final GetRequest getRequest =
         new GetRequest(indexName)
             .id(DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto));
     try {
       getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not fetch {} import index", indexType, e);
     }
 
     if (getResponse != null && getResponse.isExists()) {
-      String content = getResponse.getSourceAsString();
+      final String content = getResponse.getSourceAsString();
       try {
         return Optional.of(objectMapper.readValue(content, importDTOClass));
-      } catch (IOException e) {
+      } catch (final IOException e) {
         log.debug("Error while reading {} import index from elasticsearch!", indexType, e);
         return Optional.empty();
       }
@@ -122,7 +123,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importPositionBasedIndices(
-      String importItemName, List<PositionBasedImportIndexDto> importIndexDtos) {
+      final String importItemName, final List<PositionBasedImportIndexDto> importIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         importIndexDtos,
@@ -130,45 +131,24 @@ public class ImportRepositoryES implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private void addPositionBasedImportIndexRequest(
-      BulkRequest bulkRequest, PositionBasedImportIndexDto optimizeDto) {
-    log.debug(
-        "Writing position based import index of type [{}] with position [{}] to elasticsearch",
-        optimizeDto.getEsTypeIndexRefersTo(),
-        optimizeDto.getPositionOfLastEntity());
-    try {
-      bulkRequest.add(
-          new IndexRequest(POSITION_BASED_IMPORT_INDEX_NAME)
-              .id(
-                  DatabaseHelper.constructKey(
-                      optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
-              .source(objectMapper.writeValueAsString(optimizeDto), XContentType.JSON));
-    } catch (JsonProcessingException e) {
-      log.error(
-          "Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",
-          optimizeDto.getEsTypeIndexRefersTo(),
-          e);
-    }
-  }
-
   @Override
-  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
-    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME).id(id);
+  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
+    final GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME).id(id);
 
     GetResponse getResponse = null;
     try {
       getResponse = esClient.get(getRequest);
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       // do nothing
     }
 
     if (getResponse != null && getResponse.isExists()) {
       try {
-        AllEntitiesBasedImportIndexDto storedIndex =
+        final AllEntitiesBasedImportIndexDto storedIndex =
             objectMapper.readValue(
                 getResponse.getSourceAsString(), AllEntitiesBasedImportIndexDto.class);
         return Optional.of(storedIndex);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         log.error("Was not able to retrieve import index of [{}]. Reason: {}", id, e);
         return Optional.empty();
       }
@@ -183,7 +163,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importIndices(
-      String importItemName, List<EngineImportIndexDto> engineImportIndexDtos) {
+      final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         engineImportIndexDtos,
@@ -191,16 +171,38 @@ public class ImportRepositoryES implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private void addImportIndexRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {
-    if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
+  private void addPositionBasedImportIndexRequest(
+      final BulkRequest bulkRequest, final PositionBasedImportIndexDto optimizeDto) {
+    log.debug(
+        "Writing position based import index of type [{}] with position [{}] to elasticsearch",
+        optimizeDto.getEsTypeIndexRefersTo(),
+        optimizeDto.getPositionOfLastEntity());
+    try {
+      bulkRequest.add(
+          new IndexRequest(POSITION_BASED_IMPORT_INDEX_NAME)
+              .id(
+                  DatabaseHelper.constructKey(
+                      optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
+              .source(objectMapper.writeValueAsString(optimizeDto), XContentType.JSON));
+    } catch (final JsonProcessingException e) {
+      log.error(
+          "Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",
+          optimizeDto.getEsTypeIndexRefersTo(),
+          e);
+    }
+  }
+
+  private void addImportIndexRequest(final BulkRequest bulkRequest, final OptimizeDto optimizeDto) {
+    if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
       bulkRequest.add(createTimestampBasedRequest(timestampBasedIndexDto));
-    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
+    } else if (optimizeDto instanceof final AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
       bulkRequest.add(createAllEntitiesBasedRequest(entitiesBasedIndexDto));
     }
   }
 
-  private IndexRequest createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
-    String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+  private IndexRequest createTimestampBasedRequest(final TimestampBasedImportIndexDto importIndex) {
+    final String currentTimeStamp = dateTimeFormatter.format(
+        importIndex.getTimestampOfLastEntity());
     log.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,
@@ -210,7 +212,7 @@ public class ImportRepositoryES implements ImportRepository {
       return new IndexRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
           .id(getId(importIndex))
           .source(objectMapper.writeValueAsString(importIndex), XContentType.JSON);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.error(
           "Was not able to write timestamp based import index of type [{}] to Elasticsearch. Reason: {}",
           importIndex.getEsTypeIndexRefersTo(),
@@ -219,19 +221,20 @@ public class ImportRepositoryES implements ImportRepository {
     }
   }
 
-  private String getId(EngineImportIndexDto importIndex) {
+  private String getId(final EngineImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
         importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 
-  private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
+  private IndexRequest createAllEntitiesBasedRequest(
+      final AllEntitiesBasedImportIndexDto importIndex) {
     log.debug(
         "Writing all entities based import index type [{}] to elasticsearch. "
             + "Starting from [{}]",
         importIndex.getEsTypeIndexRefersTo(),
         importIndex.getImportIndex());
     try {
-      XContentBuilder sourceToAdjust =
+      final XContentBuilder sourceToAdjust =
           XContentFactory.jsonBuilder()
               .startObject()
               .field(ImportIndexIndex.ENGINE, importIndex.getEngine())
@@ -240,7 +243,7 @@ public class ImportRepositoryES implements ImportRepository {
       return new IndexRequest(IMPORT_INDEX_INDEX_NAME)
           .id(getId(importIndex))
           .source(sourceToAdjust);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error(
           "Was not able to write all entities based import index of type [{}] to Elasticsearch. Reason: {}",
           importIndex.getEsTypeIndexRefersTo(),

@@ -27,17 +27,17 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
   }
 
   public List<String> triggerRollover() {
-    List<String> rolledOverIndexAliases = new ArrayList<>();
+    final List<String> rolledOverIndexAliases = new ArrayList<>();
     getAliasesToConsiderRolling()
         .forEach(
             indexAlias -> {
               try {
-                boolean isRolledOver =
+                final boolean isRolledOver =
                     databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
                 if (isRolledOver) {
                   rolledOverIndexAliases.add(indexAlias);
                 }
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
               }
             });

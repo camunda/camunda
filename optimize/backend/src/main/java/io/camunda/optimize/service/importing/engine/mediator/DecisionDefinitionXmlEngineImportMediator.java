@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlEngineImportMediator
     extends DefinitionXmlImportMediator<
-        DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
+    DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
   private final DecisionDefinitionXmlFetcher engineEntityFetcher;
 

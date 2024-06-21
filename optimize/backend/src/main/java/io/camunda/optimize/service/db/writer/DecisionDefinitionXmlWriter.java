@@ -7,13 +7,16 @@
  */
 package io.camunda.optimize.service.db.writer;
 
-import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.*;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.INPUT_VARIABLE_NAMES;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.OUTPUT_VARIABLE_NAMES;
 
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import java.util.List;
 import java.util.Set;
 
 public interface DecisionDefinitionXmlWriter {
+
   Set<String> FIELDS_TO_UPDATE =
       Set.of(DECISION_DEFINITION_XML, INPUT_VARIABLE_NAMES, OUTPUT_VARIABLE_NAMES);
 

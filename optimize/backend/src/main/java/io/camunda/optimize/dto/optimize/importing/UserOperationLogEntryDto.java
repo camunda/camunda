@@ -20,11 +20,15 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants(asEnum = true)
 public class UserOperationLogEntryDto implements OptimizeDto {
+
   private String id;
 
-  @JsonIgnore private String processDefinitionId;
-  @JsonIgnore private String processDefinitionKey;
-  @JsonIgnore private String processInstanceId;
+  @JsonIgnore
+  private String processDefinitionId;
+  @JsonIgnore
+  private String processDefinitionKey;
+  @JsonIgnore
+  private String processInstanceId;
 
   private UserOperationType operationType;
   private OffsetDateTime timestamp;

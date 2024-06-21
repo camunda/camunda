@@ -49,6 +49,19 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
   private final OptimizeElasticsearchClient esClient;
 
   @Override
+  public void consumeUserTaskFieldTermsInBatches(
+      final String indexName,
+      final String termField,
+      final String termValue,
+      final String userTaskFieldName,
+      final Consumer<List<String>> termBatchConsumer,
+      final int batchSize) {
+    final TermQueryBuilder filterQuery = termQuery(termField, termValue);
+    consumeUserTaskFieldTermsInBatches(
+        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
+  }
+
+  @Override
   public Set<String> getUserTaskFieldTerms(
       final String userTaskFieldName, final Map<String, Set<String>> definitionKeyToTenantsMap) {
     log.debug(
@@ -62,19 +75,6 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
       consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll);
     }
     return result;
-  }
-
-  @Override
-  public void consumeUserTaskFieldTermsInBatches(
-      final String indexName,
-      final String termField,
-      final String termValue,
-      final String userTaskFieldName,
-      final Consumer<List<String>> termBatchConsumer,
-      final int batchSize) {
-    final TermQueryBuilder filterQuery = termQuery(termField, termValue);
-    consumeUserTaskFieldTermsInBatches(
-        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
   }
 
   private void consumeUserTaskFieldTermsInBatches(
@@ -98,10 +98,10 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
     final int resolvedBatchSize = Math.min(batchSize, MAX_RESPONSE_SIZE_LIMIT);
     final CompositeAggregationBuilder assigneeCompositeAgg =
         new CompositeAggregationBuilder(
-                COMPOSITE_AGG,
-                ImmutableList.of(
-                    new TermsValuesSourceBuilder(TERMS_AGG)
-                        .field(getUserTaskFieldPath(userTaskFieldName))))
+            COMPOSITE_AGG,
+            ImmutableList.of(
+                new TermsValuesSourceBuilder(TERMS_AGG)
+                    .field(getUserTaskFieldPath(userTaskFieldName))))
             .size(resolvedBatchSize);
     final NestedAggregationBuilder userTasksAgg =
         nested(NESTED_USER_TASKS_AGG, FLOW_NODE_INSTANCES).subAggregation(assigneeCompositeAgg);

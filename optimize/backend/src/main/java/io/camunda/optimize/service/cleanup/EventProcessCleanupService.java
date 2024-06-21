@@ -41,7 +41,7 @@ public class EventProcessCleanupService extends CleanupService {
         eventProcessPublishStateReader.getAllEventProcessPublishStates();
 
     int i = 1;
-    for (EventProcessPublishStateDto currentEventProcess : publishedEventProcesses) {
+    for (final EventProcessPublishStateDto currentEventProcess : publishedEventProcesses) {
       log.info("Event Process History Cleanup step {}/{}", i, publishedEventProcesses.size());
       performCleanupForEventProcess(startTime, currentEventProcess);
       i++;
@@ -81,6 +81,6 @@ public class EventProcessCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

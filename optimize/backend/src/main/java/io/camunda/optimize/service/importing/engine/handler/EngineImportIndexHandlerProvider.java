@@ -55,7 +55,8 @@ public class EngineImportIndexHandlerProvider {
 
   private final EngineContext engineContext;
 
-  @Autowired private BeanFactory beanFactory;
+  @Autowired
+  private BeanFactory beanFactory;
   private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
   private List<TimestampBasedEngineImportIndexHandler> timestampBasedEngineHandlers;
   private Map<String, EngineImportIndexHandler<?, ?>> allHandlers;

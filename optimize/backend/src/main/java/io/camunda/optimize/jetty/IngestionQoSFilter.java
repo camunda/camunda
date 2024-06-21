@@ -44,26 +44,22 @@ import org.springframework.http.HttpStatus;
 @Data
 public class IngestionQoSFilter implements Filter {
 
-  private static final String TOO_MANY_REQUESTS = "Too many requests";
   public static final String RETRY_AFTER_SECONDS = "5";
-
-  private final String suspended =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
-  private final String resumed =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
+  private static final String TOO_MANY_REQUESTS = "Too many requests";
   private long waitMs = 50;
   private long suspendMs = 500;
-  private int maxRequests = 10;
+  private int maxRequests = 10;  private final String suspended =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
   private Semaphore passes;
   private Queue<AsyncContext>[] queues;
-  private AsyncListener[] listeners;
-
+  private AsyncListener[] listeners;  private final String resumed =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
   private final Callable<Integer> maxRequestCountProvider;
 
   @Override
-  public void init(FilterConfig filterConfig) {
+  public void init(final FilterConfig filterConfig) {
     // We can use simpler initialization than the Jetty QoS filter as we use default configuration
-    int maxPriority = 2;
+    final int maxPriority = 2;
     queues = new Queue[maxPriority + 1];
     listeners = new AsyncListener[queues.length];
     for (int p = 0; p < queues.length; ++p) {
@@ -75,7 +71,8 @@ public class IngestionQoSFilter implements Filter {
 
   @SneakyThrows
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(final ServletRequest request, final ServletResponse response,
+      final FilterChain chain)
       throws IOException, ServletException {
     // This is the only configurable property. It cannot be set during initialization so needs
     // setting here instead
@@ -85,7 +82,7 @@ public class IngestionQoSFilter implements Filter {
 
     boolean accepted = false;
     try {
-      Boolean suspended = (Boolean) request.getAttribute(this.suspended);
+      final Boolean suspended = (Boolean) request.getAttribute(this.suspended);
       if (suspended == null) {
         accepted = passes.tryAcquire(waitMs, TimeUnit.MILLISECONDS);
         if (accepted) {
@@ -93,9 +90,9 @@ public class IngestionQoSFilter implements Filter {
           log.debug("Accepted {}", request);
         } else {
           request.setAttribute(this.suspended, Boolean.TRUE);
-          int priority = getPriority(request);
+          final int priority = getPriority(request);
           AsyncContext asyncContext = request.startAsync();
-          long suspendMs = this.suspendMs;
+          final long suspendMs = this.suspendMs;
           if (suspendMs > 0) {
             asyncContext.setTimeout(suspendMs);
           }
@@ -113,7 +110,7 @@ public class IngestionQoSFilter implements Filter {
       } else {
         if (suspended) {
           request.setAttribute(this.suspended, Boolean.FALSE);
-          Boolean resumed = (Boolean) request.getAttribute(this.resumed);
+          final Boolean resumed = (Boolean) request.getAttribute(this.resumed);
           if (Boolean.TRUE.equals(resumed)) {
             passes.acquire();
             accepted = true;
@@ -137,23 +134,23 @@ public class IngestionQoSFilter implements Filter {
         log.debug("Rejected {}", request);
         sendErrorResponse(response);
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       sendErrorResponse(response);
       Thread.currentThread().interrupt();
     } finally {
       if (accepted) {
         passes.release();
         for (int p = queues.length - 1; p >= 0; --p) {
-          AsyncContext asyncContext = queues[p].poll();
+          final AsyncContext asyncContext = queues[p].poll();
           if (asyncContext != null) {
-            ServletRequest candidate = asyncContext.getRequest();
-            Boolean suspended = (Boolean) candidate.getAttribute(this.suspended);
+            final ServletRequest candidate = asyncContext.getRequest();
+            final Boolean suspended = (Boolean) candidate.getAttribute(this.suspended);
             if (Boolean.TRUE.equals(suspended)) {
               try {
                 candidate.setAttribute(resumed, Boolean.TRUE);
                 asyncContext.dispatch();
                 break;
-              } catch (IllegalStateException x) {
+              } catch (final IllegalStateException x) {
                 log.warn(x.getMessage());
                 continue;
               }
@@ -164,13 +161,17 @@ public class IngestionQoSFilter implements Filter {
     }
   }
 
-  private int getPriority(ServletRequest request) {
+  @Override
+  public void destroy() {
+  }
+
+  private int getPriority(final ServletRequest request) {
     // We use the default prioritization for requests, as per the Jetty QoSFilter
-    HttpServletRequest baseRequest = (HttpServletRequest) request;
+    final HttpServletRequest baseRequest = (HttpServletRequest) request;
     if (baseRequest.getUserPrincipal() != null) {
       return 2;
     } else {
-      HttpSession session = baseRequest.getSession(false);
+      final HttpSession session = baseRequest.getSession(false);
       if (session != null && !session.isNew()) {
         return 1;
       } else {
@@ -179,16 +180,13 @@ public class IngestionQoSFilter implements Filter {
     }
   }
 
-  @Override
-  public void destroy() {}
-
-  private void setMaxRequests(int value) {
+  private void setMaxRequests(final int value) {
     log.info("setting the max number of ingestion requests to {}", value);
     passes = new Semaphore((value - maxRequests + passes.availablePermits()), true);
     maxRequests = value;
   }
 
-  protected void sendErrorResponse(ServletResponse servletResponse) throws IOException {
+  protected void sendErrorResponse(final ServletResponse servletResponse) throws IOException {
     // We send a different error response than Jetty QoSFilter plus a required header in line with
     // CloudEvent specification
     ((HttpServletResponse) servletResponse).setHeader(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS);
@@ -202,29 +200,39 @@ public class IngestionQoSFilter implements Filter {
   }
 
   private class QoSAsyncListener implements AsyncListener {
+
     private final int priority;
 
-    public QoSAsyncListener(int priority) {
+    public QoSAsyncListener(final int priority) {
       this.priority = priority;
     }
 
     @Override
-    public void onStartAsync(AsyncEvent event) throws IOException {}
+    public void onComplete(final AsyncEvent event) throws IOException {
+    }
 
     @Override
-    public void onComplete(AsyncEvent event) throws IOException {}
-
-    @Override
-    public void onTimeout(AsyncEvent event) throws IOException {
+    public void onTimeout(final AsyncEvent event) throws IOException {
       // Remove before it's redispatched, so it won't be
       // redispatched again at the end of the filtering.
-      AsyncContext asyncContext = event.getAsyncContext();
+      final AsyncContext asyncContext = event.getAsyncContext();
       queues[priority].remove(asyncContext);
       sendErrorResponse(event.getSuppliedResponse());
       asyncContext.complete();
     }
 
     @Override
-    public void onError(AsyncEvent event) throws IOException {}
+    public void onError(final AsyncEvent event) throws IOException {
+    }
+
+    @Override
+    public void onStartAsync(final AsyncEvent event) throws IOException {
+    }
   }
+
+
+
+
+
+
 }

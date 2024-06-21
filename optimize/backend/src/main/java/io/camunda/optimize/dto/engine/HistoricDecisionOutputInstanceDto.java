@@ -14,6 +14,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class HistoricDecisionOutputInstanceDto implements EngineDto {
+
   private String id;
   private String type;
   private Object value;

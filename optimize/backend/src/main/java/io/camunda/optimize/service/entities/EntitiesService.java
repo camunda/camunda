@@ -77,23 +77,26 @@ public class EntitiesService {
 
   public EntityNameResponseDto getEntityNames(
       final EntityNameRequestDto requestDto, final String locale) {
-    Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto, locale);
+    final Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto,
+        locale);
 
     return entityNames.orElseThrow(
         () -> {
-          String reason = String.format("Could not get entity names search request %s", requestDto);
+          final String reason = String.format("Could not get entity names search request %s",
+              requestDto);
           return new NotFoundException(reason);
         });
   }
 
   // For dashboards and collections, we only check for authorization. For reports, we also check for
   // conflicts
-  public boolean entitiesHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
+  public boolean entitiesHaveConflicts(final EntitiesDeleteRequestDto entities,
+      final String userId) {
     entities
         .getDashboards()
         .forEach(
             dashboardId -> {
-              DashboardDefinitionRestDto dashboardDefinitionRestDto =
+              final DashboardDefinitionRestDto dashboardDefinitionRestDto =
                   dashboardService.getDashboardDefinitionAsService(dashboardId);
               if (dashboardDefinitionRestDto.getCollectionId() != null) {
                 dashboardService.verifyUserHasAccessToDashboardCollection(
@@ -109,50 +112,51 @@ public class EntitiesService {
     return reportsHaveConflicts(entities, userId);
   }
 
-  public void bulkDeleteEntities(EntitiesDeleteRequestDto entities, String userId) {
-    for (String reportId : entities.getReports()) {
+  public void bulkDeleteEntities(final EntitiesDeleteRequestDto entities, final String userId) {
+    for (final String reportId : entities.getReports()) {
       try {
         reportService.deleteReportAsUser(userId, reportId, true);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The report with id {} could not be deleted: {}", reportId, e);
       }
     }
 
-    for (String dashboardId : entities.getDashboards()) {
+    for (final String dashboardId : entities.getDashboards()) {
       try {
         dashboardService.deleteDashboardAsUser(dashboardId, userId);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
       }
     }
 
-    for (String collectionId : entities.getCollections()) {
+    for (final String collectionId : entities.getCollections()) {
       try {
         collectionService.deleteCollection(userId, collectionId, true);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The collection with id {} could not be deleted: {}", collectionId, e);
       }
     }
   }
 
   private boolean conflictingItemIsUndeletedDashboard(
-      ConflictedItemDto item, EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+      final ConflictedItemDto item, final EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
     return item.getType().equals(ConflictedItemType.DASHBOARD)
         && !entitiesDeleteRequestDto.getDashboards().contains(item.getId());
   }
 
   private boolean conflictingItemIsUndeletedCombinedReport(
-      ConflictedItemDto item, List<String> reportIds) {
+      final ConflictedItemDto item, final List<String> reportIds) {
     return item.getType().equals(ConflictedItemType.COMBINED_REPORT)
         && !reportIds.contains(item.getId());
   }
 
-  private boolean reportsHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
-    List<String> reportIds = entities.getReports();
+  private boolean reportsHaveConflicts(final EntitiesDeleteRequestDto entities,
+      final String userId) {
+    final List<String> reportIds = entities.getReports();
     return reportIds.stream()
         .anyMatch(
             entry -> {
-              Set<ConflictedItemDto> conflictedItemDtos =
+              final Set<ConflictedItemDto> conflictedItemDtos =
                   reportService.getConflictedItemsFromReportDefinition(userId, entry);
               return conflictedItemDtos.stream()
                   .anyMatch(
@@ -160,7 +164,7 @@ public class EntitiesService {
                           conflictingItemIsUndeletedDashboard(conflictedItemDto, entities)
                               || conflictedItemDto.getType().equals(ConflictedItemType.ALERT)
                               || conflictingItemIsUndeletedCombinedReport(
-                                  conflictedItemDto, reportIds));
+                              conflictedItemDto, reportIds));
             });
   }
 }

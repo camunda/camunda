@@ -25,7 +25,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
-  @Setter @Getter protected DistributedByPart<Data> distributedByPart;
+  @Setter
+  @Getter
+  protected DistributedByPart<Data> distributedByPart;
 
   public void adjustSearchRequest(
       final SearchRequest searchRequest,

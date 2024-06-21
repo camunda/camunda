@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class FlowNodeEventDto implements Serializable, OptimizeDto {
+
   private String id; // == FlowNodeInstanceDto.flowNodeInstanceId
   private String activityId; // == FlowNodeInstanceDto.flowNodeID
   private String activityType;

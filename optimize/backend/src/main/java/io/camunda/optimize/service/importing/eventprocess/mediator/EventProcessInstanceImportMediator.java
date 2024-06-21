@@ -34,7 +34,8 @@ import org.springframework.stereotype.Component;
 public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
     extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, T> {
 
-  @Getter private final String publishedProcessStateId;
+  @Getter
+  private final String publishedProcessStateId;
   private final EventFetcherService<T> eventFetcherService;
 
   public EventProcessInstanceImportMediator(

@@ -25,16 +25,17 @@ public class CollectionRelationService {
     this.referenceServices = referenceServices;
   }
 
-  public Set<ConflictedItemDto> getConflictedItemsForDelete(CollectionDefinitionDto definition) {
+  public Set<ConflictedItemDto> getConflictedItemsForDelete(
+      final CollectionDefinitionDto definition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-    for (CollectionReferencingService referencingService : referenceServices) {
+    for (final CollectionReferencingService referencingService : referenceServices) {
       conflictedItems.addAll(referencingService.getConflictedItemsForCollectionDelete(definition));
     }
     return conflictedItems;
   }
 
-  public void handleDeleted(CollectionDefinitionDto definition) {
-    for (CollectionReferencingService referencingService : referenceServices) {
+  public void handleDeleted(final CollectionDefinitionDto definition) {
+    for (final CollectionReferencingService referencingService : referenceServices) {
       referencingService.handleCollectionDeleted(definition);
     }
   }

@@ -213,17 +213,17 @@ public class DigestService implements ConfigurationReloadable {
         "ownerName", ownerName,
         "processName", processDefinitionName,
         "hasTimeKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
+        currentKpiReportResults.stream()
+            .anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
         "hasQualityKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
+        currentKpiReportResults.stream()
+            .anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
         "successfulTimeKPIPercent", calculateSuccessfulKpiInPercent(TIME, currentKpiReportResults),
         "successfulQualityKPIPercent",
-            calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
+        calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
         "kpiResults",
-            getKpiSummaryDtos(
-                processDefinitionName, currentKpiReportResults, previousKpiReportResults),
+        getKpiSummaryDtos(
+            processDefinitionName, currentKpiReportResults, previousKpiReportResults),
         "optimizeHomePageLink", getOptimizeHomePageLink());
   }
 
@@ -306,14 +306,21 @@ public class DigestService implements ConfigurationReloadable {
         .toList();
   }
 
-  public enum KpiChangeType {
-    GOOD, // compared to previous report value, new value is closer to KPI target
-    NEUTRAL, // no change
-    BAD // compared to previous report value, new value is further away from KPI target
+  private static double calculatePercentageChange(
+      final KpiResultDto kpiResult, final double previousValueAsDouble) {
+    try {
+      return 100
+          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
+          / previousValueAsDouble);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Value could not be parsed to number: " + kpiResult.getValue());
+    }
   }
 
   @Data
   public static class DigestTemplateKpiSummaryDto {
+
     private final String reportName;
     private final String reportLink;
     private final String kpiType;
@@ -346,7 +353,7 @@ public class DigestService implements ConfigurationReloadable {
 
     /**
      * @return a string to indicate report target depending on viewProperty and isBelow, eg "< 2h"
-     *     or "> 50.55 %"
+     * or "> 50.55 %"
      */
     private String getKpiTargetString(
         final String target,
@@ -404,15 +411,9 @@ public class DigestService implements ConfigurationReloadable {
     }
   }
 
-  private static double calculatePercentageChange(
-      KpiResultDto kpiResult, double previousValueAsDouble) {
-    try {
-      return 100
-          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
-              / previousValueAsDouble);
-    } catch (final NumberFormatException exception) {
-      throw new OptimizeRuntimeException(
-          "Value could not be parsed to number: " + kpiResult.getValue());
-    }
+  public enum KpiChangeType {
+    GOOD, // compared to previous report value, new value is closer to KPI target
+    NEUTRAL, // no change
+    BAD // compared to previous report value, new value is further away from KPI target
   }
 }

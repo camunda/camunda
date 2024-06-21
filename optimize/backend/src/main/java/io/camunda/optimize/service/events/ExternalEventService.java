@@ -48,7 +48,7 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     final Long rightNow = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
     // all events of a batch share the same ingestion timestamp as this is the point in time they
     // got ingested
-    for (EventDto eventDto : eventDtos) {
+    for (final EventDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(rightNow);
     }
     externalEventWriter.upsertEvents(eventDtos);
@@ -65,12 +65,12 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForAllEvents() {
+  getMinAndMaxIngestedTimestampsForAllEvents() {
     return externalEventReader.getMinAndMaxIngestedTimestamps();
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForGroups(final List<String> eventGroups) {
+  getMinAndMaxIngestedTimestampsForGroups(final List<String> eventGroups) {
     return externalEventReader.getMinAndMaxIngestedTimestampsForGroups(eventGroups);
   }
 

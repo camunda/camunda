@@ -25,7 +25,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 
 public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
-  @Setter @Getter protected ViewPart<Data> viewPart;
+  @Setter
+  @Getter
+  protected ViewPart<Data> viewPart;
 
   public abstract boolean isKeyOfNumericType(final ExecutionContext<Data> context);
 

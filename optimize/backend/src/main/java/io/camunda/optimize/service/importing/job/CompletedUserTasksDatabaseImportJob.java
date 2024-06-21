@@ -31,7 +31,7 @@ public class CompletedUserTasksDatabaseImportJob extends DatabaseImportJob<FlowN
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
+  protected void persistEntities(final List<FlowNodeInstanceDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests =
         completedUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
     databaseClient.executeImportRequestsAsBulk(

@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class AuthorizedIdentitiesResult {
+
   boolean globalOptimizeGrant = false;
   final Set<String> grantedGroupIds = new HashSet<>();
   final Set<String> revokedGroupIds = new HashSet<>();

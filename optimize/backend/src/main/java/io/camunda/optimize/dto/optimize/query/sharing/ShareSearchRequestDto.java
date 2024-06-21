@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class ShareSearchRequestDto {
+
   private List<String> reports = new ArrayList<>();
   private List<String> dashboards = new ArrayList<>();
 }

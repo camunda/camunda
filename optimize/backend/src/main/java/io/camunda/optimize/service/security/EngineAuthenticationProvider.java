@@ -35,7 +35,7 @@ public class EngineAuthenticationProvider {
   private final ConfigurationService configurationService;
 
   public AuthenticationResultDto performAuthenticationCheck(
-      CredentialsRequestDto credentialsRequestDto, EngineContext engineContext) {
+      final CredentialsRequestDto credentialsRequestDto, final EngineContext engineContext) {
     try {
       final Response response =
           engineContext
@@ -48,7 +48,8 @@ public class EngineAuthenticationProvider {
               .post(Entity.json(credentialsRequestDto));
 
       if (responseIsSuccessful(response)) {
-        AuthenticationResultDto authResult = response.readEntity(AuthenticationResultDto.class);
+        final AuthenticationResultDto authResult = response.readEntity(
+            AuthenticationResultDto.class);
         authResult.setEngineAlias(engineContext.getEngineAlias());
         if (!authResult.isAuthenticated()) {
           authResult.setErrorMessage(INVALID_CREDENTIALS_ERROR_MESSAGE);
@@ -63,16 +64,16 @@ public class EngineAuthenticationProvider {
         // read Exception from the engine response
         // and rethrow it to forward the error message to the client
         // e.g when the user is locked, the error message will contain corresponding information
-        Exception runtimeException = response.readEntity(RuntimeException.class);
+        final Exception runtimeException = response.readEntity(RuntimeException.class);
         return getAuthenticationResultFromError(
             credentialsRequestDto, engineContext, runtimeException);
       }
-    } catch (ProcessingException | OptimizeRuntimeException e) {
-      String errorMessage =
+    } catch (final ProcessingException | OptimizeRuntimeException e) {
+      final String errorMessage =
           String.format(
               "Could not authenticated against engine [%s]. " + CONNECTION_WAS_REFUSED_ERROR,
               engineContext.getEngineAlias());
-      OptimizeRuntimeException optimizeEx = new OptimizeRuntimeException(errorMessage, e);
+      final OptimizeRuntimeException optimizeEx = new OptimizeRuntimeException(errorMessage, e);
       return getAuthenticationResultFromError(credentialsRequestDto, engineContext, optimizeEx);
     }
   }
@@ -90,7 +91,7 @@ public class EngineAuthenticationProvider {
         .build();
   }
 
-  private boolean responseIsSuccessful(Response response) {
+  private boolean responseIsSuccessful(final Response response) {
     return response.getStatus() < 300;
   }
 }

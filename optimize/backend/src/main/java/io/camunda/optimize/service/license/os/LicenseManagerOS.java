@@ -28,7 +28,36 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class LicenseManagerOS extends LicenseManager {
+
   private final OptimizeOpenSearchClient osClient;
+
+  @Override
+  public void storeLicense(final String licenseAsString) {
+    final LicenseDto licenseDto = new LicenseDto(licenseAsString);
+    final IndexRequest.Builder<LicenseDto> request =
+        new IndexRequest.Builder<LicenseDto>()
+            .index(LICENSE_INDEX_NAME)
+            .id(licenseDocumentId)
+            .document(licenseDto)
+            .refresh(Refresh.True);
+
+    final IndexResponse indexResponse = osClient.getRichOpenSearchClient().doc().index(request);
+    final boolean licenseWasStored = indexResponse.shards().failures().isEmpty();
+
+    if (licenseWasStored) {
+      optimizeLicense = licenseAsString;
+    } else {
+      final StringBuilder reason = new StringBuilder();
+      indexResponse
+          .shards()
+          .failures()
+          .forEach(shardFailure -> reason.append(shardFailure.reason()));
+      final String errorMessage =
+          String.format("Could not store license to OpenSearch. Reason: %s", reason);
+      log.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
 
   @Override
   protected Optional<String> retrieveStoredOptimizeLicense() {
@@ -38,33 +67,5 @@ public class LicenseManagerOS extends LicenseManager {
         .doc()
         .getWithRetries(LICENSE_INDEX_NAME, licenseDocumentId, LicenseDto.class)
         .map(LicenseDto::getLicense);
-  }
-
-  @Override
-  public void storeLicense(String licenseAsString) {
-    LicenseDto licenseDto = new LicenseDto(licenseAsString);
-    IndexRequest.Builder<LicenseDto> request =
-        new IndexRequest.Builder<LicenseDto>()
-            .index(LICENSE_INDEX_NAME)
-            .id(licenseDocumentId)
-            .document(licenseDto)
-            .refresh(Refresh.True);
-
-    IndexResponse indexResponse = osClient.getRichOpenSearchClient().doc().index(request);
-    boolean licenseWasStored = indexResponse.shards().failures().isEmpty();
-
-    if (licenseWasStored) {
-      this.optimizeLicense = licenseAsString;
-    } else {
-      StringBuilder reason = new StringBuilder();
-      indexResponse
-          .shards()
-          .failures()
-          .forEach(shardFailure -> reason.append(shardFailure.reason()));
-      String errorMessage =
-          String.format("Could not store license to OpenSearch. Reason: %s", reason);
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
   }
 }

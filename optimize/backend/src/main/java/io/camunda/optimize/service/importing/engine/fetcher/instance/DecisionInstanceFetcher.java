@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
+
   private static final String EVALUATED_AFTER = "evaluatedAfter";
   private static final String EVALUATED_AT = "evaluatedAt";
 

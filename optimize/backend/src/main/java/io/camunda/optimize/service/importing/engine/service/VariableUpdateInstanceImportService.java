@@ -57,7 +57,7 @@ public class VariableUpdateInstanceImportService
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final ObjectVariableService objectVariableService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
 
     this.variableImportAdapterProvider = variableImportAdapterProvider;
@@ -72,15 +72,15 @@ public class VariableUpdateInstanceImportService
 
   @Override
   public void executeImport(
-      List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
-      Runnable importCompleteCallback) {
+      final List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
+      final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessVariableDto> newOptimizeEntities =
+      final List<ProcessVariableDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      DatabaseImportJob<ProcessVariableDto> databaseImportJob =
+      final DatabaseImportJob<ProcessVariableDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
@@ -91,25 +91,25 @@ public class VariableUpdateInstanceImportService
     return databaseImportJobExecutor;
   }
 
-  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessVariableDto> mapEngineEntitiesToOptimizeEntities(
-      List<HistoricVariableUpdateInstanceDto> engineEntities) {
+      final List<HistoricVariableUpdateInstanceDto> engineEntities) {
     List<PluginVariableDto> pluginVariableList =
         mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates(engineEntities);
-    for (VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
+    for (final VariableImportAdapter variableImportAdapter : variableImportAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
     pluginVariableList.removeIf(variable -> !isValidVariable(variable));
-    List<ProcessVariableUpdateDto> variableUpdateDtos =
+    final List<ProcessVariableUpdateDto> variableUpdateDtos =
         pluginVariableList.stream().map(this::convertPluginVariableToImportVariable).toList();
     return objectVariableService.convertToProcessVariableDtos(variableUpdateDtos);
   }
 
   private ProcessVariableUpdateDto convertPluginVariableToImportVariable(
-      PluginVariableDto pluginVariableDto) {
+      final PluginVariableDto pluginVariableDto) {
     final ProcessVariableUpdateDto pluginVariable =
         new ProcessVariableUpdateDto(
             pluginVariableDto.getId(),
@@ -129,7 +129,7 @@ public class VariableUpdateInstanceImportService
   }
 
   private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates(
-      List<HistoricVariableUpdateInstanceDto> engineEntities) {
+      final List<HistoricVariableUpdateInstanceDto> engineEntities) {
     final Map<String, PluginVariableDto> resultSet =
         engineEntities.stream()
             .map(
@@ -154,7 +154,7 @@ public class VariableUpdateInstanceImportService
   }
 
   private PluginVariableDto mapEngineEntityToOptimizeEntity(
-      HistoricVariableUpdateInstanceDto engineEntity) {
+      final HistoricVariableUpdateInstanceDto engineEntity) {
     return new PluginVariableDto(
         engineEntity.getVariableInstanceId(),
         engineEntity.getVariableName(),
@@ -172,7 +172,7 @@ public class VariableUpdateInstanceImportService
             .orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)));
   }
 
-  private boolean isValidVariable(PluginVariableDto variableDto) {
+  private boolean isValidVariable(final PluginVariableDto variableDto) {
     if (variableDto == null) {
       log.info("Refuse to add null variable from import adapter plugin.");
       return false;
@@ -248,17 +248,17 @@ public class VariableUpdateInstanceImportService
     }
   }
 
-  private boolean isNullOrEmpty(String value) {
+  private boolean isNullOrEmpty(final String value) {
     return value == null || value.isEmpty();
   }
 
-  private boolean isNullOrZero(Long value) {
+  private boolean isNullOrZero(final Long value) {
     return value == null || value.equals(0L);
   }
 
   private DatabaseImportJob<ProcessVariableDto> createDatabaseImportJob(
-      List<ProcessVariableDto> processVariables, Runnable callback) {
-    VariableUpdateDatabaseImportJob importJob =
+      final List<ProcessVariableDto> processVariables, final Runnable callback) {
+    final VariableUpdateDatabaseImportJob importJob =
         new VariableUpdateDatabaseImportJob(
             variableWriter, camundaEventService, configurationService, callback, databaseClient);
     importJob.setEntitiesToImport(processVariables);

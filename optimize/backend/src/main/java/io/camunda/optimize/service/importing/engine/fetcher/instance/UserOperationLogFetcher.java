@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class UserOperationLogFetcher extends RetryBackoffEngineEntityFetcher {
+
   private DateTimeFormatter dateTimeFormatter;
 
   public UserOperationLogFetcher(final EngineContext engineContext) {

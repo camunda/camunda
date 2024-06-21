@@ -20,7 +20,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionTenantsRequestDto {
-  @Builder.Default private List<String> versions = new ArrayList<>();
+
+  @Builder.Default
+  private List<String> versions = new ArrayList<>();
 
   private String filterByCollectionScope;
 }

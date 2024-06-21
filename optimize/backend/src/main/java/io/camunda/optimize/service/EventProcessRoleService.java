@@ -52,7 +52,7 @@ public class EventProcessRoleService implements ConfigurationReloadable {
     // (mostly listing endpoints for reports and process/decision definitions)
     final CacheConfiguration cacheConfiguration =
         configurationService.getCaches().getEventProcessRoles();
-    this.eventProcessRoleReadCache =
+    eventProcessRoleReadCache =
         Caffeine.newBuilder()
             .maximumSize(cacheConfiguration.getMaxSize())
             .expireAfterWrite(cacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
@@ -100,6 +100,6 @@ public class EventProcessRoleService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    this.eventProcessRoleReadCache.invalidateAll();
+    eventProcessRoleReadCache.invalidateAll();
   }
 }

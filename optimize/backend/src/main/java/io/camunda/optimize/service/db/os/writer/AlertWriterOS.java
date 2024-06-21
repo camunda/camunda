@@ -136,9 +136,19 @@ public class AlertWriterOS implements AlertWriter {
     osClient.deleteByQuery(ids(alertIds), true, ALERT_INDEX_NAME);
   }
 
+  /**
+   * Delete all alerts that are associated with following report ID
+   */
+  @Override
+  public void deleteAlertsForReport(final String reportId) {
+    osClient.deleteByQuery(term(AlertIndex.REPORT_ID, reportId), true, ALERT_INDEX_NAME);
+  }
+
   @Override
   public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
-    record AlertTriggered(boolean triggered) {}
+    record AlertTriggered(boolean triggered) {
+
+    }
 
     try {
       log.debug("Writing alert status for alert with id [{}] to OpenSearch", alertId);
@@ -164,11 +174,5 @@ public class AlertWriterOS implements AlertWriter {
     } catch (final Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
-  }
-
-  /** Delete all alerts that are associated with following report ID */
-  @Override
-  public void deleteAlertsForReport(final String reportId) {
-    osClient.deleteByQuery(term(AlertIndex.REPORT_ID, reportId), true, ALERT_INDEX_NAME);
   }
 }

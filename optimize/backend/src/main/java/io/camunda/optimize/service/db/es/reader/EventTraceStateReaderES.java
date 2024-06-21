@@ -48,20 +48,20 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
   private final ObjectMapper objectMapper;
 
   @Override
-  public List<EventTraceStateDto> getEventTraceStateForTraceIds(List<String> traceIds) {
+  public List<EventTraceStateDto> getEventTraceStateForTraceIds(final List<String> traceIds) {
     log.debug("Fetching event trace states for trace ids {}", traceIds);
 
     final QueryBuilder query = termsQuery(EventTraceStateIndex.TRACE_ID, traceIds);
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch event trace states with trace ids [%s]", traceIds);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -83,20 +83,20 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
         createContainsAtLeastOneEventFromQuery(startEvents);
     final BoolQueryBuilder containsEndEventQuery =
         createContainsAtLeastOneEventFromQuery(endEvents);
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(
                 functionScoreQuery(
                     boolQuery().must(containsStartEventQuery).must(containsEndEventQuery),
                     ScoreFunctionBuilders.randomFunction()))
             .size(maxResultsSize);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch event trace states";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch event trace states";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -108,17 +108,17 @@ public class EventTraceStateReaderES implements EventTraceStateReader {
   public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
     log.debug("Fetching trace states with trace ID in [{}]", traceIds);
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(boolQuery().must(termsQuery(EventTraceStateIndex.TRACE_ID, traceIds)))
             .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch event trace states for given trace IDs";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch event trace states for given trace IDs";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

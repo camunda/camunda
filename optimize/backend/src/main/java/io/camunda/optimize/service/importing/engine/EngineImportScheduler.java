@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSourceDto> {
+
   // Iterating through this synchronized list is only thread-safe when synchronizing on the list
   // itself, as per docs
   private final List<ImportObserver> importObservers =
@@ -31,22 +32,22 @@ public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSou
     super(importMediators, dataImportSourceDto);
   }
 
-  public void subscribe(ImportObserver importObserver) {
+  public void subscribe(final ImportObserver importObserver) {
     importObservers.add(importObserver);
   }
 
-  public void unsubscribe(ImportObserver importObserver) {
+  public void unsubscribe(final ImportObserver importObserver) {
     importObservers.remove(importObserver);
   }
 
   @Override
   public Future<Void> runImportRound(final boolean forceImport) {
-    List<ImportMediator> currentImportRound =
+    final List<ImportMediator> currentImportRound =
         importMediators.stream()
             .filter(mediator -> forceImport || mediator.canImport())
             .collect(Collectors.toList());
     if (nothingToBeImported(currentImportRound)) {
-      this.isImporting = false;
+      isImporting = false;
       if (!hasActiveImportJobs()) {
         notifyThatImportIsIdle();
       }
@@ -55,7 +56,7 @@ public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSou
       }
       return CompletableFuture.completedFuture(null);
     } else {
-      this.isImporting = true;
+      isImporting = true;
       notifyThatImportIsInProgress();
       return executeImportRound(currentImportRound);
     }

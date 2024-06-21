@@ -23,11 +23,12 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class EventProcessMappingWriter {
+
   private final MappingRepository mappingRepository;
 
   public IdResponseDto createEventProcessMapping(
       final EventProcessMappingDto eventProcessMappingDto) {
-    String id = IdGenerator.getNextId();
+    final String id = IdGenerator.getNextId();
     eventProcessMappingDto.setId(id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     log.debug("Writing event-based process [{}] to Database", id);

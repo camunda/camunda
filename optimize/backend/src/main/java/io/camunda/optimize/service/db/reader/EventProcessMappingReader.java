@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class EventProcessMappingReader {
+
   EventRepository eventRepository;
 
   public Optional<EventProcessMappingDto> getEventProcessMapping(

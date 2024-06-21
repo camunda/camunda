@@ -15,18 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class TimestampBasedImportMediator<
-        T extends TimestampBasedImportIndexHandler<?>, DTO>
+    T extends TimestampBasedImportIndexHandler<?>, DTO>
     extends BackoffImportMediator<T, DTO> {
 
   protected int countOfImportedEntitiesWithLastEntityTimestamp = 0;
-
-  protected abstract OffsetDateTime getTimestamp(final DTO dto);
-
-  protected abstract List<DTO> getEntitiesNextPage();
-
-  protected abstract List<DTO> getEntitiesLastTimestamp();
-
-  protected abstract int getMaxPageSize();
 
   protected TimestampBasedImportMediator(
       final ConfigurationService configurationService,
@@ -35,6 +27,14 @@ public abstract class TimestampBasedImportMediator<
       final ImportService<DTO> importService) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
   }
+
+  protected abstract OffsetDateTime getTimestamp(final DTO dto);
+
+  protected abstract List<DTO> getEntitiesNextPage();
+
+  protected abstract List<DTO> getEntitiesLastTimestamp();
+
+  protected abstract int getMaxPageSize();
 
   @Override
   protected boolean importNextPage(final Runnable importCompleteCallback) {

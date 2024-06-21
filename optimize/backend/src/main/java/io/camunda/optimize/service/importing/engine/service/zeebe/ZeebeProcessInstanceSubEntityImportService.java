@@ -24,10 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
-  private final ZeebeProcessInstanceWriter processInstanceWriter;
   protected final ConfigurationService configurationService;
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final int partitionId;
+  private final ZeebeProcessInstanceWriter processInstanceWriter;
   private final DatabaseClient databaseClient;
   private final String sourceExportIndex;
 
@@ -38,7 +38,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient,
       final String sourceExportIndex) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.processInstanceWriter = processInstanceWriter;
     this.partitionId = partitionId;
@@ -52,7 +52,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
 
   @Override
   public void executeImport(final List<T> zeebeRecords, final Runnable importCompleteCallback) {
-    boolean newDataIsAvailable = !zeebeRecords.isEmpty();
+    final boolean newDataIsAvailable = !zeebeRecords.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessInstanceDto> newOptimizeEntities =
           filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
@@ -83,13 +83,13 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   }
 
   private void addDatabaseImportJobToQueue(
-      DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
+      final DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
-    ZeebeProcessInstanceDatabaseImportJob processInstanceImportJob =
+    final ZeebeProcessInstanceDatabaseImportJob processInstanceImportJob =
         new ZeebeProcessInstanceDatabaseImportJob(
             processInstanceWriter,
             configurationService,

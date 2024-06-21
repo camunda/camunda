@@ -21,14 +21,14 @@ public interface AbstractIncidentWriter {
 
   Logger log = LoggerFactory.getLogger(AbstractIncidentWriter.class);
 
-  default List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents) {
+  default List<ImportRequestDto> generateIncidentImports(final List<IncidentDto> incidents) {
     final String importItemName = "incidents";
     log.debug("Creating imports for {} [{}].", incidents.size(), importItemName);
 
     createInstanceIndicesFromIncidentsIfMissing(incidents);
 
-    Map<String, List<IncidentDto>> processInstanceToEvents = new HashMap<>();
-    for (IncidentDto e : incidents) {
+    final Map<String, List<IncidentDto>> processInstanceToEvents = new HashMap<>();
+    for (final IncidentDto e : incidents) {
       processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }

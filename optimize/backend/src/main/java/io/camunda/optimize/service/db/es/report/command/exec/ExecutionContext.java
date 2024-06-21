@@ -64,13 +64,13 @@ public class ExecutionContext<D extends SingleReportDataDto> {
 
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
       final ReportEvaluationContext<R> reportEvaluationContext) {
-    this.reportData = reportEvaluationContext.getReportDefinition().getData();
-    this.timezone = reportEvaluationContext.getTimezone();
-    this.combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
-    this.pagination = reportEvaluationContext.getPagination();
-    this.isCsvExport = reportEvaluationContext.isCsvExport();
-    this.filterContext = createFilterContext(reportEvaluationContext);
-    this.isJsonExport = reportEvaluationContext.isJsonExport();
+    reportData = reportEvaluationContext.getReportDefinition().getData();
+    timezone = reportEvaluationContext.getTimezone();
+    combinedRangeMinMaxStats = reportEvaluationContext.getCombinedRangeMinMaxStats();
+    pagination = reportEvaluationContext.getPagination();
+    isCsvExport = reportEvaluationContext.isCsvExport();
+    filterContext = createFilterContext(reportEvaluationContext);
+    isJsonExport = reportEvaluationContext.isJsonExport();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {
@@ -82,7 +82,7 @@ public class ExecutionContext<D extends SingleReportDataDto> {
   }
 
   public void setAllDistributedByKeys(final Set<String> allDistributedByKeys) {
-    this.allDistributedByKeysAndLabels =
+    allDistributedByKeysAndLabels =
         allDistributedByKeys.stream().collect(toMap(Function.identity(), Function.identity()));
   }
 

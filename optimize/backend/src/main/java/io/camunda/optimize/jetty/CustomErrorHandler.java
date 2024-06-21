@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.Callback;
 import org.springframework.http.HttpHeaders;
 
 public class CustomErrorHandler extends ErrorHandler {
+
   @Override
   public boolean handle(final Request request, final Response response, final Callback callback) {
     final String requestUri = ((ServletContextRequest) request).getDecodedPathInContext();

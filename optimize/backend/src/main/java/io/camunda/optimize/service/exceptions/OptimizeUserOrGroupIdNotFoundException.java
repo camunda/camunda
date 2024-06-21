@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.exceptions;
 
 public class OptimizeUserOrGroupIdNotFoundException extends OptimizeRuntimeException {
+
   public OptimizeUserOrGroupIdNotFoundException(final String message) {
     super(message);
   }

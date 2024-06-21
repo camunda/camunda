@@ -72,16 +72,16 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   }
 
   @Override
-  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
-    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
-  }
-
-  @Override
   protected BoolQueryBuilder getVariableUndefinedOrNullQuery(
       final ExecutionContext<ProcessReportDataDto> context) {
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
     return ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder(
         variable.getName(), variable.getType());
+  }
+
+  @Override
+  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
 
   @Override

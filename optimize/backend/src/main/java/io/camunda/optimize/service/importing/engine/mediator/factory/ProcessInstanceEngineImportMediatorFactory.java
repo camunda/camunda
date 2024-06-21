@@ -68,7 +68,7 @@ public class ProcessInstanceEngineImportMediatorFactory
   }
 
   public CompletedProcessInstanceEngineImportMediator
-      createCompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
+  createCompletedProcessInstanceEngineImportMediator(final EngineContext engineContext) {
     return new CompletedProcessInstanceEngineImportMediator(
         importIndexHandlerRegistry.getCompletedProcessInstanceImportIndexHandler(
             engineContext.getEngineAlias()),
@@ -87,7 +87,7 @@ public class ProcessInstanceEngineImportMediatorFactory
   }
 
   public RunningProcessInstanceEngineImportMediator
-      createRunningProcessInstanceEngineImportMediator(EngineContext engineContext) {
+  createRunningProcessInstanceEngineImportMediator(final EngineContext engineContext) {
     return new RunningProcessInstanceEngineImportMediator(
         importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(
             engineContext.getEngineAlias()),

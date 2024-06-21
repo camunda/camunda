@@ -118,7 +118,7 @@ public class VariableAggregationService {
       final MultiBucketsAggregation variableTermsAgg,
       final VariableType variableType,
       final ZoneId timezone) {
-    Map<String, Aggregations> bucketAggregations;
+    final Map<String, Aggregations> bucketAggregations;
     if (VariableType.DATE.equals(variableType)) {
       bucketAggregations =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -136,7 +136,7 @@ public class VariableAggregationService {
   }
 
   public Aggregations retrieveSubAggregationFromBucketMapEntry(
-      Map.Entry<String, Aggregations> bucketMapEntry) {
+      final Map.Entry<String, Aggregations> bucketMapEntry) {
     final ReverseNested reverseNested =
         bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
     if (reverseNested == null) {
@@ -147,7 +147,7 @@ public class VariableAggregationService {
       if (nestedFlowNodeAgg == null) {
         return reverseNested.getAggregations(); // this is an instance report
       } else {
-        Aggregations flowNodeAggs =
+        final Aggregations flowNodeAggs =
             nestedFlowNodeAgg.getAggregations(); // this is a flownode report
         final ParsedFilter aggregation = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION);
         return aggregation.getAggregations();

@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.repository.script;
 
 public interface ProcessOverviewScriptFactory {
+
   static String createUpdateOverviewScript() {
     return """
         ctx._source.owner = params.owner;

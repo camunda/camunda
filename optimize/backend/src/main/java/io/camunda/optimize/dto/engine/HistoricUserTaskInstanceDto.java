@@ -15,6 +15,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class HistoricUserTaskInstanceDto implements TenantSpecificEngineDto {
+
   private String id; // == FlowNodeInstanceDto.userTaskId
   private String processDefinitionKey;
   private String processDefinitionId;

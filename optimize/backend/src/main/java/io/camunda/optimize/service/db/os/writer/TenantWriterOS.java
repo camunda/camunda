@@ -37,7 +37,7 @@ public class TenantWriterOS implements TenantWriter {
 
   @Override
   public void writeTenants(final List<TenantDto> tenantDtos) {
-    String importItemName = "tenants";
+    final String importItemName = "tenants";
     log.debug("Writing [{}] {} to Opensearch.", tenantDtos.size(), importItemName);
 
     osClient.doImportBulkRequestWithList(
@@ -48,7 +48,7 @@ public class TenantWriterOS implements TenantWriter {
         TENANT_INDEX_NAME);
   }
 
-  private BulkOperation addImportTenantRequest(TenantDto tenantDto) {
+  private BulkOperation addImportTenantRequest(final TenantDto tenantDto) {
     final String id = tenantDto.getId();
     final Script updateScript =
         OpenSearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);

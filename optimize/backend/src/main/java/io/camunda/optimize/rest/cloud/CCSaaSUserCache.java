@@ -76,13 +76,17 @@ public class CCSaaSUserCache {
     return fetchedUser;
   }
 
-  /** Returns the users currently in the user cache */
+  /**
+   * Returns the users currently in the user cache
+   */
   public Collection<CloudUserDto> getUsersById(final Set<String> userIds) {
     repopulateCacheIfMinFetchIntervalExceeded();
     return cloudUsersCache.getAllPresent(userIds).values();
   }
 
-  /** Returns the users currently in the user cache */
+  /**
+   * Returns the users currently in the user cache
+   */
   public Collection<CloudUserDto> getAllUsers() {
     repopulateCacheIfMinFetchIntervalExceeded();
     return cloudUsersCache.asMap().values();
@@ -100,7 +104,9 @@ public class CCSaaSUserCache {
     }
   }
 
-  /** This fetches the users of the organization from the Cloud Users client. */
+  /**
+   * This fetches the users of the organization from the Cloud Users client.
+   */
   private Map<String, CloudUserDto> fetchAllUsersWithinOrganization() {
     return accessTokenProvider
         .getCurrentUsersAccessToken()

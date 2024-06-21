@@ -22,10 +22,14 @@ import org.springframework.context.annotation.Scope;
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class EngineEntityFetcher {
+
   public static final String UTF8 = "UTF-8";
   protected final EngineContext engineContext;
   protected Logger logger = LoggerFactory.getLogger(getClass());
-  @Autowired @Getter @Setter protected ConfigurationService configurationService;
+  @Autowired
+  @Getter
+  @Setter
+  protected ConfigurationService configurationService;
 
   public Client getEngineClient() {
     return engineContext.getEngineClient();

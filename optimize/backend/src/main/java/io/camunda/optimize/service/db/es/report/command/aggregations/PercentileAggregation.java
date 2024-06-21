@@ -28,6 +28,15 @@ public class PercentileAggregation extends AggregationStrategy<PercentilesAggreg
   private Double percentileValue;
 
   @Override
+  public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder>
+  createAggregationBuilderForAggregation(final String customIdentifier) {
+    return percentiles(
+        createAggregationName(
+            customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+        .percentiles(percentileValue);
+  }
+
+  @Override
   public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
     final ParsedTDigestPercentiles percentiles =
         aggs.get(
@@ -35,15 +44,6 @@ public class PercentileAggregation extends AggregationStrategy<PercentilesAggreg
                 customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION));
     return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(
         percentiles, percentileValue);
-  }
-
-  @Override
-  public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return percentiles(
-            createAggregationName(
-                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
-        .percentiles(percentileValue);
   }
 
   @Override

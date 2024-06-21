@@ -38,7 +38,7 @@ public class AuthorizedEntitiesService {
       collectionEntities = entitiesReader.getAllPrivateEntitiesForOwnerId(userId);
     }
 
-    RoleType roleForUser =
+    final RoleType roleForUser =
         identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)
             ? RoleType.EDITOR
             : RoleType.VIEWER;

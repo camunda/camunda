@@ -15,11 +15,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseHelper {
 
-  public static String constructKey(String databaseType, String engineAlias) {
+  public static String constructKey(final String databaseType, final String engineAlias) {
     return databaseType + "-" + engineAlias;
   }
 
-  public static String constructKey(String databaseType, DataSourceDto dataSourceDto) {
+  public static String constructKey(final String databaseType, final DataSourceDto dataSourceDto) {
     if (dataSourceDto instanceof ZeebeDataSourceDto) {
       return constructKey(databaseType, dataSourceDto.getName())
           + ((ZeebeDataSourceDto) dataSourceDto).getPartitionId();

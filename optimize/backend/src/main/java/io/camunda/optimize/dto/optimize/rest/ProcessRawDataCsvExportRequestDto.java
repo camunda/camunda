@@ -24,9 +24,19 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProcessRawDataCsvExportRequestDto {
-  @NotNull private String processDefinitionKey;
-  @NotEmpty @Builder.Default private List<String> processDefinitionVersions = new ArrayList<>();
-  @NotNull @Builder.Default private List<String> tenantIds = Collections.singletonList(null);
-  @Builder.Default @NotNull private List<ProcessFilterDto<?>> filter = new ArrayList<>();
-  @NotEmpty @Builder.Default private List<String> includedColumns = new ArrayList<>();
+
+  @NotNull
+  private String processDefinitionKey;
+  @NotEmpty
+  @Builder.Default
+  private List<String> processDefinitionVersions = new ArrayList<>();
+  @NotNull
+  @Builder.Default
+  private List<String> tenantIds = Collections.singletonList(null);
+  @Builder.Default
+  @NotNull
+  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @NotEmpty
+  @Builder.Default
+  private List<String> includedColumns = new ArrayList<>();
 }

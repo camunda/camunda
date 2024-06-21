@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode
 public class DefinitionExceptionItemDto implements Serializable {
+
   private DefinitionType type;
   private String key;
   private List<String> versions;

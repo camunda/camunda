@@ -63,7 +63,7 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(
                 boolQuery()
@@ -73,14 +73,14 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
             .aggregation(terms(defKeyAgg).field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))
             .fetchSource(false)
             .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(PROCESS_DEFINITION_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch non-onboarded process definition keys.";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch non-onboarded process definition keys.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public interface ProcessInstanceRepository {
+
   void bulkImportProcessInstances(
       final String importItemName, final List<ProcessInstanceDto> processInstanceDtos);
 

@@ -69,14 +69,14 @@ public class MaxRequestSizeFilter implements Filter {
     }
   }
 
-  @SneakyThrows
-  public long getMaxContentLength() {
-    return maxSizeProvider.call();
-  }
-
   @Override
   public void destroy() {
     // noop
+  }
+
+  @SneakyThrows
+  public long getMaxContentLength() {
+    return maxSizeProvider.call();
   }
 
   @SneakyThrows

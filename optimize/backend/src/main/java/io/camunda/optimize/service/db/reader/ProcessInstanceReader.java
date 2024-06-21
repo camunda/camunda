@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ProcessInstanceReader {
+
   private final ProcessInstanceRepository processInstanceRepository;
   private final DefinitionInstanceReader definitionInstanceReader;
 

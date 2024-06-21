@@ -24,7 +24,7 @@ import java.util.List;
 public class ZeebeUserTaskImportMediator
     extends PositionBasedImportMediator<ZeebeUserTaskImportIndexHandler, ZeebeUserTaskRecordDto> {
 
-  private ZeebeUserTaskFetcher zeebeUserTaskFetcher;
+  private final ZeebeUserTaskFetcher zeebeUserTaskFetcher;
 
   public ZeebeUserTaskImportMediator(
       final ZeebeUserTaskImportIndexHandler importIndexHandler,

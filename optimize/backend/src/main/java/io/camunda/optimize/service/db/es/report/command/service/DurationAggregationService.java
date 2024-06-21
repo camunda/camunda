@@ -59,6 +59,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class DurationAggregationService {
+
   private static final String DURATION_HISTOGRAM_AGGREGATION = "durationHistogram";
   private static final int AUTOMATIC_BUCKET_LIMIT =
       NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -145,7 +146,7 @@ public class DurationAggregationService {
             .map(aggregations -> aggregations.get(DURATION_HISTOGRAM_AGGREGATION));
 
     if (histogramAggregationResult.isPresent()) {
-      for (MultiBucketsAggregation.Bucket durationBucket :
+      for (final MultiBucketsAggregation.Bucket durationBucket :
           histogramAggregationResult.get().getBuckets()) {
         final List<CompositeCommandResult.DistributedByResult> distributions =
             distributedByPart.retrieveResult(response, durationBucket.getAggregations(), context);

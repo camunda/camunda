@@ -27,8 +27,8 @@ public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilt
       final List<VariableFilterDataDto<?>> variables,
       final FilterContext filterContext) {
     if (variables != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto<?> variable : variables) {
+      final List<QueryBuilder> filters = query.filter();
+      for (final VariableFilterDataDto<?> variable : variables) {
         filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
       }
     }

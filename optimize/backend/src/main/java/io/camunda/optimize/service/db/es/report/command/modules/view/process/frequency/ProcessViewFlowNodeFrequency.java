@@ -22,7 +22,7 @@ public class ProcessViewFlowNodeFrequency extends ProcessViewFrequency {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.FLOW_NODE);
     view.setProperties(ViewProperty.FREQUENCY);
     dataForCommandKey.setView(view);

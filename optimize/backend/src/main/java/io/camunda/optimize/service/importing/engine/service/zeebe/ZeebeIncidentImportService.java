@@ -56,7 +56,7 @@ public class ZeebeIncidentImportService
 
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-      List<ZeebeIncidentRecordDto> zeebeRecords) {
+      final List<ZeebeIncidentRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         zeebeRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
@@ -87,12 +87,13 @@ public class ZeebeIncidentImportService
   }
 
   private ProcessInstanceDto updateIncidents(
-      final ProcessInstanceDto instanceToAdd, List<ZeebeIncidentRecordDto> recordsForInstance) {
-    Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
+      final ProcessInstanceDto instanceToAdd,
+      final List<ZeebeIncidentRecordDto> recordsForInstance) {
+    final Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
     recordsForInstance.forEach(
         incident -> {
           final long recordKey = incident.getKey();
-          IncidentDto incidentForKey =
+          final IncidentDto incidentForKey =
               incidentsByRecordKey.getOrDefault(recordKey, createSkeletonIncident(incident));
           if (incident.getIntent() == IncidentIntent.CREATED
               && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {

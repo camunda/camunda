@@ -37,8 +37,40 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
+
+  @Override
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
+    final List<BulkOperation> bulkOperations =
+        processOverviewDtos.stream()
+            .map(
+                processOverviewDto ->
+                    new BulkOperation.Builder()
+                        .update(
+                            new UpdateOperation.Builder<ProcessOverviewDto>()
+                                .index(
+                                    indexNameService.getOptimizeIndexAliasForIndex(
+                                        PROCESS_OVERVIEW_INDEX_NAME))
+                                .id(processOverviewDto.getProcessDefinitionKey())
+                                .upsert(processOverviewDto)
+                                .script(
+                                    script(
+                                        ProcessOverviewScriptFactory.createUpdateKpisScript(),
+                                        Map.of(
+                                            "lastKpiEvaluationResults",
+                                            processOverviewDto.getLastKpiEvaluationResults())))
+                                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                                .build())
+                        .build())
+            .toList();
+    osClient.doBulkRequest(
+        BulkRequest.Builder::new,
+        bulkOperations,
+        new ProcessOverviewIndexES().getIndexName(),
+        false);
+  }
 
   @Override
   public void updateProcessConfiguration(
@@ -106,37 +138,6 @@ public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
             format(
                 "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
                 processDefinitionKey, ownerId));
-  }
-
-  @Override
-  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
-    final List<BulkOperation> bulkOperations =
-        processOverviewDtos.stream()
-            .map(
-                processOverviewDto ->
-                    new BulkOperation.Builder()
-                        .update(
-                            new UpdateOperation.Builder<ProcessOverviewDto>()
-                                .index(
-                                    indexNameService.getOptimizeIndexAliasForIndex(
-                                        PROCESS_OVERVIEW_INDEX_NAME))
-                                .id(processOverviewDto.getProcessDefinitionKey())
-                                .upsert(processOverviewDto)
-                                .script(
-                                    script(
-                                        ProcessOverviewScriptFactory.createUpdateKpisScript(),
-                                        Map.of(
-                                            "lastKpiEvaluationResults",
-                                            processOverviewDto.getLastKpiEvaluationResults())))
-                                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                                .build())
-                        .build())
-            .toList();
-    osClient.doBulkRequest(
-        BulkRequest.Builder::new,
-        bulkOperations,
-        new ProcessOverviewIndexES().getIndexName(),
-        false);
   }
 
   @Override

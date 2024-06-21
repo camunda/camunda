@@ -44,7 +44,7 @@ public class ReportEvaluationInfo {
   }
 
   public void updateReportDefinitionXml(final String definitionXml) {
-    if (report.getData() instanceof ProcessReportDataDto reportData) {
+    if (report.getData() instanceof final ProcessReportDataDto reportData) {
       reportData.getConfiguration().setXml(definitionXml);
     }
   }
@@ -54,13 +54,13 @@ public class ReportEvaluationInfo {
   }
 
   public static ReportEvaluationInfoBuilder builder(final ReportDefinitionDto<?> report) {
-    ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
+    final ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
     reportEvaluationInfo.setReport(report);
     return new ReportEvaluationInfoBuilder(reportEvaluationInfo);
   }
 
   public static ReportEvaluationInfoBuilder builder(final String reportId) {
-    ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
+    final ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
     reportEvaluationInfo.setReportId(reportId);
     return new ReportEvaluationInfoBuilder(reportEvaluationInfo);
   }
@@ -71,43 +71,43 @@ public class ReportEvaluationInfo {
     private final ReportEvaluationInfo reportEvaluationInfo;
 
     public ReportEvaluationInfoBuilder userId(final String userId) {
-      this.reportEvaluationInfo.setUserId(userId);
+      reportEvaluationInfo.setUserId(userId);
       return this;
     }
 
     public ReportEvaluationInfoBuilder additionalFilters(
         final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
-      this.reportEvaluationInfo.setAdditionalFilters(additionalFilters);
+      reportEvaluationInfo.setAdditionalFilters(additionalFilters);
       return this;
     }
 
     public ReportEvaluationInfoBuilder timezone(final ZoneId timezone) {
-      this.reportEvaluationInfo.setTimezone(timezone);
+      reportEvaluationInfo.setTimezone(timezone);
       return this;
     }
 
     public ReportEvaluationInfoBuilder pagination(final PaginationDto paginationDto) {
-      this.reportEvaluationInfo.setPagination(paginationDto);
+      reportEvaluationInfo.setPagination(paginationDto);
       return this;
     }
 
     public ReportEvaluationInfoBuilder isCsvExport(final boolean isExport) {
-      this.reportEvaluationInfo.setCsvExport(isExport);
+      reportEvaluationInfo.setCsvExport(isExport);
       return this;
     }
 
     public ReportEvaluationInfoBuilder isJsonExport(final boolean isExport) {
-      this.reportEvaluationInfo.setJsonExport(isExport);
+      reportEvaluationInfo.setJsonExport(isExport);
       return this;
     }
 
     public ReportEvaluationInfoBuilder isSharedReport(final boolean isSharedReport) {
-      this.reportEvaluationInfo.setSharedReport(isSharedReport);
+      reportEvaluationInfo.setSharedReport(isSharedReport);
       return this;
     }
 
     public ReportEvaluationInfo build() {
-      return this.reportEvaluationInfo;
+      return reportEvaluationInfo;
     }
   }
 }

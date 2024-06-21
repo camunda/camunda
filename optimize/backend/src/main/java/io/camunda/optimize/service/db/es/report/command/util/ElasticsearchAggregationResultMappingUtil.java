@@ -16,7 +16,7 @@ public class ElasticsearchAggregationResultMappingUtil {
 
   public static Double mapToDoubleOrNull(
       final ParsedTDigestPercentiles aggregation, final double percentileValue) {
-    double percentile = aggregation.percentile(percentileValue);
+    final double percentile = aggregation.percentile(percentileValue);
     if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;
     } else {

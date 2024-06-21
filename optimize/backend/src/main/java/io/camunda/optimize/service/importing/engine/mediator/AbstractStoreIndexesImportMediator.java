@@ -22,12 +22,12 @@ public abstract class AbstractStoreIndexesImportMediator<T extends ImportService
 
   protected T importService;
   protected OffsetDateTime dateUntilJobCreationIsBlocked;
-  private ConfigurationService configurationService;
+  private final ConfigurationService configurationService;
 
   protected AbstractStoreIndexesImportMediator(
-      T importService, ConfigurationService configurationService) {
+      final T importService, final ConfigurationService configurationService) {
     this.configurationService = configurationService;
-    this.dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
+    dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     this.importService = importService;
   }
 
@@ -40,7 +40,7 @@ public abstract class AbstractStoreIndexesImportMediator<T extends ImportService
 
   @Override
   public void resetBackoff() {
-    this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
+    dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
   }
 
   @Override

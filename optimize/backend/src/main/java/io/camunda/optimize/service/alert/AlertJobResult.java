@@ -15,7 +15,7 @@ public class AlertJobResult {
 
   private AlertDefinitionDto alert;
 
-  public AlertJobResult(AlertDefinitionDto alert) {
+  public AlertJobResult(final AlertDefinitionDto alert) {
     this.alert = alert;
   }
 
@@ -23,7 +23,7 @@ public class AlertJobResult {
     return alert;
   }
 
-  public void setAlert(AlertDefinitionDto alert) {
+  public void setAlert(final AlertDefinitionDto alert) {
     this.alert = alert;
   }
 
@@ -31,7 +31,7 @@ public class AlertJobResult {
     return statusChanged;
   }
 
-  public void setStatusChanged(boolean statusChanged) {
+  public void setStatusChanged(final boolean statusChanged) {
     this.statusChanged = statusChanged;
   }
 }

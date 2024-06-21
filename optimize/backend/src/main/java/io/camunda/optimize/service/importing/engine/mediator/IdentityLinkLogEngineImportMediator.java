@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IdentityLinkLogEngineImportMediator
     extends TimestampBasedImportMediator<
-        IdentityLinkLogImportIndexHandler, HistoricIdentityLinkLogDto> {
+    IdentityLinkLogImportIndexHandler, HistoricIdentityLinkLogDto> {
 
   private final IdentityLinkLogInstanceFetcher engineEntityFetcher;
 

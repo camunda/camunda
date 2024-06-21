@@ -12,11 +12,11 @@ import java.util.List;
 import org.slf4j.Logger;
 
 public interface TaskRepository {
-  record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
 
   List<TaskProgressInfo> tasksProgress(final String action);
 
-  default void executeWithTaskMonitoring(String action, Runnable runnable, Logger log) {
+  default void executeWithTaskMonitoring(final String action, final Runnable runnable,
+      final Logger log) {
     final PeriodicAction progressReporter =
         new PeriodicAction(
             getClass().getName(),
@@ -37,5 +37,9 @@ public interface TaskRepository {
     } finally {
       progressReporter.stop();
     }
+  }
+
+  record TaskProgressInfo(int progress, long totalCount, long processedCount) {
+
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.repository.script;
 import static io.camunda.optimize.service.db.es.writer.usertask.UserTaskDurationScriptUtil.createUpdateUserTaskMetricsScript;
 
 public interface UserTaskScriptFactory {
+
   static String createCompletedUserTaskInlineUpdateScript(final String updateUserTaskFiledsScript) {
     return """
         if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; }
@@ -25,13 +26,13 @@ public interface UserTaskScriptFactory {
             """
         + updateUserTaskFiledsScript
         + """
-              } else {
-                userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
-              }
-            }
-            ctx._source.${flowNodesField}.removeIf(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}));
-            ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());
-            """
+          } else {
+            userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
+          }
+        }
+        ctx._source.${flowNodesField}.removeIf(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}));
+        ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());
+        """
         + createUpdateUserTaskMetricsScript();
   }
 
@@ -78,83 +79,83 @@ public interface UserTaskScriptFactory {
 
   static String createIdentityLinkLogUpdateAssigneeScript() {
     return """
-      if (ctx._source.${flowNodesField} != null) {
-        for (def currentFlowNode : ctx._source.${flowNodesField}) {
-          // Ignore any flowNodes that arent userTasks
-          if(!"${userTaskFlowNodeType}".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {
-            continue;
-          }
+          if (ctx._source.${flowNodesField} != null) {
+            for (def currentFlowNode : ctx._source.${flowNodesField}) {
+              // Ignore any flowNodes that arent userTasks
+              if(!"${userTaskFlowNodeType}".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {
+                continue;
+              }
 
-          if(currentFlowNode.${assigneeOperationsField} == null) { currentFlowNode.${assigneeOperationsField} = []; }
-          def assignee = currentFlowNode.${assigneeOperationsField}.stream()
-           .reduce((first, second) -> {
-             boolean sameTimestampAndFirstIsAddOperation = first.${assigneeOpTimestampField}.equals(second.${assigneeOpTimestampField}) &&
-               "${identityLinkOperationAdd}".equals(first.${assigneeOperationTypeField}) &&
-               !"${identityLinkOperationAdd}".equals(second.${assigneeOperationTypeField});
-              return sameTimestampAndFirstIsAddOperation ? first : second;
-          })
-           .map(logEntry -> {
-             if("${identityLinkOperationAdd}".equals(logEntry.${assigneeOperationTypeField})) {
-               return logEntry.${assigneeOperationUserIdField};
-             } else {
-               return null;
-             }
-           })
-           .orElse(null);
-          currentFlowNode.${assigneeField} = assignee;
-        }
-      }
-    """;
+              if(currentFlowNode.${assigneeOperationsField} == null) { currentFlowNode.${assigneeOperationsField} = []; }
+              def assignee = currentFlowNode.${assigneeOperationsField}.stream()
+               .reduce((first, second) -> {
+                 boolean sameTimestampAndFirstIsAddOperation = first.${assigneeOpTimestampField}.equals(second.${assigneeOpTimestampField}) &&
+                   "${identityLinkOperationAdd}".equals(first.${assigneeOperationTypeField}) &&
+                   !"${identityLinkOperationAdd}".equals(second.${assigneeOperationTypeField});
+                  return sameTimestampAndFirstIsAddOperation ? first : second;
+              })
+               .map(logEntry -> {
+                 if("${identityLinkOperationAdd}".equals(logEntry.${assigneeOperationTypeField})) {
+                   return logEntry.${assigneeOperationUserIdField};
+                 } else {
+                   return null;
+                 }
+               })
+               .orElse(null);
+              currentFlowNode.${assigneeField} = assignee;
+            }
+          }
+        """;
   }
 
   static String createIdentityLinkLogUpdateCandidateGroupScript() {
     return """
-      if (ctx._source.${flowNodesField} != null) {
-        for (def currentFlowNode : ctx._source.${flowNodesField}) {
-          // Ignore any flowNodes that arent userTasks
-          if(!"${userTaskFlowNodeType}".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {
-          continue;
-          }
+          if (ctx._source.${flowNodesField} != null) {
+            for (def currentFlowNode : ctx._source.${flowNodesField}) {
+              // Ignore any flowNodes that arent userTasks
+              if(!"${userTaskFlowNodeType}".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {
+              continue;
+              }
 
-          if(currentFlowNode.${candidateGroupOperationsField} == null) { currentFlowNode.${candidateGroupOperationsField} = []; }
-          Set candidateGroups = new HashSet();
-          currentFlowNode.${candidateGroupOperationsField}.stream()
-           .forEach(logEntry -> {
-             if ("${identityLinkOperationAdd}".equals(logEntry.${candidateGroupOperationTypeField})) {
-               candidateGroups.add(logEntry.${candidateGroupOperationGroupIdField});
-             } else {
-               candidateGroups.remove(logEntry.${candidateGroupOperationGroupIdField});
-             }
-           });
-          currentFlowNode.${candidateGroupsField} = new ArrayList(candidateGroups);
-        }
-      }
-    """;
+              if(currentFlowNode.${candidateGroupOperationsField} == null) { currentFlowNode.${candidateGroupOperationsField} = []; }
+              Set candidateGroups = new HashSet();
+              currentFlowNode.${candidateGroupOperationsField}.stream()
+               .forEach(logEntry -> {
+                 if ("${identityLinkOperationAdd}".equals(logEntry.${candidateGroupOperationTypeField})) {
+                   candidateGroups.add(logEntry.${candidateGroupOperationGroupIdField});
+                 } else {
+                   candidateGroups.remove(logEntry.${candidateGroupOperationGroupIdField});
+                 }
+               });
+              currentFlowNode.${candidateGroupsField} = new ArrayList(candidateGroups);
+            }
+          }
+        """;
   }
 
   static String createRunningUserTaskInstanceInlineUpdateScript(
       final String updateUserTaskFiledsScript) {
     return """
-      if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; }
-      def userTaskInstancesById = ctx._source.${flowNodesField}.stream()
-        .filter(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}))
-        .collect(Collectors.toMap(flowNode -> flowNode.${userTaskIdField}, flowNode -> flowNode, (fn1, fn2) -> fn1));
-      for (def newFlowNode : params.${flowNodesField}) {
-        // Ignore flowNodes that aren't userTasks
-        if(!"${userTaskFlowNodeType}".equalsIgnoreCase(newFlowNode.${flowNodeTypeField})){ continue; }
+        if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; }
+        def userTaskInstancesById = ctx._source.${flowNodesField}.stream()
+          .filter(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}))
+          .collect(Collectors.toMap(flowNode -> flowNode.${userTaskIdField}, flowNode -> flowNode, (fn1, fn2) -> fn1));
+        for (def newFlowNode : params.${flowNodesField}) {
+          // Ignore flowNodes that aren't userTasks
+          if(!"${userTaskFlowNodeType}".equalsIgnoreCase(newFlowNode.${flowNodeTypeField})){ continue; }
 
-        def existingTask  = userTaskInstancesById.get(newFlowNode.${userTaskIdField});
-        if (existingTask != null) {
-      """
+          def existingTask  = userTaskInstancesById.get(newFlowNode.${userTaskIdField});
+          if (existingTask != null) {
+        """
         + updateUserTaskFiledsScript
         + """
-        } else {
-          userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
+          } else {
+            userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);
+          }
         }
-      }
-      ctx._source.${flowNodesField}.removeIf(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}));
-      ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());
-            """
+        ctx._source.${flowNodesField}.removeIf(flowNode -> "${userTaskFlowNodeType}".equalsIgnoreCase(flowNode.${flowNodeTypeField}));
+        ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());
+              """
         + createUpdateUserTaskMetricsScript();
   }
 }

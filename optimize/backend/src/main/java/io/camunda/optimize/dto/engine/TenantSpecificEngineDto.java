@@ -10,5 +10,6 @@ package io.camunda.optimize.dto.engine;
 import java.util.Optional;
 
 public interface TenantSpecificEngineDto extends EngineDto {
+
   Optional<String> getTenantId();
 }

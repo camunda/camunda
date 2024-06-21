@@ -35,7 +35,7 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public static CollectionScopeEntryResponseDto from(
-      CollectionScopeEntryDto scope, List<TenantDto> authorizedTenantDtos) {
+      final CollectionScopeEntryDto scope, final List<TenantDto> authorizedTenantDtos) {
     return new CollectionScopeEntryResponseDto()
         .setId(scope.getId())
         .setDefinitionKey(scope.getDefinitionKey())

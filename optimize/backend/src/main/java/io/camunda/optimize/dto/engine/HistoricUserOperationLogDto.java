@@ -14,6 +14,7 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HistoricUserOperationLogDto implements EngineDto {
+
   private String id;
   private String userId;
   private OffsetDateTime timestamp;

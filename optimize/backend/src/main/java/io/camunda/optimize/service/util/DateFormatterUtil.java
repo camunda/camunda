@@ -27,7 +27,7 @@ public class DateFormatterUtil {
     try {
       OffsetDateTime.parse(value, OPTIMIZE_FORMATTER);
       return true;
-    } catch (DateTimeParseException ex) {
+    } catch (final DateTimeParseException ex) {
       return false;
     }
   }
@@ -36,7 +36,7 @@ public class DateFormatterUtil {
     try {
       final OffsetDateTime parsedOffsetDateTime = DateParserUtils.parseOffsetDateTime(dateString);
       return Optional.of(parsedOffsetDateTime.format(OPTIMIZE_FORMATTER));
-    } catch (DateTimeParseException ex) {
+    } catch (final DateTimeParseException ex) {
       return Optional.empty();
     }
   }

@@ -102,12 +102,6 @@ public interface EventRepository {
   List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
       List<CamundaEventSourceEntryDto> camundaSources, List<String> correlationValues);
 
-  enum TimeRangeRequest {
-    AT,
-    BETWEEN,
-    AFTER
-  }
-
   default OffsetDateTime convertToOffsetDateTime(final Long eventTimestamp) {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(eventTimestamp), ZoneId.systemDefault());
   }
@@ -152,7 +146,7 @@ public interface EventRepository {
   }
 
   Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey);
+  getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey);
 
   Optional<EventProcessMappingDto> getEventProcessMapping(final String eventProcessMappingId);
 
@@ -192,17 +186,17 @@ public interface EventRepository {
   List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml();
 
   default Optional<OffsetDateTime> parseDateString(
-      String dateAsStr, final DateTimeFormatter formatter) {
+      final String dateAsStr, final DateTimeFormatter formatter) {
     try {
       return Optional.of(
           OffsetDateTime.ofInstant(Instant.parse(dateAsStr), ZoneId.systemDefault()));
-    } catch (DateTimeParseException e1) {
+    } catch (final DateTimeParseException e1) {
       try {
         // if parsing fails, try to parse as offset format (e.g., 2024-05-23T10:30:39.651+0000)
         return Optional.of(
             OffsetDateTime.ofInstant(
                 OffsetDateTime.parse(dateAsStr, formatter).toInstant(), ZoneId.systemDefault()));
-      } catch (DateTimeParseException e2) {
+      } catch (final DateTimeParseException e2) {
         return Optional.empty();
       }
     }
@@ -218,9 +212,9 @@ public interface EventRepository {
   }
 
   default Optional<String> extractCorrelationValue(
-      CamundaEventSourceEntryDto eventSourceForCurrentBucket,
-      CorrelationValueDto correlationValueDto) {
-    Optional<String> correlationValueToAdd;
+      final CamundaEventSourceEntryDto eventSourceForCurrentBucket,
+      final CorrelationValueDto correlationValueDto) {
+    final Optional<String> correlationValueToAdd;
     final CamundaEventSourceConfigDto eventSourceConfig =
         eventSourceForCurrentBucket.getConfiguration();
     if (eventSourceConfig.isTracedByBusinessKey()) {
@@ -236,5 +230,11 @@ public interface EventRepository {
           "Cannot get variable sample values for event source with no tracing variable");
     }
     return correlationValueToAdd;
+  }
+
+  enum TimeRangeRequest {
+    AT,
+    BETWEEN,
+    AFTER
   }
 }

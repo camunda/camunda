@@ -52,7 +52,7 @@ public class CamundaEventImportService {
   private final EngineContext engineContext;
 
   public List<ImportRequestDto> generateRunningCamundaActivityEventsImports(
-      List<FlowNodeEventDto> runningActivityInstances) {
+      final List<FlowNodeEventDto> runningActivityInstances) {
     final String engineAlias = runningActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
       return generateCamundaActivityEventsImports(
@@ -62,7 +62,7 @@ public class CamundaEventImportService {
   }
 
   public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(
-      List<FlowNodeEventDto> completedActivityInstances) {
+      final List<FlowNodeEventDto> completedActivityInstances) {
     final String engineAlias = completedActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
       return generateCamundaActivityEventsImports(
@@ -72,7 +72,7 @@ public class CamundaEventImportService {
   }
 
   public List<ImportRequestDto> generateRunningProcessInstanceImports(
-      List<ProcessInstanceDto> runningProcessInstances) {
+      final List<ProcessInstanceDto> runningProcessInstances) {
     final String engineAlias = runningProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
       final List<ImportRequestDto> imports =
@@ -87,7 +87,7 @@ public class CamundaEventImportService {
   }
 
   public List<ImportRequestDto> generateCompletedProcessInstanceImports(
-      List<ProcessInstanceDto> completedProcessInstances) {
+      final List<ProcessInstanceDto> completedProcessInstances) {
     final String engineAlias = completedProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
       final List<ImportRequestDto> imports =
@@ -127,7 +127,7 @@ public class CamundaEventImportService {
   }
 
   private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(
-      FlowNodeEventDto flowNodeEventDto) {
+      final FlowNodeEventDto flowNodeEventDto) {
     final Optional<ProcessDefinitionOptimizeDto> definition =
         getProcessDefinitionForDefinitionId(flowNodeEventDto.getProcessDefinitionId());
     if (!definition.isPresent()) {
@@ -144,7 +144,7 @@ public class CamundaEventImportService {
   }
 
   private Stream<CamundaActivityEventDto> convertCompletedActivityToCamundaActivityEvents(
-      FlowNodeEventDto flowNodeEventDto) {
+      final FlowNodeEventDto flowNodeEventDto) {
     final Optional<ProcessDefinitionOptimizeDto> definition =
         getProcessDefinitionForDefinitionId(flowNodeEventDto.getProcessDefinitionId());
     if (!definition.isPresent()) {

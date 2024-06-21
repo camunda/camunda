@@ -20,10 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventDtoBuilderUtil {
 
-  private static final String START_MAPPED_SUFFIX = "start";
-  private static final String END_MAPPED_SUFFIX = "end";
   public static final String PROCESS_START_TYPE = "processInstanceStart";
   public static final String PROCESS_END_TYPE = "processInstanceEnd";
+  private static final String START_MAPPED_SUFFIX = "start";
+  private static final String END_MAPPED_SUFFIX = "end";
 
   public static EventTypeDto createCamundaEventTypeDto(
       final String processId, final String eventName, final String eventLabel) {

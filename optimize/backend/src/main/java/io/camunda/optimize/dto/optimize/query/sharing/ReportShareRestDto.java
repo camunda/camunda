@@ -14,6 +14,7 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants
 public class ReportShareRestDto implements Serializable {
+
   private String id;
   private String reportId;
 }

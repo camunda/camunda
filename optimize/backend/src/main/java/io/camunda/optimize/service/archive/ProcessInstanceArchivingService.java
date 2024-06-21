@@ -64,15 +64,15 @@ public class ProcessInstanceArchivingService extends AbstractScheduledService
   }
 
   @Override
+  protected void run() {
+    archiveCompletedProcessInstances();
+  }
+
+  @Override
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
         Duration.ofMinutes(
             configurationService.getDataArchiveConfiguration().getArchiveIntervalInMins()));
-  }
-
-  @Override
-  protected void run() {
-    archiveCompletedProcessInstances();
   }
 
   public void archiveCompletedProcessInstances() {

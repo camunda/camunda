@@ -58,16 +58,10 @@ public class ProcessViewInstancePercentage extends ProcessViewPart {
         ((double) frequency.getDocCount() / unfilteredTotalInstanceCount) * 100);
   }
 
-  public ViewResult createViewResult(final Double value) {
-    return ViewResult.builder()
-        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
-        .build();
-  }
-
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     view.setProperties(ViewProperty.PERCENTAGE);
     dataForCommandKey.setView(view);
@@ -78,5 +72,11 @@ public class ProcessViewInstancePercentage extends ProcessViewPart {
     // for instance count the default is 0
     // see https://jira.camunda.com/browse/OPT-3336
     return createViewResult(0.);
+  }
+
+  public ViewResult createViewResult(final Double value) {
+    return ViewResult.builder()
+        .viewMeasure(CompositeCommandResult.ViewMeasure.builder().value(value).build())
+        .build();
   }
 }

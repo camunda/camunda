@@ -54,13 +54,13 @@ public class DecisionDefinitionEngineImportMediatorFactory
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return configurationService.isImportDmnDataEnabled()
         ? ImmutableList.of(
-            createDecisionDefinitionEngineImportMediator(engineContext),
-            createDecisionDefinitionXmlEngineImportMediator(engineContext))
+        createDecisionDefinitionEngineImportMediator(engineContext),
+        createDecisionDefinitionXmlEngineImportMediator(engineContext))
         : Collections.emptyList();
   }
 
   public DecisionDefinitionEngineImportMediator createDecisionDefinitionEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new DecisionDefinitionEngineImportMediator(
         importIndexHandlerRegistry.getDecisionDefinitionImportIndexHandler(
             engineContext.getEngineAlias()),
@@ -76,7 +76,7 @@ public class DecisionDefinitionEngineImportMediatorFactory
   }
 
   public DecisionDefinitionXmlEngineImportMediator createDecisionDefinitionXmlEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new DecisionDefinitionXmlEngineImportMediator(
         importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(
             engineContext.getEngineAlias()),

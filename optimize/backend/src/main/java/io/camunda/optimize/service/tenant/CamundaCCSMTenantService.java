@@ -32,14 +32,14 @@ public class CamundaCCSMTenantService implements TenantService {
   }
 
   @Override
-  public List<TenantDto> getTenantsForUser(final String userId) {
-    // In CCSM, we can only retrieve tenant auths for the current user using the user's token
-    return getTenantsForCurrentUser();
+  public boolean isMultiTenantEnvironment() {
+    return configurationService.isMultiTenancyEnabled();
   }
 
   @Override
-  public boolean isMultiTenantEnvironment() {
-    return configurationService.isMultiTenancyEnabled();
+  public List<TenantDto> getTenantsForUser(final String userId) {
+    // In CCSM, we can only retrieve tenant auths for the current user using the user's token
+    return getTenantsForCurrentUser();
   }
 
   private List<TenantDto> getTenantsForCurrentUser() {

@@ -49,7 +49,7 @@ public class SettingsWriterES implements SettingsWriter {
     try {
       final UpdateRequest request = createSettingsUpsert(settingsDto);
       esClient.update(request);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "There were errors while writing settings.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -58,7 +58,7 @@ public class SettingsWriterES implements SettingsWriter {
 
   private UpdateRequest createSettingsUpsert(final SettingsDto settingsDto)
       throws JsonProcessingException {
-    Set<String> fieldsToUpdate = new HashSet<>();
+    final Set<String> fieldsToUpdate = new HashSet<>();
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }

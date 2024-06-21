@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 @Slf4j
 public class MixpanelClient {
+
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final CloseableHttpClient httpClient;
@@ -119,6 +120,6 @@ public class MixpanelClient {
   }
 
   private MixpanelConfiguration getMixpanelConfiguration() {
-    return this.configurationService.getAnalytics().getMixpanel();
+    return configurationService.getAnalytics().getMixpanel();
   }
 }

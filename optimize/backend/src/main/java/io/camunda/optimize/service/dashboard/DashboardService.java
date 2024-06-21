@@ -98,7 +98,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   @Override
   public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
     if (reportDefinition
-        instanceof SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
+        instanceof final SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
       final List<ProcessVariableNameResponseDto> varNamesForReportToRemove =
           processVariableService.getVariableNamesForReportDefinitions(
               Collections.singletonList(typeCheckedReportDefinition));
@@ -124,7 +124,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .orElseThrow(
                 () -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     if (existingReport
-        instanceof SingleProcessReportDefinitionRequestDto existingReportDefinition) {
+        instanceof final SingleProcessReportDefinitionRequestDto existingReportDefinition) {
       final SingleProcessReportDefinitionRequestDto updateReportDefinition =
           (SingleProcessReportDefinitionRequestDto) updateDefinition;
       final List<ProcessVariableNameResponseDto> availableVariableNamesForExistingReport =
@@ -172,7 +172,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
-    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
     return copyAndMoveDashboard(
         dashboardId, userId, dashboardDefinition.getCollectionId(), newDashboardName);
   }
@@ -214,7 +214,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                 if (IdGenerator.isValidId(originalReportId)) {
                   String reportCopyId = uniqueReportCopies.get(originalReportId);
                   if (reportCopyId == null) {
-                    ReportDefinitionDto report =
+                    final ReportDefinitionDto report =
                         reportReader
                             .getReport(originalReportId)
                             .orElseThrow(
@@ -248,8 +248,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
               });
     }
 
-    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
-    DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
+    final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    final DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
     newDashboardDefinitionDto.setName(newDashboardName);
     newDashboardDefinitionDto.setDescription(dashboardDefinition.getDescription());
@@ -335,7 +335,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(
       final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
-    RoleType currentUserRole = getUserRoleType(userId, dashboard);
+    final RoleType currentUserRole = getUserRoleType(userId, dashboard);
     return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
   }
 
@@ -346,11 +346,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public void verifyUserHasAccessToDashboardCollection(
-      String userId, DashboardDefinitionRestDto dashboard) {
+      final String userId, final DashboardDefinitionRestDto dashboard) {
     getUserRoleType(userId, dashboard);
   }
 
-  private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
+  private RoleType getUserRoleType(final String userId,
+      final DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
     if (dashboard.isManagementDashboard() || dashboard.isInstantPreviewDashboard()) {
       currentUserRole = RoleType.VIEWER;
@@ -380,7 +381,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
-    Optional<DashboardDefinitionRestDto> dashboard = dashboardReader.getDashboard(dashboardId);
+    final Optional<DashboardDefinitionRestDto> dashboard = dashboardReader.getDashboard(
+        dashboardId);
 
     if (dashboard.isEmpty()) {
       log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
@@ -562,7 +564,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             }
             final VariableType variableType = filterData.getType();
             if ((variableType.equals(VariableType.DATE)
-                    || variableType.equals(VariableType.BOOLEAN))
+                || variableType.equals(VariableType.BOOLEAN))
                 && filterData.getData() != null) {
               throw new BadRequestException(
                   String.format(
@@ -579,8 +581,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             byClass ->
                 DashboardInstanceStartDateFilterDto.class.getSimpleName().equals(byClass.getKey())
                     || DashboardInstanceEndDateFilterDto.class
-                        .getSimpleName()
-                        .equals(byClass.getKey())
+                    .getSimpleName()
+                    .equals(byClass.getKey())
                     || DashboardStateFilterDto.class.getSimpleName().equals(byClass.getKey()))
         .forEach(
             byClass -> {
@@ -600,8 +602,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             byClass ->
                 DashboardAssigneeFilterDto.class.getSimpleName().equals(byClass.getKey())
                     || DashboardCandidateGroupFilterDto.class
-                        .getSimpleName()
-                        .equals(byClass.getKey()))
+                    .getSimpleName()
+                    .equals(byClass.getKey()))
         .forEach(
             byClass -> {
               final boolean hasNullData =
@@ -645,8 +647,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
     if (collectionId == null
         && !identityService
-            .getUserAuthorizations(userId)
-            .contains(AuthorizationType.ENTITY_EDITOR)) {
+        .getUserAuthorizations(userId)
+        .contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
   }

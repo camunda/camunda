@@ -34,7 +34,7 @@ public class StoreEngineImportProgressMediator
     implements ImportMediator {
 
   protected EngineContext engineContext;
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   public StoreEngineImportProgressMediator(
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -65,14 +65,15 @@ public class StoreEngineImportProgressMediator
               .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing engine index information!", e);
       importCompleted.complete(null);
     }
     return importCompleted;
   }
 
-  private <T extends EngineImportIndexHandler> Stream<T> createStreamForHandlers(List<T> handlers) {
+  private <T extends EngineImportIndexHandler> Stream<T> createStreamForHandlers(
+      final List<T> handlers) {
     return Optional.ofNullable(handlers).stream().flatMap(Collection::stream);
   }
 }

@@ -57,7 +57,7 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
             .flatMap(AccountsOrganisationResponse::getSalesPlan)
             .flatMap(AccountsSalesPlanDto::getType);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching the cloud organisation.", e);
     }
   }
@@ -66,6 +66,7 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   @AllArgsConstructor
   public static class AccountsOrganisationResponse {
+
     private Optional<AccountsSalesPlanDto> salesPlan;
   }
 
@@ -73,6 +74,7 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
   @AllArgsConstructor
   public static class AccountsSalesPlanDto {
+
     private Optional<String> type;
   }
 }

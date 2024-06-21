@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionWithTenantsResponseDto {
+
   private String key;
   private List<String> versions;
   private List<TenantResponseDto> tenants;

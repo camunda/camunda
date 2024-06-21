@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class EventProcessInstanceWriter {
+
   private final ProcessInstanceRepository processInstanceRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;

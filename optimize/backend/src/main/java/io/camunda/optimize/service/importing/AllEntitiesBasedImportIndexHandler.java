@@ -23,11 +23,13 @@ import org.springframework.context.annotation.Scope;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
     implements EngineImportIndexHandler<
-        AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
+    AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  @Autowired protected ImportIndexReader importIndexReader;
+  @Autowired
+  protected ImportIndexReader importIndexReader;
 
-  @Autowired protected ConfigurationService configurationService;
+  @Autowired
+  protected ConfigurationService configurationService;
 
   private long importIndex = 0;
 

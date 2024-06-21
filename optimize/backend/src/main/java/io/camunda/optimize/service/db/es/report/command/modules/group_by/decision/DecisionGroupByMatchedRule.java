@@ -35,9 +35,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
-  private final ConfigurationService configurationService;
-
   private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
+  private final ConfigurationService configurationService;
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -59,7 +58,7 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<GroupByResult> matchedRules = new ArrayList<>();
-    for (Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
+    for (final Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
       final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, matchedRuleBucket.getAggregations(), context);
       matchedRules.add(

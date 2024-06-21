@@ -45,7 +45,7 @@ public class DecisionGroupByNone extends DecisionGroupByPart {
       final ExecutionContext<DecisionReportDataDto> context) {
     final List<DistributedByResult> distributions =
         distributedByPart.retrieveResult(response, response.getAggregations(), context);
-    GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+    final GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }
 

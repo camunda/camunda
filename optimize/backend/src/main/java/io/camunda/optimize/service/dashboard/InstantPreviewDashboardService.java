@@ -67,29 +67,23 @@ public class InstantPreviewDashboardService {
   public static final String ALTTEXT_FIELD = "altText";
   public static final String TYPE_FIELD = "type";
   public static final String TYPE_IMAGE_VALUE = "image";
-
+  protected final ConfigurationService configurationService;
   private final DashboardService dashboardService;
   private final ReportService reportService;
   private final InstantDashboardMetadataReader instantDashboardMetadataReader;
   private final InstantDashboardMetadataWriter instantDashboardMetadataWriter;
   private final EntityImportService entityImportService;
   private final DefinitionService definitionService;
-  protected final ConfigurationService configurationService;
   private HashMap<String, Long> templateChecksums;
-
-  @FunctionalInterface
-  public interface BiConsumerWithParameters<T, U> {
-    void accept(T t, U u);
-  }
 
   public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(
       final String processDefinitionKey, final String dashboardJsonTemplate, final String userId) {
-    String emptySafeDashboardTemplate =
+    final String emptySafeDashboardTemplate =
         StringUtils.isEmpty(dashboardJsonTemplate)
             ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE
             : dashboardJsonTemplate;
-    String processedTemplateName = emptySafeDashboardTemplate.replace(".", "");
-    Optional<String> dashboardId =
+    final String processedTemplateName = emptySafeDashboardTemplate.replace(".", "");
+    final Optional<String> dashboardId =
         instantDashboardMetadataReader.getInstantDashboardIdFor(
             processDefinitionKey, processedTemplateName);
     if (dashboardId.isPresent()) {
@@ -116,7 +110,7 @@ public class InstantPreviewDashboardService {
 
   public Optional<InstantDashboardDataDto> createInstantPreviewDashboard(
       final String processDefinitionKey, final String dashboardJsonTemplate) {
-    String emptySafeDashboardTemplate =
+    final String emptySafeDashboardTemplate =
         StringUtils.isEmpty(dashboardJsonTemplate)
             ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE
             : dashboardJsonTemplate;
@@ -124,7 +118,7 @@ public class InstantPreviewDashboardService {
     instantDashboardDataDto.setTemplateName(emptySafeDashboardTemplate);
     instantDashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
     return setupInstantPreviewDashboard(
-            instantDashboardDataDto.getTemplateName(), processDefinitionKey)
+        instantDashboardDataDto.getTemplateName(), processDefinitionKey)
         .map(
             dashboardId -> {
               instantDashboardDataDto.setDashboardId(dashboardId);
@@ -142,21 +136,20 @@ public class InstantPreviewDashboardService {
    * transformFunction. Moreover, the additionalParameter value is also passed onto the converter.
    *
    * @param node Node with which the recursion is started, in the beginning it is the root node of
-   *     the Dashboard tile
+   * the Dashboard tile
    * @param fieldType Which node type do we want to transform? E.g. "image", "text", etc
    * @param transformFunction Once a node of the type "fieldType" is found, this function performs
-   *     the necessary conversion
+   * the necessary conversion
    * @param additionalParameterValue An additional string that is used by the converter. In the case
-   *     of an image node this is e.g. the clusterId, in the case of a text node it is e.g. the
-   *     locale
+   * of an image node this is e.g. the clusterId, in the case of a text node it is e.g. the locale
    */
   public static void findAndConvertTileContent(
-      Object node,
-      String fieldType,
-      BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
-      String additionalParameterValue) {
+      final Object node,
+      final String fieldType,
+      final BiConsumerWithParameters<Map<String, Object>, String> transformFunction,
+      final String additionalParameterValue) {
     if (node instanceof HashMap) {
-      HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
+      final HashMap<String, Object> tileConfigurationElement = (HashMap<String, Object>) node;
       if (fieldType.equals(tileConfigurationElement.getOrDefault(TYPE_FIELD, ""))) {
         // Found the leaf of the specified field type, so perform the transformation
         transformFunction.accept(tileConfigurationElement, additionalParameterValue);
@@ -171,7 +164,7 @@ public class InstantPreviewDashboardService {
       // A list typically happens when the "children" node is found. In this case, we want to
       // perform the transformation in each
       // of the children nodes as well
-      ArrayList<Object> list = (ArrayList<Object>) node;
+      final ArrayList<Object> list = (ArrayList<Object>) node;
       list.forEach(
           item ->
               findAndConvertTileContent(
@@ -181,7 +174,7 @@ public class InstantPreviewDashboardService {
 
   private Optional<String> setupInstantPreviewDashboard(
       final String dashboardJsonTemplate, final String processDefinitionKey) {
-    Optional<Set<OptimizeEntityExportDto>> exportDtos =
+    final Optional<Set<OptimizeEntityExportDto>> exportDtos =
         readAndProcessDashboardTemplate(dashboardJsonTemplate);
     return exportDtos.flatMap(
         exportDtoSet -> createReportsAndAddToDashboard(exportDtoSet, processDefinitionKey));
@@ -199,7 +192,7 @@ public class InstantPreviewDashboardService {
                 .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
                 .forEach(
                     reportEntity -> {
-                      SingleProcessReportDefinitionExportDto singleReport =
+                      final SingleProcessReportDefinitionExportDto singleReport =
                           ((SingleProcessReportDefinitionExportDto) reportEntity);
                       singleReport.getData().setInstantPreviewReport(true);
                       singleReport
@@ -218,7 +211,7 @@ public class InstantPreviewDashboardService {
         .filter(DashboardDefinitionExportDto.class::isInstance)
         .forEach(
             dashboardEntity -> {
-              DashboardDefinitionExportDto dashboardData =
+              final DashboardDefinitionExportDto dashboardData =
                   ((DashboardDefinitionExportDto) dashboardEntity);
               processAllImageUrlsInTiles(dashboardData.getTiles());
               dashboardData.setInstantPreviewDashboard(true);
@@ -258,11 +251,11 @@ public class InstantPreviewDashboardService {
   }
 
   private void convertAbsoluteUrlsToRelative(
-      Map<String, Object> textTileConfigElement, String clusterId) {
+      final Map<String, Object> textTileConfigElement, final String clusterId) {
     // If working in cloud mode, the relative URL needs to include the cluster ID for it to work
     // properly
-    String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
-    String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
+    final String srcValue = (String) textTileConfigElement.get(SRC_FIELD);
+    final String altTextValue = (String) textTileConfigElement.get(ALTTEXT_FIELD);
     // Extract the file name from the absolute path and put it at the end of the relative path. If
     // working in
     // cloud mode, the relative URL needs to include the cluster ID for it to work properly, since
@@ -274,12 +267,12 @@ public class InstantPreviewDashboardService {
     // If a custom context path is specified, we also need to include this in the created URL. If
     // the context path is later
     // changed, these tiles may not work.
-    String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
+    final String srcValueFileName = srcValue.substring((srcValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(
         SRC_FIELD,
         createContextPathAwarePath(
             clusterId + EXTERNAL_STATIC_RESOURCES_SUBPATH + srcValueFileName));
-    String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
+    final String altTextValueFileName = altTextValue.substring((altTextValue).lastIndexOf('/') + 1);
     textTileConfigElement.put(
         ALTTEXT_FIELD,
         createContextPathAwarePath(
@@ -291,12 +284,12 @@ public class InstantPreviewDashboardService {
     FilenameValidatorUtil.validateFilename(dashboardJsonTemplateFilename);
     final String fullyQualifiedPath =
         INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename;
-    try (InputStream dashboardTemplate =
+    try (final InputStream dashboardTemplate =
         getClass().getClassLoader().getResourceAsStream(fullyQualifiedPath)) {
       if (dashboardTemplate != null) {
-        String exportedDtoJson =
+        final String exportedDtoJson =
             new String(dashboardTemplate.readAllBytes(), StandardCharsets.UTF_8);
-        Long checksum = getChecksumCRC32(exportedDtoJson);
+        final Long checksum = getChecksumCRC32(exportedDtoJson);
         final Set<OptimizeEntityExportDto> valueToBeReturned =
             entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
         templateChecksums.put(dashboardJsonTemplateFilename, checksum);
@@ -304,7 +297,7 @@ public class InstantPreviewDashboardService {
       } else {
         log.error("Could not read dashboard template from " + fullyQualifiedPath);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not read dashboard template from " + fullyQualifiedPath, e);
     }
     return Optional.empty();
@@ -312,23 +305,23 @@ public class InstantPreviewDashboardService {
 
   @EventListener(ApplicationReadyEvent.class)
   public void deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates() {
-    List<Long> templateFileChecksums = getCurrentFileChecksums();
+    final List<Long> templateFileChecksums = getCurrentFileChecksums();
     try {
-      List<String> dashboardsToDelete =
+      final List<String> dashboardsToDelete =
           instantDashboardMetadataWriter.deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
               templateFileChecksums);
-      for (String dashboardIdToDelete : dashboardsToDelete) {
+      for (final String dashboardIdToDelete : dashboardsToDelete) {
         final DashboardDefinitionRestDto dashboardDefinition =
             dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
         if (dashboardDefinition.isInstantPreviewDashboard()) {
           final Set<String> reportsToDelete = dashboardDefinition.getTileIds();
-          for (String reportId : reportsToDelete) {
+          for (final String reportId : reportsToDelete) {
             reportService.deleteManagementOrInstantPreviewReport(reportId);
           }
           dashboardService.deleteDashboard(dashboardIdToDelete);
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // Whichever error occurred in the code above the details of it are contained in the exception
       // message. Catching
       // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the
@@ -343,7 +336,7 @@ public class InstantPreviewDashboardService {
     // exists, and that all other
     // templates are named incrementally
     String currentTemplate = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-    List<Long> fileChecksums = new ArrayList<>();
+    final List<Long> fileChecksums = new ArrayList<>();
     InputStream templateInputStream =
         getClass()
             .getClassLoader()
@@ -351,7 +344,7 @@ public class InstantPreviewDashboardService {
     while (templateInputStream != null) {
       try {
         fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
-      } catch (IOException e) {
+      } catch (final IOException e) {
         log.error("Could not generate checksum for template [{}]", currentTemplate);
       }
       currentTemplate = incrementFileName(currentTemplate);
@@ -363,31 +356,33 @@ public class InstantPreviewDashboardService {
     return fileChecksums;
   }
 
-  public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {
-    CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
-    byte[] buffer = new byte[bufferSize];
-    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0) {}
+  public static long getChecksumCRC32(final InputStream stream, final int bufferSize)
+      throws IOException {
+    final CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
+    final byte[] buffer = new byte[bufferSize];
+    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0) {
+    }
     return checkedInputStream.getChecksum().getValue();
   }
 
-  public static long getChecksumCRC32(String input) {
-    byte[] bytes = input.getBytes();
-    Checksum checksum = new CRC32();
+  public static long getChecksumCRC32(final String input) {
+    final byte[] bytes = input.getBytes();
+    final Checksum checksum = new CRC32();
     checksum.update(bytes, 0, bytes.length);
     return checksum.getValue();
   }
 
-  private static String incrementFileName(String fileName) {
-    String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf("."));
-    String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+  private static String incrementFileName(final String fileName) {
+    final String fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf("."));
+    final String fileExtension = fileName.substring(fileName.lastIndexOf("."));
 
-    Pattern pattern = Pattern.compile("(.*?)(\\d+)$");
-    Matcher matcher = pattern.matcher(fileNameWithoutExtension);
+    final Pattern pattern = Pattern.compile("(.*?)(\\d+)$");
+    final Matcher matcher = pattern.matcher(fileNameWithoutExtension);
 
     // If the file has a number as a suffix, increment it
     if (matcher.find()) {
-      String prefix = matcher.group(1);
-      int suffix;
+      final String prefix = matcher.group(1);
+      final int suffix;
       try {
         suffix = Integer.parseInt(matcher.group(2)) + 1;
       } catch (final NumberFormatException exception) {
@@ -405,5 +400,11 @@ public class InstantPreviewDashboardService {
         .getContextPath()
         .map(contextPath -> contextPath + subPath)
         .orElse(subPath);
+  }
+
+  @FunctionalInterface
+  public interface BiConsumerWithParameters<T, U> {
+
+    void accept(T t, U u);
   }
 }

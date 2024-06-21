@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public interface DefinitionReader {
+
   String VERSION_AGGREGATION = "versions";
   String VERSION_TAG_AGGREGATION = "versionTags";
   String TENANT_AGGREGATION = "tenants";
@@ -46,9 +47,9 @@ public interface DefinitionReader {
   String DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION = "definitionKeyAndTypeAndTenant";
   String NAME_AGGREGATION = "definitionName";
   String[] ALL_DEFINITION_INDEXES = {
-    PROCESS_DEFINITION_INDEX_NAME,
-    DECISION_DEFINITION_INDEX_NAME,
-    EVENT_PROCESS_DEFINITION_INDEX_NAME
+      PROCESS_DEFINITION_INDEX_NAME,
+      DECISION_DEFINITION_INDEX_NAME,
+      EVENT_PROCESS_DEFINITION_INDEX_NAME
   };
   String TENANT_NOT_DEFINED_VALUE = "null";
 
@@ -68,15 +69,15 @@ public interface DefinitionReader {
       final DefinitionType type, final boolean withXml);
 
   <T extends DefinitionOptimizeResponseDto>
-      Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
-          final DefinitionType type,
-          final String definitionKey,
-          final List<String> definitionVersions,
-          final List<String> tenantIds);
+  Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+      final DefinitionType type,
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds);
 
   <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
-          final DefinitionType type, final String definitionKey);
+  List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+      final DefinitionType type, final String definitionKey);
 
   Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey);
 
@@ -107,8 +108,8 @@ public interface DefinitionReader {
 
     return switch (type) {
       case PROCESS ->
-          new String[] {PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
-      case DECISION -> new String[] {DECISION_DEFINITION_INDEX_NAME};
+          new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
+      case DECISION -> new String[]{DECISION_DEFINITION_INDEX_NAME};
       default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     };
   }

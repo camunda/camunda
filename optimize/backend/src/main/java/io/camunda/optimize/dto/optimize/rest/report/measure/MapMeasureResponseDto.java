@@ -17,6 +17,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 public class MapMeasureResponseDto extends MeasureResponseDto<List<MapResultEntryDto>> {
+
   // overridden to make sure the type is always available and correct for these classes
   @Override
   public ResultType getType() {

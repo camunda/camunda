@@ -8,7 +8,11 @@
 package io.camunda.optimize.service.db.writer;
 
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
-import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.*;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_NAME;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION_TAG;
+import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.TENANT_ID;
 
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import java.util.List;

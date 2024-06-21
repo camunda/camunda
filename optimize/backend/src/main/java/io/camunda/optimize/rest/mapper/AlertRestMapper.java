@@ -23,7 +23,7 @@ public class AlertRestMapper {
     resolveOwnerAndModifierNames(alertDefinitionDto);
   }
 
-  private void resolveOwnerAndModifierNames(AlertDefinitionDto alertDefinitionDto) {
+  private void resolveOwnerAndModifierNames(final AlertDefinitionDto alertDefinitionDto) {
     Optional.ofNullable(alertDefinitionDto.getOwner())
         .flatMap(identityService::getIdentityNameById)
         .ifPresent(alertDefinitionDto::setOwner);

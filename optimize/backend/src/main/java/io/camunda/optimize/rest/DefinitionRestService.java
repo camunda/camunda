@@ -65,7 +65,7 @@ public class DefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<DefinitionResponseDto> getDefinitions(
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(userId);
   }
@@ -74,9 +74,9 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}")
   public List<DefinitionOptimizeResponseDto> getDefinitions(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @QueryParam("includeXml") boolean includeXml) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @QueryParam("includeXml") final boolean includeXml) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
   }
@@ -114,9 +114,9 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/{key}")
   public DefinitionResponseDto getDefinition(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @PathParam("key") String key) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @PathParam("key") final String key) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService
         .getDefinitionWithAvailableTenants(type, key, userId)
@@ -182,7 +182,7 @@ public class DefinitionRestService {
       @QueryParam("camundaEventImportedOnly") final boolean camundaEventImportedOnly) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    List<DefinitionResponseDto> definitions =
+    final List<DefinitionResponseDto> definitions =
         getDefinitions(type, collectionId, camundaEventImportedOnly, userId);
     return definitions.stream()
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
@@ -193,7 +193,7 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/_groupByTenant")
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getDefinitionsGroupedByTenant(userId);
   }
@@ -212,11 +212,11 @@ public class DefinitionRestService {
   @Path("/{type}/xml")
   @CacheRequest
   public Response getDefinitionXml(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @QueryParam("key") String key,
-      @QueryParam("version") String version,
-      @QueryParam("tenantId") String tenantId) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @QueryParam("key") final String key,
+      @QueryParam("version") final String version,
+      @QueryParam("tenantId") final String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<DefinitionOptimizeResponseDto> definitionDto =
         definitionService.getDefinitionWithXml(type, userId, key, version, tenantId);

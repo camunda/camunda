@@ -13,12 +13,16 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-/** The class is used to get the needed beans in classes that are not managed by spring */
+/**
+ * The class is used to get the needed beans in classes that are not managed by spring
+ */
 @Component
 public class ApplicationContextProvider implements ApplicationContextAware {
-  @Getter private static ApplicationContext applicationContext;
 
-  public static <T> T getBean(Class<T> beanClass) {
+  @Getter
+  private static ApplicationContext applicationContext;
+
+  public static <T> T getBean(final Class<T> beanClass) {
     return applicationContext.getBean(beanClass);
   }
 

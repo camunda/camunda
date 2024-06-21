@@ -22,9 +22,12 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 public class AssigneeCandidateGroupDefinitionSearchRequestDto {
+
   private String terms;
-  @Builder.Default private int limit = 25;
-  @NotNull private String processDefinitionKey;
+  @Builder.Default
+  private int limit = 25;
+  @NotNull
+  private String processDefinitionKey;
 
   @Builder.Default
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));

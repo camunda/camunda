@@ -8,7 +8,8 @@
 package io.camunda.optimize.service.exceptions;
 
 public class SharingNotAllowedException extends OptimizeValidationException {
-  public SharingNotAllowedException(String message) {
+
+  public SharingNotAllowedException(final String message) {
     super(message);
   }
 

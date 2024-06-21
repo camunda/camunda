@@ -43,10 +43,10 @@ public class AbstractProcessInstanceWriterES
   }
 
   protected void addImportProcessInstanceRequest(
-      BulkRequest bulkRequest,
-      ProcessInstanceDto processInstanceDto,
-      Set<String> updatableFields,
-      ObjectMapper objectMapper) {
+      final BulkRequest bulkRequest,
+      final ProcessInstanceDto processInstanceDto,
+      final Set<String> updatableFields,
+      final ObjectMapper objectMapper) {
     final Script updateScript =
         ElasticsearchWriterUtil.createFieldUpdateScript(
             updatableFields, processInstanceDto, objectMapper);
@@ -54,10 +54,10 @@ public class AbstractProcessInstanceWriterES
   }
 
   protected void addImportProcessInstanceRequest(
-      BulkRequest bulkRequest,
-      ProcessInstanceDto processInstanceDto,
-      Script updateScript,
-      ObjectMapper objectMapper) {
+      final BulkRequest bulkRequest,
+      final ProcessInstanceDto processInstanceDto,
+      final Script updateScript,
+      final ObjectMapper objectMapper) {
     final UpdateRequest updateRequest =
         createUpdateRequestDto(processInstanceDto, updateScript, objectMapper);
     bulkRequest.add(updateRequest);
@@ -79,8 +79,8 @@ public class AbstractProcessInstanceWriterES
     String newEntryIfAbsent = "";
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(processInstanceDto);
-    } catch (JsonProcessingException e) {
-      String reason =
+    } catch (final JsonProcessingException e) {
+      final String reason =
           String.format(
               "Error while processing JSON for process instance DTO with ID [%s].",
               processInstanceDto.getProcessInstanceId());

@@ -20,13 +20,15 @@ import org.apache.lucene.search.ScoreDoc;
 @AllArgsConstructor
 @NoArgsConstructor
 public class IdentitySearchResultResponseDto {
+
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
   /**
    * ScoreDoc holds a reference to the ScoreDoc of the last result the result list. Used to paginate
    * through the searchableIdentityCache.
    */
-  @JsonIgnore private ScoreDoc scoreDoc;
+  @JsonIgnore
+  private ScoreDoc scoreDoc;
 
   public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;

@@ -38,7 +38,8 @@ public class AuthenticationRestService {
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(
-      @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials) {
+      @Context final ContainerRequestContext requestContext,
+      final CredentialsRequestDto credentials) {
     return authenticationService.authenticateUser(requestContext, credentials);
   }
 
@@ -51,7 +52,7 @@ public class AuthenticationRestService {
   @GET
   @Path(CALLBACK)
   public Response loginCallback(
-      @Context ContainerRequestContext requestContext,
+      @Context final ContainerRequestContext requestContext,
       final @QueryParam("code") String code,
       final @QueryParam("state") String state,
       final @QueryParam("error") String error) {
@@ -60,7 +61,7 @@ public class AuthenticationRestService {
 
   @GET
   @Path(LOGOUT)
-  public Response logoutUser(@Context ContainerRequestContext requestContext) {
+  public Response logoutUser(@Context final ContainerRequestContext requestContext) {
     return authenticationService.logout(requestContext);
   }
 }

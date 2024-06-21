@@ -34,21 +34,25 @@ import lombok.experimental.FieldNameConstants;
     property = "exportEntityType",
     visible = true)
 @JsonSubTypes({
-  @JsonSubTypes.Type(
-      value = SingleProcessReportDefinitionExportDto.class,
-      name = SINGLE_PROCESS_REPORT_STRING),
-  @JsonSubTypes.Type(
-      value = SingleDecisionReportDefinitionExportDto.class,
-      name = SINGLE_DECISION_REPORT_STRING),
-  @JsonSubTypes.Type(
-      value = CombinedProcessReportDefinitionExportDto.class,
-      name = COMBINED_REPORT),
-  @JsonSubTypes.Type(value = DashboardDefinitionExportDto.class, name = DASHBOARD),
+    @JsonSubTypes.Type(
+        value = SingleProcessReportDefinitionExportDto.class,
+        name = SINGLE_PROCESS_REPORT_STRING),
+    @JsonSubTypes.Type(
+        value = SingleDecisionReportDefinitionExportDto.class,
+        name = SINGLE_DECISION_REPORT_STRING),
+    @JsonSubTypes.Type(
+        value = CombinedProcessReportDefinitionExportDto.class,
+        name = COMBINED_REPORT),
+    @JsonSubTypes.Type(value = DashboardDefinitionExportDto.class, name = DASHBOARD),
 })
 public abstract class OptimizeEntityExportDto {
-  @NotNull private String id;
-  @NotNull private ExportEntityType exportEntityType;
-  @NotNull private String name;
+
+  @NotNull
+  private String id;
+  @NotNull
+  private ExportEntityType exportEntityType;
+  @NotNull
+  private String name;
   private String description;
   private int sourceIndexVersion;
 }

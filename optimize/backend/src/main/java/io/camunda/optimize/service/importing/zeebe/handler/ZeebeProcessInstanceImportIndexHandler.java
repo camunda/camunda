@@ -21,7 +21,7 @@ public class ZeebeProcessInstanceImportIndexHandler extends PositionBasedImportI
       "zeebeProcessInstanceImportIndex";
 
   public ZeebeProcessInstanceImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
-    this.dataSource = dataSourceDto;
+    dataSource = dataSourceDto;
   }
 
   @Override

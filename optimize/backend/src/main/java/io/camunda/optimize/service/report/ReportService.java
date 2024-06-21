@@ -737,11 +737,11 @@ public class ReportService implements CollectionReferencingService {
                 if (subReportCopyId == null) {
                   subReportCopyId =
                       copyAndMoveReport(
-                              originalSubReportId,
-                              userId,
-                              newCollectionId,
-                              reportName,
-                              existingReportCopies)
+                          originalSubReportId,
+                          userId,
+                          newCollectionId,
+                          reportName,
+                          existingReportCopies)
                           .getId();
                   existingReportCopies.put(originalSubReportId, subReportCopyId);
                 }
@@ -863,8 +863,8 @@ public class ReportService implements CollectionReferencingService {
   private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
     if (collectionId == null
         && !identityService
-            .getUserAuthorizations(userId)
-            .contains(AuthorizationType.ENTITY_EDITOR)) {
+        .getUserAuthorizations(userId)
+        .contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
   }
@@ -1053,21 +1053,22 @@ public class ReportService implements CollectionReferencingService {
       final ReportDefinitionDto<?> reportDefinition) {
     return reportDefinition instanceof SingleProcessReportDefinitionRequestDto
         && (((SingleProcessReportDefinitionRequestDto) reportDefinition)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinition)
-                .getData()
-                .isInstantPreviewReport());
+        .getData()
+        .isManagementReport()
+        || ((SingleProcessReportDefinitionRequestDto) reportDefinition)
+        .getData()
+        .isInstantPreviewReport());
   }
 
   private boolean isHeatmapReportOnVersionAllOrLatest(final ProcessReportDataDto reportData) {
     return ProcessVisualization.HEAT.equals(reportData.getVisualization())
         && DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest(
-            reportData.getDefinitionVersions());
+        reportData.getDefinitionVersions());
   }
 
   @FunctionalInterface
   private interface CreateReportMethod<RD extends ReportDataDto> {
+
     IdResponseDto create(
         String userId, RD reportData, String reportName, String description, String collectionId);
   }

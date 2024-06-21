@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ProcessReportDataBuilderHelper {
+
   private List<ReportDataDefinitionDto> definitions =
       Collections.singletonList(new ReportDataDefinitionDto());
 
@@ -144,89 +145,90 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper processDefinitionKey(String processDefinitionKey) {
-    this.definitions.get(0).setKey(processDefinitionKey);
+  public ProcessReportDataBuilderHelper processDefinitionKey(final String processDefinitionKey) {
+    definitions.get(0).setKey(processDefinitionKey);
     return this;
   }
 
   public ProcessReportDataBuilderHelper processDefinitionVersions(
-      List<String> processDefinitionVersions) {
-    this.definitions.get(0).setVersions(processDefinitionVersions);
+      final List<String> processDefinitionVersions) {
+    definitions.get(0).setVersions(processDefinitionVersions);
     return this;
   }
 
   public ProcessReportDataBuilderHelper processDefinitionVersion(
       final String processDefinitionVersion) {
-    this.definitions.get(0).setVersion(processDefinitionVersion);
+    definitions.get(0).setVersion(processDefinitionVersion);
     return this;
   }
 
-  public ProcessReportDataBuilderHelper viewEntity(ProcessViewEntity viewEntity) {
+  public ProcessReportDataBuilderHelper viewEntity(final ProcessViewEntity viewEntity) {
     this.viewEntity = viewEntity;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper viewProperty(ViewProperty viewProperty) {
+  public ProcessReportDataBuilderHelper viewProperty(final ViewProperty viewProperty) {
     this.viewProperty = viewProperty;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper groupByType(ProcessGroupByType groupByType) {
+  public ProcessReportDataBuilderHelper groupByType(final ProcessGroupByType groupByType) {
     this.groupByType = groupByType;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper distributedByType(DistributedByType distributedByType) {
+  public ProcessReportDataBuilderHelper distributedByType(
+      final DistributedByType distributedByType) {
     this.distributedByType = distributedByType;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper visualization(ProcessVisualization visualization) {
+  public ProcessReportDataBuilderHelper visualization(final ProcessVisualization visualization) {
     this.visualization = visualization;
     return this;
   }
 
   public ProcessReportDataBuilderHelper groupByDateInterval(
-      AggregateByDateUnit groupByDateInterval) {
+      final AggregateByDateUnit groupByDateInterval) {
     this.groupByDateInterval = groupByDateInterval;
     return this;
   }
 
   public ProcessReportDataBuilderHelper distributeByDateInterval(
-      AggregateByDateUnit distributeByDateInterval) {
+      final AggregateByDateUnit distributeByDateInterval) {
     this.distributeByDateInterval = distributeByDateInterval;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper variableName(String variableName) {
+  public ProcessReportDataBuilderHelper variableName(final String variableName) {
     this.variableName = variableName;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper variableType(VariableType variableType) {
+  public ProcessReportDataBuilderHelper variableType(final VariableType variableType) {
     this.variableType = variableType;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper processPartStart(String processPartStart) {
+  public ProcessReportDataBuilderHelper processPartStart(final String processPartStart) {
     this.processPartStart = processPartStart;
     return this;
   }
 
-  public ProcessReportDataBuilderHelper processPartEnd(String processPartEnd) {
+  public ProcessReportDataBuilderHelper processPartEnd(final String processPartEnd) {
     this.processPartEnd = processPartEnd;
     return this;
   }
 
-  public static CombinedReportDataDto createCombinedReportData(String... reportIds) {
-    CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
+  public static CombinedReportDataDto createCombinedReportData(final String... reportIds) {
+    final CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReports(
         Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList()));
     return combinedReportDataDto;
   }
 
-  private static ProcessPartDto createProcessPart(String start, String end) {
-    ProcessPartDto processPartDto = new ProcessPartDto();
+  private static ProcessPartDto createProcessPart(final String start, final String end) {
+    final ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart(start);
     processPartDto.setEnd(end);
     return processPartDto;

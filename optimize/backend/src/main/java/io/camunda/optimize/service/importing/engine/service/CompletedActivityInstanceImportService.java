@@ -27,13 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 public class CompletedActivityInstanceImportService
     implements ImportService<HistoricActivityInstanceEngineDto> {
 
+  protected EngineContext engineContext;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
   private final DatabaseClient databaseClient;
-  protected EngineContext engineContext;
 
   public CompletedActivityInstanceImportService(
       final CompletedActivityInstanceWriter completedActivityInstanceWriter,

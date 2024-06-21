@@ -33,15 +33,9 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
 
   @Override
   public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    String importItemName = "business keys";
+    final String importItemName = "business keys";
     osClient.doImportBulkRequestWithList(
         importItemName, processInstanceIds, this::addDeleteRequest, false, BUSINESS_KEY_INDEX_NAME);
-  }
-
-  private BulkOperation addDeleteRequest(final String processInstanceId) {
-    final DeleteOperation deleteReq = new DeleteOperation.Builder().id(processInstanceId).build();
-
-    return new BulkOperation.Builder().delete(deleteReq).build();
   }
 
   @Override
@@ -54,5 +48,11 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
         .importName(importItemName)
         .type(RequestType.INDEX)
         .build();
+  }
+
+  private BulkOperation addDeleteRequest(final String processInstanceId) {
+    final DeleteOperation deleteReq = new DeleteOperation.Builder().id(processInstanceId).build();
+
+    return new BulkOperation.Builder().delete(deleteReq).build();
   }
 }

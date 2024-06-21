@@ -151,7 +151,7 @@ public class ZeebeUserTaskImportService
     // Only recalculate durations of userTasks which are completed or have assignee operations
     if (userTaskToAdd.getStartDate() != null
         && (userTaskToAdd.getEndDate() != null
-            || !userTaskToAdd.getAssigneeOperations().isEmpty())) {
+        || !userTaskToAdd.getAssigneeOperations().isEmpty())) {
 
       long totalIdleTimeInMs = 0;
       long totalWorkTimeInMs = 0;

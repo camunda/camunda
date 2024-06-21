@@ -16,6 +16,7 @@ import org.springframework.beans.factory.BeanFactory;
 
 @AllArgsConstructor
 public abstract class AbstractIngestedImportMediatorFactory {
+
   protected final BeanFactory beanFactory;
   protected final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   protected final ConfigurationService configurationService;

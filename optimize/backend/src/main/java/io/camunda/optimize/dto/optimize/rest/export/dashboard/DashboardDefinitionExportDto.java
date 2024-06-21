@@ -31,8 +31,11 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
-  @NotNull private List<DashboardReportTileDto> tiles = new ArrayList<>();
-  @NotNull private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
+
+  @NotNull
+  private List<DashboardReportTileDto> tiles = new ArrayList<>();
+  @NotNull
+  private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
   private boolean isInstantPreviewDashboard = false;
 
@@ -43,9 +46,9 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         dashboardDefinition.getName(),
         dashboardDefinition.getDescription(),
         DashboardIndex.VERSION);
-    this.tiles = dashboardDefinition.getTiles();
-    this.availableFilters = dashboardDefinition.getAvailableFilters();
-    this.collectionId = dashboardDefinition.getCollectionId();
+    tiles = dashboardDefinition.getTiles();
+    availableFilters = dashboardDefinition.getAvailableFilters();
+    collectionId = dashboardDefinition.getCollectionId();
   }
 
   @JsonIgnore

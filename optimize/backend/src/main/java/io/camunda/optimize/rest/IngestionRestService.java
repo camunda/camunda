@@ -44,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Path(INGESTION_PATH)
 @Component
 public class IngestionRestService {
+
   public static final String INGESTION_PATH = "/ingestion";
   public static final String EVENT_BATCH_SUB_PATH = "/event/batch";
   public static final String VARIABLE_SUB_PATH = "/variable";
@@ -86,7 +87,7 @@ public class IngestionRestService {
   }
 
   private static List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
-    Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
+    final Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
     return cloudEventDtos.stream()
         .map(
             cloudEventDto ->
@@ -110,6 +111,7 @@ public class IngestionRestService {
   @Data
   private static class ValidList<E> implements List<E> {
 
-    @Delegate private List<E> list = new ArrayList<>();
+    @Delegate
+    private List<E> list = new ArrayList<>();
   }
 }

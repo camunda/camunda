@@ -28,7 +28,7 @@ public class ResolvedIncidentQueryFilter implements QueryFilter<ResolvedIncident
       final List<ResolvedIncidentFilterDataDto> resolvedIncident,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(resolvedIncident)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(INCIDENTS, createResolvedIncidentTermQuery(), ScoreMode.None));
     }
   }

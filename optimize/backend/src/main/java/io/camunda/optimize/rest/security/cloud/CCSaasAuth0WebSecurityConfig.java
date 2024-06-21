@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 @Configuration
 @Conditional(CCSaaSCondition.class)
 public class CCSaasAuth0WebSecurityConfig {
+
   public static final String OAUTH_AUTH_ENDPOINT = "/sso";
   public static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
   public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";

@@ -33,7 +33,7 @@ public abstract class AbstractSecurityConfigurerAdapter {
   protected final AuthCookieService authCookieService;
 
   @SneakyThrows
-  protected SecurityFilterChain applyPublicApiOptions(HttpSecurity http) {
+  protected SecurityFilterChain applyPublicApiOptions(final HttpSecurity http) {
     return configureGenericSecurityOptions(http)
         // everything requires authentication
         .authorizeHttpRequests(httpRequests -> httpRequests.anyRequest().authenticated())
@@ -45,7 +45,7 @@ public abstract class AbstractSecurityConfigurerAdapter {
   }
 
   @SneakyThrows
-  protected HttpSecurity configureGenericSecurityOptions(HttpSecurity http) {
+  protected HttpSecurity configureGenericSecurityOptions(final HttpSecurity http) {
     return http
         // csrf is not used but the same-site property of the auth cookie, see
         // AuthCookieService#createNewOptimizeAuthCookie

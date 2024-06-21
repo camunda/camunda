@@ -74,30 +74,32 @@ public class JettyConfig {
   public static final String ALLOWED_URL_EXTENSION =
       String.join(
           "|",
-          new String[] {
-            URL_BASE,
-            LOGIN_ENDPOINT,
-            METRICS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
-            HealthRestService.READYZ_PATH,
-            LocalizationRestService.LOCALIZATION_PATH,
-            OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH,
-            OptimizeResourceConstants.REST_API_PATH,
-            OptimizeResourceConstants.STATIC_RESOURCE_PATH,
-            OptimizeResourceConstants.STATUS_WEBSOCKET_PATH,
-            OptimizeResourceConstants.ACTUATOR_ENDPOINT,
-            PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-            RestConstants.BACKUP_ENDPOINT,
-            UIConfigurationRestService.UI_CONFIGURATION_PATH
+          new String[]{
+              URL_BASE,
+              LOGIN_ENDPOINT,
+              METRICS_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
+              HealthRestService.READYZ_PATH,
+              LocalizationRestService.LOCALIZATION_PATH,
+              OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH,
+              OptimizeResourceConstants.REST_API_PATH,
+              OptimizeResourceConstants.STATIC_RESOURCE_PATH,
+              OptimizeResourceConstants.STATUS_WEBSOCKET_PATH,
+              OptimizeResourceConstants.ACTUATOR_ENDPOINT,
+              PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
+              RestConstants.BACKUP_ENDPOINT,
+              UIConfigurationRestService.UI_CONFIGURATION_PATH
           });
 
-  @Autowired private ConfigurationService configurationService;
-  @Autowired private Environment environment;
+  @Autowired
+  private ConfigurationService configurationService;
+  @Autowired
+  private Environment environment;
 
   @Bean
   public JettyServerCustomizer httpsJettyServerCustomizer() {
@@ -128,7 +130,7 @@ public class JettyConfig {
 
   @Bean
   public WebServerFactoryCustomizer<ConfigurableServletWebServerFactory>
-      optimizeWebServerFactoryCustomizer() {
+  optimizeWebServerFactoryCustomizer() {
     return factory -> {
       getContextPath().ifPresent(factory::setContextPath);
       final String host = configurationService.getContainerHost();
@@ -156,7 +158,9 @@ public class JettyConfig {
     };
   }
 
-  /** redirect to /# when the endpoint is not valid. do this rather than showing an error page */
+  /**
+   * redirect to /# when the endpoint is not valid. do this rather than showing an error page
+   */
   private void addURLRedirects(final ServletContextHandler servletContextHandler) {
     final String regex =
         "^(?!" + getContextPath().orElse("") + "(" + ALLOWED_URL_EXTENSION + ")).+";

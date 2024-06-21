@@ -29,7 +29,7 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
 
   protected abstract Class<T> getOptimizeClassForDefinitionResponse();
 
-  public List<T> fetchXmlsForDefinitions(IdSetBasedImportPage page) {
+  public List<T> fetchXmlsForDefinitions(final IdSetBasedImportPage page) {
     logger.debug("Fetching definition xml ...");
     final long requestStart = System.currentTimeMillis();
     final List<T> xmls =
@@ -45,11 +45,11 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
     return xmls;
   }
 
-  private Optional<T> fetchWithRetryIgnoreClientError(String definitionId) {
-    T result;
+  private Optional<T> fetchWithRetryIgnoreClientError(final String definitionId) {
+    final T result;
     try {
       result = getDefinitionForId(definitionId);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new OptimizeRuntimeException("Was interrupted while fetching.", e);
     }
@@ -64,7 +64,7 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
       try {
         result = performGetDefinitionXmlRequest(definitionId);
         fetched = true;
-      } catch (ClientErrorException ex) {
+      } catch (final ClientErrorException ex) {
         // We get a 404 if the definition has been deleted. In this case, we mark the definition as
         // deleted in Optimize
         if (ex.getResponse().getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
@@ -72,11 +72,11 @@ public abstract class AbstractDefinitionXmlFetcher<T> extends RetryBackoffEngine
         }
         logger.warn("ClientError on fetching entity: {}", ex.getMessage(), ex);
         fetched = true;
-      } catch (IllegalStateException e) {
+      } catch (final IllegalStateException e) {
         throw e;
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         logError(ex);
-        long timeToSleep = backoffCalculator.calculateSleepTime();
+        final long timeToSleep = backoffCalculator.calculateSleepTime();
         logDebugSleepInformation(timeToSleep);
         Thread.sleep(timeToSleep);
       }

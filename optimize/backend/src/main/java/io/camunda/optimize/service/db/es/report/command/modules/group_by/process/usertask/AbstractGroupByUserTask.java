@@ -30,6 +30,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 
 @RequiredArgsConstructor
 public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
+
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FLOW_NODE_AGGREGATION = "flowNodes";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
@@ -43,9 +44,9 @@ public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
         filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
             .subAggregation(
                 filter(
-                        FILTERED_USER_TASKS_AGGREGATION,
-                        createModelElementAggregationFilter(
-                            context.getReportData(), context.getFilterContext(), definitionService))
+                    FILTERED_USER_TASKS_AGGREGATION,
+                    createModelElementAggregationFilter(
+                        context.getReportData(), context.getFilterContext(), definitionService))
                     .subAggregation(subAggregation));
 
     // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all

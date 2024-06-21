@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(CCSaaSCondition.class)
 public abstract class AbstractCCSaaSClient {
+
   protected static final String GET_ORGS_TEMPLATE = "%s/external/organizations/%s";
 
   protected final CloseableHttpClient httpClient;

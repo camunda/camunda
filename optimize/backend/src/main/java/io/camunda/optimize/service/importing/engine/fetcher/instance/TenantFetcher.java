@@ -36,8 +36,8 @@ public class TenantFetcher extends RetryBackoffEngineEntityFetcher {
 
   public List<TenantEngineDto> fetchTenants() {
     logger.debug("Fetching tenants ...");
-    long requestStart = System.currentTimeMillis();
-    List<TenantEngineDto> entries = new ArrayList<>();
+    final long requestStart = System.currentTimeMillis();
+    final List<TenantEngineDto> entries = new ArrayList<>();
     final int maxPageSize = configurationService.getEngineImportTenantMaxPageSize();
     long indexOfFirstResult = 0L;
     List<TenantEngineDto> pageOfEntries;
@@ -47,12 +47,13 @@ public class TenantFetcher extends RetryBackoffEngineEntityFetcher {
       entries.addAll(pageOfEntries);
       indexOfFirstResult += pageOfEntries.size();
     } while (pageOfEntries.size() >= maxPageSize);
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug("Fetched [{}] tenants within [{}] ms", entries.size(), requestEnd - requestStart);
     return entries;
   }
 
-  private List<TenantEngineDto> performTenantRequest(long indexOfFirstResult, long maxPageSize) {
+  private List<TenantEngineDto> performTenantRequest(final long indexOfFirstResult,
+      final long maxPageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(TENANT_ENDPOINT)

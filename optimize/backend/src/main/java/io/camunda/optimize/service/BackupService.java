@@ -132,8 +132,8 @@ public class BackupService {
     } else if (snapshotInfosPerState.get(SnapshotState.IN_PROGRESS) != null) {
       return BackupState.IN_PROGRESS;
     } else if (snapshotInfosPerState
-            .getOrDefault(SnapshotState.SUCCESS, Collections.emptyList())
-            .size()
+        .getOrDefault(SnapshotState.SUCCESS, Collections.emptyList())
+        .size()
         < EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
       return BackupState.INCOMPLETE;
     } else {

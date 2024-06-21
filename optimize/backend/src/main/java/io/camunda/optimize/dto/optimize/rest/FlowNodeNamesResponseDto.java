@@ -13,5 +13,6 @@ import lombok.Data;
 
 @Data
 public class FlowNodeNamesResponseDto {
+
   private Map<String, String> flowNodeNames = new HashMap<>();
 }

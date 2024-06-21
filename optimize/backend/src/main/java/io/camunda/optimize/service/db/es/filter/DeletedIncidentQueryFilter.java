@@ -28,7 +28,7 @@ public class DeletedIncidentQueryFilter implements QueryFilter<DeletedIncidentFi
       final List<DeletedIncidentFilterDataDto> filter,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filter)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(INCIDENTS, createDeletedIncidentTermQuery(), ScoreMode.None));
     }
   }

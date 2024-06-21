@@ -21,7 +21,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>>
     extends AuthorizedEntityDto {
-  @JsonUnwrapped protected D reportDefinition;
+
+  @JsonUnwrapped
+  protected D reportDefinition;
 
   public AuthorizedReportEvaluationResponseDto(
       final RoleType currentUserRole, final D reportDefinition) {

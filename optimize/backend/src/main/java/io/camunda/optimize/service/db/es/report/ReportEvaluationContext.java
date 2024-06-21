@@ -37,7 +37,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   @SuppressWarnings(UNCHECKED_CAST)
   public static <R extends ReportDefinitionDto<?>> ReportEvaluationContext<R> fromReportEvaluation(
       final ReportEvaluationInfo evaluationInfo) {
-    ReportEvaluationContext<R> context = new ReportEvaluationContext<>();
+    final ReportEvaluationContext<R> context = new ReportEvaluationContext<>();
     context.setReportDefinition((R) evaluationInfo.getReport());
     context.setTimezone(evaluationInfo.getTimezone());
     context.setPagination(evaluationInfo.getPagination().orElse(null));

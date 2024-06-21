@@ -31,6 +31,13 @@ public class ProcessDistributedByNone extends ProcessDistributedByPart {
   }
 
   @Override
+  public List<DistributedByResult> createEmptyResult(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return Collections.singletonList(
+        DistributedByResult.createDistributedByNoneResult(viewPart.createEmptyResult(context)));
+  }
+
+  @Override
   public List<AggregationBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto> context) {
     return viewPart.createAggregations(context);
@@ -43,13 +50,6 @@ public class ProcessDistributedByNone extends ProcessDistributedByPart {
       final ExecutionContext<ProcessReportDataDto> context) {
     final ViewResult viewResult = viewPart.retrieveResult(response, aggregations, context);
     return Collections.singletonList(DistributedByResult.createDistributedByNoneResult(viewResult));
-  }
-
-  @Override
-  public List<DistributedByResult> createEmptyResult(
-      final ExecutionContext<ProcessReportDataDto> context) {
-    return Collections.singletonList(
-        DistributedByResult.createDistributedByNoneResult(viewPart.createEmptyResult(context)));
   }
 
   @Override

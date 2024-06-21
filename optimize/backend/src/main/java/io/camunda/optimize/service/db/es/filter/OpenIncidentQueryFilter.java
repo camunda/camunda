@@ -28,7 +28,7 @@ public class OpenIncidentQueryFilter implements QueryFilter<OpenIncidentFilterDa
       final List<OpenIncidentFilterDataDto> withOpenIncident,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(withOpenIncident)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(INCIDENTS, createOpenIncidentTermQuery(), ScoreMode.None));
     }
   }

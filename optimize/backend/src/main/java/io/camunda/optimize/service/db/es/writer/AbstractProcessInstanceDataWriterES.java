@@ -75,6 +75,6 @@ public class AbstractProcessInstanceDataWriterES<T extends OptimizeDto>
   private boolean indexExists(final String definitionKey) {
     return existingInstanceIndexDefinitionKeys.contains(definitionKey)
         || elasticSearchSchemaManager.indexExists(
-            esClient, getProcessInstanceIndexAliasName(definitionKey));
+        esClient, getProcessInstanceIndexAliasName(definitionKey));
   }
 }

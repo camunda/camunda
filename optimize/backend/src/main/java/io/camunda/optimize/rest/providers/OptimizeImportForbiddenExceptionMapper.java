@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OptimizeImportForbiddenExceptionMapper
     implements ExceptionMapper<OptimizeImportForbiddenException> {
+
   public static final String ERROR_CODE = "importDefinitionForbidden";
 
   private final LocalizationService localizationService;
@@ -41,10 +42,11 @@ public class OptimizeImportForbiddenExceptionMapper
   }
 
   private DefinitionExceptionResponseDto getForbiddenDefinitionResponseDto(
-      OptimizeImportForbiddenException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+      final OptimizeImportForbiddenException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new DefinitionExceptionResponseDto(
         errorCode, errorMessage, detailedErrorMessage, exception.getForbiddenDefinitions());

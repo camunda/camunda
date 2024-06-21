@@ -20,7 +20,7 @@ public class ZeebeVariableImportIndexHandler extends PositionBasedImportIndexHan
   private static final String ZEEBE_VAR_IMPORT_INDEX_DOC_ID = "zeebeVariableImportIndex";
 
   public ZeebeVariableImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
-    this.dataSource = dataSourceDto;
+    dataSource = dataSourceDto;
   }
 
   @Override

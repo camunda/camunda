@@ -77,13 +77,13 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
             byFlowNodeIdAggregation -> {
               final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
               final List<GroupByResult> groupedData = new ArrayList<>();
-              for (Terms.Bucket flowNodeBucket : byFlowNodeIdAggregation.getBuckets()) {
+              for (final Terms.Bucket flowNodeBucket : byFlowNodeIdAggregation.getBuckets()) {
                 final String flowNodeKey = flowNodeBucket.getKeyAsString();
                 if (flowNodeNames.containsKey(flowNodeKey)) {
                   final List<DistributedByResult> singleResult =
                       distributedByPart.retrieveResult(
                           response, flowNodeBucket.getAggregations(), context);
-                  String label = flowNodeNames.get(flowNodeKey);
+                  final String label = flowNodeNames.get(flowNodeKey);
                   groupedData.add(
                       GroupByResult.createGroupByResult(flowNodeKey, label, singleResult));
                   flowNodeNames.remove(flowNodeKey);
@@ -92,6 +92,12 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
               addMissingGroupByKeys(flowNodeNames, groupedData, context);
               compositeCommandResult.setGroups(groupedData);
             });
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(new FlowNodesGroupByDto());
   }
 
   private void addMissingGroupByKeys(
@@ -129,11 +135,5 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
             .map(Optional::get)
             .map(ProcessDefinitionOptimizeDto.class::cast)
             .collect(Collectors.toList()));
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new FlowNodesGroupByDto());
   }
 }

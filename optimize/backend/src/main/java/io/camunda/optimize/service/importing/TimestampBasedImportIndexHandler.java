@@ -27,9 +27,11 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired protected ConfigurationService configurationService;
+  @Autowired
+  protected ConfigurationService configurationService;
 
-  @Getter protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  @Getter
+  protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     final OffsetDateTime backOffWindowStart =

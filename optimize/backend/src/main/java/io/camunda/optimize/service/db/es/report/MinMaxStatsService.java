@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class MinMaxStatsService {
+
   private static final String NESTED_AGGREGATION_FIRST_FIELD = "nestedAggField1";
   private static final String NESTED_AGGREGATION_SECOND_FIELD = "nestedAggField2";
 
@@ -163,14 +164,14 @@ public class MinMaxStatsService {
     final SearchResponse response;
     try {
       response = databaseClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Could not retrieve stats for script %s on indices %s",
               script.toString(), Arrays.toString(indexNames));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
@@ -257,26 +258,26 @@ public class MinMaxStatsService {
               .subAggregation(statsAggField2);
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(query)
             .fetchSource(false)
             .aggregation(statsAggField1)
             .aggregation(statsAggField2)
             .size(0);
-    SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
 
-    SearchResponse response;
+    final SearchResponse response;
     try {
       response = databaseClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not retrieve stats for firstField %s and secondField %s on index %s",
               firstField, secondField, Arrays.toString(indexNames));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);

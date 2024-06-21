@@ -42,14 +42,16 @@ public class DmnModelGenerator {
   private String decisionRequirementDiagramName = DEFAULT_DRD_NAME;
   private final DmnModelInstance modelInstance = Dmn.createEmptyModel();
 
-  private List<Decision> decisions = new ArrayList<>();
+  private final List<Decision> decisions = new ArrayList<>();
 
-  public DmnModelGenerator decisionRequirementDiagramKey(String decisionRequirementDiagramKey) {
+  public DmnModelGenerator decisionRequirementDiagramKey(
+      final String decisionRequirementDiagramKey) {
     this.decisionRequirementDiagramKey = decisionRequirementDiagramKey;
     return this;
   }
 
-  public DmnModelGenerator decisionRequirementDiagramName(String decisionRequirementDiagramName) {
+  public DmnModelGenerator decisionRequirementDiagramName(
+      final String decisionRequirementDiagramName) {
     this.decisionRequirementDiagramName = decisionRequirementDiagramName;
     return this;
   }
@@ -75,14 +77,14 @@ public class DmnModelGenerator {
 
   private static <E extends NamedElement> E generateNamedElement(
       final Class<E> elementClass, final String name, final DmnModelInstance modelInstance) {
-    E element = generateElement(elementClass, modelInstance);
+    final E element = generateElement(elementClass, modelInstance);
     element.setName(name);
     return element;
   }
 
   private static <E extends DmnElement> E generateElement(
       final Class<E> elementClass, final DmnModelInstance modelInstance) {
-    E element = modelInstance.newInstance(elementClass);
+    final E element = modelInstance.newInstance(elementClass);
     String identifier = elementClass.getSimpleName();
     identifier = Character.toLowerCase(identifier.charAt(0)) + identifier.substring(1);
     element.setId(identifier);
@@ -94,15 +96,15 @@ public class DmnModelGenerator {
     private static final String DEFAULT_DECISION_DEFINITION_KEY = "aDecision";
     private static final String DEFAULT_DECISION_NAME = "aDecisionName";
 
-    private DmnModelGenerator dmnModelGenerator;
-    private DmnModelInstance modelInstance;
+    private final DmnModelGenerator dmnModelGenerator;
+    private final DmnModelInstance modelInstance;
 
-    private List<Input> inputs = new ArrayList<>();
-    private List<Output> outputs = new ArrayList<>();
+    private final List<Input> inputs = new ArrayList<>();
+    private final List<Output> outputs = new ArrayList<>();
     private String decisionDefinitionKey;
     private String decisionDefinitionName;
     private String decisionDefinitionVersionTag;
-    private List<Rule> rules = new ArrayList<>();
+    private final List<Rule> rules = new ArrayList<>();
     private HitPolicy hitPolicy = HitPolicy.UNIQUE;
 
     public DecisionGenerator(
@@ -113,75 +115,76 @@ public class DmnModelGenerator {
       decisionDefinitionName = DEFAULT_DECISION_NAME + dmnModelGenerator.decisions.size();
     }
 
-    public DecisionGenerator decisionDefinitionKey(String decisionKey) {
-      this.decisionDefinitionKey = decisionKey;
+    public DecisionGenerator decisionDefinitionKey(final String decisionKey) {
+      decisionDefinitionKey = decisionKey;
       return this;
     }
 
-    public DecisionGenerator decisionDefinitionName(String decisionDefinitionName) {
+    public DecisionGenerator decisionDefinitionName(final String decisionDefinitionName) {
       this.decisionDefinitionName = decisionDefinitionName;
       return this;
     }
 
-    public DecisionGenerator decisionDefinitionVersionTag(String decisionDefinitionVersionTag) {
+    public DecisionGenerator decisionDefinitionVersionTag(
+        final String decisionDefinitionVersionTag) {
       this.decisionDefinitionVersionTag = decisionDefinitionVersionTag;
       return this;
     }
 
     public DecisionGenerator addInput(
-        String label,
-        String inputIdClause,
-        String camInputVariable,
-        DecisionTypeRef decisionTypeRef) {
-      Input input = generateElement(Input.class, modelInstance);
+        final String label,
+        final String inputIdClause,
+        final String camInputVariable,
+        final DecisionTypeRef decisionTypeRef) {
+      final Input input = generateElement(Input.class, modelInstance);
       input.setId(inputIdClause);
       input.setLabel(label);
-      InputExpression inputExpression = generateElement(InputExpression.class, modelInstance);
+      final InputExpression inputExpression = generateElement(InputExpression.class, modelInstance);
       inputExpression.setTypeRef(decisionTypeRef.getId());
       inputExpression.setId("LiteralExpression_" + IdGenerator.getNextId());
-      Text text = modelInstance.newInstance(Text.class);
+      final Text text = modelInstance.newInstance(Text.class);
       text.setTextContent(camInputVariable);
       inputExpression.setText(text);
       input.setInputExpression(inputExpression);
-      this.inputs.add(input);
+      inputs.add(input);
       return this;
     }
 
     public DecisionGenerator addInput(
-        String label, String camInputVariable, DecisionTypeRef decisionTypeRef) {
+        final String label, final String camInputVariable, final DecisionTypeRef decisionTypeRef) {
       return addInput(
           label, "InputClause_" + IdGenerator.getNextId(), camInputVariable, decisionTypeRef);
     }
 
-    public DecisionGenerator addInput(String label, DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addInput(final String label, final DecisionTypeRef decisionTypeRef) {
       return addInput(label, "CamInputVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
     public DecisionGenerator addOutput(
-        String label,
-        String outputClauseId,
-        String camOutputVariable,
-        DecisionTypeRef decisionTypeRef) {
-      Output output = generateElement(Output.class, modelInstance);
+        final String label,
+        final String outputClauseId,
+        final String camOutputVariable,
+        final DecisionTypeRef decisionTypeRef) {
+      final Output output = generateElement(Output.class, modelInstance);
       output.setId(outputClauseId);
       output.setLabel(label);
       output.setTypeRef(decisionTypeRef.getId());
       output.setName(camOutputVariable);
-      this.outputs.add(output);
+      outputs.add(output);
       return this;
     }
 
     public DecisionGenerator addOutput(
-        String label, String camOutputVariable, DecisionTypeRef decisionTypeRef) {
+        final String label, final String camOutputVariable, final DecisionTypeRef decisionTypeRef) {
       return addOutput(
           label, "OutputClause_" + IdGenerator.getNextId(), camOutputVariable, decisionTypeRef);
     }
 
-    public DecisionGenerator addOutput(String label, DecisionTypeRef decisionTypeRef) {
+    public DecisionGenerator addOutput(final String label, final DecisionTypeRef decisionTypeRef) {
       return addOutput(label, "CamOutPutVariable_" + IdGenerator.getNextId(), decisionTypeRef);
     }
 
-    public DecisionGenerator setHitPolicy(HitPolicy hitPolicy) {
+    public DecisionGenerator setHitPolicy(final HitPolicy hitPolicy) {
       this.hitPolicy = hitPolicy;
       return this;
     }
@@ -190,25 +193,25 @@ public class DmnModelGenerator {
       return new RuleGenerator(this);
     }
 
-    private DecisionGenerator addRule(Rule rule) {
-      this.rules.add(rule);
+    private DecisionGenerator addRule(final Rule rule) {
+      rules.add(rule);
       return this;
     }
 
     public DmnModelGenerator buildDecision() {
-      Decision decision =
+      final Decision decision =
           generateNamedElement(Decision.class, decisionDefinitionName, modelInstance);
       decision.setId(decisionDefinitionKey);
       decision.setVersionTag(decisionDefinitionVersionTag);
 
-      DecisionTable decisionTable = generateElement(DecisionTable.class, modelInstance);
+      final DecisionTable decisionTable = generateElement(DecisionTable.class, modelInstance);
       decisionTable.setHitPolicy(hitPolicy);
       decisionTable.setId("DecisionTable_" + IdGenerator.getNextId());
       decision.setExpression(decisionTable);
 
       decisionTable.getInputs().addAll(inputs);
       decisionTable.getOutputs().addAll(outputs);
-      decisionTable.getRules().addAll(this.rules);
+      decisionTable.getRules().addAll(rules);
 
       dmnModelGenerator.decisions.add(decision);
       return dmnModelGenerator;
@@ -217,33 +220,33 @@ public class DmnModelGenerator {
 
   public class RuleGenerator {
 
-    private DecisionGenerator decisionGenerator;
-    private DmnModelInstance modelInstance;
-    private List<InputEntry> inputEntries = new ArrayList<>();
-    private List<OutputEntry> outputEntries = new ArrayList<>();
+    private final DecisionGenerator decisionGenerator;
+    private final DmnModelInstance modelInstance;
+    private final List<InputEntry> inputEntries = new ArrayList<>();
+    private final List<OutputEntry> outputEntries = new ArrayList<>();
 
-    public RuleGenerator(DecisionGenerator decisionGenerator) {
-      this.modelInstance = decisionGenerator.modelInstance;
+    public RuleGenerator(final DecisionGenerator decisionGenerator) {
+      modelInstance = decisionGenerator.modelInstance;
       this.decisionGenerator = decisionGenerator;
     }
 
-    public RuleGenerator addStringInputEntry(String expression) {
-      Text text = modelInstance.newInstance(Text.class);
+    public RuleGenerator addStringInputEntry(final String expression) {
+      final Text text = modelInstance.newInstance(Text.class);
       text.setTextContent(expression);
 
-      InputEntry inputEntry = modelInstance.newInstance(InputEntry.class);
+      final InputEntry inputEntry = modelInstance.newInstance(InputEntry.class);
       inputEntry.setText(text);
-      this.inputEntries.add(inputEntry);
+      inputEntries.add(inputEntry);
       return this;
     }
 
-    public RuleGenerator addStringOutputEntry(String expression) {
-      Text text = modelInstance.newInstance(Text.class);
+    public RuleGenerator addStringOutputEntry(final String expression) {
+      final Text text = modelInstance.newInstance(Text.class);
       text.setTextContent(expression);
 
-      OutputEntry outputEntry = modelInstance.newInstance(OutputEntry.class);
+      final OutputEntry outputEntry = modelInstance.newInstance(OutputEntry.class);
       outputEntry.setText(text);
-      this.outputEntries.add(outputEntry);
+      outputEntries.add(outputEntry);
       return this;
     }
 
@@ -251,8 +254,8 @@ public class DmnModelGenerator {
       return buildRule(null);
     }
 
-    public DecisionGenerator buildRule(String ruleId) {
-      Rule rule = modelInstance.newInstance(Rule.class, ruleId);
+    public DecisionGenerator buildRule(final String ruleId) {
+      final Rule rule = modelInstance.newInstance(Rule.class, ruleId);
       if (inputEntries.size() != decisionGenerator.inputs.size()) {
         throw new RuntimeException("The number of inputs and input entries must match!");
       }
@@ -261,8 +264,8 @@ public class DmnModelGenerator {
       }
       rule.getInputEntries().addAll(inputEntries);
       rule.getOutputEntries().addAll(outputEntries);
-      this.decisionGenerator.rules.add(rule);
-      return this.decisionGenerator;
+      decisionGenerator.rules.add(rule);
+      return decisionGenerator;
     }
   }
 }

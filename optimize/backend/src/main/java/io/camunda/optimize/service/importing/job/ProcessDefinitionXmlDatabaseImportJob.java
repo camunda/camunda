@@ -27,7 +27,7 @@ public class ProcessDefinitionXmlDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
+  protected void persistEntities(final List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
 }

@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto
 import java.util.List;
 
 public interface ProcessOverviewRepository {
+
   void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos);
 
   void updateProcessConfiguration(String processDefinitionKey, ProcessOverviewDto overviewDto);

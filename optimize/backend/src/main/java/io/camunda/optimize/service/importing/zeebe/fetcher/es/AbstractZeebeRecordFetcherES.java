@@ -51,10 +51,20 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   }
 
   @Override
+  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
+    if (e instanceof ElasticsearchStatusException) {
+      return Arrays.stream(e.getSuppressed())
+          .map(Throwable::getMessage)
+          .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE));
+    }
+    return false;
+  }
+
+  @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(getRecordQuery(positionBasedImportPage))
             .size(getDynamicBatchSize())
@@ -65,24 +75,14 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
             .routing(String.valueOf(partitionId))
             .requestCache(false);
 
-    SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
+    final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
     if (searchResponse.getFailedShards() > 0
         || (searchResponse.getTotalShards()
-            > (searchResponse.getFailedShards() + searchResponse.getSuccessfulShards()))) {
+        > (searchResponse.getFailedShards() + searchResponse.getSuccessfulShards()))) {
       throw new OptimizeRuntimeException("Not all shards could be searched successfully");
     }
     return ElasticsearchReaderUtil.mapHits(
         searchResponse.getHits(), getRecordDtoClass(), objectMapper);
-  }
-
-  @Override
-  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof ElasticsearchStatusException) {
-      return Arrays.stream(e.getSuppressed())
-          .map(Throwable::getMessage)
-          .anyMatch(msg -> msg.contains(INDEX_NOT_FOUND_EXCEPTION_TYPE));
-    }
-    return false;
   }
 
   private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
@@ -129,7 +129,7 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
         log.info(
             "There are no newer records to process, so empty pages of records are currently expected");
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
       } else {

@@ -51,8 +51,8 @@ public class EventProcessInstanceImportMediatorFactory {
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <T extends EventProcessEventDto>
-      List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
-          final EventProcessPublishStateDto publishedStateDto) {
+  List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
+      final EventProcessPublishStateDto publishedStateDto) {
     return publishedStateDto.getEventImportSources().stream()
         .map(
             importSource ->
@@ -70,8 +70,8 @@ public class EventProcessInstanceImportMediatorFactory {
   }
 
   private ImportService<? extends EventProcessEventDto> createImportService(
-      EventProcessPublishStateDto eventProcessPublishStateDto,
-      EventImportSourceDto eventSourceEntryDto) {
+      final EventProcessPublishStateDto eventProcessPublishStateDto,
+      final EventImportSourceDto eventSourceEntryDto) {
     final EventProcessInstanceImportService eventProcessInstanceImportService =
         createEventProcessInstanceImportService(eventProcessPublishStateDto);
     if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getEventImportSourceType())) {

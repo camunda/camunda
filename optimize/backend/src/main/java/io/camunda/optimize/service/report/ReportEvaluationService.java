@@ -31,7 +31,7 @@ public class ReportEvaluationService {
       final String reportId,
       final AdditionalProcessReportEvaluationFilterDto filterDto,
       final PaginationDto paginationDto) {
-    ReportEvaluationInfo evaluationInfo =
+    final ReportEvaluationInfo evaluationInfo =
         ReportEvaluationInfo.builder(reportId)
             .userId(userId)
             .timezone(timezone)
@@ -52,7 +52,7 @@ public class ReportEvaluationService {
     // as no owner/modifier display names are required for unsaved reports
     reportDefinition.setOwner(null);
     reportDefinition.setLastModifier(null);
-    ReportEvaluationInfo evaluationInfo =
+    final ReportEvaluationInfo evaluationInfo =
         ReportEvaluationInfo.builder(reportDefinition)
             .userId(userId)
             .timezone(timezone)

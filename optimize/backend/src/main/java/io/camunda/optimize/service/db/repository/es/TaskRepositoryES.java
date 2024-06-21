@@ -25,11 +25,12 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class TaskRepositoryES implements TaskRepository {
+
   private final OptimizeElasticsearchClient esClient;
 
   @Override
   public List<TaskRepository.TaskProgressInfo> tasksProgress(final String action) {
-    ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
+    final ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
     return safe(
         () ->
             esClient.getTaskList(request).getTasks().stream()
@@ -44,14 +45,14 @@ public class TaskRepositoryES implements TaskRepository {
         log);
   }
 
-  private static long getProcessedTasksCount(BulkByScrollTask.Status status) {
+  private static long getProcessedTasksCount(final BulkByScrollTask.Status status) {
     return status.getDeleted() + status.getCreated() + status.getUpdated();
   }
 
-  private static int getProgress(BulkByScrollTask.Status status) {
+  private static int getProgress(final BulkByScrollTask.Status status) {
     return status.getTotal() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.getTotal() * 100.0D)
-            .intValue()
+        .intValue()
         : 0;
   }
 }

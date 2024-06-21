@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.repository.script;
 
 public interface ProcessVariableScriptFactory {
+
   static String createInlineUpdateScript() {
     return """
         HashMap varIdToVar = new HashMap();

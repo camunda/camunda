@@ -41,7 +41,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
       final DecisionDefinitionWriter decisionDefinitionWriter,
       final DecisionDefinitionResolverService decisionDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.decisionDefinitionWriter = decisionDefinitionWriter;
@@ -65,6 +65,11 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
     }
   }
 
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
+  }
+
   private void markSavedDefinitionsAsDeleted(
       final List<DecisionDefinitionOptimizeDto> definitionsToImport) {
     final boolean definitionsDeleted =
@@ -73,11 +78,6 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
     if (definitionsDeleted) {
       decisionDefinitionResolverService.syncCache();
     }
-  }
-
-  @Override
-  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
-    return databaseImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

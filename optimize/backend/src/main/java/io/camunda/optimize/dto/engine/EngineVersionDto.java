@@ -11,5 +11,6 @@ import lombok.Data;
 
 @Data
 public class EngineVersionDto {
+
   protected String version;
 }

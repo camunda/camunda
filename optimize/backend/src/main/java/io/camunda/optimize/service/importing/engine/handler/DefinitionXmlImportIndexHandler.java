@@ -27,18 +27,21 @@ import org.springframework.context.annotation.Scope;
 public abstract class DefinitionXmlImportIndexHandler
     implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  @Autowired protected DatabaseClient databaseClient;
+  @Autowired
+  protected DatabaseClient databaseClient;
 
-  @Autowired protected ConfigurationService configurationService;
+  @Autowired
+  protected ConfigurationService configurationService;
 
-  @Autowired private ImportIndexReader importIndexReader;
+  @Autowired
+  private ImportIndexReader importIndexReader;
 
   private Long importIndex = 0L;
 
   @Override
   public IdSetBasedImportPage getNextPage() {
-    Set<String> ids = performSearchQuery();
-    IdSetBasedImportPage page = new IdSetBasedImportPage();
+    final Set<String> ids = performSearchQuery();
+    final IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(ids);
     updateIndex(ids.size());
     return page;
@@ -46,7 +49,7 @@ public abstract class DefinitionXmlImportIndexHandler
 
   @Override
   public AllEntitiesBasedImportIndexDto getIndexStateDto() {
-    AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
+    final AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
     importIndexDto.setEsTypeIndexRefersTo(getDatabaseTypeForStoring());
     importIndexDto.setImportIndex(importIndex);
     importIndexDto.setEngine(getEngineAlias());
@@ -59,7 +62,7 @@ public abstract class DefinitionXmlImportIndexHandler
     importIndex = 0L;
   }
 
-  public void updateIndex(int pageSize) {
+  public void updateIndex(final int pageSize) {
     importIndex += pageSize;
   }
 
@@ -77,7 +80,7 @@ public abstract class DefinitionXmlImportIndexHandler
   }
 
   private void readIndexFromDatabase() {
-    Optional<AllEntitiesBasedImportIndexDto> storedIndex =
+    final Optional<AllEntitiesBasedImportIndexDto> storedIndex =
         importIndexReader.getImportIndex(getDatabaseId());
     storedIndex.ifPresent(
         allEntitiesBasedImportIndexDto ->

@@ -30,8 +30,8 @@ public class LicenseCheckingRestService {
   @Path("/validate-and-store")
   @Consumes(MediaType.TEXT_PLAIN)
   @Produces(MediaType.APPLICATION_JSON)
-  public LicenseInformationResponseDto validateOptimizeLicenseAndStoreIt(String license) {
-    LicenseInformationResponseDto licenseInformationDto =
+  public LicenseInformationResponseDto validateOptimizeLicenseAndStoreIt(final String license) {
+    final LicenseInformationResponseDto licenseInformationDto =
         licenseManager.validateOptimizeLicense(license);
     licenseManager.storeLicense(license);
     return licenseInformationDto;

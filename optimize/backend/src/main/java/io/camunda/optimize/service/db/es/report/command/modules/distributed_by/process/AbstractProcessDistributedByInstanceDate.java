@@ -78,7 +78,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
 
     final Optional<Aggregations> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    final Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -87,8 +87,8 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
       return Collections.emptyList();
     }
 
-    List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : keyToAggregationMap.entrySet()) {
+    final List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
+    for (final Map.Entry<String, Aggregations> keyToAggregationEntry : keyToAggregationMap.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           viewPart.retrieveResult(response, keyToAggregationEntry.getValue(), context);
       distributedByResults.add(

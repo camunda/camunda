@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class TaskRepositoryOS implements TaskRepository {
+
   private final OptimizeOpenSearchClient osClient;
 
   @Override
@@ -41,14 +42,14 @@ public class TaskRepositoryOS implements TaskRepository {
         .toList();
   }
 
-  private static long getProcessedTasksCount(Status status) {
+  private static long getProcessedTasksCount(final Status status) {
     return status.deleted() + status.created() + status.updated();
   }
 
-  private static int getProgress(Status status) {
+  private static int getProgress(final Status status) {
     return status.total() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
-            .intValue()
+        .intValue()
         : 0;
   }
 }

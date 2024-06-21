@@ -25,9 +25,12 @@ import lombok.NonNull;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
-  @NonNull private String version;
+
+  @NonNull
+  private String version;
   private String versionTag;
-  @NonNull private List<TenantDto> tenants;
+  @NonNull
+  private List<TenantDto> tenants;
 
   public void sort() {
     tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));

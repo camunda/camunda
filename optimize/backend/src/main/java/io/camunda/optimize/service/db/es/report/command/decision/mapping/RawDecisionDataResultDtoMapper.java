@@ -38,7 +38,7 @@ public class RawDecisionDataResultDtoMapper {
           allInputVariables.addAll(getInputVariables(decisionInstanceDto));
           allOutputVariables.addAll(getOutputVariables(decisionInstanceDto));
 
-          RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(decisionInstanceDto);
+          final RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(decisionInstanceDto);
           rawData.add(dataEntry);
         });
 

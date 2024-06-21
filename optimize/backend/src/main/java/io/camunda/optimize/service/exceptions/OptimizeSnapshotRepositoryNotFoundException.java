@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.exceptions;
 
 public class OptimizeSnapshotRepositoryNotFoundException extends OptimizeRuntimeException {
+
   public static final String ERROR_CODE = "snapshotRepositoryDoesNotExist";
 
   public OptimizeSnapshotRepositoryNotFoundException(final String message) {

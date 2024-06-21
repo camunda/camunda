@@ -47,6 +47,32 @@ public class CamundaPlatformDefinitionAuthorizationService
   private final TenantService tenantService;
 
   @Override
+  public boolean isAuthorizedToAccessDefinition(
+      final String identityId,
+      final IdentityType identityType,
+      final String definitionKey,
+      final DefinitionType definitionType,
+      final List<String> tenantIds) {
+    if (StringUtils.isBlank(definitionKey)) {
+      return true;
+    }
+    switch (definitionType) {
+      case PROCESS:
+        return eventProcessAuthorizationService
+            .isAuthorizedToEventProcess(identityId, definitionKey)
+            .orElseGet(
+                () ->
+                    engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+                        identityId, identityType, definitionKey, tenantIds));
+      case DECISION:
+        return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
+            identityId, identityType, definitionKey, tenantIds);
+      default:
+        throw new IllegalArgumentException("Unsupported definition type: " + definitionType);
+    }
+  }
+
+  @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(
       final String userId,
       final SimpleDefinitionDto definitionDto,
@@ -54,8 +80,8 @@ public class CamundaPlatformDefinitionAuthorizationService
       final Set<String> engines) {
     if (Boolean.TRUE.equals(definitionDto.getIsEventProcess())) {
       return eventProcessAuthorizationService
-              .isAuthorizedToEventProcess(userId, definitionDto.getKey())
-              .orElse(false)
+          .isAuthorizedToEventProcess(userId, definitionDto.getKey())
+          .orElse(false)
           ? Collections.singletonList(TENANT_NOT_DEFINED)
           : Collections.emptyList();
     } else {
@@ -85,32 +111,6 @@ public class CamundaPlatformDefinitionAuthorizationService
           .filter(Objects::nonNull)
           .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
           .toList();
-    }
-  }
-
-  @Override
-  public boolean isAuthorizedToAccessDefinition(
-      final String identityId,
-      final IdentityType identityType,
-      final String definitionKey,
-      final DefinitionType definitionType,
-      final List<String> tenantIds) {
-    if (StringUtils.isBlank(definitionKey)) {
-      return true;
-    }
-    switch (definitionType) {
-      case PROCESS:
-        return eventProcessAuthorizationService
-            .isAuthorizedToEventProcess(identityId, definitionKey)
-            .orElseGet(
-                () ->
-                    engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-                        identityId, identityType, definitionKey, tenantIds));
-      case DECISION:
-        return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
-            identityId, identityType, definitionKey, tenantIds);
-      default:
-        throw new IllegalArgumentException("Unsupported definition type: " + definitionType);
     }
   }
 

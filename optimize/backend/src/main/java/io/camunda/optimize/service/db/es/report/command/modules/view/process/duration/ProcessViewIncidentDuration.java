@@ -40,7 +40,7 @@ public class ProcessViewIncidentDuration extends ProcessViewDuration {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.INCIDENT);
     view.setProperties(ViewProperty.DURATION);
     dataForCommandKey.setView(view);

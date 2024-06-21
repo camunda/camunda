@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CamundaActivityEventWriter {
+
   private final IndexRepository indexRepository;
   private final EventRepository eventRepository;
   private final CamundaActivityEventReader camundaActivityEventReader;

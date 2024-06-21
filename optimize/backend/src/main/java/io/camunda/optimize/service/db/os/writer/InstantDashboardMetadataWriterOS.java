@@ -35,24 +35,25 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadataWriter {
+
   private final OptimizeOpenSearchClient osClient;
 
   @Override
   public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
     log.debug("Writing new Instant preview dashboard to Opensearch");
-    String id = dashboardDataDto.getInstantDashboardId();
+    final String id = dashboardDataDto.getInstantDashboardId();
 
-    IndexRequest.Builder<InstantDashboardDataDto> requestBuilder =
+    final IndexRequest.Builder<InstantDashboardDataDto> requestBuilder =
         new IndexRequest.Builder<InstantDashboardDataDto>()
             .index(INSTANT_DASHBOARD_INDEX_NAME)
             .id(id)
             .document(dashboardDataDto)
             .refresh(Refresh.True);
 
-    Result result = osClient.index(requestBuilder).result();
+    final Result result = osClient.index(requestBuilder).result();
 
     if (!Set.of(Result.Created, Result.Updated).contains(result)) {
-      String message =
+      final String message =
           "Could not write Instant preview dashboard data to Opensearch. "
               + "Maybe the connection to Opensearch got lost?";
       log.error(message);
@@ -65,14 +66,16 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
   @Override
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
       final List<Long> hashesAllowed) throws IOException {
-    record Result(String dashboardId) {}
-    BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-    SearchRequest.Builder requestBuilder =
+    record Result(String dashboardId) {
+
+    }
+    final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+    final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
             .index(INSTANT_DASHBOARD_INDEX_NAME)
             .query(not(longTerms(InstantDashboardDataDto.Fields.templateHash, hashesAllowed)));
 
-    List<String> dashboardIdsToBeDeleted =
+    final List<String> dashboardIdsToBeDeleted =
         osClient.searchValues(requestBuilder, Result.class).stream()
             .map(Result::dashboardId)
             .toList();

@@ -48,7 +48,7 @@ public class MixpanelDataScheduler extends AbstractScheduledService
       try {
         mixpanelReportingService.sendHeartbeatData();
         log.info("Mixpanel telemetry data was sent.");
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.error("Failed to send Mixpanel telemetry.", e);
       }
     } else {
@@ -57,14 +57,14 @@ public class MixpanelDataScheduler extends AbstractScheduledService
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    init();
-  }
-
-  @Override
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
         Duration.ofHours(getTelemetryConfiguration().getReportingIntervalInHours()));
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    init();
   }
 
   public synchronized boolean startMixpanelTelemetryScheduling() {
@@ -79,6 +79,6 @@ public class MixpanelDataScheduler extends AbstractScheduledService
   }
 
   protected TelemetryConfiguration getTelemetryConfiguration() {
-    return this.configurationService.getTelemetryConfiguration();
+    return configurationService.getTelemetryConfiguration();
   }
 }

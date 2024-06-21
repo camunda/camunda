@@ -46,7 +46,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
     eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
 
     final BulkRequest bulkRequest = new BulkRequest();
-    for (EventSequenceCountDto eventSequenceCountDto : eventSequenceCountDtos) {
+    for (final EventSequenceCountDto eventSequenceCountDto : eventSequenceCountDtos) {
       bulkRequest.add(createEventSequenceCountUpsertRequest(eventSequenceCountDto));
     }
 
@@ -60,7 +60,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
                   bulkResponse.buildFailureMessage());
           throw new OptimizeRuntimeException(errorMessage);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String errorMessage = "There were errors while writing event sequence counts.";
         log.error(errorMessage, e);
         throw new OptimizeRuntimeException(errorMessage, e);
@@ -76,12 +76,12 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
           new IndexRequest(getIndexName(indexKey))
               .id(eventSequenceCountDto.getId())
               .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       final String errorMessage =
           "There were errors while json processing of creating of the event sequence counts.";
       log.error(errorMessage, e);
     }
-    UpdateRequest updateRequest;
+    final UpdateRequest updateRequest;
     updateRequest =
         new UpdateRequest()
             .index(getIndexName(indexKey))

@@ -22,7 +22,8 @@ import org.springframework.context.annotation.Scope;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetcher {
 
-  @Autowired protected BackoffCalculator backoffCalculator;
+  @Autowired
+  protected BackoffCalculator backoffCalculator;
 
   protected RetryBackoffEngineEntityFetcher(final EngineContext engineContext) {
     super(engineContext);
@@ -32,22 +33,22 @@ public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetche
     this.backoffCalculator = backoffCalculator;
   }
 
-  protected <DTOS> DTOS fetchWithRetry(Supplier<DTOS> fetchFunction) {
+  protected <DTOS> DTOS fetchWithRetry(final Supplier<DTOS> fetchFunction) {
     DTOS result = null;
     try {
       while (result == null) {
         try {
           result = fetchFunction.get();
-        } catch (IllegalStateException e) {
+        } catch (final IllegalStateException e) {
           throw e;
-        } catch (Exception exception) {
+        } catch (final Exception exception) {
           logError(exception);
-          long timeToSleep = backoffCalculator.calculateSleepTime();
+          final long timeToSleep = backoffCalculator.calculateSleepTime();
           logDebugSleepInformation(timeToSleep);
           Thread.sleep(timeToSleep);
         }
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new OptimizeRuntimeException("Was interrupted while fetching.", e);
     }
@@ -55,13 +56,13 @@ public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetche
     return result;
   }
 
-  protected void logDebugSleepInformation(long sleepTime) {
+  protected void logDebugSleepInformation(final long sleepTime) {
     logger.debug(
         "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.", sleepTime);
   }
 
-  protected void logError(Exception e) {
-    StringBuilder errorMessageBuilder = new StringBuilder();
+  protected void logError(final Exception e) {
+    final StringBuilder errorMessageBuilder = new StringBuilder();
     errorMessageBuilder.append(
         String.format(
             "Error during fetching of entities. Please check the connection with [%s]!",

@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.repository;
 
 public interface SnapshotRepository {
+
   void deleteOptimizeSnapshots(final Long backupId);
 
   void triggerSnapshot(final String snapshotName, final String[] indexNames);

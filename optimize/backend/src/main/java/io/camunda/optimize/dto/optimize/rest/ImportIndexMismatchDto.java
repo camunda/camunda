@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode
 public class ImportIndexMismatchDto implements Serializable {
+
   private String indexName;
   private int sourceIndexVersion;
   private int targetIndexVersion;

@@ -22,14 +22,15 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractProcessInstanceImportService
     implements ImportService<HistoricProcessInstanceDto> {
+
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   protected final EngineContext engineContext;
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
-  private final ProcessDefinitionResolverService processDefinitionResolverService;
   protected final ConfigurationService configurationService;
   protected final DatabaseClient databaseClient;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public AbstractProcessInstanceImportService(
       final ConfigurationService configurationService,
@@ -37,7 +38,7 @@ public abstract class AbstractProcessInstanceImportService
       final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
@@ -58,11 +59,11 @@ public abstract class AbstractProcessInstanceImportService
       final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessInstanceDto> newOptimizeEntities =
+      final List<ProcessInstanceDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntitiesAndApplyPlugins(pageOfEngineEntities);
-      DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
+      final DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }

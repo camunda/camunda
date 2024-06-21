@@ -24,6 +24,6 @@ public class TerminatedUserSessionDto {
 
   public TerminatedUserSessionDto(final String id) {
     this.id = id;
-    this.terminationTimestamp = LocalDateUtil.getCurrentDateTime();
+    terminationTimestamp = LocalDateUtil.getCurrentDateTime();
   }
 }

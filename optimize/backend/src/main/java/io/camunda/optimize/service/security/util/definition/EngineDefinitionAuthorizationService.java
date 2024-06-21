@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EngineDefinitionAuthorizationService
     extends AbstractCachingAuthorizationService<Map<String, EngineAuthorizations>> {
+
   private static final List<String> RELEVANT_PERMISSIONS =
       List.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
   private static final List<String> SINGLETON_LIST_NOT_DEFINED_TENANT =
@@ -80,7 +81,7 @@ public class EngineDefinitionAuthorizationService
     // (mostly listing endpoints for reports and process/decision definitions)
     final CacheConfiguration cacheConfiguration =
         configurationService.getCaches().getDefinitionEngines();
-    this.definitionEnginesReadCache =
+    definitionEnginesReadCache =
         Caffeine.newBuilder()
             .maximumSize(cacheConfiguration.getMaxSize())
             .expireAfterWrite(cacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
@@ -88,6 +89,12 @@ public class EngineDefinitionAuthorizationService
                 typeAndKey ->
                     definitionReader.getDefinitionEngines(
                         typeAndKey.getType(), typeAndKey.getKey()));
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    super.reloadConfiguration(context);
+    definitionEnginesReadCache.invalidateAll();
   }
 
   @Override
@@ -132,12 +139,6 @@ public class EngineDefinitionAuthorizationService
               }
             });
     return result;
-  }
-
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    super.reloadConfiguration(context);
-    definitionEnginesReadCache.invalidateAll();
   }
 
   public boolean isAuthorizedToSeeDefinition(
@@ -222,9 +223,9 @@ public class EngineDefinitionAuthorizationService
                     Collectors.mapping(TenantAndEnginePair::getTenantId, Collectors.toSet())));
 
     final Set<String> authorizedTenants = new HashSet<>();
-    for (Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
+    for (final Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
       final String engineId = engineAndTenants.getKey();
-      for (String tenantId : engineAndTenants.getValue()) {
+      for (final String tenantId : engineAndTenants.getValue()) {
         if (isAuthorizedToSeeFullyQualifiedDefinition(
             identityId, identityType, definitionKey, definitionType, tenantId, engineId)) {
           authorizedTenants.add(tenantId);
@@ -272,8 +273,8 @@ public class EngineDefinitionAuthorizationService
         nullSafeTenants.isEmpty() ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
     // user needs to be authorized for all considered tenants to get access
     return filterAuthorizedTenantsForDefinition(
-                identityId, identityType, definitionKey, definitionType, expectedTenants, engines)
-            .size()
+        identityId, identityType, definitionKey, definitionType, expectedTenants, engines)
+        .size()
         == expectedTenants.size();
   }
 
@@ -365,12 +366,14 @@ public class EngineDefinitionAuthorizationService
 
   @Value
   private static class TenantAndEnginePair {
+
     String tenantId;
     String engine;
   }
 
   @Value
   private static class DefinitionTypeAndKey {
+
     DefinitionType type;
     String key;
   }

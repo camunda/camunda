@@ -39,7 +39,9 @@ import org.apache.commons.lang3.ArrayUtils;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 public class CombinedReportEvaluationResult extends ReportEvaluationResult {
-  @NonNull private List<SingleReportEvaluationResult<?>> reportEvaluationResults;
+
+  @NonNull
+  private List<SingleReportEvaluationResult<?>> reportEvaluationResults;
   private long instanceCount;
 
   public CombinedReportEvaluationResult(
@@ -47,14 +49,14 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
       final long instanceCount,
       @NonNull final CombinedReportDefinitionRequestDto reportDefinition) {
     super(reportDefinition);
-    this.reportEvaluationResults = new ArrayList<>(singleReportResults);
+    reportEvaluationResults = new ArrayList<>(singleReportResults);
     this.instanceCount = instanceCount;
   }
 
   @Override
   public List<String[]> getResultAsCsv(
       final Integer limit, final Integer offset, final ZoneId timezone) {
-    Optional<ResultType> resultType =
+    final Optional<ResultType> resultType =
         reportEvaluationResults.stream()
             .findFirst()
             .map(thing -> thing.getFirstCommandResult().getType());
@@ -64,7 +66,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
             () -> {
               log.debug(
                   "No reports to evaluate are available in the combined report. Returning empty csv instead.");
-              return Collections.singletonList(new String[] {});
+              return Collections.singletonList(new String[]{});
             });
   }
 
@@ -84,7 +86,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         csvStrings = mapCombinedNumberReportResultsToCsvList();
         break;
       default:
-        String message =
+        final String message =
             String.format(
                 "Unsupported report type [%s] in combined report",
                 resultType.getClass().getSimpleName());
@@ -106,7 +108,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
     final String[] reportNameHeader =
         createCombinedReportHeader(
-            reportEvaluationResults, r -> new String[] {r.getReportDefinition().getName(), "", ""});
+            reportEvaluationResults, r -> new String[]{r.getReportDefinition().getName(), "", ""});
 
     final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(allSingleReportsAsCsvList);
     mergedCsvReports.add(0, reportNameHeader);
@@ -116,8 +118,8 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
   /**
    * @return a list of report result tables where each String[] entry consists of two values - label
-   *     and value. A List<String[]> corresponds to a report result table with a header, e.g.
-   *     flowNodes | flowNode_frequency Task A | 1 Task B | 50
+   * and value. A List<String[]> corresponds to a report result table with a header, e.g. flowNodes
+   * | flowNode_frequency Task A | 1 Task B | 50
    */
   private List<List<String[]>> extractListOfReportResultTables(
       final Integer limit,
@@ -139,8 +141,8 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
               Comparator.comparing(MapResultEntryDto::getLabel, String.CASE_INSENSITIVE_ORDER));
           final List<String[]> singleReportTable = CSVUtils.map(enrichedData, limit, offset);
           new MapCommandResult(
-                  singleResult.getFirstCommandResult().getMeasures(),
-                  (SingleReportDataDto) singleResult.getReportDefinition().getData())
+              singleResult.getFirstCommandResult().getMeasures(),
+              (SingleReportDataDto) singleResult.getReportDefinition().getData())
               .addCsvHeader(singleReportTable);
           reportResultTable.add(singleReportTable);
         });
@@ -156,8 +158,6 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .collect(Collectors.toSet());
   }
 
-  interface ReportResultHeaderMapper extends Function<ReportEvaluationResult, String[]> {}
-
   private List<String[]> mapCombinedNumberReportResultsToCsvList() {
     final List<List<String[]>> reportResultTable =
         reportEvaluationResults.stream()
@@ -166,7 +166,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
     final String[] reportNameHeader =
         createCombinedReportHeader(
-            reportEvaluationResults, r -> new String[] {r.getReportDefinition().getName(), ""});
+            reportEvaluationResults, r -> new String[]{r.getReportDefinition().getName(), ""});
 
     final List<String[]> mergedCsvReports = mergeSingleReportsToOneCsv(reportResultTable);
     mergedCsvReports.add(0, reportNameHeader);
@@ -180,14 +180,14 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .reduce(
             (l1, l2) -> {
               for (int i = 0; i < l1.size(); i++) {
-                String[] firstReportWithSeparatorColumn = ArrayUtils.addAll(l1.get(i), "");
+                final String[] firstReportWithSeparatorColumn = ArrayUtils.addAll(l1.get(i), "");
                 l1.set(i, ArrayUtils.addAll(firstReportWithSeparatorColumn, l2.get(i)));
               }
               return l1;
             })
         .orElseThrow(
             () -> {
-              String message = "Was not able to merge single reports to combined report csv";
+              final String message = "Was not able to merge single reports to combined report csv";
               log.error(message);
               return new OptimizeRuntimeException(message);
             });
@@ -202,5 +202,9 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .map(result -> Arrays.copyOf(result, result.length - 1))
         .orElseThrow(
             () -> new OptimizeRuntimeException("Was not able to create combined report header"));
+  }
+
+  interface ReportResultHeaderMapper extends Function<ReportEvaluationResult, String[]> {
+
   }
 }

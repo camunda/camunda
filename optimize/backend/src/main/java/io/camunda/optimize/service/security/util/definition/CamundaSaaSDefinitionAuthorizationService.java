@@ -29,15 +29,6 @@ public class CamundaSaaSDefinitionAuthorizationService
     implements DataSourceDefinitionAuthorizationService {
 
   @Override
-  public List<TenantDto> resolveAuthorizedTenantsForProcess(
-      final String userId,
-      final SimpleDefinitionDto definitionDto,
-      final List<String> tenantIds,
-      final Set<String> engines) {
-    return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
-  }
-
-  @Override
   public boolean isAuthorizedToAccessDefinition(
       final String identityId,
       final IdentityType identityType,
@@ -45,6 +36,15 @@ public class CamundaSaaSDefinitionAuthorizationService
       final DefinitionType definitionType,
       final List<String> tenantIds) {
     return true;
+  }
+
+  @Override
+  public List<TenantDto> resolveAuthorizedTenantsForProcess(
+      final String userId,
+      final SimpleDefinitionDto definitionDto,
+      final List<String> tenantIds,
+      final Set<String> engines) {
+    return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
   }
 
   @Override

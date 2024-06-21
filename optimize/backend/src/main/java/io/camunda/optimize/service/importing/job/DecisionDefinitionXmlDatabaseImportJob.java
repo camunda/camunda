@@ -27,7 +27,7 @@ public class DecisionDefinitionXmlDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
+  protected void persistEntities(final List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
     decisionDefinitionXmlWriter.importDecisionDefinitionXmls(newOptimizeEntities);
   }
 }

@@ -41,7 +41,8 @@ public class EmailService {
 
   private final ConfigurationService configurationService;
 
-  @Autowired private final FreeMarkerConfigurer freemarkerConfigurer;
+  @Autowired
+  private final FreeMarkerConfigurer freemarkerConfigurer;
 
   public void sendTemplatedEmailWithErrorHandling(
       final String recipient,
@@ -69,7 +70,7 @@ public class EmailService {
           } else {
             sendEmail(recipient, subject, body);
           }
-        } catch (MessagingException e) {
+        } catch (final MessagingException e) {
           log.error(
               "Was not able to send email from [{}] to [{}]!",
               configurationService.getNotificationEmailAddress(),
@@ -90,7 +91,7 @@ public class EmailService {
   // TODO To be removed with OPT-6381
   private void sendEmail(final String recipient, final String subject, final String body)
       throws MessagingException {
-    MimeMessage message = createMimeMessage();
+    final MimeMessage message = createMimeMessage();
     message.setFrom(new InternetAddress(configurationService.getNotificationEmailAddress()));
     validateAddress(recipient);
     message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
@@ -106,8 +107,8 @@ public class EmailService {
 
   private void sendHtmlMessage(final String recipient, final String subject, final String htmlBody)
       throws MessagingException {
-    MimeMessage message = createMimeMessage();
-    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+    final MimeMessage message = createMimeMessage();
+    final MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
     helper.setTo(recipient);
     helper.setSubject(subject);
     helper.setText(htmlBody, true);
@@ -116,17 +117,17 @@ public class EmailService {
   }
 
   private MimeMessage createMimeMessage() {
-    Properties properties = new Properties();
+    final Properties properties = new Properties();
     properties.setProperty("mail.transport.protocol", "smtp");
     properties.put("mail.smtp.host", configurationService.getNotificationEmailHostname());
     properties.put("mail.smtp.port", configurationService.getNotificationEmailPort());
 
     final EmailAuthenticationConfiguration emailAuthenticationConfiguration =
         configurationService.getEmailAuthenticationConfiguration();
-    Session session;
+    final Session session;
     if (Boolean.TRUE.equals(emailAuthenticationConfiguration.getEnabled())) {
       properties.put("mail.smtp.auth", "true");
-      Authenticator auth =
+      final Authenticator auth =
           new Authenticator() {
             @Override
             public PasswordAuthentication getPasswordAuthentication() {
@@ -135,7 +136,7 @@ public class EmailService {
                   emailAuthenticationConfiguration.getPassword());
             }
           };
-      EmailSecurityProtocol securityProtocol =
+      final EmailSecurityProtocol securityProtocol =
           emailAuthenticationConfiguration.getSecurityProtocol();
       if (securityProtocol.equals(EmailSecurityProtocol.STARTTLS)) {
         properties.put("mail.smtp.starttls.enable", "true");
@@ -169,11 +170,11 @@ public class EmailService {
       final Template freemarkerTemplate =
           freemarkerConfigurer.getConfiguration().getTemplate(templateName);
       return FreeMarkerTemplateUtils.processTemplateIntoString(freemarkerTemplate, templateInput);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = String.format("Failed to read email template %s.", templateName);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (TemplateException e) {
+    } catch (final TemplateException e) {
       final String reason = String.format("Failed to process email template  %s.", templateName);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

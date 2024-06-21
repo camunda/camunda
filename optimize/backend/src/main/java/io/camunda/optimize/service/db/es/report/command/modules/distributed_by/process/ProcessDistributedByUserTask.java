@@ -40,7 +40,7 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByModelEleme
 
   @Override
   protected Map<String, FlowNodeDataDto> extractModelElementData(
-      DefinitionOptimizeResponseDto def) {
+      final DefinitionOptimizeResponseDto def) {
     return ((ProcessDefinitionOptimizeDto) def)
         .getUserTaskData().stream().collect(toMap(FlowNodeDataDto::getId, Function.identity()));
   }

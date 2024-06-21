@@ -17,7 +17,7 @@ public class IdSetBasedImportPage implements ImportPage {
     return ids;
   }
 
-  public void setIds(Set<String> ids) {
+  public void setIds(final Set<String> ids) {
     this.ids = ids;
   }
 }

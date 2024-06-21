@@ -36,7 +36,8 @@ import org.springframework.stereotype.Component;
 public class LocalizationService implements ConfigurationReloadable {
 
   public static final String LOCALIZATION_PATH = "localization/";
-
+  public static final String REPORT_COUNT_KEY = "count";
+  public static final String REPORT_DURATION_KEY = "duration";
   private static final String API_ERRORS_FIELD = "apiErrors";
   private static final String MANAGEMENT_DASHBOARD_FIELD = "managementDashboard";
   private static final String INSTANT_DASHBOARD_FIELD = "instantDashboard";
@@ -44,8 +45,6 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String REPORT_FIELD = "report";
   private static final String REPORT_GROUPING_FIELD = "groupBy";
   private static final String REPORT_VIEW_FIELD = "view";
-  public static final String REPORT_COUNT_KEY = "count";
-  public static final String REPORT_DURATION_KEY = "duration";
   private static final String MISSING_ASSIGNEE_FIELD = "missingAssignee";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -70,7 +69,7 @@ public class LocalizationService implements ConfigurationReloadable {
   public String getDefaultLocaleMessageForApiErrorCode(final String code) {
     try {
       return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return String.format("Failed to localize error message for code [%s]", code);
     }
   }
@@ -79,7 +78,7 @@ public class LocalizationService implements ConfigurationReloadable {
     try {
       return getMessageForCode(
           configurationService.getFallbackLocale(), REPORT_FIELD, MISSING_ASSIGNEE_FIELD);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return String.format(
           "Failed to localize label for missing assignee field with localization code: %s",
           MISSING_ASSIGNEE_FIELD);
@@ -184,7 +183,7 @@ public class LocalizationService implements ConfigurationReloadable {
     final URL localizationFile = getClass().getClassLoader().getResource(fileName);
     try {
       objectMapper.readTree(localizationFile);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeConfigurationException(
           String.format(
               "File for configured availableLocale is not a valid JSON file [%s].", fileName),

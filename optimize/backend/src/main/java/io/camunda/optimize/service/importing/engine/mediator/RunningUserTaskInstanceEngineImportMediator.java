@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RunningUserTaskInstanceEngineImportMediator
     extends TimestampBasedImportMediator<
-        RunningUserTaskInstanceImportIndexHandler, HistoricUserTaskInstanceDto> {
+    RunningUserTaskInstanceImportIndexHandler, HistoricUserTaskInstanceDto> {
 
   private final RunningUserTaskInstanceFetcher engineEntityFetcher;
 

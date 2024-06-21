@@ -51,7 +51,7 @@ public class SettingsReaderES implements SettingsReader {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "There was an error while reading settings.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

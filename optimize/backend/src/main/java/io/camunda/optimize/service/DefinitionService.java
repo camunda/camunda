@@ -119,7 +119,7 @@ public class DefinitionService implements ConfigurationReloadable {
             definitionWithTenantIdsDto -> {
               final Optional<DefinitionResponseDto> authorizedDefinition =
                   filterAndMapDefinitionsWithTenantIdsByAuthorizations(
-                          userId, Collections.singleton(definitionWithTenantIdsDto))
+                      userId, Collections.singleton(definitionWithTenantIdsDto))
                       .findFirst();
               return authorizedDefinition.orElseThrow(
                   () ->
@@ -395,7 +395,7 @@ public class DefinitionService implements ConfigurationReloadable {
     // tenant
     // If > one tenant is in the list, first look on the null tenant, then on other tenants in the
     // sorted list
-    List<String> tenantIdsForDefinitionSearch = new ArrayList<>(selectedTenantIds);
+    final List<String> tenantIdsForDefinitionSearch = new ArrayList<>(selectedTenantIds);
     tenantIdsForDefinitionSearch.add(null);
     return tenantIdsForDefinitionSearch.stream()
         .distinct()

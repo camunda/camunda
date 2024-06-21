@@ -51,7 +51,7 @@ public class OptimizeOpenSearchClientFactory {
         openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("OpenSearch cluster successfully started");
 
-    OptimizeOpenSearchClient osClient =
+    final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
             openSearchClient,
             openSearchAsyncClient,
@@ -79,7 +79,7 @@ public class OptimizeOpenSearchClientFactory {
             e);
       } finally {
         if (!isConnected) {
-          long sleepTime = backoffCalculator.calculateSleepTime();
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           log.info("No OpenSearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {
             Thread.sleep(sleepTime);

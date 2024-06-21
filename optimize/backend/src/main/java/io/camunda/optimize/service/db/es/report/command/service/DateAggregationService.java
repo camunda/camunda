@@ -156,8 +156,8 @@ public class DateAggregationService {
     final MultiBucketsAggregation agg = aggregations.get(aggregationName);
 
     Map<String, Aggregations> formattedKeyToBucketMap = new LinkedHashMap<>();
-    for (MultiBucketsAggregation.Bucket entry : agg.getBuckets()) {
-      String formattedDate =
+    for (final MultiBucketsAggregation.Bucket entry : agg.getBuckets()) {
+      final String formattedDate =
           formatToCorrectTimezone(entry.getKeyAsString(), timezone, dateTimeFormatter);
       formattedKeyToBucketMap.put(formattedDate, entry.getAggregations());
     }
@@ -178,7 +178,7 @@ public class DateAggregationService {
 
   private DateHistogramAggregationBuilder createDateHistogramAggregation(
       final DateAggregationContext context) {
-    DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
+    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
         AggregationBuilders.dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
             .order(BucketOrder.key(false))
             .field(context.getDateField())
@@ -223,7 +223,7 @@ public class DateAggregationService {
     final Duration automaticIntervalDuration =
         getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
 
-    List<FiltersAggregator.KeyedFilter> filters = new ArrayList<>();
+    final List<FiltersAggregator.KeyedFilter> filters = new ArrayList<>();
     for (ZonedDateTime currentBucketStart = startOfFirstBucket;
         currentBucketStart.isBefore(endOfLastBucket);
         currentBucketStart = getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)) {
@@ -234,7 +234,7 @@ public class DateAggregationService {
               getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)
                   .toOffsetDateTime());
 
-      BoolQueryBuilder query =
+      final BoolQueryBuilder query =
           QueryBuilders.boolQuery()
               .must(QueryBuilders.rangeQuery(context.getDateField()).lt(endAsString))
               .must(
@@ -248,14 +248,14 @@ public class DateAggregationService {
                                   QueryBuilders.existsQuery(
                                       context.getRunningDateReportEndDateField()))));
 
-      FiltersAggregator.KeyedFilter keyedFilter =
+      final FiltersAggregator.KeyedFilter keyedFilter =
           new FiltersAggregator.KeyedFilter(startAsString, query);
       filters.add(keyedFilter);
     }
 
     final FiltersAggregationBuilder limitingFilterAggregation =
         AggregationBuilders.filters(
-            FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[] {}));
+            FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[]{}));
     context.getSubAggregations().forEach(limitingFilterAggregation::subAggregation);
     return limitingFilterAggregation;
   }
@@ -291,7 +291,7 @@ public class DateAggregationService {
 
     final Duration intervalDuration =
         getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
-    DateRangeAggregationBuilder rangeAgg =
+    final DateRangeAggregationBuilder rangeAgg =
         AggregationBuilders.dateRange(context.getDateAggregationName().orElse(DATE_AGGREGATION))
             .timeZone(min.getZone())
             .field(context.getDateField());
@@ -300,13 +300,13 @@ public class DateAggregationService {
     do {
       // this is a do while loop to ensure there's always at least one bucket, even when min and max
       // are equal
-      ZonedDateTime nextStart = start.plus(intervalDuration);
-      boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
+      final ZonedDateTime nextStart = start.plus(intervalDuration);
+      final boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
       // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into
       // the last bucket
-      ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
+      final ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
-      RangeAggregator.Range range =
+      final RangeAggregator.Range range =
           new RangeAggregator.Range(
               dateTimeFormatter.format(start), // key that's being used
               dateTimeFormatter.format(start),

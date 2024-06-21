@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class CCSMAlertRecipientValidator implements AlertRecipientValidator {
+
   private final CCSMIdentityService identityService;
 
   @Override

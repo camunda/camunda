@@ -71,13 +71,13 @@ public class ElasticsearchWriterUtil {
   }
 
   public static boolean tryUpdateByQueryRequest(
-      OptimizeElasticsearchClient esClient,
-      String updateItemIdentifier,
-      Script updateScript,
-      AbstractQueryBuilder filterQuery,
-      String... indices) {
+      final OptimizeElasticsearchClient esClient,
+      final String updateItemIdentifier,
+      final Script updateScript,
+      final AbstractQueryBuilder filterQuery,
+      final String... indices) {
     log.debug("Updating {}", updateItemIdentifier);
-    UpdateByQueryRequest request =
+    final UpdateByQueryRequest request =
         new UpdateByQueryRequest(indices)
             .setQuery(filterQuery)
             .setAbortOnVersionConflict(false)
@@ -89,7 +89,7 @@ public class ElasticsearchWriterUtil {
     final String taskId;
     try {
       taskId = esClient.submitUpdateTask(request).getTask();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Could not create updateBy task for [%s] with query [%s]!",
@@ -104,7 +104,7 @@ public class ElasticsearchWriterUtil {
       final TaskResponse.Status taskStatus = getTaskResponse(esClient, taskId).getTaskStatus();
       log.debug("Updated [{}] {}.", taskStatus.getDeleted(), updateItemIdentifier);
       return taskStatus.getUpdated() > 0L;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
@@ -113,14 +113,14 @@ public class ElasticsearchWriterUtil {
   }
 
   public static boolean tryDeleteByQueryRequest(
-      OptimizeElasticsearchClient esClient,
-      AbstractQueryBuilder<?> queryBuilder,
-      String deletedItemIdentifier,
+      final OptimizeElasticsearchClient esClient,
+      final AbstractQueryBuilder<?> queryBuilder,
+      final String deletedItemIdentifier,
       final boolean refresh,
-      String... indices) {
+      final String... indices) {
     log.debug("Deleting {}", deletedItemIdentifier);
 
-    DeleteByQueryRequest request =
+    final DeleteByQueryRequest request =
         new DeleteByQueryRequest(indices)
             .setAbortOnVersionConflict(false)
             .setQuery(queryBuilder)
@@ -130,7 +130,7 @@ public class ElasticsearchWriterUtil {
     final String taskId;
     try {
       taskId = esClient.submitDeleteTask(request).getTask();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Could not create delete task for [%s] with query [%s]!",
@@ -149,7 +149,7 @@ public class ElasticsearchWriterUtil {
           taskStatus.getTotal(),
           deletedItemIdentifier);
       return taskStatus.getDeleted() > 0L;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
@@ -169,7 +169,7 @@ public class ElasticsearchWriterUtil {
         final TaskResponse taskResponse = getTaskResponse(esClient, taskId);
         validateTaskResponse(taskResponse);
 
-        int currentProgress = (int) (taskResponse.getProgress() * 100.0);
+        final int currentProgress = (int) (taskResponse.getProgress() * 100.0);
         if (currentProgress != progress) {
           final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
           progress = currentProgress;
@@ -188,10 +188,10 @@ public class ElasticsearchWriterUtil {
         if (!finished) {
           Thread.sleep(backoffCalculator.calculateSleepTime());
         }
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         log.error("Waiting for Elasticsearch task (ID: {}) completion was interrupted!", taskId, e);
         Thread.currentThread().interrupt();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new OptimizeRuntimeException(
             String.format(
                 "Error while trying to read Elasticsearch task (ID: %s) progress!", taskId),

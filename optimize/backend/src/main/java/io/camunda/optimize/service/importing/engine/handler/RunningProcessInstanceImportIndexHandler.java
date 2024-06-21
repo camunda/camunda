@@ -22,7 +22,8 @@ public class RunningProcessInstanceImportIndexHandler
   public static final String RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID =
       "runningProcessInstanceImportIndex";
 
-  @Getter private final EngineContext engineContext;
+  @Getter
+  private final EngineContext engineContext;
 
   public RunningProcessInstanceImportIndexHandler(final EngineContext engineContext) {
     this.engineContext = engineContext;

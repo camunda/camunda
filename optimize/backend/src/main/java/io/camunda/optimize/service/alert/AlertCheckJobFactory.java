@@ -20,13 +20,13 @@ public class AlertCheckJobFactory extends AbstractAlertFactory<AlertJob> {
   }
 
   @Override
-  protected String getTriggerGroup() {
-    return "statusCheck-trigger";
+  protected AlertInterval getInterval(final AlertDefinitionDto alert) {
+    return alert.getCheckInterval();
   }
 
   @Override
-  protected String getTriggerName(final AlertDefinitionDto alert) {
-    return alert.getId() + "-check-trigger";
+  protected Class<AlertJob> getJobClass() {
+    return AlertJob.class;
   }
 
   @Override
@@ -40,12 +40,12 @@ public class AlertCheckJobFactory extends AbstractAlertFactory<AlertJob> {
   }
 
   @Override
-  protected AlertInterval getInterval(final AlertDefinitionDto alert) {
-    return alert.getCheckInterval();
+  protected String getTriggerName(final AlertDefinitionDto alert) {
+    return alert.getId() + "-check-trigger";
   }
 
   @Override
-  protected Class<AlertJob> getJobClass() {
-    return AlertJob.class;
+  protected String getTriggerGroup() {
+    return "statusCheck-trigger";
   }
 }

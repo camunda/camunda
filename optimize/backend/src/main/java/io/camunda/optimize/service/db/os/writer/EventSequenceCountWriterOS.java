@@ -62,7 +62,7 @@ public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
         .build();
   }
 
-  private String getPrefixedIndexName(String indexKey) {
+  private String getPrefixedIndexName(final String indexKey) {
     return osClient.getIndexNameService().getOptimizeIndexAliasForIndex(getIndexName(indexKey));
   }
 }

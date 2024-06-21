@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class RepositoryOS implements Repository {
+
   private static final String DELETE_BY_QUERY_ACTION_NAME = "indices:data/write/delete/byquery";
   private static final String UPDATE_BY_QUERY_ACTION_NAME = "indices:data/write/update/byquery";
 

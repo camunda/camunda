@@ -58,7 +58,7 @@ public class DashboardImportService {
             indexVersion -> {
               try {
                 validateIndexVersionOrFail(indexVersion);
-              } catch (OptimizeImportIncorrectIndexVersionException e) {
+              } catch (final OptimizeImportIncorrectIndexVersionException e) {
                 indexMismatches.addAll(e.getMismatchingIndices());
               }
             });
@@ -138,7 +138,7 @@ public class DashboardImportService {
     try {
       dashboardService.validateDashboardFilters(
           userId, dashboardToImport.getAvailableFilters(), dashboardToImport.getTiles());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeImportFileInvalidException(
           "The provided file includes at least one dashboard with invalid filters. Error: "
               + e.getMessage());

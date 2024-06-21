@@ -47,6 +47,14 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
   }
 
   @Override
+  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
+    if (e instanceof OpenSearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
+    }
+    return false;
+  }
+
+  @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
     final SearchRequest.Builder builder =
@@ -62,19 +70,11 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
         osClient.getOpenSearchClient().search(builder.build(), getRecordDtoClass());
     if (!searchResponse.shards().failures().isEmpty()
         || (searchResponse.shards().total().intValue()
-            > (searchResponse.shards().failures().size()
-                + searchResponse.shards().successful().intValue()))) {
+        > (searchResponse.shards().failures().size()
+        + searchResponse.shards().successful().intValue()))) {
       throw new OptimizeRuntimeException("Not all shards could be searched successfully");
     }
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
-  }
-
-  @Override
-  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof OpenSearchException) {
-      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
-    }
-    return false;
   }
 
   private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {

@@ -31,23 +31,30 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 @Getter
 public class DateAggregationContext {
 
-  @NonNull @Setter private AggregateByDateUnit aggregateByDateUnit;
-  @NonNull private final String dateField;
+  @NonNull
+  @Setter
+  private AggregateByDateUnit aggregateByDateUnit;
+  @NonNull
+  private final String dateField;
   private final String
       runningDateReportEndDateField; // used for range filter aggregation in running date reports
   // only
 
-  @NonNull private final MinMaxStatDto minMaxStats;
+  @NonNull
+  private final MinMaxStatDto minMaxStats;
   // extendBoundsToMinMaxStats true is used for distrBy date reports which require extended bounds
   // even when no date
   // filters are applied. If date filters are applied, extendedBounds may be overwritten by the
   // filter bounds.
   // This serves a similar purpose as <allDistributedByKeys> in the ExecutionContext for
   // non-histogram aggregations.
-  @Builder.Default private final boolean extendBoundsToMinMaxStats = false;
+  @Builder.Default
+  private final boolean extendBoundsToMinMaxStats = false;
 
-  @NonNull private final ZoneId timezone;
-  @NonNull private final List<AggregationBuilder> subAggregations;
+  @NonNull
+  private final ZoneId timezone;
+  @NonNull
+  private final List<AggregationBuilder> subAggregations;
 
   private final String dateAggregationName;
 
@@ -58,7 +65,8 @@ public class DateAggregationContext {
   private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
-  @NonNull private final FilterContext filterContext;
+  @NonNull
+  private final FilterContext filterContext;
 
   public ZonedDateTime getEarliestDate() {
     return ZonedDateTime.ofInstant(

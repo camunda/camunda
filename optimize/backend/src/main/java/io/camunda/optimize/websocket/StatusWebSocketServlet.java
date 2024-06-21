@@ -15,7 +15,8 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 @RequiredArgsConstructor
 public class StatusWebSocketServlet extends JettyWebSocketServlet {
 
-  @Serial private static final long serialVersionUID = 4602610830296058744L;
+  @Serial
+  private static final long serialVersionUID = 4602610830296058744L;
 
   @Override
   protected void configure(final JettyWebSocketServletFactory factory) {

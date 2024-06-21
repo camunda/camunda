@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DefinitionKeyResponseDto {
+
   private String key;
   private String name;
 }

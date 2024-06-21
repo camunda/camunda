@@ -50,7 +50,7 @@ public class ExternalVariableUpdateImportService
       final ProcessVariableUpdateWriter variableWriter,
       final ObjectVariableService objectVariableService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.variableWriter = variableWriter;
     this.configurationService = configurationService;
@@ -64,11 +64,11 @@ public class ExternalVariableUpdateImportService
       final Runnable importCompleteCallback) {
     log.trace("Importing external variable entities...");
 
-    boolean newDataIsAvailable = !pageOfExternalEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfExternalEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessVariableDto> newOptimizeEntities =
+      final List<ProcessVariableDto> newOptimizeEntities =
           mapExternalEntitiesToOptimizeEntities(pageOfExternalEntities);
-      DatabaseImportJob<ProcessVariableDto> databaseImportJob =
+      final DatabaseImportJob<ProcessVariableDto> databaseImportJob =
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
@@ -87,7 +87,7 @@ public class ExternalVariableUpdateImportService
       final List<ExternalProcessVariableDto> externalEntities) {
     final List<ExternalProcessVariableDto> deduplicatedVariables =
         resolveDuplicateVariableUpdatesPerProcessInstance(externalEntities);
-    List<ProcessVariableUpdateDto> processVariables =
+    final List<ProcessVariableUpdateDto> processVariables =
         deduplicatedVariables.stream().map(this::convertExternalToProcessVariableDto).toList();
     return objectVariableService.convertToProcessVariableDtos(processVariables);
   }
@@ -97,9 +97,9 @@ public class ExternalVariableUpdateImportService
     // if we have more than one variable update for the same variable within one process instance,
     // we only import the
     // variable with the latest ingestion timestamp
-    List<ExternalProcessVariableDto> deduplicatedVariables = new ArrayList<>();
-    Map<String, List<ExternalProcessVariableDto>> variablesByProcessInstanceId = new HashMap<>();
-    for (ExternalProcessVariableDto variable : externalEntities) {
+    final List<ExternalProcessVariableDto> deduplicatedVariables = new ArrayList<>();
+    final Map<String, List<ExternalProcessVariableDto>> variablesByProcessInstanceId = new HashMap<>();
+    for (final ExternalProcessVariableDto variable : externalEntities) {
       variablesByProcessInstanceId.putIfAbsent(variable.getProcessInstanceId(), new ArrayList<>());
       variablesByProcessInstanceId.get(variable.getProcessInstanceId()).add(variable);
     }

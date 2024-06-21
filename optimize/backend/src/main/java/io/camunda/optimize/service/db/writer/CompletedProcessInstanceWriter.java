@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @AllArgsConstructor
 public class CompletedProcessInstanceWriter {
+
   private static final Set<String> READ_ONLY_ALIASES = Set.of(PROCESS_INSTANCE_MULTI_ALIAS);
   private static final Set<String> UPDATABLE_FIELDS =
       Set.of(

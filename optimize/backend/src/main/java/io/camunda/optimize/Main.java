@@ -21,8 +21,9 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
 public class Main {
-  public static void main(String[] args) {
-    SpringApplication optimize = new SpringApplication(Main.class);
+
+  public static void main(final String[] args) {
+    final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     optimize.setDefaultProperties(

@@ -39,19 +39,18 @@ public abstract class StatusCheckingService {
   protected final EngineContextFactory engineContextFactory;
   protected final ImportSchedulerManagerService importSchedulerManagerService;
   protected final OptimizeIndexNameService optimizeIndexNameService;
-
-  public abstract boolean isConnectedToDatabase();
-
   private final LoadingCache<EngineContext, Boolean> engineConnectionCache =
       CacheBuilder.newBuilder()
           .expireAfterWrite(1, TimeUnit.MINUTES)
           .build(
               new CacheLoader<EngineContext, Boolean>() {
                 @Override
-                public Boolean load(@NonNull EngineContext engineContext) {
+                public Boolean load(@NonNull final EngineContext engineContext) {
                   return isEngineVersionRequestSuccessful(engineContext);
                 }
               });
+
+  public abstract boolean isConnectedToDatabase();
 
   public StatusResponseDto getStatusResponse() {
     return getStatusResponse(true);
@@ -67,16 +66,16 @@ public abstract class StatusCheckingService {
     return configuredEngines.isEmpty()
         // else there must be as least one connected Camunda Platform engine
         || configuredEngines.stream()
-            .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
+        .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
   }
 
   private StatusResponseDto getStatusResponse(final boolean skipCache) {
-    StatusResponseDto statusWithProgress = new StatusResponseDto();
+    final StatusResponseDto statusWithProgress = new StatusResponseDto();
     statusWithProgress.setConnectedToElasticsearch(isConnectedToDatabase());
-    Map<String, Boolean> importStatusMap = importSchedulerManagerService.getImportStatusMap();
-    Map<String, EngineStatusDto> engineConnections = new HashMap<>();
-    for (EngineContext e : engineContextFactory.getConfiguredEngines()) {
-      EngineStatusDto engineConnection = new EngineStatusDto();
+    final Map<String, Boolean> importStatusMap = importSchedulerManagerService.getImportStatusMap();
+    final Map<String, EngineStatusDto> engineConnections = new HashMap<>();
+    for (final EngineContext e : engineContextFactory.getConfiguredEngines()) {
+      final EngineStatusDto engineConnection = new EngineStatusDto();
       engineConnection.setIsConnected(isConnectedToEngine(e, skipCache));
       engineConnection.setIsImporting(importStatusMap.getOrDefault(e.getEngineAlias(), false));
       engineConnections.put(e.getEngineAlias(), engineConnection);
@@ -94,7 +93,7 @@ public abstract class StatusCheckingService {
     } else {
       try {
         isConnected = engineConnectionCache.get(engineContext);
-      } catch (ExecutionException ex) {
+      } catch (final ExecutionException ex) {
         log.warn(
             "There was a problem checking the connection status of engine with alias {}",
             engineContext.getEngineAlias());
@@ -103,12 +102,12 @@ public abstract class StatusCheckingService {
     return isConnected;
   }
 
-  private boolean isEngineVersionRequestSuccessful(EngineContext engineContext) {
+  private boolean isEngineVersionRequestSuccessful(final EngineContext engineContext) {
     boolean isConnected = false;
     try {
       final String engineEndpoint =
           configurationService.getEngineRestApiEndpointOfCustomEngine(
-                  engineContext.getEngineAlias())
+              engineContext.getEngineAlias())
               + EngineConstants.VERSION_ENDPOINT;
       try (final Response response =
           engineContext
@@ -118,7 +117,7 @@ public abstract class StatusCheckingService {
               .get()) {
         isConnected = response.getStatus() == Response.Status.OK.getStatusCode();
       }
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       // do nothing
     }
     return isConnected;

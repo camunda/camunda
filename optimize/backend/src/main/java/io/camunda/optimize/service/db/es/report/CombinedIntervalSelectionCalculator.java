@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class CombinedIntervalSelectionCalculator {
+
   private final List<MinMaxStatDto> minMaxStats = new ArrayList<>();
 
   public void addStat(final MinMaxStatDto minMaxStat) {

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
+
   private static final String TOKEN_REQUEST_GRANT_TYPE = "client_credentials";
 
   protected CCSaaSM2MTokenProvider(

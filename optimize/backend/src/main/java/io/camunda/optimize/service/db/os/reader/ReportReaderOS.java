@@ -213,21 +213,21 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
+  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
+    return getReportsForCollection(collectionId, true);
+  }
+
+  @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
-    final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
+    final String[] indices = new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME};
     return getReportDefinitionDtos(reportIds, indices);
   }
 
   @Override
   public List<ReportDefinitionDto> getReportsForCollectionOmitXml(final String collectionId) {
     return getReportsForCollection(collectionId, false);
-  }
-
-  @Override
-  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
-    return getReportsForCollection(collectionId, true);
   }
 
   @Override
@@ -247,10 +247,10 @@ public class ReportReaderOS implements ReportReader {
               .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
               .build()
               .toQuery();
-      return osClient.count(new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
+      return osClient.count(new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
     } else {
       return osClient.count(
-          new String[] {SINGLE_DECISION_REPORT_INDEX_NAME}, QueryDSL.matchAll(), errorMessage);
+          new String[]{SINGLE_DECISION_REPORT_INDEX_NAME}, QueryDSL.matchAll(), errorMessage);
     }
   }
 
@@ -263,7 +263,7 @@ public class ReportReaderOS implements ReportReader {
             .build()
             .toQuery();
     final SearchRequest.Builder searchRequest =
-        getSearchRequestOmitXml(query, new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME});
+        getSearchRequestOmitXml(query, new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME});
     final String errorMessage = "Was not able to fetch process reports to count userTask reports.";
     final SearchResponse<SingleProcessReportDefinitionRequestDto> searchResponse =
         osClient.search(searchRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
@@ -292,9 +292,9 @@ public class ReportReaderOS implements ReportReader {
 
     final SearchRequest.Builder searchRequest =
         getSearchRequestOmitXml(
-                processReportQuery,
-                new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME},
-                LIST_FETCH_LIMIT)
+            processReportQuery,
+            new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
+            LIST_FETCH_LIMIT)
             .scroll(
                 new Time.Builder()
                     .time(
@@ -343,7 +343,7 @@ public class ReportReaderOS implements ReportReader {
 
     final SearchRequest.Builder searchRequest =
         getSearchRequestOmitXml(
-            getCombinedReportsBySimpleReportIdQuery, new String[] {COMBINED_REPORT_INDEX_NAME});
+            getCombinedReportsBySimpleReportIdQuery, new String[]{COMBINED_REPORT_INDEX_NAME});
 
     final String errorMessage =
         String.format(
@@ -411,7 +411,7 @@ public class ReportReaderOS implements ReportReader {
 
   private SearchRequest.Builder getSearchRequestIncludingXml(
       final Query query, final String[] indices) {
-    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[] {});
+    return getSearchRequest(query, indices, LIST_FETCH_LIMIT, new String[]{});
   }
 
   private SearchRequest.Builder getSearchRequestOmitXml(

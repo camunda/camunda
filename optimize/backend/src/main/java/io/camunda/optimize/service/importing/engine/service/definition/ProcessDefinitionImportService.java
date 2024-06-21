@@ -41,7 +41,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       final ProcessDefinitionWriter processDefinitionWriter,
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.processDefinitionWriter = processDefinitionWriter;
@@ -55,7 +55,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       final Runnable importCompleteCallback) {
     log.trace("Importing process definitions from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
@@ -64,6 +64,11 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
           createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
       addDatabaseImportJobToQueue(databaseImportJob);
     }
+  }
+
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   private void markSavedDefinitionsAsDeleted(
@@ -76,17 +81,12 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
     }
   }
 
-  @Override
-  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
-    return databaseImportJobExecutor;
-  }
-
-  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
-      List<ProcessDefinitionEngineDto> engineEntities) {
+      final List<ProcessDefinitionEngineDto> engineEntities) {
     // we mark new definitions as deleted if they are imported in the same batch as a newer
     // deployment
     final Map<String, List<ProcessDefinitionEngineDto>> groupedDefinitions =
@@ -115,7 +115,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   private DatabaseImportJob<ProcessDefinitionOptimizeDto> createDatabaseImportJob(
       final List<ProcessDefinitionOptimizeDto> processDefinitions,
       final Runnable importCompleteCallback) {
-    ProcessDefinitionDatabaseImportJob procDefImportJob =
+    final ProcessDefinitionDatabaseImportJob procDefImportJob =
         new ProcessDefinitionDatabaseImportJob(
             processDefinitionWriter, importCompleteCallback, databaseClient);
     procDefImportJob.setEntitiesToImport(processDefinitions);
@@ -123,7 +123,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(
-      ProcessDefinitionEngineDto engineEntity) {
+      final ProcessDefinitionEngineDto engineEntity) {
     return ProcessDefinitionOptimizeDto.builder()
         .id(engineEntity.getId())
         .key(engineEntity.getKey())

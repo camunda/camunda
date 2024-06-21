@@ -28,13 +28,13 @@ public class TerminatedUserSessionReaderOS extends TerminatedUserSessionReader {
 
   @Override
   protected boolean sessionIdExists(final String sessionId) {
-    GetRequest.Builder requestBuilder =
+    final GetRequest.Builder requestBuilder =
         new GetRequest.Builder()
             .index(TERMINATED_USER_SESSION_INDEX_NAME)
             .id(sessionId)
             .sourceIncludes(Collections.emptyList());
 
-    String errorMessage =
+    final String errorMessage =
         String.format("Was not able to fetch user session for ID [%s]", sessionId);
 
     return osClient.get(requestBuilder, TerminatedUserSessionDto.class, errorMessage).found();

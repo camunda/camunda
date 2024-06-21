@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class DashboardRestMapper {
 
-  private static final String TYPE_TEXT_VALUE = "text";
   public static final String TEXT_FIELD = "text";
+  private static final String TYPE_TEXT_VALUE = "text";
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
 

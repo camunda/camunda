@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import java.text.MessageFormat;
 
 public interface ProcessInstanceScriptFactory {
+
   static String createDeleteEventsWithIdsInScript() {
     return MessageFormat.format(
         "ctx._source.{0}.removeIf(event -> params.eventIdsToDelete.contains(event.{1}));\n",

@@ -8,7 +8,8 @@
 package io.camunda.optimize.service.exceptions;
 
 public class InvalidEventProcessStateException extends OptimizeValidationException {
-  public InvalidEventProcessStateException(String message) {
+
+  public InvalidEventProcessStateException(final String message) {
     super(message);
   }
 

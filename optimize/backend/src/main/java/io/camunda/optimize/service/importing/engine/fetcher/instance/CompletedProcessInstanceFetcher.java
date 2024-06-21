@@ -41,19 +41,19 @@ public class CompletedProcessInstanceFetcher extends RetryBackoffEngineEntityFet
   }
 
   public List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(
-      TimestampBasedImportPage page) {
+      final TimestampBasedImportPage page) {
     return fetchCompletedProcessInstances(
         page.getTimestampOfLastEntity(),
         configurationService.getEngineImportProcessInstanceMaxPageSize());
   }
 
   public List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(
-      OffsetDateTime endTimeOfLastInstance) {
+      final OffsetDateTime endTimeOfLastInstance) {
     logger.debug("Fetching completed historic process instances...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> secondEntries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricProcessInstanceDto> secondEntries =
         fetchWithRetry(() -> performCompletedProcessInstanceRequest(endTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] completed historic process instances for set end time within [{}] ms",
         secondEntries.size(),
@@ -62,12 +62,12 @@ public class CompletedProcessInstanceFetcher extends RetryBackoffEngineEntityFet
   }
 
   private List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     logger.debug("Fetching completed historic process instances...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> entries =
+    final long requestStart = System.currentTimeMillis();
+    final List<HistoricProcessInstanceDto> entries =
         fetchWithRetry(() -> performCompletedProcessInstanceRequest(timeStamp, pageSize));
-    long requestEnd = System.currentTimeMillis();
+    final long requestEnd = System.currentTimeMillis();
     logger.debug(
         "Fetched [{}] completed historic process instances which ended after "
             + "set timestamp with page size [{}] within [{}] ms",
@@ -78,7 +78,7 @@ public class CompletedProcessInstanceFetcher extends RetryBackoffEngineEntityFet
   }
 
   private List<HistoricProcessInstanceDto> performCompletedProcessInstanceRequest(
-      OffsetDateTime timeStamp, long pageSize) {
+      final OffsetDateTime timeStamp, final long pageSize) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
@@ -86,11 +86,12 @@ public class CompletedProcessInstanceFetcher extends RetryBackoffEngineEntityFet
         .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 
   private List<HistoricProcessInstanceDto> performCompletedProcessInstanceRequest(
-      OffsetDateTime endTimeOfLastInstance) {
+      final OffsetDateTime endTimeOfLastInstance) {
     return getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
@@ -99,6 +100,7 @@ public class CompletedProcessInstanceFetcher extends RetryBackoffEngineEntityFet
             MAX_RESULTS_TO_RETURN, configurationService.getEngineImportProcessInstanceMaxPageSize())
         .request(MediaType.APPLICATION_JSON)
         .acceptEncoding(UTF8)
-        .get(new GenericType<>() {});
+        .get(new GenericType<>() {
+        });
   }
 }

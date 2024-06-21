@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto {
+
   protected String flowNodeId;
   protected Long lowerOutlierBound;
   protected Long higherOutlierBound;

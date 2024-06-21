@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class ShareSearchResultResponseDto {
+
   private Map<String, Boolean> reports = new HashMap<>();
   private Map<String, Boolean> dashboards = new HashMap<>();
 }

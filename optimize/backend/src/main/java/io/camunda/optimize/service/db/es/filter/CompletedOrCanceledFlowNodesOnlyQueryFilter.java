@@ -30,7 +30,7 @@ public class CompletedOrCanceledFlowNodesOnlyQueryFilter
       final List<CompletedOrCanceledFlowNodesOnlyFilterDataDto> completedOrCanceledFilterData,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(completedOrCanceledFilterData)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       filters.add(
           nestedQuery(
               FLOW_NODE_INSTANCES,

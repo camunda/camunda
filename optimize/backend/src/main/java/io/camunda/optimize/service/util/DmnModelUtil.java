@@ -35,7 +35,7 @@ public class DmnModelUtil {
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {
       return Dmn.readModelFromStream(stream);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
   }
@@ -51,7 +51,7 @@ public class DmnModelUtil {
           .filter(decision -> decision.getId().equals(definitionKey))
           .map(Decision::getName)
           .findFirst();
-    } catch (Exception exc) {
+    } catch (final Exception exc) {
       log.warn("Failed parsing the DMN xml.", exc);
       return Optional.empty();
     }
@@ -70,13 +70,13 @@ public class DmnModelUtil {
   private static List<DecisionVariableNameResponseDto> extractVariables(
       final DmnModelInstance model,
       @NonNull final String decisionKey,
-      VariableExtractionFunction extractVariables) {
+      final VariableExtractionFunction extractVariables) {
     return model.getModelElementsByType(Decision.class).stream()
         .filter(decision -> Objects.equals(decision.getId(), decisionKey))
         .findFirst()
         .map(
             decision -> {
-              Collection<DecisionTable> decisionTables =
+              final Collection<DecisionTable> decisionTables =
                   decision.getChildElementsByType(DecisionTable.class);
               if (decisionTables.size() < 1) {
                 log.warn("Found decision without tables, which is not supported!");
@@ -85,20 +85,20 @@ public class DmnModelUtil {
                 log.warn("Found decision with multiple tables. Supported is only one!");
                 return new ArrayList<DecisionVariableNameResponseDto>();
               }
-              DecisionTable firstDecisionTable = decisionTables.iterator().next();
+              final DecisionTable firstDecisionTable = decisionTables.iterator().next();
               return extractVariables.extract(firstDecisionTable, decisionKey);
             })
         .orElse(new ArrayList<>());
   }
 
   private static List<DecisionVariableNameResponseDto> extractInputVariablesFromDecision(
-      final DecisionTable decision, String xmlDecisionKey) {
+      final DecisionTable decision, final String xmlDecisionKey) {
     final List<DecisionVariableNameResponseDto> inputVariableList = new ArrayList<>();
-    for (Input node : decision.getChildElementsByType(Input.class)) {
-      DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
+    for (final Input node : decision.getChildElementsByType(Input.class)) {
+      final DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
-      String id = node.getInputExpression().getTypeRef();
+      final String id = node.getInputExpression().getTypeRef();
       if (id == null) {
         log.warn(
             "Found decision input with id {} without a type on decision with key {}, will default to String",
@@ -114,13 +114,13 @@ public class DmnModelUtil {
   }
 
   private static List<DecisionVariableNameResponseDto> extractOutputVariablesFromDecision(
-      final DecisionTable decision, String xmlDecisionKey) {
+      final DecisionTable decision, final String xmlDecisionKey) {
     final List<DecisionVariableNameResponseDto> outputVariableList = new ArrayList<>();
-    for (Output node : decision.getChildElementsByType(Output.class)) {
-      DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
+    for (final Output node : decision.getChildElementsByType(Output.class)) {
+      final DecisionVariableNameResponseDto variableNameDto = new DecisionVariableNameResponseDto();
       variableNameDto.setId(node.getId());
       variableNameDto.setName(node.getLabel());
-      String id = node.getTypeRef();
+      final String id = node.getTypeRef();
       if (id == null) {
         log.warn(
             "Found decision output with id {} without a type on decision with key {}, will default to String",
@@ -136,6 +136,7 @@ public class DmnModelUtil {
   }
 
   private interface VariableExtractionFunction {
+
     List<DecisionVariableNameResponseDto> extract(DecisionTable table, String key);
   }
 }

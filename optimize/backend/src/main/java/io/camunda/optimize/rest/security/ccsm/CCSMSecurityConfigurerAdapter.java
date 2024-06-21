@@ -75,7 +75,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   @Bean
-  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(HttpSecurity http)
+  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(final HttpSecurity http)
       throws Exception {
     return new CCSMAuthenticationCookieFilter(
         ccsmTokenService,
@@ -87,7 +87,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @SneakyThrows
   @Bean
   @Order(1)
-  protected SecurityFilterChain configurePublicApi(HttpSecurity http) {
+  protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
     final HttpSecurity httpSecurityBuilder =
         http.securityMatchers(
             securityMatchers ->
@@ -100,7 +100,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @SneakyThrows
   @Bean
   @Order(2)
-  protected SecurityFilterChain configureWebSecurity(HttpSecurity http) {
+  protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
     return super.configureGenericSecurityOptions(http)
         // Then we configure the specific web security for CCSM
         .authorizeHttpRequests(
@@ -160,8 +160,8 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   private JwtDecoder createJwtDecoderWithAudience(final String jwtSetUri) {
-    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
-    OAuth2TokenValidator<Jwt> audienceValidator =
+    final NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
+    final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAudienceFromConfiguration());
     jwtDecoder.setJwtValidator(audienceValidator);
     return jwtDecoder;

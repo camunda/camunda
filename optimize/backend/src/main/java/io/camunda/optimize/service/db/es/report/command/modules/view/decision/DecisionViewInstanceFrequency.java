@@ -52,16 +52,16 @@ public class DecisionViewInstanceFrequency extends DecisionViewPart {
   }
 
   @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
+  }
+
+  @Override
   public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
     // for instance count the default is 0
     // see https://jira.camunda.com/browse/OPT-3336
     return createViewResult(0.);
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(
-      final DecisionReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.FREQUENCY));
   }
 
   private ViewResult createViewResult(final double value) {

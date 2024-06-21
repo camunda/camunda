@@ -91,11 +91,6 @@ public class ProcessReportCmdExecutionPlan<T>
     return multiDefinitionFilterQuery;
   }
 
-  public Optional<MinMaxStatDto> getGroupByMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.getMinMaxStats(context, setupBaseQuery(context));
-  }
-
   @Override
   protected BoolQueryBuilder setupUnfilteredBaseQuery(
       final ExecutionContext<ProcessReportDataDto> context) {
@@ -124,6 +119,29 @@ public class ProcessReportCmdExecutionPlan<T>
     return multiDefinitionFilterQuery;
   }
 
+  @Override
+  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    if (context.getReportData().isManagementReport()) {
+      getMultiIndexAlias();
+    }
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+  }
+
+  @Override
+  protected Supplier<ProcessReportDataDto> getDataDtoSupplier() {
+    return ProcessReportDataDto::new;
+  }
+
+  public Optional<MinMaxStatDto> getGroupByMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.getMinMaxStats(context, setupBaseQuery(context));
+  }
+
   private BoolQueryBuilder buildDefinitionBaseQueryForFilters(
       final ExecutionContext<ProcessReportDataDto> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
@@ -149,24 +167,6 @@ public class ProcessReportCmdExecutionPlan<T>
               multiDefinitionFilterQuery.should(definitionQuery);
             });
     return multiDefinitionFilterQuery;
-  }
-
-  @Override
-  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
-    if (context.getReportData().isManagementReport()) {
-      getMultiIndexAlias();
-    }
-    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
-  }
-
-  @Override
-  protected String[] getMultiIndexAlias() {
-    return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
-  }
-
-  @Override
-  protected Supplier<ProcessReportDataDto> getDataDtoSupplier() {
-    return ProcessReportDataDto::new;
   }
 
   private BoolQueryBuilder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {

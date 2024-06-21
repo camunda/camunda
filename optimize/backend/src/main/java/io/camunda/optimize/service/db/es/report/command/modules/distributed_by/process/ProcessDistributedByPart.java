@@ -30,7 +30,7 @@ public abstract class ProcessDistributedByPart extends DistributedByPart<Process
         .map(
             entry ->
                 createDistributedByResult(
-                    entry.getKey(), entry.getValue(), this.viewPart.createEmptyResult(context)))
+                    entry.getKey(), entry.getValue(), viewPart.createEmptyResult(context)))
         .collect(Collectors.toList());
   }
 }

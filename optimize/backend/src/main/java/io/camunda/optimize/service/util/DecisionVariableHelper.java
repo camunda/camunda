@@ -30,6 +30,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelper {
+
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS =
       Collections.unmodifiableList(
           Arrays.asList(VariableType.DATE, VariableType.DOUBLE, VariableType.LONG));

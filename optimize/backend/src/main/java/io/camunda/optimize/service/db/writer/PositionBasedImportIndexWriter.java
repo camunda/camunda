@@ -18,10 +18,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class PositionBasedImportIndexWriter {
+
   private final ImportRepository importRepository;
 
-  public void importIndexes(List<PositionBasedImportIndexDto> importIndexDtos) {
-    String importItemName = "position based import index information";
+  public void importIndexes(final List<PositionBasedImportIndexDto> importIndexDtos) {
+    final String importItemName = "position based import index information";
     log.debug("Writing [{}] {} to database.", importIndexDtos.size(), importItemName);
     importRepository.importPositionBasedIndices(importItemName, importIndexDtos);
   }

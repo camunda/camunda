@@ -35,6 +35,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class RunningProcessInstanceWriter {
+
+  private static final Set<String> READ_ONLY_ALIASES = Set.of(PROCESS_INSTANCE_MULTI_ALIAS);
   Set<String> UPDATABLE_FIELDS =
       Set.of(
           PROCESS_DEFINITION_KEY,
@@ -46,7 +48,6 @@ public class RunningProcessInstanceWriter {
           DATA_SOURCE,
           TENANT_ID);
   String IMPORT_ITEM_NAME = "running process instances";
-  private static final Set<String> READ_ONLY_ALIASES = Set.of(PROCESS_INSTANCE_MULTI_ALIAS);
   private final ProcessInstanceRepository processInstanceRepository;
   private final IndexRepository indexRepository;
   private final ImportRequestDtoFactory importRequestDtoFactory;
@@ -84,10 +85,10 @@ public class RunningProcessInstanceWriter {
 
   public void importProcessInstancesForProcessDefinitionIds(
       final Map<String, Map<String, String>> definitionKeyToIdToStateMap) {
-    for (Map.Entry<String, Map<String, String>> definitionKeyEntry :
+    for (final Map.Entry<String, Map<String, String>> definitionKeyEntry :
         definitionKeyToIdToStateMap.entrySet()) {
       final String definitionKey = definitionKeyEntry.getKey();
-      for (Map.Entry<String, String> definitionStateEntry :
+      for (final Map.Entry<String, String> definitionStateEntry :
           definitionKeyEntry.getValue().entrySet()) {
         indexRepository.createMissingIndices(
             PROCESS_INSTANCE_INDEX, READ_ONLY_ALIASES, Set.of(definitionKey));
@@ -105,7 +106,7 @@ public class RunningProcessInstanceWriter {
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX, READ_ONLY_ALIASES, definitionKeyToNewStateMap.keySet());
 
-    for (Map.Entry<String, String> definitionStateEntry : definitionKeyToNewStateMap.entrySet()) {
+    for (final Map.Entry<String, String> definitionStateEntry : definitionKeyToNewStateMap.entrySet()) {
       processInstanceRepository.updateAllProcessInstancesStates(
           IMPORT_ITEM_NAME, definitionStateEntry.getKey(), definitionStateEntry.getValue());
     }

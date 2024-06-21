@@ -45,6 +45,11 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
     return getResultAsCsv(limit, offset, timezone, true);
   }
 
+  @Override
+  public ResultType getType() {
+    return ResultType.RAW;
+  }
+
   @SuppressWarnings(UNCHECKED_CAST)
   public List<String[]> getResultAsCsv(
       final Integer limit,
@@ -61,7 +66,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           true);
     } else if (rawData.get(0) instanceof RawDataProcessInstanceDto) {
-      List<RawDataProcessInstanceDto> rawProcessData = (List<RawDataProcessInstanceDto>) rawData;
+      final List<RawDataProcessInstanceDto> rawProcessData = (List<RawDataProcessInstanceDto>) rawData;
       rawProcessData.forEach(
           raw -> {
             raw.setStartDate(atSameTimezoneOffsetDateTime(raw.getStartDate(), timezone));
@@ -74,7 +79,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           includeNewVariables);
     } else {
-      List<RawDataDecisionInstanceDto> rawDecisionData = (List<RawDataDecisionInstanceDto>) rawData;
+      final List<RawDataDecisionInstanceDto> rawDecisionData = (List<RawDataDecisionInstanceDto>) rawData;
       rawDecisionData.forEach(
           raw ->
               raw.setEvaluationDateTime(
@@ -82,10 +87,5 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
       return CSVUtils.mapRawDecisionReportInstances(
           rawDecisionData, limit, offset, singleReportData.getConfiguration().getTableColumns());
     }
-  }
-
-  @Override
-  public ResultType getType() {
-    return ResultType.RAW;
   }
 }

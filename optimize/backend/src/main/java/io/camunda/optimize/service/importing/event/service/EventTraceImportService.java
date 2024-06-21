@@ -28,7 +28,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
       final ConfigurationService configurationService,
       final EventTraceStateService eventTraceStateService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.eventTraceStateService = eventTraceStateService;
     this.databaseClient = databaseClient;
@@ -39,7 +39,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
       final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
     log.trace("Importing external event traces.");
 
-    boolean newDataIsAvailable = !pageOfEvents.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
       databaseImportJobExecutor.executeImportJob(
           createDatabaseImportJob(pageOfEvents, importCompleteCallback));

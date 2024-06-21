@@ -43,7 +43,8 @@ public class ZeebeImportIndexHandlerProvider {
   }
 
   private final ZeebeDataSourceDto zeebeDataSourceDto;
-  @Autowired private BeanFactory beanFactory;
+  @Autowired
+  private BeanFactory beanFactory;
   private Map<String, PositionBasedImportIndexHandler> positionBasedHandlersByName;
 
   public ZeebeImportIndexHandlerProvider(final ZeebeDataSourceDto zeebeDataSourceDto) {

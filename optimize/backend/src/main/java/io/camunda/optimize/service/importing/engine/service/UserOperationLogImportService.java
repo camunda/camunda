@@ -44,7 +44,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
       final ProcessDefinitionResolverService processDefinitionResolverService,
       final ProcessInstanceResolverService processInstanceResolverService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.runningProcessInstanceImportIndexHandler = runningProcessInstanceImportIndexHandler;
@@ -62,7 +62,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   @Override
   public void executeImport(
       final List<HistoricUserOperationLogDto> pageOfEngineEntities,
-      Runnable importCompleteCallback) {
+      final Runnable importCompleteCallback) {
     log.trace("Importing suspension related user operation logs from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -90,7 +90,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   }
 
   private DatabaseImportJob<UserOperationLogEntryDto> createDatabaseImportJob(
-      final List<UserOperationLogEntryDto> userOperationLogs, Runnable callback) {
+      final List<UserOperationLogEntryDto> userOperationLogs, final Runnable callback) {
     final UserOperationLogDatabaseImportJob importJob =
         new UserOperationLogDatabaseImportJob(
             runningProcessInstanceWriter, callback, databaseClient);
@@ -133,7 +133,8 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
         .build();
   }
 
-  private boolean containsBatchOperation(List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
+  private boolean containsBatchOperation(
+      final List<UserOperationLogEntryDto> userOperationLogEntryDtos) {
     return userOperationLogEntryDtos.stream()
         .anyMatch(userOpLog -> isSuspensionViaBatchOperation(userOpLog.getOperationType()));
   }

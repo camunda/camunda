@@ -57,7 +57,7 @@ public class SingleReportEvaluator {
       final Collection<Command<?, ?>> commands) {
     final boolean isAssigneeAnalyticsEnabled =
         ConfigurationService.getOptimizeProfile(applicationContext.getEnvironment())
-                .equals(OptimizeProfile.PLATFORM)
+            .equals(OptimizeProfile.PLATFORM)
             || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
     this.configurationService = configurationService;
     this.notSupportedCommand = notSupportedCommand;

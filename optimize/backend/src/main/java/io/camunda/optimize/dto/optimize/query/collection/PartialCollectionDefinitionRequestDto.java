@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class PartialCollectionDefinitionRequestDto {
+
   protected String name;
   protected PartialCollectionDataDto data;
 

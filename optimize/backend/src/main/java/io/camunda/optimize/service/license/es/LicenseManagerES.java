@@ -35,18 +35,60 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class LicenseManagerES extends LicenseManager {
+
   private final OptimizeElasticsearchClient esClient;
+
+  @Override
+  public void storeLicense(final String licenseAsString) {
+    final XContentBuilder builder;
+    try {
+      builder = jsonBuilder().startObject().field(LICENSE, licenseAsString).endObject();
+    } catch (final IOException exception) {
+      throw new OptimizeInvalidLicenseException(
+          "Could not parse given license. Please check the encoding!");
+    }
+
+    final IndexRequest request =
+        new IndexRequest(LICENSE_INDEX_NAME)
+            .id(licenseDocumentId)
+            .source(builder)
+            .setRefreshPolicy(IMMEDIATE);
+
+    final IndexResponse indexResponse;
+    try {
+      indexResponse = esClient.index(request);
+    } catch (final IOException e) {
+      final String reason =
+          "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    final boolean licenseWasStored = indexResponse.getShardInfo().getFailed() == 0;
+    if (licenseWasStored) {
+      setOptimizeLicense(licenseAsString);
+    } else {
+      final StringBuilder reason = new StringBuilder();
+      for (final ReplicationResponse.ShardInfo.Failure failure :
+          indexResponse.getShardInfo().getFailures()) {
+        reason.append(failure.reason()).append("\n");
+      }
+      final String errorMessage =
+          String.format("Could not store license to Elasticsearch. Reason: %s", reason);
+      log.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
 
   @Override
   protected Optional<String> retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(licenseDocumentId);
+    final GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(licenseDocumentId);
 
-    GetResponse getResponse;
+    final GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest);
-    } catch (IOException e) {
-      String reason = "Could not retrieve license from Elasticsearch.";
+    } catch (final IOException e) {
+      final String reason = "Could not retrieve license from Elasticsearch.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -55,46 +97,5 @@ public class LicenseManagerES extends LicenseManager {
       return Optional.of(getResponse.getSource().get(LICENSE).toString());
     }
     return Optional.empty();
-  }
-
-  @Override
-  public void storeLicense(String licenseAsString) {
-    XContentBuilder builder;
-    try {
-      builder = jsonBuilder().startObject().field(LICENSE, licenseAsString).endObject();
-    } catch (IOException exception) {
-      throw new OptimizeInvalidLicenseException(
-          "Could not parse given license. Please check the encoding!");
-    }
-
-    IndexRequest request =
-        new IndexRequest(LICENSE_INDEX_NAME)
-            .id(licenseDocumentId)
-            .source(builder)
-            .setRefreshPolicy(IMMEDIATE);
-
-    IndexResponse indexResponse;
-    try {
-      indexResponse = esClient.index(request);
-    } catch (IOException e) {
-      String reason =
-          "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    boolean licenseWasStored = indexResponse.getShardInfo().getFailed() == 0;
-    if (licenseWasStored) {
-      this.setOptimizeLicense(licenseAsString);
-    } else {
-      StringBuilder reason = new StringBuilder();
-      for (ReplicationResponse.ShardInfo.Failure failure :
-          indexResponse.getShardInfo().getFailures()) {
-        reason.append(failure.reason()).append("\n");
-      }
-      String errorMessage =
-          String.format("Could not store license to Elasticsearch. Reason: %s", reason);
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
   }
 }

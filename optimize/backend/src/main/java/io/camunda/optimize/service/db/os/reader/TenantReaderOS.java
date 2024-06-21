@@ -54,10 +54,10 @@ public class TenantReaderOS implements TenantReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<TenantDto>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<TenantDto>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchRequest, TenantDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve tenants!", e);
     }
     return new HashSet<>(OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp));

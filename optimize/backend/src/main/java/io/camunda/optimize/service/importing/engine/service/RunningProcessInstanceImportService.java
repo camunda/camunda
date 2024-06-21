@@ -47,7 +47,7 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
   @Override
   protected DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstances, final Runnable callback) {
-    RunningProcessInstanceDatabaseImportJob importJob =
+    final RunningProcessInstanceDatabaseImportJob importJob =
         new RunningProcessInstanceDatabaseImportJob(
             runningProcessInstanceWriter,
             camundaEventService,

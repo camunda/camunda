@@ -33,7 +33,7 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
       final EngineContext engineContext,
       final TenantWriter tenantWriter,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.tenantWriter = tenantWriter;
@@ -44,7 +44,7 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
   public void executeImport(
       final List<TenantEngineDto> pageOfEngineEntities, final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<TenantDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
@@ -77,7 +77,7 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
     return importJob;
   }
 
-  private TenantDto mapEngineEntityToOptimizeEntity(TenantEngineDto engineEntity) {
+  private TenantDto mapEngineEntityToOptimizeEntity(final TenantEngineDto engineEntity) {
     return new TenantDto(
         engineEntity.getId(), engineEntity.getName(), engineContext.getEngineAlias());
   }

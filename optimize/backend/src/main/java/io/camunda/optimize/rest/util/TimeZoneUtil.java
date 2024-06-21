@@ -25,7 +25,7 @@ public class TimeZoneUtil {
 
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
 
-  public static ZoneId extractTimezone(ContainerRequestContext requestContext) {
+  public static ZoneId extractTimezone(final ContainerRequestContext requestContext) {
     final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);
     if (AVAILABLE_ZONE_IDS.contains(headerString)) {
       return ZoneId.of(headerString);
@@ -42,7 +42,8 @@ public class TimeZoneUtil {
   public static String formatToCorrectTimezone(
       final String dateAsString, final ZoneId timezone, final DateTimeFormatter dateTimeFormatter) {
     final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
-    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    final OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone)
+        .toOffsetDateTime();
     return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 

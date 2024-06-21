@@ -22,7 +22,7 @@ public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDef
   protected final ProcessReportCmdExecutionPlan<T> executionPlan;
 
   protected ProcessCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = buildExecutionPlan(builder);
+    executionPlan = buildExecutionPlan(builder);
   }
 
   @Override
@@ -32,13 +32,9 @@ public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDef
     return executionPlan.evaluate(reportEvaluationContext);
   }
 
-  protected abstract ProcessReportCmdExecutionPlan<T> buildExecutionPlan(
-      final ReportCmdExecutionPlanBuilder builder);
-
-  public BoolQueryBuilder getBaseQuery(
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
-          reportEvaluationContext) {
-    return executionPlan.setupBaseQuery(new ExecutionContext<>(reportEvaluationContext));
+  @Override
+  public String createCommandKey() {
+    return executionPlan.generateCommandKey();
   }
 
   @Override
@@ -48,8 +44,12 @@ public abstract class ProcessCmd<T> implements Command<T, SingleProcessReportDef
     return executionPlan.getGroupByMinMaxStats(new ExecutionContext<>(reportEvaluationContext));
   }
 
-  @Override
-  public String createCommandKey() {
-    return executionPlan.generateCommandKey();
+  protected abstract ProcessReportCmdExecutionPlan<T> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder);
+
+  public BoolQueryBuilder getBaseQuery(
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext) {
+    return executionPlan.setupBaseQuery(new ExecutionContext<>(reportEvaluationContext));
   }
 }

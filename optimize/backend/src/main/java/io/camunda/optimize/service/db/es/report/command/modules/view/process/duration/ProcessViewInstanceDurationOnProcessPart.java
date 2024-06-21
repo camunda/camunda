@@ -40,7 +40,7 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
   @Override
   public List<AggregationBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto> context) {
-    ProcessPartDto processPart =
+    final ProcessPartDto processPart =
         context
             .getReportConfiguration()
             .getProcessPart()
@@ -85,7 +85,7 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
       final BoolQueryBuilder baseQuery,
       final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
-    ProcessPartDto processPart =
+    final ProcessPartDto processPart =
         context
             .getReportConfiguration()
             .getProcessPart()

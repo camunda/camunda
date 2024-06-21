@@ -38,20 +38,8 @@ public abstract class PositionBasedImportIndexHandler
   private long pendingPositionOfLastEntity = 0;
   private long pendingSequenceOfLastEntity = 0;
   private boolean hasSeenSequenceField = false;
-  @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
-
-  @Override
-  public PositionBasedImportIndexDto getIndexStateDto() {
-    final PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
-    indexToStore.setDataSource(dataSource);
-    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
-    indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
-    indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
-    indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
-    indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
-    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
-    return indexToStore;
-  }
+  @Autowired
+  private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
   @PostConstruct
   protected void init() {
@@ -70,17 +58,6 @@ public abstract class PositionBasedImportIndexHandler
   }
 
   @Override
-  public void resetImportIndex() {
-    lastImportExecutionTimestamp = BEGINNING_OF_TIME;
-    timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
-    persistedPositionOfLastEntity = 0;
-    persistedSequenceOfLastEntity = 0;
-    pendingPositionOfLastEntity = 0;
-    pendingSequenceOfLastEntity = 0;
-    hasSeenSequenceField = false;
-  }
-
-  @Override
   public ZeebeDataSourceDto getDataSource() {
     return dataSource;
   }
@@ -94,7 +71,33 @@ public abstract class PositionBasedImportIndexHandler
     return page;
   }
 
-  /** States the database document name where the index information should be stored. */
+  @Override
+  public PositionBasedImportIndexDto getIndexStateDto() {
+    final PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
+    indexToStore.setDataSource(dataSource);
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
+    indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
+    indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
+    indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
+    indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
+    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
+    return indexToStore;
+  }
+
+  @Override
+  public void resetImportIndex() {
+    lastImportExecutionTimestamp = BEGINNING_OF_TIME;
+    timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
+    persistedPositionOfLastEntity = 0;
+    persistedSequenceOfLastEntity = 0;
+    pendingPositionOfLastEntity = 0;
+    pendingSequenceOfLastEntity = 0;
+    hasSeenSequenceField = false;
+  }
+
+  /**
+   * States the database document name where the index information should be stored.
+   */
   protected abstract String getDatabaseDocID();
 
   public void updateLastPersistedEntityPositionAndSequence(

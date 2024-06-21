@@ -57,7 +57,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
       final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.decisionInstanceWriter = decisionInstanceWriter;
@@ -69,9 +69,10 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
 
   @Override
   public void executeImport(
-      List<HistoricDecisionInstanceDto> engineDtoList, Runnable importCompleteCallback) {
+      final List<HistoricDecisionInstanceDto> engineDtoList,
+      final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
-    boolean newDataIsAvailable = !engineDtoList.isEmpty();
+    final boolean newDataIsAvailable = !engineDtoList.isEmpty();
 
     if (newDataIsAvailable) {
       final List<DecisionInstanceDto> optimizeDtos =
@@ -89,7 +90,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   public Optional<DecisionInstanceDto> mapEngineEntityToOptimizeEntity(
-      HistoricDecisionInstanceDto engineEntity) {
+      final HistoricDecisionInstanceDto engineEntity) {
     final Optional<DecisionDefinitionOptimizeDto> definition =
         resolveDecisionDefinition(engineEntity);
     if (!definition.isPresent()) {
@@ -125,12 +126,12 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
                 .orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))));
   }
 
-  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(
-      List<HistoricDecisionInstanceDto> engineEntities) {
+      final List<HistoricDecisionInstanceDto> engineEntities) {
     return engineEntities.stream()
         .map(this::mapEngineEntityToOptimizeEntity)
         .filter(Optional::isPresent)
@@ -139,7 +140,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private DatabaseImportJob<DecisionInstanceDto> createDatabaseImportJob(
-      List<DecisionInstanceDto> decisionInstanceDtos, Runnable callback) {
+      final List<DecisionInstanceDto> decisionInstanceDtos, final Runnable callback) {
     final DecisionInstanceDatabaseImportJob importJob =
         new DecisionInstanceDatabaseImportJob(decisionInstanceWriter, callback, databaseClient);
     importJob.setEntitiesToImport(decisionInstanceDtos);
@@ -147,14 +148,14 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private List<OutputInstanceDto> mapDecisionOutputs(
-      HistoricDecisionInstanceDto engineEntity,
+      final HistoricDecisionInstanceDto engineEntity,
       final DecisionDefinitionOptimizeDto resolvedDefinition) {
     List<PluginDecisionOutputDto> outputInstanceDtoList =
         engineEntity.getOutputs().stream()
             .map(o -> mapEngineOutputDtoToPluginOutputDto(engineEntity, o, resolvedDefinition))
             .collect(Collectors.toList());
 
-    for (DecisionOutputImportAdapter dmnInputImportAdapter :
+    for (final DecisionOutputImportAdapter dmnInputImportAdapter :
         decisionOutputImportAdapterProvider.getPlugins()) {
       outputInstanceDtoList = dmnInputImportAdapter.adaptOutputs(outputInstanceDtoList);
     }
@@ -166,14 +167,14 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private List<InputInstanceDto> mapDecisionInputs(
-      HistoricDecisionInstanceDto engineEntity,
+      final HistoricDecisionInstanceDto engineEntity,
       final DecisionDefinitionOptimizeDto resolvedDefinition) {
     List<PluginDecisionInputDto> inputInstanceDtoList =
         engineEntity.getInputs().stream()
             .map(i -> mapEngineInputDtoToPluginInputDto(engineEntity, i, resolvedDefinition))
             .collect(Collectors.toList());
 
-    for (DecisionInputImportAdapter decisionInputImportAdapter :
+    for (final DecisionInputImportAdapter decisionInputImportAdapter :
         decisionInputImportAdapterProvider.getPlugins()) {
       inputInstanceDtoList = decisionInputImportAdapter.adaptInputs(inputInstanceDtoList);
     }
@@ -185,7 +186,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private InputInstanceDto mapPluginInputDtoToOptimizeInputDto(
-      PluginDecisionInputDto pluginDecisionInputDto) {
+      final PluginDecisionInputDto pluginDecisionInputDto) {
     return new InputInstanceDto(
         pluginDecisionInputDto.getId(),
         pluginDecisionInputDto.getClauseId(),
@@ -197,7 +198,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private OutputInstanceDto mapPluginOutputDtoToOptimizeOutputDto(
-      PluginDecisionOutputDto pluginDecisionOutputDto) {
+      final PluginDecisionOutputDto pluginDecisionOutputDto) {
     return new OutputInstanceDto(
         pluginDecisionOutputDto.getId(),
         pluginDecisionOutputDto.getClauseId(),
@@ -291,7 +292,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     try {
       return decisionDefinitionResolverService.getDefinition(
           engineEntity.getDecisionDefinitionId(), engineContext);
-    } catch (OptimizeDecisionDefinitionNotFoundException ex) {
+    } catch (final OptimizeDecisionDefinitionNotFoundException ex) {
       log.debug("Could not find the definition with ID {}", engineEntity.getDecisionDefinitionId());
       return Optional.empty();
     }

@@ -22,15 +22,15 @@ public class SumAggregation extends AggregationStrategy<SumAggregationBuilder> {
   private static final String SUM_AGGREGATION = "sumAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Sum aggregation = aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public ValuesSourceAggregationBuilder<SumAggregationBuilder>
+  createAggregationBuilderForAggregation(final String customIdentifier) {
+    return sum(createAggregationName(customIdentifier, SUM_AGGREGATION));
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<SumAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return sum(createAggregationName(customIdentifier, SUM_AGGREGATION));
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
+    final Sum aggregation = aggs.get(createAggregationName(customIdentifier, SUM_AGGREGATION));
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

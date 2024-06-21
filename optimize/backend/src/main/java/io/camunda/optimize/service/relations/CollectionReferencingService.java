@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import java.util.Set;
 
 public interface CollectionReferencingService {
+
   Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(CollectionDefinitionDto definition);
 
   void handleCollectionDeleted(CollectionDefinitionDto definition);

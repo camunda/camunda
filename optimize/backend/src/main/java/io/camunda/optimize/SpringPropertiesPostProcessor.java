@@ -20,18 +20,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class SpringPropertiesPostProcessor implements EnvironmentPostProcessor {
 
-  private static final String PROPERTY_SOURCE_NAME = "defaultProperties";
   public static final String SPRING_HTTP2_ENABLED_PROPERTY = "server.http2.enabled";
+  private static final String PROPERTY_SOURCE_NAME = "defaultProperties";
 
   @Override
   public void postProcessEnvironment(
-      ConfigurableEnvironment environment, SpringApplication application) {
-    Map<String, Object> propertiesToAddMap = createSpringProperties();
+      final ConfigurableEnvironment environment, final SpringApplication application) {
+    final Map<String, Object> propertiesToAddMap = createSpringProperties();
     addToDefaultProperties(environment.getPropertySources(), propertiesToAddMap);
   }
 
   private Map<String, Object> createSpringProperties() {
-    ConfigurationService preAutowireConfigService = ConfigurationService.createDefault();
+    final ConfigurationService preAutowireConfigService = ConfigurationService.createDefault();
     return Map.of(
         SPRING_HTTP2_ENABLED_PROPERTY, preAutowireConfigService.getContainerHttp2Enabled());
   }
@@ -40,13 +40,13 @@ public class SpringPropertiesPostProcessor implements EnvironmentPostProcessor {
      This does NOT overwrite properties defined in application.properties
   */
   private void addToDefaultProperties(
-      MutablePropertySources propertySources, Map<String, Object> propertiesToAddMap) {
+      final MutablePropertySources propertySources, final Map<String, Object> propertiesToAddMap) {
     Optional.ofNullable(propertySources.get(PROPERTY_SOURCE_NAME))
         .filter(MapPropertySource.class::isInstance)
         .map(MapPropertySource.class::cast)
         .ifPresentOrElse(
             propertySource -> {
-              for (String key : propertiesToAddMap.keySet()) {
+              for (final String key : propertiesToAddMap.keySet()) {
                 if (!propertySource.containsProperty(key)) {
                   propertySource.getSource().put(key, propertiesToAddMap.get(key));
                 }

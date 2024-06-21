@@ -12,7 +12,8 @@ import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
 public class AlertUtil {
 
-  public static void mapBasicFields(AlertCreationRequestDto toCreate, AlertDefinitionDto result) {
+  public static void mapBasicFields(final AlertCreationRequestDto toCreate,
+      final AlertDefinitionDto result) {
     result.setCheckInterval(toCreate.getCheckInterval());
     result.setEmails(toCreate.getEmails());
     result.setWebhook(toCreate.getWebhook());

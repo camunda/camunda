@@ -55,8 +55,8 @@ public abstract class AbstractUserTaskWriter {
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX, Set.of(PROCESS_INSTANCE_MULTI_ALIAS), keys);
 
-    Map<String, List<FlowNodeInstanceDto>> userTaskToProcessInstance = new HashMap<>();
-    for (FlowNodeInstanceDto userTask : userTaskInstances) {
+    final Map<String, List<FlowNodeInstanceDto>> userTaskToProcessInstance = new HashMap<>();
+    for (final FlowNodeInstanceDto userTask : userTaskInstances) {
       userTaskToProcessInstance.putIfAbsent(userTask.getProcessInstanceId(), new ArrayList<>());
       userTaskToProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
     }

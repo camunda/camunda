@@ -32,8 +32,9 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CamundaActivityEventReader {
-  private final EventRepository eventRepository;
+
   DatabaseClient dbClient;
+  private final EventRepository eventRepository;
 
   public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionAfter(
       final String definitionKey, final Long eventTimestamp, final int limit) {
@@ -94,7 +95,7 @@ public class CamundaActivityEventReader {
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
+  getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
     log.debug("Fetching min and max timestamp for ingested camunda events");
     return eventRepository.getMinAndMaxIngestedTimestampsForDefinition(processDefinitionKey);
   }

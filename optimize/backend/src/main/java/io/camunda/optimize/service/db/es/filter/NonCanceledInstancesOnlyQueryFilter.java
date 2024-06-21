@@ -29,9 +29,9 @@ public class NonCanceledInstancesOnlyQueryFilter
       final List<NonCanceledInstancesOnlyFilterDataDto> nonCanceledInstancesOnlyFilters,
       final FilterContext filterContext) {
     if (nonCanceledInstancesOnlyFilters != null && !nonCanceledInstancesOnlyFilters.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
 
-      BoolQueryBuilder onlyNonCanceledInstancesQuery =
+      final BoolQueryBuilder onlyNonCanceledInstancesQuery =
           boolQuery()
               .mustNot(termQuery(STATE, EXTERNALLY_TERMINATED_STATE))
               .mustNot(termQuery(STATE, INTERNALLY_TERMINATED_STATE));

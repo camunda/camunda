@@ -27,9 +27,9 @@ public class ReportRelationService {
   }
 
   public Set<ConflictedItemDto> getConflictedItemsForDeleteReport(
-      ReportDefinitionDto reportDefinition) {
+      final ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-    for (ReportReferencingService referencingService : referencingServices) {
+    for (final ReportReferencingService referencingService : referencingServices) {
       conflictedItems.addAll(
           referencingService.getConflictedItemsForReportDelete(reportDefinition));
     }
@@ -37,9 +37,9 @@ public class ReportRelationService {
   }
 
   public Set<ConflictedItemDto> getConflictedItemsForUpdatedReport(
-      ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition) {
+      final ReportDefinitionDto currentDefinition, final ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-    for (ReportReferencingService referencingService : referencingServices) {
+    for (final ReportReferencingService referencingService : referencingServices) {
       conflictedItems.addAll(
           referencingService.getConflictedItemsForReportUpdate(
               currentDefinition, updateDefinition));
@@ -47,14 +47,14 @@ public class ReportRelationService {
     return conflictedItems;
   }
 
-  public void handleDeleted(ReportDefinitionDto reportDefinition) {
-    for (ReportReferencingService referencingService : referencingServices) {
+  public void handleDeleted(final ReportDefinitionDto reportDefinition) {
+    for (final ReportReferencingService referencingService : referencingServices) {
       referencingService.handleReportDeleted(reportDefinition);
     }
   }
 
   public void handleUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
-    for (ReportReferencingService referencingService : referencingServices) {
+    for (final ReportReferencingService referencingService : referencingServices) {
       referencingService.handleReportUpdated(reportId, updateDefinition);
     }
   }

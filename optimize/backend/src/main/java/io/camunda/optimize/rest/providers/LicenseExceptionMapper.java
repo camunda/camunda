@@ -28,7 +28,7 @@ public class LicenseExceptionMapper implements ExceptionMapper<OptimizeLicenseEx
   }
 
   @Override
-  public Response toResponse(OptimizeLicenseException e) {
+  public Response toResponse(final OptimizeLicenseException e) {
     log.debug("Mapping OptimizeLicenseException.");
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)
@@ -36,10 +36,11 @@ public class LicenseExceptionMapper implements ExceptionMapper<OptimizeLicenseEx
         .build();
   }
 
-  private ErrorResponseDto getErrorResponseDto(OptimizeLicenseException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+  private ErrorResponseDto getErrorResponseDto(final OptimizeLicenseException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        errorCode);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }

@@ -34,7 +34,7 @@ public class EventFetcherFactory {
   private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
   public EventFetcherService<?> createEventFetcherForEventImportSource(
-      EventImportSourceDto eventImportSourceDto) {
+      final EventImportSourceDto eventImportSourceDto) {
     if (EventSourceType.EXTERNAL.equals(eventImportSourceDto.getEventImportSourceType())) {
       final boolean includeAllGroups =
           eventImportSourceDto.getEventSourceConfigurations().stream()

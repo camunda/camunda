@@ -36,7 +36,7 @@ public class EventProcessInstanceDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<EventProcessInstanceDto> newOptimizeEntities) {
+  protected void persistEntities(final List<EventProcessInstanceDto> newOptimizeEntities) {
     final String index =
         new EventProcessInstanceIndexES(eventProcessPublishStateDto.getId()).getIndexName();
     eventProcessInstanceWriter.importProcessInstances(index, newOptimizeEntities, gatewayLookup);

@@ -63,23 +63,23 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
 
     switch (dto.getType()) {
       case STRING:
-        StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
+        final StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
       case INTEGER:
       case DOUBLE:
       case SHORT:
       case LONG:
-        OperatorMultipleValuesVariableFilterDataDto numericVarDto =
+        final OperatorMultipleValuesVariableFilterDataDto numericVarDto =
             (OperatorMultipleValuesVariableFilterDataDto) dto;
         queryBuilder = createNumericQueryBuilder(numericVarDto);
         break;
       case DATE:
-        DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
+        final DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
       case BOOLEAN:
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        final BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         queryBuilder = createBooleanQueryBuilder(booleanVarDto);
         break;
       default:
@@ -135,13 +135,13 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
             .must(termQuery(getNestedVariableTypeField(), VariableType.STRING.getId()));
 
     final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
-    QueryBuilder filter =
+    final QueryBuilder filter =
         (lowerCaseValue.length() > MAX_GRAM)
             /*
               using the slow wildcard query for uncommonly large filter strings (> 10 chars)
             */
             ? wildcardQuery(
-                getValueSearchField(LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
+            getValueSearchField(LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
             /*
               using Elasticsearch ngrams to filter for strings < 10 chars,
               because it's fast but increasing the number of chars makes the index bigger
@@ -175,40 +175,12 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
         dto.getName(), dto.getType(), dto.getData().getValues());
   }
 
-  private BoolQueryBuilder createEqualsOneOrMoreValuesFilterQuery(
-      final String variableName, final VariableType variableType, final List<?> values) {
-    final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
-    final String nestedVariableNameFieldLabel = getNestedVariableNameField();
-    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
-
-    final List<?> nonNullValues =
-        values.stream().filter(Objects::nonNull).collect(Collectors.toList());
-
-    if (!nonNullValues.isEmpty()) {
-      variableFilterBuilder.should(
-          nestedQuery(
-              VARIABLES,
-              boolQuery()
-                  .must(termQuery(nestedVariableNameFieldLabel, variableName))
-                  .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
-                  .must(termsQuery(nestedVariableValueFieldLabel, nonNullValues)),
-              ScoreMode.None));
-    }
-
-    final boolean hasNullValues = nonNullValues.size() < values.size();
-    if (hasNullValues) {
-      variableFilterBuilder.should(
-          createFilterForUndefinedOrNullQueryBuilder(variableName, variableType));
-    }
-    return variableFilterBuilder;
-  }
-
   @Override
   protected QueryBuilder createNumericQueryBuilder(
-      OperatorMultipleValuesVariableFilterDataDto dto) {
+      final OperatorMultipleValuesVariableFilterDataDto dto) {
     validateMultipleValuesFilterDataDto(dto);
 
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
     final BoolQueryBuilder boolQueryBuilder =
         boolQuery()
@@ -216,7 +188,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
             .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
 
     QueryBuilder resultQuery = nestedQuery(VARIABLES, boolQueryBuilder, ScoreMode.None);
-    Object value = retrieveValue(dto);
+    final Object value = retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
@@ -270,6 +242,34 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
     }
 
     return dateFilterBuilder;
+  }
+
+  private BoolQueryBuilder createEqualsOneOrMoreValuesFilterQuery(
+      final String variableName, final VariableType variableType, final List<?> values) {
+    final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
+    final String nestedVariableNameFieldLabel = getNestedVariableNameField();
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
+
+    final List<?> nonNullValues =
+        values.stream().filter(Objects::nonNull).collect(Collectors.toList());
+
+    if (!nonNullValues.isEmpty()) {
+      variableFilterBuilder.should(
+          nestedQuery(
+              VARIABLES,
+              boolQuery()
+                  .must(termQuery(nestedVariableNameFieldLabel, variableName))
+                  .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+                  .must(termsQuery(nestedVariableValueFieldLabel, nonNullValues)),
+              ScoreMode.None));
+    }
+
+    final boolean hasNullValues = nonNullValues.size() < values.size();
+    if (hasNullValues) {
+      variableFilterBuilder.should(
+          createFilterForUndefinedOrNullQueryBuilder(variableName, variableType));
+    }
+    return variableFilterBuilder;
   }
 
   private String getVariableValueFieldForType(final VariableType type) {

@@ -113,7 +113,7 @@ public class ReportExportService {
 
   public void validateReportAuthorizationsOrFail(
       final String userId, final List<ReportDefinitionDto<?>> reportDefinitions) {
-    List<String> notAuthorizedReportIds = new ArrayList<>();
+    final List<String> notAuthorizedReportIds = new ArrayList<>();
 
     reportDefinitions.forEach(
         reportDef -> {

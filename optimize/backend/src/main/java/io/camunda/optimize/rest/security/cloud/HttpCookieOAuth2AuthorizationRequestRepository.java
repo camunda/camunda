@@ -60,7 +60,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
   @Override
   public OAuth2AuthorizationRequest removeAuthorizationRequest(
-      HttpServletRequest request, HttpServletResponse response) {
+      final HttpServletRequest request, final HttpServletResponse response) {
     final OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
     deleteCookie(request, response);
     return authorizationRequest;
@@ -80,7 +80,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
       final HttpServletRequest request, final HttpServletResponse response) {
     final Cookie[] cookies = request.getCookies();
     if (cookies != null && cookies.length > 0) {
-      for (Cookie cookie : cookies) {
+      for (final Cookie cookie : cookies) {
         if (cookie.getName().equals(REQUEST_COOKIE_NAME)) {
           cookie.setValue("");
           cookie.setPath("/");
@@ -94,7 +94,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
   private static Optional<Cookie> getAuthorizationRequestCookie(final HttpServletRequest request) {
     final Cookie[] cookies = request.getCookies();
     if (cookies != null && cookies.length > 0) {
-      for (Cookie cookie : cookies) {
+      for (final Cookie cookie : cookies) {
         if (cookie.getName().equals(REQUEST_COOKIE_NAME)) {
           return Optional.of(cookie);
         }

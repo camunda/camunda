@@ -41,7 +41,7 @@ public class ProcessDefinitionXmlImportService
       final EngineContext engineContext,
       final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.engineContext = engineContext;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
@@ -54,7 +54,7 @@ public class ProcessDefinitionXmlImportService
       final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
-    boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
           mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
@@ -84,7 +84,7 @@ public class ProcessDefinitionXmlImportService
   private DatabaseImportJob<ProcessDefinitionOptimizeDto> createDatabaseImportJob(
       final List<ProcessDefinitionOptimizeDto> processDefinitions,
       final Runnable importCompleteCallback) {
-    ProcessDefinitionXmlDatabaseImportJob procDefImportJob =
+    final ProcessDefinitionXmlDatabaseImportJob procDefImportJob =
         new ProcessDefinitionXmlDatabaseImportJob(
             processDefinitionXmlWriter, importCompleteCallback, databaseClient);
     procDefImportJob.setEntitiesToImport(processDefinitions);

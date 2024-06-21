@@ -58,8 +58,8 @@ public class AuthorizedCollectionService {
   }
 
   public AuthorizedCollectionDefinitionDto
-      getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
-          final String userId, final String collectionId) {
+  getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
+      final String userId, final String collectionId) {
 
     final AuthorizedCollectionDefinitionDto collectionDefinition =
         getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
@@ -85,7 +85,7 @@ public class AuthorizedCollectionService {
   public void verifyUserAuthorizedToEditCollectionRole(
       final String userId, final String collectionId, final String roleId)
       throws NotFoundException, ForbiddenException {
-    AuthorizedCollectionDefinitionDto authCollectionDto =
+    final AuthorizedCollectionDefinitionDto authCollectionDto =
         getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     authCollectionDto.getDefinitionDto().getData().getRoles().stream()

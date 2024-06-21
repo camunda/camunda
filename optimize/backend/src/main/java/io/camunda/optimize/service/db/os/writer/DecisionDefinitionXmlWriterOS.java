@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DecisionDefinitionXmlWriterOS implements DecisionDefinitionXmlWriter {
+
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
@@ -39,7 +40,7 @@ public class DecisionDefinitionXmlWriterOS implements DecisionDefinitionXmlWrite
   @Override
   public void importDecisionDefinitionXmls(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    String importItemName = "decision definition XML information";
+    final String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to OS.", decisionDefinitions.size(), importItemName);
     osClient.doImportBulkRequestWithList(
         importItemName,

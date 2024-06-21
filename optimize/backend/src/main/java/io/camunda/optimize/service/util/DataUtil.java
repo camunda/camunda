@@ -14,7 +14,7 @@ import java.util.Objects;
 public class DataUtil {
 
   @SafeVarargs
-  public static <T> HashSet<T> newHashSet(T... elements) {
+  public static <T> HashSet<T> newHashSet(final T... elements) {
     Objects.requireNonNull(elements);
     return new HashSet(Arrays.asList(elements));
   }

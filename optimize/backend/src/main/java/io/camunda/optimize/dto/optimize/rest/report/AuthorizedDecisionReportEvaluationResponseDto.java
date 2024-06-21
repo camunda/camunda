@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthorizedDecisionReportEvaluationResponseDto<T>
     extends AuthorizedSingleReportEvaluationResponseDto<
-        T, SingleDecisionReportDefinitionRequestDto> {
+    T, SingleDecisionReportDefinitionRequestDto> {
 
   public AuthorizedDecisionReportEvaluationResponseDto(
       final RoleType currentUserRole,

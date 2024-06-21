@@ -72,12 +72,12 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
     final Map<String, FlowNodeDataDto> modelElementData =
         getModelElementData(context.getReportData());
     final List<DistributedByResult> distributedByModelElements = new ArrayList<>();
-    for (Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
+    for (final Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
       final ViewResult viewResult =
           viewPart.retrieveResult(response, modelElementBucket.getAggregations(), context);
       final String modelElementKey = modelElementBucket.getKeyAsString();
       if (modelElementData.containsKey(modelElementKey)) {
-        String label = modelElementData.get(modelElementKey).getName();
+        final String label = modelElementData.get(modelElementKey).getName();
         distributedByModelElements.add(
             createDistributedByResult(modelElementKey, label, viewResult));
         modelElementData.remove(modelElementKey);
@@ -85,6 +85,12 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
     }
     addMissingDistributions(modelElementData, distributedByModelElements, context);
     return distributedByModelElements;
+  }
+
+  @Override
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   private void addMissingDistributions(
@@ -130,7 +136,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   private Set<String> getExcludedFlowNodes(
       final ProcessReportDataDto reportData, final Map<String, FlowNodeDataDto> modelElementNames) {
-    Set<String> excludedFlowNodes =
+    final Set<String> excludedFlowNodes =
         reportData.getFilter().stream()
             .filter(
                 filter ->
@@ -158,12 +164,6 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
         .anyMatch(
             filter ->
                 filter instanceof AssigneeFilterDto || filter instanceof CandidateGroupFilterDto);
-  }
-
-  @Override
-  protected void addAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   protected abstract String getModelElementIdPath();

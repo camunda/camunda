@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class EventProcessDefinitionReader {
+
   private EventRepository eventRepository;
 
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(

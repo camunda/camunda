@@ -57,7 +57,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
             .getProcessDataCleanupConfiguration()
             .getAllProcessSpecificConfigurationKeys());
     int i = 1;
-    for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
+    for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
       log.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForProcessKey(startTime, currentProcessDefinitionKey);
       i++;
@@ -138,7 +138,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private int getBatchSize() {

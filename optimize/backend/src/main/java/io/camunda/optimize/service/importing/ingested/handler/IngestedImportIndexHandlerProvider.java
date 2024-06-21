@@ -28,7 +28,8 @@ public class IngestedImportIndexHandlerProvider {
   private final BeanFactory beanFactory;
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
-  @Getter private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
+  @Getter
+  private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
 
   @PostConstruct
   public void init() {
@@ -44,8 +45,8 @@ public class IngestedImportIndexHandlerProvider {
     return allHandlers.values();
   }
 
-  private <R, C extends Class<R>> R getImportIndexHandlerInstance(C requiredType) {
-    R result;
+  private <R, C extends Class<R>> R getImportIndexHandlerInstance(final C requiredType) {
+    final R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(allHandlers.get(requiredType.getSimpleName()));
     } else {
@@ -54,7 +55,7 @@ public class IngestedImportIndexHandlerProvider {
     return result;
   }
 
-  private boolean isInstantiated(Class<?> handlerClass) {
+  private boolean isInstantiated(final Class<?> handlerClass) {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
   }
 }

@@ -50,13 +50,13 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  protected String getDatabaseImportIndexType() {
-    return DatabaseConstants.TENANT_INDEX_NAME;
-  }
-
-  @Override
   public void resetImportIndex() {
     super.resetImportIndex();
     alreadyImportedTenants.clear();
+  }
+
+  @Override
+  protected String getDatabaseImportIndexType() {
+    return DatabaseConstants.TENANT_INDEX_NAME;
   }
 }

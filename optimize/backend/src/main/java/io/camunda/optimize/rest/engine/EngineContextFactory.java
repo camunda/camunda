@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 public interface EngineContextFactory {
+
   void init();
 
   void close();

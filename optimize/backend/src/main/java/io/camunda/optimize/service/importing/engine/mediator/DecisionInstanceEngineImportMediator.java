@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionInstanceEngineImportMediator
     extends TimestampBasedImportMediator<
-        DecisionInstanceImportIndexHandler, HistoricDecisionInstanceDto> {
+    DecisionInstanceImportIndexHandler, HistoricDecisionInstanceDto> {
 
   private final DecisionInstanceFetcher decisionInstanceFetcher;
 

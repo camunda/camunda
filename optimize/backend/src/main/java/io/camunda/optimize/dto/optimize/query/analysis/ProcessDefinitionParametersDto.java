@@ -27,10 +27,6 @@ public class ProcessDefinitionParametersDto {
   protected Boolean disconsiderAutomatedTasks = false;
   protected List<ProcessFilterDto<?>> filters = new ArrayList<>();
 
-  public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = normalizeTenants(tenantIds);
-  }
-
   protected List<String> normalizeNullTenants(final List<String> tenantIds) {
     return tenantIds.stream()
         .map(QueryParamUtil::normalizeNullStringValue)
@@ -44,5 +40,9 @@ public class ProcessDefinitionParametersDto {
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = normalizeTenants(tenantIds);
   }
 }

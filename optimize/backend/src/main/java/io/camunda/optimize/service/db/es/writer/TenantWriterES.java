@@ -39,7 +39,7 @@ public class TenantWriterES implements TenantWriter {
 
   @Override
   public void writeTenants(final List<TenantDto> tenantDtos) {
-    String importItemName = "tenants";
+    final String importItemName = "tenants";
     log.debug("Writing [{}] {} to ES.", tenantDtos.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,
@@ -48,12 +48,11 @@ public class TenantWriterES implements TenantWriter {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
-  private void addImportTenantRequest(BulkRequest bulkRequest, TenantDto tenantDto) {
+  private void addImportTenantRequest(final BulkRequest bulkRequest, final TenantDto tenantDto) {
     final String id = tenantDto.getId();
     final Script updateScript =
         ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);
-    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-    final UpdateRequest request =
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final UpdateRequest request =
         new UpdateRequest()
             .index(TENANT_INDEX_NAME)
             .id(id)

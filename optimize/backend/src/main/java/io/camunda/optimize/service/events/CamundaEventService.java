@@ -91,13 +91,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class CamundaEventService {
 
-  private final CamundaActivityEventReader camundaActivityEventReader;
-  private final DefinitionService definitionService;
-
   public static final String EVENT_SOURCE_CAMUNDA = "camunda";
   public static final String PROCESS_START_TYPE = EventDtoBuilderUtil.PROCESS_START_TYPE;
   public static final String PROCESS_END_TYPE = EventDtoBuilderUtil.PROCESS_END_TYPE;
-
+  public static final Set<String> SPLIT_START_END_MAPPED_TYPES =
+      ImmutableSet.of(
+          TASK,
+          TASK_SCRIPT,
+          TASK_SERVICE,
+          TASK_BUSINESS_RULE,
+          TASK_MANUAL_TASK,
+          TASK_USER_TASK,
+          TASK_SEND_TASK,
+          TASK_RECEIVE_TASK);
   private static final Set<String> START_EVENT_TYPES =
       ImmutableSet.of(
           START_EVENT,
@@ -108,7 +114,6 @@ public class CamundaEventService {
           START_EVENT_COMPENSATION,
           START_EVENT_ERROR,
           START_EVENT_CONDITIONAL);
-
   private static final Set<String> END_EVENT_TYPES =
       ImmutableSet.of(
           END_EVENT_ERROR,
@@ -120,10 +125,8 @@ public class CamundaEventService {
           END_EVENT_ESCALATION,
           END_EVENT_NONE,
           "endEvent");
-
   private static final Set<String> START_AND_END_EVENT_TYPES =
       ImmutableSet.<String>builder().addAll(START_EVENT_TYPES).addAll(END_EVENT_TYPES).build();
-
   public static final Set<String> SINGLE_MAPPED_TYPES =
       ImmutableSet.<String>builder()
           .addAll(START_AND_END_EVENT_TYPES)
@@ -157,23 +160,13 @@ public class CamundaEventService {
                   INTERMEDIATE_EVENT_NONE_THROW,
                   INTERMEDIATE_EVENT_ESCALATION_THROW))
           .build();
-
-  public static final Set<String> SPLIT_START_END_MAPPED_TYPES =
-      ImmutableSet.of(
-          TASK,
-          TASK_SCRIPT,
-          TASK_SERVICE,
-          TASK_BUSINESS_RULE,
-          TASK_MANUAL_TASK,
-          TASK_USER_TASK,
-          TASK_SEND_TASK,
-          TASK_RECEIVE_TASK);
-
   private static final Set<String> ALL_MAPPED_TYPES =
       ImmutableSet.<String>builder()
           .addAll(SINGLE_MAPPED_TYPES)
           .addAll(SPLIT_START_END_MAPPED_TYPES)
           .build();
+  private final CamundaActivityEventReader camundaActivityEventReader;
+  private final DefinitionService definitionService;
 
   public List<OrderedEventDto> getTraceableCamundaEventsForDefinitionAfter(
       final String definitionKey, final Long eventTimestamp, final int limit) {
@@ -197,7 +190,7 @@ public class CamundaEventService {
 
   public List<EventTypeDto> getLabeledCamundaEventTypesForProcess(
       final String userId, final CamundaEventSourceEntryDto camundaEventSourceEntryDto) {
-    List<EventTypeDto> result = new ArrayList<>();
+    final List<EventTypeDto> result = new ArrayList<>();
     if (camundaEventSourceEntryDto
         .getConfiguration()
         .getEventScope()
@@ -229,12 +222,12 @@ public class CamundaEventService {
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
+  getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
     return camundaActivityEventReader.getMinAndMaxIngestedTimestampsForDefinition(
         processDefinitionKey);
   }
 
-  private boolean isStateTraceable(CamundaActivityEventDto camundaActivityEventDto) {
+  private boolean isStateTraceable(final CamundaActivityEventDto camundaActivityEventDto) {
     return !camundaActivityEventDto.getActivityType().equalsIgnoreCase(PROCESS_START_TYPE)
         && !camundaActivityEventDto.getActivityType().equalsIgnoreCase(PROCESS_END_TYPE);
   }

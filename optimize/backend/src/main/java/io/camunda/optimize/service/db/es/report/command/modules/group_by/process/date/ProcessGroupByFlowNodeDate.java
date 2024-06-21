@@ -33,6 +33,11 @@ public abstract class ProcessGroupByFlowNodeDate extends AbstractProcessGroupByM
   }
 
   @Override
+  protected String getPathToElementField() {
+    return FLOW_NODE_INSTANCES;
+  }
+
+  @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
     return createModelElementAggregationFilter(
         context.getReportData(), context.getFilterContext(), definitionService);
@@ -41,10 +46,5 @@ public abstract class ProcessGroupByFlowNodeDate extends AbstractProcessGroupByM
   @Override
   protected QueryBuilder getModelElementTypeFilterQuery() {
     return matchAllQuery();
-  }
-
-  @Override
-  protected String getPathToElementField() {
-    return FLOW_NODE_INSTANCES;
   }
 }

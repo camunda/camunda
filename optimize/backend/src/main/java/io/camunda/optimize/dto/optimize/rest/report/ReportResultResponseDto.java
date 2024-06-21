@@ -21,13 +21,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReportResultResponseDto<T> {
+
   private long instanceCount;
   private long instanceCountWithoutFilters;
   private List<MeasureResponseDto<T>> measures = new ArrayList<>();
   private PaginationDto pagination;
 
-  public void addMeasure(MeasureResponseDto<T> measure) {
-    this.measures.add(measure);
+  public void addMeasure(final MeasureResponseDto<T> measure) {
+    measures.add(measure);
   }
 
   @JsonIgnore

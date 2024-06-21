@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionInstanceRepositoryES implements DecisionInstanceRepository {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -45,7 +46,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
 
   @Override
   public void importDecisionInstances(
-      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+      final String importItemName, final List<DecisionInstanceDto> decisionInstanceDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         decisionInstanceDtos,
@@ -78,7 +79,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
     String source = "";
     try {
       source = objectMapper.writeValueAsString(decisionInstanceDto);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       final String reason =
           String.format(
               "Error while processing JSON for decision instance DTO with ID [%s].",
@@ -89,7 +90,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
 
     final IndexRequest request =
         new IndexRequest(
-                getDecisionInstanceIndexAliasName(decisionInstanceDto.getDecisionDefinitionKey()))
+            getDecisionInstanceIndexAliasName(decisionInstanceDto.getDecisionDefinitionKey()))
             .id(decisionInstanceId)
             .source(source, XContentType.JSON);
 

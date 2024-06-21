@@ -30,9 +30,12 @@ public abstract class CommandEvaluationResult<T> {
 
   protected long instanceCount;
   protected long instanceCountWithoutFilters;
-  @NonNull protected List<MeasureDto<T>> measures = new ArrayList<>();
-  @NonNull protected ReportDataDto reportData;
-  @NonNull protected PaginationDto pagination = new PaginationDto(null, null);
+  @NonNull
+  protected List<MeasureDto<T>> measures = new ArrayList<>();
+  @NonNull
+  protected ReportDataDto reportData;
+  @NonNull
+  protected PaginationDto pagination = new PaginationDto(null, null);
 
   protected CommandEvaluationResult(
       @NonNull final List<MeasureDto<T>> measures, @NonNull final ReportDataDto reportData) {
@@ -51,16 +54,16 @@ public abstract class CommandEvaluationResult<T> {
     this.reportData = reportData;
   }
 
-  public <R extends ReportDataDto> R getReportDataAs(Class<R> reportDataType) {
+  public <R extends ReportDataDto> R getReportDataAs(final Class<R> reportDataType) {
     return reportDataType.cast(reportData);
   }
 
   public T getFirstMeasureData() {
-    return this.measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
+    return measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
   }
 
   public void addMeasure(final MeasureDto<T> measureDto) {
-    this.measures.add(measureDto);
+    measures.add(measureDto);
   }
 
   public abstract List<String[]> getResultAsCsv(

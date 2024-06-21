@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionInstanceEngineImportMediatorFactory
     extends AbstractEngineImportMediatorFactory {
+
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
   private final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
@@ -58,7 +59,7 @@ public class DecisionInstanceEngineImportMediatorFactory
   }
 
   public DecisionInstanceEngineImportMediator createDecisionInstanceEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new DecisionInstanceEngineImportMediator(
         importIndexHandlerRegistry.getDecisionInstanceImportIndexHandler(
             engineContext.getEngineAlias()),

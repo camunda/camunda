@@ -40,7 +40,7 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   @Override
   public void importDecisionDefinitionXmls(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    String importItemName = "decision definition XML information";
+    final String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,
@@ -55,7 +55,7 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
     final Script updateScript =
         ElasticsearchWriterUtil.createFieldUpdateScript(
             FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
-    UpdateRequest updateRequest =
+    final UpdateRequest updateRequest =
         new UpdateRequest()
             .index(DECISION_DEFINITION_INDEX_NAME)
             .id(decisionDefinitionDto.getId())

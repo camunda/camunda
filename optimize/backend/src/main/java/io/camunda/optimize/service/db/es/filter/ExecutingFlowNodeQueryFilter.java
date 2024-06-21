@@ -30,13 +30,13 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
       final BoolQueryBuilder query,
       final List<ExecutingFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
+    final List<QueryBuilder> filters = query.filter();
     flowNodeFilter.forEach(filter -> filters.add(createFilterQueryBuilder(filter)));
   }
 
   private QueryBuilder createFilterQueryBuilder(
       final ExecutingFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+    final BoolQueryBuilder boolQueryBuilder = boolQuery();
     flowNodeFilter
         .getValues()
         .forEach(

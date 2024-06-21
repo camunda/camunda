@@ -8,7 +8,8 @@
 package io.camunda.optimize.service.exceptions;
 
 public class InvalidDashboardVariableFilterException extends OptimizeValidationException {
-  public InvalidDashboardVariableFilterException(String message) {
+
+  public InvalidDashboardVariableFilterException(final String message) {
     super(message);
   }
 

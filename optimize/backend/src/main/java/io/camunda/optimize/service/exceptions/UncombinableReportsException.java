@@ -8,7 +8,8 @@
 package io.camunda.optimize.service.exceptions;
 
 public class UncombinableReportsException extends OptimizeValidationException {
-  public UncombinableReportsException(String message) {
+
+  public UncombinableReportsException(final String message) {
     super(message);
   }
 

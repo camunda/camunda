@@ -16,10 +16,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeUserTaskImportIndexHandler extends PositionBasedImportIndexHandler {
+
   private static final String ZEEBE_USER_TASK_IMPORT_INDEX_DOC_ID = "zeebeUserTaskImportIndex";
 
   public ZeebeUserTaskImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
-    this.dataSource = dataSourceDto;
+    dataSource = dataSourceDto;
   }
 
   @Override

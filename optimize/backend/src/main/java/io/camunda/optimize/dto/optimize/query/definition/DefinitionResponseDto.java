@@ -25,7 +25,9 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class DefinitionResponseDto extends SimpleDefinitionDto {
-  @NonNull private List<TenantDto> tenants;
+
+  @NonNull
+  private List<TenantDto> tenants;
 
   public DefinitionResponseDto(
       @NonNull final String key,

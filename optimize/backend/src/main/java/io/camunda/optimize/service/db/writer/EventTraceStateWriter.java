@@ -17,14 +17,14 @@ public interface EventTraceStateWriter {
 
   default String updateScript() {
     return """
-              for (def tracedEvent : params.eventTrace) {
-                  ctx._source.eventTrace.removeIf(event -> event.eventId.equals(tracedEvent.eventId));
-              }
-              ctx._source.eventTrace.addAll(params.eventTrace);
-            """;
+          for (def tracedEvent : params.eventTrace) {
+              ctx._source.eventTrace.removeIf(event -> event.eventId.equals(tracedEvent.eventId));
+          }
+          ctx._source.eventTrace.addAll(params.eventTrace);
+        """;
   }
 
-  default String getIndexName(String indexKey) {
+  default String getIndexName(final String indexKey) {
     return EventTraceStateIndex.constructIndexName(indexKey);
   }
 }

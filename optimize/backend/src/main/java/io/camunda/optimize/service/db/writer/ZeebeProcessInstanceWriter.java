@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @AllArgsConstructor
 public class ZeebeProcessInstanceWriter {
+
   private static final String NEW_INSTANCE = "instance";
   private static final String FORMATTER = "dateFormatPattern";
   private static final String SOURCE_EXPORT_INDEX = "sourceExportIndex";

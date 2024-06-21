@@ -62,8 +62,7 @@ public class EventProcessDefinitionWriterES implements EventProcessDefinitionWri
 
   private void addImportProcessDefinitionToRequest(
       final BulkRequest bulkRequest, final EventProcessDefinitionDto processDefinitionDto) {
-    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-    final UpdateRequest updateRequest =
+    @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final UpdateRequest updateRequest =
         new UpdateRequest()
             .index(EVENT_PROCESS_DEFINITION_INDEX_NAME)
             .id(processDefinitionDto.getId())

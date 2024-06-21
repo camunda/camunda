@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CorrelatedCamundaProcessInstanceReader {
+
   private final EventRepository eventRepository;
 
   public List<String> getCorrelationValueSampleForEventSources(

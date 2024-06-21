@@ -37,7 +37,7 @@ public class CompletedActivityInstanceDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) {
+  protected void persistEntities(final List<FlowNodeEventDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests = new ArrayList<>();
     importRequests.addAll(
         completedActivityInstanceWriter.generateActivityInstanceImports(newOptimizeEntities));

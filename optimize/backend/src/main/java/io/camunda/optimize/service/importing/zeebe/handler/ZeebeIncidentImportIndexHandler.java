@@ -20,7 +20,7 @@ public class ZeebeIncidentImportIndexHandler extends PositionBasedImportIndexHan
   private static final String ZEEBE_INCIDENT_IMPORT_INDEX_DOC_ID = "zeebeIncidentImportIndex";
 
   public ZeebeIncidentImportIndexHandler(final ZeebeDataSourceDto dataSourceDto) {
-    this.dataSource = dataSourceDto;
+    dataSource = dataSourceDto;
   }
 
   @Override

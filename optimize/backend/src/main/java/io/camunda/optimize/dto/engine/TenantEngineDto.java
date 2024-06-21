@@ -13,6 +13,7 @@ import lombok.Data;
 
 @Data
 public class TenantEngineDto implements TenantSpecificEngineDto {
+
   private String id;
   private String name;
 

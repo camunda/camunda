@@ -161,11 +161,11 @@ public class DefinitionReaderOS implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
-          final DefinitionType type,
-          final String definitionKey,
-          final List<String> definitionVersions,
-          final List<String> tenantIds) {
+  Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+      final DefinitionType type,
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds) {
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }
@@ -188,8 +188,8 @@ public class DefinitionReaderOS implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
-          final DefinitionType type, final String definitionKey) {
+  List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+      final DefinitionType type, final String definitionKey) {
     if (definitionKey == null) {
       return Collections.emptyList();
     }
@@ -598,8 +598,8 @@ public class DefinitionReaderOS implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionPerTenant(
-          final DefinitionType type, final String key) {
+  List<T> getLatestFullyImportedDefinitionPerTenant(
+      final DefinitionType type, final String key) {
     log.debug(
         "Fetching latest fully imported [{}] definitions for key [{}] on each tenant", type, key);
 
@@ -642,7 +642,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     subAggregations.put(
         "topHits", AggregationDSL.topHitsAggregation(1)._toAggregation() // Use size=1
-        );
+    );
 
     final Aggregation definitionAgg =
         AggregationDSL.withSubaggregations(
@@ -863,8 +863,8 @@ public class DefinitionReaderOS implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> retrieveResultsFromLatestDefinitionPerTenant(
-          final DefinitionType type, final SearchResponse<T> searchResponse) {
+  List<T> retrieveResultsFromLatestDefinitionPerTenant(
+      final DefinitionType type, final SearchResponse<T> searchResponse) {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
     final List<T> results = new ArrayList<>();
     final FiltersBucket filteredDefsAgg =
@@ -915,12 +915,12 @@ public class DefinitionReaderOS implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      Function<Hit<T>, T> createMappingFunctionForDefinitionType(final Class<T> type) {
+  Function<Hit<T>, T> createMappingFunctionForDefinitionType(final Class<T> type) {
     return hit -> {
       try {
-        T definitionDto = hit.source();
+        final T definitionDto = hit.source();
         if (ProcessDefinitionOptimizeDto.class.equals(type)) {
-          ProcessDefinitionOptimizeDto processDefinition =
+          final ProcessDefinitionOptimizeDto processDefinition =
               (ProcessDefinitionOptimizeDto) definitionDto;
           processDefinition.setType(DefinitionType.PROCESS);
           processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.index()));
@@ -928,7 +928,7 @@ public class DefinitionReaderOS implements DefinitionReader {
           definitionDto.setType(DefinitionType.DECISION);
         }
         return definitionDto;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         final String reason =
             "While mapping search results to class {} "
                 + "it was not possible to deserialize a hit from OpenSearch!"

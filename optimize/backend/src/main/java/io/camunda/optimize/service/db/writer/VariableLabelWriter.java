@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class VariableLabelWriter {
+
   private final VariableRepository variableRepository;
 
   public void createVariableLabelUpsertRequest(
@@ -36,15 +37,15 @@ public class VariableLabelWriter {
 
     final String query =
         """
-      def existingLabels = ctx._source.labels;
-      for (label in params['labels']) {
-         existingLabels.removeIf(existingLabel -> existingLabel.variableName.equals(label.variableName)
-                                                  && existingLabel.variableType.equals(label.variableType)
-         );
-         if(label.variableLabel != null && !label.variableLabel.trim().isEmpty()) {
-              existingLabels.add(label);
-         }
-      }""";
+            def existingLabels = ctx._source.labels;
+            for (label in params['labels']) {
+               existingLabels.removeIf(existingLabel -> existingLabel.variableName.equals(label.variableName)
+                                                        && existingLabel.variableType.equals(label.variableType)
+               );
+               if(label.variableLabel != null && !label.variableLabel.trim().isEmpty()) {
+                    existingLabels.add(label);
+               }
+            }""";
 
     final ScriptData scriptData = new ScriptData(params, query);
 

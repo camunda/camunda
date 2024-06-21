@@ -58,7 +58,7 @@ public class ReportAuthorizationService {
         && ((ProcessReportDataDto) report.getData()).isInstantPreviewReport()) {
       role =
           isAuthorizedToAccessProcessReportDefinition(
-                  userId, (ProcessReportDataDto) report.getData())
+              userId, (ProcessReportDataDto) report.getData())
               ? RoleType.VIEWER
               : null;
     } else if (Optional.ofNullable(report.getOwner())

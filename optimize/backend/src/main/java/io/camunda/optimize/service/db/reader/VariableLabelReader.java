@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class VariableLabelReader {
+
   private final VariableRepository variableRepository;
 
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(

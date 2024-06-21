@@ -57,29 +57,29 @@ public class NumberCommandResult extends CommandEvaluationResult<Double> {
 
   private List<String[]> frequencyNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    csvStrings.add(new String[] {String.valueOf(getFirstMeasureData())});
+    csvStrings.add(new String[]{String.valueOf(getFirstMeasureData())});
 
     final String normalizedCommandKey =
         getViewIdentifier(getReportDataAs(SingleReportDataDto.class));
-    final String[] header = new String[] {normalizedCommandKey};
+    final String[] header = new String[]{normalizedCommandKey};
     csvStrings.add(0, header);
     return csvStrings;
   }
 
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    Double result = getFirstMeasureData();
-    csvStrings.add(new String[] {String.valueOf(result)});
+    final Double result = getFirstMeasureData();
+    csvStrings.add(new String[]{String.valueOf(result)});
 
     final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
     final String normalizedCommandKey = getViewIdentifier(singleReportData);
     final String[] operations =
-        new String[] {
-          CSVUtils.mapAggregationType(
-              singleReportData.getConfiguration().getAggregationTypes().iterator().next())
+        new String[]{
+            CSVUtils.mapAggregationType(
+                singleReportData.getConfiguration().getAggregationTypes().iterator().next())
         };
     csvStrings.add(0, operations);
-    final String[] header = new String[] {normalizedCommandKey};
+    final String[] header = new String[]{normalizedCommandKey};
     csvStrings.add(0, header);
     return csvStrings;
   }

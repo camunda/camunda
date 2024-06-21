@@ -81,6 +81,7 @@ import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class EngineContext {
+
   private static final Set<String> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS =
       Set.of(ALL_RESOURCES_RESOURCE_ID, OPTIMIZE_APPLICATION_RESOURCE_ID);
   private final String engineAlias;
@@ -104,8 +105,8 @@ public class EngineContext {
         EngineVersionChecker.checkEngineVersionSupport(
             engineClient,
             configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()));
-        this.versionValidated = true;
-      } catch (Exception e) {
+        versionValidated = true;
+      } catch (final Exception e) {
         log.error(
             "Failed to validate engine {} version with error message: {}",
             getEngineAlias(),
@@ -118,7 +119,7 @@ public class EngineContext {
   }
 
   public void close() {
-    this.engineClient.close();
+    engineClient.close();
   }
 
   public String getEngineAlias() {
@@ -190,7 +191,7 @@ public class EngineContext {
   public Optional<UserDto> getUserById(final String userId) {
     EngineListUserDto engineUserDto = null;
     try {
-      Response response =
+      final Response response =
           getEngineClient()
               .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
               .path(USER_BY_ID_ENDPOINT_TEMPLATE)
@@ -201,8 +202,8 @@ public class EngineContext {
         engineUserDto = response.readEntity(EngineListUserDto.class);
       }
       response.close();
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch user with id [%s] from engine with alias [%s]",
               userId, getEngineAlias());
@@ -253,8 +254,8 @@ public class EngineContext {
         .version(engineDto.getVersionAsString())
         .versionTag(engineDto.getVersionTag())
         .name(engineDto.getName())
-        .dataSource(new EngineDataSourceDto(this.getEngineAlias()))
-        .tenantId(engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null)))
+        .dataSource(new EngineDataSourceDto(getEngineAlias()))
+        .tenantId(engineDto.getTenantId().orElseGet(() -> getDefaultTenantId().orElse(null)))
         .build();
   }
 
@@ -292,7 +293,7 @@ public class EngineContext {
   }
 
   private ProcessDefinitionOptimizeDto mapToOptimizeProcessDefinition(
-      ProcessDefinitionEngineDto engineEntity) {
+      final ProcessDefinitionEngineDto engineEntity) {
     return new ProcessDefinitionOptimizeDto(
         engineEntity.getId(),
         engineEntity.getKey(),
@@ -300,8 +301,8 @@ public class EngineContext {
         engineEntity.getVersionTag(),
         engineEntity.getName(),
         true,
-        new EngineDataSourceDto(this.getEngineAlias()),
-        engineEntity.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null)));
+        new EngineDataSourceDto(getEngineAlias()),
+        engineEntity.getTenantId().orElseGet(() -> getDefaultTenantId().orElse(null)));
   }
 
   public HistoricProcessInstanceDto fetchProcessInstance(final String processInstanceId) {
@@ -321,8 +322,8 @@ public class EngineContext {
     }
   }
 
-  private UserDto mapEngineUser(EngineListUserDto engineUser) {
-    if (this.configurationService.getUserIdentityCacheConfiguration().isIncludeUserMetaData()) {
+  private UserDto mapEngineUser(final EngineListUserDto engineUser) {
+    if (configurationService.getUserIdentityCacheConfiguration().isIncludeUserMetaData()) {
       return new UserDto(
           engineUser.getId(),
           engineUser.getFirstName(),
@@ -348,7 +349,7 @@ public class EngineContext {
 
   public List<UserDto> fetchPageOfUsers(
       final int pageStartIndex, final int pageLimit, final String groupId) {
-    Response response =
+    final Response response =
         getEngineClient()
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
             .queryParam(MAX_RESULTS_TO_RETURN, pageLimit)
@@ -394,7 +395,7 @@ public class EngineContext {
     }
     EngineGroupDto groupDto = null;
     try {
-      Response response =
+      final Response response =
           getEngineClient()
               .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
               .path(GROUP_BY_ID_ENDPOINT_TEMPLATE)
@@ -405,8 +406,8 @@ public class EngineContext {
         groupDto = response.readEntity(EngineGroupDto.class);
       }
       response.close();
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch group with id [%s] from engine with alias [%s]",
               groupId, getEngineAlias());
@@ -422,9 +423,9 @@ public class EngineContext {
                     getUserCountForUserGroup(group.getId()).orElse(null)));
   }
 
-  private Optional<Long> getUserCountForUserGroup(String userGroupId) {
+  private Optional<Long> getUserCountForUserGroup(final String userGroupId) {
     try {
-      Response response =
+      final Response response =
           getEngineClient()
               .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
               .queryParam(MEMBER_OF_GROUP, userGroupId)
@@ -435,8 +436,8 @@ public class EngineContext {
         return Optional.of(response.readEntity(CountDto.class).getCount());
       }
       response.close();
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not get user count for user group [%s] from engine with alias [%s]",
               userGroupId, getEngineAlias());
@@ -452,7 +453,7 @@ public class EngineContext {
   }
 
   public List<GroupDto> fetchPageOfGroups(final int pageStartIndex, final int pageLimit) {
-    Response response =
+    final Response response =
         getEngineClient()
             .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
             .queryParam(MAX_RESULTS_TO_RETURN, pageLimit)
@@ -486,7 +487,7 @@ public class EngineContext {
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     try {
-      Response response =
+      final Response response =
           getEngineClient()
               .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
               .queryParam(MEMBER, userId)
@@ -502,8 +503,8 @@ public class EngineContext {
             .toList();
         // @formatter:on
       }
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch groups for user [%s] from engine with alias [%s]",
               userId, getEngineAlias());
@@ -516,8 +517,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllApplicationAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_APPLICATION);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch application authorizations from the Engine with alias [%s] to check the access permissions.",
               getEngineAlias());
@@ -529,8 +530,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllProcessDefinitionAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_PROCESS_DEFINITION);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch process definition authorizations from the Engine with alias [%s] to check the access "
                   + "permissions.",
@@ -543,8 +544,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllDecisionDefinitionAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_DECISION_DEFINITION);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch decision definition authorizations from the Engine with alias [%s] to check the access "
                   + "permissions.",
@@ -557,8 +558,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllTenantAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_TENANT);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch tenant authorizations from the Engine with alias [%s] to check the access "
                   + "permissions.",
@@ -571,7 +572,7 @@ public class EngineContext {
   public List<AuthorizationDto> getAllGroupAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_GROUP);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(
           "Could not fetch group authorizations from the engine with alias {} to check the access permissions.",
           getEngineAlias(),
@@ -583,7 +584,7 @@ public class EngineContext {
   public List<AuthorizationDto> getAllUserAuthorizations() {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_USER);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(
           "Could not fetch user authorizations from the engine with alias {} to check the access permissions.",
           getEngineAlias(),
@@ -595,7 +596,7 @@ public class EngineContext {
   public List<AuthorizationDto> getAllApplicationAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_APPLICATION, userId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           String.format(
               "Could not fetch application authorizations for user with ID [%s] from the Engine with alias [%s] to check "
@@ -609,8 +610,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllProcessDefinitionAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_PROCESS_DEFINITION, userId);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch process definition authorizations for user with ID [%s] from the Engine with alias [%s] to "
                   + "check the access permissions.",
@@ -623,8 +624,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllDecisionDefinitionAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_DECISION_DEFINITION, userId);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch decision definition authorizations from the Engine with alias [%s] to check the access "
                   + "permissions.",
@@ -637,8 +638,8 @@ public class EngineContext {
   public List<AuthorizationDto> getAllTenantAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_TENANT, userId);
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           String.format(
               "Could not fetch tenant authorizations from the Engine with alias [%s] to check the access "
                   + "permissions.",
@@ -651,7 +652,7 @@ public class EngineContext {
   public List<AuthorizationDto> getAllGroupAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_GROUP, userId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(
           "Could not fetch group authorizations from the engine with alias {} to check the access permissions.",
           getEngineAlias(),
@@ -663,7 +664,7 @@ public class EngineContext {
   public List<AuthorizationDto> getAllUserAuthorizationsForUser(final String userId) {
     try {
       return getAuthorizationsForTypeForUser(RESOURCE_TYPE_USER, userId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(
           "Could not fetch user authorizations from the engine with alias {} to check the access permissions.",
           getEngineAlias(),
@@ -686,8 +687,8 @@ public class EngineContext {
   }
 
   private List<AuthorizationDto> getAuthorizationsForType(final int resourceType) {
-    int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
-    List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
+    final int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
+    final List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
     List<AuthorizationDto> pageOfAuthorizations;
     do {
       final Response response =
@@ -705,7 +706,7 @@ public class EngineContext {
         totalAuthorizations.addAll(pageOfAuthorizations);
         // @formatter:on
       } else {
-        String message =
+        final String message =
             String.format(
                 "Could not fetch authorizations from engine with alias [%s]! Error from engine: %s",
                 getEngineAlias(), response.readEntity(String.class));
@@ -719,8 +720,8 @@ public class EngineContext {
 
   private List<AuthorizationDto> getAuthorizationsForTypeForIdentity(
       final int resourceType, final IdentityType identityType, final List<String> identityIds) {
-    int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
-    List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
+    final int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
+    final List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
     List<AuthorizationDto> pageOfAuthorizations;
     do {
       final Response response =
@@ -741,7 +742,7 @@ public class EngineContext {
         totalAuthorizations.addAll(pageOfAuthorizations);
         // @formatter:on
       } else {
-        String message =
+        final String message =
             String.format(
                 "Could not fetch authorizations from engine with alias [%s] for [%s]s with IDs [%s]! Error from "
                     + "engine: %s",
@@ -764,7 +765,7 @@ public class EngineContext {
   private String encodeCommaSeparatedListForUri(final List<String> stringList) {
     try {
       return URLEncoder.encode(String.join(",", stringList), StandardCharsets.UTF_8.name());
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       throw new OptimizeRuntimeException("Error while encoding list for URI.", e);
     }
   }

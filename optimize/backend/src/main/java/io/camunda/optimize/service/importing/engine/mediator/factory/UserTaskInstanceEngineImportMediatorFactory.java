@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserTaskInstanceEngineImportMediatorFactory
     extends AbstractEngineImportMediatorFactory {
+
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -55,7 +56,7 @@ public class UserTaskInstanceEngineImportMediatorFactory
   }
 
   public RunningUserTaskInstanceEngineImportMediator
-      createRunningUserTaskInstanceEngineImportMediator(EngineContext engineContext) {
+  createRunningUserTaskInstanceEngineImportMediator(final EngineContext engineContext) {
     return new RunningUserTaskInstanceEngineImportMediator(
         importIndexHandlerRegistry.getRunningUserTaskInstanceImportIndexHandler(
             engineContext.getEngineAlias()),
@@ -71,7 +72,7 @@ public class UserTaskInstanceEngineImportMediatorFactory
   }
 
   public CompletedUserTaskEngineImportMediator createCompletedUserTaskInstanceEngineImportMediator(
-      EngineContext engineContext) {
+      final EngineContext engineContext) {
     return new CompletedUserTaskEngineImportMediator(
         importIndexHandlerRegistry.getCompletedUserTaskInstanceImportIndexHandler(
             engineContext.getEngineAlias()),

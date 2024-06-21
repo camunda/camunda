@@ -24,7 +24,9 @@ import lombok.NonNull;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
-  @NonNull private List<String> tenantIds;
+
+  @NonNull
+  private List<String> tenantIds;
 
   public DefinitionWithTenantIdsDto(
       @NonNull final String key,

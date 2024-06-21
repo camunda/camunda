@@ -39,13 +39,22 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public abstract class AbstractIncidentWriterOS implements AbstractIncidentWriter {
+
   private static final Set<String> READ_ONLY_ALIASES = Set.of(PROCESS_INSTANCE_MULTI_ALIAS);
   private final IndexRepository indexRepository;
   private final ObjectMapper objectMapper;
 
   @Override
+  public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
+    final Set<String> definitionKeys =
+        incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet());
+    indexRepository.createMissingIndices(PROCESS_INSTANCE_INDEX, READ_ONLY_ALIASES, definitionKeys);
+  }
+
+  @Override
   public ImportRequestDto createImportRequestForIncident(
-      Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance, final String importName) {
+      final Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
+      final String importName) {
     final List<IncidentDto> incidents = incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
     final String processDefinitionKey = incidents.get(0).getDefinitionKey();
@@ -70,12 +79,5 @@ public abstract class AbstractIncidentWriterOS implements AbstractIncidentWriter
         .source(procInst)
         .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
-  }
-
-  @Override
-  public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
-    final Set<String> definitionKeys =
-        incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet());
-    indexRepository.createMissingIndices(PROCESS_INSTANCE_INDEX, READ_ONLY_ALIASES, definitionKeys);
   }
 }

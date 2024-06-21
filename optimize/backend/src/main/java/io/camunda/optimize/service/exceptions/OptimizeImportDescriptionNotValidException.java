@@ -15,9 +15,10 @@ public class OptimizeImportDescriptionNotValidException extends OptimizeValidati
 
   public static final String ERROR_CODE = "importDescriptionInvalid";
 
-  @Getter private final Set<String> invalidEntityIds;
+  @Getter
+  private final Set<String> invalidEntityIds;
 
-  public OptimizeImportDescriptionNotValidException(Set<String> invalidEntityIds) {
+  public OptimizeImportDescriptionNotValidException(final Set<String> invalidEntityIds) {
     super(
         "Could not apply action due to invalid descriptions. Descriptions must be null or not greater than 400 characters. "
             + "Invalid entities: "

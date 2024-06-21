@@ -43,11 +43,6 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
   }
 
   @Override
-  protected String getVariablePath() {
-    return INPUTS;
-  }
-
-  @Override
   protected String getVariableName(final ExecutionContext<DecisionReportDataDto> context) {
     return getVariableGroupByDto(context).getId();
   }
@@ -73,8 +68,8 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
   }
 
   @Override
-  protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
-    return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
+  protected String getVariablePath() {
+    return INPUTS;
   }
 
   @Override
@@ -82,6 +77,11 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
       final ExecutionContext<DecisionReportDataDto> context) {
     return DecisionVariableHelper.getVariableUndefinedOrNullQuery(
         getVariableName(context), getVariablePath(), getVariableType(context));
+  }
+
+  @Override
+  protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
+    return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
   }
 
   @Override

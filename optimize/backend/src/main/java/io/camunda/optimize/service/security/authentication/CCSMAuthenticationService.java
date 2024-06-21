@@ -65,7 +65,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     try {
       tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
-    } catch (NotAuthorizedException ex) {
+    } catch (final NotAuthorizedException ex) {
       return Response.status(Response.Status.FORBIDDEN)
           .entity(
               "User has no authorization to access Optimize. Please check your Identity configuration")
@@ -88,7 +88,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       try {
         Optional.ofNullable(cookies.get(OPTIMIZE_REFRESH_TOKEN))
             .ifPresent(refreshCookie -> ccsmTokenService.revokeToken(refreshCookie.getValue()));
-      } catch (IdentityException exception) {
+      } catch (final IdentityException exception) {
         // We catch the exception even if the token revoke failed, so we can still delete the
         // Optimize cookies
       } finally {
@@ -108,8 +108,8 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       final URI baseUri = requestContext.getUriInfo().getBaseUri();
       redirectUri = baseUri.getScheme() + "://" + baseUri.getHost();
       if (
-      // value is -1 if no port is set, in that case no need to add it
-      baseUri.getPort() != -1) {
+        // value is -1 if no port is set, in that case no need to add it
+          baseUri.getPort() != -1) {
         redirectUri += ":" + baseUri.getPort();
       }
       redirectUri += configurationService.getContextPath().orElse("");

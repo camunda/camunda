@@ -54,11 +54,11 @@ public class FlowNodeRestService {
             request.getTenantId());
 
     if (processDefinitionXmlDto.isPresent()) {
-      List<String> nodeIds = request.getNodeIds();
-      Map<String, String> flowNodeIdsToNames =
+      final List<String> nodeIds = request.getNodeIds();
+      final Map<String, String> flowNodeIdsToNames =
           extractFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeData());
       if (nodeIds != null && !nodeIds.isEmpty()) {
-        for (String id : nodeIds) {
+        for (final String id : nodeIds) {
           result.getFlowNodeNames().put(id, flowNodeIdsToNames.get(id));
         }
       } else {

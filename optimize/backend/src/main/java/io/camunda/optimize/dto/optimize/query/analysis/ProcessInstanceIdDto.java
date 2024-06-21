@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 
 public class ProcessInstanceIdDto extends IdResponseDto {
+
   @Override
   @JsonProperty(PROCESS_INSTANCE_ID)
   public void setId(final String id) {

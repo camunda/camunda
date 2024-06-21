@@ -11,6 +11,7 @@ import lombok.Data;
 
 @Data
 public class BranchAnalysisOutcomeDto {
+
   protected Long activitiesReached;
   protected Long activityCount;
   protected String activityId;

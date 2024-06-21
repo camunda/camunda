@@ -24,6 +24,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 @Builder
 @Data
 public class VariableAggregationContext {
+
   private final String variableName;
   private final VariableType variableType;
   private final String variablePath;
@@ -37,7 +38,8 @@ public class VariableAggregationContext {
   private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;
   private final MinMaxStatDto combinedRangeMinMaxStats;
-  @NonNull private final FilterContext filterContext;
+  @NonNull
+  private final FilterContext filterContext;
 
   public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
     return Optional.ofNullable(combinedRangeMinMaxStats);

@@ -57,7 +57,8 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractEngineImportMediatorFactory> engineMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
 
-  @Autowired private Environment environment;
+  @Autowired
+  private Environment environment;
 
   @Getter
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers =
@@ -83,7 +84,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
   @PreDestroy
   public synchronized void shutdown() {
-    for (AbstractImportScheduler<? extends SchedulerConfig> oldScheduler : importSchedulers) {
+    for (final AbstractImportScheduler<? extends SchedulerConfig> oldScheduler : importSchedulers) {
       oldScheduler.stopImportScheduling();
       oldScheduler.shutdown();
     }
@@ -97,7 +98,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   public synchronized void startSchedulers() {
-    for (AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
+    for (final AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
       if (configurationService.isImportEnabled(scheduler.getDataImportSourceDto())) {
         scheduler.startImportScheduling();
       } else {
@@ -109,13 +110,13 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   public synchronized void stopSchedulers() {
-    for (AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
+    for (final AbstractImportScheduler<? extends SchedulerConfig> scheduler : importSchedulers) {
       scheduler.stopImportScheduling();
     }
   }
 
   @Override
-  public synchronized void reloadConfiguration(ApplicationContext context) {
+  public synchronized void reloadConfiguration(final ApplicationContext context) {
     shutdown();
     importIndexHandlerRegistry.reloadConfiguration();
     initSchedulers();
@@ -172,14 +173,14 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     final List<AbstractImportScheduler<? extends SchedulerConfig>> schedulers = new ArrayList<>();
     schedulers.add(new IngestedDataImportScheduler(createIngestedDataMediatorList()));
 
-    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+    for (final EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         final List<ImportMediator> mediators = createEngineMediatorList(engineContext);
         final EngineImportScheduler scheduler =
             new EngineImportScheduler(
                 mediators, new EngineDataSourceDto(engineContext.getEngineAlias()));
         schedulers.add(scheduler);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         log.error("Can't create scheduler for engine [{}]", engineContext.getEngineAlias(), e);
       }
     }
@@ -192,7 +193,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         zeebeMediatorList.addAll(
             createZeebeMediatorList(new ZeebeDataSourceDto(zeebeConfig.getName(), partitionId)));
       }
-      ZeebeImportScheduler zeebeImportScheduler =
+      final ZeebeImportScheduler zeebeImportScheduler =
           new ZeebeImportScheduler(
               zeebeMediatorList,
               new ZeebeConfigDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount()));
@@ -212,7 +213,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         .collect(Collectors.toList());
   }
 
-  private List<ImportMediator> createEngineMediatorList(EngineContext engineContext) {
+  private List<ImportMediator> createEngineMediatorList(final EngineContext engineContext) {
     importIndexHandlerRegistry.register(
         engineContext.getEngineAlias(),
         beanFactory.getBean(EngineImportIndexHandlerProvider.class, engineContext));

@@ -95,7 +95,7 @@ public class DashboardExportService {
         dashboards.stream().flatMap(d -> d.getTileIds().stream()).collect(toSet());
     try {
       return reportExportService.retrieveReportDefinitionsOrFailIfMissing(reportIds);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       throw new OptimizeRuntimeException(
           "Could not retrieve some reports required by this dashboard.");
     }
@@ -112,7 +112,7 @@ public class DashboardExportService {
               try {
                 collectionService.verifyUserAuthorizedToEditCollectionResources(
                     userId, collectionId);
-              } catch (ForbiddenException e) {
+              } catch (final ForbiddenException e) {
                 unauthorizedCollectionIds.add(collectionId);
               }
             });

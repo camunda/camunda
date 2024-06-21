@@ -200,7 +200,7 @@ public class CamundaPlatformTenantAuthorizationService
   }
 
   private void initDefaultTenantIds() {
-    this.defaultTenantIdByEngine =
+    defaultTenantIdByEngine =
         configurationService.getConfiguredEngines().entrySet().stream()
             .filter(entry -> entry.getValue().getDefaultTenantId().isPresent())
             .collect(

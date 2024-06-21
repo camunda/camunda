@@ -14,6 +14,7 @@ import lombok.Data;
 
 @Data
 public class HistoricVariableUpdateInstanceDto implements TenantSpecificEngineDto {
+
   private String id;
   private String variableInstanceId;
   private String variableName;

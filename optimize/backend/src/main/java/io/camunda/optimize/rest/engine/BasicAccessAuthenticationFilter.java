@@ -18,6 +18,7 @@ import java.util.Base64;
 
 @Priority(AUTHENTICATION)
 public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
+
   private final String defaultEngineAuthenticationUser;
   private final String defaultEngineAuthenticationPassword;
 

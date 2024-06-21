@@ -29,7 +29,7 @@ public class InstancesContainingUserTasksFilter
       final List<InstancesContainingUserTasksFilterDataDto> instancesContainingUserTasksFilters,
       final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(instancesContainingUserTasksFilters)) {
-      List<QueryBuilder> filters = query.filter();
+      final List<QueryBuilder> filters = query.filter();
       filters.add(
           nestedQuery(FLOW_NODE_INSTANCES, createUserTaskFlowNodeTypeFilter(), ScoreMode.None));
     }

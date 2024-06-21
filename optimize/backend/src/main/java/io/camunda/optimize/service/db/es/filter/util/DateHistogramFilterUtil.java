@@ -47,7 +47,7 @@ public class DateHistogramFilterUtil {
   public static BoolQueryBuilder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContext context, final DateTimeFormatter dateTimeFormatter) {
 
-    RangeQueryBuilder queryDate =
+    final RangeQueryBuilder queryDate =
         QueryBuilders.rangeQuery(context.getDateField())
             .gte(dateTimeFormatter.format(context.getEarliestDate()))
             .lte(dateTimeFormatter.format(context.getLatestDate()))
@@ -222,9 +222,9 @@ public class DateHistogramFilterUtil {
                 .filter(RelativeDateFilterDataDto.class::isInstance)
                 .map(
                     filter -> {
-                      RelativeDateFilterStartDto startDto =
+                      final RelativeDateFilterStartDto startDto =
                           ((RelativeDateFilterDataDto) filter).getStart();
-                      OffsetDateTime startOfCurrentInterval =
+                      final OffsetDateTime startOfCurrentInterval =
                           getStartOfCurrentInterval(now, startDto.getUnit());
                       if (startDto.getValue() == 0L) {
                         return startOfCurrentInterval;

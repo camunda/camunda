@@ -57,7 +57,7 @@ public class ExternalEventReader {
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
+  getMinAndMaxIngestedTimestampsForGroups(final List<String> groups) {
     log.debug("Fetching min and max timestamp for ingested external events in groups: {}", groups);
     return eventRepository.getMinAndMaxIngestedTimestampsForGroups(groups);
   }

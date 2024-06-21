@@ -35,7 +35,7 @@ public abstract class AbstractAlertFactory<T extends Job> {
     this.applicationContext = applicationContext;
   }
 
-  private long durationInMs(AlertInterval checkInterval) {
+  private long durationInMs(final AlertInterval checkInterval) {
     return Duration.between(
             OffsetDateTime.now(),
             OffsetDateTime.now()
@@ -43,14 +43,14 @@ public abstract class AbstractAlertFactory<T extends Job> {
         .toMillis();
   }
 
-  private ChronoUnit unitOf(String unit) {
+  private ChronoUnit unitOf(final String unit) {
     return ChronoUnit.valueOf(unit.toUpperCase());
   }
 
-  public Trigger createTrigger(AlertDefinitionDto alert, JobDetail jobDetail) {
+  public Trigger createTrigger(final AlertDefinitionDto alert, final JobDetail jobDetail) {
     SimpleTrigger trigger = null;
     if (getInterval(alert) != null) {
-      OffsetDateTime startFuture =
+      final OffsetDateTime startFuture =
           OffsetDateTime.now()
               .plus(getInterval(alert).getValue(), unitOf(getInterval(alert).getUnit().name()));
 
@@ -68,14 +68,14 @@ public abstract class AbstractAlertFactory<T extends Job> {
     return trigger;
   }
 
-  public JobDetail createJobDetails(AlertDefinitionDto alert) {
-    JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
+  public JobDetail createJobDetails(final AlertDefinitionDto alert) {
+    final JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
     jobDetailFactoryBean.setJobClass(getJobClass());
     jobDetailFactoryBean.setDurability(true);
     jobDetailFactoryBean.setName(getJobName(alert));
     jobDetailFactoryBean.setGroup(getJobGroup());
 
-    Map<String, String> dataMap = new HashMap<>();
+    final Map<String, String> dataMap = new HashMap<>();
     dataMap.put("alertId", alert.getId());
     jobDetailFactoryBean.setJobDataAsMap(dataMap);
     jobDetailFactoryBean.setApplicationContext(getApplicationContext());
@@ -89,11 +89,11 @@ public abstract class AbstractAlertFactory<T extends Job> {
     return applicationContext;
   }
 
-  protected JobKey getJobKey(AlertDefinitionDto alert) {
-    return new JobKey(this.getJobName(alert), this.getJobGroup());
+  protected JobKey getJobKey(final AlertDefinitionDto alert) {
+    return new JobKey(getJobName(alert), getJobGroup());
   }
 
-  protected TriggerKey getTriggerKey(AlertDefinitionDto toDelete) {
+  protected TriggerKey getTriggerKey(final AlertDefinitionDto toDelete) {
     return new TriggerKey(getTriggerName(toDelete), getTriggerGroup());
   }
 

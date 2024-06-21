@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OptimizeImportIncorrectIndexVersionExceptionMapper
     implements ExceptionMapper<OptimizeImportIncorrectIndexVersionException> {
+
   public static final String ERROR_CODE = "importIndexVersionMismatch";
 
   private final LocalizationService localizationService;
@@ -41,9 +42,10 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
   }
 
   private ImportedIndexMismatchResponseDto getIndexMismatchResponseDto(
-      OptimizeImportIncorrectIndexVersionException exception) {
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(ERROR_CODE);
-    String detailedErrorMessage = exception.getMessage();
+      final OptimizeImportIncorrectIndexVersionException exception) {
+    final String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(
+        ERROR_CODE);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ImportedIndexMismatchResponseDto(
         ERROR_CODE, errorMessage, detailedErrorMessage, exception.getMismatchingIndices());

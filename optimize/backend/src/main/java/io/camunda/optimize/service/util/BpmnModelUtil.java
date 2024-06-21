@@ -90,13 +90,13 @@ public class BpmnModelUtil {
     final List<FlowElement> subProcessStartEndEvents =
         new ArrayList<>(modelInstance.getModelElementsByType(SubProcess.class))
             .stream()
-                .filter(Objects::nonNull)
-                .flatMap(subProcess -> subProcess.getFlowElements().stream())
-                .filter(
-                    element ->
-                        StartEvent.class.isAssignableFrom(element.getClass())
-                            || EndEvent.class.isAssignableFrom(element.getClass()))
-                .toList();
+            .filter(Objects::nonNull)
+            .flatMap(subProcess -> subProcess.getFlowElements().stream())
+            .filter(
+                element ->
+                    StartEvent.class.isAssignableFrom(element.getClass())
+                        || EndEvent.class.isAssignableFrom(element.getClass()))
+            .toList();
 
     return modelInstance.getModelElementsByType(eventClass).stream()
         .filter(event -> !subProcessStartEndEvents.contains(event))

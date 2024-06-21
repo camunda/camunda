@@ -79,21 +79,16 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewRawData extends ProcessViewPart {
 
-  private final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
-  private final DatabaseClient databaseClient;
-  private final DefinitionService definitionService;
-  private final ProcessVariableReader processVariableReader;
   private static final String CURRENT_TIME = "currentTime";
   private static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
   private static final String DATE_FORMAT = "dateFormat";
   private static final String FLOWNODE_IDS_TO_DURATIONS = "flowNodeIdsToDurations";
   private static final String NUMBER_OF_USER_TASKS = "numberOfUserTasks";
-
-  @Override
-  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
-    return ViewProperty.RAW_DATA;
-  }
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
+  private final DatabaseClient databaseClient;
+  private final DefinitionService definitionService;
+  private final ProcessVariableReader processVariableReader;
 
   @Override
   public void adjustSearchRequest(
@@ -102,7 +97,7 @@ public class ProcessViewRawData extends ProcessViewPart {
       final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
-    List<String> defKeysToTarget =
+    final List<String> defKeysToTarget =
         context.getReportData().getDefinitions().stream()
             .map(ReportDataDefinitionDto::getKey)
             .filter(Objects::nonNull)
@@ -136,7 +131,7 @@ public class ProcessViewRawData extends ProcessViewPart {
 
     final SearchSourceBuilder search = searchRequest.source().fetchSource(true);
     if (!context.isJsonExport()) {
-      search.fetchSource(null, new String[] {FLOW_NODE_INSTANCES});
+      search.fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
     }
     if (context.isCsvExport()) {
       context
@@ -162,7 +157,7 @@ public class ProcessViewRawData extends ProcessViewPart {
               });
     }
     // @formatter:off
-    String getFlowNodeDurationsScript =
+    final String getFlowNodeDurationsScript =
         "def flowNodeInstanceIdToDuration = new HashMap();"
             + "def dateFormatter = new SimpleDateFormat(params.dateFormat);"
             + "for (flowNodeInstance in params._source.flowNodeInstances) {"
@@ -188,7 +183,7 @@ public class ProcessViewRawData extends ProcessViewPart {
             + "return flowNodeInstanceIdToDuration;";
     // @formatter:on
 
-    Map<String, Object> params = new HashMap<>();
+    final Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
     params.put(DATE_FORMAT, OPTIMIZE_DATE_FORMAT);
     searchRequest
@@ -213,6 +208,11 @@ public class ProcessViewRawData extends ProcessViewPart {
   }
 
   @Override
+  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewProperty.RAW_DATA;
+  }
+
+  @Override
   public List<AggregationBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto> context) {
     return Collections.emptyList();
@@ -223,9 +223,9 @@ public class ProcessViewRawData extends ProcessViewPart {
       final SearchResponse response,
       final Aggregations aggs,
       final ExecutionContext<ProcessReportDataDto> context) {
-    Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
-    Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
-    Function<SearchHit, ProcessInstanceDto> mappingFunction =
+    final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
+    final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
+    final Function<SearchHit, ProcessInstanceDto> mappingFunction =
         hit -> {
           try {
             final ProcessInstanceDto processInstance =
@@ -245,7 +245,7 @@ public class ProcessViewRawData extends ProcessViewPart {
                 processInstance.setDuration(
                     Math.round(Double.parseDouble(hit.getSortValues()[0].toString())));
               } else {
-                Long currentTime = hit.getFields().get(CURRENT_TIME).getValue();
+                final Long currentTime = hit.getFields().get(CURRENT_TIME).getValue();
                 processInstance.setDuration(
                     currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
               }
@@ -253,7 +253,7 @@ public class ProcessViewRawData extends ProcessViewPart {
             return processInstance;
           } catch (final NumberFormatException exception) {
             throw new OptimizeRuntimeException("Error while parsing fields to numbers");
-          } catch (IOException e) {
+          } catch (final IOException e) {
             final String reason = "Error while mapping search results to Process Instances";
             log.error(reason, e);
             throw new OptimizeRuntimeException(reason);
@@ -276,9 +276,9 @@ public class ProcessViewRawData extends ProcessViewPart {
               response.getHits(), Integer.MAX_VALUE, ProcessInstanceDto.class, mappingFunction);
     }
 
-    RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
+    final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
-    Map<String, String> flowNodeIdsToFlowNodeNames =
+    final Map<String, String> flowNodeIdsToFlowNodeNames =
         definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
             rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData =
@@ -295,21 +295,21 @@ public class ProcessViewRawData extends ProcessViewPart {
   }
 
   @Override
-  public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
-    return ViewResult.builder().rawData(new ArrayList<>()).build();
-  }
-
-  @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new ProcessViewDto(ViewProperty.RAW_DATA));
   }
 
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<ProcessReportDataDto> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
+  }
+
   private void addSorting(
-      String sortByField,
-      SortOrder sortOrder,
-      SearchSourceBuilder searchSourceBuilder,
-      Map<String, Object> params) {
+      final String sortByField,
+      final SortOrder sortOrder,
+      final SearchSourceBuilder searchSourceBuilder,
+      final Map<String, Object> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       searchSourceBuilder.sort(
@@ -326,7 +326,7 @@ public class ProcessViewRawData extends ProcessViewPart {
       // doc['field'].value == null
       // and recommends using doc['field'].size() == 0
       // @formatter:off
-      String query =
+      final String query =
           "if (doc[params.duration].size() == 0) {"
               + "params.currentTime - doc[params.startDate].value.toInstant()"
               + " .toEpochMilli() }"
@@ -335,7 +335,7 @@ public class ProcessViewRawData extends ProcessViewPart {
               + "}";
       // @formatter:on
 
-      Script script = createDefaultScriptWithSpecificDtoParams(query, params, objectMapper);
+      final Script script = createDefaultScriptWithSpecificDtoParams(query, params, objectMapper);
       searchSourceBuilder.sort(
           SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER)
               .order(sortOrder));
@@ -364,7 +364,7 @@ public class ProcessViewRawData extends ProcessViewPart {
             .map(varKey -> VARIABLE_PREFIX + varKey)
             .toList();
 
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    final TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(

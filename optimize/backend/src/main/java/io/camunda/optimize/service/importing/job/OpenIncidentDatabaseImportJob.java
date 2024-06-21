@@ -32,7 +32,7 @@ public class OpenIncidentDatabaseImportJob extends DatabaseImportJob<IncidentDto
   }
 
   @Override
-  protected void persistEntities(List<IncidentDto> newOptimizeEntities) {
+  protected void persistEntities(final List<IncidentDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests =
         new ArrayList<>(openIncidentWriter.generateIncidentImports(newOptimizeEntities));
     databaseClient.executeImportRequestsAsBulk(

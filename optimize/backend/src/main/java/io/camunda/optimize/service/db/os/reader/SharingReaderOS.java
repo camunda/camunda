@@ -112,10 +112,10 @@ public class SharingReaderOS implements SharingReader {
         new BoolQuery.Builder()
             .must(QueryDSL.terms(ReportShareIndex.REPORT_ID, reports, FieldValue::of));
     return findSharesByQuery(
-            boolQueryBuilder.build(),
-            REPORT_SHARE_INDEX_NAME,
-            ReportShareRestDto.class,
-            "Was not able to retrieve report shares!")
+        boolQueryBuilder.build(),
+        REPORT_SHARE_INDEX_NAME,
+        ReportShareRestDto.class,
+        "Was not able to retrieve report shares!")
         .stream()
         .collect(Collectors.toMap(ReportShareRestDto::getReportId, Function.identity()));
   }
@@ -126,10 +126,10 @@ public class SharingReaderOS implements SharingReader {
         new BoolQuery.Builder()
             .must(QueryDSL.terms(DashboardShareIndex.DASHBOARD_ID, dashboards, FieldValue::of));
     return findSharesByQuery(
-            boolQueryBuilder.build(),
-            DASHBOARD_SHARE_INDEX_NAME,
-            DashboardShareRestDto.class,
-            "Was not able to retrieve dashboards shares!")
+        boolQueryBuilder.build(),
+        DASHBOARD_SHARE_INDEX_NAME,
+        DashboardShareRestDto.class,
+        "Was not able to retrieve dashboards shares!")
         .stream()
         .collect(Collectors.toMap(DashboardShareRestDto::getDashboardId, Function.identity()));
   }

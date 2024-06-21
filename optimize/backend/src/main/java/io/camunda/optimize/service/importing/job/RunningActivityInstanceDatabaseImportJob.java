@@ -36,7 +36,7 @@ public class RunningActivityInstanceDatabaseImportJob extends DatabaseImportJob<
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeEventDto> runningActivityInstances) {
+  protected void persistEntities(final List<FlowNodeEventDto> runningActivityInstances) {
     final List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(
         runningActivityInstanceWriter.generateActivityInstanceImports(runningActivityInstances));

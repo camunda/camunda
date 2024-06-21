@@ -42,7 +42,7 @@ public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFac
     return ImmutableList.of(createTenantImportMediator(engineContext));
   }
 
-  public TenantImportMediator createTenantImportMediator(EngineContext engineContext) {
+  public TenantImportMediator createTenantImportMediator(final EngineContext engineContext) {
     return new TenantImportMediator(
         importIndexHandlerRegistry.getTenantImportIndexHandler(engineContext.getEngineAlias()),
         beanFactory.getBean(TenantFetcher.class, engineContext),

@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class EventBasedProcessesInstanceImportScheduler extends AbstractScheduledService {
+
   private final ConfigurationService configurationService;
 
   private final EventProcessInstanceImportMediatorManager instanceImportMediatorManager;
@@ -102,7 +103,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
                 })
             .toArray(CompletableFuture[]::new);
 
-    Optional<EventProcessPublishStateDto> pendingPublish =
+    final Optional<EventProcessPublishStateDto> pendingPublish =
         eventBasedProcessIndexManager.getPublishedInstanceStates().stream()
             .filter(s -> s.getState().equals(PUBLISH_PENDING))
             .findFirst();
@@ -127,12 +128,12 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
   }
 
   private void doBackoff(final Collection<? extends ImportMediator> mediators) {
-    long timeToSleep =
+    final long timeToSleep =
         mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
       Thread.currentThread().interrupt();
     }

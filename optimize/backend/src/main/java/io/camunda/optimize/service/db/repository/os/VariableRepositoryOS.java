@@ -99,6 +99,7 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class VariableRepositoryOS implements VariableRepository {
+
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
   private final ConfigurationService configurationService;
@@ -170,6 +171,18 @@ public class VariableRepositoryOS implements VariableRepository {
   }
 
   @Override
+  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
+    osClient.deleteByQueryTask(
+        String.format("variable updates of %d process instances", processInstanceIds.size()),
+        QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds),
+        false,
+        osClient
+            .getIndexNameService()
+            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                new VariableUpdateInstanceIndexOS()));
+  }
+
+  @Override
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       final List<String> processDefinitionKeys) {
     final Map<String, String> map = new HashMap<>();
@@ -195,24 +208,12 @@ public class VariableRepositoryOS implements VariableRepository {
   }
 
   @Override
-  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
-    osClient.deleteByQueryTask(
-        String.format("variable updates of %d process instances", processInstanceIds.size()),
-        QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds),
-        false,
-        osClient
-            .getIndexNameService()
-            .getOptimizeIndexNameWithVersionWithWildcardSuffix(
-                new VariableUpdateInstanceIndexOS()));
-  }
-
-  @Override
   public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
       final Set<String> processInstanceIds) {
 
     final Query query =
         QueryDSL.stringTerms(VariableUpdateInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new Builder()
             .index(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
             .query(query)
@@ -247,7 +248,7 @@ public class VariableRepositoryOS implements VariableRepository {
 
   @Override
   public void writeExternalProcessVariables(
-      List<ExternalProcessVariableDto> variables, final String itemName) {
+      final List<ExternalProcessVariableDto> variables, final String itemName) {
     final List<BulkOperation> bulkOperations =
         variables.stream().map(this::createInsertExternalVariableOperation).toList();
 
@@ -278,13 +279,13 @@ public class VariableRepositoryOS implements VariableRepository {
 
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
-      Long ingestTimestamp, int limit) {
+      final Long ingestTimestamp, final int limit) {
     return getPageOfVariablesSortedByIngestionTimestamp(
         QueryDSL.gt(INGESTION_TIMESTAMP, ingestTimestamp), limit);
   }
 
   @Override
-  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(Long ingestTimestamp) {
+  public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
     return getPageOfVariablesSortedByIngestionTimestamp(
         QueryDSL.gteLte(INGESTION_TIMESTAMP, ingestTimestamp, ingestTimestamp),
         MAX_RESPONSE_SIZE_LIMIT);
@@ -292,7 +293,7 @@ public class VariableRepositoryOS implements VariableRepository {
 
   @Override
   public List<String> getDecisionVariableValues(
-      DecisionVariableValueRequestDto requestDto, String variablesPath) {
+      final DecisionVariableValueRequestDto requestDto, final String variablesPath) {
     final Query query =
         createDefinitionQuery(
             requestDto.getDecisionDefinitionKey(),
@@ -308,7 +309,7 @@ public class VariableRepositoryOS implements VariableRepository {
             .aggregations(getVariableValueAggregation(requestDto, variablesPath));
 
     try {
-      String errorMsg =
+      final String errorMsg =
           String.format(
               "Was not able to fetch values for variable [%s] with type [%s] ",
               requestDto.getVariableId(), requestDto.getVariableType());
@@ -316,7 +317,7 @@ public class VariableRepositoryOS implements VariableRepository {
           osClient.search(searchRequest, DecisionInstanceDto.class, errorMsg);
       final Map<String, Aggregate> aggregations = searchResponse.aggregations();
       return extractVariableValues(aggregations, requestDto, variablesPath);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(DECISION, e)) {
         log.info(
             "Was not able to fetch variable values because no instance index with alias {} exists. "
@@ -332,25 +333,25 @@ public class VariableRepositoryOS implements VariableRepository {
       final Map<String, Aggregate> aggregations,
       final DecisionVariableValueRequestDto requestDto,
       final String variableFieldLabel) {
-    NestedAggregate variablesFromType = aggregations.get(variableFieldLabel).nested();
-    FilterAggregate filteredVariables =
+    final NestedAggregate variablesFromType = aggregations.get(variableFieldLabel).nested();
+    final FilterAggregate filteredVariables =
         variablesFromType.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
-    List<String> allValues = new ArrayList<>();
+    final List<String> allValues = new ArrayList<>();
     if (filteredVariables.aggregations().get(VALUE_AGGREGATION).isSterms()) {
-      StringTermsAggregate valueTerms =
+      final StringTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).sterms();
-      for (StringTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final StringTermsBucket valueBucket : valueTerms.buckets().array()) {
         allValues.add(valueBucket.key());
       }
     } else if (filteredVariables.aggregations().get(VALUE_AGGREGATION).isDterms()) {
-      DoubleTermsAggregate valueTerms =
+      final DoubleTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).dterms();
-      for (DoubleTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final DoubleTermsBucket valueBucket : valueTerms.buckets().array()) {
         allValues.add(String.valueOf(valueBucket.key()));
       }
     }
 
-    int lastIndex =
+    final int lastIndex =
         Math.min(allValues.size(), requestDto.getResultOffset() + requestDto.getNumResults());
     return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
@@ -370,8 +371,8 @@ public class VariableRepositoryOS implements VariableRepository {
     filterForVariableWithGivenIdAndPrefix.aggregations(
         Map.of(VALUE_AGGREGATION, collectAllVariableValues._toAggregation()));
 
-    NestedAggregation.Builder nestedAgg = new NestedAggregation.Builder().path(variablePath);
-    Aggregation finalAgg =
+    final NestedAggregation.Builder nestedAgg = new NestedAggregation.Builder().path(variablePath);
+    final Aggregation finalAgg =
         new Aggregation.Builder()
             .nested(nestedAgg.build())
             .aggregations(
@@ -393,12 +394,12 @@ public class VariableRepositoryOS implements VariableRepository {
       final String variablePath, final String valueFilter, final Query filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
-      Query filter =
+      final Query filter =
           // using the slow wildcard query for uncommonly large filter strings (>10 chars)
           (lowerCaseValue.length() > MAX_GRAM)
               ? QueryDSL.wildcardQuery(
-                  getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE),
-                  buildWildcardQuery(lowerCaseValue))
+              getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE),
+              buildWildcardQuery(lowerCaseValue))
               /*
                 using ngrams to filter for strings < 10 chars,
                 because it's fast but increasing the number of chars makes the index bigger
@@ -437,7 +438,7 @@ public class VariableRepositoryOS implements VariableRepository {
 
   private BulkOperation createInsertExternalVariableOperation(
       final ExternalProcessVariableDto externalVariable) {
-    IndexOperation<ExternalProcessVariableDto> indexOp =
+    final IndexOperation<ExternalProcessVariableDto> indexOp =
         new IndexOperation.Builder<ExternalProcessVariableDto>()
             .index(
                 indexNameService.getOptimizeIndexAliasForIndex(

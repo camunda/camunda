@@ -49,8 +49,15 @@ public abstract class AbstractIncidentWriterES
   }
 
   @Override
+  public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
+    createInstanceIndicesIfMissing(
+        incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
+  }
+
+  @Override
   public ImportRequestDto createImportRequestForIncident(
-      Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance, final String importName) {
+      final Map.Entry<String, List<IncidentDto>> incidentsByProcessInstance,
+      final String importName) {
     final List<IncidentDto> incidents = incidentsByProcessInstance.getValue();
     final String processInstanceId = incidentsByProcessInstance.getKey();
     final String processDefinitionKey = incidents.get(0).getDefinitionKey();
@@ -76,11 +83,5 @@ public abstract class AbstractIncidentWriterES
         .source(procInst)
         .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
         .build();
-  }
-
-  @Override
-  public void createInstanceIndicesFromIncidentsIfMissing(final List<IncidentDto> incidents) {
-    createInstanceIndicesIfMissing(
-        incidents.stream().map(IncidentDto::getDefinitionKey).collect(toSet()));
   }
 }

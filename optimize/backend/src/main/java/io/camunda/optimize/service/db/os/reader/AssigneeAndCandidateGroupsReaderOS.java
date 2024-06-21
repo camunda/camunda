@@ -49,6 +49,19 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
   private final OptimizeOpenSearchClient osClient;
 
   @Override
+  public void consumeUserTaskFieldTermsInBatches(
+      final String indexName,
+      final String termField,
+      final String termValue,
+      final String userTaskFieldName,
+      final Consumer<List<String>> termBatchConsumer,
+      final int batchSize) {
+    final Query filterQuery = QueryDSL.term(termField, termValue);
+    consumeUserTaskFieldTermsInBatches(
+        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
+  }
+
+  @Override
   public Set<String> getUserTaskFieldTerms(
       final String userTaskFieldName, final Map<String, Set<String>> definitionKeyToTenantsMap) {
     log.debug(
@@ -62,19 +75,6 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
       consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll);
     }
     return result;
-  }
-
-  @Override
-  public void consumeUserTaskFieldTermsInBatches(
-      final String indexName,
-      final String termField,
-      final String termValue,
-      final String userTaskFieldName,
-      final Consumer<List<String>> termBatchConsumer,
-      final int batchSize) {
-    final Query filterQuery = QueryDSL.term(termField, termValue);
-    consumeUserTaskFieldTermsInBatches(
-        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
   }
 
   private void consumeUserTaskFieldTermsInBatches(
@@ -109,9 +109,9 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
     final CompositeAggregation assigneeCompositeAgg =
         new CompositeAggregation.Builder().sources(sources).size(resolvedBatchSize).build();
 
-    NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
+    final NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
 
-    Aggregation userTasksAgg =
+    final Aggregation userTasksAgg =
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));

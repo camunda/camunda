@@ -30,16 +30,17 @@ import java.io.IOException;
 public class NoCachingFilter implements Filter {
 
   @Override
-  public void init(FilterConfig filterConfig) {
+  public void init(final FilterConfig filterConfig) {
     // nothing to do here
   }
 
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(final ServletRequest request, final ServletResponse response,
+      final FilterChain chain)
       throws IOException, ServletException {
-    HttpServletRequest servletRequest = (HttpServletRequest) request;
-    String requestPath = servletRequest.getServletPath();
-    boolean isStaticResourceThatShouldNotBeCached =
+    final HttpServletRequest servletRequest = (HttpServletRequest) request;
+    final String requestPath = servletRequest.getServletPath();
+    final boolean isStaticResourceThatShouldNotBeCached =
         NO_CACHE_RESOURCES.stream().anyMatch(requestPath::endsWith);
     if (isStaticResourceThatShouldNotBeCached || isApiRestCall(requestPath)) {
       ((HttpServletResponse) response).setHeader(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
@@ -47,12 +48,12 @@ public class NoCachingFilter implements Filter {
     chain.doFilter(request, response);
   }
 
-  private boolean isApiRestCall(String requestPath) {
-    return requestPath.startsWith(REST_API_PATH);
-  }
-
   @Override
   public void destroy() {
     // nothing to do here
+  }
+
+  private boolean isApiRestCall(final String requestPath) {
+    return requestPath.startsWith(REST_API_PATH);
   }
 }

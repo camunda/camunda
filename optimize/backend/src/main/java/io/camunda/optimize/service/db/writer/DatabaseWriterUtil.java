@@ -31,13 +31,14 @@ public class DatabaseWriterUtil {
 
   public static <T> Map<String, T> createFieldUpdateScriptParams(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
-    Map<String, Object> entityAsMap =
-        objectMapper.convertValue(entityDto, new TypeReference<>() {});
+    final Map<String, Object> entityAsMap =
+        objectMapper.convertValue(entityDto, new TypeReference<>() {
+        });
     final Map<String, T> params = new HashMap<>();
-    for (String fieldName : fields) {
+    for (final String fieldName : fields) {
       Object fieldValue = entityAsMap.get(fieldName);
       if (fieldValue != null) {
-        if (fieldValue instanceof TemporalAccessor temporalAccessor) {
+        if (fieldValue instanceof final TemporalAccessor temporalAccessor) {
           fieldValue = dateTimeFormatter.format(temporalAccessor);
         }
         params.put(fieldName, (T) fieldValue);
@@ -76,7 +77,8 @@ public class DatabaseWriterUtil {
         // get converted to generic objects that the elasticsearch client is happy to serialize
         // while it complains on
         // specific DTO's
-        .map(value -> objectMapper.convertValue(value, new TypeReference<Map<String, T>>() {}))
+        .map(value -> objectMapper.convertValue(value, new TypeReference<Map<String, T>>() {
+        }))
         .orElse(Collections.emptyMap());
   }
 }

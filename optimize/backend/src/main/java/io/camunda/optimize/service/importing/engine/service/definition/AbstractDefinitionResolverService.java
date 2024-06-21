@@ -44,8 +44,8 @@ public abstract class AbstractDefinitionResolverService<T extends DefinitionOpti
           definitionId);
       try {
         value = fetchFromEngine(definitionId, engineContext);
-      } catch (OptimizeDecisionDefinitionFetchException
-          | OptimizeProcessDefinitionFetchException e) {
+      } catch (final OptimizeDecisionDefinitionFetchException
+                     | OptimizeProcessDefinitionFetchException e) {
         log.info("Could not retrieve definition with ID {} from the engine.", definitionId);
         return Optional.empty();
       }

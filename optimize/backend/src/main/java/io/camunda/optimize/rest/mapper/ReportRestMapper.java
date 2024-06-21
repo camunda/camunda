@@ -154,9 +154,9 @@ public class ReportRestMapper {
   }
 
   private <T>
-      AuthorizedProcessReportEvaluationResponseDto<T>
-          mapToAuthorizedProcessReportEvaluationResponseDto(
-              final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
+  AuthorizedProcessReportEvaluationResponseDto<T>
+  mapToAuthorizedProcessReportEvaluationResponseDto(
+      final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
     return new AuthorizedProcessReportEvaluationResponseDto<>(
         null,
         mapToReportResultResponseDto(singleReportEvaluationResult),
@@ -165,10 +165,10 @@ public class ReportRestMapper {
   }
 
   private <T, R extends ReportDefinitionDto<?>>
-      AuthorizedSingleReportEvaluationResponseDto<T, R> mapToLocalizedEvaluationResponseDto(
-          final RoleType currentUserRole,
-          final SingleReportEvaluationResult<?> evaluationResult,
-          final String locale) {
+  AuthorizedSingleReportEvaluationResponseDto<T, R> mapToLocalizedEvaluationResponseDto(
+      final RoleType currentUserRole,
+      final SingleReportEvaluationResult<?> evaluationResult,
+      final String locale) {
     final AuthorizedSingleReportEvaluationResponseDto<T, R> mappedResult =
         new AuthorizedSingleReportEvaluationResponseDto<>(
             currentUserRole,
@@ -213,11 +213,11 @@ public class ReportRestMapper {
       final ReportDefinitionDto<?> reportDefinitionDto) {
     return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
         && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isInstantPreviewReport());
+        .getData()
+        .isManagementReport()
+        || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+        .getData()
+        .isInstantPreviewReport());
   }
 
   private void localizeReportData(

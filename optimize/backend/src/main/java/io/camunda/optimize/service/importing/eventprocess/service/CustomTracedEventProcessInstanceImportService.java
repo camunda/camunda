@@ -71,7 +71,7 @@ public class CustomTracedEventProcessInstanceImportService
 
   private List<CamundaActivityEventDto> filterForConfiguredTenantsAndVersions(
       final List<CamundaActivityEventDto> camundaActivities) {
-    List<CamundaActivityEventDto> filteredActivities =
+    final List<CamundaActivityEventDto> filteredActivities =
         camundaActivities.stream()
             .filter(activity -> eventSourceConfig.getTenants().contains(activity.getTenantId()))
             .collect(Collectors.toList());
@@ -89,7 +89,7 @@ public class CustomTracedEventProcessInstanceImportService
         "Correlating [{}] camunda activity events for process definition key {}.",
         eventDtosToImport.size(),
         eventSourceConfig.getProcessDefinitionKey());
-    Set<String> processInstanceIds =
+    final Set<String> processInstanceIds =
         eventDtosToImport.stream().map(EventDto::getTraceId).collect(Collectors.toSet());
 
     final Map<String, List<VariableUpdateInstanceDto>> processInstanceToVariableUpdates =
@@ -105,9 +105,9 @@ public class CustomTracedEventProcessInstanceImportService
                 extractVariablesDataForEvent(
                     processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
 
-    List<EventDto> correlatedEvents;
+    final List<EventDto> correlatedEvents;
     if (eventSourceConfig.isTracedByBusinessKey()) {
-      Map<String, String> instanceIdToBusinessKeys =
+      final Map<String, String> instanceIdToBusinessKeys =
           businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds).stream()
               .filter(businessKeyDto -> businessKeyDto.getBusinessKey() != null)
               .collect(
@@ -129,16 +129,16 @@ public class CustomTracedEventProcessInstanceImportService
                         processInstanceToVariableUpdates.get(eventDto.getTraceId());
                     return variablesForTraceId != null
                         && variablesForTraceId.stream()
-                            .anyMatch(
-                                var ->
-                                    var.getName()
-                                        .equalsIgnoreCase(eventSourceConfig.getTraceVariable()));
+                        .anyMatch(
+                            var ->
+                                var.getName()
+                                    .equalsIgnoreCase(eventSourceConfig.getTraceVariable()));
                   })
               .peek(
                   eventDto -> {
                     // if the value of the correlation key changes during the running of the
                     // instance, we take the original value
-                    VariableUpdateInstanceDto firstUpdate =
+                    final VariableUpdateInstanceDto firstUpdate =
                         processInstanceToVariableUpdates.get(eventDto.getTraceId()).stream()
                             .filter(
                                 variableUpdateInstanceDto ->
@@ -169,7 +169,7 @@ public class CustomTracedEventProcessInstanceImportService
   }
 
   private Object extractVariablesDataForEvent(
-      List<VariableUpdateInstanceDto> variableUpdateInstanceDtos) {
+      final List<VariableUpdateInstanceDto> variableUpdateInstanceDtos) {
     if (variableUpdateInstanceDtos == null || variableUpdateInstanceDtos.isEmpty()) {
       return null;
     }
@@ -188,8 +188,9 @@ public class CustomTracedEventProcessInstanceImportService
   }
 
   private Object getTypedVariable(final VariableUpdateInstanceDto variableUpdateInstanceDto) {
-    String type = variableUpdateInstanceDto.getType();
-    String value = variableUpdateInstanceDto.getValue().stream().sorted().findFirst().orElse(null);
+    final String type = variableUpdateInstanceDto.getType();
+    final String value = variableUpdateInstanceDto.getValue().stream().sorted().findFirst()
+        .orElse(null);
     try {
       if (type.equalsIgnoreCase(VariableType.STRING.getId())) {
         return value;
@@ -206,7 +207,7 @@ public class CustomTracedEventProcessInstanceImportService
       } else if (type.equalsIgnoreCase(VariableType.DATE.getId())) {
         return variableDateTimeFormatter.parse(value);
       }
-    } catch (ParseException | NumberFormatException ex) {
+    } catch (final ParseException | NumberFormatException ex) {
       log.warn(
           "Could not parse variable value {} with type {} into supported type, will use String as type",
           value,
@@ -217,7 +218,7 @@ public class CustomTracedEventProcessInstanceImportService
   }
 
   private List<String> getVersionsToIncludeForFilter() {
-    List<String> versionsForFilter = new ArrayList<>(eventSourceConfig.getVersions());
+    final List<String> versionsForFilter = new ArrayList<>(eventSourceConfig.getVersions());
     versionsForFilter.removeIf(Objects::isNull);
     if (DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest(versionsForFilter)) {
       return Collections.singletonList(

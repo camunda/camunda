@@ -31,10 +31,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class EventTraceStateProcessingScheduler extends AbstractScheduledService {
+
   private final ConfigurationService configurationService;
 
   private final EventTraceImportMediatorManager eventTraceImportMediatorManager;
-  @Getter private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
+  @Getter
+  private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
 
   @PostConstruct
   public void init() {
@@ -107,12 +109,12 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   }
 
   private void doBackoff(final List<ImportMediator> mediators) {
-    long timeToSleep =
+    final long timeToSleep =
         mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
       Thread.currentThread().interrupt();
     }

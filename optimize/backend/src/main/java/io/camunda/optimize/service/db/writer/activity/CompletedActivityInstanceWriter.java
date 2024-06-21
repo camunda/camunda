@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWriter {
+
   Set<String> USER_TASK_FIELDS_TO_UPDATE =
       Set.of(
           FLOW_NODE_ID,

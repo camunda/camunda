@@ -51,25 +51,27 @@ public class EventTraceStateService {
   }
 
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
-    Map<String, EventTraceStateDto> eventTraceStatesForUpdate =
+    final Map<String, EventTraceStateDto> eventTraceStatesForUpdate =
         getEventTraceStatesForIds(
-                eventsToProcess.stream()
-                    .map(EventDto::getTraceId)
-                    .distinct()
-                    .collect(Collectors.toList()))
+            eventsToProcess.stream()
+                .map(EventDto::getTraceId)
+                .distinct()
+                .collect(Collectors.toList()))
             .stream()
             .collect(Collectors.toMap(EventTraceStateDto::getTraceId, Function.identity()));
-    Map<String, EventTraceStateDto> eventTraceStatesToCreate = new HashMap<>();
-    Map<String, EventSequenceCountDto> sequenceAdjustmentsRequired = new HashMap<>();
+    final Map<String, EventTraceStateDto> eventTraceStatesToCreate = new HashMap<>();
+    final Map<String, EventSequenceCountDto> sequenceAdjustmentsRequired = new HashMap<>();
 
-    for (EventDto event : eventsToProcess) {
-      TracedEventDto tracedEventToAdd = TracedEventDto.fromEventDto(event);
-      EventTraceStateDto currentTraceState = eventTraceStatesForUpdate.get(event.getTraceId());
+    for (final EventDto event : eventsToProcess) {
+      final TracedEventDto tracedEventToAdd = TracedEventDto.fromEventDto(event);
+      final EventTraceStateDto currentTraceState = eventTraceStatesForUpdate.get(
+          event.getTraceId());
       if (currentTraceState == null) {
         addOrUpdateNewTraceState(eventTraceStatesToCreate, event, tracedEventToAdd);
       } else {
-        List<TracedEventDto> eventTrace = currentTraceState.getEventTrace();
-        TracedEventDto tracedEventToRemove = getExistingTracedEventToBeReplaced(eventTrace, event);
+        final List<TracedEventDto> eventTrace = currentTraceState.getEventTrace();
+        final TracedEventDto tracedEventToRemove = getExistingTracedEventToBeReplaced(eventTrace,
+            event);
 
         // We do nothing if the new event is a duplicate as the trace state will be unaffected
         if (!tracedEventToAdd.equals(tracedEventToRemove)) {
@@ -149,7 +151,7 @@ public class EventTraceStateService {
     };
   }
 
-  private List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
+  private List<EventTraceStateDto> getEventTraceStatesForIds(final List<String> traceIds) {
     return eventTraceStateReader.getEventTraceStateForTraceIds(traceIds);
   }
 
@@ -179,7 +181,7 @@ public class EventTraceStateService {
       final Map<String, EventTraceStateDto> eventTraceStatesToCreate,
       final EventDto event,
       final TracedEventDto tracedEventToAdd) {
-    Optional<EventTraceStateDto> existingTraceStateToAdd =
+    final Optional<EventTraceStateDto> existingTraceStateToAdd =
         Optional.ofNullable(eventTraceStatesToCreate.get(event.getTraceId()));
 
     // we might already have seen a new trace ID in this batch of events - this keeps linked events
@@ -192,7 +194,7 @@ public class EventTraceStateService {
         eventTrace.add(tracedEventToAdd);
       }
     } else {
-      EventTraceStateDto newTraceStateDto =
+      final EventTraceStateDto newTraceStateDto =
           EventTraceStateDto.builder()
               .traceId(event.getTraceId())
               .eventTrace(new ArrayList<>(Collections.singletonList(tracedEventToAdd)))
@@ -204,9 +206,9 @@ public class EventTraceStateService {
   private void addAdjustmentsForNewTraces(
       final EventTraceStateDto eventTraceStateToCreate,
       final Map<String, EventSequenceCountDto> adjustmentsRequired) {
-    List<TracedEventDto> tracedEvents = eventTraceStateToCreate.getEventTrace();
-    for (TracedEventDto event : tracedEvents) {
-      int eventIndex = tracedEvents.indexOf(event);
+    final List<TracedEventDto> tracedEvents = eventTraceStateToCreate.getEventTrace();
+    for (final TracedEventDto event : tracedEvents) {
+      final int eventIndex = tracedEvents.indexOf(event);
       if (eventIndex == tracedEvents.size() - 1) {
         incrementSequenceAdjustment(createAdjustment(event, null), adjustmentsRequired);
       } else {
@@ -224,10 +226,10 @@ public class EventTraceStateService {
       eventTrace.add(tracedEventToAdd);
     }
     sortTracedEvents(eventTrace);
-    int indexOfNewEvent = eventTrace.indexOf(tracedEventToAdd);
-    TracedEventDto newPreviousEvent =
+    final int indexOfNewEvent = eventTrace.indexOf(tracedEventToAdd);
+    final TracedEventDto newPreviousEvent =
         (indexOfNewEvent == 0) ? null : eventTrace.get(indexOfNewEvent - 1);
-    TracedEventDto newNextEvent =
+    final TracedEventDto newNextEvent =
         (indexOfNewEvent == eventTrace.size() - 1) ? null : eventTrace.get(indexOfNewEvent + 1);
     if (newPreviousEvent != null) {
       decrementSequenceAdjustment(
@@ -243,10 +245,10 @@ public class EventTraceStateService {
       final List<TracedEventDto> eventTrace,
       final TracedEventDto tracedEventToRemove,
       final Map<String, EventSequenceCountDto> requiredCountAdjustments) {
-    int indexOfCurrentEvent = eventTrace.indexOf(tracedEventToRemove);
-    TracedEventDto currentPreviousEvent =
+    final int indexOfCurrentEvent = eventTrace.indexOf(tracedEventToRemove);
+    final TracedEventDto currentPreviousEvent =
         (indexOfCurrentEvent == 0) ? null : eventTrace.get(indexOfCurrentEvent - 1);
-    TracedEventDto currentNextEvent =
+    final TracedEventDto currentNextEvent =
         (indexOfCurrentEvent == eventTrace.size() - 1)
             ? null
             : eventTrace.get(indexOfCurrentEvent + 1);
@@ -262,20 +264,22 @@ public class EventTraceStateService {
   }
 
   private void decrementSequenceAdjustment(
-      EventSequenceCountDto adjustment, Map<String, EventSequenceCountDto> adjustments) {
+      final EventSequenceCountDto adjustment,
+      final Map<String, EventSequenceCountDto> adjustments) {
     addOrUpdateAdjustmentInList(adjustment, adjustments, -1L);
   }
 
   private void incrementSequenceAdjustment(
-      EventSequenceCountDto adjustment, Map<String, EventSequenceCountDto> adjustments) {
+      final EventSequenceCountDto adjustment,
+      final Map<String, EventSequenceCountDto> adjustments) {
     addOrUpdateAdjustmentInList(adjustment, adjustments, 1L);
   }
 
   private void addOrUpdateAdjustmentInList(
-      EventSequenceCountDto sequenceDto,
-      Map<String, EventSequenceCountDto> adjustments,
-      Long adjustment) {
-    Optional<EventSequenceCountDto> existingAdjustment =
+      final EventSequenceCountDto sequenceDto,
+      final Map<String, EventSequenceCountDto> adjustments,
+      final Long adjustment) {
+    final Optional<EventSequenceCountDto> existingAdjustment =
         Optional.ofNullable(adjustments.get(sequenceDto.getId()));
 
     if (existingAdjustment.isPresent()) {
@@ -287,8 +291,8 @@ public class EventTraceStateService {
   }
 
   private EventSequenceCountDto createAdjustment(
-      TracedEventDto sourceEvent, TracedEventDto targetEvent) {
-    EventSequenceCountDto eventSequenceCountDto =
+      final TracedEventDto sourceEvent, final TracedEventDto targetEvent) {
+    final EventSequenceCountDto eventSequenceCountDto =
         EventSequenceCountDto.builder()
             .sourceEvent(
                 Optional.ofNullable(sourceEvent)

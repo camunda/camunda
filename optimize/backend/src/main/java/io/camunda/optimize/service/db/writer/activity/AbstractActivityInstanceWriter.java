@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public abstract class AbstractActivityInstanceWriter {
+
   private final ObjectMapper objectMapper;
   private final IndexRepository indexRepository;
 
@@ -53,8 +54,8 @@ public abstract class AbstractActivityInstanceWriter {
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX, Set.of(PROCESS_INSTANCE_MULTI_ALIAS), keys);
 
-    Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
-    for (FlowNodeEventDto e : activityInstances) {
+    final Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
+    for (final FlowNodeEventDto e : activityInstances) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
       }
@@ -68,15 +69,15 @@ public abstract class AbstractActivityInstanceWriter {
 
   public FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance) {
     return new FlowNodeInstanceDto(
-            activityInstance.getProcessDefinitionKey(),
-            activityInstance.getProcessDefinitionVersion(),
-            activityInstance.getTenantId(),
-            activityInstance.getEngineAlias(),
-            activityInstance.getProcessInstanceId(),
-            activityInstance.getActivityId(),
-            activityInstance.getActivityType(),
-            activityInstance.getId(),
-            activityInstance.getTaskId())
+        activityInstance.getProcessDefinitionKey(),
+        activityInstance.getProcessDefinitionVersion(),
+        activityInstance.getTenantId(),
+        activityInstance.getEngineAlias(),
+        activityInstance.getProcessInstanceId(),
+        activityInstance.getActivityId(),
+        activityInstance.getActivityType(),
+        activityInstance.getId(),
+        activityInstance.getTaskId())
         .setTotalDurationInMs(activityInstance.getDurationInMs())
         .setStartDate(activityInstance.getStartDate())
         .setEndDate(activityInstance.getEndDate())

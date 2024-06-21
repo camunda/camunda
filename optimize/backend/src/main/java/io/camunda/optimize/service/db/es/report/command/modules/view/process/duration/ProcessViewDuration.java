@@ -75,8 +75,8 @@ public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
     return reportData.isUserTaskReport()
         ? getUserTaskDurationScript(
-            LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-            getDurationFieldName(reportData))
+        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+        getDurationFieldName(reportData))
         : getDurationScript(
             LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
             getDurationFieldName(reportData),

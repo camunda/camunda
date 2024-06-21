@@ -22,15 +22,15 @@ public class MinAggregation extends AggregationStrategy<MinAggregationBuilder> {
   private static final String MIN_AGGREGATION = "minAggregation";
 
   @Override
-  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
-    final Min aggregation = aggs.get(createAggregationName(customIdentifier, MIN_AGGREGATION));
-    return mapToDoubleOrNull(aggregation.getValue());
+  public ValuesSourceAggregationBuilder<MinAggregationBuilder>
+  createAggregationBuilderForAggregation(final String customIdentifier) {
+    return min(createAggregationName(customIdentifier, MIN_AGGREGATION));
   }
 
   @Override
-  public ValuesSourceAggregationBuilder<MinAggregationBuilder>
-      createAggregationBuilderForAggregation(final String customIdentifier) {
-    return min(createAggregationName(customIdentifier, MIN_AGGREGATION));
+  public Double getValueForAggregation(final String customIdentifier, final Aggregations aggs) {
+    final Min aggregation = aggs.get(createAggregationName(customIdentifier, MIN_AGGREGATION));
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override

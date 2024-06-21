@@ -15,10 +15,10 @@ public interface OpenIncidentWriter extends AbstractIncidentWriter {
     // new instances, since the stored instances are
     // probably completed incidents.
     return """
-        def existingIncidentsById = ctx._source.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
-        def incidentsToAddById = params.incidents.stream().filter(e -> !existingIncidentsById.containsKey(e.id))
-        .collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
-        ctx._source.incidents.addAll(incidentsToAddById.values());
-    """;
+            def existingIncidentsById = ctx._source.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
+            def incidentsToAddById = params.incidents.stream().filter(e -> !existingIncidentsById.containsKey(e.id))
+            .collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));
+            ctx._source.incidents.addAll(incidentsToAddById.values());
+        """;
   }
 }

@@ -62,6 +62,7 @@ import org.apache.commons.lang3.StringUtils;
 @RequiredArgsConstructor
 @Accessors(chain = true)
 public class CompositeCommandResult {
+
   private final SingleReportDataDto reportDataDto;
   private final ViewProperty viewProperty;
 
@@ -79,17 +80,17 @@ public class CompositeCommandResult {
       final Double defaultNumberValue) {
     this.reportDataDto = reportDataDto;
     this.viewProperty = viewProperty;
-    this.defaultNumberValueSupplier = () -> defaultNumberValue;
+    defaultNumberValueSupplier = () -> defaultNumberValue;
   }
 
   public void setGroup(final GroupByResult groupByResult) {
-    this.groups = singletonList(groupByResult);
+    groups = singletonList(groupByResult);
   }
 
   public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
     final Map<ViewMeasureIdentifier, List<HyperMapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> distributionsByAggregationType =
           createMeasureMap(ArrayList::new);
       group.distributions.forEach(
@@ -135,7 +136,7 @@ public class CompositeCommandResult {
   public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
     final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       group
           .getDistributions()
           .forEach(
@@ -267,7 +268,7 @@ public class CompositeCommandResult {
   private boolean isUserTaskDurationResult() {
     return reportDataDto instanceof ProcessReportDataDto
         && ProcessViewEntity.USER_TASK.equals(
-            ((ProcessReportDataDto) reportDataDto).getView().getEntity())
+        ((ProcessReportDataDto) reportDataDto).getView().getEntity())
         && ViewProperty.DURATION.equals(viewProperty);
   }
 
@@ -400,6 +401,7 @@ public class CompositeCommandResult {
   @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   public static class GroupByResult {
+
     private String key;
     private String label;
     private List<DistributedByResult> distributions;
@@ -432,16 +434,17 @@ public class CompositeCommandResult {
   @Data
   @EqualsAndHashCode
   public static class DistributedByResult {
+
     private String key;
     private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult createDistributedByNoneResult(ViewResult viewResult) {
+    public static DistributedByResult createDistributedByNoneResult(final ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
     }
 
     public static DistributedByResult createDistributedByResult(
-        String key, String label, ViewResult viewResult) {
+        final String key, final String label, final ViewResult viewResult) {
       return new DistributedByResult(key, label, viewResult);
     }
 
@@ -450,14 +453,14 @@ public class CompositeCommandResult {
     }
 
     public List<Double> getValuesAsDouble() {
-      return this.getViewResult().getViewMeasures().stream()
+      return getViewResult().getViewMeasures().stream()
           .map(ViewMeasure::getValue)
           .collect(Collectors.toList());
     }
 
     public List<MapResultEntryDto> getValuesAsMapResultEntries() {
       return getValuesAsDouble().stream()
-          .map(value -> new MapResultEntryDto(this.key, value, this.label))
+          .map(value -> new MapResultEntryDto(key, value, label))
           .collect(Collectors.toList());
     }
   }
@@ -465,13 +468,16 @@ public class CompositeCommandResult {
   @Builder
   @Data
   public static class ViewResult {
-    @Singular private List<ViewMeasure> viewMeasures;
+
+    @Singular
+    private List<ViewMeasure> viewMeasures;
     private List<? extends RawDataInstanceDto> rawData;
   }
 
   @Builder
   @Data
   public static class ViewMeasure {
+
     private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
     private Double value;
@@ -486,11 +492,11 @@ public class CompositeCommandResult {
   @NoArgsConstructor
   public static class ViewMeasureIdentifier {
 
-    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
-      this.aggregationType = aggregationDto;
-    }
-
     private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
+
+    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
+      aggregationType = aggregationDto;
+    }
   }
 }

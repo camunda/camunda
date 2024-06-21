@@ -50,8 +50,8 @@ public class ProcessPartQueryUtil {
 
   public static Double getProcessPartAggregationResult(
       final Aggregations aggs, final AggregationDto aggregationType) {
-    Nested nested = aggs.get(NESTED_AGGREGATION);
-    ScriptedMetric scriptedMetric =
+    final Nested nested = aggs.get(NESTED_AGGREGATION);
+    final ScriptedMetric scriptedMetric =
         nested.getAggregations().get(getScriptAggregationName(aggregationType));
 
     if (scriptedMetric.aggregation() instanceof Number) {
@@ -65,7 +65,7 @@ public class ProcessPartQueryUtil {
       final BoolQueryBuilder boolQueryBuilder,
       final String startFlowNodeId,
       final String endFlowNodeId) {
-    String termPath =
+    final String termPath =
         ProcessInstanceIndex.FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_ID;
     boolQueryBuilder.must(
         nestedQuery(
@@ -110,7 +110,7 @@ public class ProcessPartQueryUtil {
     final String aggName =
         aggregationType.getType() == AggregationType.PERCENTILE
             ? aggregationType.getType().getId()
-                + String.valueOf(aggregationType.getValue()).replace(".", "_")
+            + String.valueOf(aggregationType.getValue()).replace(".", "_")
             : aggregationType.getType().getId();
     return String.join("_", SCRIPT_AGGREGATION, aggName);
   }

@@ -38,7 +38,7 @@ public class DecisionVariableReader {
       return Collections.emptyList();
     }
 
-    List<DecisionVariableNameResponseDto> decisionDefinitions =
+    final List<DecisionVariableNameResponseDto> decisionDefinitions =
         decisionDefinitionReader
             .getDecisionDefinition(decisionDefinitionKey, decisionDefinitionVersions, tenantIds)
             .orElseThrow(
@@ -63,7 +63,7 @@ public class DecisionVariableReader {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Collections.emptyList();
     } else {
-      List<DecisionVariableNameResponseDto> decisionDefinitions =
+      final List<DecisionVariableNameResponseDto> decisionDefinitions =
           decisionDefinitionReader
               .getDecisionDefinition(decisionDefinitionKey, decisionDefinitionVersions, tenantIds)
               .orElseThrow(

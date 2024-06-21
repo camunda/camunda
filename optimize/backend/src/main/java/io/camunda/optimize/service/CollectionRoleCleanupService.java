@@ -59,7 +59,7 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       final SearchableIdentityCache newIdentityCache, final CollectionDefinitionDto collection) {
     final Set<String> invalidIdentities = new HashSet<>();
     final CollectionDataDto collectionData = collection.getData();
-    for (CollectionRoleRequestDto role : collectionData.getRoles()) {
+    for (final CollectionRoleRequestDto role : collectionData.getRoles()) {
       final IdentityDto roleIdentity = role.getIdentity();
       switch (roleIdentity.getType()) {
         case GROUP:
@@ -86,7 +86,7 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       try {
         log.info("Removing role with ID [{}] from collection with ID [{}].", roleId, collectionId);
         collectionWriter.removeRoleFromCollection(collectionId, roleId);
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         log.error(
             "Could not remove role with ID [{}] from collection with ID [{}]",
             roleId,

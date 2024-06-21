@@ -18,12 +18,15 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class DashboardDefinitionUpdateDto {
+
   protected String name;
-  @JsonInclude protected String description;
+  @JsonInclude
+  protected String description;
   protected OffsetDateTime lastModified;
   protected String lastModifier;
   protected List<DashboardReportTileDto> tiles;
   protected String collectionId;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
-  @JsonInclude protected Long refreshRateSeconds;
+  @JsonInclude
+  protected Long refreshRateSeconds;
 }

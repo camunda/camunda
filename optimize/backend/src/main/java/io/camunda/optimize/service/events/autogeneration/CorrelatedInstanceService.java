@@ -39,10 +39,10 @@ public class CorrelatedInstanceService {
   private final EventTraceStateService externalEventTraceStateService;
 
   public CorrelatedInstanceService(
-      CorrelatedCamundaProcessInstanceReader correlatedCamundaProcessInstanceReader,
-      EventTraceStateServiceFactory eventTraceStateServiceFactory) {
+      final CorrelatedCamundaProcessInstanceReader correlatedCamundaProcessInstanceReader,
+      final EventTraceStateServiceFactory eventTraceStateServiceFactory) {
     this.correlatedCamundaProcessInstanceReader = correlatedCamundaProcessInstanceReader;
-    this.externalEventTraceStateService =
+    externalEventTraceStateService =
         eventTraceStateServiceFactory.createEventTraceStateService(EXTERNAL_EVENTS_INDEX_SUFFIX);
   }
 

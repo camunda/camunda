@@ -31,6 +31,7 @@ import org.springframework.web.filter.GenericFilterBean;
 @AllArgsConstructor
 @Slf4j
 public class SingleSignOnRequestFilter extends GenericFilterBean {
+
   private final AuthenticationExtractorProvider authenticationExtractorProvider;
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final SessionService sessionService;
@@ -42,11 +43,12 @@ public class SingleSignOnRequestFilter extends GenericFilterBean {
    * the single sign on functionality to Optimize.
    */
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(final ServletRequest request, final ServletResponse response,
+      final FilterChain chain)
       throws IOException, ServletException {
     log.debug("Received new request.");
-    HttpServletResponse servletResponse = (HttpServletResponse) response;
-    HttpServletRequest servletRequest = (HttpServletRequest) request;
+    final HttpServletResponse servletResponse = (HttpServletResponse) response;
+    final HttpServletRequest servletRequest = (HttpServletRequest) request;
 
     if (authenticationExtractorProvider.hasPluginsConfigured()) {
       servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
@@ -57,8 +59,8 @@ public class SingleSignOnRequestFilter extends GenericFilterBean {
   }
 
   private void provideAuthentication(
-      HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
-    boolean hasValidSession = sessionService.hasValidSession(servletRequest);
+      final HttpServletResponse servletResponse, final HttpServletRequest servletRequest) {
+    final boolean hasValidSession = sessionService.hasValidSession(servletRequest);
     if (!hasValidSession) {
       log.debug("Creating new auth header for the Optimize cookie.");
       addTokenFromAuthenticationExtractorPlugins(servletRequest, servletResponse);
@@ -66,8 +68,8 @@ public class SingleSignOnRequestFilter extends GenericFilterBean {
   }
 
   private void addTokenFromAuthenticationExtractorPlugins(
-      HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-    for (AuthenticationExtractor plugin : authenticationExtractorProvider.getPlugins()) {
+      final HttpServletRequest servletRequest, final HttpServletResponse servletResponse) {
+    for (final AuthenticationExtractor plugin : authenticationExtractorProvider.getPlugins()) {
       final AuthenticationResult authenticationResult =
           plugin.extractAuthenticatedUser(servletRequest);
       if (authenticationResult.isAuthenticated()) {
@@ -80,11 +82,13 @@ public class SingleSignOnRequestFilter extends GenericFilterBean {
   }
 
   private void createSessionIfIsAuthorizedToAccessOptimize(
-      HttpServletRequest servletRequest, HttpServletResponse servletResponse, String userId) {
-    boolean isAuthorized = applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId);
+      final HttpServletRequest servletRequest, final HttpServletResponse servletResponse,
+      final String userId) {
+    final boolean isAuthorized = applicationAuthorizationService.isUserAuthorizedToAccessOptimize(
+        userId);
     if (isAuthorized) {
       log.debug("User [{}] was authorized to access Optimize, creating new session token.", userId);
-      String securityToken = sessionService.createAuthToken(userId);
+      final String securityToken = sessionService.createAuthToken(userId);
       authorizeCurrentRequest(servletRequest, securityToken);
       writeOptimizeAuthorizationCookieToResponse(servletRequest, servletResponse, securityToken);
     }

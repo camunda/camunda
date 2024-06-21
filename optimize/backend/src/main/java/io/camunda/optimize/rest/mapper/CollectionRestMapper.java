@@ -25,7 +25,8 @@ public class CollectionRestMapper {
     resolveOwnerAndModifierNames(collectionDefinitionRestDto.getDefinitionDto());
   }
 
-  private void resolveOwnerAndModifierNames(BaseCollectionDefinitionDto collectionDefinitionDto) {
+  private void resolveOwnerAndModifierNames(
+      final BaseCollectionDefinitionDto collectionDefinitionDto) {
     Optional.ofNullable(collectionDefinitionDto.getOwner())
         .flatMap(identityService::getIdentityNameById)
         .ifPresent(collectionDefinitionDto::setOwner);

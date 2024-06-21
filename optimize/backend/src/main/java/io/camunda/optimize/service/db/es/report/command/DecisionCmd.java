@@ -19,7 +19,7 @@ public abstract class DecisionCmd<T>
   protected final DecisionReportCmdExecutionPlan<T> executionPlan;
 
   protected DecisionCmd(final ReportCmdExecutionPlanBuilder builder) {
-    this.executionPlan = buildExecutionPlan(builder);
+    executionPlan = buildExecutionPlan(builder);
   }
 
   @Override
@@ -29,11 +29,11 @@ public abstract class DecisionCmd<T>
     return executionPlan.evaluate(reportEvaluationContext);
   }
 
-  protected abstract DecisionReportCmdExecutionPlan<T> buildExecutionPlan(
-      final ReportCmdExecutionPlanBuilder builder);
-
   @Override
   public String createCommandKey() {
     return executionPlan.generateCommandKey();
   }
+
+  protected abstract DecisionReportCmdExecutionPlan<T> buildExecutionPlan(
+      final ReportCmdExecutionPlanBuilder builder);
 }

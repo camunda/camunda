@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 @AllArgsConstructor
 public class MixpanelReportingService {
+
   private final MixpanelDataService mixpanelDataService;
   private final MixpanelClient mixpanelClient;
 

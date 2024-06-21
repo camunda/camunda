@@ -29,8 +29,8 @@ public class ProcessMultiVariableQueryFilter extends AbstractProcessVariableQuer
       final List<MultipleVariableFilterDataDto> multiVariableFilters,
       final FilterContext filterContext) {
     if (multiVariableFilters != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (MultipleVariableFilterDataDto multiVariableFilter : multiVariableFilters) {
+      final List<QueryBuilder> filters = query.filter();
+      for (final MultipleVariableFilterDataDto multiVariableFilter : multiVariableFilters) {
         filters.add(buildMultiVariableFilterQuery(multiVariableFilter, filterContext));
       }
     }

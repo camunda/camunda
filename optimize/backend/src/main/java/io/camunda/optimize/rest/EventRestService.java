@@ -89,7 +89,7 @@ public class EventRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void deleteEvents(
       @Context final ContainerRequestContext requestContext,
-      @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) List<String> eventIdsToDelete) {
+      @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) final List<String> eventIdsToDelete) {
     validateEventProcessManagementAuthorization(requestContext);
     externalEventService.deleteEvents(eventIdsToDelete);
   }

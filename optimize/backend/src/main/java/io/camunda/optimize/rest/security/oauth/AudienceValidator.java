@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 @AllArgsConstructor
 public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
+
   private final String expectedAudience;
 
   @Override

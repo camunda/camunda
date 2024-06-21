@@ -57,6 +57,11 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
     runCleanup();
   }
 
+  @Override
+  protected CronTrigger createScheduleTrigger() {
+    return new CronTrigger(getCleanupConfiguration().getCronTrigger());
+  }
+
   public void runCleanup() {
     log.info("Running optimize history cleanup...");
     final OffsetDateTime startTime = LocalDateUtil.getCurrentDateTime();
@@ -69,7 +74,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
                   "Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
               try {
                 optimizeCleanupService.doCleanup(startTime);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.error(
                     "Execution of cleanupService {} failed",
                     optimizeCleanupService.getClass().getSimpleName(),
@@ -92,11 +97,6 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
   }
 
   protected CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
-  }
-
-  @Override
-  protected CronTrigger createScheduleTrigger() {
-    return new CronTrigger(getCleanupConfiguration().getCronTrigger());
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

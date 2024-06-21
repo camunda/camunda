@@ -19,18 +19,21 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MultiDefinitionTenantsRequestDto {
 
-  public MultiDefinitionTenantsRequestDto(final List<DefinitionDto> definitionDtos) {
-    this.definitions = definitionDtos;
-  }
-
   private List<DefinitionDto> definitions = new ArrayList<>();
   private String filterByCollectionScope;
+
+  public MultiDefinitionTenantsRequestDto(final List<DefinitionDto> definitionDtos) {
+    definitions = definitionDtos;
+  }
 
   @AllArgsConstructor
   @Data
   @NoArgsConstructor
   public static class DefinitionDto {
-    @NotNull private String key;
-    @NotNull private List<String> versions = new ArrayList<>();
+
+    @NotNull
+    private String key;
+    @NotNull
+    private List<String> versions = new ArrayList<>();
   }
 }

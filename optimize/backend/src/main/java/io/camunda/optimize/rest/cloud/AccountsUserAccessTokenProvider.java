@@ -27,7 +27,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class AccountsUserAccessTokenProvider {
 
   private Optional<String> retrieveServiceTokenFromFramework() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null) {
       if (authentication instanceof JwtAuthenticationToken) {
         return Optional.ofNullable(

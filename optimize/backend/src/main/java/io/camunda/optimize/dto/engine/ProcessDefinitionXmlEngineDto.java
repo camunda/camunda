@@ -12,6 +12,7 @@ import lombok.Data;
 
 @Data
 public class ProcessDefinitionXmlEngineDto implements TenantSpecificEngineDto {
+
   private String id;
   private String bpmn20Xml;
   private String tenantId;

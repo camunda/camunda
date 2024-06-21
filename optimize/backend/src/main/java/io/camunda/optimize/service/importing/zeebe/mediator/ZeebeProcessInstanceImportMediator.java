@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeProcessInstanceImportMediator
     extends PositionBasedImportMediator<
-        ZeebeProcessInstanceImportIndexHandler, ZeebeProcessInstanceRecordDto> {
+    ZeebeProcessInstanceImportIndexHandler, ZeebeProcessInstanceRecordDto> {
 
   private final ZeebeProcessInstanceFetcher zeebeProcessInstanceFetcher;
 

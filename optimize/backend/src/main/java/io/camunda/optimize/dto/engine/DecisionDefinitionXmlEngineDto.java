@@ -12,6 +12,7 @@ import lombok.Data;
 
 @Data
 public class DecisionDefinitionXmlEngineDto implements TenantSpecificEngineDto {
+
   private String id;
   private String dmnXml;
   private String tenantId;

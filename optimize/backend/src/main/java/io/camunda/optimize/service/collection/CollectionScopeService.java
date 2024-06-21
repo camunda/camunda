@@ -57,14 +57,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class CollectionScopeService {
 
+  public static final String SCOPE_NOT_AUTHORIZED_MESSAGE =
+      "User [%s] is not authorized to add scope [%s]. Either "
+          + "they aren't allowed to access the definition or the provided tenants.";
   private static final String UNAUTHORIZED_TENANT_MASK_NAME = "Unauthorized Tenant";
   private static final String UNAUTHORIZED_TENANT_MASK_ID = "__unauthorizedTenantId__";
   public static final TenantDto UNAUTHORIZED_TENANT_MASK =
       new TenantDto(UNAUTHORIZED_TENANT_MASK_ID, UNAUTHORIZED_TENANT_MASK_NAME, "unknownEngine");
-  public static final String SCOPE_NOT_AUTHORIZED_MESSAGE =
-      "User [%s] is not authorized to add scope [%s]. Either "
-          + "they aren't allowed to access the definition or the provided tenants.";
-
   private final TenantService tenantService;
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -195,7 +194,7 @@ public class CollectionScopeService {
       final String userId, final List<CollectionScopeEntryDto> scopeEntries) {
     scopeEntries.forEach(
         scopeEntry -> {
-          boolean isAuthorized =
+          final boolean isAuthorized =
               definitionAuthorizationService.isAuthorizedToAccessDefinition(
                   userId,
                   scopeEntry.getDefinitionType(),
@@ -210,7 +209,8 @@ public class CollectionScopeService {
   }
 
   public void deleteScopeEntry(
-      String userId, String collectionId, String scopeEntryId, boolean force) {
+      final String userId, final String collectionId, final String scopeEntryId,
+      final boolean force) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
 
@@ -241,7 +241,7 @@ public class CollectionScopeService {
   private void checkForConflictsOnScopeDeletion(
       final String userId,
       final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion) {
-    Set<ConflictedItemDto> conflictedItems =
+    final Set<ConflictedItemDto> conflictedItems =
         getConflictsForReports(userId, reportsAffectedByScopeDeletion);
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeCollectionConflictException(conflictedItems);
@@ -253,11 +253,11 @@ public class CollectionScopeService {
     return reports.stream()
         .flatMap(
             report -> {
-              Set<ConflictedItemDto> reportConflicts =
+              final Set<ConflictedItemDto> reportConflicts =
                   reportService
                       .getReportDeleteConflictingItems(userId, report.getId())
                       .getConflictedItems();
-              reportConflicts.add(this.reportToConflictedItem(report));
+              reportConflicts.add(reportToConflictedItem(report));
               return reportConflicts.stream();
             })
         .collect(Collectors.toSet());
@@ -289,7 +289,7 @@ public class CollectionScopeService {
       final String collectionId,
       final CollectionScopeEntryUpdateDto scopeUpdate,
       final String scopeEntryId,
-      boolean force) {
+      final boolean force) {
     final CollectionDefinitionDto collectionDefinition =
         authorizedCollectionService
             .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId)
@@ -352,7 +352,7 @@ public class CollectionScopeService {
 
   private void checkForConflictOnUpdate(
       final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
-    Set<ConflictedItemDto> conflictedItems =
+    final Set<ConflictedItemDto> conflictedItems =
         reportsAffectedByUpdate.stream()
             .map(this::reportToConflictedItem)
             .collect(Collectors.toSet());
@@ -362,7 +362,7 @@ public class CollectionScopeService {
   }
 
   public boolean hasConflictsForCollectionScopeDelete(
-      String userId, String collectionId, List<String> collectionScopeIds) {
+      final String userId, final String collectionId, final List<String> collectionScopeIds) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
     return collectionScopeIds.stream()
@@ -372,17 +372,17 @@ public class CollectionScopeService {
   }
 
   public void bulkDeleteCollectionScopes(
-      String userId, String collectionId, List<String> collectionScopeIds) {
-    List<String> collectionScopesToDelete = new ArrayList<>();
+      final String userId, final String collectionId, final List<String> collectionScopeIds) {
+    final List<String> collectionScopesToDelete = new ArrayList<>();
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
-    for (String collectionScopeId : collectionScopeIds) {
+    for (final String collectionScopeId : collectionScopeIds) {
       final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
           getAllReportsAffectedByScopeDeletion(collectionId, collectionScopeId);
       try {
         deleteReports(userId, reportsAffectedByScopeDeletion);
         collectionScopesToDelete.add(collectionScopeId);
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.debug(
             "There was an error while deleting reports associated to collection scope with id {}. The scope cannot be "
                 + "deleted.",
@@ -394,7 +394,7 @@ public class CollectionScopeService {
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(
       final String collectionId, final CollectionDefinitionDto collectionDefinition) {
-    List<ReportDefinitionDto> reportsInCollection =
+    final List<ReportDefinitionDto> reportsInCollection =
         reportReader.getReportsForCollectionIncludingXml(collectionId);
     return reportsInCollection.stream()
         .filter(report -> !report.isCombined())
@@ -478,7 +478,7 @@ public class CollectionScopeService {
           .stream()
           .filter(tenantDto -> scope.getTenants().contains(tenantDto.getId()))
           .collect(Collectors.toList());
-    } catch (ForbiddenException e) {
+    } catch (final ForbiddenException e) {
       return new ArrayList<>();
     }
   }
@@ -492,7 +492,7 @@ public class CollectionScopeService {
         .orElse(scope.getDefinitionKey());
   }
 
-  private ConflictedItemDto reportToConflictedItem(CollectionEntity collectionEntity) {
+  private ConflictedItemDto reportToConflictedItem(final CollectionEntity collectionEntity) {
     return new ConflictedItemDto(
         collectionEntity.getId(), ConflictedItemType.REPORT, collectionEntity.getName());
   }

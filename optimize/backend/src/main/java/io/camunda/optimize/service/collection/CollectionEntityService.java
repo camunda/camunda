@@ -43,7 +43,7 @@ public class CollectionEntityService {
 
   public List<EntityResponseDto> getAuthorizedCollectionEntities(
       final String userId, final String collectionId) {
-    AuthorizedCollectionDefinitionDto authCollectionDto =
+    final AuthorizedCollectionDefinitionDto authCollectionDto =
         authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
     List<EntityResponseDto> entities =
         authorizedEntitiesService.getAuthorizedCollectionEntities(userId, collectionId);
@@ -60,19 +60,21 @@ public class CollectionEntityService {
     return entities;
   }
 
-  public List<AlertDefinitionDto> getStoredAlertsForCollection(String userId, String collectionId) {
+  public List<AlertDefinitionDto> getStoredAlertsForCollection(final String userId,
+      final String collectionId) {
     return alertService.getStoredAlertsForCollection(userId, collectionId);
   }
 
   public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(
-      String userId, String collectionId) {
+      final String userId, final String collectionId) {
     return reportService.findAndFilterReports(userId, collectionId);
   }
 
   public void copyCollectionEntities(
-      String userId, CollectionDefinitionRestDto collectionDefinitionDto, String newCollectionId) {
+      final String userId, final CollectionDefinitionRestDto collectionDefinitionDto,
+      final String newCollectionId) {
     final Map<String, String> uniqueReportCopies = new HashMap<>();
-    List<EntityResponseDto> oldCollectionEntities =
+    final List<EntityResponseDto> oldCollectionEntities =
         getAuthorizedCollectionEntities(userId, collectionDefinitionDto.getId());
 
     oldCollectionEntities.forEach(
