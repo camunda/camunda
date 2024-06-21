@@ -38,7 +38,7 @@ public class GroupService {
   }
 
   public CamundaGroup findGroupByName(final String groupName) {
-    final var group =
+    final Group group =
         groupRepository
             .findByName(groupName)
             .orElseThrow(() -> new RuntimeException("group.notFound"));
@@ -46,8 +46,7 @@ public class GroupService {
   }
 
   public CamundaGroup findGroupById(final Long groupId) {
-    final var group =
-        groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("group.notFound"));
+    final Group group = findById(groupId);
     return new CamundaGroup(group.getId(), group.getName());
   }
 
@@ -67,15 +66,22 @@ public class GroupService {
     groupRepository.deleteById(groupId);
   }
 
-  public CamundaGroup renameGroup(final String name, final CamundaGroup group) {
-    camundaUserDetailsManager.renameGroup(name, group.name());
-    return findGroupByName(group.name());
+  public CamundaGroup updateGroup(final Long groupId, final CamundaGroup updatedGroup) {
+    if (groupId == null || !groupId.equals(updatedGroup.id())) {
+      throw new RuntimeException("group.notFound");
+    }
+
+    Group group = findById(groupId);
+    group.setName(updatedGroup.name());
+    group = groupRepository.save(group);
+
+    return new CamundaGroup(groupId, group.getName());
   }
 
-  public CamundaGroup renameGroupById(final Long groupId, final CamundaGroup updatedGroup) {
-    final CamundaGroup group = findGroupById(groupId);
-    camundaUserDetailsManager.renameGroup(group.name(), updatedGroup.name());
-    return new CamundaGroup(groupId, updatedGroup.name());
+  private Group findById(final Long groupId) {
+    return groupRepository
+        .findById(groupId)
+        .orElseThrow(() -> new RuntimeException("group.notFound"));
   }
 
   public void assignRoleToGroup(final Long groupId, final String roleName) {
