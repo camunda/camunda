@@ -73,19 +73,20 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRespo
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Supplier;
 
 public final class RecordingGatewayService extends GatewayImplBase {
 
-  private final List<GeneratedMessageV3> requests = new ArrayList<>();
+  private final BlockingDeque<GeneratedMessageV3> requests = new LinkedBlockingDeque<>();
 
   private final Map<Class<? extends GeneratedMessageV3>, RequestHandler> requestHandlers =
       new HashMap<>();
@@ -588,17 +589,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
         });
   }
 
-  public List<GeneratedMessageV3> getRequests() {
-    return requests;
-  }
-
   @SuppressWarnings("unchecked")
-  public <T extends GeneratedMessageV3> T getRequest(final int index) {
-    return (T) requests.get(index);
-  }
-
   public <T extends GeneratedMessageV3> T getLastRequest() {
-    return getRequest(requests.size() - 1);
+    return (T) requests.getLast();
   }
 
   public <T extends GeneratedMessageV3> void addRequestHandler(
