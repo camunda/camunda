@@ -27,7 +27,7 @@ public class RoleServiceTest {
   @Autowired private RoleService roleService;
 
   @Test
-  public void createRole_Works() {
+  public void createRoleWorks() {
     final Role role = new Role();
     role.setName("ADMIN");
     role.setDescription("Administrator role");
@@ -40,7 +40,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void createRole_NameIsNull_ThrowsException() {
+  public void createRoleNameIsNullThrowsException() {
     final Role role = new Role();
     role.setName(null);
 
@@ -51,7 +51,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void createRole_NameIsEmpty_ThrowsException() {
+  public void createRoleNameIsEmptyThrowsException() {
     final Role role = new Role();
     role.setName("");
 
@@ -62,7 +62,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void createRole_NameIsBlank_ThrowsException() {
+  public void createRoleNameIsBlankThrowsException() {
     final Role role = new Role();
     role.setName(" ");
 
@@ -73,7 +73,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void createRole_NameIsWhitespace_ThrowsException() {
+  public void createRoleNameIsWhitespaceThrowsException() {
     final Role role = new Role();
     role.setName("   ");
 
@@ -84,7 +84,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void deleteRole_Works() {
+  public void deleteRoleWorks() {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
     List<Role> allRoles = roleService.findAllRoles();
@@ -99,7 +99,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void deleteNonExistingRole_PassesWithoutChanges() {
+  public void deleteNonExistingRolePassesWithoutChanges() {
     final String randomString = RandomStringUtils.randomAlphabetic(2);
 
     List<Role> allRoles = roleService.findAllRoles();
@@ -114,7 +114,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void findRoleByName_Works() {
+  public void findRoleByNameWorks() {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
     final Role roleByName = roleService.findRoleByName(role.getName());
@@ -124,7 +124,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void findRoleByName_RoleDoesNotExist_ThrowsException() {
+  public void findRoleByNameRoleDoesNotExistThrowsException() {
     final RuntimeException exception =
         assertThrows(
             RuntimeException.class,
@@ -134,7 +134,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void updateRole_Works() {
+  public void updateRoleWorks() {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
     final Role newRole = new Role();
@@ -148,7 +148,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void updateRole_NameIsNullOrEmpty_ThrowsException() {
+  public void updateRoleNameIsNullOrEmptyThrowsException() {
     final Role invalidRole = new Role();
     invalidRole.setName(null);
 
@@ -168,7 +168,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void updateRole_NamesDontMatch_ThrowsException() {
+  public void updateRoleNamesDontMatchThrowsException() {
     final Role validRole = new Role();
     validRole.setName("validName");
 
@@ -180,7 +180,7 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void updateRole_PermissionsIsNull_ThrowsException() {
+  public void updateRolePermissionsIsNullThrowsException() {
     final String name = RandomStringUtils.randomAlphabetic(10);
     final Role role = new Role();
     role.setName(name);
