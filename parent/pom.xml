@@ -62,6 +62,7 @@
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.2</version.identity>
+    <version.surefire>3.3.0</version.surefire>
     <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.10.2</version.junit>
@@ -119,10 +120,10 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
     <version.zpt>8.5.3</version.zpt>
-    <version.feign>13.2.1</version.feign>
+    <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.6</version.awssdk>
+    <version.awssdk>2.26.7</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -152,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.747</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.748</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
@@ -172,7 +173,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.0</version.keycloak>
+    <version.keycloak>25.0.1</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -808,6 +809,14 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- camunda java client -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
@@ -931,6 +940,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>identity-webjar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-common</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -945,6 +960,12 @@
         <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven.surefire</groupId>
+        <artifactId>surefire-shared-utils</artifactId>
+        <version>${version.surefire}</version>
       </dependency>
 
       <dependency>
@@ -1220,6 +1241,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-client-java</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -2889,6 +2916,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
+                <dep>io.camunda:zeebe-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>
