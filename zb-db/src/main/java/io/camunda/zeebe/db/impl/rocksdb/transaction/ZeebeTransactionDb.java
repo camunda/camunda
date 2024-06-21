@@ -100,7 +100,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
               .formatted(cfHandles.size()));
     }
 
-    final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.getFirst();
+    final ColumnFamilyHandle defaultColumnFamilyHandle = cfHandles.get(0);
     closables.add(defaultColumnFamilyHandle);
 
     return new ZeebeTransactionDb<>(
