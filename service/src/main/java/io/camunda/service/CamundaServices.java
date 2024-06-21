@@ -11,6 +11,7 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 
 public final class CamundaServices extends ApiServices<CamundaServices> {
 
@@ -24,6 +25,11 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
       final ServiceTransformers transformers,
       final Authentication authentication) {
     super(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public <T> JobServices<T> jobServices(final ActivateJobsHandler<T> activateJobsHandler) {
+    return new JobServices<>(
+        brokerClient, activateJobsHandler, searchClient, transformers, authentication);
   }
 
   public ProcessInstanceServices processInstanceServices() {
