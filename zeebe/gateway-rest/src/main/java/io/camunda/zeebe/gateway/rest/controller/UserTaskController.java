@@ -7,15 +7,27 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.UserTaskServices;
+import io.camunda.service.search.query.ProcessInstanceQuery;
+import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,6 +45,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskController {
 
   private final BrokerClient brokerClient;
+
+  @Autowired private UserTaskServices userTaskServices;
 
   @Autowired
   public UserTaskController(final BrokerClient brokerClient) {
@@ -119,5 +133,36 @@ public class UserTaskController {
               HttpStatus.INTERNAL_SERVER_ERROR, message, title);
         }
     };
+  }
+
+  @PostMapping(
+      path = "/user-tasks/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserTaskSearchQueryResponse> searchUserTasks(
+      @RequestBody final UserTaskSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserTaskQuery(query)
+        .fold(
+            (Function<? super UserTaskQuery, ? extends ResponseEntity<UserTaskSearchQueryResponse>>) this::search, RestErrorMapper::mapProblemToResponse);
+  }
+
+  private ResponseEntity<UserTaskSearchQueryResponse> search(
+      final UserTaskQuery query) {
+    try {
+      final var tenantIds = TenantAttributeHolder.tenantIds();
+      final var result =
+          userTaskServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result).get());
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Failed to execute UserTask Search Query");
+      return ResponseEntity.of(problemDetail)
+          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
+          .build();
+    }
   }
 }
