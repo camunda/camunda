@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
 import io.camunda.service.CamundaServiceException;
+import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.security.auth.Authentication;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperConfiguratio
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.gateway.rest.controller.UserTaskController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -234,7 +234,7 @@ public class ErrorMapperTest {
   }
 
   @Test
-  public void shouldThrowExceptionWithRequestBodyMissing() throws Exception {
+  public void shouldThrowExceptionWithRequestBodyMissing() {
     // given
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
@@ -293,6 +293,18 @@ public class ErrorMapperTest {
     @Bean
     public HttpSecurity httpSecurity() {
       return Mockito.mock(HttpSecurity.class);
+    }
+
+    @Bean
+    public BrokerClient brokerClient() {
+      return Mockito.mock(BrokerClient.class);
+    }
+
+    @Bean
+    public JobServices<JobActivationResponse> jobServices(
+        final BrokerClient brokerClient,
+        final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
+      return new JobServices<>(brokerClient, activateJobsHandler, null);
     }
   }
 }
