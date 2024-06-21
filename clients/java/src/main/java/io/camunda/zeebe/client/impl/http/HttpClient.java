@@ -100,10 +100,29 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
+  }
+
+  @Deprecated
+  public <HttpT, RespT> void get(
+      final String path,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
   }
 
+  public <RespT> void post(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
+  }
+
+  @Deprecated
   public <RespT> void post(
       final String path,
       final String body,
@@ -126,15 +145,75 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
+  }
+
+  @Deprecated
+  public <RespT> void patch(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
   }
 
   public <RespT> void delete(
+      final String path, final RequestConfig requestConfig, final HttpCamundaFuture<RespT> result) {
+    sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
+  }
+
+  @Deprecated
+  public <RespT> void delete(
       final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
 
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    final URI target = buildRequestURI(path);
+    final Runnable retryAction =
+        () -> {
+          if (result.isCancelled()) {
+            // skip if the request was already cancelled
+            return;
+          }
+
+          sendRequest(httpMethod, path, body, requestConfig, responseType, transformer, result);
+        };
+
+    final SimpleRequestBuilder requestBuilder =
+        SimpleRequestBuilder.create(httpMethod).setUri(target);
+    if (body != null) {
+      requestBuilder.setBody(body, ContentType.APPLICATION_JSON);
+    }
+
+    try {
+      credentialsProvider.applyCredentials(requestBuilder::addHeader);
+    } catch (final IOException e) {
+      result.completeExceptionally(
+          new ClientException("Failed to apply credentials to request", e));
+      return;
+    }
+
+    final SimpleHttpRequest request = requestBuilder.build();
+    request.setConfig(requestConfig);
+
+    result.transportFuture(
+        client.execute(
+            SimpleRequestProducer.create(request),
+            new ApiResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
+            new ApiCallback<>(
+                result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
+  }
+
+  @Deprecated
   private <HttpT, RespT> void sendRequest(
       final Method httpMethod,
       final String path,
