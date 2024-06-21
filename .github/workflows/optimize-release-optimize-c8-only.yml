@@ -1,4 +1,4 @@
-name: Optimize Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
+name: Optimize Release Camunda Optimize C8
 
 on:
   schedule:
@@ -17,9 +17,6 @@ on:
         required: true
         description: "The branch used for the release checkout"
         default: "release/0.0.0"
-      ADDITIONAL_DOCKER_TAG:
-        required: false
-        description: "Any additional tag that should be added to the docker image"
       DOCKER_LATEST:
         required: true
         description: "Should the docker image be tagged as latest?"
@@ -30,15 +27,14 @@ on:
         description: "Is this a dry run?"
         type: boolean
         default: true
-      RELEASE_EXAMPLES:
-        required: true
-        description: "Update Optimize examples repository?"
-        type: boolean
-        default: false
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   build:
-    name: Execute Release and Upload to Download Center
+    name: Execute Release
     runs-on: gcp-core-2-release
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
@@ -48,8 +44,6 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-        with:
-          fetch-depth: 0
 
       - name: Import Secrets
         id: secrets
@@ -60,9 +54,6 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
-            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
-            secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_USR;
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
@@ -74,20 +65,18 @@ jobs:
           echo "DEVELOPMENT_VERSION: ${{ inputs.DEVELOPMENT_VERSION }}"
           echo "BRANCH: ${{ inputs.BRANCH }}"
           echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
-          echo "ADDITIONAL_DOCKER_TAG: ${{ inputs.ADDITIONAL_DOCKER_TAG }}"
           echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
-          echo "RELEASE_EXAMPLES: ${{ inputs.RELEASE_EXAMPLES }}"
 
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
 
       - name: Setup Maven
-        uses: camunda/camunda-optimize/.github/actions/setup-maven@master
+        uses: ./.github/actions/setup-maven
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: Is current release major or manor.
+      - name: Is current release major or minor.
         id: release-type
         env:
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
@@ -114,13 +103,6 @@ jobs:
           echo "is_rc=$is_rc" >> "$GITHUB_OUTPUT"
           echo "is_alpha=$is_alpha" >> "$GITHUB_OUTPUT"
 
-      - name: Generate a GitHub token
-        id: github-token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2
-        with:
-          app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
-
       - name: Install common tooling (buildx) # required on self-hosted runners
         uses: camunda/infra-global-github-actions/common-tooling@main
         with:
@@ -138,10 +120,8 @@ jobs:
         run: |
           {
             echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST || true}}"
-            echo "ADDITIONAL_DOCKER_TAG=${{ github.event.inputs.ADDITIONAL_DOCKER_TAG || '' }}"
             echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}"
             echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}"
-            echo "VERSION=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}"
             echo "BRANCH=${{ github.event.inputs.BRANCH || github.ref_name }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
             echo "MAJOR_OR_MINOR=${{ steps.release-type.outputs.is_major_or_minor }}"
@@ -149,16 +129,8 @@ jobs:
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
+            echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
-
-      # When it's neither a dry run nor a release candidate it means we are running the workflow from the proper branch.
-      # Generating changelog and creating a draft release will only work on the proper branch.
-      - name: Generate changelog
-        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        uses: ./.github/actions/generate-changelog
-        id: changelog
-        with:
-          branch: ${{ env.BRANCH }}
 
       - name: Login to prod Harbor docker registry
         uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
@@ -173,98 +145,155 @@ jobs:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
-      - name: Run Maven
-        shell: bash
-        env:
-          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
-          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_ACTOR_ID: ${{ github.actor_id }}
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: |
-          .github/scripts/execute-release.sh
-
-      # This still needs changing once we are on prod
-      - name: Upload artifact to Camunda Download Center
-        if: env.IS_DRY_RUN == 'false'
-        uses: camunda/infra-global-github-actions/download-center-upload@main
+      - name: Checkout release branch
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
-          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
-          ee: "true"
-          env: "prod"
-          version: ${{ github.event.inputs.RELEASE_VERSION }}
-          artifact_file: target/checkout/optimize-distro/target/*.{tar.gz,zip}
-          repo_name: "optimize"
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: Configure GitHub user
+        run: |
+          git config --global user.name "optimize-release"
+          git config --global user.email "ci@optimize.camunda.cloud"
+
+      - name: Prepare release
+        run: |
+          mvn -f optimize \
+            -DpushChanges=false \
+            -DskipTests=true \
+            -Prelease,engine-latest \
+            release:prepare \
+            -Dtag=${TAG} \
+            -DreleaseVersion="${RELEASE_VERSION}" \
+            -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
+            -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml" \
+            -B \
+            --fail-at-end \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+
+      - name: Push changes
+        if: env.IS_DRY_RUN == 'false'
+        run: |
+          git push --tags
+          git push --all
+
+      - name: Perform release
+        run: |
+          mvn -f optimize \
+            -DlocalCheckout=true \
+            -DskipTests=true \
+            -B \
+            --fail-at-end \
+            -Prelease,engine-latest \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
+            release:perform \
+            -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
+
+      - name: Remove tag for RC release
+        if: env.IS_RC == 'true'
+        run: |
+          git tag -d ${TAG}
+          git push origin :refs/tags/${TAG}
 
       - name: Auto-update previous version
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_ACTOR_ID: ${{ github.actor_id }}
-          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
-          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
         run: |
-          git checkout ${{ github.ref_name }}
-          .github/scripts/update-previous-version.sh
+          if [ "$IS_PATCH" = "false" ]; then
+            # only major / minor GA (.0) release versions will trigger an auto-update of previousVersion property.
+            echo "Auto-updating previousVersion property as release version is a valid major/minor version."
+            git fetch
+            git checkout ${BRANCH}
+            sed -i "s/project.previousVersion>.*</project.previousVersion>${RELEASE_VERSION}</g" pom.xml
+            git add pom.xml
+            # This is needed to not abort the job in case 'git diff' returns a status different from 0
+            set +e
+            git diff --staged --quiet
+            diff_result=$?
+            set -e
+
+            if [ $diff_result -ne 0 ]; then
+              git commit -m "chore: update previousVersion to new release version ${RELEASE_VERSION}"
+              echo "pushing to branch ${BRANCH}"
+              if [ "$IS_DRY_RUN" = "true" ]; then
+                echo "not pushing to branch ${BRANCH} in dry run mode"
+              else
+                echo "pushing to branch ${BRANCH}"
+                git push origin ${BRANCH}
+              fi
+            else
+              echo "Release version ${RELEASE_VERSION} did not change. Nothing to commit."
+            fi
+          else
+            echo "Not auto-updating previousVersion property as release version is not a valid major/minor version."
+          fi
 
       - name: Build Docker Image
         run: |
-          .github/scripts/build-release-docker-image.sh
+          tags=""
+
+          echo "Adding tags to release docker image..."
+
+          # Tagging the optimize release Docker image with the specified version
+          echo "Tagging optimize release docker image with version ${RELEASE_VERSION}"
+          tags=("${DOCKER_IMAGE_TEAM}:${RELEASE_VERSION}")
+          tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
+
+          # Major and minor versions are always tagged as the latest
+          if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
+              echo "Tagging optimize release docker image with \`${DOCKER_LATEST_TAG}\`"
+              tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
+              tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
+          fi
+
+          printf -v tag_arguments -- "-t %s " "${tags[@]}"
+          docker buildx create --use
+
+          export VERSION="${RELEASE_VERSION}"
+          export DATE="$(date +%FT%TZ)"
+          export REVISION="${REVISION}"
+          export BASE_IMAGE=docker.io/library/alpine:3.20.0
+
+          # if CI (GHA) export the variables for pushing in a later step
+          if [ "${CI}" = "true" ]; then
+              echo "DATE=$DATE" >>"$GITHUB_ENV"
+              echo "tag_arguments=$tag_arguments" >>"$GITHUB_ENV"
+          fi
+
+          docker buildx build \
+              ${tag_arguments} \
+              --build-arg VERSION="${RELEASE_VERSION}" \
+              --build-arg DATE="${DATE}" \
+              --build-arg REVISION="${REVISION}" \
+              --provenance false \
+              --load \
+              -f optimize.Dockerfile \
+              .
+
+          ./optimize/docker/test/verify.sh "${tags[@]}"
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.release.yml
           project_name: smoketest
+          timeout: 600
         env:
-          OPTIMIZE_IMAGE_TAG: ${{ github.event.inputs.RELEASE_VERSION }}
+          OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
-          CAMBPM_HOST: "172.17.0.1"
-          CAMBPM_PORT:
-            "8080"
-            # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
-            # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
-            # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
-            # exposed there on port 8080.
+          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+          IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+
+      - name: Wait for Optimize to start
+        run: ./.github/scripts/wait-for.sh http://localhost:8090/ready
 
       - name: Execute health check and push docker image
         uses: ./.github/actions/execute-healthcheck-and-push-image
         with:
-          version: ${{ env.VERSION }}
+          version: ${{ env.RELEASE_VERSION }}
           date: ${{ env.DATE }}
           revision: ${{ env.REVISION }}
 
-      - name: Create a draft release
-        if: env.IS_DRY_RUN == 'false' && env.IS_RC == 'false'
-        run: |
-          curl -L \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/${{ github.repository }}/releases \
-          -d '{"tag_name":"${{ env.RELEASE_VERSION }}","target_commitish":"${{ github.sha }}","name":"${{ env.RELEASE_VERSION }}","body":${{ toJson(steps.changelog.outputs.changelog) }},"draft":true,"prerelease":${{ env.IS_ALPHA == 'true' }},"generate_release_notes":false,"make_latest":"${{ env.DOCKER_LATEST }}"}'
-
       - name: Docker log dump
+        if: always()
         uses: ./.github/actions/docker-logs
         with:
           archive_name: deploy-artifacts-docker
-
-      - name: Checkout Optimize examples
-        if: inputs.RELEASE_EXAMPLES == true
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-        with:
-          token: ${{ steps.github-token.outputs.token }}
-          repository: camunda/camunda-optimize-examples
-          path: camunda-optimize-examples
-          ref: master
-
-      - name: Trigger release examples repo
-        if: inputs.RELEASE_EXAMPLES == true
-        working-directory: camunda-optimize-examples
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_ACTOR_ID: ${{ github.actor_id }}
-          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
-          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-        run: |
-          ../.github/scripts/update_example_repo.sh

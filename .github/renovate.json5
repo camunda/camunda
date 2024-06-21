@@ -162,7 +162,6 @@
       customType: "regex",
       fileMatch: [
         ".github/scripts/build-docker-image.sh",
-        ".github/scripts/build-release-docker-image.sh",
       ],
       matchStrings: [
         "export BASE_IMAGE=(?<depName>.*?):(?<currentValue>.*?)\\s",
