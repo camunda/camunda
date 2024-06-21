@@ -34,7 +34,7 @@ import org.springframework.context.ApplicationContext;
     properties = {INTEGRATION_TESTS + "=true"})
 public abstract class AbstractDataCleanupTest {
 
-  protected static final Logger logger = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
+  protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataCleanupTest.class);
   @Autowired
   protected static ApplicationContext applicationContext;
   @RegisterExtension
@@ -45,8 +45,11 @@ public abstract class AbstractDataCleanupTest {
   @Order(2)
   protected static EmbeddedOptimizeExtension embeddedOptimizeExtension =
       new EmbeddedOptimizeExtension();
+
+  @SuppressWarnings("checkstyle:constantname")
   private static final Properties properties =
       PropertyUtil.loadProperties("static-cleanup-test.properties");
+
   protected static long maxCleanupDurationInMin =
       Long.parseLong(properties.getProperty("cleanup.test.max.duration.in.min", "240"));
 
@@ -57,25 +60,25 @@ public abstract class AbstractDataCleanupTest {
 
   protected static void importEngineData() {
     final OffsetDateTime importStart = OffsetDateTime.now();
-    logger.info("Starting import of engine data to Optimize...");
+    LOGGER.info("Starting import of engine data to Optimize...");
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.importAllEngineData();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final OffsetDateTime afterImport = OffsetDateTime.now();
     final long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
-    logger.info("Import took [ " + importDurationInMinutes + " ] min");
+    LOGGER.info("Import took [ " + importDurationInMinutes + " ] min");
   }
 
   protected static void runCleanupAndAssertFinishedWithinTimeout()
       throws InterruptedException, TimeoutException {
-    logger.info("Starting History Cleanup...");
+    LOGGER.info("Starting History Cleanup...");
     final ExecutorService cleanupExecutorService = Executors.newSingleThreadExecutor();
     cleanupExecutorService.execute(
         () -> embeddedOptimizeExtension.getCleanupScheduler().runCleanup());
     cleanupExecutorService.shutdown();
     final boolean wasAbleToFinishImportInTime =
         cleanupExecutorService.awaitTermination(maxCleanupDurationInMin, TimeUnit.MINUTES);
-    logger.info(".. History cleanup finished, timed out {} ", !wasAbleToFinishImportInTime);
+    LOGGER.info(".. History cleanup finished, timed out {} ", !wasAbleToFinishImportInTime);
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException(
           "Import was not able to finish import in " + maxCleanupDurationInMin + " minutes!");
