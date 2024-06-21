@@ -65,10 +65,6 @@ WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
 VOLUME ${TASKLIST_HOME}/logs
 
-COPY --from=prepare /tmp/tasklist ${TASKLIST_HOME}
-# rename tasklist-migrate script to migrate (as expected by SaaS)
-RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
-
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
@@ -76,6 +72,12 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${TASKLIST_HOME}/logs && \
     chown -R 1001:0 ${TASKLIST_HOME} && \
     chmod -R 0775 ${TASKLIST_HOME}
+
+COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
+
+# rename tasklist-migrate script to migrate (as expected by SaaS)
+RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
+
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]
