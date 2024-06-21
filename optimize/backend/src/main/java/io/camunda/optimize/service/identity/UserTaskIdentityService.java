@@ -22,9 +22,9 @@ public interface UserTaskIdentityService {
 
   default List<GroupDto> getCandidateGroupIdentitiesById(final Collection<String> ids) {
     return getIdentities(
-            ids.stream()
-                .map(id -> new IdentityDto(id, IdentityType.GROUP))
-                .collect(Collectors.toSet()))
+        ids.stream()
+            .map(id -> new IdentityDto(id, IdentityType.GROUP))
+            .collect(Collectors.toSet()))
         .stream()
         .filter(GroupDto.class::isInstance)
         .map(GroupDto.class::cast)
@@ -33,9 +33,9 @@ public interface UserTaskIdentityService {
 
   default List<UserDto> getAssigneesByIds(final Collection<String> assigneeIds) {
     return getIdentities(
-            assigneeIds.stream()
-                .map(id -> new IdentityDto(id, IdentityType.USER))
-                .collect(Collectors.toSet()))
+        assigneeIds.stream()
+            .map(id -> new IdentityDto(id, IdentityType.USER))
+            .collect(Collectors.toSet()))
         .stream()
         .filter(UserDto.class::isInstance)
         .map(UserDto.class::cast)

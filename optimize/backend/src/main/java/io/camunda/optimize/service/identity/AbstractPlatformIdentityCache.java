@@ -39,7 +39,7 @@ import org.springframework.scheduling.support.CronTrigger;
 public abstract class AbstractPlatformIdentityCache extends AbstractScheduledService
     implements ConfigurationReloadable {
 
-  protected final Logger log = LoggerFactory.getLogger(this.getClass());
+  protected final Logger log = LoggerFactory.getLogger(getClass());
 
   private final Supplier<IdentityCacheConfiguration> cacheConfigurationSupplier;
   private final BackoffCalculator backoffCalculator;
@@ -54,8 +54,8 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     this.cacheConfigurationSupplier = cacheConfigurationSupplier;
     this.identityCacheSyncListeners = identityCacheSyncListeners;
     this.backoffCalculator = backoffCalculator;
-    this.activeIdentityCache =
-        new SearchableIdentityCache(() -> this.getCacheConfiguration().getMaxEntryLimit());
+    activeIdentityCache =
+        new SearchableIdentityCache(() -> getCacheConfiguration().getMaxEntryLimit());
   }
 
   protected abstract void populateCache(final SearchableIdentityCache newIdentityCache);
@@ -68,7 +68,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    this.cronExpression = evaluateCronExpression();
+    cronExpression = evaluateCronExpression();
     resetCache();
   }
 
@@ -80,7 +80,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   public void init() {
     log.info("Initializing {} identity sync.", getCacheLabel());
     getCacheConfiguration().validate();
-    this.cronExpression = evaluateCronExpression();
+    cronExpression = evaluateCronExpression();
     startScheduledSync();
   }
 
@@ -88,7 +88,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     log.info("Scheduling {} identity sync", getCacheLabel());
     final boolean wasScheduled = startScheduling();
     if (wasScheduled) {
-      this.taskScheduler.submit(this::syncIdentitiesWithRetry);
+      taskScheduler.submit(this::syncIdentitiesWithRetry);
     }
   }
 
@@ -102,9 +102,14 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   protected void run() {
     try {
       syncIdentitiesWithRetry();
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       log.error("Could not sync {} identities, there was an error.", getCacheLabel(), ex);
     }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new CronTrigger(cronExpression.toString());
   }
 
   public void syncIdentitiesWithRetry() {
@@ -128,15 +133,15 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
                 e);
             shouldRetry = false;
           } else {
-            long timeToSleep = backoffCalculator.calculateSleepTime();
+            final long timeToSleep = backoffCalculator.calculateSleepTime();
             log.error(
                 "Error while syncing {} identities. Will retry in {} millis",
                 getCacheLabel(),
                 timeToSleep,
                 e);
             try {
-              this.wait(timeToSleep);
-            } catch (InterruptedException ex) {
+              wait(timeToSleep);
+            } catch (final InterruptedException ex) {
               log.debug("Thread interrupted during sleep. Continuing.", ex);
               Thread.currentThread().interrupt();
             }
@@ -154,7 +159,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
       populateCache(newIdentityCache);
       replaceActiveCache(newIdentityCache);
       notifyCacheListeners(newIdentityCache);
-    } catch (MaxEntryLimitHitException e) {
+    } catch (final MaxEntryLimitHitException e) {
       log.error(
           "Could not synchronize {} identity cache as the limit of {} records was reached on refresh.\n {}",
           getCacheLabel(),
@@ -167,7 +172,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   public void addIdentity(final IdentityWithMetadataResponseDto identity) {
     try {
       activeIdentityCache.addIdentity(identity);
-    } catch (MaxEntryLimitHitException e) {
+    } catch (final MaxEntryLimitHitException e) {
       log.warn(
           "Identity [{}] could not be added to active {} identity cache as the limit of {} records was reached.\n {}",
           identity,
@@ -206,7 +211,7 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   private synchronized void replaceActiveCache(final SearchableIdentityCache newIdentityCache) {
     final SearchableIdentityCache previousIdentityCache = activeIdentityCache;
-    this.activeIdentityCache = newIdentityCache;
+    activeIdentityCache = newIdentityCache;
     previousIdentityCache.close();
   }
 
@@ -222,16 +227,11 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
     return activeIdentityCache;
   }
 
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new CronTrigger(this.cronExpression.toString());
-  }
-
   protected List<UserDto> fetchUsersById(
       final EngineContext engineContext, final Collection<String> userIdBatch) {
     if (getCacheConfiguration().isIncludeUserMetaData()) {
-      List<UserDto> users = engineContext.getUsersById(userIdBatch);
-      List<String> usersNotInEngine = new ArrayList<>(userIdBatch);
+      final List<UserDto> users = engineContext.getUsersById(userIdBatch);
+      final List<String> usersNotInEngine = new ArrayList<>(userIdBatch);
       usersNotInEngine.removeIf(
           userId -> users.stream().anyMatch(user -> user.getId().equals(userId)));
       users.addAll(usersNotInEngine.stream().map(UserDto::new).toList());
@@ -243,8 +243,8 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
 
   protected List<GroupDto> fetchGroupsById(
       final EngineContext engineContext, final Collection<String> groupIdBatch) {
-    List<GroupDto> groups = engineContext.getGroupsById(groupIdBatch);
-    List<String> groupsNotInEngine = new ArrayList<>(groupIdBatch);
+    final List<GroupDto> groups = engineContext.getGroupsById(groupIdBatch);
+    final List<String> groupsNotInEngine = new ArrayList<>(groupIdBatch);
     groupsNotInEngine.removeIf(
         groupId -> groups.stream().anyMatch(group -> group.getId().equals(groupId)));
     groups.addAll(groupsNotInEngine.stream().map(GroupDto::new).toList());
@@ -252,10 +252,10 @@ public abstract class AbstractPlatformIdentityCache extends AbstractScheduledSer
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
-    for (IdentityCacheSyncListener identityCacheSyncListener : identityCacheSyncListeners) {
+    for (final IdentityCacheSyncListener identityCacheSyncListener : identityCacheSyncListeners) {
       try {
         identityCacheSyncListener.onFinishIdentitySync(newIdentityCache);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         log.error(
             "Error while calling listener {} after identitySync.",
             identityCacheSyncListener.getClass().getSimpleName());

@@ -49,11 +49,6 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
   }
 
   @Override
-  protected String getCacheLabel() {
-    return "platform assignee/candidateGroup";
-  }
-
-  @Override
   protected void populateCache(final SearchableIdentityCache newIdentityCache) {
     engineContextFactory
         .getConfiguredEngines()
@@ -82,6 +77,11 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
             });
   }
 
+  @Override
+  protected String getCacheLabel() {
+    return "platform assignee/candidateGroup";
+  }
+
   public void addIdentitiesIfNotPresent(final Set<IdentityDto> identities) {
     final Set<IdentityDto> identitiesInCache =
         getIdentities(identities).stream()
@@ -95,9 +95,13 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
   }
 
   @Override
-  public List<IdentityWithMetadataResponseDto> getIdentities(
-      final Collection<IdentityDto> identities) {
-    return getActiveIdentityCache().getIdentities(identities);
+  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
+      final String terms,
+      final Collection<String> identityIds,
+      final IdentityType identityType,
+      final int resultLimit) {
+    return searchAmongIdentitiesWithIds(
+        terms, identityIds, new IdentityType[]{identityType}, resultLimit);
   }
 
   @Override
@@ -107,13 +111,9 @@ public class PlatformUserTaskIdentityCache extends AbstractPlatformUserTaskIdent
   }
 
   @Override
-  public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(
-      final String terms,
-      final Collection<String> identityIds,
-      final IdentityType identityType,
-      final int resultLimit) {
-    return searchAmongIdentitiesWithIds(
-        terms, identityIds, new IdentityType[] {identityType}, resultLimit);
+  public List<IdentityWithMetadataResponseDto> getIdentities(
+      final Collection<IdentityDto> identities) {
+    return getActiveIdentityCache().getIdentities(identities);
   }
 
   public IdentitySearchResultResponseDto searchAmongIdentitiesWithIds(

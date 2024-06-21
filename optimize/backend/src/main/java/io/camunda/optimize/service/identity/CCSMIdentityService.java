@@ -72,12 +72,6 @@ public class CCSMIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
-    // Groups do not exist in CCSM
-    return Collections.emptyList();
-  }
-
-  @Override
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return Collections.emptyList();
   }
@@ -102,14 +96,20 @@ public class CCSMIdentityService extends AbstractIdentityService {
             .toList());
   }
 
-  public List<UserDto> getUsersByEmail(final Set<String> emails) {
-    return userCache.searchForUsersUsingEmails(emails).stream().map(UserDto.class::cast).toList();
-  }
-
   @Override
   public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
     return userCache.getUsersById(userIds).stream()
         .map(IdentityWithMetadataResponseDto.class::cast)
         .toList();
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
+    // Groups do not exist in CCSM
+    return Collections.emptyList();
+  }
+
+  public List<UserDto> getUsersByEmail(final Set<String> emails) {
+    return userCache.searchForUsersUsingEmails(emails).stream().map(UserDto.class::cast).toList();
   }
 }

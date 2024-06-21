@@ -62,12 +62,6 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
-    // Groups do not exist in SaaS
-    return Collections.emptyList();
-  }
-
-  @Override
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return Collections.emptyList();
   }
@@ -111,6 +105,20 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
     }
   }
 
+  @Override
+  public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
+    return usersCache.getUsersById(userIds).stream()
+        .map(this::mapToUserDto)
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .toList();
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
+    // Groups do not exist in SaaS
+    return Collections.emptyList();
+  }
+
   public List<UserDto> getUsersByEmail(final Set<String> emails) {
     try {
       return usersCache.getAllUsers().stream()
@@ -124,14 +132,6 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
       log.warn("Failed retrieving users.", e);
       return Collections.emptyList();
     }
-  }
-
-  @Override
-  public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
-    return usersCache.getUsersById(userIds).stream()
-        .map(this::mapToUserDto)
-        .map(IdentityWithMetadataResponseDto.class::cast)
-        .toList();
   }
 
   @NotNull

@@ -37,6 +37,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(CCSMCondition.class)
 public class CCSMUserCache {
+
   private final Cache<String, UserDto> ccsmUsersCache;
   private final CCSMTokenService ccsmTokenService;
   private final Identity identity;

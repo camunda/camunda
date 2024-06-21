@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Conditional(CamundaPlatformCondition.class)
 public class PlatformIdentityService extends AbstractIdentityService implements SessionListener {
+
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final IdentityAuthorizationService identityAuthorizationService;
@@ -58,6 +59,12 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
     this.engineContextFactory = engineContextFactory;
     this.syncedIdentityCache = syncedIdentityCache;
     initUserGroupCache();
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    super.reloadConfiguration(context);
+    cleanUpUserGroupCache();
   }
 
   @Override
@@ -132,9 +139,25 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    super.reloadConfiguration(context);
-    cleanUpUserGroupCache();
+  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(
+      final String userId,
+      final String searchString,
+      final int maxResults,
+      final boolean excludeUserGroups) {
+    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
+    final IdentityType[] identityTypesToSearch =
+        excludeUserGroups ? new IdentityType[]{IdentityType.USER} : IdentityType.values();
+    IdentitySearchResultResponseDto result =
+        syncedIdentityCache.searchIdentities(searchString, identityTypesToSearch, maxResults);
+    while (!result.getResult().isEmpty() && filteredIdentities.size() < maxResults) {
+      // continue searching until either the maxResult number of hits has been found or
+      // the end of the cache has been reached
+      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
+      result =
+          syncedIdentityCache.searchIdentitiesAfter(
+              searchString, identityTypesToSearch, maxResults, result);
+    }
+    return new IdentitySearchResultResponseDto(filteredIdentities);
   }
 
   @Override
@@ -154,28 +177,6 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
 
   public void addIdentity(final IdentityWithMetadataResponseDto identity) {
     syncedIdentityCache.addIdentity(identity);
-  }
-
-  @Override
-  public IdentitySearchResultResponseDto searchForIdentitiesAsUser(
-      final String userId,
-      final String searchString,
-      final int maxResults,
-      final boolean excludeUserGroups) {
-    final List<IdentityWithMetadataResponseDto> filteredIdentities = new ArrayList<>();
-    final IdentityType[] identityTypesToSearch =
-        excludeUserGroups ? new IdentityType[] {IdentityType.USER} : IdentityType.values();
-    IdentitySearchResultResponseDto result =
-        syncedIdentityCache.searchIdentities(searchString, identityTypesToSearch, maxResults);
-    while (!result.getResult().isEmpty() && filteredIdentities.size() < maxResults) {
-      // continue searching until either the maxResult number of hits has been found or
-      // the end of the cache has been reached
-      filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
-      result =
-          syncedIdentityCache.searchIdentitiesAfter(
-              searchString, identityTypesToSearch, maxResults, result);
-    }
-    return new IdentitySearchResultResponseDto(filteredIdentities);
   }
 
   private void initUserGroupCache() {

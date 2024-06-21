@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache {
+
   private final EngineContextFactory engineContextFactory;
 
   public PlatformUserIdentityCache(
@@ -45,17 +46,17 @@ public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache {
   }
 
   @Override
-  protected String getCacheLabel() {
-    return "platform user";
-  }
-
-  @Override
   protected void populateCache(final SearchableIdentityCache newIdentityCache) {
     engineContextFactory
         .getConfiguredEngines()
         .forEach(
             engineContext ->
                 populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
+  }
+
+  @Override
+  protected String getCacheLabel() {
+    return "platform user";
   }
 
   private void populateAllAuthorizedIdentitiesForEngineToCache(
@@ -116,7 +117,7 @@ public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache {
                     || (!userIdsOfRevokedGroupMembers.contains(userDto.getId())
                         && !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())))
         // @formatter:on
-        );
+    );
   }
 
   private void populateGrantedIdentitiesToCache(
@@ -178,6 +179,7 @@ public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache {
 
   @FunctionalInterface
   private interface GetIdentityPageMethod<T extends IdentityWithMetadataResponseDto> {
+
     List<T> getPageOfIdentities(int pageStartIndex, int pageLimit);
   }
 }

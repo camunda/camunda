@@ -91,6 +91,14 @@ public class CloudUserTaskIdentityService implements UserTaskIdentityService {
   }
 
   @Override
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
+    return USER == type
+        ? Optional.of(getUserByIdAndAddToCacheIfNotFound(id))
+        : Optional.of(getGroupByIdAndAddToCacheIfNotFound(id));
+  }
+
+  @Override
   public List<IdentityWithMetadataResponseDto> getIdentities(
       final Collection<IdentityDto> identities) {
     return identities.stream()
@@ -102,14 +110,6 @@ public class CloudUserTaskIdentityService implements UserTaskIdentityService {
         .toList();
   }
 
-  @Override
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
-      final String id, final IdentityType type) {
-    return USER == type
-        ? Optional.of(getUserByIdAndAddToCacheIfNotFound(id))
-        : Optional.of(getGroupByIdAndAddToCacheIfNotFound(id));
-  }
-
   private List<IdentityWithMetadataResponseDto> getIdentitiesByIdOrReturnDefaultDto(
       final Set<String> ids, final IdentityType type) {
     return getIdentitiesByIdOrReturnDefaultDto(ids, type, ids.size());
@@ -119,8 +119,8 @@ public class CloudUserTaskIdentityService implements UserTaskIdentityService {
       final Set<String> ids, final IdentityType type, final int resultLimit) {
     return USER == type
         ? getUsersByIdAndAddToCacheIfNotFound(ids, resultLimit).stream()
-            .map(IdentityWithMetadataResponseDto.class::cast)
-            .collect(toList())
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .collect(toList())
         : getGroupsByIdAndAddToCacheIfNotFound(ids, resultLimit).stream()
             .map(IdentityWithMetadataResponseDto.class::cast)
             .collect(toList());
