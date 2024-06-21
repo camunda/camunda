@@ -11,6 +11,15 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change
       }}
+  java-unit-tests:
+    description: Output whether `unit-tests` (java) should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change ||
+        steps.filter-common.outputs.java-code-change ||
+        steps.filter-common.outputs.maven-change
+      }}
 
 runs:
   using: composite
@@ -27,6 +36,14 @@ runs:
           - '.github/workflows/**'
           - '.github/actionlint*'
 
+        # We use specific src/main and src/test path to:
+        #  * react on java code (production + test) changes
+        #  * react on resource changes like bpmn, XML, etc.
+        #  * but _not_ react on frontend src folder changes
+        java-code-change:
+          - '**/src/main/**'
+          - '**/src/test/**'
+          
         maven-change:
           - 'bom/*'
           - 'build-tools/**'

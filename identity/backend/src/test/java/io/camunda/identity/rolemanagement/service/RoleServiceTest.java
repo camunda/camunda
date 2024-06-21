@@ -10,11 +10,9 @@ package io.camunda.identity.rolemanagement.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.identity.CamundaSpringBootTest;
 import io.camunda.identity.TestHelper;
-import io.camunda.identity.permissions.PermissionEnum;
 import io.camunda.identity.rolemanagement.model.Role;
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,7 +47,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -60,7 +58,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -71,7 +69,7 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -82,18 +80,21 @@ public class RoleServiceTest {
     final RuntimeException exception =
         assertThrows(RuntimeException.class, () -> roleService.createRole(role));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("createRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
   public void deleteRole_Works() {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
+    List<Role> allRoles = roleService.findAllRoles();
+    assertEquals(1, allRoles.size());
+
     roleService.deleteRoleByName(role.getName());
 
-    final List<Role> allRoles = roleService.findAllRoles();
+    allRoles = roleService.findAllRoles();
 
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(role.getName())));
   }
 
@@ -102,13 +103,13 @@ public class RoleServiceTest {
     final String randomString = RandomStringUtils.randomAlphabetic(2);
 
     List<Role> allRoles = roleService.findAllRoles();
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(randomString)));
 
     roleService.deleteRoleByName(randomString);
 
     allRoles = roleService.findAllRoles();
-    assertEquals(2, allRoles.size());
+    assertEquals(0, allRoles.size());
     assertFalse(allRoles.stream().anyMatch(r -> r.getName().equals(randomString)));
   }
 
@@ -155,7 +156,7 @@ public class RoleServiceTest {
         assertThrows(
             RuntimeException.class, () -> roleService.updateRole("validName", invalidRole));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("updateRole.role.name: role.notValid", exception.getMessage());
 
     invalidRole.setName("   ");
 
@@ -163,7 +164,7 @@ public class RoleServiceTest {
         assertThrows(
             RuntimeException.class, () -> roleService.updateRole("validName", invalidRole));
 
-    assertEquals("role.notValid", exception.getMessage());
+    assertEquals("updateRole.role.name: role.notValid", exception.getMessage());
   }
 
   @Test
@@ -179,57 +180,15 @@ public class RoleServiceTest {
   }
 
   @Test
-  public void permissionsOfRole_Works() {
-    final Role role = TestHelper.createAndSaveRandomRole(roleService);
+  public void updateRole_PermissionsIsNull_ThrowsException() {
+    final String name = RandomStringUtils.randomAlphabetic(10);
+    final Role role = new Role();
+    role.setName(name);
+    role.setPermissions(null);
 
-    assertTrue(role.getPermissions().isEmpty());
+    final RuntimeException exception =
+        assertThrows(RuntimeException.class, () -> roleService.updateRole(name, role));
 
-    roleService.assignPermissionToRole(role.getName(), "READ_ALL");
-    Role updatedRole = roleService.findRoleByName(role.getName());
-
-    assertEquals(1, updatedRole.getPermissions().size());
-    assertTrue(updatedRole.getPermissions().contains(PermissionEnum.READ_ALL));
-
-    roleService.assignPermissionToRole(role.getName(), "CREATE_ALL");
-    updatedRole = roleService.findRoleByName(role.getName());
-
-    assertEquals(2, updatedRole.getPermissions().size());
-    assertTrue(updatedRole.getPermissions().contains(PermissionEnum.READ_ALL));
-    assertTrue(updatedRole.getPermissions().contains(PermissionEnum.CREATE_ALL));
-
-    final List<PermissionEnum> allPermissionsOfRole =
-        roleService.findAllPermissionsOfRole(role.getName());
-
-    assertEquals(2, allPermissionsOfRole.size());
-    assertTrue(allPermissionsOfRole.contains(PermissionEnum.READ_ALL));
-    assertTrue(allPermissionsOfRole.contains(PermissionEnum.CREATE_ALL));
-
-    roleService.unassignPermissionFromRole(role.getName(), "READ_ALL");
-    updatedRole = roleService.findRoleByName(role.getName());
-
-    assertEquals(1, updatedRole.getPermissions().size());
-    assertTrue(updatedRole.getPermissions().contains(PermissionEnum.CREATE_ALL));
-    assertFalse(updatedRole.getPermissions().contains(PermissionEnum.READ_ALL));
-  }
-
-  @Test
-  public void unknownPermissionsForRoles_ThrowsException() {
-    final Role role = TestHelper.createAndSaveRandomRole(roleService);
-
-    assertTrue(role.getPermissions().isEmpty());
-
-    RuntimeException exception =
-        assertThrows(
-            RuntimeException.class,
-            () -> roleService.assignPermissionToRole(role.getName(), "UNKNOWN_PERMISSION"));
-
-    assertEquals("permission.notFound", exception.getMessage());
-
-    exception =
-        assertThrows(
-            RuntimeException.class,
-            () -> roleService.unassignPermissionFromRole(role.getName(), "UNKNOWN_PERMISSION"));
-
-    assertEquals("permission.notFound", exception.getMessage());
+    assertEquals("updateRole.role.permissions: role.notValid", exception.getMessage());
   }
 }

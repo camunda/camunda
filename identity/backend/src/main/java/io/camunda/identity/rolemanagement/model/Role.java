@@ -18,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,12 +28,13 @@ import java.util.Set;
 public class Role {
 
   @Id
-  @NotNull
+  @NotBlank(message = "role.notValid")
   @Column(name = "authority")
   private String name;
 
   private String description;
 
+  @NotNull(message = "role.notValid")
   @ElementCollection(targetClass = PermissionEnum.class, fetch = FetchType.EAGER)
   @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_authority"))
   @Column(name = "permission", nullable = false)
