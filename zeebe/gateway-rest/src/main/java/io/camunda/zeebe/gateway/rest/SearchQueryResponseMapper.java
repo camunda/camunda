@@ -8,9 +8,12 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstance;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserTask;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.List;
@@ -61,5 +64,47 @@ public final class SearchQueryResponseMapper {
             .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
             .startDate(p.startDate())
             .endDate(p.endDate()));
+  }
+
+  // User Task Mappers
+  public static Either<ProblemDetail, UserTaskSearchQueryResponse> toUserTaskSearchQueryResponse(
+      final SearchQueryResult<UserTaskEntity> result) {
+    final var response = new UserTaskSearchQueryResponse();
+    final var total = result.total();
+    final var sortValues = result.sortValues();
+    final var items = result.items();
+
+    response.setTotal(total);
+
+    if (sortValues != null) {
+      response.setSortValues(Arrays.asList(sortValues));
+    }
+
+    if (items != null) {
+      response.setItems(toUserTasks(items).get());
+    }
+
+    return Either.right(response);
+  }
+
+  public static Either<ProblemDetail, List<UserTask>> toUserTasks(
+      final List<UserTaskEntity> tasks) {
+    return Either.right(
+        tasks.stream().map(SearchQueryResponseMapper::toUserTask).map(Either::get).toList());
+  }
+
+  public static Either<ProblemDetail, UserTask> toUserTask(final UserTaskEntity t) {
+    return Either.right(
+        new UserTask()
+            .tenantIds(t.tenantId())
+            .key(t.key())
+            .processInstanceKey(t.processInstanceId())
+            .processDefinitionKey(t.processDefinitionId().toString())
+            .state(t.state())
+            .assignee(t.assignee())
+            .candidateUser(t.candidateUsers())
+            .candidateGroup(t.candidateGroups())
+            .dueDate(t.dueDate())
+            .followUpDate(t.followUpDate()));
   }
 }
