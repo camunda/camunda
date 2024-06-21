@@ -236,6 +236,29 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/search:
+    post:
+      tags:
+        - User task
+      summary: User Task Search Query
+      description: Search for user tasks based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskSearchQueryRequest'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserTaskSearchQueryResponse"
+        '400':
+          description: >
+            The User Task Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   responses:
@@ -245,6 +268,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/TopologyResponse"
+    ProcessInstanceSearchQueryResponse:
+      description: Process instance search response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+    UserTaskSearchQueryResponse:
+      description: User task search response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserTaskSearchQueryResponse"
 
   schemas:
     TopologyResponse:
@@ -678,6 +713,125 @@ components:
         endDate:
           type: string
           format: date-time
+    UserTaskSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: User task search query response.
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTask"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      type: object
+      properties:
+        key:
+          type: array
+          items:
+            type: integer
+            format: int64
+        state:
+          type: array
+          items:
+            type: string
+        assignee:
+          type: array
+          items:
+            type: string
+        taskDefinitionId:
+          type: array
+          items:
+            type: string
+        candidateGroup:
+          type: array
+          items:
+            type: string
+        candidateUser:
+          type: array
+          items:
+            type: string
+        processDefinitionKey:
+          type: array
+          items:
+            type: integer
+            format: int64
+        processInstanceKey:
+          type: array
+          items:
+            type: integer
+            format: int64
+        followUpDate:
+          $ref: "#/components/schemas/DateFilter"
+        dueDate:
+          $ref: "#/components/schemas/DateFilter"
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableFilter"
+        tenantIds:
+          type: array
+          items:
+            type: string
+    UserTask:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        state:
+          type: string
+        assignee:
+          type: string
+        taskDefinitionId:
+          type: string
+        candidateGroup:
+          type: array
+          items:
+            type: string
+        candidateUser:
+          type: array
+          items:
+            type: string
+        processDefinitionKey:
+          type: string
+        processInstanceKey:
+          type: integer
+          format: int64
+        followUpDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        tenantIds:
+          type: string
+    VariableFilter:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    DateFilter:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+
   securitySchemes:
     bearerAuth:
       type: http
