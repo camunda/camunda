@@ -11,6 +11,7 @@ import {
   apiDelete,
   apiGet,
   apiPost,
+  apiPut,
   pathBuilder,
 } from "src/utility/api/request";
 
@@ -42,7 +43,7 @@ type UpdateRoleParams = Role;
 export const updateRole: ApiDefinition<Role, UpdateRoleParams> = ({
   id,
   ...role
-}) => apiPost(path(id), role);
+}) => apiPut(path(id), role);
 
 type DeleteRoleParams = GetRoleParams;
 

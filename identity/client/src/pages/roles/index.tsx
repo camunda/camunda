@@ -19,6 +19,8 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import EditModal from "./modals/EditModal";
+import { Edit, TrashCan } from "@carbon/react/icons";
+import DeleteModal from "src/pages/roles/modals/DeleteModal";
 
 const Index: FC = () => {
   const { t, Translate } = useTranslate();
@@ -27,6 +29,7 @@ const Index: FC = () => {
   const { data: roles, loading, reload, success } = useApi(getRoles);
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
+  const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
 
   return (
     <Page>
@@ -39,8 +42,15 @@ const Index: FC = () => {
         ]}
         menuItems={[
           {
-            label: t("Edit role"),
+            label: t("Edit"),
+            icon: Edit,
             onClick: editRole,
+          },
+          {
+            label: t("Delete"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: deleteRole,
           },
         ]}
         sortProperty="name"
@@ -64,6 +74,7 @@ const Index: FC = () => {
       )}
       {addRoleModal}
       {editRoleModal}
+      {deleteRoleModal}
     </Page>
   );
 };
