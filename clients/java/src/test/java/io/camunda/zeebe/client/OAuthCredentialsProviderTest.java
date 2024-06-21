@@ -30,7 +30,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.CamundaClientCredentials;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -176,7 +176,7 @@ public final class OAuthCredentialsProviderTest {
     assertThat(shouldRetry).isTrue();
     assertThat(cache.readCache().get(AUDIENCE))
         .get()
-        .returns("foo", ZeebeClientCredentials::getAccessToken);
+        .returns("foo", CamundaClientCredentials::getAccessToken);
   }
 
   @Test
@@ -219,7 +219,9 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, null);
-    cache.put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE)).writeCache();
+    cache
+        .put(AUDIENCE, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+        .writeCache();
 
     // when - should not make any request, but use the cached credentials
     provider.applyCredentials(applier);
@@ -250,7 +252,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(AUDIENCE))
-        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
+        .hasValue(new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
@@ -267,7 +269,7 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, null);
-    cache.put(AUDIENCE, new ZeebeClientCredentials("invalid", EXPIRY, TOKEN_TYPE)).writeCache();
+    cache.put(AUDIENCE, new CamundaClientCredentials("invalid", EXPIRY, TOKEN_TYPE)).writeCache();
 
     // when - should refresh on unauthorized and write new token
     provider.shouldRetryRequest(unauthorizedCode);
@@ -275,7 +277,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(AUDIENCE))
-        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
+        .hasValue(new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
@@ -474,7 +476,7 @@ public final class OAuthCredentialsProviderTest {
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
       final ZeebeClientBuilder builder = clientBuilder();
       cache
-          .put(AUDIENCE, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .put(AUDIENCE, new CamundaClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
           .writeCache();
       recordingInterceptor.setInterceptAction(
           (call, headers) -> {
@@ -503,7 +505,7 @@ public final class OAuthCredentialsProviderTest {
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
       final ZeebeClientBuilder builder = clientBuilder();
       cache
-          .put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .put(AUDIENCE, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
           .writeCache();
       recordingInterceptor.setInterceptAction(
           (call, headers) -> call.close(Status.UNAUTHENTICATED, headers));
@@ -533,7 +535,7 @@ public final class OAuthCredentialsProviderTest {
       mockUnauthorizedRestRequest();
       mockAuthorizedRestRequest();
       cache
-          .put(AUDIENCE, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .put(AUDIENCE, new CamundaClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
           .writeCache();
       mockCredentials(ACCESS_TOKEN, null);
 
@@ -555,7 +557,7 @@ public final class OAuthCredentialsProviderTest {
       final ZeebeClientBuilder builder = clientBuilder();
       mockUnauthorizedRestRequest();
       cache
-          .put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .put(AUDIENCE, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
           .writeCache();
       mockCredentials(ACCESS_TOKEN, null);
 
