@@ -37,8 +37,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ListenerEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -182,12 +182,12 @@ public class ExecutionListenerTaskElementsTest {
                 .withElementId(elementType.name())
                 .limit(4))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getType(), v.getJobKind(), v.getListenerEventType()))
+        .extracting(v -> tuple(v.getType(), v.getJobKind(), v.getJobListenerEventType()))
         .containsExactly(
-            tuple(START_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, ListenerEventType.START),
-            tuple(START_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, ListenerEventType.START),
-            tuple(END_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, ListenerEventType.END),
-            tuple(END_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, ListenerEventType.END));
+            tuple(START_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, JobListenerEventType.START),
+            tuple(START_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, JobListenerEventType.START),
+            tuple(END_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, JobListenerEventType.END),
+            tuple(END_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, JobListenerEventType.END));
 
     // assert the process instance has completed as expected
     assertThat(

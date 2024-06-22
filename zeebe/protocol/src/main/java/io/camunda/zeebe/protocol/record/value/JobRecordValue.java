@@ -123,5 +123,5 @@ public interface JobRecordValue
    * @return the listener event type associated with this job. This type is applicable mainly for
    *     jobs of kind {@link JobKind#EXECUTION_LISTENER} or {@link JobKind#TASK_LISTENER}
    */
-  ListenerEventType getListenerEventType();
+  JobListenerEventType getJobListenerEventType();
 }

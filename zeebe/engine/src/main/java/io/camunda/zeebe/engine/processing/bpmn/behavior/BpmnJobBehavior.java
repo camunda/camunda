@@ -28,7 +28,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.ListenerEventType;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -130,11 +130,11 @@ public final class BpmnJobBehavior {
     return list == null ? null : ExpressionTransformer.asListLiteral(list);
   }
 
-  private static ListenerEventType fromExecutionListenerEventType(
+  private static JobListenerEventType fromExecutionListenerEventType(
       final ZeebeExecutionListenerEventType eventType) {
     return switch (eventType) {
-      case start -> ListenerEventType.START;
-      case end -> ListenerEventType.END;
+      case start -> JobListenerEventType.START;
+      case end -> JobListenerEventType.END;
     };
   }
 
@@ -148,7 +148,7 @@ public final class BpmnJobBehavior {
         element,
         jobProperties,
         JobKind.BPMN_ELEMENT,
-        ListenerEventType.UNSPECIFIED,
+        JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders());
     jobMetrics.jobCreated(jobProperties.getType());
   }
@@ -159,13 +159,14 @@ public final class BpmnJobBehavior {
       final JobProperties jobProperties,
       final ExecutionListener executionListener) {
 
-    final var listenerEventType = fromExecutionListenerEventType(executionListener.getEventType());
+    final var jobListenerEventType =
+        fromExecutionListenerEventType(executionListener.getEventType());
     writeJobCreatedEvent(
         context,
         element,
         jobProperties,
         JobKind.EXECUTION_LISTENER,
-        listenerEventType,
+        jobListenerEventType,
         Collections.emptyMap());
     jobMetrics.jobCreated(jobProperties.getType());
   }
@@ -183,7 +184,7 @@ public final class BpmnJobBehavior {
       final ExecutableFlowElement element,
       final JobProperties props,
       final JobKind jobKind,
-      final ListenerEventType listenerEventType,
+      final JobListenerEventType jobListenerEventType,
       final Map<String, String> taskHeaders) {
 
     final var encodedHeaders = encodeHeaders(taskHeaders, props);
@@ -191,7 +192,7 @@ public final class BpmnJobBehavior {
     jobRecord
         .setType(props.getType())
         .setJobKind(jobKind)
-        .setListenerEventType(listenerEventType)
+        .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
         .setBpmnProcessId(context.getBpmnProcessId())

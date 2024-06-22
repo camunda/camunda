@@ -24,8 +24,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ListenerEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -165,7 +165,7 @@ public final class JobWorkerElementTest {
     Assertions.assertThat(jobCreated.getValue())
         .hasType("test")
         .hasJobKind(JobKind.BPMN_ELEMENT)
-        .hasListenerEventType(ListenerEventType.UNSPECIFIED)
+        .hasJobListenerEventType(JobListenerEventType.UNSPECIFIED)
         .hasRetries(5)
         .hasElementInstanceKey(taskActivated.getKey())
         .hasElementId(taskActivated.getValue().getElementId())

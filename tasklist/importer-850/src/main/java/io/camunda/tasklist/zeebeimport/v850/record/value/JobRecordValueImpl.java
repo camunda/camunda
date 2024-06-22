@@ -9,8 +9,8 @@ package io.camunda.tasklist.zeebeimport.v850.record.value;
 
 import io.camunda.tasklist.zeebeimport.v850.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ListenerEventType;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,7 +31,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
-  private ListenerEventType listenerEventType;
+  private JobListenerEventType jobListenerEventType;
 
   public JobRecordValueImpl() {}
 
@@ -187,12 +187,13 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public ListenerEventType getListenerEventType() {
-    return listenerEventType;
+  public JobListenerEventType getJobListenerEventType() {
+    return jobListenerEventType;
   }
 
-  public JobRecordValueImpl setListenerEventType(final ListenerEventType listenerEventType) {
-    this.listenerEventType = listenerEventType;
+  public JobRecordValueImpl setJobListenerEventType(
+      final JobListenerEventType jobListenerEventType) {
+    this.jobListenerEventType = jobListenerEventType;
     return this;
   }
 
@@ -215,7 +216,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         errorCode,
         tenantId,
         jobKind,
-        listenerEventType);
+        jobListenerEventType);
   }
 
   @Override
@@ -245,7 +246,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
         && jobKind == that.jobKind
-        && listenerEventType == that.listenerEventType;
+        && jobListenerEventType == that.jobListenerEventType;
   }
 
   @Override
@@ -289,8 +290,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + ", jobKind="
         + jobKind
         + '\''
-        + ", listenerEventType="
-        + listenerEventType
+        + ", jobListenerEventType="
+        + jobListenerEventType
         + '}';
   }
 }

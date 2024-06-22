@@ -431,7 +431,7 @@ public class CompactRecordLogger {
           .append(" (")
           .append(value.getJobKind())
           .append("[")
-          .append(value.getListenerEventType())
+          .append(value.getJobListenerEventType())
           .append("]),");
     }
 

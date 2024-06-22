@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-public enum ListenerEventType {
+/** Enumerates listener event types associated with jobs */
+public enum JobListenerEventType {
 
   /** Default */
   UNSPECIFIED,

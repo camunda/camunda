@@ -95,7 +95,7 @@
                 "jobKind": {
                   "type": "keyword"
                 },
-                "listenerEventType": {
+                "jobListenerEventType": {
                   "type": "keyword"
                 }
               }
