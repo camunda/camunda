@@ -143,6 +143,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
     requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
+    requireMappedBoundaryEventToStayAttachedToSameElement(
+        sourceProcessDefinition, targetProcessDefinition, mappingInstructions);
 
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
@@ -182,6 +184,40 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void requireMappedBoundaryEventToStayAttachedToSameElement(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
+    final var sourceBoundaryEvents = sourceProcessDefinition.getProcess().getBoundaryEvents();
+    sourceBoundaryEvents.stream()
+        .map(b -> BufferUtil.bufferAsString(b.getId()))
+        .filter(
+            bId -> mappingInstructions.stream().anyMatch(m -> m.getSourceElementId().equals(bId)))
+        .forEach(
+            b -> {
+              final var targetElementId =
+                  mappingInstructions.stream()
+                      .filter(m -> m.getSourceElementId().equals(b.getId()))
+                      .findFirst()
+                      .get()
+                      .getTargetElementId();
+              final var targetElement =
+                  targetProcessDefinition.getProcess().getElementById(targetElementId);
+              if (!targetElement.isBoundaryEvent()) {
+                throw new ProcessInstanceMigrationPreconditionFailedException(
+                    String.format(
+                        """
+                    Expected to migrate process instance '%s' \
+                    but active element with id '%s' is mapped to element with id '%s' \
+                    that must be a boundary event. \
+                    Boundary events must stay attached to the same element in the target process. \
+                    Please report this as a bug""",
+                        sourceProcessDefinition.getBpmnProcessId(), b.getId(), targetElementId),
+                    RejectionType.INVALID_STATE);
+              }
+            });
   }
 
   private Map<String, String> mapElementIds(
