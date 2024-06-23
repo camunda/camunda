@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -78,6 +79,7 @@ public final class FileBasedSnapshotStore extends Actor
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private final ChecksumProvider checksumProvider;
   private final String actorName;
   private final int partitionId;
 
@@ -86,6 +88,15 @@ public final class FileBasedSnapshotStore extends Actor
       final SnapshotMetrics snapshotMetrics,
       final Path snapshotsDirectory,
       final Path pendingDirectory) {
+    this(partitionId, snapshotMetrics, snapshotsDirectory, pendingDirectory, null);
+  }
+
+  public FileBasedSnapshotStore(
+      final int partitionId,
+      final SnapshotMetrics snapshotMetrics,
+      final Path snapshotsDirectory,
+      final Path pendingDirectory,
+      final ChecksumProvider checksumProvider) {
     this.snapshotsDirectory = snapshotsDirectory;
     this.pendingDirectory = pendingDirectory;
     this.snapshotMetrics = snapshotMetrics;
@@ -94,6 +105,7 @@ public final class FileBasedSnapshotStore extends Actor
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
+    this.checksumProvider = checksumProvider;
   }
 
   @Override
@@ -198,8 +210,9 @@ public final class FileBasedSnapshotStore extends Actor
 
     try {
       final var expectedChecksum = SnapshotChecksum.read(checksumPath);
-      final var actualChecksum = SnapshotChecksum.calculate(path);
-      if (expectedChecksum.getCombinedValue() != actualChecksum.getCombinedValue()) {
+      final var actualChecksum =
+          SnapshotChecksum.calculateWithProvidedChecksums(path, checksumProvider);
+      if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
             path,
@@ -417,7 +430,7 @@ public final class FileBasedSnapshotStore extends Actor
     final var directory = buildPendingSnapshotDirectory(newSnapshotId);
 
     final var newPendingSnapshot =
-        new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor);
+        new FileBasedTransientSnapshot(newSnapshotId, directory, this, actor, checksumProvider);
     addPendingSnapshot(newPendingSnapshot);
     return Either.right(newPendingSnapshot);
   }
