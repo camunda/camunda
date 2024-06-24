@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
@@ -21,6 +22,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
+import java.util.List;
 
 public final class LogStreamMetrics {
   private static final Counter FLOW_CONTROL_OUTCOME =
@@ -29,7 +31,7 @@ public final class LogStreamMetrics {
           .subsystem("flow_control")
           .name("outcome")
           .help(
-              "The count of entries passing through the flow control, organized by context and outcome")
+              "The count of records passing through the flow control, organized by context and outcome")
           .labelNames("partition", "context", "outcome")
           .register();
 
@@ -251,21 +253,29 @@ public final class LogStreamMetrics {
     };
   }
 
-  public void flowControlAccepted(final WriteContext context) {
+  public void flowControlAccepted(
+      final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     triedAppends.inc();
     if (context instanceof UserCommand) {
       receivedRequests.inc();
     }
-    FLOW_CONTROL_OUTCOME.labels(partitionLabel, contextLabel(context), "accepted").inc();
+    FLOW_CONTROL_OUTCOME
+        .labels(partitionLabel, contextLabel(context), "accepted")
+        .inc(batchMetadata.size());
   }
 
-  public void flowControlRejected(final WriteContext context, final Rejection reason) {
+  public void flowControlRejected(
+      final WriteContext context,
+      final List<LogAppendEntryMetadata> batchMetadata,
+      final Rejection reason) {
     triedAppends.inc();
     deferredAppends.inc();
     if (context instanceof UserCommand) {
       receivedRequests.inc();
       droppedRequests.inc();
     }
-    FLOW_CONTROL_OUTCOME.labels(partitionLabel, contextLabel(context), reasonLabel(reason)).inc();
+    FLOW_CONTROL_OUTCOME
+        .labels(partitionLabel, contextLabel(context), reasonLabel(reason))
+        .inc(batchMetadata.size());
   }
 }

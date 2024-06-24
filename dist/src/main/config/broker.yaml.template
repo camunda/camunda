@@ -505,7 +505,7 @@
       # write:
         # enabled: false
         # rampUp: 0 # ramp up time, for example 10s
-        # limit: 1000 # maximum number of writes per second
+        # limit: 1000 # maximum number of records written per second
 
     # backpressure:
       # Configure backpressure below.

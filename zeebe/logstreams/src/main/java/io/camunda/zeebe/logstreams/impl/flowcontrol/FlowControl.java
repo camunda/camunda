@@ -100,9 +100,9 @@ public final class FlowControl implements AppendListener {
     final var result = tryAcquireInternal(context, batchMetadata);
     switch (result) {
       case Either.Left<Rejection, InFlightEntry>(final var reason) ->
-          metrics.flowControlRejected(context, reason);
+          metrics.flowControlRejected(context, batchMetadata, reason);
       case Either.Right<Rejection, InFlightEntry>(final var ignored) ->
-          metrics.flowControlAccepted(context);
+          metrics.flowControlAccepted(context, batchMetadata);
     }
     return result;
   }
@@ -119,7 +119,7 @@ public final class FlowControl implements AppendListener {
       requestListener = null;
     }
 
-    if (writeRateLimiter != null && !writeRateLimiter.tryAcquire()) {
+    if (writeRateLimiter != null && !writeRateLimiter.tryAcquire(batchMetadata.size())) {
       if (requestListener != null) {
         requestListener.onIgnore();
       }
