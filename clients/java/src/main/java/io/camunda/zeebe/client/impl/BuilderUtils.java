@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl;
 
-final class BuilderUtils {
+public final class BuilderUtils {
 
   private BuilderUtils() {}
 
-  static void appendProperty(
+  public static void appendProperty(
       final StringBuilder sb, final String propertyName, final Object value) {
     sb.append(propertyName).append(": ").append(value).append("\n");
   }

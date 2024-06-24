@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.zeebe.client.impl.CamundaClientCredentials;
+import io.camunda.client.impl.CamundaClientCredentials;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

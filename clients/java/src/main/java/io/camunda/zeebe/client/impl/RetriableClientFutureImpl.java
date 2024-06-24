@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import io.camunda.client.impl.CamundaClientFutureImpl;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;

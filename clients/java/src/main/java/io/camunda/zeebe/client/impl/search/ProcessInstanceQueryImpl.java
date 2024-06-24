@@ -19,7 +19,7 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processIn
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
@@ -107,8 +107,10 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<ProcessInstance>> sendCommand() {
-    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
+  @Deprecated
+  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/search",
         jsonMapper.toJson(request),
@@ -120,10 +122,8 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  @Deprecated
-  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<SearchQueryResponse<ProcessInstance>> sendCommand() {
+    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/process-instances/search",
         jsonMapper.toJson(request),

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl;
+package io.camunda.client.impl;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
@@ -30,7 +30,7 @@ public final class CamundaCallCredentials extends io.grpc.CallCredentials {
 
   private final CredentialsProvider credentialsProvider;
 
-  CamundaCallCredentials(final CredentialsProvider credentialsProvider) {
+  public CamundaCallCredentials(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
   }
 

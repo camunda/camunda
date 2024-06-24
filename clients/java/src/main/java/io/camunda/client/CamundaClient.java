@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client;
+package io.camunda.client;
 
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaClientCloudBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaClientImpl;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
+import io.camunda.client.impl.CamundaClientImpl;
+import io.camunda.zeebe.client.ZeebeClient;
 
 /** The client to communicate with Camunda platform */
 public interface CamundaClient extends ZeebeClient {

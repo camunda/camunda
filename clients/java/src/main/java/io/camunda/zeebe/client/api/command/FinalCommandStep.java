@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import java.time.Duration;
 
@@ -23,7 +24,7 @@ public interface FinalCommandStep<T> {
 
   /**
    * Sets the request timeout for the command. The default request timeout can be configured using
-   * {@link io.camunda.zeebe.client.CamundaClientBuilder#defaultRequestTimeout(Duration)}.
+   * {@link CamundaClientBuilder#defaultRequestTimeout(Duration)}.
    *
    * @param requestTimeout the request timeout
    * @return the configured command

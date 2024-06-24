@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsComm
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;

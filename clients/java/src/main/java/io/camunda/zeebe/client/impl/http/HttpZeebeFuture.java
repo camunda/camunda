@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.concurrent.CompletableFuture;

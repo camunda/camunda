@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client;
+package io.camunda.client;
+
+import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1;
 
 public interface CamundaClientCloudBuilderStep1 extends ZeebeClientCloudBuilderStep1 {
 

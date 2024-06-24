@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;

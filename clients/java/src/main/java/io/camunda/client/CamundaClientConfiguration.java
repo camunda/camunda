@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl;
+package io.camunda.client;
 
-public final class CamundaClientBuilderImpl extends ZeebeClientBuilderImpl {}
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+
+public interface CamundaClientConfiguration extends ZeebeClientConfiguration {}

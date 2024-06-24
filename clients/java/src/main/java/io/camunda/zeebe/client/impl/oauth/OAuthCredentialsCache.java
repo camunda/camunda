@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.camunda.zeebe.client.impl.CamundaClientCredentials;
+import io.camunda.client.impl.CamundaClientCredentials;
 import io.camunda.zeebe.client.impl.util.FunctionWithIO;
 import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;

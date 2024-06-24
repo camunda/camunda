@@ -13,18 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl;
+package io.camunda.client.impl;
 
-import java.util.function.Function;
+import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 
-public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
-    extends ZeebeClientFutureImpl<ClientResponse, BrokerResponse> {
-
-  public CamundaClientFutureImpl() {
-    super();
-  }
-
-  public CamundaClientFutureImpl(final Function<BrokerResponse, ClientResponse> responseMapper) {
-    super(responseMapper);
-  }
-}
+public class CamundaClientCloudBuilderImpl extends ZeebeClientCloudBuilderImpl {}

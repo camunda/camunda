@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client;
+package io.camunda.client.impl;
 
-public interface CamundaClientConfiguration extends ZeebeClientConfiguration {}
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+
+public class CamundaObjectMapper extends ZeebeObjectMapper {}

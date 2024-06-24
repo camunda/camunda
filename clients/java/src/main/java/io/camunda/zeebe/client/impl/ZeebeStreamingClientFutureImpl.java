@@ -16,6 +16,7 @@
 
 package io.camunda.zeebe.client.impl;
 
+import io.camunda.client.impl.CamundaClientFutureImpl;
 import java.util.function.Consumer;
 
 @Deprecated
