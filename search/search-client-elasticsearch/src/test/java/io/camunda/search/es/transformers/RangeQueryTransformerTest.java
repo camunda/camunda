@@ -33,6 +33,15 @@ public class RangeQueryTransformerTest {
   private static Stream<Arguments> provideRangeQueries() {
     return Stream.of(
         Arguments.arguments(
+            SearchQueryBuilders.range().field("foo").lt(null).build(),
+            "Query: {'range':{'foo':{}}}"),
+        Arguments.arguments(
+            SearchQueryBuilders.range().field("foo").lt(Long.MAX_VALUE).build(),
+            "Query: {'range':{'foo':{'lt':9223372036854775807}}}"),
+        Arguments.arguments(
+            SearchQueryBuilders.range().field("foo").lt(Long.MIN_VALUE).build(),
+            "Query: {'range':{'foo':{'lt':-9223372036854775808}}}"),
+        Arguments.arguments(
             SearchQueryBuilders.range().field("foo").lt(123456789L).build(),
             "Query: {'range':{'foo':{'lt':123456789}}}"),
         Arguments.arguments(
