@@ -42,14 +42,21 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'adopt'
+          java-version: 21
+          distribution: temurin
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Build Java Client
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -am
+
+      - name: Downgrade Java environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
