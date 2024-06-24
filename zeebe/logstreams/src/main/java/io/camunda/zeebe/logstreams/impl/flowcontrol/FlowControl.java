@@ -23,6 +23,49 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+/**
+ * Maintains a view of in-flight entries as they are being appended, written, committed and finally
+ * processed.
+ *
+ * <p>If enabled, a write rate limiter is used to limit the rate of appends to the log storage.
+ * Additionally, a request limiter is used to limit the amount of unprocessed user commands to
+ * ensure fast response times.
+ *
+ * <h3>Thread safety</h3>
+ *
+ * Access patterns:
+ *
+ * <ol>
+ *   <li>Calls to {@link #tryAcquire(WriteContext, List)} from the sequencer, serialized through the
+ *       sequencers write lock.
+ *   <li>Calls to {@link #onAppend(InFlightEntry, long)} from the sequencer, serialized through the
+ *       sequencers write lock.
+ *   <li>Calls to {@link #onWrite(long, long)} from the log storage, serialized through the single
+ *       raft thread.
+ *   <li>Calls to {@link #onCommit(long, long)} from the log storage, serialized through the single
+ *       raft thread.
+ *   <li>Calls to {@link #onProcessed(long)} from the stream processor, serialized through the
+ *       stream processor actor.
+ * </ol>
+ *
+ * The order in which these methods are called is weakly constrained:
+ *
+ * <ul>
+ *   <li>{@link #tryAcquire(WriteContext, List)} and {@link #onAppend(InFlightEntry, long)} are
+ *       always called in that order and before any other methods.
+ *   <li>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link
+ *       #onProcessed(long)} can be called in any order.
+ * </ul>
+ *
+ * The weak ordering forces us to program quite defensively and carefully choose where and how we
+ * modify internal state.
+ *
+ * <p>The {@link #inFlight} map is only modified in the {@link #onAppend(InFlightEntry, long)}
+ * method. All other methods only read from it.
+ *
+ * <p>A volatile field {@link #lastProcessedPosition} is only modified in {@link #onProcessed(long)}
+ * and used in {@link #onAppend(InFlightEntry, long)} to clean up old entries.
+ */
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
