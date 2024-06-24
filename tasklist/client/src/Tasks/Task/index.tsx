@@ -113,10 +113,13 @@ const Task: React.FC = observer(() => {
 
     if (autoSelectNextTaskEnabled) {
       const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      if (newTasks.length > 1 && newTasks[0].id === id) {
-        autoSelectGoToTask(newTasks[1].id);
-      } else if (newTasks.length > 0 && newTasks[0].id !== id) {
-        autoSelectGoToTask(newTasks[0].id);
+      const openTasks = newTasks.filter(
+        ({taskState}) => taskState === 'CREATED',
+      );
+      if (openTasks.length > 1 && openTasks[0].id === id) {
+        autoSelectGoToTask(openTasks[1].id);
+      } else if (openTasks.length > 0 && openTasks[0].id !== id) {
+        autoSelectGoToTask(openTasks[0].id);
       } else {
         navigate({
           pathname: pages.initial,

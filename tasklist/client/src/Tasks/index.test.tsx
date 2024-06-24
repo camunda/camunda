@@ -16,11 +16,13 @@ import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {Task} from 'modules/types';
 
 vi.mock('modules/stores/autoSelectFirstTask', () => ({
   autoSelectNextTaskStore: {
-    enabled: true,
-    toggle: vi.fn(),
+    enabled: false,
+    enable: vi.fn(),
+    disable: vi.fn(),
   },
 }));
 
@@ -129,31 +131,32 @@ describe('<Tasks />', () => {
     expect(screen.queryByText('No tasks found')).not.toBeInTheDocument();
   });
 
-  it('should select the first task when auto-select is enabled and tasks are in the list', async () => {
+  it('should select the first open task when auto-select is enabled and tasks are in the list', async () => {
     nodeMockServer.use(
       http.get('/v1/internal/users/current', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, {candidateUser: string; foo: unknown}>(
-        '/v1/tasks/search',
-        async () => {
-          return HttpResponse.json(FIRST_PAGE);
-        },
-      ),
+      http.post<never, never>('/v1/tasks/search', async () => {
+        return HttpResponse.json([
+          {...FIRST_PAGE[0], taskState: 'COMPLETED'},
+          ...FIRST_PAGE.splice(1),
+        ] satisfies Task[]);
+      }),
     );
 
     const {user} = render(<Component />, {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTestId('pathname')).not.toHaveTextContent('/0');
+    expect(await screen.findByText('TASK 0')).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).not.toHaveTextContent('/1');
 
     const toggle = screen.getByTestId('toggle-auto-select-task');
     expect(toggle).toBeInTheDocument();
     await user.click(toggle);
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/0'),
+      expect(screen.getByTestId('pathname')).toHaveTextContent('/1'),
     );
   });
 
