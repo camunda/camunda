@@ -72,179 +72,6 @@ jobs:
         tags: "registry.camunda.cloud/team-optimize/optimize:pr-${{ github.event.pull_request.head.sha }}"
         push: true
 
-  migration:
-    name: Migration
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-
-    - name: Fetch main branch
-      run: git fetch origin main:refs/remote/origin/main
-
-    - name: Setup Maven
-      uses: ./.github/actions/setup-maven
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: Login to Harbor registry
-      uses: ./.github/actions/login-registry
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: "Read Java / Version Info"
-      id: "pom-info"
-      uses: YunaBraska/java-info-action@main
-
-    - name: Start Cambpm
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-        project_name: cambpm
-      env:
-        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-        CAMBPM_JVM_MEMORY: 1
-
-    - name: Start Elastic - Old
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-        project_name: elasticsearch-old
-      env:
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-        ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
-
-    - name: Start Elastic - New
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-        project_name: elasticsearch-new
-      env:
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-        ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-
-    - name: Install
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
-
-    - name: Verify upgrade
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: verify -Dskip.docker -pl optimize/upgrade
-
-    - name: Verify optimize/util/optimize-reimport-preparation
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: verify -Dskip.docker -pl optimize/util/optimize-reimport-preparation -Pengine-latest,it
-
-    - name: Verify optimize/qa/upgrade-tests
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: verify -Dskip.docker -pl optimize/qa/upgrade-tests -Pupgrade-es-schema-tests
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
-      with:
-        name: migration-junit
-        path: |
-          **/failsafe-reports/**/*.xml
-          **/*.log
-          **/*.json
-        retention-days: 7
-        if-no-files-found: ignore
-
-    - name: Docker log dump
-      uses: ./.github/actions/docker-logs
-      if: always()
-      with:
-        archive_name: migration-docker
-
-  data-upgrade-test:
-    name: Data Upgrade Test
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-
-    - name: Fetch main branch
-      run: git fetch origin main:refs/remote/origin/main
-
-    - name: Setup Maven
-      uses: ./.github/actions/setup-maven
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: Login to Harbor registry
-      uses: ./.github/actions/login-registry
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: "Read Java / Version Info"
-      id: "pom-info"
-      uses: YunaBraska/java-info-action@main
-
-    - name: Start Cambpm # Cambpm even needed?
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-        project_name: cambpm
-      env:
-        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-        CAMBPM_JVM_MEMORY: 1
-
-    - name: Start Elastic - Old
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-        project_name: elasticsearch-old
-      env:
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-        ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_elasticsearch_port }}
-
-    - name: Start Elastic - New
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
-        project_name: elasticsearch-new
-      env:
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-        ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-
-    - name: Install
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: install -Pengine-latest -Dskip.fe.build -Dskip.docker -DskipTests
-
-    - name: Verify optimize/qa/upgrade-tests
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/upgrade-tests -Pupgrade-optimize-data
-
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
-      with:
-        name: data-upgrade-test-junit
-        path: |
-          **/failsafe-reports/**/*.xml
-          **/*.log
-        retention-days: 7
-        if-no-files-found: ignore
-
-    - name: Docker log dump
-      uses: ./.github/actions/docker-logs
-      if: always()
-      with:
-        archive_name: data-upgrade-test-docker
-
   integration-tests:
     name: Integration Tests
     runs-on: gcp-core-32-default
@@ -253,24 +80,13 @@ jobs:
       fail-fast: false
       matrix:
         cambpm: [ 'latest' ]
-        includedGroups: [ 'ccsm-test', 'import,eventBasedProcess', 'reportEvaluation', '' ]
+        includedGroups: [ 'ccsm-test' ]
         include:
         - includedGroups: 'ccsm-test'
           excludedGroups: ''
           profiles: 'ccsm-it'
           requiresCambpm: false
-        - includedGroups: ''
-          excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
-          profiles: 'it,engine-latest'
-          requiresCambpm: true
-        - includedGroups: 'import,eventBasedProcess'
-          excludedGroups: ''
-          profiles: 'it,engine-latest'
-          requiresCambpm: true
-        - includedGroups: 'reportEvaluation'
-          excludedGroups: ''
-          profiles: 'it,engine-latest'
-          requiresCambpm: true
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -295,16 +111,6 @@ jobs:
     - name: Expose Parsed Elastic Version
       run: |
         echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
-
-    - name: Start Cambpm
-      if: ${{ matrix.requiresCambpm }}
-      uses: ./.github/actions/compose
-      with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-        project_name: cambpm
-      env:
-        CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-        CAMBPM_JVM_MEMORY: 8
 
     - name: Start Elastic
       uses: ./.github/actions/compose
@@ -352,20 +158,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        includedGroups: [ 'ccsm-test', 'openSearchPassing', 'import,eventBasedProcess' ]
+        includedGroups: [ 'ccsm-test' ]
         include:
-          - includedGroups: 'openSearchPassing'
-            excludedGroups: 'openSearchSingleTestFailOK,openSearchShouldBePassing'
-            profiles: 'it,engine-latest'
-            requiresCambpm: true
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
             requiresCambpm: false
-          - includedGroups: 'import,eventBasedProcess'
-            excludedGroups: ''
-            profiles: 'it,engine-latest'
-            requiresCambpm: true
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -389,16 +188,6 @@ jobs:
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start Cambpm
-        if: ${{ matrix.requiresCambpm }}
-        uses: ./.github/actions/compose
-        with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-          project_name: cambpm
-        env:
-          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-          CAMBPM_JVM_MEMORY: 8
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
@@ -539,11 +328,9 @@ jobs:
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
     needs:
-      - migration
       - integration-tests
       - integration-tests-os
       - unit-tests
-      - data-upgrade-test
       - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
