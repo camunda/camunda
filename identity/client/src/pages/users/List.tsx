@@ -41,7 +41,7 @@ const List: FC = () => {
     return (
       <Page>
         <PageTitle>
-          <Translate>Groups</Translate>
+          <Translate>Users</Translate>
         </PageTitle>
         <C3EmptyState
           heading={t("You don’t have any users yet")}
@@ -69,6 +69,7 @@ const List: FC = () => {
         data={users}
         headers={[
           { header: t("Username"), key: "username" },
+          { header: t("Name"), key: "name" },
           { header: t("Email"), key: "email" },
         ]}
         menuItems={[
