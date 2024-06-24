@@ -584,10 +584,10 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.60.1":
-  version "1.60.1"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.60.1.tgz#7bcc06d3b7188640b94975a22e5a01d6039a99fe"
-  integrity sha512-RsHit4WyLrvby++1G3ziNCd2MAC9/GiItZp7wYfiL6K1auWWNQUGlcId5X4ZI4lt+SmUPnihMqXFbs2HHe5YNg==
+"@carbon/react@1.60.2":
+  version "1.60.2"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.60.2.tgz#3c4f84aa877aa0c04d67a3cc64912b00ec7cd067"
+  integrity sha512-/wqvpEf4XiFSzI0Nyc4oVYXY3FmaI5a8mgwGgOPpiM4nIEBdxVlMKz+mkf3Qw0JeMHqkTCKZfriEn9JAbUpbUg==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.20.0"
@@ -1909,10 +1909,10 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@20.14.7":
-  version "20.14.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.7.tgz#342cada27f97509eb8eb2dbc003edf21ce8ab5a8"
-  integrity sha512-uTr2m2IbJJucF3KUxgnGOZvYbN0QgkGyWxG6973HCpMYFy2KfcgYuIwkJQMQkt1VbBMlvWRbpshFTLxnxCZjKQ==
+"@types/node@20.14.8":
+  version "20.14.8"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.8.tgz#45c26a2a5de26c3534a9504530ddb3b27ce031ac"
+  integrity sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==
   dependencies:
     undici-types "~5.26.4"
 
@@ -5090,10 +5090,10 @@ mitt@^3.0.0:
   resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mixpanel-browser@2.52.0:
-  version "2.52.0"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.52.0.tgz#f7984ef8c976ea4468ff52c9a62881c4ce21d417"
-  integrity sha512-aWrL477cOqcmgEakZUsw9ZEyrsdekGVbvHQZGFycgBtueG40DzenMD9Drhx7T/PR4agFkU/TEBPmRKoSKqkyEw==
+mixpanel-browser@2.53.0:
+  version "2.53.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.53.0.tgz#7531e4ee4e5fdf14c4fbe9612163e4fe3c4a1646"
+  integrity sha512-8U7zCTT82yCIH2vfdCvs0ZRWlCgyHMuU4jtC6yOAiNUR4HhnQYk7re/o2GnhfdvYtkPxdda60/3eH1igUlIXuw==
   dependencies:
     rrweb "2.0.0-alpha.13"
 

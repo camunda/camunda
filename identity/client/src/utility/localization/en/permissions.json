@@ -1,0 +1,6 @@
+{
+  "*:read.description": "Read access for every resource",
+  "*:update.description": "Update access for every resource",
+  "*:create.description": "Create access for every resource",
+  "*:delete.description": "Delete access for every resource"
+}

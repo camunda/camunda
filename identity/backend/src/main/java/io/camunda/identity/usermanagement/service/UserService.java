@@ -51,7 +51,9 @@ public class UserService {
               .build();
       camundaUserDetailsManager.createUser(userDetails);
       final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
-      userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
+      userProfileRepository.save(
+          new Profile(
+              createdUser.getId(), userWithCredential.getEmail(), userWithCredential.getName()));
       return userProfileRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
@@ -113,7 +115,8 @@ public class UserService {
               .build();
 
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(existingUser.getId(), userWithPassword.getEmail()));
+      userProfileRepository.save(
+          new Profile(existingUser.getId(), userWithPassword.getEmail(), userWithPassword.getName()));
 
       return userProfileRepository
           .findUserById(id)

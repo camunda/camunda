@@ -50,7 +50,9 @@ CREATE TABLE IF NOT EXISTS group_members (
 );
 
 CREATE TABLE IF NOT EXISTS profiles(
-    id bigint primary key, email varchar(100) unique,
+    id bigint primary key,
+    email varchar(100) unique,
+    name varchar,
     constraint fk_profile_users foreign key(id) references users(id) ON DELETE CASCADE);
 
 -- authority == role
