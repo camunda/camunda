@@ -51,6 +51,7 @@ public final class LogEntryDescriptor {
 
   public static final long KEY_NULL_VALUE = -1;
 
+  // When VERSION is incremented, also update the version check in getMetadataLength
   private static final short VERSION = 1;
   private static final int VERSION_OFFSET;
 
@@ -190,7 +191,12 @@ public final class LogEntryDescriptor {
   }
 
   public static int getMetadataLength(final DirectBuffer buffer, final int offset) {
-    return buffer.getInt(metadataLengthOffset(offset), Protocol.ENDIANNESS);
+    if (getVersion(buffer, offset) == 1) {
+      return buffer.getInt(metadataLengthOffset(offset), Protocol.ENDIANNESS);
+    } else {
+      // previous versions never set a version, so the version could be a garbage value or 0.
+      return buffer.getShort(metadataLengthOffset(offset), Protocol.ENDIANNESS);
+    }
   }
 
   public static void setMetadataLength(
