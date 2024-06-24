@@ -50,13 +50,6 @@ jobs:
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -am
-
-      - name: Downgrade Java environment
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
