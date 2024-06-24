@@ -37,7 +37,7 @@ class RoleMembershipServiceTest {
   @Autowired private CamundaUserDetailsManager camundaUserDetailsManager;
 
   @Test
-  void assignRoleToUser_Works() {
+  void assignRoleToUserWorks() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
     final Role role1 = TestHelper.createAndSaveRandomRole(roleService);
     final Role role2 = TestHelper.createAndSaveRandomRole(roleService);
@@ -67,7 +67,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void assignRoleToUser_ThrowsException_IfRoleDoesNotExist() {
+  void assignRoleToUserThrowsExceptionIfRoleDoesNotExist() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
 
     final RuntimeException exception =
@@ -81,7 +81,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void getRolesByUserId_Works() {
+  void getRolesByUserIdWorks() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
     final Role role1 = TestHelper.createAndSaveRandomRole(roleService);
     final Role role2 = TestHelper.createAndSaveRandomRole(roleService);
@@ -97,7 +97,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void unassignRoleFromUser_Works() {
+  void unassignRoleFromUserWorks() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
     roleMembershipService.assignRoleToUser(role.getName(), user.getId());
@@ -126,7 +126,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void unassignRoleFromUser_ThrowsException_IfRoleDoesNotExist() {
+  void unassignRoleFromUserThrowsExceptionIfRoleDoesNotExist() {
     final CamundaUser user = TestHelper.createAndSaveRandomUser(userService);
 
     final RuntimeException exception =
@@ -140,7 +140,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void assignRoleToGroup_Works() {
+  void assignRoleToGroupWorks() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
@@ -157,7 +157,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void assignRoleToGroup_ThrowsException_IfRoleDoesNotExist() {
+  void assignRoleToGroupThrowsExceptionIfRoleDoesNotExist() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
 
     final RuntimeException exception =
@@ -171,7 +171,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void getRolesByGroupId_Works() {
+  void getRolesByGroupIdWorks() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
@@ -184,7 +184,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void unassignRoleFromGroup_Works() {
+  void unassignRoleFromGroupWorks() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
 
@@ -197,7 +197,7 @@ class RoleMembershipServiceTest {
   }
 
   @Test
-  void unassignRoleFromGroup_ThrowsException_IfRoleDoesNotExist() {
+  void unassignRoleFromGroupThrowsExceptionIfRoleDoesNotExist() {
     final CamundaGroup group = TestHelper.createAndSaveRandomGroup(groupService);
 
     final RuntimeException exception =
