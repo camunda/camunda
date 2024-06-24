@@ -2458,10 +2458,10 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@testing-library/dom@10.1.0":
-  version "10.1.0"
-  resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.1.0.tgz#2d073e49771ad614da999ca48f199919e5176fb6"
-  integrity sha512-wdsYKy5zupPyLCW2Je5DLHSxSfbIp6h80WoHOQc+RPtmPGA52O9x5MJEkv92Sjonpq+poOAtUKhh1kBGAXBrNA==
+"@testing-library/dom@10.2.0":
+  version "10.2.0"
+  resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.2.0.tgz#d3b22515bc0603a06f119c6ae6670669c3f2085f"
+  integrity sha512-CytIvb6tVOADRngTHGWNxH8LPgO/3hi/BdCEHOf7Qd2GvZVClhVP0Wo/QHzWhpki49Bk0b4VT6xpt3fx8HTSIw==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/runtime" "^7.12.5"
@@ -2803,10 +2803,10 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@20.14.7":
-  version "20.14.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.7.tgz#342cada27f97509eb8eb2dbc003edf21ce8ab5a8"
-  integrity sha512-uTr2m2IbJJucF3KUxgnGOZvYbN0QgkGyWxG6973HCpMYFy2KfcgYuIwkJQMQkt1VbBMlvWRbpshFTLxnxCZjKQ==
+"@types/node@20.14.8":
+  version "20.14.8"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.8.tgz#45c26a2a5de26c3534a9504530ddb3b27ce031ac"
+  integrity sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==
   dependencies:
     undici-types "~5.26.4"
 
@@ -8792,10 +8792,10 @@ mitt@^3.0.0:
   resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mixpanel-browser@2.52.0:
-  version "2.52.0"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.52.0.tgz#f7984ef8c976ea4468ff52c9a62881c4ce21d417"
-  integrity sha512-aWrL477cOqcmgEakZUsw9ZEyrsdekGVbvHQZGFycgBtueG40DzenMD9Drhx7T/PR4agFkU/TEBPmRKoSKqkyEw==
+mixpanel-browser@2.53.0:
+  version "2.53.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.53.0.tgz#7531e4ee4e5fdf14c4fbe9612163e4fe3c4a1646"
+  integrity sha512-8U7zCTT82yCIH2vfdCvs0ZRWlCgyHMuU4jtC6yOAiNUR4HhnQYk7re/o2GnhfdvYtkPxdda60/3eH1igUlIXuw==
   dependencies:
     rrweb "2.0.0-alpha.13"
 

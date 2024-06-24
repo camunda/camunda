@@ -49,6 +49,7 @@ const useApiCall: UseApiCall = <R, P>(
       (!loading &&
         (errors?.reduce(namedErrorsReducer, {}) as NamedErrors<P>)) ||
       null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify([errors, loading])],
   );
 
@@ -121,6 +122,7 @@ const useApiCall: UseApiCall = <R, P>(
         success: apiSuccess,
       };
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [apiDefinition],
   ) as ApiCall<R, P>;
 
