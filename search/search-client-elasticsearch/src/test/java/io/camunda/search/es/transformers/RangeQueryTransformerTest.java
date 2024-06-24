@@ -15,6 +15,7 @@ import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -68,5 +69,28 @@ public class RangeQueryTransformerTest {
     assertThat(result).isNotNull();
     assertThat(result._toQuery()).isNotNull();
     assertThat(result._toQuery().toString()).isEqualTo(expectedQuery);
+  }
+
+  @Test
+  public void shouldCombineMultipleRangeQueries() {
+    // given
+    final SearchRangeQuery query =
+        SearchQueryBuilders.range()
+            .field("foo")
+            .lt(123456789L)
+            .lte(12345L)
+            .gte(123456L)
+            .gt(1234L)
+            .build();
+
+    // when
+    final var result = transformer.apply(query);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.lt().to(Long.class)).isEqualTo(123456789L);
+    assertThat(result.gt().to(Long.class)).isEqualTo(1234L);
+    assertThat(result.gte().to(Long.class)).isEqualTo(123456L);
+    assertThat(result.lte().to(Long.class)).isEqualTo(12345L);
   }
 }
