@@ -204,6 +204,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         buffer.limit(buffer.capacity());
       }
 
+      channel.force(true);
+
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
