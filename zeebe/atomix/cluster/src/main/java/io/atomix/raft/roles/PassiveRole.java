@@ -52,9 +52,9 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.impl.SnapshotChunkId;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -136,9 +136,9 @@ public class PassiveRole extends InactiveRole {
         && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
       final var errMsg =
           "Expected chunkId of ["
-              + new String(nextPendingSnapshotChunkId.array(), StandardCharsets.UTF_8)
+              + new SnapshotChunkId(nextPendingSnapshotChunkId)
               + "] got ["
-              + new String(request.chunkId().array(), StandardCharsets.UTF_8)
+              + new SnapshotChunkId(request.chunkId())
               + "].";
       abortPendingSnapshots();
       return CompletableFuture.completedFuture(

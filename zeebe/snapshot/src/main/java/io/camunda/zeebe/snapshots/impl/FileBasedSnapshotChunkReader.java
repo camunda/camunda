@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.io.IOException;
@@ -77,8 +76,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return;
     }
 
-    final var chunkId = decodeChunkId(id);
-    final var chunkIdParts = chunkId.toString().split("__");
+    final var chunkIdParts = new SnapshotChunkId(id).toString().split("__");
 
     offset = Long.valueOf(chunkIdParts[1]);
 
@@ -91,7 +89,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return null;
     }
 
-    return encodeChunkId(chunksView.first().toString() + "__" + offset);
+    return new SnapshotChunkId(chunksView.first().toString() + "__" + offset).getId();
   }
 
   @Override
@@ -140,13 +138,5 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  private ByteBuffer encodeChunkId(final CharSequence path) {
-    return ByteBuffer.wrap(path.toString().getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS);
-  }
-
-  private CharSequence decodeChunkId(final ByteBuffer id) {
-    return ID_CHARSET.decode(id).toString();
   }
 }
