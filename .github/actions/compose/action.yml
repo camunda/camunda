@@ -11,6 +11,10 @@ inputs:
   additional_flags:
     description: "Additional flags to pass to the compose command"
     required: false
+  timeout:
+    description: "Timeout for the healthcheck"
+    required: false
+    default: "300"
 runs:
   using: composite
   steps:
@@ -29,5 +33,5 @@ runs:
         ${{ github.action_path }}/healthy.sh
       env:
         FILE: ${{ inputs.compose_file }}
-        TIMEOUT: "300"
+        TIMEOUT: ${{ inputs.timeout }}
         COMPOSE_FLAGS: "--project-name ${{ inputs.project_name }}"
