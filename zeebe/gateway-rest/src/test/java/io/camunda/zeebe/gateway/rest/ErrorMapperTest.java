@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -263,7 +264,11 @@ public class ErrorMapperTest {
   }
 
   @SpringBootApplication(
-      exclude = {SecurityAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
+      exclude = {
+        SecurityAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class,
+        DataSourceAutoConfiguration.class
+      })
   static class TestErrorMapperApplication {
     // required to provide the web server context
   }
