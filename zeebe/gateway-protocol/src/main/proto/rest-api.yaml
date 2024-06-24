@@ -740,7 +740,7 @@ components:
           items:
             type: integer
             format: int64
-        state:
+        taskState:
           type: array
           items:
             type: string
@@ -792,7 +792,7 @@ components:
         key:
           type: integer
           format: int64
-        state:
+        taskState:
           type: string
         assignee:
           type: string
@@ -807,8 +807,12 @@ components:
           items:
             type: string
         processDefinitionKey:
-          type: string
+          type: integer
+          format: int64
         processInstanceKey:
+          type: integer
+          format: int64
+        formKey:
           type: integer
           format: int64
         creationDate:

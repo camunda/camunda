@@ -103,11 +103,15 @@ public final class SearchQueryResponseMapper {
             .tenantIds(t.tenantId())
             .key(t.key())
             .processInstanceKey(t.processInstanceId())
-            .processDefinitionKey(t.processDefinitionId().toString())
-            .state(t.state())
+            .processDefinitionKey(t.processDefinitionId())
+            .taskState(t.state())
             .assignee(t.assignee())
             .candidateUser(t.candidateUsers())
             .candidateGroup(t.candidateGroups())
+            .formKey(t.formKey())
+            .taskDefinitionId(t.flowNodeBpmnId())
+            .creationDate(t.creationTime())
+            .completionDate(t.completionTime())
             .dueDate(t.dueDate())
             .followUpDate(t.followUpDate()));
   }

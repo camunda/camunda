@@ -21,13 +21,14 @@ import java.util.List;
 public class UserTaskImpl {
 
   private final Long key;
-  private final String state;
+  private final String taskState;
   private final String assignee;
   private final String taskDefinitionId;
   private final List<String> candidateGroup;
   private final List<String> candidateUser;
-  private final String processDefinitionKey;
+  private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long formKey;
   private final String creationDate;
   private final String completionDate;
   private final String followUpDate;
@@ -36,13 +37,14 @@ public class UserTaskImpl {
 
   public UserTaskImpl(final UserTaskItem item) {
     key = item.getKey();
-    state = item.getState();
+    taskState = item.getTaskState();
     assignee = item.getAssignee();
     taskDefinitionId = item.getTaskDefinitionId();
     candidateGroup = item.getCandidateGroup();
     candidateUser = item.getCandidateUser();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
+    formKey = item.getFormKey();
     creationDate = item.getCreationDate();
     completionDate = item.getCompletionDate();
     followUpDate = item.getFollowUpDate();
@@ -54,8 +56,8 @@ public class UserTaskImpl {
     return key;
   }
 
-  public String getState() {
-    return state;
+  public String getTaskState() {
+    return taskState;
   }
 
   public String getAssignee() {
@@ -74,12 +76,20 @@ public class UserTaskImpl {
     return candidateUser;
   }
 
-  public String getProcessDefinitionKey() {
+  public Long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  public Long getFormKey() {
+    return formKey;
+  }
+
+  public Long setFormKey() {
+    return formKey;
   }
 
   public String getCreationDate() {

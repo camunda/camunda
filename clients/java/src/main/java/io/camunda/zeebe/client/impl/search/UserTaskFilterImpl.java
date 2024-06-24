@@ -51,7 +51,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter userTaskStates(final List<String> states) {
-    filter.setState(UserTaskFilter.addValuesToList(filter.getState(), states));
+    filter.setTaskState(UserTaskFilter.addValuesToList(filter.getTaskState(), states));
     return this;
   }
 

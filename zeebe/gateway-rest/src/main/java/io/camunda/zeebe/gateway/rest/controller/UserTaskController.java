@@ -7,15 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
@@ -143,11 +139,12 @@ public class UserTaskController {
       @RequestBody final UserTaskSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(
-            (Function<? super UserTaskQuery, ? extends ResponseEntity<UserTaskSearchQueryResponse>>) this::search, RestErrorMapper::mapProblemToResponse);
+            (Function<? super UserTaskQuery, ? extends ResponseEntity<UserTaskSearchQueryResponse>>)
+                this::search,
+            RestErrorMapper::mapProblemToResponse);
   }
 
-  private ResponseEntity<UserTaskSearchQueryResponse> search(
-      final UserTaskQuery query) {
+  private ResponseEntity<UserTaskSearchQueryResponse> search(final UserTaskQuery query) {
     try {
       final var tenantIds = TenantAttributeHolder.tenantIds();
       final var result =
@@ -157,9 +154,7 @@ public class UserTaskController {
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Failed to execute UserTask Search Query");
+              HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to execute UserTask Search Query");
       return ResponseEntity.of(problemDetail)
           .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
           .build();
