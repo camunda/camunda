@@ -57,6 +57,7 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
     Mockito.when(userReader.getCurrentOrganizationId()).thenReturn(organisation);
   }
 
+  @Override
   @AfterEach
   public void after() {
     setDefaultCurrentUser();

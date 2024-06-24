@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class ClusterEndpointResponseIT {
-  @TestZeebe
-  static TestStandaloneBroker broker = new TestStandaloneBroker().withRecordingExporter(true);
+  @TestZeebe static TestStandaloneBroker broker = new TestStandaloneBroker();
 
   @Test
   void shouldMatchExpectedSerialization() throws IOException, InterruptedException {
@@ -47,12 +46,7 @@ final class ClusterEndpointResponseIT {
                                   "priority": 1,
                                   "config":{
                                      "exporting": {
-                                        "exporters": [
-                                          {
-                                            "id": "recordingExporter",
-                                            "state": "ENABLED"
-                                          }
-                                        ]
+                                        "exporters": []
                                      }
                                   }
                                 }

@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,12 +37,12 @@ class GatewayBrokerTransportStepTest {
   private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
-  private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private final ActorScheduler mockActorSchedulingService = mock(ActorScheduler.class);
 
   private BrokerStartupContextImpl testBrokerStartupContext;
+  private final BrokerInfo mockBrokerInfo = mock(BrokerInfo.class);
 
   private final GatewayBrokerTransportStep sut = new GatewayBrokerTransportStep();
 
@@ -52,7 +53,7 @@ class GatewayBrokerTransportStepTest {
 
     testBrokerStartupContext =
         new BrokerStartupContextImpl(
-            TEST_BROKER_INFO,
+            mockBrokerInfo,
             TEST_BROKER_CONFIG,
             mock(SpringBrokerBridge.class),
             mockActorSchedulingService,
@@ -97,6 +98,8 @@ class GatewayBrokerTransportStepTest {
     @Test
     void shouldStartAndInstallTransport() {
       // when
+      final int randomNodeId = new Random().nextInt(10);
+      when(mockBrokerInfo.getNodeId()).thenReturn(randomNodeId);
       sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
       await().until(startupFuture::isDone);
 

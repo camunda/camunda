@@ -12,7 +12,14 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final record SearchRangeQuery(
-    String field, Object gt, Object gte, Object lt, Object lte, String from, String to)
+    String field,
+    Object gt,
+    Object gte,
+    Object lt,
+    Object lte,
+    String from,
+    String to,
+    String format)
     implements SearchQueryOption {
 
   static SearchRangeQuery of(final Function<Builder, ObjectBuilder<SearchRangeQuery>> fn) {
@@ -28,6 +35,7 @@ public final record SearchRangeQuery(
     private Object lte;
     private String from;
     private String to;
+    private String format;
 
     public Builder field(final String field) {
       this.field = field;
@@ -64,9 +72,15 @@ public final record SearchRangeQuery(
       return this;
     }
 
+    public Builder format(final String value) {
+      format = value;
+      return this;
+    }
+
     @Override
     public SearchRangeQuery build() {
-      return new SearchRangeQuery(Objects.requireNonNull(field), gt, gte, lt, lte, from, to);
+      return new SearchRangeQuery(
+          Objects.requireNonNull(field), gt, gte, lt, lte, from, to, format);
     }
   }
 }

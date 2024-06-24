@@ -8,8 +8,8 @@
 
 import { FC } from "react";
 import { Route, Routes as RouterRoutes } from "react-router-dom";
-import Redirect from "src/components/global/Redirect";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
+import Redirect from "src/components/router/Redirect";
 
 const GlobalRoutes: FC = () => {
   const routes = useGlobalRoutes();

@@ -13,6 +13,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.github/actions/**'
@@ -22,6 +23,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -34,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -46,7 +48,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.2
+        image: camunda/zeebe:8.5.3
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -57,7 +59,7 @@ jobs:
           - 26500:26500
     steps:
       - name: Check out repository code
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f

@@ -11,6 +11,7 @@ import io.camunda.operate.ApplicationShutdownService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.webapps.zeebe.PartitionSupplier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,7 +34,10 @@ public class PartitionHolder {
   private List<Integer> partitionIds = new ArrayList<>();
 
   @Autowired private OperateProperties operateProperties;
-  @Autowired private PartitionSupplier partitionSupplier;
+
+  @Autowired
+  @Qualifier("operatePartitionSupplier")
+  private PartitionSupplier partitionSupplier;
 
   @Autowired(required = false)
   private ApplicationShutdownService applicationShutdownService;
@@ -52,7 +57,7 @@ public class PartitionHolder {
   }
 
   private List<Integer> getPartitionIdsWithWaitingTimeAndRetries(
-      long waitingTimeInMilliseconds, int maxRetries) {
+      final long waitingTimeInMilliseconds, final int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
       if (retries > 0) {
@@ -117,7 +122,7 @@ public class PartitionHolder {
     return Optional.empty();
   }
 
-  protected void sleepFor(long milliseconds) {
+  protected void sleepFor(final long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
   }
 
