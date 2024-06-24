@@ -2,11 +2,11 @@ import { FC } from "react";
 import useTranslate from "src/utility/localization";
 import { Role } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
-import usePermissions from "src/pages/roles/modals/usePermissions";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/roles/modals/EditModal";
 import { useNavigate } from "react-router";
+import usePermissionsTranslated from "src/pages/roles/modals/usePermissionsTranslated";
 
 type RoleDetailsProps = {
   role: Role | null;
@@ -17,17 +17,13 @@ const RolePermissions: FC<RoleDetailsProps> = ({ role, loading }) => {
   const navigate = useNavigate();
   const { t } = useTranslate();
 
-  const { availableItems } = usePermissions();
-
-  const rolePermissions = availableItems.filter((itemX) =>
-    role?.permissions?.includes(itemX.permission),
-  );
+  const availableItems = usePermissionsTranslated(role?.permissions);
   const [editRole, editRoleModal] = useEntityModal(EditModal, () =>
     navigate("..", { replace: true }),
   );
   const openEditRole = () => editRole(role!);
 
-  if (rolePermissions.length == 0) {
+  if (availableItems.length == 0) {
     return (
       <>
         <C3EmptyState
@@ -53,7 +49,7 @@ const RolePermissions: FC<RoleDetailsProps> = ({ role, loading }) => {
     <EntityList
       isInsideModal={false}
       title={t("Permissions")}
-      data={rolePermissions}
+      data={availableItems}
       headers={[
         { header: t("Permission"), key: "permission" },
         { header: t("Description"), key: "description" },
