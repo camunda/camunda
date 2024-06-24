@@ -64,83 +64,9 @@ public final class UserTaskServices
       boolean firstIteration = true;
 
       for (final VariableValueFilter variableValueFilter : query.filter().variableFilters()) {
-        final VariableFilter.Builder variableFilterBuilder = new VariableFilter.Builder();
-        variableFilterBuilder.variable(variableValueFilter);
-
-        final SearchQueryPage searchQueryPage = new SearchQueryPage.Builder()
-            .size(MAX_ELASTICSEARCH_PAGE_SIZE)
-            .build();
-
-        final VariableQuery variableQueryBuilder;
-        if(firstIteration){
-          variableQueryBuilder = VariableQuery.of(b -> b
-              .filter(variableFilterBuilder.build())
-              .page(searchQueryPage)
-        );}
-        else{
-          variableFilterBuilder.processInstanceKeys(scopeKeyMapByProcessInstanceKey.keySet().stream().toList());
-          variableFilterBuilder.variable(variableValueFilter);
-          variableQueryBuilder = VariableQuery.of(b -> b
-            .filter(variableFilterBuilder.build())
-            .page(searchQueryPage)
-        );
-        }
-
-        final var searchResults = variableServices
-            .withAuthentication(authentication)
-            .search(variableQueryBuilder);
-
-        final Map<Long, Set<Long>> currentScopeKeyMapByProcessInstanceKey = searchResults.items().stream()
-            .collect(Collectors.groupingBy(
-                VariableEntity::processInstanceKey,
-                Collectors.mapping(VariableEntity::scopeKey, Collectors.toSet())
-            ));
-
-        if (firstIteration) {
-          // Initialize the map on the first iteration
-          for (final Map.Entry<Long, Set<Long>> entry : currentScopeKeyMapByProcessInstanceKey.entrySet()) {
-            final Long processInstanceId = entry.getKey();
-            final Set<Long> validScopeKeys = entry.getValue().stream()
-                .filter(scopeKey -> !scopeKey.equals(processInstanceId))
-                .collect(Collectors.toSet());
-            if (!validScopeKeys.isEmpty()) {
-              scopeKeyMapByProcessInstanceKey.put(processInstanceId, validScopeKeys);
-            } else {
-              scopeKeyMapByProcessInstanceKey.put(processInstanceId, null);
-            }
-          }
-          firstIteration = false;
-        } else {
-          scopeKeyMapByProcessInstanceKey.entrySet().removeIf(entry -> {
-            final Long processInstanceId = entry.getKey();
-            final Set<Long> validScopeKeys = entry.getValue() != null ? entry.getValue().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet()) : new HashSet<>();
-            final Set<Long> currentScopeKeys = currentScopeKeyMapByProcessInstanceKey.get(processInstanceId);
-
-            if (currentScopeKeys != null) {
-              validScopeKeys.retainAll(currentScopeKeys);
-            }
-
-            // Ensure processInstanceId equals scopeId or scopeId equals flowNodeID
-            if (entry.getValue() == null || validScopeKeys.isEmpty()) {
-              return currentScopeKeys == null || currentScopeKeys.isEmpty();
-            }
-
-            return validScopeKeys.isEmpty() || !currentScopeKeyMapByProcessInstanceKey.containsKey(processInstanceId);
-          });
-
-          // Merge the valid entries from the current map
-          for (final Map.Entry<Long, Set<Long>> entry : currentScopeKeyMapByProcessInstanceKey.entrySet()) {
-            scopeKeyMapByProcessInstanceKey.merge(entry.getKey(), entry.getValue(), (oldSet, newSet) -> {
-              oldSet.addAll(newSet);
-              return oldSet;
-            });
-          }
-        }
+        processVariableFilter(variableValueFilter, variableServices, scopeKeyMapByProcessInstanceKey, firstIteration);
+        firstIteration = false;
       }
-
-      System.out.println("Collected ScopeKeys by ProcessInstanceId: " + scopeKeyMapByProcessInstanceKey);
 
       // Collect all unique processInstanceIds and scopeKeys
       final List<Long> allProcessInstanceIds = new ArrayList<>(scopeKeyMapByProcessInstanceKey.keySet());
@@ -149,9 +75,10 @@ public final class UserTaskServices
           .filter(Objects::nonNull)
           .collect(Collectors.toList());
 
-      if(allProcessInstanceIds.isEmpty() && allScopeKeys.isEmpty()){
+      if (allProcessInstanceIds.isEmpty() && allScopeKeys.isEmpty()) {
         return new SearchQueryResult<>(0, Collections.emptyList(), null);
       }
+
       // Modify the UserTaskQuery to include the new filter conditions
       final UserTaskQuery modifiedQuery = UserTaskQuery.of(b -> b
           .filter(f -> f
@@ -167,9 +94,94 @@ public final class UserTaskServices
   }
 
 
-
   public SearchQueryResult<UserTaskEntity> search(
       final Function<Builder, ObjectBuilder<UserTaskQuery>> fn) {
     return search(SearchQueryBuilders.userTaskSearchQuery(fn));
+  }
+
+  private void processVariableFilter(final VariableValueFilter variableValueFilter,
+      final VariableServices variableServices,
+      final Map<Long, Set<Long>> scopeKeyMapByProcessInstanceKey,
+      final boolean firstIteration) {
+    final VariableFilter.Builder variableFilterBuilder = new VariableFilter.Builder();
+    variableFilterBuilder.variable(variableValueFilter);
+
+    final SearchQueryPage searchQueryPage = new SearchQueryPage.Builder()
+        .size(MAX_ELASTICSEARCH_PAGE_SIZE)
+        .build();
+
+    final VariableQuery variableQueryBuilder;
+    if (firstIteration) {
+      variableQueryBuilder = VariableQuery.of(b -> b
+          .filter(variableFilterBuilder.build())
+          .page(searchQueryPage)
+      );
+    } else {
+      variableFilterBuilder.processInstanceKeys(new ArrayList<>(scopeKeyMapByProcessInstanceKey.keySet()));
+      variableFilterBuilder.variable(variableValueFilter);
+      variableQueryBuilder = VariableQuery.of(b -> b
+          .filter(variableFilterBuilder.build())
+          .page(searchQueryPage)
+      );
+    }
+
+    final var searchResults = variableServices
+        .withAuthentication(authentication)
+        .search(variableQueryBuilder);
+
+    final Map<Long, Set<Long>> currentScopeKeyMapByProcessInstanceKey = searchResults.items().stream()
+        .collect(Collectors.groupingBy(
+            VariableEntity::processInstanceKey,
+            Collectors.mapping(VariableEntity::scopeKey, Collectors.toSet())
+        ));
+
+    if (firstIteration) {
+      initializeScopeKeyMap(scopeKeyMapByProcessInstanceKey, currentScopeKeyMapByProcessInstanceKey);
+    } else {
+      updateScopeKeyMap(scopeKeyMapByProcessInstanceKey, currentScopeKeyMapByProcessInstanceKey);
+    }
+  }
+
+  private void initializeScopeKeyMap(final Map<Long, Set<Long>> scopeKeyMapByProcessInstanceKey,
+      final Map<Long, Set<Long>> currentScopeKeyMapByProcessInstanceKey) {
+    for (final Map.Entry<Long, Set<Long>> entry : currentScopeKeyMapByProcessInstanceKey.entrySet()) {
+      final Long processInstanceId = entry.getKey();
+      final Set<Long> validScopeKeys = entry.getValue().stream()
+          .filter(scopeKey -> !scopeKey.equals(processInstanceId))
+          .collect(Collectors.toSet());
+      if (!validScopeKeys.isEmpty()) {
+        scopeKeyMapByProcessInstanceKey.put(processInstanceId, validScopeKeys);
+      } else {
+        scopeKeyMapByProcessInstanceKey.put(processInstanceId, null);
+      }
+    }
+  }
+
+  private void updateScopeKeyMap(final Map<Long, Set<Long>> scopeKeyMapByProcessInstanceKey,
+      final Map<Long, Set<Long>> currentScopeKeyMapByProcessInstanceKey) {
+    scopeKeyMapByProcessInstanceKey.entrySet().removeIf(entry -> {
+      final Long processInstanceId = entry.getKey();
+      final Set<Long> validScopeKeys = entry.getValue() != null ? entry.getValue().stream()
+          .filter(Objects::nonNull)
+          .collect(Collectors.toSet()) : new HashSet<>();
+      final Set<Long> currentScopeKeys = currentScopeKeyMapByProcessInstanceKey.get(processInstanceId);
+
+      if (currentScopeKeys != null) {
+        validScopeKeys.retainAll(currentScopeKeys);
+      }
+
+      if (entry.getValue() == null || validScopeKeys.isEmpty()) {
+        return currentScopeKeys == null || currentScopeKeys.isEmpty();
+      }
+
+      return validScopeKeys.isEmpty() || !currentScopeKeyMapByProcessInstanceKey.containsKey(processInstanceId);
+    });
+
+    currentScopeKeyMapByProcessInstanceKey.forEach((processInstanceId, currentScopeKeys) ->
+        scopeKeyMapByProcessInstanceKey.merge(processInstanceId, currentScopeKeys, (oldSet, newSet) -> {
+          oldSet.addAll(newSet);
+          return oldSet;
+        })
+    );
   }
 }
