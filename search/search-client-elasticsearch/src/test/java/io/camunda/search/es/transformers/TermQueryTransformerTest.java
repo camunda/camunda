@@ -8,6 +8,7 @@
 package io.camunda.search.es.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.search.clients.query.SearchQuery;
@@ -15,6 +16,7 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -82,5 +84,15 @@ public class TermQueryTransformerTest {
     // then
     assertThat(result).isNotNull();
     assertThat(result.toString()).isEqualTo(expectedQuery);
+  }
+
+  @Test
+  public void shouldThrowErrorOnNullValue() {
+    // given
+
+    // when - throw
+    assertThatThrownBy(() -> SearchQueryBuilders.term().field("foo").value((String) null).build())
+        .hasMessageContaining("Expected non-null value for term query, for field 'foo'.")
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

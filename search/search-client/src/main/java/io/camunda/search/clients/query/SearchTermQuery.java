@@ -57,8 +57,13 @@ public record SearchTermQuery(String field, TypedValue value, Boolean caseInsens
 
     @Override
     public SearchTermQuery build() {
-      return new SearchTermQuery(
-          Objects.requireNonNull(field), Objects.requireNonNull(value), caseInsensitive);
+      Objects.requireNonNull(field);
+
+      if (value == null || value == TypedValue.NULL || value.isNull() || value.value() == null) {
+        throw new IllegalArgumentException(
+            String.format("Expected non-null value for term query, for field '%s'.", field));
+      }
+      return new SearchTermQuery(field, value, caseInsensitive);
     }
   }
 }
