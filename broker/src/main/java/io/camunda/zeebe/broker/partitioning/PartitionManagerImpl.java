@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -77,7 +78,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(actorSchedulingService, localBroker.getNodeId());
+        new FileBasedSnapshotStoreFactory(
+            actorSchedulingService, localBroker.getNodeId(), new ChecksumProviderRocksDBImpl());
 
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;

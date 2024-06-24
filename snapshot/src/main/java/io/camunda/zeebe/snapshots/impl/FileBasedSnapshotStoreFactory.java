@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -35,6 +36,7 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
 
+  private static ChecksumProvider checksumProvider;
   private final Int2ObjectHashMap<FileBasedSnapshotStore> partitionSnapshotStores =
       new Int2ObjectHashMap<>();
   private final ActorSchedulingService actorScheduler;
@@ -42,8 +44,16 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
 
   public FileBasedSnapshotStoreFactory(
       final ActorSchedulingService actorScheduler, final int nodeId) {
+    this(actorScheduler, nodeId, null);
+  }
+
+  public FileBasedSnapshotStoreFactory(
+      final ActorSchedulingService actorScheduler,
+      final int nodeId,
+      final ChecksumProvider checksumProvider) {
     this.actorScheduler = actorScheduler;
     this.nodeId = nodeId;
+    this.checksumProvider = checksumProvider;
   }
 
   public static RestorableSnapshotStore createRestorableSnapshotStore(
@@ -67,7 +77,8 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
         partitionId,
         new SnapshotMetrics(Integer.toString(partitionId)),
         snapshotDirectory,
-        pendingDirectory);
+        pendingDirectory,
+        checksumProvider);
   }
 
   @Override

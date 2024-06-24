@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
@@ -36,6 +37,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private final FileBasedSnapshotStore snapshotStore;
   private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
+  private final ChecksumProvider checksumProvider;
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private SfvChecksum checksum;
@@ -45,11 +47,13 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStore snapshotStore,
-      final ActorControl actor) {
+      final ActorControl actor,
+      final ChecksumProvider checksumProvider) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
+    this.checksumProvider = checksumProvider;
   }
 
   @Override
@@ -80,7 +84,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculate(directory);
+          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
 
           snapshot = null;
           isValid = true;

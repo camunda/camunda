@@ -18,6 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -75,6 +76,25 @@ final class SfvChecksum {
         + ", checksums="
         + checksums
         + '}';
+  }
+
+  public SortedMap<String, Long> getChecksums() {
+    return checksums;
+  }
+
+  public void updateFromChecksum(final Path filePath, final long checksum) {
+    final String fileName = filePath.getFileName().toString();
+    checksums.put(fileName, checksum);
+  }
+
+  public boolean sameChecksums(final SfvChecksum o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null) {
+      return false;
+    }
+    return Objects.equals(checksums, o.getChecksums());
   }
 
   public void updateFromFile(final Path filePath) throws IOException {
