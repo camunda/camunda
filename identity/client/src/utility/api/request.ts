@@ -12,12 +12,6 @@ export type ApiResult<R> =
       success: false;
     };
 
-export type ApiParameters<P = undefined> = [
-  params: P extends undefined ? never : P,
-  baseUrl: string,
-  header: Record<string, string> | undefined,
-];
-
 export type ApiPromise<R> = Promise<ApiResult<R>>;
 
 export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE";
@@ -30,7 +24,16 @@ type ApiRequestParams<P> = {
   headers?: Record<string, string>;
 };
 
-export const requestUrl = (baseUrl: string, path: string, params?: unknown) => {
+export const pathBuilder =
+  (basePath: string) =>
+  (...pathComponents: (string | number)[]) => {
+    if (pathComponents.length === 0) {
+      return basePath;
+    }
+    return `${basePath}/${pathComponents.map((param) => `${encodeURIComponent(param)}`).join("/")}`;
+  };
+
+const requestUrl = (baseUrl: string, path: string, params?: unknown) => {
   let encodedParams = "";
   if (params && Object.entries(params).length > 0) {
     const urlParams = new URLSearchParams();
