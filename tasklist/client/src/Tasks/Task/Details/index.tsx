@@ -37,11 +37,11 @@ const Details: React.FC = () => {
     refetchInterval: 5000,
   });
   const taskState = task?.taskState;
-  const taskCompleted = taskState === 'COMPLETED';
+  const isTaskCompleted = taskState === 'COMPLETED';
   const {data: process, isLoading: processLoading} = useProcessDefinition(
     task?.processDefinitionKey ?? '',
     {
-      enabled: task !== undefined && !taskCompleted,
+      enabled: task !== undefined && !isTaskCompleted,
     },
   );
   const {data: currentUser} = useCurrentUser();
@@ -79,7 +79,7 @@ const Details: React.FC = () => {
         pathname: pages.taskDetailsProcess(id),
       },
       visible:
-        !taskCompleted && process !== undefined && process.bpmnXml !== null,
+        !isTaskCompleted && process !== undefined && process.bpmnXml !== null,
     },
   ];
 
