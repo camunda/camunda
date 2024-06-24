@@ -116,7 +116,8 @@ public class UserService {
 
       camundaUserDetailsManager.updateUser(userDetails);
       userProfileRepository.save(
-          new Profile(existingUser.getId(), userWithPassword.getEmail(), userWithPassword.getName()));
+          new Profile(
+              existingUser.getId(), userWithPassword.getEmail(), userWithPassword.getName()));
 
       return userProfileRepository
           .findUserById(id)
