@@ -336,6 +336,42 @@ public class FileBasedReceivedSnapshotTest {
                 name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
   }
 
+  @Test
+  public void shouldReceiveSnapshotCorrectlyWhenFilesAreChunked() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    // when
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(snapshotChunkReader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    //    then
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      files.forEach(
+          filePath -> {
+            final var fileName = filePath.getFileName().toString();
+            try {
+              final var fileBytes = Files.readAllBytes(filePath);
+              final var persistedFileBytes =
+                  Files.readAllBytes(persistedSnapshot.getPath().resolve(fileName));
+
+              assertThat(fileBytes).isEqualTo(persistedFileBytes);
+            } catch (final IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    }
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
