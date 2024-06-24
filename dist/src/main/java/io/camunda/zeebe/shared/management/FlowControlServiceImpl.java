@@ -8,6 +8,9 @@
 package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -48,12 +51,16 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<String> set(final String flowControlCfg) {
+  public CompletableFuture<String> set(final FlowControlCfg flowControlCfg) {
     LOG.info("Setting flow control configuration.");
-    final String flowControlConfigurationValidation =
-        validateFlowControlConfiguration(flowControlCfg);
-    if (flowControlConfigurationValidation != null) {
-      return CompletableFuture.completedFuture(flowControlConfigurationValidation);
+
+    final ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
+    final byte[] configuration;
+    try {
+      configuration = objectMapper.writeValueAsBytes(flowControlCfg);
+    } catch (final JsonProcessingException e) {
+      return CompletableFuture.completedFuture(
+          "Failed to parse flow control configuration: " + e.getMessage());
     }
 
     final var topology = client.getTopologyManager().getTopology();
@@ -64,7 +71,7 @@ public class FlowControlServiceImpl implements FlowControlService {
                     broadcastOnPartition(
                         topology,
                         partition,
-                        request -> request.setFlowControlConfiguration(flowControlCfg)))
+                        request -> request.setFlowControlConfiguration(configuration)))
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(results).thenApply(e -> "Flow control configuration set.");
   }
@@ -107,8 +114,7 @@ public class FlowControlServiceImpl implements FlowControlService {
                   .thenApply(
                       e ->
                           "BrokerId %d, partitionId %d: %s"
-                              .formatted(
-                                  brokerId, partitionId, e.getResponse().getConfiguration()));
+                              .formatted(brokerId, partitionId, e.getResponse().getPayload()));
             })
         .toList();
   }
@@ -125,35 +131,5 @@ public class FlowControlServiceImpl implements FlowControlService {
     members.addAll(followers);
     members.addAll(inactive);
     return members;
-  }
-
-  private String validateFlowControlConfiguration(final String flowControlCfg) {
-    if (flowControlCfg == null || flowControlCfg.isEmpty()) {
-      return "Flow control configuration is empty.";
-    }
-
-    try {
-      FlowControlCfg.fromJson(flowControlCfg);
-      return null;
-    } catch (final JsonProcessingException e) {
-      return "Failed to parse flow control configuration: "
-          + e.getMessage()
-          + ".\n"
-          + "\n"
-          + "An example of a flow control configuration to change the Append limit can be: \n"
-          + "{"
-          + "\n\t\"append\": "
-          + "\n\t{"
-          + "\n\t\t\"useWindowed\": false,"
-          + "\n\t\t\"vegas\":"
-          + "\n\t\t{"
-          + "\n\t\t\t\"alpha\": 3, "
-          + "\n\t\t\t\"beta\": 6, "
-          + "\n\t\t\t\"initialLimit\": 20"
-          + "\n\t\t},"
-          + "\n\t\t\"algorithm\": \"VEGAS\""
-          + "\n\t}"
-          + "\n}\n";
-    }
   }
 }

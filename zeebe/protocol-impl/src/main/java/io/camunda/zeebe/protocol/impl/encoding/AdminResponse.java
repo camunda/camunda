@@ -26,7 +26,6 @@ public class AdminResponse implements BufferReader, BufferWriter {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
-    configuration = bodyDecoder.payload();
   }
 
   @Override
@@ -39,7 +38,7 @@ public class AdminResponse implements BufferReader, BufferWriter {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
   }
 
-  public String getConfiguration() {
-    return configuration;
+  public String getPayload() {
+    return bodyDecoder.payload();
   }
 }

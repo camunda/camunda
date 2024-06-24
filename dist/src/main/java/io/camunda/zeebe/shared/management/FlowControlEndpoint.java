@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class FlowControlEndpoint {
   }
 
   @PostMapping()
-  public ResponseEntity<?> post(@RequestBody final String flowControlCfg) {
+  public ResponseEntity<?> post(@RequestBody final FlowControlCfg flowControlCfg) {
 
     try {
       return ResponseEntity.status(WebEndpointResponse.STATUS_OK)
@@ -53,6 +54,6 @@ public class FlowControlEndpoint {
   interface FlowControlService {
     CompletableFuture<List<String>> get();
 
-    CompletableFuture<String> set(String flowControlCfg);
+    CompletableFuture<String> set(FlowControlCfg flowControlCfg);
   }
 }

@@ -26,8 +26,9 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
   private long key = AdminRequestEncoder.keyNullValue();
-  private String configuration = null;
+  private byte[] configuration = null;
   private int payloadLength = 0;
+  private boolean hasPayload = false;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -35,7 +36,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
-    configuration = bodyDecoder.payload();
+    bodyDecoder.getPayload(configuration, 0, length - bodyDecoder.limit());
   }
 
   @Override
@@ -53,8 +54,11 @@ public class AdminRequest implements BufferReader, BufferWriter {
         .brokerId(brokerId)
         .partitionId(partitionId)
         .type(type)
-        .key(key)
-        .payload(configuration);
+        .key(key);
+
+    if (hasPayload) {
+      bodyEncoder.putPayload(configuration, 0, payloadLength);
+    }
   }
 
   public int getBrokerId() {
@@ -89,8 +93,9 @@ public class AdminRequest implements BufferReader, BufferWriter {
     this.key = key;
   }
 
-  public void setConfiguration(final String configuration) {
-    this.configuration = configuration;
-    payloadLength = configuration.length();
+  public void setPayload(final byte[] payload) {
+    configuration = payload;
+    payloadLength = payload.length;
+    hasPayload = true;
   }
 }

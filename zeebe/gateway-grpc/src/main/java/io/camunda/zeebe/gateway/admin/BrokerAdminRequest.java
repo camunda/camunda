@@ -49,9 +49,9 @@ public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
     request.setType(AdminRequestType.GET_FLOW_CONTROL);
   }
 
-  public void setFlowControlConfiguration(final String configuration) {
+  public void setFlowControlConfiguration(final byte[] configuration) {
     request.setType(AdminRequestType.SET_FLOW_CONTROL);
-    request.setConfiguration(configuration);
+    request.setPayload(configuration);
   }
 
   public BrokerAdminRequest banInstance(final long key) {
