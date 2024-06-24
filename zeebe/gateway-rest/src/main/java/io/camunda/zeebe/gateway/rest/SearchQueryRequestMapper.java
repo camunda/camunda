@@ -210,7 +210,7 @@ public final class SearchQueryRequestMapper {
 
       // processDefinitionKey
       if (filter.getProcessDefinitionKey() != null && !filter.getProcessDefinitionKey().isEmpty()) {
-        builder.processDefinitionKeys(filter.getProcessDefinitionKey().toString());
+        builder.processDefinitionKeys(filter.getProcessDefinitionKey());
       }
 
       // processInstanceKey

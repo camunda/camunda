@@ -8,7 +8,6 @@
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -16,12 +15,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
@@ -34,9 +31,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
-
-    final var variablesQuery = getVariablesQuery(filter.variableFilters());
-
     final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
     final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");
     final var dueDateQuery = getDateFilter(filter.dueDateFilter(), "dueDate");
@@ -46,6 +40,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var processDefinitionKeyQuery =
         getProcessDefinitionKeyQuery(filter.processDefinitionKeys());
     final var bpmnProcessIdQuery = getBpmnProcessIdQuery(filter.processNames());
+    final var scopeKeyQuery = getScopeKeyQuery(filter.scopeKeys());
 
     final var candidateUsersQuery = getCandidateUsersQuery(filter.candidateUsers());
     final var candidateGroupsQuery = getCandidateGroupsQuery(filter.candidateGroups());
@@ -70,7 +65,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         followUpDateQuery,
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
-        variablesQuery,
+        scopeKeyQuery,
         tenantQuery,
         userTaksImplementationQuery);
   }
@@ -86,19 +81,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     }
   }
 
-  private SearchQuery getVariablesQuery(final List<VariableValueFilter> variableFilters) {
-    if (variableFilters != null && !variableFilters.isEmpty()) {
-      final var transformer = getVariableValueFilterTransformer();
-      final var queries =
-          variableFilters.stream()
-              .map(transformer::apply)
-              .map((q) -> hasChildQuery("variable", q))
-              .collect(Collectors.toList());
-      return and(queries);
-    }
-    return null;
-  }
-
   private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {
     if (filter != null) {
       final var transformer = getDateValueFilterTransformer();
@@ -111,8 +93,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("processInstanceId", processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<String> processDefinitionIds) {
-    return stringTerms("processDefinitionId", processDefinitionIds);
+  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
+    return longTerms("processDefinitionId", processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
@@ -131,6 +113,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms("candidateGroups", candidateGroups);
   }
 
+  private SearchQuery getScopeKeyQuery(final List<Long> scopeKeys) {
+    return longTerms("flowNodeInstanceId", scopeKeys);
+  }
+
   private SearchQuery getAssigneesQuery(final List<String> assignee) {
     return stringTerms("assignee", assignee);
   }
@@ -145,10 +131,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
     return stringTerms("bpmnProcessId", bpmnProcessId);
-  }
-
-  private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
-    return transformers.getFilterTransformer(VariableValueFilter.class);
   }
 
   private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {

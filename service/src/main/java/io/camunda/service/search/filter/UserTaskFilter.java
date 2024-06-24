@@ -23,7 +23,8 @@ public final record UserTaskFilter(
     List<String> assignees,
     List<String> userTaskState,
     List<Long> processInstanceKeys,
-    List<String> processDefinitionKeys,
+    List<Long> processDefinitionKeys,
+    List<Long> scopeKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
     boolean created,
@@ -44,7 +45,8 @@ public final record UserTaskFilter(
     private List<String> assignees;
     private List<String> userTaskState;
     private List<Long> processInstanceKeys;
-    private List<String> processDefinitionKeys;
+    private List<Long> processDefinitionKeys;
+    private List<Long> scopeKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
     private boolean created;
@@ -165,12 +167,21 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final String value, final String... values) {
+    public Builder processDefinitionKeys(final Long value, final Long... values) {
       return processDefinitionKeys(collectValues(value, values));
     }
 
-    public Builder processDefinitionKeys(final List<String> values) {
+    public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+      return this;
+    }
+
+    public Builder scopeKeys(final Long value, final Long... values) {
+      return scopeKeys(collectValues(value, values));
+    }
+
+    public Builder scopeKeys(final List<Long> values) {
+      scopeKeys = addValuesToList(scopeKeys, values);
       return this;
     }
 
@@ -226,6 +237,7 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(scopeKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
           created,
