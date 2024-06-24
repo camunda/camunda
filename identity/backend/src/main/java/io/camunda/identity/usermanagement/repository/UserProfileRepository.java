@@ -21,14 +21,14 @@ public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.name, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id""")
   List<CamundaUser> findAllUsers();
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.name, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
           where users.username = :username
@@ -37,7 +37,7 @@ public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.name, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
           where users.id = :id
@@ -46,7 +46,7 @@ public interface UserProfileRepository extends JpaRepository<Profile, Long> {
 
   @Query(
       """
-          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.email, users.enabled) \
+          select new io.camunda.identity.usermanagement.CamundaUser(users.id, users.username, profiles.name, profiles.email, users.enabled) \
           from User users \
           left join Profile profiles on users.id = profiles.id
           where users.username in (:usernames)

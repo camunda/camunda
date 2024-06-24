@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -55,13 +56,17 @@ final class ExporterDisableTest {
     client = cluster.newClientBuilder().build();
     actuator = ExportersActuator.of(cluster.availableGateway());
 
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
-            "process.bpmn")
-        .send()
-        .join();
+    final var deploymentKey =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("processId").startEvent().endEvent().done(),
+                "process.bpmn")
+            .send()
+            .join()
+            .getKey();
+
+    new ZeebeResourcesHelper(client).waitUntilDeploymentIsDone(deploymentKey);
   }
 
   @Test

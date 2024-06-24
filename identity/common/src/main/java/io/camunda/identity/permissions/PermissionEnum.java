@@ -5,21 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useEffect } from "react";
-import { useNavigate } from "react-router";
+package io.camunda.identity.permissions;
 
-type RedirectProps = {
-  to: string;
-};
+public enum PermissionEnum {
+  CREATE_ALL("*:create"),
+  READ_ALL("*:read"),
+  UPDATE_ALL("*:update"),
+  DELETE_ALL("*:delete");
 
-const Redirect: FC<RedirectProps> = ({ to }) => {
-  const navigate = useNavigate();
+  private final String value;
 
-  useEffect(() => {
-    navigate(to, { replace: true });
-  }, [to]);
+  PermissionEnum(final String value) {
+    this.value = value;
+  }
 
-  return null;
-};
-
-export default Redirect;
+  public String getValue() {
+    return value;
+  }
+}

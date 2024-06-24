@@ -156,6 +156,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>identity-webjar</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
     </dependency>
 
@@ -661,6 +666,7 @@
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
             <dependency>io.camunda:identity-backend</dependency>
             <dependency>io.camunda:identity-common</dependency>
+            <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
