@@ -13,6 +13,9 @@ import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.model.Profile;
 import io.camunda.identity.usermanagement.repository.UserProfileRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,8 +26,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 public class UserService {
   private final CamundaUserDetailsManager camundaUserDetailsManager;
@@ -40,7 +45,7 @@ public class UserService {
     this.passwordEncoder = passwordEncoder;
   }
 
-  public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
+  public CamundaUser createUser(@Valid final CamundaUserWithPassword userWithCredential) {
     try {
       final UserDetails userDetails =
           User.withUsername(userWithCredential.getUsername())
@@ -60,18 +65,19 @@ public class UserService {
     }
   }
 
-  public void deleteUser(final Long id) {
+  public void deleteUser(@NotNull(message = "userId.invalid") final Long id) {
     final CamundaUser user = findUserById(id);
     camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
-  public CamundaUser findUserById(final Long id) {
+  public CamundaUser findUserById(@NotNull(message = "userId.invalid") final Long id) {
     return userProfileRepository
         .findUserById(id)
         .orElseThrow(() -> new RuntimeException("user.notFound"));
   }
 
-  public CamundaUser findUserByUsername(final String username) {
+  public CamundaUser findUserByUsername(
+      @NotBlank(message = "userUsername.invalid") final String username) {
     final var user = userProfileRepository.findByUsername(username);
     if (user == null) {
       throw new RuntimeException("user.notFound");
@@ -79,7 +85,8 @@ public class UserService {
     return user;
   }
 
-  public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
+  public List<CamundaUser> findUsersByUsernameIn(
+      @NotNull(message = "userUsernames.invalid") final List<String> usernames) {
     return userProfileRepository.findAllByUsernameIn(usernames);
   }
 
@@ -87,7 +94,9 @@ public class UserService {
     return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
+  public CamundaUser updateUser(
+      @NotNull(message = "userId.invalid") final Long id,
+      @Valid final CamundaUserWithPassword userWithPassword) {
     try {
       if (!Objects.equals(id, userWithPassword.getId())) {
         throw new RuntimeException("user.notFound");

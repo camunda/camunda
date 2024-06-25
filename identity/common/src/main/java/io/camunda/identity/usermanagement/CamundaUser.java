@@ -8,12 +8,18 @@
 package io.camunda.identity.usermanagement;
 
 import java.util.Objects;
+import org.apache.logging.log4j.core.config.plugins.validation.constraints.NotBlank;
 
 public class CamundaUser {
   private Long id;
+
+  @NotBlank(message = "user.invalid")
   private String username;
+
   private String name;
+
   private String email;
+
   private boolean enabled = true;
 
   public CamundaUser() {}
