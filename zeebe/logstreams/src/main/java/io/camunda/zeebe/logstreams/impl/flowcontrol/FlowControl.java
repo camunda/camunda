@@ -33,8 +33,8 @@ public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
   private Limit appendLimit;
   private Limit requestLimit;
-  private  Limiter<Void> appendLimiter;
-  private  Limiter<Intent> requestLimiter;
+  private Limiter<Void> appendLimiter;
+  private Limiter<Intent> requestLimiter;
 
   private final Map<Long, InFlightEntry.Unwritten> unwritten = new ConcurrentHashMap<>();
   private final Map<Long, InFlightEntry.Uncommitted> uncommitted = new ConcurrentHashMap<>();
@@ -126,20 +126,21 @@ public final class FlowControl implements AppendListener {
     return requestLimit;
   }
 
-  public void setRequestLimit(final Limit requestLimit){
+  public void setRequestLimit(final Limit requestLimit) {
     this.requestLimit = requestLimit;
-   requestLimiter = RequestLimiter.builder().limit(appendLimit).build(metrics);
+    requestLimiter = RequestLimiter.builder().limit(appendLimit).build(metrics);
+    metrics.setInflightRequests(0);
   }
 
   public Limit getAppendLimit() {
     return appendLimit;
   }
 
-  public void setAppendLimit(final Limit appendLimit){
+  public void setAppendLimit(final Limit appendLimit) {
     this.appendLimit = appendLimit;
     appendLimiter = AppendLimiter.builder().limit(appendLimit).metrics(metrics).build();
+    metrics.setInflightAppends(0);
   }
-
 
   private void cleanupUncommitted(final long highestPosition) {
     final var size = uncommitted.size();
