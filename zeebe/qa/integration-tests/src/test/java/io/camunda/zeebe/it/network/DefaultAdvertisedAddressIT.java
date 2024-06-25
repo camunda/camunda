@@ -13,10 +13,10 @@ import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.net.URI;
 import java.time.Duration;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 /**
  * This test ensures that the bare Docker image will always pick up the right host bind and
