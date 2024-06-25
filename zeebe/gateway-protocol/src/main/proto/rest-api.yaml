@@ -925,20 +925,6 @@ components:
         endDate:
           type: string
           format: date-time
-    CamundaUserWithPasswordDto:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        username:
-          type: "string"
-        email:
-          type: "string"
-        enabled:
-          type: "boolean"
-        password:
-          type: "string"
     CamundaUserDto:
       type: "object"
       properties:
@@ -947,10 +933,19 @@ components:
           format: "int64"
         username:
           type: "string"
+        name:
+          type: "string"
         email:
           type: "string"
         enabled:
           type: "boolean"
+    CamundaUserWithPasswordDto:
+      allOf:
+        - $ref: '#/components/schemas/CamundaUserDto'
+        - type: "object"
+          properties:
+            password:
+              type: "string"
     FilterDto:
       type: "object"
       properties: { }

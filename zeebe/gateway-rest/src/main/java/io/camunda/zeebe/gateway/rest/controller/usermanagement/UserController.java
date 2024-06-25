@@ -86,6 +86,7 @@ public class UserController {
     camundaUserWithPassword.setId(dto.getId());
     camundaUserWithPassword.setUsername(dto.getUsername());
     camundaUserWithPassword.setPassword(dto.getPassword());
+    camundaUserWithPassword.setName(dto.getName());
     camundaUserWithPassword.setEmail(dto.getEmail());
     camundaUserWithPassword.setEnabled(dto.getEnabled());
 
@@ -96,6 +97,7 @@ public class UserController {
     final CamundaUserDto camundaUserDto = new CamundaUserDto();
     camundaUserDto.setId(camundaUser.getId());
     camundaUserDto.setUsername(camundaUser.getUsername());
+    camundaUserDto.setName(camundaUser.getName());
     camundaUserDto.setEmail(camundaUser.getEmail());
     camundaUserDto.setEnabled(camundaUser.isEnabled());
 
