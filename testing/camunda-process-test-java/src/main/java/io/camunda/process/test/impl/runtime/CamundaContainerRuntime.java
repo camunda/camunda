@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.TasklistContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
@@ -27,7 +28,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.utility.DockerImageName;
 
 public class CamundaContainerRuntime implements AutoCloseable {
 
@@ -46,13 +46,17 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String ZEEBE_REST_API =
       NETWORK_ALIAS_ZEEBE + ":" + ContainerRuntimePorts.ZEEBE_REST_API;
 
+  private final ContainerFactory containerFactory;
+
   private final Network network;
   private final ZeebeContainer zeebeContainer;
   private final ElasticsearchContainer elasticsearchContainer;
   private final OperateContainer operateContainer;
   private final TasklistContainer tasklistContainer;
 
-  CamundaContainerRuntime(final CamundaContainerRuntimeBuilder builder) {
+  CamundaContainerRuntime(
+      final CamundaContainerRuntimeBuilder builder, final ContainerFactory containerFactory) {
+    this.containerFactory = containerFactory;
     network = Network.newNetwork();
 
     elasticsearchContainer = createElasticsearchContainer(network, builder);
@@ -64,10 +68,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final ElasticsearchContainer container =
-        new ElasticsearchContainer(
-                parseDockerImage(
-                    builder.getElasticsearchDockerImageName(),
-                    builder.getElasticsearchDockerImageVersion()))
+        containerFactory
+            .createElasticsearchContainer(
+                builder.getElasticsearchDockerImageName(),
+                builder.getElasticsearchDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getElasticsearchLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_ELASTICSEARCH)
@@ -82,9 +86,9 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private ZeebeContainer createZeebeContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final ZeebeContainer container =
-        new ZeebeContainer(
-                parseDockerImage(
-                    builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion()))
+        containerFactory
+            .createZeebeContainer(
+                builder.getZeebeDockerImageName(), builder.getZeebeDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getZeebeLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_ZEEBE)
@@ -99,10 +103,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private OperateContainer createOperateContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final OperateContainer container =
-        new OperateContainer(
-                parseDockerImage(
-                    ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME,
-                    builder.getOperateDockerImageVersion()))
+        containerFactory
+            .createOperateContainer(
+                ContainerRuntimeDefaults.OPERATE_DOCKER_IMAGE_NAME,
+                builder.getOperateDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getOperateLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_OPERATE)
@@ -118,10 +122,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private TasklistContainer createTasklistContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final TasklistContainer container =
-        new TasklistContainer(
-                parseDockerImage(
-                    ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_NAME,
-                    builder.getTasklistDockerImageVersion()))
+        containerFactory
+            .createTasklistContainer(
+                ContainerRuntimeDefaults.TASKLIST_DOCKER_IMAGE_NAME,
+                builder.getTasklistDockerImageVersion())
             .withLogConsumer(createContainerLogger(builder.getTasklistLoggerName()))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_TASKLIST)
@@ -179,11 +183,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant endTime = Instant.now();
     final Duration shutdownTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime stopped in {}", shutdownTime);
-  }
-
-  private static DockerImageName parseDockerImage(
-      final String imageName, final String imageVersion) {
-    return DockerImageName.parse(imageName).withTag(imageVersion);
   }
 
   private static Slf4jLogConsumer createContainerLogger(final String name) {
