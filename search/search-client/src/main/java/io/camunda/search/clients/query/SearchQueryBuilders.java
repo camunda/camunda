@@ -15,6 +15,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public final class SearchQueryBuilders {
@@ -132,11 +133,11 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery ids(final Collection<String> ids) {
-    return ids(new ArrayList<>(ids));
+    return ids(new ArrayList<>(Objects.requireNonNullElse(ids, List.of())));
   }
 
   public static SearchQuery ids(final String... ids) {
-    return ids(List.of(ids));
+    return ids(List.of(Objects.requireNonNullElse(ids, new String[0])));
   }
 
   public static SearchMatchQuery.Builder match() {
