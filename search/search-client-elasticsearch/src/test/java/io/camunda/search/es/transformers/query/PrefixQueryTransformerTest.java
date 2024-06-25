@@ -42,7 +42,7 @@ public class PrefixQueryTransformerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideRangeQueries")
+  @MethodSource("providePrefixQueries")
   public void shouldApplyTransformer(final SearchQuery query, final String expectedResultQuery) {
     // given
     final var expectedQuery = expectedResultQuery.replace("'", "\"");
