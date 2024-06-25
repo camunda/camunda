@@ -9,14 +9,8 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchHasChildQuery(SearchQuery query, String type)
-    implements SearchQueryOption {
-
-  static SearchHasChildQuery of(final Function<Builder, ObjectBuilder<SearchHasChildQuery>> fn) {
-    return SearchQueryBuilders.hasChild(fn);
-  }
+public record SearchHasChildQuery(SearchQuery query, String type) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchHasChildQuery> {
 
@@ -26,10 +20,6 @@ public final record SearchHasChildQuery(SearchQuery query, String type)
     public Builder query(final SearchQuery value) {
       query = value;
       return this;
-    }
-
-    public Builder query(final Function<SearchQuery.Builder, ObjectBuilder<SearchQuery>> fn) {
-      return query(SearchQueryBuilders.query(fn));
     }
 
     public Builder type(final String value) {
