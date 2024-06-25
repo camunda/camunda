@@ -53,10 +53,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HOST.
       # host: 0.0.0.0
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # broker stands behind a proxy.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.broker.gateway.network.host was explicitly and it is not the ANY address (e.g. "0.0.0.0" or "::"), use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_ADVERTISEDHOST.
+      #
+      # advertisedHost:
 
       # If a port offset is set it will be added to all ports specified in the config
       # or the default values. This is a shortcut to not always specifying every port.
@@ -94,10 +100,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
         # port: 26501
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.commandApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
@@ -113,10 +122,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.internalApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
