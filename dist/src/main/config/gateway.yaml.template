@@ -87,10 +87,15 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # gateway stands behind a proxy.
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.gateway.network.host was explicitly and it is not the ANY address (e.g. "0.0.0.0" or "::"), use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # advertisedHost:
 
       # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
       # gateway stands behind a proxy.
