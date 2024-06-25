@@ -599,13 +599,16 @@ public class ClusteringRule extends ExternalResource {
 
   public InetSocketAddress[] getOtherBrokers(final InetSocketAddress address) {
     return getBrokers().stream()
-        .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
+        .map(b -> b.getConfig().getNetwork().getCommandApi().getAdvertisedAddress())
         .filter(a -> !address.equals(a))
+        // force producing a resolved address for equality comparison
+        .map(addr -> new InetSocketAddress(addr.getHostString(), addr.getPort()))
         .toArray(InetSocketAddress[]::new);
   }
 
   public InetSocketAddress[] getOtherBrokers(final int nodeId) {
-    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
+    final InetSocketAddress filter =
+        getBrokerCfg(nodeId).getNetwork().getCommandApi().getAdvertisedAddress();
     return getOtherBrokers(filter);
   }
 
