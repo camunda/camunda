@@ -736,40 +736,24 @@ components:
       type: object
       properties:
         key:
-          type: array
-          items:
-            type: integer
-            format: int64
+          type: integer
+          format: int64
         taskState:
-          type: array
-          items:
-            type: string
+          type: string
         assignee:
-          type: array
-          items:
-            type: string
+          type: string
         taskDefinitionId:
-          type: array
-          items:
-            type: string
+          type: string
         candidateGroup:
-          type: array
-          items:
-            type: string
+          type: string
         candidateUser:
-          type: array
-          items:
-            type: string
+          type: string
         processDefinitionKey:
-          type: array
-          items:
-            type: integer
-            format: int64
+          type: integer
+          format: int64
         processInstanceKey:
-          type: array
-          items:
-            type: integer
-            format: int64
+          type: integer
+          format: int64
         creationTime:
           $ref: "#/components/schemas/DateFilter"
         completionTime:
@@ -783,9 +767,7 @@ components:
           items:
             $ref: "#/components/schemas/VariableFilter"
         tenantIds:
-          type: array
-          items:
-            type: string
+          type: string
     UserTaskItem:
       type: object
       properties:
