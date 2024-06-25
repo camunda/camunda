@@ -8,7 +8,6 @@
 package io.camunda.search.clients.query;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -34,17 +33,9 @@ public record SearchBoolQuery(
       return this;
     }
 
-    public Builder filter(final SearchQuery query, final SearchQuery... queries) {
-      return filter(collectValues(query, queries));
-    }
-
     public Builder must(final List<SearchQuery> queries) {
       must = addValuesToList(must, queries);
       return this;
-    }
-
-    public Builder must(final SearchQuery query, final SearchQuery... queries) {
-      return must(collectValues(query, queries));
     }
 
     public Builder mustNot(final List<SearchQuery> queries) {
@@ -55,10 +46,6 @@ public record SearchBoolQuery(
     public Builder should(final List<SearchQuery> queries) {
       should = addValuesToList(should, queries);
       return this;
-    }
-
-    public Builder should(final SearchQuery query, final SearchQuery... queries) {
-      return should(collectValues(query, queries));
     }
 
     @Override
