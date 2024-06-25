@@ -55,7 +55,7 @@ public class UserController {
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaUserDto findUserByUsername(@PathVariable final Long id) {
+  public CamundaUserDto findUserById(@PathVariable final Long id) {
     return mapToCamundaUserDto(userService.findUserById(id));
   }
 

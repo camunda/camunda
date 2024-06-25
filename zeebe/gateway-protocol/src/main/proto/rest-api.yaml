@@ -335,7 +335,7 @@ paths:
       tags:
         - User
       summary: "Retrieve details of a user"
-      operationId: "findUserByUsername"
+      operationId: "findUserById"
       parameters:
         - name: "id"
           in: "path"
