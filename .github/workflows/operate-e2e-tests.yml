@@ -17,6 +17,8 @@ on:
       - "parent/*"
       - "pom.xml"
   pull_request:
+    branches:
+      - "merge-optimize-in"
     paths:
       - ".ci/**"
       - ".github/actions/**"
