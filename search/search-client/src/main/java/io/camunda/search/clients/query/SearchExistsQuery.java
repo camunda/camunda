@@ -22,7 +22,9 @@ public record SearchExistsQuery(String field) implements SearchQueryOption {
 
     @Override
     public SearchExistsQuery build() {
-      return new SearchExistsQuery(Objects.requireNonNull(field));
+      return new SearchExistsQuery(
+          Objects.requireNonNull(
+              field, "Expected a non-null field parameter for the exists query."));
     }
   }
 }
