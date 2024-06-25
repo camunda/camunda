@@ -39,6 +39,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -74,7 +75,7 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays =
+  const allFlowNodeStateOverlays =
     processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
       ({flowNodeState, count, flowNodeId}) => ({
         payload: {flowNodeState, count},
@@ -83,6 +84,15 @@ const TopPanel: React.FC = observer(() => {
         position: overlayPositions[flowNodeState],
       }),
     );
+
+  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays.filter(
+    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+  );
+
+  const flowNodeStateOverlays = executionCountToggleStore.state
+    .isExecutionCountVisible
+    ? allFlowNodeStateOverlays
+    : notCompletedFlowNodeStateOverlays;
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
