@@ -16,16 +16,18 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { id, email: currentEmail, username },
+  entity: { id, email: currentEmail, name: currentName, username },
 }) => {
   const { t } = useTranslate();
   const [apiCall, { loading, namedErrors }] = useApiCall(updateUser);
+  const [name, setName] = useState(currentName);
   const [email, setEmail] = useState(currentEmail);
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
       id,
+      name,
       email,
       username,
       password,
@@ -47,11 +49,12 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
       confirmLabel={t("Update user")}
     >
       <TextField
-        label={t("Username")}
-        value={username}
-        placeholder={t("Username")}
-        errors={namedErrors?.username}
-        disabled
+        label={t("Name")}
+        value={name}
+        placeholder={t("Name")}
+        onChange={setName}
+        errors={namedErrors?.name}
+        autoFocus
       />
       <TextField
         label={t("Email")}
@@ -59,7 +62,13 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         placeholder={t("Email")}
         onChange={setEmail}
         errors={namedErrors?.email}
-        autoFocus
+      />
+      <TextField
+        label={t("Username")}
+        value={username}
+        placeholder={t("Username")}
+        errors={namedErrors?.username}
+        disabled
       />
       <TextField
         label={t("Password")}
