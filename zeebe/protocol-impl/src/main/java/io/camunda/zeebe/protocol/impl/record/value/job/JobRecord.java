@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -63,13 +64,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty("processDefinitionKey", -1L);
   private final EnumProperty<JobKind> jobKindProp =
       new EnumProperty<>("jobKind", JobKind.class, JobKind.BPMN_ELEMENT);
+  private final EnumProperty<JobListenerEventType> jobListenerEventTypeProp =
+      new EnumProperty<>(
+          "jobListenerEventType", JobListenerEventType.class, JobListenerEventType.UNSPECIFIED);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
-    super(19);
+    super(20);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -86,6 +90,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(jobKindProp)
+        .declareProperty(jobListenerEventTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp);
@@ -108,6 +113,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     jobKindProp.setValue(record.getJobKind());
+    jobListenerEventTypeProp.setValue(record.getJobListenerEventType());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
@@ -225,6 +231,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setJobKind(final JobKind jobKind) {
     jobKindProp.setValue(jobKind);
+    return this;
+  }
+
+  @Override
+  public JobListenerEventType getJobListenerEventType() {
+    return jobListenerEventTypeProp.getValue();
+  }
+
+  public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
+    jobListenerEventTypeProp.setValue(jobListenerEventType);
     return this;
   }
 

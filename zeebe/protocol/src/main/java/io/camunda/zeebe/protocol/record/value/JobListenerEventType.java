@@ -15,7 +15,23 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-public enum ExecutionListenerEventType {
+/** Enumerates listener event types associated with jobs */
+public enum JobListenerEventType {
+
+  /** Default */
+  UNSPECIFIED,
+
+  /**
+   * Represents the `start` event for an execution listener. This event type is used to indicate
+   * that the listener should be triggered at the start of an execution, such as the beginning of a
+   * process instance, sub-process or element (task, event, gateway).
+   */
   START,
+
+  /**
+   * Represents the `end` event for an execution listener. This event type is used to indicate that
+   * the listener should be triggered at the end of an execution, such as the completion of a
+   * process instance, sub-process or element (task, event, gateway).
+   */
   END
 }
