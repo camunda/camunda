@@ -30,7 +30,7 @@ public class UserGroupMembershipServiceTest {
   void addUserToGroupAdded() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final var createdUser = userService.createUser(camundaUserWithPassword);
+    final var createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.addUserToGroup(camundaUserWithPassword, group);
@@ -43,7 +43,7 @@ public class UserGroupMembershipServiceTest {
   void addUserToGroupUsingIdsAdded() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final var createdUser = userService.createUser(camundaUserWithPassword);
+    final var createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.addUserToGroupByIds(createdUser.getId(), group.id());
@@ -56,7 +56,7 @@ public class UserGroupMembershipServiceTest {
   void duplicateUserAddUserToGroupThrowsException() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    userService.createUser(camundaUserWithPassword);
+    userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.addUserToGroup(camundaUserWithPassword, group);
@@ -69,7 +69,7 @@ public class UserGroupMembershipServiceTest {
   void duplicateUserAddUserToGroupUsingIdsThrowsException() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final CamundaUser createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.addUserToGroupByIds(createdUser.getId(), group.id());
@@ -82,7 +82,7 @@ public class UserGroupMembershipServiceTest {
   void nonExistingGroupAddUserToGroupThrowsException() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    userService.createUser(camundaUserWithPassword);
+    userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = new CamundaGroup("group" + UUID.randomUUID());
 
     assertThrows(
@@ -94,7 +94,7 @@ public class UserGroupMembershipServiceTest {
   void nonExistingGroupAddUserToGroupUsingIdsThrowsException() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final CamundaUser createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = new CamundaGroup("group" + UUID.randomUUID());
 
     assertThrows(
@@ -106,7 +106,7 @@ public class UserGroupMembershipServiceTest {
   void nonExistingMemberRemoveUserFromGroupNoOp() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    userService.createUser(camundaUserWithPassword);
+    userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.removeUserFromGroup(camundaUserWithPassword, group);
@@ -119,7 +119,7 @@ public class UserGroupMembershipServiceTest {
   void nonExistingMemberRemoveUserFromGroupUsingIdsNoOp() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final CamundaUser createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
 
     userGroupMembershipService.removeUserFromGroupByIds(createdUser.getId(), group.id());
@@ -134,7 +134,7 @@ public class UserGroupMembershipServiceTest {
   void existingMemberRemoveUserFromGroupRemoved() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    userService.createUser(camundaUserWithPassword);
+    userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
     userGroupMembershipService.addUserToGroup(camundaUserWithPassword, group);
 
@@ -149,7 +149,7 @@ public class UserGroupMembershipServiceTest {
   void existingMemberRemoveUserFromGroupUsingIdsRemoved() {
     final var camundaUserWithPassword =
         new CamundaUserWithPassword("user" + UUID.randomUUID(), "password");
-    final CamundaUser createdUser = userService.createUser(camundaUserWithPassword);
+    final CamundaUser createdUser = userService.createUserFailIfExists(camundaUserWithPassword);
     final var group = groupService.createGroup(new CamundaGroup("group" + UUID.randomUUID()));
     userGroupMembershipService.addUserToGroup(camundaUserWithPassword, group);
 

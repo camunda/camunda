@@ -42,7 +42,8 @@ public class UserController {
   @ResponseStatus(HttpStatus.CREATED)
   public CamundaUserDto createUser(
       @RequestBody final CamundaUserWithPasswordDto userWithPasswordDto) {
-    return mapToCamundaUserDto(userService.createUser(mapToUserWithPassword(userWithPasswordDto)));
+    return mapToCamundaUserDto(
+        userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
   }
 
   @DeleteMapping(path = "/{id}")

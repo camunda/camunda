@@ -22,7 +22,7 @@ public class TestHelper {
   public static final String DEFAULT_USER_ROLE = "DEFAULT_USER";
 
   public static CamundaUser createAndSaveRandomUser(final UserService userService) {
-    return userService.createUser(
+    return userService.createUserFailIfExists(
         new CamundaUserWithPassword(
             RandomStringUtils.randomAlphabetic(10), "email", false, "password"));
   }
