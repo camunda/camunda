@@ -32,7 +32,7 @@ public class PrefixQueryTransformerTest {
     transformer = transformers.getTransformer(SearchQuery.class);
   }
 
-  private static Stream<Arguments> provideRangeQueries() {
+  private static Stream<Arguments> providePrefixQueries() {
     return Stream.of(
         Arguments.arguments(
             SearchQueryBuilders.prefix("foo", "ba"), "Query: {'prefix':{'foo':{'value':'ba'}}}"),
