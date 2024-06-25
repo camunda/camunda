@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.qa.util.actuator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import java.util.List;
 
 public class FlowControlActuator {
@@ -23,7 +25,13 @@ public class FlowControlActuator {
     return getClient.getFlowControlConfiguration();
   }
 
-  public String setFlowControlConfiguration(final String request, final String append) {
-    return postClient.setFlowControlConfiguration(request, append);
+  public String setFlowControlConfiguration(final String request) {
+    final FlowControlCfg flowControlCfg;
+    try {
+      flowControlCfg = FlowControlCfg.fromJson(request);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+    return postClient.setFlowControlConfiguration(flowControlCfg);
   }
 }

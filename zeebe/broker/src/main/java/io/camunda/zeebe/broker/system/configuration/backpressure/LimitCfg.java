@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backpressure;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.FixedLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
@@ -21,7 +22,10 @@ import java.util.concurrent.TimeUnit;
 public final class LimitCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
+
+  @JsonProperty(value = "useWindowed")
   private boolean useWindowed = true;
+
   private LimitAlgorithm algorithm = LimitAlgorithm.AIMD;
   private final AIMDCfg aimd = new AIMDCfg();
   private final FixedCfg fixed = new FixedCfg();
