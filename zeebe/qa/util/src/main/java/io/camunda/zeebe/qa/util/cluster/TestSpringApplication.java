@@ -26,7 +26,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.client.ReactorResourceFactory;
 
-abstract class TestSpringApplication<T extends TestSpringApplication<T>>
+public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
@@ -113,9 +113,8 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return switch (port) {
       case REST -> restPort();
       case MONITORING -> monitoringPort();
-      default ->
-          throw new IllegalArgumentException(
-              "No known port %s; must one of MONITORING".formatted(port));
+      default -> throw new IllegalArgumentException(
+          "No known port %s; must one of MONITORING".formatted(port));
     };
   }
 
