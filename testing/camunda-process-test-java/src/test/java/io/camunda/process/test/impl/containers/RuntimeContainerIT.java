@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.containers;
+package io.camunda.process.test.impl.containers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.process.test.impl.containers.OperateContainer;
-import io.camunda.process.test.impl.containers.TasklistContainer;
-import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
@@ -44,9 +41,11 @@ import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class ContainerIntegrationTest {
+@Disabled("Only for demo purposes. Will be transformed into an integration test.")
+public class RuntimeContainerIT {
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
@@ -73,17 +72,13 @@ public class ContainerIntegrationTest {
   void shouldConnectWithZeebeClient() {
     // given
     final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
-    final URI grpcAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getGrpcApiPort());
-    final URI restAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getRestApiPort());
 
     // when
     final ZeebeClient zeebeClient =
         ZeebeClient.newClientBuilder()
             .usePlaintext()
-            .grpcAddress(grpcAddress)
-            .restAddress(restAddress)
+            .grpcAddress(zeebeContainer.getGrpcApiAddress())
+            .restAddress(zeebeContainer.getRestApiAddress())
             .build();
 
     // then
@@ -202,15 +197,10 @@ public class ContainerIntegrationTest {
 
   private static ZeebeClient createZeebeClient(final CamundaContainerRuntime runtime) {
     final ZeebeContainer zeebeContainer = runtime.getZeebeContainer();
-    final URI grpcAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getGrpcApiPort());
-    final URI restAddress =
-        URI.create("http://" + zeebeContainer.getHost() + ":" + zeebeContainer.getRestApiPort());
-
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
-        .grpcAddress(grpcAddress)
-        .restAddress(restAddress)
+        .grpcAddress(zeebeContainer.getGrpcApiAddress())
+        .restAddress(zeebeContainer.getRestApiAddress())
         .build();
   }
 

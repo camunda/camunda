@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -425,8 +426,13 @@ public class CompactRecordLogger {
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
 
-    if (value.getJobKind() != null) {
-      result.append(" (").append(value.getJobKind()).append("),");
+    if (value.getJobKind() != null && value.getJobKind() != JobKind.BPMN_ELEMENT) {
+      result
+          .append(" (")
+          .append(value.getJobKind())
+          .append("[")
+          .append(value.getJobListenerEventType())
+          .append("]),");
     }
 
     result.append(" ").append(value.getRetries()).append(" retries,");
