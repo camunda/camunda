@@ -9,14 +9,8 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchConstantScoreQuery(SearchQuery query) implements SearchQueryOption {
-
-  static SearchConstantScoreQuery of(
-      final Function<Builder, ObjectBuilder<SearchConstantScoreQuery>> fn) {
-    return SearchQueryBuilders.constantScore(fn);
-  }
+public record SearchConstantScoreQuery(SearchQuery query) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchConstantScoreQuery> {
 
@@ -25,10 +19,6 @@ public final record SearchConstantScoreQuery(SearchQuery query) implements Searc
     public Builder filter(final SearchQuery value) {
       filter = value;
       return this;
-    }
-
-    public Builder filter(final Function<SearchQuery.Builder, ObjectBuilder<SearchQuery>> fn) {
-      return filter(SearchQueryBuilders.query(fn));
     }
 
     @Override
