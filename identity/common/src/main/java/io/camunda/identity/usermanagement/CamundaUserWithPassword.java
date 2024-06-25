@@ -13,7 +13,11 @@ public class CamundaUserWithPassword extends CamundaUser {
   public CamundaUserWithPassword() {}
 
   public CamundaUserWithPassword(final String username, final String password) {
-    super(username);
+    this(username, null, password);
+  }
+
+  public CamundaUserWithPassword(final String username, final String name, final String password) {
+    super(username, name, null);
     this.password = password;
   }
 

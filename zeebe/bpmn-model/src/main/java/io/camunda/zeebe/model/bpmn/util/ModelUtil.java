@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Escalation;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
@@ -37,6 +39,8 @@ import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +55,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class ModelUtil {
 
@@ -64,6 +69,36 @@ public class ModelUtil {
   private static final List<Class<? extends Activity>>
       ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES =
           Arrays.asList(SubProcess.class, CallActivity.class);
+
+  public static <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
+      final BaseElement element, Class<T> type) {
+    final ExtensionElements extensionElements = element.getExtensionElements();
+    if (extensionElements == null) {
+      return Collections.emptyList();
+    }
+    return extensionElements.getChildElementsByType(type);
+  }
+
+  public static void validateExecutionListenersDefinitionForElement(
+      final BaseElement element,
+      final ValidationResultCollector validationResultCollector,
+      final Consumer<Collection<ZeebeExecutionListener>> executionListenersSupportValidation) {
+    final Collection<ZeebeExecutionListeners> executionListeners =
+        ModelUtil.getExtensionElementsByType(element, ZeebeExecutionListeners.class);
+
+    if (!executionListeners.isEmpty()) {
+      if (executionListeners.size() == 1) {
+        executionListeners.stream()
+            .findFirst()
+            .ifPresent(
+                listeners ->
+                    executionListenersSupportValidation.accept(listeners.getExecutionListeners()));
+      } else {
+        validationResultCollector.addError(
+            0, "Element must not have more than one execution listeners definition");
+      }
+    }
+  }
 
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()

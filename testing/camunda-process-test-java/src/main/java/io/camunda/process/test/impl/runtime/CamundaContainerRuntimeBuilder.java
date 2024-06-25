@@ -15,12 +15,15 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class CamundaContainerRuntimeBuilder {
+
+  private ContainerFactory containerFactory = new ContainerFactory();
 
   private String zeebeDockerImageName = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_NAME;
   private String zeebeDockerImageVersion = ContainerRuntimeDefaults.ZEEBE_DOCKER_IMAGE_VERSION;
@@ -49,6 +52,13 @@ public class CamundaContainerRuntimeBuilder {
   private String elasticsearchLoggerName = ContainerRuntimeDefaults.ELASTICSEARCH_LOGGER_NAME;
   private String operateLoggerName = ContainerRuntimeDefaults.OPERATE_LOGGER_NAME;
   private String tasklistLoggerName = ContainerRuntimeDefaults.TASKLIST_LOGGER_NAME;
+
+  // ============ For testing =================
+
+  CamundaContainerRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
+    this.containerFactory = containerFactory;
+    return this;
+  }
 
   // ============ Configuration options =================
 
@@ -171,7 +181,7 @@ public class CamundaContainerRuntimeBuilder {
   // ============ Build =================
 
   public CamundaContainerRuntime build() {
-    return new CamundaContainerRuntime(this);
+    return new CamundaContainerRuntime(this, containerFactory);
   }
 
   // ============ Getters =================

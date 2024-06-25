@@ -16,12 +16,18 @@ import jakarta.persistence.Table;
 public class Profile {
   @Id private Long id;
   private String email;
+  private String name;
 
   public Profile() {}
 
   public Profile(final Long id, final String email) {
+    this(id, email, null);
+  }
+
+  public Profile(final Long id, final String email, final String name) {
     this.id = id;
     this.email = email;
+    this.name = name;
   }
 
   public Long getId() {
@@ -38,5 +44,13 @@ public class Profile {
 
   public void setEmail(final String email) {
     this.email = email;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
   }
 }

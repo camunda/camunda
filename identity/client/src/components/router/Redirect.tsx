@@ -17,7 +17,7 @@ const Redirect: FC<RedirectProps> = ({ to }) => {
 
   useEffect(() => {
     navigate(to, { replace: true });
-  }, [to]);
+  }, [navigate, to]);
 
   return null;
 };

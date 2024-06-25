@@ -25,8 +25,7 @@ import org.springframework.security.provisioning.UserDetailsManager;
       "camunda.identity.init.users[0].password=" + DefaultUserInitializerTest.PASSWORD,
       "camunda.identity.init.users[1].username=test1",
       "camunda.identity.init.users[1].password=password1",
-    },
-    profiles = {"test", "auth-basic"})
+    })
 public class DefaultUserInitializerTest {
 
   static final String USERNAME = "test";

@@ -199,7 +199,9 @@ public abstract class BaseWebConfigurer {
       throws IOException {
     final String requestedUrl =
         request.getRequestURI().substring(request.getContextPath().length());
-    if (requestedUrl.contains("/api/") || requestedUrl.contains("/v1/")) {
+    if (requestedUrl.contains("/api/")
+        || requestedUrl.contains("/v1/")
+        || requestedUrl.contains("/v2/")) {
       sendError(request, response, ex);
     } else {
       storeRequestedUrlAndRedirectToLogin(request, response, requestedUrl);

@@ -68,7 +68,16 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
     return this;
   }
 
-  private enum State {
+  public State getState() {
+    return stateProp.getValue();
+  }
+
+  public State setState(final State state) {
+    stateProp.setValue(state);
+    return state;
+  }
+
+  public enum State {
     STATE_OPENING,
     STATE_OPENED,
     STATE_CLOSING,

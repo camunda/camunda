@@ -10,6 +10,7 @@ const i18n = i18next.createInstance(
     interpolation: {
       escapeValue: false,
     },
+    nsSeparator: false,
     resources: {
       en,
     },

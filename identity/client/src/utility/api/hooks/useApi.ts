@@ -33,9 +33,11 @@ const useApi: UseApi = <R, P>(
 
   const paramsDependency = JSON.stringify(params);
   // params are passed to dependencies as json string which is not recognised by eslint
-  // eslint-disable-next-line
-  // @ts-ignore
-  const reload = useCallback(() => call(params as P), [call, paramsDependency]);
+  const reload = useCallback(
+    () => call(params as P),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [call, paramsDependency],
+  );
 
   useEffect(() => {
     if (paramsValid) {
