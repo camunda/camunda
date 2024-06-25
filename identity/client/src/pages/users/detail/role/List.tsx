@@ -1,4 +1,4 @@
-import { FC, useEffect } from "react";
+import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
 import EntityList, {
   DocumentationDescription,
@@ -7,29 +7,31 @@ import EntityList, {
   NoDataHeader,
 } from "src/components/entityList";
 import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
 import { useEntityModal } from "src/components/modal";
 import { User } from "src/utility/api/users";
 import { getUserRoles } from "src/utility/api/users/roles";
 import AddModal from "./AddModal";
 import DeleteModal from "./DeleteModal";
 import { DocumentationLink } from "src/components/documentation";
-import { Translate } from "@carbon/react/icons";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import { useApi } from "src/utility/api";
 
 type RolesListProps = {
-  user: User | null;
+  user: User;
   loadingUser: boolean;
 };
 
 const List: FC<RolesListProps> = ({ user, loadingUser }) => {
-  const { t } = useTranslate();
+  const { t, Translate } = useTranslate();
 
-  const [callGetRoles, { data: roles, loading: loadingRoles, success }] =
-    useApiCall(getUserRoles);
+  const {
+    data: roles,
+    loading: loadingRoles,
+    success,
+    reload,
+  } = useApi(getUserRoles, { id: user.id });
 
   const loading = loadingUser || loadingRoles;
-  const reload = () => user && callGetRoles({ id: user.id });
 
   const [assignRole, addModal] = useEntityModal(AddModal, reload, {
     userRoles: roles || [],
@@ -46,14 +48,6 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
     </Translate>
   );
 
-  useEffect(() => {
-    if (user) {
-      (async () => {
-        await callGetRoles({ id: user.id });
-      })();
-    }
-  }, [JSON.stringify(user)]);
-
   return (
     <>
       <EntityList
@@ -64,7 +58,7 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
           { header: t("Description"), key: "description" },
         ]}
         addEntityLabel="Assign roles"
-        onAddEntity={() => user && assignRole(user)}
+        onAddEntity={() => assignRole(user)}
         menuItems={[
           {
             label: t("Delete"),
