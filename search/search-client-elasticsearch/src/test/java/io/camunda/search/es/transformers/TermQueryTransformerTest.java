@@ -31,7 +31,7 @@ public class TermQueryTransformerTest {
     transformer = transformers.getTransformer(SearchQuery.class);
   }
 
-  private static Stream<Arguments> provideRangeQueries() {
+  private static Stream<Arguments> provideQueries() {
     return Stream.of(
         Arguments.arguments(
             SearchQueryBuilders.term("foo", 1), "Query: {'term':{'foo':{'value':1}}}"),
@@ -72,7 +72,7 @@ public class TermQueryTransformerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideRangeQueries")
+  @MethodSource("provideQueries")
   public void shouldApplyTransformer(
       final SearchQuery rangeQuery, final String expectedResultQuery) {
     // given
@@ -91,8 +91,18 @@ public class TermQueryTransformerTest {
     // given
 
     // when - throw
-    assertThatThrownBy(() -> SearchQueryBuilders.term().field("foo").value((String) null).build())
+    assertThatThrownBy(() -> SearchQueryBuilders.term().field("foo").build())
         .hasMessageContaining("Expected non-null value for term query, for field 'foo'.")
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  public void shouldThrowErrorOnNullField() {
+    // given
+
+    // when - throw
+    assertThatThrownBy(() -> SearchQueryBuilders.term().build())
+        .hasMessageContaining("Expected non-null field for term query.")
+        .isInstanceOf(NullPointerException.class);
   }
 }
