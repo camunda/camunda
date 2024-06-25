@@ -34,7 +34,11 @@ public final record SearchPrefixQuery(String field, String value) implements Sea
 
     @Override
     public SearchPrefixQuery build() {
-      return new SearchPrefixQuery(Objects.requireNonNull(field), Objects.requireNonNull(value));
+      return new SearchPrefixQuery(
+          Objects.requireNonNull(field, "Expected a non-null field for the prefix query."),
+          Objects.requireNonNull(
+              value,
+              "Expected a non-null value for the prefix query with field: '" + field + "'."));
     }
   }
 }
