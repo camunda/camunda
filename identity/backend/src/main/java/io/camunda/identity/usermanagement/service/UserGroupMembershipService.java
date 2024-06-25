@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class MembershipService {
+public class UserGroupMembershipService {
   private final CamundaUserDetailsManager camundaUserDetailsManager;
 
   private final UserService userService;
   private final GroupService groupService;
   private final MembershipRepository membershipRepository;
 
-  public MembershipService(
+  public UserGroupMembershipService(
       final CamundaUserDetailsManager camundaUserDetailsManager,
       final UserService userService,
       final GroupService groupService,
