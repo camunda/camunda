@@ -23,7 +23,9 @@ public record SearchConstantScoreQuery(SearchQuery query) implements SearchQuery
 
     @Override
     public SearchConstantScoreQuery build() {
-      return new SearchConstantScoreQuery(Objects.requireNonNull(filter));
+      return new SearchConstantScoreQuery(
+          Objects.requireNonNull(
+              filter, "Expected a non-null filter for the constant score query."));
     }
   }
 }
