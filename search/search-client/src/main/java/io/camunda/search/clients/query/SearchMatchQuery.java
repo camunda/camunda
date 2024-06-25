@@ -37,7 +37,14 @@ public record SearchMatchQuery(String field, String query, SearchMatchQueryOpera
     @Override
     public SearchMatchQuery build() {
       return new SearchMatchQuery(
-          Objects.requireNonNull(field), Objects.requireNonNull(query), operator);
+          Objects.requireNonNull(field, "Expected a non-null field for the match query."),
+          Objects.requireNonNull(
+              query,
+              () ->
+                  String.format(
+                      "Expected a non-null query parameter for the match query, with field: '%s'.",
+                      field)),
+          operator);
     }
   }
 
