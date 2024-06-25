@@ -124,6 +124,7 @@ jobs:
     if: needs.detect-changes.outputs.docker-ci == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
