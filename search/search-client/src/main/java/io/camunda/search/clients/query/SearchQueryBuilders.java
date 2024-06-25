@@ -172,7 +172,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery prefix(final String field, final String value) {
-    return SearchPrefixQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return prefix(q -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery.Builder query() {

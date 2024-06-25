@@ -9,13 +9,8 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchPrefixQuery(String field, String value) implements SearchQueryOption {
-
-  static SearchPrefixQuery of(final Function<Builder, ObjectBuilder<SearchPrefixQuery>> fn) {
-    return SearchQueryBuilders.prefix(fn);
-  }
+public record SearchPrefixQuery(String field, String value) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchPrefixQuery> {
 
