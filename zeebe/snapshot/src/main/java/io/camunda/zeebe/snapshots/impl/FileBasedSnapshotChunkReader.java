@@ -72,11 +72,11 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return;
     }
 
-    final var chunkIdParts = new SnapshotChunkId(id).toString().split("__");
+    final var chunkId = new SnapshotChunkId(id);
 
-    offset = Long.valueOf(chunkIdParts[1]);
+    offset = chunkId.offset();
 
-    chunksView = new TreeSet<>(chunks.tailSet(chunkIdParts[0], true));
+    chunksView = new TreeSet<>(chunks.tailSet(chunkId.fileName(), true));
   }
 
   @Override
@@ -85,7 +85,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return null;
     }
 
-    return new SnapshotChunkId(chunksView.first().toString() + "__" + offset).getId();
+    return new SnapshotChunkId(chunksView.first().toString(), offset).id();
   }
 
   @Override

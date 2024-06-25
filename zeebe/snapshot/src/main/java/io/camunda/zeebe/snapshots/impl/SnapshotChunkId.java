@@ -21,6 +21,18 @@ public record SnapshotChunkId(ByteBuffer id) {
             .order(Protocol.ENDIANNESS));
   }
 
+  public String fileName() {
+    final var fileName = ID_CHARSET.decode(id()).toString().split("__")[0];
+    id.clear();
+    return fileName;
+  }
+
+  public long offset() {
+    final var offset = Long.valueOf(ID_CHARSET.decode(id()).toString().split("__")[1]);
+    id.clear();
+    return offset;
+  }
+
   @Override
   public String toString() {
     return ID_CHARSET.decode(id).toString();
