@@ -932,13 +932,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       log.error("Failed to close metastore", e);
     }
 
-    // Close the snapshot store.
-    try {
-      persistedSnapshotStore.close();
-    } catch (final Exception e) {
-      log.error("Failed to close snapshot store", e);
-    }
-
     // close thread contexts
     threadContext.close();
   }
