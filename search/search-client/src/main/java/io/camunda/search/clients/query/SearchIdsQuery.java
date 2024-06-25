@@ -14,13 +14,8 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchIdsQuery(List<String> values) implements SearchQueryOption {
-
-  static SearchIdsQuery of(final Function<Builder, ObjectBuilder<SearchIdsQuery>> fn) {
-    return SearchQueryBuilders.ids(fn);
-  }
+public record SearchIdsQuery(List<String> values) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchIdsQuery> {
 

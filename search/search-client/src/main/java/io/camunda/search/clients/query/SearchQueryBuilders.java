@@ -128,7 +128,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery ids(final List<String> ids) {
-    return SearchIdsQuery.of(q -> q.values(withoutNull(ids))).toSearchQuery();
+    return ids(q -> q.values(withoutNull(ids))).toSearchQuery();
   }
 
   public static SearchQuery ids(final Collection<String> ids) {
