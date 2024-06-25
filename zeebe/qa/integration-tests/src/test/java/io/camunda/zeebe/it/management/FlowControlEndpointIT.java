@@ -35,29 +35,6 @@ final class FlowControlEndpointIT {
           .withEmbeddedGateway(true)
           .build();
 
-  final String requestConfig =
-      "{\n"
-          + "        \"useWindowed\": false,\n"
-          + "        \"vegas\":\n"
-          + "        {\n"
-          + "                \"alpha\": 3,\n"
-          + "                \"beta\": 6,\n"
-          + "                \"initialLimit\": 50\n"
-          + "        },\n"
-          + "        \"algorithm\": \"VEGAS\"\n"
-          + "}\n";
-  final String appendConfig =
-      "{\n"
-          + "        \"useWindowed\": false,\n"
-          + "        \"vegas\":\n"
-          + "        {\n"
-          + "                \"alpha\": 3,\n"
-          + "                \"beta\": 6,\n"
-          + "                \"initialLimit\": 20\n"
-          + "        },\n"
-          + "        \"algorithm\": \"VEGAS\"\n"
-          + "}\n";
-
   @AutoCloseResource private final ZeebeClient client = CLUSTER.newClientBuilder().build();
 
   @BeforeEach
@@ -68,26 +45,88 @@ final class FlowControlEndpointIT {
   @Test
   void shouldSetFLowControl() {
     // given
-    getActuator().setFlowControlConfiguration(requestConfig, appendConfig);
+    getActuator()
+        .setFlowControlConfiguration(
+            "{\n"
+                + "  \"append\": {\n"
+                + "    \"useWindowed\": false,\n"
+                + "    \"algorithm\": \"VEGAS\",\n"
+                + "    \"vegas\": {\n"
+                + "      \"alpha\": 3,\n"
+                + "      \"beta\": 6,\n"
+                + "      \"initialLimit\": 20\n"
+                + "    }\n"
+                + "  },\n"
+                + "  \"request\": {\n"
+                + "    \"useWindowed\": false,\n"
+                + "    \"algorithm\": \"VEGAS\",\n"
+                + "    \"vegas\": {\n"
+                + "      \"alpha\": 3,\n"
+                + "      \"beta\": 6,\n"
+                + "      \"initialLimit\": 50\n"
+                + "    }\n"
+                + "  }\n"
+                + "}");
     final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
 
     // then
     assertThat(flowControlConfiguration.getFirst())
         .contains(
-            "REQUEST=VegasLimit [limit=50, rtt_noload=0.0 ms]}",
+            "REQUEST=VegasLimit [limit=50, rtt_noload=0.0 ms]",
             "APPEND=VegasLimit [limit=20, rtt_noload=0.0 ms]");
-  }
-
-  @Test
-  void failsToParseJsonBody() {
-    // given
-    final String body = getActuator().setFlowControlConfiguration("{{", "null");
-    assertThat(body).contains("Failed to parse flow control configuration");
   }
 
   private FlowControlActuator getActuator() {
     return new FlowControlActuator(
         GetFlowControlActuator.of(CLUSTER.availableGateway()),
         SetFlowControlActuator.of(CLUSTER.availableGateway()));
+  }
+
+  @Test
+  void canConfigureJustOneOfTheLimits() {
+    // given
+    // to configure just one of the limits, we have to set the others to null
+    getActuator()
+        .setFlowControlConfiguration(
+            "{ "
+                + "  \"request\": null, "
+                + "  \"append\": "
+                + "  {"
+                + "    \"enabled\":true,"
+                + "    \"useWindowed\":false,"
+                + "    \"fixed\":{\"limit\":20},"
+                + "    \"algorithm\":\"FIXED\""
+                + "  }"
+                + "}");
+    getActuator()
+        .setFlowControlConfiguration(
+            "{ "
+                + "  \"append\": null, "
+                + "  \"request\": "
+                + "  {"
+                + "    \"enabled\":true,"
+                + "    \"useWindowed\":false,"
+                + "    \"legacyVegas\": {"
+                + "      \"maxConcurrency\": 32768"
+                + "    },"
+                + "    \"algorithm\":\"LEGACY_VEGAS\""
+                + "  }"
+                + "}");
+    final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
+
+    // then
+    assertThat(flowControlConfiguration.getFirst())
+        .contains(
+            "APPEND=FixedLimit [limit=20]", "REQUEST=VegasLimit [limit=1024, rtt_noload=0.0 ms]");
+  }
+
+  @Test
+  void canDisableALimit() {
+    // given
+    getActuator().setFlowControlConfiguration("{ \"request\": { \"enabled\": false } }");
+    final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
+
+    // then
+    assertThat(flowControlConfiguration.getFirst()).contains("REQUEST=null");
   }
 }

@@ -219,7 +219,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
         () -> {
           try {
             final FlowControl flowControl = adminControl.getLogStream().getFlowControl();
-            if (flowControlCfg.getAppend() != null && flowControlCfg.getAppend().isEnabled()) {
+            if (flowControlCfg.getAppend() != null) {
               flowControl.setAppendLimit(flowControlCfg.getAppend().buildLimit());
             }
             if (flowControlCfg.getRequest() != null) {
