@@ -296,6 +296,6 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery wildcardQuery(final String field, final String value) {
-    return SearchWildcardQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return wildcard(q -> q.field(field).value(value)).toSearchQuery();
   }
 }
