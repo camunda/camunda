@@ -90,7 +90,7 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -T2 -B --no-snapshot-updates
-          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
           verify
