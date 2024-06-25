@@ -21,6 +21,7 @@ import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
+import List from "src/pages/users/detail/role/List";
 
 const Details: FC = () => {
   const { t } = useTranslate();
@@ -79,7 +80,7 @@ const Details: FC = () => {
               {
                 key: "roles",
                 label: t("Assigned roles"),
-                content: t("Roles"),
+                content: user && <List user={user} loadingUser={loading} />,
               },
             ]}
             selectedTabKey={tab}

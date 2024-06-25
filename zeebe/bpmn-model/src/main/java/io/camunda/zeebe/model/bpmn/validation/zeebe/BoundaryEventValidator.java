@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import static io.camunda.zeebe.model.bpmn.util.ModelUtil.validateExecutionListenersDefinitionForElement;
+
 import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
@@ -24,6 +26,8 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,6 +69,33 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
     }
 
     validateEventDefinition(element, validationResultCollector);
+
+    validateExecutionListenersDefinitionForElement(
+        element,
+        validationResultCollector,
+        listeners -> {
+          final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
+          eventDefinitions.stream()
+              .findFirst()
+              .ifPresent(
+                  eventDefinition -> {
+                    if (eventDefinition instanceof CompensateEventDefinition) {
+                      validationResultCollector.addError(
+                          0,
+                          "Execution listeners of type 'start' and 'end' are not supported by [compensation] boundary events");
+                    } else {
+                      final boolean startExecutionListenersDefined =
+                          listeners.stream()
+                              .map(ZeebeExecutionListener::getEventType)
+                              .anyMatch(ZeebeExecutionListenerEventType.start::equals);
+                      if (startExecutionListenersDefined) {
+                        validationResultCollector.addError(
+                            0,
+                            "Execution listeners of type 'start' are not supported by boundary events");
+                      }
+                    }
+                  });
+        });
   }
 
   private boolean isValidCompensationBoundaryEvent(final BoundaryEvent element) {

@@ -32,7 +32,7 @@ jobs:
       - id: add-to-zdp
         name: Add to ZDP project
         if: ${{ steps.has-project.outputs.result == 'false' }}
-        uses: actions/add-to-project@v1.0.1
+        uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -40,7 +40,7 @@ jobs:
           label-operator: NOT
       - id: add-to-zda
         name: Add to ZPA project
-        uses: actions/add-to-project@v1.0.1
+        uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/29
@@ -49,7 +49,7 @@ jobs:
           label-operator: NOT
       - id: add-to-operate
         name: Add to Operate project
-        uses: actions/add-to-project@v1.0.1
+        uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/24
@@ -57,7 +57,7 @@ jobs:
           labeled: component/operate
       - id: add-to-hto
         name: Add to HTO project
-        uses: actions/add-to-project@v1.0.1
+        uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/41

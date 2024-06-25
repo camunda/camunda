@@ -141,6 +141,7 @@ runs:
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav
         -D aether.syncContext.named.factory=file-lock
+        -D aether.syncContext.named.time=120
         -D maven.artifact.threads=32
         EOF
     - name: Determine if running on GH infra or self-hosted
