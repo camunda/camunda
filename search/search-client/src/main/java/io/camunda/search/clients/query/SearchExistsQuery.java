@@ -9,14 +9,8 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchExistsQuery(String field) implements SearchQueryOption {
-
-  static SearchExistsQuery of(final Function<Builder, ObjectBuilder<SearchExistsQuery>> fn) {
-    return SearchQueryBuilders.exists(fn);
-  }
-
+public record SearchExistsQuery(String field) implements SearchQueryOption {
   public static final class Builder implements ObjectBuilder<SearchExistsQuery> {
 
     private String field;
