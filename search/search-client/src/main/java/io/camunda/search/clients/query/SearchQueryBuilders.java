@@ -223,23 +223,23 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery term(final String field, final Integer value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final Long value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final Double value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final String value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final boolean value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchTermsQuery.Builder terms() {

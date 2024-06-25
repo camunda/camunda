@@ -10,14 +10,9 @@ package io.camunda.search.clients.query;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchTermQuery(String field, TypedValue value, Boolean caseInsensitive)
+public record SearchTermQuery(String field, TypedValue value, Boolean caseInsensitive)
     implements SearchQueryOption {
-
-  static SearchTermQuery of(final Function<Builder, ObjectBuilder<SearchTermQuery>> fn) {
-    return SearchQueryBuilders.term(fn);
-  }
 
   public static final class Builder implements ObjectBuilder<SearchTermQuery> {
 
@@ -63,7 +58,12 @@ public final record SearchTermQuery(String field, TypedValue value, Boolean case
     @Override
     public SearchTermQuery build() {
       return new SearchTermQuery(
-          Objects.requireNonNull(field), Objects.requireNonNull(value), caseInsensitive);
+          Objects.requireNonNull(field, "Expected non-null field for term query."),
+          Objects.requireNonNull(
+              value,
+              () ->
+                  String.format("Expected non-null value for term query, for field '%s'.", field)),
+          caseInsensitive);
     }
   }
 }
