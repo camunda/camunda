@@ -18,7 +18,6 @@ package io.camunda.zeebe.client.impl.search;
 import io.camunda.zeebe.client.api.search.UserTaskFilter;
 import io.camunda.zeebe.client.protocol.rest.DateFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import java.util.List;
 
 public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
     implements UserTaskFilter {
@@ -34,103 +33,50 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter userTaskKeys(final Long value, final Long... values) {
-    return userTaskKeys(UserTaskFilter.collectValues(value, values));
-  }
-
-  @Override
-  public UserTaskFilter userTaskKeys(final List<Long> values) {
-    filter.setKey(UserTaskFilter.addValuesToList(filter.getKey(), values));
+  public UserTaskFilter userTaskKey(final Long value) {
+    filter.setKey(value);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskStates(final String state, final String... states) {
-    return userTaskStates(UserTaskFilter.collectValues(state, states));
-  }
-
-  @Override
-  public UserTaskFilter userTaskStates(final List<String> states) {
-    filter.setTaskState(UserTaskFilter.addValuesToList(filter.getTaskState(), states));
+  public UserTaskFilter userTaskState(final String state) {
+    filter.setTaskState(state);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskAssignees(final String assignee, final String... assignees) {
-    return userTaskAssignees(UserTaskFilter.collectValues(assignee, assignees));
-  }
-
-  @Override
-  public UserTaskFilter userTaskAssignees(final List<String> assignees) {
-    filter.setAssignee(UserTaskFilter.addValuesToList(filter.getAssignee(), assignees));
+  public UserTaskFilter userTaskAssignee(final String assignee) {
+    filter.setAssignee(assignee);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskTaskDefinitionIds(
-      final String taskDefinitionId, final String... taskDefinitionIds) {
-    return userTaskTaskDefinitionIds(
-        UserTaskFilter.collectValues(taskDefinitionId, taskDefinitionIds));
-  }
-
-  @Override
-  public UserTaskFilter userTaskTaskDefinitionIds(final List<String> taskDefinitionIds) {
-    filter.setTaskDefinitionId(
-        UserTaskFilter.addValuesToList(filter.getTaskDefinitionId(), taskDefinitionIds));
+  public UserTaskFilter userTaskTaskDefinitionId(final String taskDefinitionId) {
+    filter.setTaskDefinitionId(taskDefinitionId);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCandidateGroups(
-      final String candidateGroup, final String... candidateGroups) {
-    return userTaskCandidateGroups(UserTaskFilter.collectValues(candidateGroup, candidateGroups));
-  }
-
-  @Override
-  public UserTaskFilter userTaskCandidateGroups(final List<String> candidateGroups) {
-    filter.setCandidateGroup(
-        UserTaskFilter.addValuesToList(filter.getCandidateGroup(), candidateGroups));
+  public UserTaskFilter userTaskCandidateGroup(final String candidateGroup) {
+    filter.setCandidateGroup(candidateGroup);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCandidateUsers(
-      final String candidateUser, final String... candidateUsers) {
-    return userTaskCandidateUsers(UserTaskFilter.collectValues(candidateUser, candidateUsers));
-  }
-
-  @Override
-  public UserTaskFilter userTaskCandidateUsers(final List<String> candidateUsers) {
-    filter.setCandidateUser(
-        UserTaskFilter.addValuesToList(filter.getCandidateUser(), candidateUsers));
+  public UserTaskFilter userTaskCandidateUser(final String candidateUser) {
+    filter.setCandidateUser(candidateUser);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskProcessDefinitionKeys(
-      final Long processDefinitionKey, final Long... processDefinitionKeys) {
-    return userTaskProcessDefinitionKeys(
-        UserTaskFilter.collectValues(processDefinitionKey, processDefinitionKeys));
-  }
-
-  @Override
-  public UserTaskFilter userTaskProcessDefinitionKeys(final List<Long> processDefinitionKeys) {
-    filter.setProcessDefinitionKey(
-        UserTaskFilter.addValuesToList(filter.getProcessDefinitionKey(), processDefinitionKeys));
+  public UserTaskFilter userTaskProcessDefinitionKey(final Long processDefinitionKey) {
+    filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskProcessInstanceKeys(
-      final Long processInstanceKey, final Long... processInstanceKeys) {
-    return userTaskProcessInstanceKeys(
-        UserTaskFilter.collectValues(processInstanceKey, processInstanceKeys));
-  }
-
-  @Override
-  public UserTaskFilter userTaskProcessInstanceKeys(final List<Long> processInstanceKeys) {
-    filter.setProcessInstanceKey(
-        UserTaskFilter.addValuesToList(filter.getProcessInstanceKey(), processInstanceKeys));
+  public UserTaskFilter userTaskProcessInstanceKey(final Long processInstanceKey) {
+    filter.setProcessInstanceKey(processInstanceKey);
     return this;
   }
 
@@ -148,7 +94,8 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter userTaskCreationDate(final DateFilter dateFilter) {
-    return null;
+    filter.setCreationTime(dateFilter);
+    return this;
   }
 
   @Override
@@ -158,19 +105,8 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter userTaskTenantIds(final String tenantId, final String... tenantIds) {
-    return userTaskTenantIds(UserTaskFilter.collectValues(tenantId, tenantIds));
-  }
-
-  @Override
-  public UserTaskFilter userTaskTenantIds(final List<String> tenantIds) {
-    filter.setTenantIds(UserTaskFilter.addValuesToList(filter.getTenantIds(), tenantIds));
-    return this;
-  }
-
-  @Override
-  public UserTaskFilter userTaskCreatedDate(final DateFilter dateFilter) {
-    filter.setCreationTime(dateFilter);
+  public UserTaskFilter userTaskTenantId(final String tenantId) {
+    filter.setTenantIds(tenantId);
     return this;
   }
 

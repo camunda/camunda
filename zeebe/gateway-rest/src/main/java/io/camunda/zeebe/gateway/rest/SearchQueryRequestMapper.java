@@ -184,7 +184,7 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       // key
-      if (filter.getKey() != null && !filter.getKey().isEmpty()) {
+      if (filter.getKey() != null) {
         builder.userTaskKeys(filter.getKey());
       }
 
@@ -209,17 +209,17 @@ public final class SearchQueryRequestMapper {
       }
 
       // processDefinitionKey
-      if (filter.getProcessDefinitionKey() != null && !filter.getProcessDefinitionKey().isEmpty()) {
+      if (filter.getProcessDefinitionKey() != null) {
         builder.processDefinitionKeys(filter.getProcessDefinitionKey().toString());
       }
 
       // processInstanceKey
-      if (filter.getProcessInstanceKey() != null && !filter.getProcessInstanceKey().isEmpty()) {
+      if (filter.getProcessInstanceKey() != null) {
         builder.processInstanceKeys(filter.getProcessInstanceKey());
       }
 
       // tenantIds
-      if (filter.getTenantIds() != null && !filter.getTenantIds().isEmpty()) {
+      if (filter.getTenantIds() != null) {
         builder.tenantIds(filter.getTenantIds());
       }
 
