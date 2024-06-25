@@ -10,8 +10,6 @@ package io.camunda.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.Either;

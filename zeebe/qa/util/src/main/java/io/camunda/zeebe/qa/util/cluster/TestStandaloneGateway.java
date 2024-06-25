@@ -16,7 +16,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
-public final class TestStandaloneGateway extends TestCamundaApplication<TestStandaloneGateway>
+public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final GatewayBasedProperties config;
 

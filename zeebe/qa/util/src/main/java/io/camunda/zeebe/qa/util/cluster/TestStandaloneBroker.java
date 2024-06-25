@@ -28,7 +28,7 @@ import org.springframework.util.unit.DataSize;
 
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
-public final class TestStandaloneBroker extends TestCamundaApplication<TestStandaloneBroker>
+public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
