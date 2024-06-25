@@ -137,7 +137,6 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
 ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_BROKER_GATEWAY_NETWORK_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
