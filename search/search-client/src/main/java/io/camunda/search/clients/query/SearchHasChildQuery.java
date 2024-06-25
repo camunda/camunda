@@ -29,7 +29,15 @@ public record SearchHasChildQuery(SearchQuery query, String type) implements Sea
 
     @Override
     public SearchHasChildQuery build() {
-      return new SearchHasChildQuery(Objects.requireNonNull(query), Objects.requireNonNull(type));
+      return new SearchHasChildQuery(
+          Objects.requireNonNull(
+              query, "Expected a non-null query parameter for the hasChild query."),
+          Objects.requireNonNull(
+              type,
+              () ->
+                  String.format(
+                      "Expected a non-null type parameter for the hasChild query, with query: '%s'.",
+                      query)));
     }
   }
 }
