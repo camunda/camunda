@@ -5,25 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { ReactElement, useState } from "react";
+
 import { Role } from "src/utility/api/roles";
 import { default as allPermissions } from "src/configuration/permissions";
-import useTranslate from "src/utility/localization";
+import { useState } from "react";
+import usePermissionsTranslated, {
+  TranslatedPermissionItem,
+} from "src/pages/roles/modals/usePermissionsTranslated";
 
-type RoleListItem = {
-  permission: string;
-  description: ReactElement | string;
-};
-
-const usePermissions = (initialPermissions: Role["permissions"] = []) => {
-  const { t } = useTranslate("permissions");
+const useAllPermissionsTranslated = (
+  initialPermissions: Role["permissions"] = [],
+) => {
   const [permissions, setPermissions] = useState<string[]>(initialPermissions);
-  const availableItems: RoleListItem[] = allPermissions.map(
-    (permission: string) => ({
-      permission,
-      description: t(`${permission}.description`),
-    }),
-  );
+  const availableItems: TranslatedPermissionItem[] =
+    usePermissionsTranslated(allPermissions);
 
   const onSelect = (entity: (typeof availableItems)[0]) => {
     setPermissions([...permissions, entity.permission]);
@@ -44,4 +39,4 @@ const usePermissions = (initialPermissions: Role["permissions"] = []) => {
   };
 };
 
-export default usePermissions;
+export default useAllPermissionsTranslated;
