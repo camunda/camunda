@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.es.transformers;
+package io.camunda.search.es.transformers.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
