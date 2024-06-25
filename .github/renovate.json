@@ -71,6 +71,11 @@
       "allowedVersions": "!/0.8.9/"
     },
     {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["io.netty"],
+      "allowedVersions": "<=4.1.110.Final"
+    },
+    {
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
       "matchPackagePatterns": [".*"],
