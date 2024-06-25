@@ -13,8 +13,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
@@ -26,8 +24,6 @@ import java.util.TreeSet;
  * the directory once this is created.
  */
 public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
-  static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
-
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;
 
