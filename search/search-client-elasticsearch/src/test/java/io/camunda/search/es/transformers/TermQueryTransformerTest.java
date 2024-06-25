@@ -45,6 +45,12 @@ public class TermQueryTransformerTest {
             SearchQueryBuilders.term("foo", "string"),
             "Query: {'term':{'foo':{'value':'string'}}}"),
         Arguments.arguments(
+            SearchQueryBuilders.term("foo", (String) null),
+            "Query: {'term':{'foo':{'value':null}}}"),
+        Arguments.arguments(
+            SearchQueryBuilders.term().field("foo").value((String) null).build().toSearchQuery(),
+            "Query: {'term':{'foo':{'value':null}}}"),
+        Arguments.arguments(
             SearchQueryBuilders.term()
                 .field("foo")
                 .value("string")
