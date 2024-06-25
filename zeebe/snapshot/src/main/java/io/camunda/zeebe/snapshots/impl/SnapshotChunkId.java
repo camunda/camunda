@@ -11,39 +11,12 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
-public class SnapshotChunkId {
+public record SnapshotChunkId(ByteBuffer id) {
   private static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
-  private final ByteBuffer id;
 
-  public SnapshotChunkId(final ByteBuffer id) {
-    this.id = id;
-  }
-
-  SnapshotChunkId(final String id) {
-    this.id = ByteBuffer.wrap(id.getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS);
-  }
-
-  public ByteBuffer getId() {
-    return id;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(id);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final SnapshotChunkId that = (SnapshotChunkId) o;
-    return Objects.equals(id, that.id);
+  SnapshotChunkId(final String id, final long offset) {
+    this(ByteBuffer.wrap((id + "__" + offset).getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS));
   }
 
   @Override
