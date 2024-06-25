@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public interface UserTaskFilter extends SearchRequestFilter {
 
@@ -49,6 +50,11 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter);
 
   UserTaskFilter userTaskTenantId(final String tenantId);
+
+  UserTaskFilter variable(final VariableValueFilter filter);
+
+  /** Filter by variable values. */
+  UserTaskFilter variable(final Consumer<VariableValueFilter> fn);
 
   // TODO move this to a shared utility module
 

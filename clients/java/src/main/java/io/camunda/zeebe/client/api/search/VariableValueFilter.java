@@ -25,6 +25,8 @@ public interface VariableValueFilter extends SearchRequestFilter {
   /** Filter by variable value equal to value */
   VariableValueFilter eq(final Object value);
 
+  VariableValueFilter neq(final Object value);
+
   /** Filter by variable value greater than value */
   VariableValueFilter gt(final Object value);
 

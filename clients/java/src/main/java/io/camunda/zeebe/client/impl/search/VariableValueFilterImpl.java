@@ -41,6 +41,12 @@ public class VariableValueFilterImpl
   }
 
   @Override
+  public VariableValueFilter neq(final Object value) {
+    filter.setNeq(value);
+    return this;
+  }
+
+  @Override
   public VariableValueFilter gt(final Object value) {
     filter.setGt(value);
     return this;

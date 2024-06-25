@@ -90,6 +90,7 @@ public final class SearchQueryRequestMapper {
         FilterBuilders.variableValue(
             (v) ->
                 v.name(f.getName())
+                    .neq(f.getNeq())
                     .eq(f.getEq())
                     .gt(f.getGt())
                     .gte(f.getGte())
@@ -241,6 +242,14 @@ public final class SearchQueryRequestMapper {
       // followUpDate
       if (filter.getFollowUpDate() != null) {
         builder.followUpDate(toDateValueFilter(filter.getFollowUpDate()));
+      }
+
+      // variables
+      if (filter.getVariables() != null) {
+        final var variableFilters = toVariableValueFilter(filter.getVariables()).get();
+        if (variableFilters != null) {
+          builder.variable(variableFilters);
+        }
       }
     }
 

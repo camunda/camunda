@@ -15,9 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
+
 import io.camunda.zeebe.client.api.search.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.VariableValueFilter;
 import io.camunda.zeebe.client.protocol.rest.DateFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
+import java.util.function.Consumer;
 
 public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
     implements UserTaskFilter {
@@ -108,6 +113,18 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   public UserTaskFilter userTaskTenantId(final String tenantId) {
     filter.setTenantIds(tenantId);
     return this;
+  }
+
+  @Override
+  public UserTaskFilter variable(final VariableValueFilter value) {
+    final VariableValueFilterRequest variableFilter = provideSearchRequestProperty(value);
+    filter.addVariablesItem(variableFilter);
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter variable(final Consumer<VariableValueFilter> fn) {
+    return variable(variableValueFilter(fn));
   }
 
   @Override

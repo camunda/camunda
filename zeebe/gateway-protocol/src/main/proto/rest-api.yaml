@@ -668,6 +668,8 @@ components:
           type: string
         eq:
           type: object
+        neq:
+          type: object
         gt:
           type: object
         gte:
@@ -762,12 +764,12 @@ components:
           $ref: "#/components/schemas/DateFilter"
         dueDate:
           $ref: "#/components/schemas/DateFilter"
+        tenantIds:
+          type: string
         variables:
           type: array
           items:
-            $ref: "#/components/schemas/VariableFilter"
-        tenantIds:
-          type: string
+            $ref: "#/components/schemas/VariableValueFilterRequest"
     UserTaskItem:
       type: object
       properties:
