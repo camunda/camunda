@@ -15,8 +15,10 @@ import java.nio.charset.StandardCharsets;
 public record SnapshotChunkId(ByteBuffer id) {
   private static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
 
-  SnapshotChunkId(final String id, final long offset) {
-    this(ByteBuffer.wrap((id + "__" + offset).getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS));
+  SnapshotChunkId(final String fileName, final long offset) {
+    this(
+        ByteBuffer.wrap((fileName + "__" + offset).getBytes(ID_CHARSET))
+            .order(Protocol.ENDIANNESS));
   }
 
   @Override
