@@ -50,8 +50,8 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
     this.snapshotRequestTimeout = snapshotRequestTimeout;
   }
 
-  public int getSnapshotChunkSize() {
-    return Math.toIntExact(snapshotChunkSize.toBytes());
+  public DataSize getSnapshotChunkSize() {
+    return snapshotChunkSize;
   }
 
   public void setSnapshotChunkSize(final DataSize snapshotChunkSize) {

@@ -86,7 +86,7 @@ public final class RaftPartitionFactory {
     partitionConfig.setSnapshotRequestTimeout(
         brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
     partitionConfig.setSnapshotChunkSize(
-        brokerCfg.getExperimental().getRaft().getSnapshotChunkSize());
+        (int) brokerCfg.getExperimental().getRaft().getSnapshotChunkSize().toBytes());
     partitionConfig.setConfigurationChangeTimeout(
         brokerCfg.getExperimental().getRaft().getConfigurationChangeTimeout());
     partitionConfig.setMaxQuorumResponseTimeout(
