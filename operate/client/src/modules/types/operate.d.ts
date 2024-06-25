@@ -105,7 +105,7 @@ interface ListenerEntity {
   listenerType: 'EXECUTION' | 'USER_TASK';
   listenerKey: number;
   state: string;
-  jobType: string;
+  jobType: 'UNSPECIFIED' | 'START' | 'END';
   event: string;
   time: string;
 }
