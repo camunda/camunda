@@ -39,6 +39,14 @@ outputs:
         steps.filter-common.outputs.dockerfile-change == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true'
       }}
+  frontend-change:
+    description: Output whether any frontend has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
 
 
 runs:
