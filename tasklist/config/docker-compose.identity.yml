@@ -35,7 +35,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: opensearchproject/opensearch:2.15.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -87,7 +87,7 @@ services:
         condition: service_healthy
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.5.2
+    image: camunda/identity:8.5.3
     ports:
       - "8084:8084"
     environment:

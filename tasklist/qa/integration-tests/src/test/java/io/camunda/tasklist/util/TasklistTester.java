@@ -702,6 +702,22 @@ public class TasklistTester {
     return taskIsCompleted(flowNodeBpmnId);
   }
 
+  public TasklistTester completeZeebeUserTask(
+      String flowNodeBpmnId, Map<String, Object> variables) {
+    // resolve taskId, if not yet resolved
+    if (taskId == null) {
+      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+      if (taskId == null) {
+        fail(
+            String.format(
+                "Cannot resolveTaskId for flowNodeBpmnId=%s processDefinitionKey=%s state=%s",
+                flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
+      }
+    }
+    zeebeClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
+    return taskIsCompleted(flowNodeBpmnId);
+  }
+
   private List<VariableInputDTO> createVariablesList(String... variables) {
     assertThat(variables.length % 2).isEqualTo(0);
     final List<VariableInputDTO> result = new ArrayList<>();

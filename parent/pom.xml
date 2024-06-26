@@ -61,7 +61,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.2</version.identity>
+    <version.identity>8.5.3</version.identity>
     <version.surefire>3.3.0</version.surefire>
     <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
@@ -78,7 +78,7 @@
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
-    <version.protobuf-common>2.40.0</version.protobuf-common>
+    <version.protobuf-common>2.41.0</version.protobuf-common>
     <version.micrometer>1.13.1</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
@@ -123,7 +123,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.8</version.awssdk>
+    <version.awssdk>2.26.9</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.749</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.750</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
