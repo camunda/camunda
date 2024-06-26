@@ -16,7 +16,7 @@ import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import java.net.URI;
@@ -251,7 +251,7 @@ public class UserControllerTest {
     final UserSearchResponse userSearchResponseDto = new UserSearchResponse();
     userSearchResponseDto.setItems(List.of(camundaUserDto));
 
-    final SearchRequestDto searchRequestDto = new SearchRequestDto();
+    final SearchQueryRequest searchQueryRequest = new SearchQueryRequest();
 
     when(userService.findAllUsers()).thenReturn(List.of(camundaUser));
 
@@ -260,7 +260,7 @@ public class UserControllerTest {
         .uri("/v2/users/search")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(searchRequestDto)
+        .bodyValue(searchQueryRequest)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()

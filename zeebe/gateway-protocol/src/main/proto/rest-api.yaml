@@ -445,7 +445,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SearchRequestDto"
+              $ref: "#/components/schemas/SearchQueryRequest"
         required: true
       responses:
         "200":
@@ -946,27 +946,6 @@ components:
           properties:
             password:
               type: "string"
-    FilterDto:
-      type: "object"
-      properties: { }
-    SortDto:
-      type: "object"
-      properties: { }
-    PageDto:
-      type: "object"
-      properties: { }
-    SearchRequestDto:
-      type: "object"
-      properties:
-        filter:
-          type: "object"
-          properties: { }
-        sort:
-          type: "object"
-          properties: { }
-        page:
-          type: "object"
-          properties: { }
     UserSearchResponse:
       type: object
       allOf:

@@ -12,7 +12,7 @@ import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
@@ -63,7 +63,7 @@ public class UserController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public UserSearchResponse findAllUsers(@RequestBody final SearchRequestDto searchRequestDto) {
+  public UserSearchResponse findAllUsers(@RequestBody final SearchQueryRequest searchQueryRequest) {
     final UserSearchResponse responseDto = new UserSearchResponse();
     final List<CamundaUserResponse> allUsers =
         userService.findAllUsers().stream().map(this::mapToCamundaUserResponse).toList();
