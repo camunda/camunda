@@ -159,7 +159,7 @@
 
       # Controls the advertised host. This is particularly useful if your broker stands behind a
       # proxy. If not set, its default is computed as:
-      #   - If zeebe.broker.network.host was explicitly and it is not the ANY address (e.g. "0.0.0.0" or "::"), use this.
+      #   - If zeebe.broker.network.host was explicitly, use this.
       #   - If not, try to resolve the machine's hostname to an IP address and use that.
       #   - If the hostname is not resolvable, use the first non-loopback IP address.
       #   - If there is none, use the loopback address.
