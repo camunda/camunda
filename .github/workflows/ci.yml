@@ -255,10 +255,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       flakyUnitTests: ${{ needs.java-unit-tests.outputs.flakyTests }}
+      flakyITs: ${{ needs.integration-tests.outputs.flakyTests }}
     needs:
       - actionlint
       - java-unit-tests
       - identity-frontend-tests
+      - integration-tests
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
@@ -300,6 +302,13 @@ jobs:
                     "type": "mrkdwn",
                     "text": "*Detected flaky unit tests:* \n ${{ env.FLAKY_UNIT_TESTS }}"
                   }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Detected flaky integration tests:* \n ${{ env.FLAKY_ITS }}"
+                  }
                 }
               ]
             }
@@ -307,3 +316,4 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
+          FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
