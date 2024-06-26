@@ -47,7 +47,7 @@ public class UserControllerTest {
   @Autowired private WebTestClient webClient;
 
   @Test
-  void getUserByIdWorks() {
+  void getUserByIdShouldReturnExistingUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
@@ -88,7 +88,7 @@ public class UserControllerTest {
   }
 
   @Test
-  void createUserWorks() {
+  void createUserShouldCreateAndReturnNewUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
@@ -155,7 +155,7 @@ public class UserControllerTest {
   }
 
   @Test
-  void updateUserWorks() {
+  void updateUserShouldUpdateAndReturnUpdatedUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
     camundaUser.setName("updatedName");
@@ -226,7 +226,7 @@ public class UserControllerTest {
   }
 
   @Test
-  void deleteUserWorks() {
+  void deleteUserShouldRemoveExistingUser() {
 
     webClient
         .delete()
@@ -240,7 +240,7 @@ public class UserControllerTest {
   }
 
   @Test
-  void searchUsersWorks() {
+  void searchUsersShouldReturnAllUsers() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
