@@ -25,7 +25,9 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
 
   DELETING((short) 5),
   DELETE((short) 6),
-  DELETED((short) 7);
+  DELETED((short) 7),
+
+  MIGRATED((short) 8);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -52,6 +54,7 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
       case CORRELATED:
       case DELETING:
       case DELETED:
+      case MIGRATED:
         return true;
       default:
         return false;
@@ -76,6 +79,8 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
         return DELETE;
       case 7:
         return DELETED;
+      case 8:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }

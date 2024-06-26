@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
-import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import java.util.Collection;
 
 public final class ExecutionListenerTransformer {
@@ -31,16 +29,8 @@ public final class ExecutionListenerTransformer {
       final ExpressionLanguage expressionLanguage) {
 
     flowNode.addListener(
-        fromZeebeExecutionListenerEventType(listener.getEventType()),
+        listener.getEventType(),
         expressionLanguage.parseExpression(listener.getType()),
         expressionLanguage.parseExpression(listener.getRetries()));
-  }
-
-  private ExecutionListenerEventType fromZeebeExecutionListenerEventType(
-      final ZeebeExecutionListenerEventType eventType) {
-    return switch (eventType) {
-      case ZeebeExecutionListenerEventType.start -> ExecutionListenerEventType.START;
-      case ZeebeExecutionListenerEventType.end -> ExecutionListenerEventType.END;
-    };
   }
 }

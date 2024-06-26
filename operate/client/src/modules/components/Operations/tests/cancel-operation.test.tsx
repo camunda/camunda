@@ -15,7 +15,7 @@ import {Paths} from 'modules/Routes';
 describe('Operations - Cancel Operation', () => {
   it('should show cancel confirmation modal', async () => {
     const modalText =
-      'About to cancel Instance instance_1. In case there are called instances, these will be canceled too.';
+      /About to cancel Instance instance_1. In case there are called instances, these will be canceled too/i;
 
     const {user} = render(
       <Operations
@@ -44,7 +44,7 @@ describe('Operations - Cancel Operation', () => {
     const onOperationMock = jest.fn();
 
     const modalText =
-      /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically./;
+      /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically/;
 
     const {user} = render(
       <Operations
@@ -107,6 +107,9 @@ describe('Operations - Cancel Operation', () => {
   });
 
   it('should display helper modal when clicking modify instance, until user clicks do not show', async () => {
+    const helperModalText =
+      /Process instance modification mode allows you to plan multiple modifications on a process instance/i;
+
     const {user} = render(
       <Operations
         instance={{...INSTANCE, state: 'INCIDENT'}}
@@ -122,22 +125,16 @@ describe('Operations - Cancel Operation', () => {
       screen.queryByTestId('apply-modifications-button'),
     ).not.toBeInTheDocument();
 
-    expect(
-      screen.getByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(helperModalText)).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('checkbox', {name: 'Do not show this message again'}),
+      screen.getByRole('checkbox', {
+        name: /Don't show this message next time/i,
+      }),
     );
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
-    expect(
-      screen.queryByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(helperModalText)).not.toBeInTheDocument();
 
     expect(modificationsStore.state.status).toBe('enabled');
 
@@ -151,10 +148,6 @@ describe('Operations - Cancel Operation', () => {
 
     expect(modificationsStore.state.status).toBe('enabled');
 
-    expect(
-      screen.queryByText(
-        'Process instance modification mode allows you to plan multiple modifications on a process instance.',
-      ),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(helperModalText)).not.toBeInTheDocument();
   });
 });

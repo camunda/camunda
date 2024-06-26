@@ -67,7 +67,11 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery not(final List<SearchQuery> queries) {
-    return map(queries, SearchQueryBuilders::mustNot);
+    final var nonNullQueries = withoutNull(queries);
+    if (nonNullQueries != null && !nonNullQueries.isEmpty()) {
+      return SearchQueryBuilders.mustNot(queries);
+    }
+    return null;
   }
 
   public static SearchQuery or(final SearchQuery query, final SearchQuery... queries) {
@@ -168,7 +172,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery prefix(final String field, final String value) {
-    return SearchPrefixQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return prefix(q -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery.Builder query() {
@@ -219,23 +223,23 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery term(final String field, final Integer value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final Long value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final Double value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final String value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery term(final String field, final boolean value) {
-    return SearchTermQuery.of((q) -> q.field(field).value(value)).toSearchQuery();
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchTermsQuery.Builder terms() {
@@ -292,6 +296,6 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery wildcardQuery(final String field, final String value) {
-    return SearchWildcardQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return wildcard(q -> q.field(field).value(value)).toSearchQuery();
   }
 }

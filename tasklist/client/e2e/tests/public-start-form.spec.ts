@@ -24,7 +24,7 @@ test.describe('public start process', () => {
 
     await publicFormsPage.nameInput.fill('Joe Doe');
     await publicFormsPage.emailInput.fill('joe@doe.com');
-    await publicFormsPage.clickSubmitButton();
+    await publicFormsPage.submitButton.click();
 
     await expect(publicFormsPage.successMessage).toBeVisible();
   });

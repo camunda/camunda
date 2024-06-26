@@ -1,8 +1,0 @@
-spring:
-  datasource:
-    username: ${CAMUNDA_IDENTITY_DATABASE_USERNAME:}
-    password: ${CAMUNDA_IDENTITY_DATABASE_PASSWORD:}
-    url: jdbc:postgresql://${CAMUNDA_IDENTITY_DATABASE_HOST:}:${CAMUNDA_IDENTITY_DATABASE_PORT:}/${CAMUNDA_IDENTITY_DATABASE_NAME:}
-  sql:
-    init:
-      mode: always

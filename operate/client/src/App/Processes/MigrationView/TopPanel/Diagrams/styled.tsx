@@ -39,6 +39,7 @@ const DiagramWrapper = styled.section`
 const Label = styled.label`
   ${styles.headingCompact01};
   color: var(--cds-text-secondary);
+  align-self: center;
 `;
 
 const FieldContainer = styled.div`

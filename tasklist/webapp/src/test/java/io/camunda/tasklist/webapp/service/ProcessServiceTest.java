@@ -19,6 +19,7 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -49,7 +50,7 @@ public class ProcessServiceTest {
 
   @Spy
   private IdentityAuthorizationService identityAuthorizationService =
-      new IdentityAuthorizationService();
+      new IdentityAuthorizationServiceImpl();
 
   @InjectMocks private ProcessService instance;
 

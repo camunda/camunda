@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.qa.util.actuator;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Feign;
@@ -17,8 +20,10 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
@@ -78,4 +83,36 @@ public interface ExportersActuator {
   @RequestLine("POST /{exporterId}/disable")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse disableExporter(@Param final String exporterId);
+
+  /**
+   * Request to enable an exporter
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /{exporterId}/enable")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse enableExporter(
+      @Param final String exporterId, @RequestBody final InitializationInfo initializeFrom);
+
+  default PlannedOperationsResponse enableExporter(
+      final String exporterId, final String initializeFrom) {
+    return enableExporter(exporterId, new InitializationInfo(initializeFrom));
+  }
+
+  @RequestLine("POST /{exporterId}/enable")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse enableExporter(@Param final String exporterId);
+
+  /**
+   * Returns the list of exporters with their status
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<ExporterStatus> getExporters();
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonInclude(Include.NON_EMPTY)
+  record InitializationInfo(String initializeFrom) {}
 }

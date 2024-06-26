@@ -30,6 +30,10 @@
 # Relative paths are resolved relative to the installation directory of the broker.
 # ----------------------------------------------------
 
+# Enable the Camunda REST API to start on broker startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
+# camunda.rest.enabled: false
+
 # zeebe:
   # broker:
     # gateway:

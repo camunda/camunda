@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,7 +41,7 @@ public class MockMvcManager {
         post(url).content(objectMapper.writeValueAsString(dtoRequest)).contentType(jsonContentType);
 
     if (expectedStatus != null) {
-      return mockMvc.perform(ope).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
+      return mockMvc.perform(ope).andExpect(status().is(expectedStatus)).andReturn();
     } else {
       return mockMvc.perform(ope).andReturn();
     }

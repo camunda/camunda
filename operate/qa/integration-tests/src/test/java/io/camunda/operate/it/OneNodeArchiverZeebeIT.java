@@ -85,6 +85,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   private DateTimeFormatter dateTimeFormatter;
 
+  @Override
   @Before
   public void before() {
     super.before();

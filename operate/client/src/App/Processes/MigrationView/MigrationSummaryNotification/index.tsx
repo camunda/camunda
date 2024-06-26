@@ -7,44 +7,16 @@
  */
 
 import {MigrationSummary, InlineNotification} from './styled';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-import {observer} from 'mobx-react';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import pluralSuffix from 'modules/utils/pluralSuffix';
+import {MigrationDetails} from '../MigrationDetails';
 
-const MigrationSummaryNotification: React.FC = observer(() => {
-  const {
-    migrationState: {selectedTargetProcess, selectedTargetVersion},
-    getSelectedProcessDetails,
-  } = processesStore;
-
-  const {
-    processName: selectedSourceProcessName,
-    version: selectedSourceProcessVersion,
-  } = getSelectedProcessDetails();
-
+const MigrationSummaryNotification: React.FC = () => {
   return (
     <InlineNotification
       kind="info"
       title=""
       children={
         <MigrationSummary orientation="vertical" gap={5}>
-          <p>
-            You are about to migrate{' '}
-            {pluralSuffix(
-              processInstanceMigrationStore.state.selectedInstancesCount,
-              'process instance',
-            )}{' '}
-            from the process definition:{' '}
-            <strong>
-              {`${selectedSourceProcessName} - version ${selectedSourceProcessVersion}`}
-            </strong>{' '}
-            to the process definition:{' '}
-            <strong>
-              {`${selectedTargetProcess?.name} - version ${selectedTargetVersion}`}
-            </strong>
-          </p>
-
+          <MigrationDetails />
           <p>
             This process can take several minutes until it completes. You can
             observe progress of this in the operations panel.
@@ -59,6 +31,6 @@ const MigrationSummaryNotification: React.FC = observer(() => {
       hideCloseButton
     />
   );
-});
+};
 
 export {MigrationSummaryNotification};

@@ -30,6 +30,7 @@ component/operate:
         - 'operate/**'
         - 'parent/*'
         - 'pom.xml'
+        - 'webapps-common/**'
 component/identity:
   - changed-files:
       - any-glob-to-any-file:
@@ -49,3 +50,11 @@ component/tasklist:
           - 'pom.xml'
           - 'tasklist/**'
           - 'tasklist.Dockerfile'
+          - 'webapps-common/**'
+component/build-pipeline:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - 'maven-settings.xml'

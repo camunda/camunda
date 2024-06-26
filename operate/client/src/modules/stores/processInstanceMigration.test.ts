@@ -27,7 +27,7 @@ describe('processInstanceMigration', () => {
 
     expect(processInstanceMigrationStore.isSummaryStep).toBe(false);
     expect(processInstanceMigrationStore.currentStep).toEqual({
-      stepDescription: 'Mapping elements',
+      stepDescription: 'mapping elements',
       stepNumber: 1,
     });
     expect(processInstanceMigrationStore.isSummaryStep).toBe(false);
@@ -35,7 +35,7 @@ describe('processInstanceMigration', () => {
     processInstanceMigrationStore.setCurrentStep('summary');
 
     expect(processInstanceMigrationStore.currentStep).toEqual({
-      stepDescription: 'Confirm',
+      stepDescription: 'confirm',
       stepNumber: 2,
     });
     expect(processInstanceMigrationStore.isSummaryStep).toBe(true);
