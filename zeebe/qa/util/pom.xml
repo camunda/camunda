@@ -179,4 +179,8 @@
     </dependency>
 
   </dependencies>
+
+  <scm>
+    <tag>8.5.4</tag>
+  </scm>
 </project>

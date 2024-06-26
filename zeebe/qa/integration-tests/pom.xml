@@ -496,4 +496,8 @@
       </build>
     </profile>
   </profiles>
+
+  <scm>
+    <tag>8.5.4</tag>
+  </scm>
 </project>
