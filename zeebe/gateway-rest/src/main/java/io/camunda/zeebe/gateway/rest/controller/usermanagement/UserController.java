@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -40,9 +40,9 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
-  public CamundaUserDto createUser(
-      @RequestBody final CamundaUserWithPasswordDto userWithPasswordDto) {
-    return mapToCamundaUserDto(
+  public CamundaUserResponse createUser(
+      @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto) {
+    return mapToCamundaUserResponse(
         userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
   }
 
@@ -55,18 +55,18 @@ public class UserController {
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaUserDto findUserById(@PathVariable final Long id) {
-    return mapToCamundaUserDto(userService.findUserById(id));
+  public CamundaUserResponse findUserById(@PathVariable final Long id) {
+    return mapToCamundaUserResponse(userService.findUserById(id));
   }
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public UserSearchResponseDto findAllUsers(@RequestBody final SearchRequestDto searchRequestDto) {
-    final UserSearchResponseDto responseDto = new UserSearchResponseDto();
-    final List<CamundaUserDto> allUsers =
-        userService.findAllUsers().stream().map(this::mapToCamundaUserDto).toList();
+  public UserSearchResponse findAllUsers(@RequestBody final SearchRequestDto searchRequestDto) {
+    final UserSearchResponse responseDto = new UserSearchResponse();
+    final List<CamundaUserResponse> allUsers =
+        userService.findAllUsers().stream().map(this::mapToCamundaUserResponse).toList();
     responseDto.setItems(allUsers);
 
     return responseDto;
@@ -76,12 +76,12 @@ public class UserController {
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CamundaUserDto updateUser(
-      @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordDto user) {
-    return mapToCamundaUserDto(userService.updateUser(id, mapToUserWithPassword(user)));
+  public CamundaUserResponse updateUser(
+      @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordRequest user) {
+    return mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
   }
 
-  private CamundaUserWithPassword mapToUserWithPassword(final CamundaUserWithPasswordDto dto) {
+  private CamundaUserWithPassword mapToUserWithPassword(final CamundaUserWithPasswordRequest dto) {
     final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
 
     camundaUserWithPassword.setId(dto.getId());
@@ -94,8 +94,8 @@ public class UserController {
     return camundaUserWithPassword;
   }
 
-  private CamundaUserDto mapToCamundaUserDto(final CamundaUser camundaUser) {
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+  private CamundaUserResponse mapToCamundaUserResponse(final CamundaUser camundaUser) {
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setId(camundaUser.getId());
     camundaUserDto.setUsername(camundaUser.getUsername());
     camundaUserDto.setName(camundaUser.getName());

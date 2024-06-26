@@ -14,10 +14,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import java.net.URI;
 import java.util.List;
@@ -51,7 +51,7 @@ public class UserControllerTest {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
@@ -64,7 +64,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
   }
 
@@ -92,7 +92,7 @@ public class UserControllerTest {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
@@ -100,7 +100,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
@@ -116,7 +116,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
 
     verify(userService, times(1)).createUserFailIfExists(camundaUserWithPassword);
@@ -130,7 +130,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
@@ -160,7 +160,7 @@ public class UserControllerTest {
     camundaUser.setUsername("demo");
     camundaUser.setName("updatedName");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
     camundaUserDto.setName("updatedName");
@@ -170,7 +170,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setName("updatedName");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setName("updatedName");
@@ -187,7 +187,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
 
     verify(userService, times(1)).updateUser(1L, camundaUserWithPassword);
@@ -201,7 +201,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
@@ -244,11 +244,11 @@ public class UserControllerTest {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
-    final UserSearchResponseDto userSearchResponseDto = new UserSearchResponseDto();
+    final UserSearchResponse userSearchResponseDto = new UserSearchResponse();
     userSearchResponseDto.setItems(List.of(camundaUserDto));
 
     final SearchRequestDto searchRequestDto = new SearchRequestDto();
@@ -264,7 +264,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(UserSearchResponseDto.class)
+        .expectBody(UserSearchResponse.class)
         .isEqualTo(userSearchResponseDto);
 
     verify(userService, times(1)).findAllUsers();
