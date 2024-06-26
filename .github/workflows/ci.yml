@@ -119,6 +119,7 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
+    needs: [detect-changes]
     timeout-minutes: 20
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
