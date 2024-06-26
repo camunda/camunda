@@ -56,13 +56,16 @@ final class AddressInitializations {
   private static NonLoopBackAddresses collectNonLoopBackAddresses(
       final Stream<InetAddress> networkInterfaces, final boolean isIPv6Preferred) {
     // loop through all network interfaces' addresses, and pick the first non loop back IPv4 and
-    // IPv6 addresses; there is no combiner as this is not meant to be used with parallel streams
+    // IPv6 addresses
     return networkInterfaces
         .filter(Predicate.not(InetAddress::isLoopbackAddress))
         .collect(
             () -> new NonLoopBackAddresses(isIPv6Preferred),
             NonLoopBackAddresses::setIfNonNull,
-            (a, b) -> {});
+            (a, b) -> {
+              a.setIfNonNull(b.ipv4);
+              a.setIfNonNull(b.ipv6);
+            });
   }
 
   private static final class NonLoopBackAddresses {
