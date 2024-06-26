@@ -21,7 +21,7 @@ type RolesListProps = {
   loadingUser: boolean;
 };
 
-const List: FC<RolesListProps> = ({ user, loadingUser }) => {
+const Roles: FC<RolesListProps> = ({ user, loadingUser }) => {
   const { t, Translate } = useTranslate();
 
   const {
@@ -98,4 +98,4 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
   );
 };
 
-export default List;
+export default Roles;

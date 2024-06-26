@@ -13,9 +13,7 @@ import usePermissionsTranslated, {
   TranslatedPermissionItem,
 } from "src/pages/roles/modals/usePermissionsTranslated";
 
-const useAllPermissionsTranslated = (
-  initialPermissions: Role["permissions"] = [],
-) => {
+const useAllPermissions = (initialPermissions: Role["permissions"] = []) => {
   const [permissions, setPermissions] = useState<string[]>(initialPermissions);
   const availableItems: TranslatedPermissionItem[] =
     usePermissionsTranslated(allPermissions);
@@ -39,4 +37,4 @@ const useAllPermissionsTranslated = (
   };
 };
 
-export default useAllPermissionsTranslated;
+export default useAllPermissions;
