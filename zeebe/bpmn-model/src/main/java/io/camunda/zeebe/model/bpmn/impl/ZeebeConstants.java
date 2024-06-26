@@ -59,6 +59,8 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
 
+  public static final String ATTRIBUTE_BINDING_TYPE = "bindingType";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";

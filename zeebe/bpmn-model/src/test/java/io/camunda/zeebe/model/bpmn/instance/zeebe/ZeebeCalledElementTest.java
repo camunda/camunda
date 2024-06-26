@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-public class ZeebeCalledDecisionTest extends BpmnModelElementInstanceTest {
+public class ZeebeCalledElementTest extends BpmnModelElementInstanceTest {
 
   @Override
   public TypeAssumption getTypeAssumption() {
@@ -36,8 +36,11 @@ public class ZeebeCalledDecisionTest extends BpmnModelElementInstanceTest {
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "decisionId", false, true),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resultVariable", false, true),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "processId", false, false),
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS, "propagateAllChildVariables", false, false, true),
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS, "propagateAllParentVariables", false, false, true),
         new AttributeAssumption(
             BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest));
   }
