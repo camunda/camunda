@@ -333,7 +333,6 @@ public final class FileBasedSnapshotChunkReaderTest {
     assertThat(chunkFromFirstSeek.getChecksum()).isEqualTo(chunkFromSecondSeek.getChecksum());
   }
 
-
   private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {
     final var snapshotChunks = new ArrayList<SnapshotChunk>();
 
