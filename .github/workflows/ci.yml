@@ -61,7 +61,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   java-unit-tests:
-    if: needs.detect-changes.outputs.java-unit-tests == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
@@ -117,7 +117,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   integration-tests:
-    if: needs.detect-changes.outputs.java-unit-tests == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 20
     outputs:
