@@ -25,7 +25,7 @@ jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
-      java-unit-tests: ${{ steps.filter.outputs.java-unit-tests }}
+      java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
