@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: opensearchproject/opensearch:2.15.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch
@@ -59,7 +59,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.5.2
+    image: camunda/identity:8.5.3
     ports:
       - "8080:8080"
     volumes:

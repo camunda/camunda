@@ -150,8 +150,7 @@ public final class SearchQueryBuilders {
 
   public static <A> SearchQuery match(
       final String field, final String value, final SearchMatchQueryOperator operator) {
-    return SearchMatchQuery.of((q) -> q.field(field).query(value).operator(operator))
-        .toSearchQuery();
+    return match((q) -> q.field(field).query(value).operator(operator)).toSearchQuery();
   }
 
   public static SearchQuery matchAll() {
@@ -172,7 +171,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery prefix(final String field, final String value) {
-    return SearchPrefixQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return prefix(q -> q.field(field).value(value)).toSearchQuery();
   }
 
   public static SearchQuery.Builder query() {
@@ -296,6 +295,6 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery wildcardQuery(final String field, final String value) {
-    return SearchWildcardQuery.of(q -> q.field(field).value(value)).toSearchQuery();
+    return wildcard(q -> q.field(field).value(value)).toSearchQuery();
   }
 }
