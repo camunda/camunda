@@ -89,7 +89,7 @@
 
       # Controls the advertised host. This is particularly useful if your broker stands behind a
       # proxy. If not set, its default is computed as:
-      #   - If zeebe.gateway.network.host was explicitly and it is not the ANY address (e.g. "0.0.0.0" or "::"), use this.
+      #   - If zeebe.gateway.cluster.host was explicitly set and it is not the ANY address (e.g. "0.0.0.0" or "::"), use this.
       #   - If not, try to resolve the machine's hostname to an IP address and use that.
       #   - If the hostname is not resolvable, use the first non-loopback IP address.
       #   - If there is none, use the loopback address.
