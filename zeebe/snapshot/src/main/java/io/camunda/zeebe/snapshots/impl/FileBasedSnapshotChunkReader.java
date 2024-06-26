@@ -7,15 +7,12 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
@@ -27,8 +24,6 @@ import java.util.TreeSet;
  * the directory once this is created.
  */
 public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
-  static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
-
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;
 
@@ -77,12 +72,11 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return;
     }
 
-    final var chunkId = decodeChunkId(id);
-    final var chunkIdParts = chunkId.toString().split("__");
+    final var chunkId = new SnapshotChunkId(id);
 
-    offset = Long.valueOf(chunkIdParts[1]);
+    offset = chunkId.offset();
 
-    chunksView = new TreeSet<>(chunks.tailSet(chunkIdParts[0], true));
+    chunksView = new TreeSet<>(chunks.tailSet(chunkId.fileName(), true));
   }
 
   @Override
@@ -91,7 +85,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return null;
     }
 
-    return encodeChunkId(chunksView.first().toString() + "__" + offset);
+    return new SnapshotChunkId(chunksView.first().toString(), offset).id();
   }
 
   @Override
@@ -140,13 +134,5 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  private ByteBuffer encodeChunkId(final CharSequence path) {
-    return ByteBuffer.wrap(path.toString().getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS);
-  }
-
-  private CharSequence decodeChunkId(final ByteBuffer id) {
-    return ID_CHARSET.decode(id).toString();
   }
 }
