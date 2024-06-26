@@ -423,6 +423,8 @@ jobs:
       - docker-checks
       - identity-frontend-tests
       - integration-tests
+      - build-platform-backend
+      - build-platform-frontend
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
