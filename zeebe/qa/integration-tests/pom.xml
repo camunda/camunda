@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.5.2</version>
+    <version>8.5.4</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
@@ -496,4 +496,8 @@
       </build>
     </profile>
   </profiles>
+
+  <scm>
+    <tag>8.5.4</tag>
+  </scm>
 </project>
