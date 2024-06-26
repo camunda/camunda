@@ -7,8 +7,8 @@
  */
 package io.camunda.identity.usermanagement;
 
+import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.NotBlank;
 
 public class CamundaUser {
   private Long id;

@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.usermanagement;
 
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public class CamundaUserWithPassword extends CamundaUser {
 
