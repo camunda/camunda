@@ -584,10 +584,10 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.60.2":
-  version "1.60.2"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.60.2.tgz#3c4f84aa877aa0c04d67a3cc64912b00ec7cd067"
-  integrity sha512-/wqvpEf4XiFSzI0Nyc4oVYXY3FmaI5a8mgwGgOPpiM4nIEBdxVlMKz+mkf3Qw0JeMHqkTCKZfriEn9JAbUpbUg==
+"@carbon/react@1.60.3":
+  version "1.60.3"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.60.3.tgz#a3178b0639241097013bbbf13888b6fd7d551512"
+  integrity sha512-YyEOM4wHcEga6TmDDrN2xx0bi8GAMJdxC9pWPAiK1MctTTnDJWSE2qY9c8/hgbGAI/W9cIGiwvNJrrTXMV2OgQ==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.20.0"
