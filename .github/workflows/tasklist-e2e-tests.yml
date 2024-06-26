@@ -14,8 +14,6 @@ on:
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
   pull_request:
-    branches:
-      - 'merge-optimize-in'
     paths:
       - '.github/actions/**'
       - '.github/workflows/tasklist-*'
