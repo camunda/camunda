@@ -352,6 +352,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-util</artifactId>
         <version>${project.version}</version>
       </dependency>

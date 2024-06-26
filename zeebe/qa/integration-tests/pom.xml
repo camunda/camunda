@@ -460,11 +460,6 @@
       <artifactId>zeebe-backup-store-azure</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
 
   </dependencies>
 
