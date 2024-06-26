@@ -95,6 +95,43 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
 
+  build-platform-frontend:
+    if: needs.detect-changes.outputs.frontend-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+      - uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+      - uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./identity/client
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
