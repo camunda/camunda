@@ -37,6 +37,7 @@ import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
+import io.camunda.zeebe.client.api.search.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -585,4 +586,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance query
    */
   ProcessInstanceQuery newProcessInstanceQuery();
+
+  UserTaskQuery newUserTaskQuery();
 }

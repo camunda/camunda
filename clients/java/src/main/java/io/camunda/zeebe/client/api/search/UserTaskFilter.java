@@ -24,41 +24,21 @@ import java.util.Objects;
 
 public interface UserTaskFilter extends SearchRequestFilter {
 
-  UserTaskFilter userTaskKeys(final Long value, final Long... values);
+  UserTaskFilter userTaskKey(final Long value);
 
-  UserTaskFilter userTaskKeys(final List<Long> values);
+  UserTaskFilter userTaskState(final String state);
 
-  UserTaskFilter userTaskStates(final String state, final String... states);
+  UserTaskFilter userTaskAssignee(final String assignee);
 
-  UserTaskFilter userTaskStates(final List<String> states);
+  UserTaskFilter userTaskTaskDefinitionId(final String taskDefinitionId);
 
-  UserTaskFilter userTaskAssignees(final String assignee, final String... assignees);
+  UserTaskFilter userTaskCandidateGroup(final String candidateGroup);
 
-  UserTaskFilter userTaskAssignees(final List<String> assignees);
+  UserTaskFilter userTaskCandidateUser(final String candidateUser);
 
-  UserTaskFilter userTaskTaskDefinitionIds(
-      final String taskDefinitionId, final String... taskDefinitionIds);
+  UserTaskFilter userTaskProcessDefinitionKey(final Long processDefinitionKey);
 
-  UserTaskFilter userTaskTaskDefinitionIds(final List<String> taskDefinitionIds);
-
-  UserTaskFilter userTaskCandidateGroups(
-      final String candidateGroup, final String... candidateGroups);
-
-  UserTaskFilter userTaskCandidateGroups(final List<String> candidateGroups);
-
-  UserTaskFilter userTaskCandidateUsers(final String candidateUser, final String... candidateUsers);
-
-  UserTaskFilter userTaskCandidateUsers(final List<String> candidateUsers);
-
-  UserTaskFilter userTaskProcessDefinitionKeys(
-      final Long processDefinitionKey, final Long... processDefinitionKeys);
-
-  UserTaskFilter userTaskProcessDefinitionKeys(final List<Long> processDefinitionKeys);
-
-  UserTaskFilter userTaskProcessInstanceKeys(
-      final Long processInstanceKey, final Long... processInstanceKeys);
-
-  UserTaskFilter userTaskProcessInstanceKeys(final List<Long> processInstanceKeys);
+  UserTaskFilter userTaskProcessInstanceKey(final Long processInstanceKey);
 
   UserTaskFilter userTaskFollowUpDate(final DateFilter dateFilter);
 
@@ -68,11 +48,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
 
   UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter);
 
-  UserTaskFilter userTaskTenantIds(final String tenantId, final String... tenantIds);
-
-  UserTaskFilter userTaskTenantIds(final List<String> tenantIds);
-
-  UserTaskFilter userTaskCreatedDate(final DateFilter dateFilter);
+  UserTaskFilter userTaskTenantId(final String tenantId);
 
   // TODO move this to a shared utility module
 
