@@ -49,7 +49,6 @@ import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
@@ -586,13 +585,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  /** Returns the list of available brokers in a cluster. */
-  public List<InetSocketAddress> getBrokersInCluster() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
-        .collect(Collectors.toList());
-  }
-
   public Collection<Broker> getBrokers() {
     return brokers.values();
   }
@@ -602,19 +594,6 @@ public class ClusteringRule extends ExternalResource {
         .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
         .toArray(InetSocketAddress[]::new);
-  }
-
-  public InetSocketAddress[] getOtherBrokers(final int nodeId) {
-    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
-    return getOtherBrokers(filter);
-  }
-
-  /** Returns the count of partition leaders */
-  public long getPartitionLeaderCount() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .flatMap(broker -> broker.getPartitions().stream())
-        .filter(PartitionInfo::isLeader)
-        .count();
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
