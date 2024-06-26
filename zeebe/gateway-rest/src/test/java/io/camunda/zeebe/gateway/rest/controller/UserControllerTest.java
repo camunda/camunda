@@ -18,40 +18,30 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
-import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
-import io.camunda.zeebe.gateway.rest.controller.UserControllerTest.TestUserControllerApplication;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-@SpringBootTest(
-    classes = {
-      TestUserControllerApplication.class,
-      UserController.class,
-      GlobalControllerExceptionHandler.class
-    },
-    webEnvironment = WebEnvironment.RANDOM_PORT)
+@WebMvcTest(
+    controllers = {UserController.class},
+    excludeAutoConfiguration = {
+      SecurityAutoConfiguration.class,
+      HibernateJpaAutoConfiguration.class,
+      DataSourceAutoConfiguration.class
+    })
 public class UserControllerTest {
 
-  @MockBean private JobController jobController;
-  @MockBean private ProcessInstanceController processInstanceController;
-  @MockBean private TopologyController topologyController;
-  @MockBean private UserTaskController userTaskController;
-  @MockBean private HttpSecurity httpSecurity;
   @MockBean private UserService userService;
 
   @Autowired private WebTestClient webClient;
@@ -279,12 +269,4 @@ public class UserControllerTest {
 
     verify(userService, times(1)).findAllUsers();
   }
-
-  @SpringBootApplication(
-      exclude = {
-        SecurityAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class,
-        DataSourceAutoConfiguration.class
-      })
-  static class TestUserControllerApplication {}
 }
