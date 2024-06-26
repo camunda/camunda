@@ -150,8 +150,7 @@ public final class SearchQueryBuilders {
 
   public static <A> SearchQuery match(
       final String field, final String value, final SearchMatchQueryOperator operator) {
-    return SearchMatchQuery.of((q) -> q.field(field).query(value).operator(operator))
-        .toSearchQuery();
+    return match((q) -> q.field(field).query(value).operator(operator)).toSearchQuery();
   }
 
   public static SearchQuery matchAll() {
