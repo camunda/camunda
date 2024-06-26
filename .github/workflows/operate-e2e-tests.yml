@@ -117,7 +117,7 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true -pl '!optimize,!optimize/client,!optimize/upgrade,!optimize/backend,!optimize/util,!optimize/util/dependency-doc-creation,!optimize/util/optimize-reimport-preparation,!optimize/util/optimize-commons,!optimize/plugins,!optimize/plugins/plugin,!optimize/plugins/optimize-test-plugins/optimize-main-test-plugin,!optimize/plugins/optimize-test-plugins/optimize-pluginloading-test-plugin,!optimize/qa,!optimize/qa/engine-it-plugin,!optimize/qa/import-performance-tests,!optimize/qa/data-generation,!optimize/qa/upgrade-tests,!optimize/qa/connect-to-secured-es-tests,!optimize/qa/cleanup-performance-tests,!optimize/qa/clustering-tests,!optimize/qa/optimize-data-generator,!optimize/qa/import-mediator-permutation-test'
       - name: Start Operate
         run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
         env:
