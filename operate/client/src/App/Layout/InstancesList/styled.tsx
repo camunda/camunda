@@ -60,6 +60,7 @@ const Container = styled.div<ContainerProps>`
   display: grid;
   height: 100%;
   position: relative;
+  overflow: auto;
 
   ${gridColumnLayout}
   ${gridRowLayout}

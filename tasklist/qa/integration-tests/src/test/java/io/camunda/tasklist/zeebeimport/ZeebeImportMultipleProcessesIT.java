@@ -32,6 +32,7 @@ public class ZeebeImportMultipleProcessesIT extends TasklistZeebeIntegrationTest
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private ProcessStore processStore;
   private MockMvcHelper mockMvcHelper;
 

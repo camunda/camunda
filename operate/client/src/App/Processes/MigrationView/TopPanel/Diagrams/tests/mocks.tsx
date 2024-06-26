@@ -9,7 +9,8 @@
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
+import {processXmlStore as processXmlSourceStore} from 'modules/stores/processXml/processXml.migration.source';
+import {processXmlStore as processXmlTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {processesStore} from 'modules/stores/processes/processes.list';
 
 type Props = {
@@ -21,7 +22,8 @@ const Wrapper = ({children}: Props) => {
     return () => {
       processesStore.reset();
       processInstanceMigrationStore.reset();
-      processXmlStore.reset();
+      processXmlSourceStore.reset();
+      processXmlTargetStore.reset();
       processStatisticsStore.reset();
     };
   });

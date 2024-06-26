@@ -56,7 +56,9 @@ public class InternalAPIErrorControllerIT {
   @Autowired private MockMvc mockMvc;
   @MockBean private OperationReader operationReader;
   @MockBean private OperateProfileService mockProfileService;
+
   @Autowired private ObjectMapper objectMapper;
+
   private MockHttpServletRequestBuilder mockGetRequest;
 
   @Before

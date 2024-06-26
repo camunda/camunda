@@ -124,7 +124,6 @@ const CollapsiblePanel: React.FC = () => {
         setCustomFilterToEdit(undefined);
       }}
       onSuccess={(filter) => {
-        console.log({filter});
         setIsCustomFiltersModalOpen(false);
         setCustomFilterToEdit(undefined);
         navigate({

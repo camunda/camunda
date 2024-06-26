@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -34,7 +34,6 @@ import org.springframework.context.annotation.Profile;
     basePackages = {
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
-      "io.camunda.zeebe.gateway.rest",
       "io.camunda.authentication"
     })
 @ConfigurationPropertiesScan(
@@ -48,7 +47,7 @@ import org.springframework.context.annotation.Profile;
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
-  private final BrokerConfiguration configuration;
+  private final BrokerBasedConfiguration configuration;
   private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
@@ -60,7 +59,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Autowired
   public BrokerModuleConfiguration(
-      final BrokerConfiguration configuration,
+      final BrokerBasedConfiguration configuration,
       final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,

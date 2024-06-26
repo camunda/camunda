@@ -36,6 +36,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -47,7 +48,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   private static final Set<String> STATES_TO_PERSIST = Set.of(ProcessIntent.CREATED.name());
   private static final Set<String> STATES_TO_DELETE = Set.of(ProcessIntent.DELETED.name());
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private ProcessIndex processIndex;
 
@@ -57,7 +60,8 @@ public class ProcessZeebeRecordProcessorElasticSearch {
 
   @Autowired private ProcessDefinitionDeletionProcessor processDefinitionDeletionProcessor;
 
-  public void processDeploymentRecord(Record<DeployedProcessImpl> record, BulkRequest bulkRequest)
+  public void processDeploymentRecord(
+      final Record<DeployedProcessImpl> record, final BulkRequest bulkRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final DeployedProcessImpl recordValue = record.getValue();
@@ -72,7 +76,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
             try {
               persistForm(
                   processDefinitionKey, formKey, schema, bulkRequest, recordValue.getTenantId());
-            } catch (PersistenceException e) {
+            } catch (final PersistenceException e) {
               exceptions.add(e);
             }
           });
@@ -87,7 +91,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   }
 
   private void persistProcess(
-      Process process, BulkRequest bulkRequest, BiConsumer<String, String> userTaskFormCollector)
+      final Process process,
+      final BulkRequest bulkRequest,
+      final BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
 
     final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
@@ -99,7 +105,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
               .index(processIndex.getFullQualifiedName())
               .id(toStringOrNull(processEntity.getKey()))
               .source(objectMapper.writeValueAsString(processEntity), XContentType.JSON));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to insert process [%s]", processEntity.getKey()),
           e);
@@ -107,7 +113,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   }
 
   private ProcessEntity createEntity(
-      Process process, BiConsumer<String, String> userTaskFormCollector) {
+      final Process process, final BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
@@ -126,27 +132,24 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         processEntity::setFormKey,
-        formId -> processEntity.setFormId(formId),
+        processEntity::setFormId,
         processEntity::setStartedByForm);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));
 
     Optional.ofNullable(processEntity.getFormId())
-        .ifPresent(
-            id -> {
-              processEntity.setIsFormEmbedded(false);
-            });
+        .ifPresent(id -> processEntity.setIsFormEmbedded(false));
 
     return processEntity;
   }
 
   private void persistForm(
-      String processDefinitionKey,
-      String formKey,
-      String schema,
-      BulkRequest bulkRequest,
-      String tenantId)
+      final String processDefinitionKey,
+      final String formKey,
+      final String schema,
+      final BulkRequest bulkRequest,
+      final String tenantId)
       throws PersistenceException {
     final FormEntity formEntity = new FormEntity(processDefinitionKey, formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);
@@ -157,7 +160,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
               .id(toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
 
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to insert task form [%s]", formEntity.getId()),
           e);

@@ -205,6 +205,11 @@
                 "id": 1,
                 "name": "processInstanceKey",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -262,6 +267,11 @@
                 "id": 6,
                 "name": "tenantId",
                 "type": "string"
+              },
+              {
+                "id": 7,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -955,6 +965,11 @@
                 "id": 1,
                 "name": "incidentKey",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -1058,6 +1073,11 @@
                 "id": 2,
                 "name": "retries",
                 "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -1076,6 +1096,11 @@
                 "id": 2,
                 "name": "timeout",
                 "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -1099,6 +1124,11 @@
                 "id": 3,
                 "name": "local",
                 "type": "bool"
+              },
+              {
+                "id": 4,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },
@@ -1131,6 +1161,11 @@
                 "name": "terminateInstructions",
                 "type": "TerminateInstruction",
                 "is_repeated": true
+              },
+              {
+                "id": 4,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ],
             "messages": [
@@ -1197,6 +1232,11 @@
                 "id": 2,
                 "name": "migrationPlan",
                 "type": "MigrationPlan"
+              },
+              {
+                "id": 3,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ],
             "messages": [
@@ -1243,6 +1283,11 @@
                 "id": 1,
                 "name": "resourceKey",
                 "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "operationReference",
+                "type": "uint64"
               }
             ]
           },

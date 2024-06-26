@@ -144,6 +144,21 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
+  public void onRecovered(final int partitionId) {
+    commandHandler.onRecovered(partitionId);
+  }
+
+  @Override
+  public void onPaused(final int partitionId) {
+    commandHandler.onPaused(partitionId);
+  }
+
+  @Override
+  public void onResumed(final int partitionId) {
+    commandHandler.onResumed(partitionId);
+  }
+
+  @Override
   public void onDiskSpaceNotAvailable() {
     actor.run(commandHandler::onDiskSpaceNotAvailable);
   }

@@ -13,7 +13,7 @@
   <name>Identity Parent</name>
   <modules>
     <module>backend</module>
-    <module>auth-starter</module>
+    <module>client</module>
     <module>common</module>
   </modules>
 
@@ -22,6 +22,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit-jupiter-api.version>5.10.2</junit-jupiter-api.version>
+    <skip.fe.build>false</skip.fe.build>
   </properties>
 
   <dependencies>
@@ -75,11 +76,14 @@
             <dep>org.springframework:spring-jdbc</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-web</dep>
+            <dep>org.springframework.boot:spring-boot</dep>
             <dep>org.springframework.boot:spring-boot-starter-web</dep>
+            <dep>org.springframework.boot:spring-boot-starter-data-jpa</dep>
             <dep>org.springframework.boot:spring-boot-starter-jdbc</dep>
             <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
             <dep>org.slf4j:slf4j-api</dep>
             <dep>org.yaml:snakeyaml</dep>
+            <dep>org.springframework.boot:spring-boot-starter-validation</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>

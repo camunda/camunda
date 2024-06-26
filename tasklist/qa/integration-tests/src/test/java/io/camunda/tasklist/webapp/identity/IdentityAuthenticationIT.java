@@ -54,6 +54,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     },
     properties = {
       "camunda.tasklist.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
+      "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
@@ -90,8 +91,7 @@ public class IdentityAuthenticationIT {
 
     final List<Tenant> tenants =
         new ObjectMapper()
-            .readValue(
-                this.getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
+            .readValue(getClass().getResource("/identity/tenants.json"), new TypeReference<>() {});
     when(this.tenants.forToken(any())).thenReturn(tenants);
 
     // when

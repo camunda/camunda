@@ -16,6 +16,9 @@ camunda.tasklist:
     readerBackoff: 0
     schedulerBackoff: 0
     startLoadingDataOnStartup: false
+camunda.webapps:
+  enabled: true
+  default-app: operate
 logging:
   level:
     ROOT: INFO
@@ -26,6 +29,15 @@ management:
 spring:
   web:
     resources:
-      static-locations: classpath:/static
+      static-locations: classpath:/test-static/tasklist/
   thymeleaf:
-    prefix: classpath:/static
+    prefix: classpath:/test-static/
+server.servlet.session.cookie.name: TASKLIST-SESSION
+server.error.include-message: always
+management.health.defaults.enabled: false
+management.endpoint.health.probes.enabled: true
+management.endpoints.web.exposure.include: health,prometheus,loggers,usage-metrics,backups
+management.endpoint.health.group.readiness.include: readinessState,searchEngineCheck
+---
+spring.config.activate.on-profile: identity-auth, sso-auth
+camunda.webapps.login-delegated: true

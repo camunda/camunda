@@ -810,13 +810,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       log.error("Failed to close metastore", e);
     }
 
-    // Close the snapshot store.
-    try {
-      persistedSnapshotStore.close();
-    } catch (final Exception e) {
-      log.error("Failed to close snapshot store", e);
-    }
-
     // close thread contexts
     threadContext.close();
   }
@@ -874,6 +867,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setFirstCommitIndex(final long firstCommitIndex) {
     if (this.firstCommitIndex == 0) {
+      if (firstCommitIndex == 0) {
+        return;
+      }
       this.firstCommitIndex = firstCommitIndex;
       log.info(
           "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",

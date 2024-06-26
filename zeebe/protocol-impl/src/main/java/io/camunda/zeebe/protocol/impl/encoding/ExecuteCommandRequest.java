@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.operationReferenceNullValue;
 import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
 import io.camunda.zeebe.protocol.Protocol;
@@ -33,6 +34,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private final DirectBuffer value = new UnsafeBuffer(0, 0);
   private int partitionId;
   private long key;
+  private long operationReference;
   private ValueType valueType;
   private Intent intent;
   private final AuthInfo authorization = new AuthInfo();
@@ -44,6 +46,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   public ExecuteCommandRequest reset() {
     partitionId = partitionIdNullValue();
     key = keyNullValue();
+    operationReference = operationReferenceNullValue();
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
@@ -69,6 +72,15 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     this.key = key;
     partitionId = Protocol.decodePartitionId(key);
 
+    return this;
+  }
+
+  public long getOperationReference() {
+    return operationReference;
+  }
+
+  public ExecuteCommandRequest setOperationReference(final long operationReference) {
+    this.operationReference = operationReference;
     return this;
   }
 
@@ -128,6 +140,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
     partitionId = bodyDecoder.partitionId();
     key = bodyDecoder.key();
+    operationReference = bodyDecoder.operationReference();
     valueType = bodyDecoder.valueType();
     intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
 
@@ -180,6 +193,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .wrap(buffer, offset)
         .partitionId(partitionId)
         .key(key)
+        .operationReference(operationReference)
         .valueType(valueType)
         .intent(intent.value())
         .putValue(value, 0, value.capacity())

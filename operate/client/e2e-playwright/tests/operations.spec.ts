@@ -96,6 +96,7 @@ test.describe('Operations', () => {
   test('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
     page,
   }) => {
     test.slow();
@@ -105,8 +106,8 @@ test.describe('Operations', () => {
     await expect(page.getByTestId('data-list')).toBeVisible();
 
     // filter by Process Instance Key
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.processInstanceKeysFilter.fill(
       instance.processInstanceKey,
     );
 
@@ -150,15 +151,13 @@ test.describe('Operations', () => {
       .getByRole('listitem')
       .nth(0);
 
-    const operationId = await operationItem
-      .getByTestId('operation-id')
-      .innerText();
+    const operationId = await operationItem.getByRole('link').innerText();
 
     await expect(operationItem.getByText('Cancel')).toBeVisible();
     await expect(operationItem.getByText(DATE_REGEX)).toBeVisible();
 
-    await operationItem.getByText('1 Instance').click();
-    await expect(processesPage.operationIdFilter).toHaveValue(operationId);
+    await operationItem.getByRole('link').click();
+    await expect(filtersPanel.operationIdFilter).toHaveValue(operationId);
     await expect(page.getByText('1 results')).toBeVisible();
 
     const instanceRow = page.getByTestId('data-list').getByRole('row').nth(0);
@@ -177,7 +176,7 @@ test.describe('Operations', () => {
 
   test('Retry and cancel multiple instances @roundtrip', async ({
     commonPage,
-    processesPage,
+    processesPage: {filtersPanel},
     page,
   }) => {
     test.slow();
@@ -187,8 +186,8 @@ test.describe('Operations', () => {
     await expect(page.getByTestId('data-list')).toBeVisible();
 
     // filter by Process Instance Keys
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.processInstanceKeysFilter.fill(
       instances.map((instance) => instance.processInstanceKey).join(','),
     );
 
@@ -226,7 +225,7 @@ test.describe('Operations', () => {
       operationsListItems.nth(0).getByRole('progressbar'),
     ).toBeHidden();
 
-    await processesPage.resetFiltersButton.click();
+    await filtersPanel.resetFiltersButton.click();
 
     await expect
       .poll(async () => {
@@ -235,18 +234,15 @@ test.describe('Operations', () => {
       })
       .toBeGreaterThan(instances.length);
     // select all instances from operation
-    await operationsListItems
-      .nth(0)
-      .getByRole('link', {name: `${instances.length} Instances`})
-      .click();
+    await operationsListItems.nth(0).getByRole('link').click();
 
     await expect(instancesList.getByRole('row')).toHaveCount(instances.length);
 
     const operationId = await operationsListItems
       .nth(0)
-      .getByTestId('operation-id')
+      .getByRole('link')
       .innerText();
-    await expect(processesPage.operationIdFilter).toHaveValue(operationId);
+    await expect(filtersPanel.operationIdFilter).toHaveValue(operationId);
 
     // check if all instances are shown
     await Promise.all(

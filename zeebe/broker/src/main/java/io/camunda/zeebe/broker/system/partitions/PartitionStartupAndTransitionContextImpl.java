@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -41,14 +42,12 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -68,7 +67,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final BrokerCfg brokerCfg;
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
-  private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
+  private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
@@ -110,7 +109,7 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionMessagingService partitionCommunicationService,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
-      final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
+      final CommandApiService commandApiService,
       final PersistedSnapshotStore persistedSnapshotStore,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
@@ -126,7 +125,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerCfg = brokerCfg;
     this.stateController = stateController;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
-    this.commandResponseWriterSupplier = commandResponseWriterSupplier;
+    this.commandApiService = commandApiService;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     this.partitionRaftListeners = Collections.unmodifiableList(partitionRaftListeners);
@@ -489,8 +488,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriterSupplier.get();
+  public CommandApiService getCommandApiService() {
+    return commandApiService;
   }
 
   @Override

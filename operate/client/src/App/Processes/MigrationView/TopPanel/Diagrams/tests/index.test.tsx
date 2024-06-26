@@ -25,7 +25,7 @@ describe('Target Diagram', () => {
     const {user} = render(<Diagrams />, {wrapper: Wrapper});
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     // expect latest version selected by default

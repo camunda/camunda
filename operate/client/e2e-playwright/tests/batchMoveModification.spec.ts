@@ -11,6 +11,7 @@ import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
+import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -43,18 +44,20 @@ test.beforeAll(async ({request}) => {
 test.describe('Process Instance Batch Modification', () => {
   test('Move Operation @roundtrip', async ({
     processesPage,
+    processesPage: {filtersPanel},
     commonPage,
     page,
+    request,
   }) => {
     test.slow();
-    const processInstanceKeys = initialData.processInstances
-      .map((instance) => instance.processInstanceKey)
-      .join(',');
+    const processInstanceKeys = initialData.processInstances.map(
+      (instance) => instance.processInstanceKey,
+    );
 
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
-        ids: processInstanceKeys,
+        ids: processInstanceKeys.join(','),
         process: initialData.bpmnProcessId,
         version: initialData.version.toString(),
         flowNodeId: 'checkPayment',
@@ -121,22 +124,20 @@ test.describe('Process Instance Batch Modification', () => {
     // Wait for migrate operation to finish
     await expect(
       modificationOperationEntry.getByRole('progressbar'),
-    ).not.toBeVisible();
+    ).not.toBeVisible({timeout: 60000});
 
-    await modificationOperationEntry
-      .getByRole('link', {
-        name: `${NUM_SELECTED_PROCESS_INSTANCES} Instances`,
-      })
-      .click();
+    await modificationOperationEntry.getByRole('link').click();
 
     await commonPage.collapseOperationsPanel();
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion(initialData.version.toString());
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion(initialData.version.toString());
 
     // Filter by all process instances which have been created in setup
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(processInstanceKeys);
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.processInstanceKeysFilter.fill(
+      processInstanceKeys.join(','),
+    );
 
     // Expect the correct number of instances related to the move modification
     await expect(
@@ -145,24 +146,46 @@ test.describe('Process Instance Batch Modification', () => {
       ),
     ).toBeVisible();
 
-    // Expect that flow node instances have been created on shipArticles in all process instances.
-    // Reload page until data is updated.
+    // Wait for all process instances to be modified
     await expect
       .poll(
         async () => {
-          await page.reload();
-          return processesPage.diagram.diagram
-            .getByTestId('state-overlay-shipArticles-active')
-            .textContent();
+          const response = await request.post(
+            `${config.endpoint}/api/process-instances/statistics`,
+            {
+              data: {
+                active: true,
+                running: true,
+                processIds: ['2251799813685249'],
+                activityId: 'shipArticles',
+                ids: processInstanceKeys,
+              },
+            },
+          );
+          const statistics: ProcessInstancesStatisticsDto[] =
+            await response.json();
+          const targetFlowNodeStatistics = statistics.find(({activityId}) => {
+            return activityId === 'shipArticles';
+          });
+          return targetFlowNodeStatistics?.active;
         },
-        {intervals: [2000], timeout: 30000},
+        {timeout: SETUP_WAITING_TIME},
       )
-      .toBe(NUM_SELECTED_PROCESS_INSTANCES.toString());
+      .toBe(NUM_SELECTED_PROCESS_INSTANCES);
+
+    await page.reload();
 
     // Expect that checkPayment flow node instances got canceled in all process instances
     await expect(
       processesPage.diagram.diagram.getByTestId(
         'state-overlay-checkPayment-canceled',
+      ),
+    ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+
+    // Expect that flow node instances have been created on shipArticles in all process instances.
+    expect(
+      processesPage.diagram.diagram.getByTestId(
+        'state-overlay-shipArticles-active',
       ),
     ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
   });

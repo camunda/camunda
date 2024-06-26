@@ -21,6 +21,22 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
@@ -34,6 +50,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-grpc</artifactId>
     </dependency>
 
     <dependency>
@@ -115,34 +136,32 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-backend</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-webjar</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-common</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -158,12 +177,21 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-archiver</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-importer</artifactId>
     </dependency>
 
     <dependency>
@@ -173,7 +201,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>auth-spring-boot-starter</artifactId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-jpa</artifactId>
     </dependency>
 
     <dependency>
@@ -281,7 +319,7 @@
 
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
+      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
 
     <dependency>
@@ -321,10 +359,14 @@
     </dependency>
 
     <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
@@ -401,6 +443,11 @@
     <dependency>
       <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
 
     <dependency>
@@ -600,16 +647,20 @@
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
+            <dependency>io.camunda:identity-backend</dependency>
+            <dependency>io.camunda:identity-common</dependency>
+            <dependency>io.camunda:identity-webjar</dependency>
 
-            <dependency>io.camunda:operate-webapp</dependency>
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
+
             <dependency>io.camunda:tasklist-data-generator</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
@@ -640,7 +691,17 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/cluster-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+            </configuration>
+          </execution>
+          <execution>
+            <id>exporter</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>

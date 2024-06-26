@@ -23,11 +23,10 @@
     <version.java>17</version.java>
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <identity.version>8.5.1</identity.version>
     <java-jwt.version>4.4.0</java-jwt.version>
     <junit-platform-commons.version>1.10.2</junit-platform-commons.version>
     <spring-boot-test.version>3.2.5</spring-boot-test.version>
-    <wiremock-standalone.version>3.6.0</wiremock-standalone.version>
+    <wiremock-standalone.version>3.7.0</wiremock-standalone.version>
   </properties>
 
   <dependencies>
@@ -38,7 +37,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -149,12 +148,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
-      <version>${identity.version}</version>
     </dependency>
 
     <dependency>

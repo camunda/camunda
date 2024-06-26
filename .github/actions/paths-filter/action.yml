@@ -1,0 +1,69 @@
+---
+name: Common paths filter for camunda/camunda
+
+description: Common filters to detect and group changes against a base branch
+
+outputs:
+  actionlint:
+    description: Output whether `actionlint` should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true'
+      }}
+  java-unit-tests:
+    description: Output whether `unit-tests` (java) should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
+  identity-frontend-tests:
+    description: Output whether Identity frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
+
+runs:
+  using: composite
+  steps:
+
+  - uses: dorny/paths-filter@v3
+    id: filter-common
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+
+        # We use specific src/main and src/test path to:
+        #  * react on java code (production + test) changes
+        #  * react on resource changes like bpmn, XML, etc.
+        #  * but _not_ react on frontend src folder changes
+        java-code-change:
+          - '**/src/main/**'
+          - '**/src/test/**'
+
+        maven-change:
+          - 'bom/*'
+          - 'build-tools/**'
+          - 'dist/**'
+          - 'parent/*'
+          - 'pom.xml'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-identity
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        identity-frontend-change:
+          - 'identity/client/**'

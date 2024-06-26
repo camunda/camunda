@@ -33,7 +33,7 @@ jobs:
         run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
       - id: add-to-hto
         name: Add to HTO project
-        uses: actions/add-to-project@v1.0.1
+        uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/41

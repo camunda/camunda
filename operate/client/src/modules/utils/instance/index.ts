@@ -38,6 +38,7 @@ const createOperation = (
     type: operationType,
     state: 'SCHEDULED',
     errorMessage: null,
+    completedDate: null,
   };
 };
 

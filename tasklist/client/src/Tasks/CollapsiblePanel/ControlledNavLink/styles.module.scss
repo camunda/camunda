@@ -7,22 +7,25 @@
  */
 
 @use '@carbon/layout';
+@use '@carbon/type';
 
 .link {
   --border-width: #{layout.to-rem(2px)};
   --active-border-width: #{layout.to-rem(4px)};
+  --link-height: #{layout.to-rem(40px)};
   text-decoration: none;
   color: var(--cds-text-primary);
-  height: layout.to-rem(40px);
-  display: flex;
-  align-items: center;
+  height: var(--link-height);
+  display: block;
   border-left: var(--active-border-width) solid transparent;
   border-bottom: layout.to-rem(1px) solid var(--cds-border-subtle);
   padding: 0 var(--cds-spacing-04);
-
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  @include type.type-style('body-01');
+  line-height: var(--link-height);
 
   &.active:not(:focus) {
     border-left: var(--active-border-width) solid var(--cds-border-interactive);

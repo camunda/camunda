@@ -27,9 +27,12 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
@@ -38,6 +41,7 @@ import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
@@ -51,6 +55,8 @@ import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverte
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
+import io.camunda.webapps.WebappsModuleConfiguration;
+import jakarta.json.Json;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -59,7 +65,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -112,7 +117,12 @@ import org.springframework.web.client.RestTemplate;
       ElasticsearchSessionRepository.class,
       OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
-      OpensearchConnector.class
+      OpensearchConnector.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
+      OperateIndexController.class,
+      WebappsModuleConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
@@ -129,7 +139,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.operate.auth0.claimName=claimName"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles(SSO_AUTH_PROFILE)
+@ActiveProfiles({SSO_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   public static final String CONTEXT_PATH = "/operate-test";
@@ -148,7 +158,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @MockBean private IndicesCheck probes;
   @Autowired private ApplicationContext applicationContext;
 
-  public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
+  public AuthenticationWithPersistentSessionsIT(
+      final BiFunction<String, String, Tokens> orgExtractor) {
     this.orgExtractor = orgExtractor;
   }
 
@@ -157,7 +168,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return Arrays.asList(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
   }
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -180,16 +191,16 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         5L);
   }
 
-  private static String toEncodedToken(Map map) {
+  private static String toEncodedToken(final Map map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map map) {
-    return new JSONObject(map).toString();
+  private static String toJSON(final Map map) {
+    return Json.createObjectBuilder(map).build().toString();
   }
 
   @Before
@@ -375,7 +386,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getBody()).contains("\"c8Links\":" + c8Links);
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
@@ -387,16 +398,17 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getBody()).contains("No permission for Operate");
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 

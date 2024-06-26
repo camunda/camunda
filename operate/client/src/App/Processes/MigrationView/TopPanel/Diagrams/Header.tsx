@@ -19,6 +19,7 @@ type Props =
     }
   | {
       mode: 'edit';
+      label: string;
       children: React.ReactNode;
     };
 
@@ -42,7 +43,11 @@ const Header: React.FC<Props> = observer((props) => {
 
   const {children} = props;
 
-  return <Container orientation="horizontal">{children}</Container>;
+  return (
+    <Container orientation="horizontal" gap={6}>
+      {children}
+    </Container>
+  );
 });
 
 export {Header};

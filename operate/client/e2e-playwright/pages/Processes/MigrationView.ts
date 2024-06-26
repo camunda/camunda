@@ -11,17 +11,21 @@ import {Page, Locator} from '@playwright/test';
 export class MigrationView {
   private page: Page;
 
-  readonly targetProcessDropdown: Locator;
+  readonly targetProcessComboBox: Locator;
   readonly targetVersionDropdown: Locator;
   readonly nextButton: Locator;
   readonly confirmButton: Locator;
   readonly summaryNotification: Locator;
+  readonly migrationConfirmationModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.migrationConfirmationModal = page.getByRole('dialog', {
+      name: /migration confirmation/i,
+    });
 
-    this.targetProcessDropdown = page.getByRole('combobox', {
-      name: 'Target Process',
+    this.targetProcessComboBox = page.getByRole('combobox', {
+      name: 'Target',
       exact: true,
     });
 
@@ -41,13 +45,13 @@ export class MigrationView {
   }
 
   async selectTargetProcess(option: string) {
-    await this.targetProcessDropdown.click();
-    await this.page.getByRole('option', {name: option}).click();
+    await this.targetProcessComboBox.click();
+    await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 
   async selectTargetVersion(option: string) {
     await this.targetVersionDropdown.click();
-    await this.page.getByRole('option', {name: option}).click();
+    await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 
   mapFlowNode({
@@ -60,6 +64,13 @@ export class MigrationView {
     return this.page
       .getByLabel(`Target flow node for ${sourceFlowNodeName}`)
       .selectOption(targetFlowNodeName);
+  }
+
+  confirmMigration() {
+    this.migrationConfirmationModal.getByRole('textbox').fill('MIGRATE');
+    return this.migrationConfirmationModal
+      .getByRole('button', {name: /confirm/i})
+      .click();
   }
 
   selectTargetSourceFlowNode(flowNodeName: string) {

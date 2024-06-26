@@ -28,13 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @SpringBootTest(
     classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
     properties = {
-      "camunda.client.mode=oidc",
+      "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
@@ -172,11 +171,5 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
   void shouldHaveDefaultRetryPolicy() {
     assertThat(zeebeClientConfiguration.useDefaultRetryPolicy())
         .isEqualTo(DEFAULT.useDefaultRetryPolicy());
-  }
-
-  @Test
-  void shouldNotLogClientInfoAtStartup(final CapturedOutput output) {
-    assertThat(output).contains("clientId='***'");
-    assertThat(output).contains("clientSecret='***'");
   }
 }

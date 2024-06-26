@@ -45,7 +45,7 @@ public class ClientConfigRestServiceIdentityIT extends OperateAbstractIT {
   @Test
   public void testGetClientConfig() throws Exception {
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -60,6 +60,7 @@ public class ClientConfigRestServiceIdentityIT extends OperateAbstractIT {
                 + "\"isEnterprise\":false,"
                 + "\"canLogout\":true,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/operate\","
                 + "\"organizationId\":null,"
                 + "\"clusterId\":null,"
                 + "\"mixpanelAPIHost\":null,"

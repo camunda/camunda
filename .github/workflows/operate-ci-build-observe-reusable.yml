@@ -7,6 +7,11 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
+      forkCount:
+        description: "The number of VMs to fork in parallel in order to execute the tests"
+        required: false
+        default: 4
+        type: number
       command:
         description: "Maven command to trigger the test"
         required: true

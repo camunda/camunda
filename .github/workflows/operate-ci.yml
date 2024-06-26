@@ -18,6 +18,7 @@ on:
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.ci/**'
@@ -28,6 +29,7 @@ on:
       - 'pom.xml'
       - 'operate.Dockerfile'
       - 'parent/*'
+      - 'webapps-common/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -49,7 +51,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile
+      command: mvn -f operate verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile -DskipQaBuild
       runner-type: gcp-core-4-default
 
   run-unit-tests:
@@ -81,13 +83,3 @@ jobs:
       command: mvn -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Opensearch ITs
       runner-type: gcp-core-32-default
-
-  test-summary:
-    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
-    # https://github.com/orgs/community/discussions/26251
-    # This name is hard-coded in the branch rules; remember to update that if this name changes
-    name: Test summary
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0

@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component("schemaStartup")
+@Component("tasklistSchemaStartup")
 @Profile("test")
 public class TestSchemaStartup extends SchemaStartup {
 
