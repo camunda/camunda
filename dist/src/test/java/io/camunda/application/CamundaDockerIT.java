@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -41,54 +44,22 @@ public class CamundaDockerIT {
           "camunda.docker.test.elasticsearch.image",
           "docker.elastic.co/elasticsearch/elasticsearch:8.14.1");
 
-  private GenericContainer camundaContainer;
-  private ElasticsearchContainer elasticsearchContainer;
+  private final List<GenericContainer> createdContainers = new ArrayList<>();
 
   @Test
   public void testStartCamundaDocker() throws Exception {
-    elasticsearchContainer =
-        new ElasticsearchContainer(ELASTICSEARCH_DOCKER_IMAGE)
-            .withNetwork(Network.SHARED)
-            .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS)
-            .withEnv("xpack.security.enabled", "false")
-            .withExposedPorts(ELASTICSEARCH_PORT);
+    // given
+    // create and start Elasticsearch container
+    final ElasticsearchContainer elasticsearchContainer =
+        createContainer(this::createElasticsearchContainer);
     elasticsearchContainer.start();
-    camundaContainer =
-        new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
-            .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
-            .withNetwork(Network.SHARED)
-            .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
-            .waitingFor(
-                new HttpWaitStrategy()
-                    .forPort(MANAGEMENT_PORT)
-                    .forPath("/actuator/health")
-                    .withReadTimeout(Duration.ofSeconds(120)))
-            .withStartupTimeout(Duration.ofSeconds(300))
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-                "io.camunda.zeebe.exporter.ElasticsearchExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticsearchUrl())
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", gatewayAddress())
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
-            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
-            .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress());
-    try {
-      camundaContainer.start();
-    } catch (Exception e) {
-      fail(
-          String.format(
-              "Failed to start Camunda container.\n"
-                  + "Exception message: %s.\n"
-                  + "Container Logs:\n%s",
-              e.getMessage(), camundaContainer.getLogs()));
-    }
-    camundaContainer.start();
+    // create camunda container
+    final GenericContainer camundaContainer = createContainer(this::createCamundaContainer);
 
-    try (final CloseableHttpResponse response =
+    // when
+    startContainer(camundaContainer);
+    // and when performing health check
+    try (final CloseableHttpResponse healthCheckResponse =
         HttpClients.createDefault()
             .execute(
                 new HttpGet(
@@ -97,11 +68,63 @@ public class CamundaDockerIT {
                         camundaContainer.getHost(),
                         camundaContainer.getMappedPort(MANAGEMENT_PORT),
                         "/actuator/health")))) {
-      assertThat(response.getCode()).isEqualTo(200);
-      assertThat(EntityUtils.toString(response.getEntity()))
+
+      // then
+      assertThat(healthCheckResponse.getCode()).isEqualTo(200);
+      assertThat(EntityUtils.toString(healthCheckResponse.getEntity()))
           .isEqualTo(
               "{\"status\":\"UP\",\"components\":{\"brokerReady\":{\"status\":\"UP\"},\"brokerStartup\":{\"status\":\"UP\"},\"brokerStatus\":{\"status\":\"UP\"},\"indicesCheck\":{\"status\":\"UP\"},\"livenessState\":{\"status\":\"UP\"},\"readinessState\":{\"status\":\"UP\"},\"searchEngineCheck\":{\"status\":\"UP\"}},\"groups\":[\"liveness\",\"readiness\",\"startup\",\"status\"]}");
     }
+  }
+
+  private void startContainer(GenericContainer container) {
+    try {
+      container.start();
+    } catch (Exception e) {
+      fail(
+          String.format(
+              "Failed to start container.\n" + "Exception message: %s.\n" + "Container Logs:\n%s",
+              e.getMessage(), container.getLogs()));
+    }
+  }
+
+  private <T extends GenericContainer> T createContainer(Supplier<T> containerSupplier) {
+    T container = containerSupplier.get();
+    createdContainers.add(container);
+    return container;
+  }
+
+  private ElasticsearchContainer createElasticsearchContainer() {
+    return new ElasticsearchContainer(ELASTICSEARCH_DOCKER_IMAGE)
+        .withNetwork(Network.SHARED)
+        .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS)
+        .withEnv("xpack.security.enabled", "false")
+        .withExposedPorts(ELASTICSEARCH_PORT);
+  }
+
+  private GenericContainer createCamundaContainer() {
+    return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+        .withNetwork(Network.SHARED)
+        .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
+        .waitingFor(
+            new HttpWaitStrategy()
+                .forPort(MANAGEMENT_PORT)
+                .forPath("/actuator/health")
+                .withReadTimeout(Duration.ofSeconds(120)))
+        .withStartupTimeout(Duration.ofSeconds(300))
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.ElasticsearchExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticsearchUrl())
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", gatewayAddress())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", httpUrl())
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress());
   }
 
   private static String httpUrl() {
@@ -118,11 +141,6 @@ public class CamundaDockerIT {
 
   @AfterEach
   public void stopContainers() {
-    if (camundaContainer != null) {
-      camundaContainer.stop();
-    }
-    if (elasticsearchContainer != null) {
-      elasticsearchContainer.stop();
-    }
+    createdContainers.forEach(GenericContainer::stop);
   }
 }

@@ -29,7 +29,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-unit-tests: ${{ steps.filter.outputs.java-unit-tests }}
-      docker-ci: ${{ steps.filter.outputs.docker-ci }}
+      camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -121,7 +121,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   docker-checks:
-    if: needs.detect-changes.outputs.docker-ci == 'true'
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -309,7 +309,7 @@ jobs:
     name: Deploy snapshot Camunda Docker image
     needs: [ detect-changes, check-results ]
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.docker-ci == 'true' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
