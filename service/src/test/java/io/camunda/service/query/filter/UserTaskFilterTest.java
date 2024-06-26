@@ -80,7 +80,8 @@ public class UserTaskFilterTest {
     // given
     final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
     final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery((q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
+        SearchQueryBuilders.userTaskSearchQuery(
+            (q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
 
     // when
     services.search(searchQuery);
@@ -94,10 +95,12 @@ public class UserTaskFilterTest {
     assertThat(sort).hasSize(2); // Assert has key + creationTime
 
     // Check if "creationTime" is present in any position
-    final boolean creationTimeAscPresent = sort.stream()
-        .anyMatch(s -> s.field().field().equals("creationTime") && s.field().order().equals(
-            SortOrder.ASC));
-
+    final boolean creationTimeAscPresent =
+        sort.stream()
+            .anyMatch(
+                s ->
+                    s.field().field().equals("creationTime")
+                        && s.field().order().equals(SortOrder.ASC));
 
     assertThat(creationTimeAscPresent).isTrue();
   }
@@ -107,7 +110,8 @@ public class UserTaskFilterTest {
     // given
     final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
     final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery((q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
+        SearchQueryBuilders.userTaskSearchQuery(
+            (q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
 
     // when
     services.search(searchQuery);
@@ -121,10 +125,12 @@ public class UserTaskFilterTest {
     assertThat(sort).hasSize(2); // Assert has key + creationTime
 
     // Check if " completionTime" is present in any position
-    final boolean completionDateDesc = sort.stream()
-        .anyMatch(s -> s.field().field().equals("completionTime") && s.field().order().equals(
-            SortOrder.DESC));
-
+    final boolean completionDateDesc =
+        sort.stream()
+            .anyMatch(
+                s ->
+                    s.field().field().equals("completionTime")
+                        && s.field().order().equals(SortOrder.DESC));
 
     assertThat(completionDateDesc).isTrue();
   }
@@ -242,8 +248,10 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByProcessInstanceKey() {
     // given
-    final var processInstanceKeyFilter = FilterBuilders.userTask((f) -> f.processInstanceKeys(12345L));
-    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processInstanceKeyFilter));
+    final var processInstanceKeyFilter =
+        FilterBuilders.userTask((f) -> f.processInstanceKeys(12345L));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processInstanceKeyFilter));
 
     // when
     services.search(searchQuery);
@@ -266,12 +274,13 @@ public class UserTaskFilterTest {
             });
   }
 
-
   @Test
   public void shouldQueryByProcessDefinitionKey() {
     // given
-    final var processDefinitionKeyFilter = FilterBuilders.userTask((f) -> f.processDefinitionKeys("processDef1"));
-    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processDefinitionKeyFilter));
+    final var processDefinitionKeyFilter =
+        FilterBuilders.userTask((f) -> f.processDefinitionKeys("processDef1"));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processDefinitionKeyFilter));
 
     // when
     services.search(searchQuery);
@@ -298,7 +307,8 @@ public class UserTaskFilterTest {
   public void shouldQueryByBpmnProcessId() {
     // given
     final var bpmnProcessIdFilter = FilterBuilders.userTask((f) -> f.processNames("bpmnProcess1"));
-    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(bpmnProcessIdFilter));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(bpmnProcessIdFilter));
 
     // when
     services.search(searchQuery);
@@ -324,8 +334,10 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByCandidateUsers() {
     // given
-    final var candidateUsersFilter = FilterBuilders.userTask((f) -> f.candidateUsers("candidateUser1"));
-    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(candidateUsersFilter));
+    final var candidateUsersFilter =
+        FilterBuilders.userTask((f) -> f.candidateUsers("candidateUser1"));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(candidateUsersFilter));
 
     // when
     services.search(searchQuery);
@@ -351,8 +363,10 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByCandidateGroups() {
     // given
-    final var candidateGroupsFilter = FilterBuilders.userTask((f) -> f.candidateGroups("candidateGroup1"));
-    final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(candidateGroupsFilter));
+    final var candidateGroupsFilter =
+        FilterBuilders.userTask((f) -> f.candidateGroups("candidateGroup1"));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(candidateGroupsFilter));
 
     // when
     services.search(searchQuery);
@@ -418,5 +432,4 @@ public class UserTaskFilterTest {
     assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
     assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
   }
-
 }

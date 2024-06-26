@@ -221,9 +221,12 @@ public final class VariableFilterTest {
   @Test
   public void shouldApplySortConditionByValueASC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var variableFilter =
+        FilterBuilders.variable(
+            (f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
     final var searchQuery =
-        SearchQueryBuilders.variableSearchQuery((q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
+        SearchQueryBuilders.variableSearchQuery(
+            (q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
 
     // when
     services.search(searchQuery);
@@ -236,10 +239,10 @@ public final class VariableFilterTest {
     assertThat(sort).isNotNull();
     assertThat(sort).hasSize(2);
 
-    final boolean sortByValueConditionCheck = sort.stream()
-        .anyMatch(s -> s.field().field().equals("value") && s.field().order().equals(
-            SortOrder.ASC));
-
+    final boolean sortByValueConditionCheck =
+        sort.stream()
+            .anyMatch(
+                s -> s.field().field().equals("value") && s.field().order().equals(SortOrder.ASC));
 
     assertThat(sortByValueConditionCheck).isTrue();
   }
@@ -247,9 +250,12 @@ public final class VariableFilterTest {
   @Test
   public void shouldApplySortConditionByValueDESC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var variableFilter =
+        FilterBuilders.variable(
+            (f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
     final var searchQuery =
-        SearchQueryBuilders.variableSearchQuery((q) -> q.filter(variableFilter).sort((s) -> s.value().desc()));
+        SearchQueryBuilders.variableSearchQuery(
+            (q) -> q.filter(variableFilter).sort((s) -> s.value().desc()));
 
     // when
     services.search(searchQuery);
@@ -262,10 +268,10 @@ public final class VariableFilterTest {
     assertThat(sort).isNotNull();
     assertThat(sort).hasSize(2);
 
-    final boolean sortByValueConditionCheck = sort.stream()
-        .anyMatch(s -> s.field().field().equals("value") && s.field().order().equals(
-            SortOrder.DESC));
-
+    final boolean sortByValueConditionCheck =
+        sort.stream()
+            .anyMatch(
+                s -> s.field().field().equals("value") && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByValueConditionCheck).isTrue();
   }
