@@ -18,8 +18,10 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
 import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
+import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
 import io.camunda.zeebe.gateway.rest.controller.UserControllerTest.TestUserControllerApplication;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
+import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +32,18 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @SpringBootTest(
-    classes = {TestUserControllerApplication.class, UserController.class},
+    classes = {
+      TestUserControllerApplication.class,
+      UserController.class,
+      GlobalControllerExceptionHandler.class
+    },
     webEnvironment = WebEnvironment.RANDOM_PORT)
 public class UserControllerTest {
 
@@ -71,6 +79,25 @@ public class UserControllerTest {
   }
 
   @Test
+  void getUserByIdThrowsExceptionWhenServiceThrowsException() {
+    final String message = "message";
+    when(userService.findUserById(1L)).thenThrow(new IllegalArgumentException(message));
+
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setInstance(URI.create("/v2/users/1"));
+
+    webClient
+        .get()
+        .uri("/v2/users/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
   void createUserWorks() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
@@ -103,6 +130,38 @@ public class UserControllerTest {
         .isEqualTo(camundaUserDto);
 
     verify(userService, times(1)).createUserFailIfExists(camundaUserWithPassword);
+  }
+
+  @Test
+  void createUserByIdThrowsExceptionWhenServiceThrowsException() {
+    final String message = "message";
+
+    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
+    camundaUserWithPassword.setUsername("demo");
+    camundaUserWithPassword.setPassword("password");
+
+    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    dto.setUsername("demo");
+    dto.setPassword("password");
+    dto.setEnabled(true);
+
+    when(userService.createUserFailIfExists(camundaUserWithPassword))
+        .thenThrow(new IllegalArgumentException(message));
+
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setInstance(URI.create("/v2/users"));
+
+    webClient
+        .post()
+        .uri("/v2/users")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
   }
 
   @Test
@@ -142,6 +201,38 @@ public class UserControllerTest {
         .isEqualTo(camundaUserDto);
 
     verify(userService, times(1)).updateUser(1L, camundaUserWithPassword);
+  }
+
+  @Test
+  void updateUserByIdThrowsExceptionWhenServiceThrowsException() {
+    final String message = "message";
+
+    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
+    camundaUserWithPassword.setUsername("demo");
+    camundaUserWithPassword.setPassword("password");
+
+    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    dto.setUsername("demo");
+    dto.setPassword("password");
+    dto.setEnabled(true);
+
+    when(userService.updateUser(1L, camundaUserWithPassword))
+        .thenThrow(new IllegalArgumentException(message));
+
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setInstance(URI.create("/v2/users/1"));
+
+    webClient
+        .put()
+        .uri("/v2/users/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
   }
 
   @Test
