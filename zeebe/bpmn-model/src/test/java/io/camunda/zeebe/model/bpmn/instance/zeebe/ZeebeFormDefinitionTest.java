@@ -38,6 +38,8 @@ public class ZeebeFormDefinitionTest extends BpmnModelElementInstanceTest {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "formKey", false, false),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "formId", false, false),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "externalReference", false, false));
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "externalReference", false, false),
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest));
   }
 }
