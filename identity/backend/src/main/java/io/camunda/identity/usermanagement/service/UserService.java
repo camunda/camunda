@@ -11,8 +11,8 @@ import io.camunda.identity.security.CamundaUserDetails;
 import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.model.Profile;
-import io.camunda.identity.usermanagement.repository.UserProfileRepository;
+import io.camunda.identity.usermanagement.model.NativeUser;
+import io.camunda.identity.usermanagement.repository.NativeUserRepository;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
@@ -28,15 +28,15 @@ import org.springframework.util.StringUtils;
 @Transactional
 public class UserService {
   private final CamundaUserDetailsManager camundaUserDetailsManager;
-  private final UserProfileRepository userProfileRepository;
+  private final NativeUserRepository nativeUserRepository;
   private final PasswordEncoder passwordEncoder;
 
   public UserService(
       final CamundaUserDetailsManager camundaUserDetailsManager,
-      final UserProfileRepository userProfileRepository,
+      final NativeUserRepository nativeUserRepository,
       final PasswordEncoder passwordEncoder) {
     this.camundaUserDetailsManager = camundaUserDetailsManager;
-    this.userProfileRepository = userProfileRepository;
+    this.nativeUserRepository = nativeUserRepository;
     this.passwordEncoder = passwordEncoder;
   }
 
@@ -50,11 +50,11 @@ public class UserService {
               .roles("DEFAULT_USER")
               .build();
       camundaUserDetailsManager.createUser(userDetails);
-      final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
-      userProfileRepository.save(
-          new Profile(
+      final var createdUser = nativeUserRepository.findByUsername(userDetails.getUsername());
+      nativeUserRepository.save(
+          new NativeUser(
               createdUser.getId(), userWithCredential.getEmail(), userWithCredential.getName()));
-      return userProfileRepository.findByUsername(userWithCredential.getUsername());
+      return nativeUserRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
     }
@@ -66,13 +66,13 @@ public class UserService {
   }
 
   public CamundaUser findUserById(final Long id) {
-    return userProfileRepository
+    return nativeUserRepository
         .findUserById(id)
         .orElseThrow(() -> new RuntimeException("user.notFound"));
   }
 
   public CamundaUser findUserByUsername(final String username) {
-    final var user = userProfileRepository.findByUsername(username);
+    final var user = nativeUserRepository.findByUsername(username);
     if (user == null) {
       throw new RuntimeException("user.notFound");
     }
@@ -80,11 +80,11 @@ public class UserService {
   }
 
   public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
-    return userProfileRepository.findAllByUsernameIn(usernames);
+    return nativeUserRepository.findAllByUsernameIn(usernames);
   }
 
   public List<CamundaUser> findAllUsers() {
-    return userProfileRepository.findAllUsers();
+    return nativeUserRepository.findAllUsers();
   }
 
   public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
@@ -115,11 +115,11 @@ public class UserService {
               .build();
 
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(
-          new Profile(
+      nativeUserRepository.save(
+          new NativeUser(
               existingUser.getId(), userWithPassword.getEmail(), userWithPassword.getName()));
 
-      return userProfileRepository
+      return nativeUserRepository
           .findUserById(id)
           .orElseThrow(() -> new RuntimeException("user.notFound"));
     } catch (final UsernameNotFoundException e) {

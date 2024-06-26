@@ -15,5 +15,5 @@ import org.springframework.context.annotation.Profile;
 @ComponentScan(basePackages = {"io.camunda.authentication"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
 @EnableAutoConfiguration
-@Profile("auth-basic")
+@Profile("auth-basic|auth-oidc")
 public class AuthenticationModuleConfiguration {}

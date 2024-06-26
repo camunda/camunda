@@ -9,26 +9,14 @@ package io.camunda.identity.usermanagement.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "profiles")
-public class Profile {
+@Table(name = "mapped_users")
+public class MappedUser {
   @Id private Long id;
-  private String email;
-  private String name;
-
-  public Profile() {}
-
-  public Profile(final Long id, final String email) {
-    this(id, email, null);
-  }
-
-  public Profile(final Long id, final String email, final String name) {
-    this.id = id;
-    this.email = email;
-    this.name = name;
-  }
+  @OneToOne private User user;
 
   public Long getId() {
     return id;
@@ -38,19 +26,11 @@ public class Profile {
     this.id = id;
   }
 
-  public String getEmail() {
-    return email;
+  public User getUser() {
+    return user;
   }
 
-  public void setEmail(final String email) {
-    this.email = email;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(final String name) {
-    this.name = name;
+  public void setUser(final User user) {
+    this.user = user;
   }
 }

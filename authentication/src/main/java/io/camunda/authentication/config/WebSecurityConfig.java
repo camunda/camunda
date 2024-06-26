@@ -23,7 +23,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Profile("auth-basic")
+@Profile("auth-basic|auth-oidc")
 @EnableWebSecurity
 @EnableMethodSecurity
 public class WebSecurityConfig {
@@ -42,12 +42,26 @@ public class WebSecurityConfig {
 
   @Bean
   @Primary
-  public HttpSecurity localHttpSecurity(
+  @Profile("auth-basic")
+  public HttpSecurity basicHttpSecurity(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring basic auth login");
     return baseHttpSecurity(httpSecurity, authFailureHandler)
         .httpBasic(withDefaults())
+        .logout((logout) -> logout.logoutSuccessUrl("/"));
+  }
+
+  @Bean
+  @Primary
+  @Profile("auth-oidc")
+  public HttpSecurity oidcHttpSecurity(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    LOG.info("Configuring oidc auth login");
+    return baseHttpSecurity(httpSecurity, authFailureHandler)
+        .oauth2Login(oauthLoginConfigurer -> {})
+        .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
         .logout((logout) -> logout.logoutSuccessUrl("/"));
   }
 

@@ -1,0 +1,19 @@
+flags:
+  user-management: oidc
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          oidcclient:
+            client-id: oidcclient
+            client-secret: "secret"
+            authorization-grant-type: authorization_code
+            redirect-uri: http://localhost:8080/login/oauth2/code/oidcclient
+            provider: oidcclient
+            scope:
+              - "openid"
+              - "profile"
+        provider:
+          oidcclient:
+            issuer-uri: http://auth.identity:9000
