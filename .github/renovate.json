@@ -71,6 +71,7 @@
       "allowedVersions": "!/0.8.9/"
     },
     {
+      "description": "Do not update Netty as it is incompatible with grpc-java < 1.65; this can be removed after that",
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["io.netty"],
       "allowedVersions": "<=4.1.110.Final"
