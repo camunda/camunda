@@ -65,8 +65,27 @@ public final class SetVariablesCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link SetVariablesCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<SetVariablesResponse> send() {
+  @Deprecated
+  public ZeebeFuture<SetVariablesResponse> send() {
+    final SetVariablesRequest request = builder.build();
+
+    final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                SetVariablesResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<SetVariablesResponse> sendCommand() {
     final SetVariablesRequest request = builder.build();
 
     final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>

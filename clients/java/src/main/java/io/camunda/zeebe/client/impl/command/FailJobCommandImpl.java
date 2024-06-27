@@ -86,8 +86,26 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link FailJobCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<FailJobResponse> send() {
+  @Deprecated
+  public ZeebeFuture<FailJobResponse> send() {
+    final FailJobRequest request = builder.build();
+
+    final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =
+        new RetriableClientFutureImpl<>(
+            FailJobResponseImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<FailJobResponse> sendCommand() {
     final FailJobRequest request = builder.build();
 
     final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =

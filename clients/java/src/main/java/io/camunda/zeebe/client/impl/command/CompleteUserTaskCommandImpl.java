@@ -59,8 +59,24 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     CompleteUserTaskCommandImpl:sendCommand()}
+   */
   @Override
-  public CamundaFuture<CompleteUserTaskResponse> send() {
+  @Deprecated
+  public ZeebeFuture<CompleteUserTaskResponse> send() {
+    final HttpZeebeFuture<CompleteUserTaskResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/user-tasks/" + userTaskKey + "/completion",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  @Override
+  public CamundaFuture<CompleteUserTaskResponse> sendCommand() {
     final HttpCamundaFuture<CompleteUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/completion",

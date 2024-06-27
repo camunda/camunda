@@ -71,8 +71,29 @@ public class JobUpdateTimeoutCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     JobUpdateTimeoutCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<UpdateTimeoutJobResponse> send() {
+  @Deprecated
+  public ZeebeFuture<UpdateTimeoutJobResponse> send() {
+    final UpdateJobTimeoutRequest request = builder.build();
+
+    final RetriableClientFutureImpl<
+            UpdateTimeoutJobResponse, GatewayOuterClass.UpdateJobTimeoutResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                UpdateTimeoutJobResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<UpdateTimeoutJobResponse> sendCommand() {
     final UpdateJobTimeoutRequest request = builder.build();
 
     final RetriableClientFutureImpl<

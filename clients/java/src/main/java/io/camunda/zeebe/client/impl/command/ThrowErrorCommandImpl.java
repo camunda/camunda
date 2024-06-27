@@ -78,8 +78,24 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<Void> send() {
+  @Deprecated
+  public ZeebeFuture<Void> send() {
+    final ThrowErrorRequest request = builder.build();
+
+    final RetriableClientFutureImpl<Void, ThrowErrorResponse> future =
+        new RetriableClientFutureImpl<>(
+            retryPredicate, streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<Void> sendCommand() {
     final ThrowErrorRequest request = builder.build();
 
     final RetriableClientFutureImpl<Void, ThrowErrorResponse> future =

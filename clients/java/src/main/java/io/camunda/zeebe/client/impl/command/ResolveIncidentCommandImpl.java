@@ -57,7 +57,24 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   @Override
-  public CamundaFuture<ResolveIncidentResponse> send() {
+  @Deprecated
+  public ZeebeFuture<ResolveIncidentResponse> send() {
+    final ResolveIncidentRequest request = builder.build();
+
+    final RetriableClientFutureImpl<
+            ResolveIncidentResponse, GatewayOuterClass.ResolveIncidentResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                ResolveIncidentResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<ResolveIncidentResponse> sendCommand() {
     final ResolveIncidentRequest request = builder.build();
 
     final RetriableClientFutureImpl<

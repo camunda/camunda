@@ -161,7 +161,24 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CamundaFuture<ProcessInstanceEvent> send() {
+  @Deprecated
+  public ZeebeFuture<ProcessInstanceEvent> send() {
+    final CreateProcessInstanceRequest request = builder.build();
+
+    final RetriableClientFutureImpl<
+            ProcessInstanceEvent, GatewayOuterClass.CreateProcessInstanceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                CreateProcessInstanceResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<ProcessInstanceEvent> sendCommand() {
     final CreateProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<

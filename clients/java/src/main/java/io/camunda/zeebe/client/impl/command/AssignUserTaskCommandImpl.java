@@ -52,8 +52,23 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link AssignUserTaskCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<AssignUserTaskResponse> send() {
+  @Deprecated
+  public ZeebeFuture<AssignUserTaskResponse> send() {
+    final HttpZeebeFuture<AssignUserTaskResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/user-tasks/" + userTaskKey + "/assignment",
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  @Override
+  public CamundaFuture<AssignUserTaskResponse> sendCommand() {
     final HttpCamundaFuture<AssignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/assignment",

@@ -212,8 +212,30 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     ModifyProcessInstanceCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<ModifyProcessInstanceResponse> send() {
+  @Deprecated
+  public ZeebeFuture<ModifyProcessInstanceResponse> send() {
+    final ModifyProcessInstanceRequest request = requestBuilder.build();
+
+    final RetriableClientFutureImpl<
+            ModifyProcessInstanceResponse, GatewayOuterClass.ModifyProcessInstanceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                ModifyProcessInstanceResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<ModifyProcessInstanceResponse> sendCommand() {
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

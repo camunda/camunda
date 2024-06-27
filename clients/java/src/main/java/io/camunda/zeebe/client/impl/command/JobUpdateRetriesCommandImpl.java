@@ -65,8 +65,29 @@ public final class JobUpdateRetriesCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     JobUpdateRetriesCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<UpdateRetriesJobResponse> send() {
+  @Deprecated
+  public ZeebeFuture<UpdateRetriesJobResponse> send() {
+    final UpdateJobRetriesRequest request = builder.build();
+
+    final RetriableClientFutureImpl<
+            UpdateRetriesJobResponse, GatewayOuterClass.UpdateJobRetriesResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                UpdateRetriesJobResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<UpdateRetriesJobResponse> sendCommand() {
     final UpdateJobRetriesRequest request = builder.build();
 
     final RetriableClientFutureImpl<

@@ -99,8 +99,30 @@ public final class MigrateProcessInstanceCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     MigrateProcessInstanceCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<MigrateProcessInstanceResponse> send() {
+  @Deprecated
+  public ZeebeFuture<MigrateProcessInstanceResponse> send() {
+    final MigrateProcessInstanceRequest request = requestBuilder.build();
+
+    final RetriableClientFutureImpl<
+            MigrateProcessInstanceResponse, GatewayOuterClass.MigrateProcessInstanceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                MigrateProcessInstanceResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<MigrateProcessInstanceResponse> sendCommand() {
     final MigrateProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

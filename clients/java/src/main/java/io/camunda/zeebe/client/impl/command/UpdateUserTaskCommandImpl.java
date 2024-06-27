@@ -57,7 +57,18 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   }
 
   @Override
-  public CamundaFuture<UpdateUserTaskResponse> send() {
+  public ZeebeFuture<UpdateUserTaskResponse> send() {
+    final HttpZeebeFuture<UpdateUserTaskResponse> result = new HttpZeebeFuture<>();
+    httpClient.patch(
+        "/user-tasks/" + userTaskKey,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  @Override
+  public CamundaFuture<UpdateUserTaskResponse> sendCommand() {
     final HttpCamundaFuture<UpdateUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/user-tasks/" + userTaskKey,

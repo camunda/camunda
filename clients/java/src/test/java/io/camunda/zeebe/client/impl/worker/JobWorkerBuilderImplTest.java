@@ -26,7 +26,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -148,7 +147,7 @@ class JobWorkerBuilderImplTest {
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -173,7 +172,7 @@ class JobWorkerBuilderImplTest {
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -200,7 +199,7 @@ class JobWorkerBuilderImplTest {
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
     Mockito.when(lastStep.requestTimeout(any())).thenReturn(lastStep);
-    final CamundaFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
+    final ZeebeFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
     Mockito.when(lastStep.send()).thenReturn(zeebeFuture);
     Mockito.when(zeebeFuture.exceptionally(any())).thenReturn(Mockito.mock());
 
@@ -231,7 +230,7 @@ class JobWorkerBuilderImplTest {
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
     Mockito.when(lastStep.requestTimeout(any())).thenReturn(lastStep);
-    final CamundaFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
+    final ZeebeFuture<ActivateJobsResponse> zeebeFuture = Mockito.mock();
     Mockito.when(lastStep.send()).thenReturn(zeebeFuture);
     Mockito.when(zeebeFuture.exceptionally(any())).thenReturn(Mockito.mock());
 
@@ -261,7 +260,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -289,7 +288,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder

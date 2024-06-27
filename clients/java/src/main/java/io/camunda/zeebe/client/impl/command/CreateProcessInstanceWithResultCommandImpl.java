@@ -68,8 +68,33 @@ public final class CreateProcessInstanceWithResultCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     CreateProcessInstanceWithResultCommandImpl#sendCommand()}
+   */
   @Override
-  public CamundaFuture<ProcessInstanceResult> send() {
+  @Deprecated
+  public ZeebeFuture<ProcessInstanceResult> send() {
+    final CreateProcessInstanceWithResultRequest request =
+        builder
+            .setRequest(createProcessInstanceRequestBuilder)
+            .setRequestTimeout(requestTimeout.toMillis())
+            .build();
+
+    final RetriableClientFutureImpl<
+            ProcessInstanceResult, GatewayOuterClass.CreateProcessInstanceWithResultResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<ProcessInstanceResult> sendCommand() {
     final CreateProcessInstanceWithResultRequest request =
         builder
             .setRequest(createProcessInstanceRequestBuilder)

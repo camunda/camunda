@@ -196,7 +196,24 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
-  public CamundaFuture<DeploymentEvent> send() {
+  @Deprecated
+  public ZeebeFuture<DeploymentEvent> send() {
+    final DeployResourceRequest request = requestBuilder.build();
+
+    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                DeploymentEventImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
+
+    send(request, future);
+
+    return future;
+  }
+
+  @Override
+  public CamundaFuture<DeploymentEvent> sendCommand() {
     final DeployResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>
