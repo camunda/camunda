@@ -39,11 +39,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-license</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 
