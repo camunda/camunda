@@ -39,7 +39,7 @@ outputs:
         steps.filter-common.outputs.dockerfile-change == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true'
       }}
-  frontend-change:
+  frontend-changes:
     description: Output whether any frontend has changed
     value: >-
       ${{
