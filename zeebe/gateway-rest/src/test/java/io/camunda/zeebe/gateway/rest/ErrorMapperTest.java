@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperApplication;
 import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperConfiguration;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.gateway.rest.controller.UserTaskController;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
@@ -33,6 +34,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -41,6 +45,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -258,7 +263,12 @@ public class ErrorMapperTest {
     Mockito.verifyNoInteractions(brokerClient);
   }
 
-  @SpringBootApplication
+  @SpringBootApplication(
+      exclude = {
+        SecurityAutoConfiguration.class,
+        HibernateJpaAutoConfiguration.class,
+        DataSourceAutoConfiguration.class
+      })
   static class TestErrorMapperApplication {
     // required to provide the web server context
   }
@@ -279,6 +289,16 @@ public class ErrorMapperTest {
     @Bean
     public ProcessInstanceServices processInstanceService() {
       return Mockito.mock(ProcessInstanceServices.class);
+    }
+
+    @Bean
+    public UserController userController() {
+      return Mockito.mock(UserController.class);
+    }
+
+    @Bean
+    public HttpSecurity httpSecurity() {
+      return Mockito.mock(HttpSecurity.class);
     }
   }
 }

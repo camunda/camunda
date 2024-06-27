@@ -13,6 +13,9 @@ import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.model.Profile;
 import io.camunda.identity.usermanagement.repository.UserProfileRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,8 +26,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 
 @Service
+@Validated
 @Transactional
 public class UserService {
   private final CamundaUserDetailsManager camundaUserDetailsManager;
@@ -40,46 +45,62 @@ public class UserService {
     this.passwordEncoder = passwordEncoder;
   }
 
-  public CamundaUser createUser(final CamundaUserWithPassword userWithCredential) {
+  public boolean userExistsByUsername(@NotBlank final String username) {
+    return camundaUserDetailsManager.userExists(username);
+  }
+
+  public CamundaUser createUser(@Valid final CamundaUserWithPassword camundaUserWithPassword)
+      throws IllegalArgumentException {
     try {
+
       final UserDetails userDetails =
-          User.withUsername(userWithCredential.getUsername())
-              .password(userWithCredential.getPassword())
+          User.withUsername(camundaUserWithPassword.getUsername())
+              .password(camundaUserWithPassword.getPassword())
               .passwordEncoder(passwordEncoder::encode)
-              .disabled(!userWithCredential.isEnabled())
+              .disabled(!camundaUserWithPassword.isEnabled())
               .roles("DEFAULT_USER")
               .build();
+
       camundaUserDetailsManager.createUser(userDetails);
-      final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
+
+      final CamundaUser createdUser =
+          userProfileRepository.findByUsername(userDetails.getUsername());
+
       userProfileRepository.save(
           new Profile(
-              createdUser.getId(), userWithCredential.getEmail(), userWithCredential.getName()));
-      return userProfileRepository.findByUsername(userWithCredential.getUsername());
+              createdUser.getId(),
+              camundaUserWithPassword.getEmail(),
+              camundaUserWithPassword.getName()));
+
+      return userProfileRepository.findByUsername(camundaUserWithPassword.getUsername());
+
     } catch (final DuplicateKeyException e) {
-      throw new RuntimeException("user.duplicate");
+      throw new IllegalArgumentException("User already exists.");
     }
   }
 
-  public void deleteUser(final Long id) {
+  public void deleteUser(@NotNull(message = "Invalid user ID.") final Long id) {
     final CamundaUser user = findUserById(id);
     camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
-  public CamundaUser findUserById(final Long id) {
+  public CamundaUser findUserById(@NotNull(message = "Invalid user ID.") final Long id) {
     return userProfileRepository
         .findUserById(id)
-        .orElseThrow(() -> new RuntimeException("user.notFound"));
+        .orElseThrow(() -> new IllegalArgumentException("User invalid."));
   }
 
-  public CamundaUser findUserByUsername(final String username) {
-    final var user = userProfileRepository.findByUsername(username);
+  public CamundaUser findUserByUsername(
+      @NotBlank(message = "Username invalid.") final String username) {
+    final CamundaUser user = userProfileRepository.findByUsername(username);
     if (user == null) {
-      throw new RuntimeException("user.notFound");
+      throw new IllegalArgumentException("User invalid.");
     }
     return user;
   }
 
-  public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
+  public List<CamundaUser> findUsersByUsernameIn(
+      @NotNull(message = "Username invalid.") final List<String> usernames) {
     return userProfileRepository.findAllByUsernameIn(usernames);
   }
 
@@ -87,17 +108,19 @@ public class UserService {
     return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
+  public CamundaUser updateUser(
+      @NotNull(message = "UserID invalid.") final Long id,
+      @Valid final CamundaUserWithPassword userWithPassword) {
     try {
       if (!Objects.equals(id, userWithPassword.getId())) {
-        throw new RuntimeException("user.notFound");
+        throw new IllegalArgumentException("User invalid.");
       }
 
       final CamundaUser existingUser = findUserById(id);
 
       if (existingUser == null
           || !existingUser.getUsername().equals(userWithPassword.getUsername())) {
-        throw new RuntimeException("user.notFound");
+        throw new IllegalArgumentException("User invalid.");
       }
 
       final CamundaUserDetails existingUserDetail =
@@ -121,9 +144,9 @@ public class UserService {
 
       return userProfileRepository
           .findUserById(id)
-          .orElseThrow(() -> new RuntimeException("user.notFound"));
+          .orElseThrow(() -> new IllegalArgumentException("User invalid."));
     } catch (final UsernameNotFoundException e) {
-      throw new RuntimeException("user.notFound");
+      throw new IllegalArgumentException("User invalid.");
     }
   }
 }
