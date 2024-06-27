@@ -69,7 +69,7 @@ public final class SearchQueryResponseMapper {
             .endDate(p.endDate()));
   }
 
-  public static Either<ProblemDetail, UserTaskSearchQueryResponse> toUserTaskSearchQueryResponse(
+  public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result) {
     final var response = new UserTaskSearchQueryResponse();
     final var total = result.total();
@@ -88,7 +88,7 @@ public final class SearchQueryResponseMapper {
       response.setItems(toUserTasks(items).get());
     }
 
-    return Either.right(response);
+    return response;
   }
 
   public static Either<ProblemDetail, List<UserTaskItem>> toUserTasks(

@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.containers;
 
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
+import java.net.URI;
 import java.time.Duration;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -81,5 +82,17 @@ public class ZeebeContainer extends GenericContainer<ZeebeContainer> {
 
   public int getRestApiPort() {
     return getMappedPort(ContainerRuntimePorts.ZEEBE_REST_API);
+  }
+
+  public URI getGrpcApiAddress() {
+    return toUriWithPort(getGrpcApiPort());
+  }
+
+  public URI getRestApiAddress() {
+    return toUriWithPort(getRestApiPort());
+  }
+
+  private URI toUriWithPort(final int port) {
+    return URI.create("http://" + getHost() + ":" + port);
   }
 }

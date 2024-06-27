@@ -151,11 +151,21 @@ public final class SnapshotChunkImpl
 
   @Override
   public long getFileBlockPosition() {
+    // backwards compatability
+    if (fileBlockPosition == SnapshotChunkDecoder.fileBlockPositionNullValue()) {
+      return 0;
+    }
+
     return fileBlockPosition;
   }
 
   @Override
   public long getTotalFileSize() {
+    // backwards comptability
+    if (totalFileSize == SnapshotChunkDecoder.totalFileSizeNullValue()) {
+      return getContent().length;
+    }
+
     return totalFileSize;
   }
 

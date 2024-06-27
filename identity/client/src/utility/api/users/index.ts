@@ -4,6 +4,7 @@ export const USERS_ENDPOINT = "/users";
 
 export type User = {
   id: string;
+  name: string;
   username: string;
   password: string;
   email: string;

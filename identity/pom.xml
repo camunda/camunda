@@ -83,6 +83,7 @@
             <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
             <dep>org.slf4j:slf4j-api</dep>
             <dep>org.yaml:snakeyaml</dep>
+            <dep>org.springframework.boot:spring-boot-starter-validation</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>
