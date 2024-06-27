@@ -15,9 +15,13 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +29,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ZeebeRestController
 @RequestMapping("/v2/users")
@@ -39,46 +42,77 @@ public class UserController {
   @PostMapping(
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  @ResponseStatus(HttpStatus.CREATED)
-  public CamundaUserResponse createUser(
-      @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto) {
-    return mapToCamundaUserResponse(
-        userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
+  public ResponseEntity<Object> createUser(
+      @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto,
+      final HttpServletRequest request) {
+    try {
+      final CamundaUserResponse camundaUserResponse =
+          mapToCamundaUserResponse(
+              userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
+      return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
+    } catch (final Exception e) {
+      return handleException(e, request.getRequestURI());
+    }
   }
 
   @DeleteMapping(path = "/{id}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteUser(@PathVariable final Long id) {
-    userService.deleteUser(id);
+  public ResponseEntity<Object> deleteUser(
+      @PathVariable final Long id, final HttpServletRequest request) {
+    try {
+      userService.deleteUser(id);
+      return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    } catch (final Exception e) {
+      return handleException(e, request.getRequestURI());
+    }
   }
 
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaUserResponse findUserById(@PathVariable final Long id) {
-    return mapToCamundaUserResponse(userService.findUserById(id));
+  public ResponseEntity<Object> findUserById(
+      @PathVariable final Long id, final HttpServletRequest request) {
+    try {
+      final CamundaUserResponse camundaUserResponse =
+          mapToCamundaUserResponse(userService.findUserById(id));
+      return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return handleException(e, request.getRequestURI());
+    }
   }
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public UserSearchResponse findAllUsers(@RequestBody final SearchQueryRequest searchQueryRequest) {
-    final UserSearchResponse responseDto = new UserSearchResponse();
-    final List<CamundaUserResponse> allUsers =
-        userService.findAllUsers().stream().map(this::mapToCamundaUserResponse).toList();
-    responseDto.setItems(allUsers);
+  public ResponseEntity<Object> findAllUsers(
+      @RequestBody final SearchQueryRequest searchQueryRequest, final HttpServletRequest request) {
+    try {
+      final UserSearchResponse responseDto = new UserSearchResponse();
+      final List<CamundaUserResponse> allUsers =
+          userService.findAllUsers().stream().map(this::mapToCamundaUserResponse).toList();
+      responseDto.setItems(allUsers);
 
-    return responseDto;
+      return new ResponseEntity<>(responseDto, HttpStatus.OK);
+    } catch (final Exception e) {
+      return handleException(e, request.getRequestURI());
+    }
   }
 
   @PutMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CamundaUserResponse updateUser(
-      @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordRequest user) {
-    return mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
+  public ResponseEntity<Object> updateUser(
+      @PathVariable final Long id,
+      @RequestBody final CamundaUserWithPasswordRequest user,
+      final HttpServletRequest request) {
+    try {
+      final CamundaUserResponse camundaUserResponse =
+          mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
+      return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return handleException(e, request.getRequestURI());
+    }
   }
 
   private CamundaUserWithPassword mapToUserWithPassword(final CamundaUserWithPasswordRequest dto) {
@@ -103,5 +137,19 @@ public class UserController {
     camundaUserDto.setEnabled(camundaUser.isEnabled());
 
     return camundaUserDto;
+  }
+
+  private ResponseEntity<Object> handleException(final Exception e, final String requestUri) {
+    if (e instanceof IllegalArgumentException) {
+      final ProblemDetail problemDetail =
+          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+      problemDetail.setInstance(URI.create(requestUri));
+      return ResponseEntity.of(problemDetail).build();
+    }
+
+    final ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    problemDetail.setInstance(URI.create(requestUri));
+    return ResponseEntity.of(problemDetail).build();
   }
 }
