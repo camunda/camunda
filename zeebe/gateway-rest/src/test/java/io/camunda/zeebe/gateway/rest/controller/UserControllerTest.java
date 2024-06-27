@@ -269,4 +269,31 @@ public class UserControllerTest {
 
     verify(userService, times(1)).findAllUsers();
   }
+
+  @Test
+  void searchUsersWithoutRequestBodyShouldReturnAllUsers() {
+    final CamundaUser camundaUser = new CamundaUser();
+    camundaUser.setUsername("demo");
+
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
+    camundaUserDto.setUsername("demo");
+    camundaUserDto.setEnabled(true);
+
+    final UserSearchResponse userSearchResponseDto = new UserSearchResponse();
+    userSearchResponseDto.setItems(List.of(camundaUserDto));
+
+    when(userService.findAllUsers()).thenReturn(List.of(camundaUser));
+
+    webClient
+        .post()
+        .uri("/v2/users/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is2xxSuccessful()
+        .expectBody(UserSearchResponse.class)
+        .isEqualTo(userSearchResponseDto);
+
+    verify(userService, times(1)).findAllUsers();
+  }
 }

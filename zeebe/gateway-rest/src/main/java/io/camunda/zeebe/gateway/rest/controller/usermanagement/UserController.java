@@ -80,7 +80,7 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> findAllUsers(
-      @RequestBody final SearchQueryRequest searchQueryRequest) {
+      @RequestBody(required = false) final SearchQueryRequest searchQueryRequest) {
     try {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
