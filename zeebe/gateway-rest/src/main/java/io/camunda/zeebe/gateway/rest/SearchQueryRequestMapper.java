@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -148,6 +149,7 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, UserTaskSort> toUserTaskSearchQuerySort(
       final List<SearchQuerySortRequest> sorting) {
+
     if (sorting != null && !sorting.isEmpty()) {
       final var builder = SortOptionBuilders.userTask();
 
@@ -160,7 +162,11 @@ public final class SearchQueryRequestMapper {
         } else if ("completionTime".equals(field)) {
           builder.completionDate();
         } else {
-          throw new RuntimeException("unkown sortBy " + field);
+          // Return an Either.Left with a ProblemDetail for unknown sortBy field
+          final ProblemDetail problemDetail =
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field);
+          return Either.left(problemDetail);
         }
 
         if ("asc".equalsIgnoreCase(order)) {
@@ -168,7 +174,11 @@ public final class SearchQueryRequestMapper {
         } else if ("desc".equalsIgnoreCase(order)) {
           builder.desc();
         } else {
-          throw new RuntimeException("unkown sortOrder " + order);
+          // Return an Either.Left with a ProblemDetail for unknown sortOrder
+          final ProblemDetail problemDetail =
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order);
+          return Either.left(problemDetail);
         }
       }
 
@@ -178,8 +188,7 @@ public final class SearchQueryRequestMapper {
     return Either.right(null);
   }
 
-  public static Either<ProblemDetail, UserTaskFilter> toUserTaskFilter(
-      final UserTaskFilterRequest filter) {
+  public static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
     if (filter != null) {
@@ -244,14 +253,25 @@ public final class SearchQueryRequestMapper {
       }
     }
 
-    return Either.right(builder.build());
+    return builder.build();
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final UserTaskSearchQueryRequest request) {
-    final var page = toSearchQueryPage(request.getPage()).get();
-    final var sorting = toUserTaskSearchQuerySort(request.getSort()).get();
-    final var userTaskFilter = toUserTaskFilter(request.getFilter()).get();
+    final var pageResult = toSearchQueryPage(request.getPage());
+    if (pageResult.isLeft()) {
+      return Either.left(pageResult.getLeft());
+    }
+    final var page = pageResult.get();
+
+    final var sortingResult = toUserTaskSearchQuerySort(request.getSort());
+    if (sortingResult.isLeft()) {
+      return Either.left(sortingResult.getLeft());
+    }
+    final var sorting = sortingResult.get();
+
+    final var userTaskFilter = toUserTaskFilter(request.getFilter());
+
     return Either.right(
         SearchQueryBuilders.userTaskSearchQuery()
             .page(page)
