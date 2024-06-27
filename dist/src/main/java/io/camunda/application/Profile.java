@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import java.util.Set;
+
 /**
  * A fixed set of Spring profiles. Some are application specific (broker, gateway), and others
  * environment specific (dev, test ,prod). Here to avoid littering the code base with different hard
@@ -26,9 +28,12 @@ public enum Profile {
   DEVELOPMENT("dev"),
   PRODUCTION("prod"),
 
-  // other
+  // authentication profiles
+  AUTH_BASIC("auth-basic"),
   IDENTITY_AUTH("identity-auth"),
   SSO_AUTH("sso-auth"),
+  DEFAULT_AUTH_PROFILE("auth"),
+  LDAP_AUTH_PROFILE("ldap-auth"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");
@@ -41,6 +46,14 @@ public enum Profile {
 
   public String getId() {
     return id;
+  }
+
+  public static Set<Profile> getAuthProfiles() {
+    return Set.of(AUTH_BASIC, DEFAULT_AUTH_PROFILE, IDENTITY_AUTH, LDAP_AUTH_PROFILE, SSO_AUTH);
+  }
+
+  public static Set<Profile> getWebappProfiles() {
+    return Set.of(TASKLIST, IDENTITY, OPERATE);
   }
 
   @Override

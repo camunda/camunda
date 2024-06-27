@@ -1,11 +1,15 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.range;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
@@ -21,7 +25,8 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
   private final ServiceTransformers transformers;
   private final VariableValueFilterTransformer variableValueFilterTransformer;
 
-  public VariableFilterTransformer(final ServiceTransformers transformers,
+  public VariableFilterTransformer(
+      final ServiceTransformers transformers,
       final VariableValueFilterTransformer variableValueFilterTransformer) {
     this.transformers = transformers;
     this.variableValueFilterTransformer = variableValueFilterTransformer;
@@ -45,7 +50,6 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
-
   private SearchQuery getVariablesQuery(
       final List<VariableValueFilter> variableFilters, final boolean orConditions) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
@@ -57,7 +61,6 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     }
     return null;
   }
-
 
   private SearchQuery of(final Object value) {
     final var typedValue = TypedValue.toTypedValue(value);

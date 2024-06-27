@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.usermanagement.service;
 
+import io.camunda.identity.security.CamundaUserDetails;
 import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
@@ -50,7 +51,9 @@ public class UserService {
               .build();
       camundaUserDetailsManager.createUser(userDetails);
       final var createdUser = userProfileRepository.findByUsername(userDetails.getUsername());
-      userProfileRepository.save(new Profile(createdUser.getId(), userWithCredential.getEmail()));
+      userProfileRepository.save(
+          new Profile(
+              createdUser.getId(), userWithCredential.getEmail(), userWithCredential.getName()));
       return userProfileRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
       throw new RuntimeException("user.duplicate");
@@ -63,11 +66,9 @@ public class UserService {
   }
 
   public CamundaUser findUserById(final Long id) {
-    final var user = userProfileRepository.findUserById(id);
-    if (user == null) {
-      throw new RuntimeException("user.notFound");
-    }
-    return user;
+    return userProfileRepository
+        .findUserById(id)
+        .orElseThrow(() -> new RuntimeException("user.notFound"));
   }
 
   public CamundaUser findUserByUsername(final String username) {
@@ -86,33 +87,41 @@ public class UserService {
     return userProfileRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword user) {
+  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
     try {
-      if (user.getId() != null && !Objects.equals(id, user.getId())) {
-        throw new RuntimeException("user.notFound");
-      }
-      final CamundaUser existingUser = userProfileRepository.findUserById(id);
-      if (existingUser == null || !existingUser.getUsername().equals(user.getUsername())) {
+      if (!Objects.equals(id, userWithPassword.getId())) {
         throw new RuntimeException("user.notFound");
       }
 
-      final UserDetails existingUserDetail =
+      final CamundaUser existingUser = findUserById(id);
+
+      if (existingUser == null
+          || !existingUser.getUsername().equals(userWithPassword.getUsername())) {
+        throw new RuntimeException("user.notFound");
+      }
+
+      final CamundaUserDetails existingUserDetail =
           camundaUserDetailsManager.loadUserByUsername(existingUser.getUsername());
 
-      final var userBuilder =
+      final UserDetails userDetails =
           User.withUsername(existingUser.getUsername())
-              .authorities(existingUserDetail.getAuthorities())
-              .disabled(!user.isEnabled())
               .password(
-                  StringUtils.hasText(user.getPassword())
-                      ? user.getPassword()
+                  StringUtils.hasText(userWithPassword.getPassword())
+                      ? userWithPassword.getPassword()
                       : existingUserDetail.getPassword())
-              .passwordEncoder(passwordEncoder::encode);
+              .passwordEncoder(passwordEncoder::encode)
+              .roles(existingUserDetail.getRoles().toArray(new String[0]))
+              .disabled(!userWithPassword.isEnabled())
+              .build();
 
-      final UserDetails userDetails = userBuilder.build();
       camundaUserDetailsManager.updateUser(userDetails);
-      userProfileRepository.save(new Profile(id, user.getEmail()));
-      return userProfileRepository.findUserById(id);
+      userProfileRepository.save(
+          new Profile(
+              existingUser.getId(), userWithPassword.getEmail(), userWithPassword.getName()));
+
+      return userProfileRepository
+          .findUserById(id)
+          .orElseThrow(() -> new RuntimeException("user.notFound"));
     } catch (final UsernameNotFoundException e) {
       throw new RuntimeException("user.notFound");
     }

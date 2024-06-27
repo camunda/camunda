@@ -5,8 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { ApiDefinition, apiGet } from "../request";
-import { User } from "src/utility/api/users";
+import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -24,10 +23,17 @@ export type GetGroupParams = {
 export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({ id }) =>
   apiGet(`${GROUPS_ENDPOINT}/${id}`);
 
-export type GetGroupUsersParams = {
-  id: string;
-};
+export type CreateGroupParams = { name: Group["name"] };
 
-export const getGroupUsers: ApiDefinition<User[], GetGroupUsersParams> = ({
+export const createGroup: ApiDefinition<undefined, CreateGroupParams> = (
+  params,
+) => apiPost(GROUPS_ENDPOINT, params);
+
+export const updateGroup: ApiDefinition<undefined, Group> = ({ id, name }) =>
+  apiPut(`${GROUPS_ENDPOINT}/${id}`, { name });
+
+type DeleteGroupParams = GetGroupParams;
+
+export const deleteGroup: ApiDefinition<undefined, DeleteGroupParams> = ({
   id,
-}) => apiGet(`${GROUPS_ENDPOINT}/${id}/users`);
+}) => apiDelete(`${GROUPS_ENDPOINT}/${id}`);

@@ -25,7 +25,8 @@ public final class VariableValueFilterTransformer
     return toSearchQuery(value, "varName", "varValue");
   }
 
-  public SearchQuery toSearchQuery(final VariableValueFilter value, final String varName, final String varValue) {
+  public SearchQuery toSearchQuery(
+      final VariableValueFilter value, final String varName, final String varValue) {
     final var name = value.name();
     final var eq = value.eq();
     final var neq = value.neq();

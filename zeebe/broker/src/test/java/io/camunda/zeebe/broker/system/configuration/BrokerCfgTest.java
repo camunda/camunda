@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.configuration;
 import static io.camunda.zeebe.broker.system.configuration.BrokerCfg.ENV_DEBUG_EXPORTER;
 import static io.camunda.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
-import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -188,14 +187,14 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseDefaultHost() {
-    assertDefaultHost(DEFAULT_HOST);
+    assertDefaultHost("0.0.0.0");
   }
 
   @Test
   public void shouldUseSpecifiedHosts() {
     assertHost(
         "specific-hosts",
-        DEFAULT_HOST,
+        "0.0.0.0",
         "gatewayHost",
         "commandHost",
         "internalHost",

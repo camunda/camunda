@@ -45,7 +45,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     return findSequenceFlowToTake(element, activating)
@@ -65,7 +65,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onComplete(
+  public Either<Failure, ?> finalizeCompletion(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

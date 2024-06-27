@@ -95,6 +95,8 @@ public final class ServiceTransformers {
     mappers.put(UserTaskFilter.class, new UserTaskFilterTransformer(mappers));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
-    mappers.put(VariableFilter.class, new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
+    mappers.put(
+        VariableFilter.class,
+        new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
   }
 }

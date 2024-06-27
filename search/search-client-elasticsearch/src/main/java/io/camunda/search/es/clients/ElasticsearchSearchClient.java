@@ -59,4 +59,15 @@ public final class ElasticsearchSearchClient implements CamundaSearchClient {
   private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
     return new SearchResponseTransformer<>(transformers);
   }
+
+  @Override
+  public void close() throws Exception {
+    if (client != null) {
+      try {
+        client._transport().close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 }
