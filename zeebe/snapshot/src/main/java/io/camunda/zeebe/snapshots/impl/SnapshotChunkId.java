@@ -35,6 +35,8 @@ public record SnapshotChunkId(ByteBuffer id) {
 
   @Override
   public String toString() {
-    return ID_CHARSET.decode(id).toString();
+    final String idStr = ID_CHARSET.decode(id).toString();
+    id.clear();
+    return idStr;
   }
 }
