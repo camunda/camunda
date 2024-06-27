@@ -147,7 +147,7 @@ class JobWorkerBuilderImplTest {
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -172,7 +172,7 @@ class JobWorkerBuilderImplTest {
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -260,7 +260,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -288,7 +288,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.sendCommand()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
