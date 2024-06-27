@@ -351,16 +351,23 @@ public class ProcessInstanceMigrationMigrateProcessor
         .subscribeToEvents(
             context,
             targetElement,
-            catchEvent -> {
-              final var element = catchEvent.element();
-              final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
+            executableCatchEvent -> {
+              final String targetCatchEventId =
+                  BufferUtil.bufferAsString(executableCatchEvent.getId());
               if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
                 // We will migrate this mapped catch event, so we don't want to subscribe to it
                 // Store interrupting status, we will use it to update the interrupting status of
                 // the migrated subscription
-                targetCatchEventIdToInterrupting.put(targetCatchEventId, element.isInterrupting());
+                targetCatchEventIdToInterrupting.put(
+                    targetCatchEventId, executableCatchEvent.isInterrupting());
                 return false;
               }
+
+              return true;
+            },
+            catchEvent -> {
+              final var element = catchEvent.element();
+              final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
 
               if (element.isMessage()) {
                 requireNoSubscriptionForMessage(
