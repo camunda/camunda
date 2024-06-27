@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {InstanceMock} from './';
+import type {InstanceMock} from '.';
 
 const runningInstance: InstanceMock = {
   detail: {
