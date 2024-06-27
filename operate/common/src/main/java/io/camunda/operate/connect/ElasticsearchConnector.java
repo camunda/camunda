@@ -65,17 +65,17 @@ public class ElasticsearchConnector {
 
   private ElasticsearchClient elasticsearchClient;
 
-  public static void closeEsClient(final RestHighLevelClient esClient) {
+  public static void closeEsClient(RestHighLevelClient esClient) {
     if (esClient != null) {
       try {
         esClient.close();
-      } catch (final IOException e) {
+      } catch (IOException e) {
         LOGGER.error("Could not close esClient", e);
       }
     }
   }
 
-  public static void closeEsClient(final ElasticsearchClient esClient) {
+  public static void closeEsClient(ElasticsearchClient esClient) {
     if (esClient != null) {
       esClient.shutdown();
     }
@@ -110,7 +110,7 @@ public class ElasticsearchConnector {
     return elasticsearchClient;
   }
 
-  public boolean checkHealth(final ElasticsearchClient elasticsearchClient) {
+  public boolean checkHealth(ElasticsearchClient elasticsearchClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
@@ -131,7 +131,7 @@ public class ElasticsearchConnector {
               })
           .build()
           .retry();
-    } catch (final Exception e) {
+    } catch (Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }
@@ -157,13 +157,13 @@ public class ElasticsearchConnector {
     if (elasticsearchClient != null) {
       try {
         elasticsearchClient._transport().close();
-      } catch (final IOException e) {
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
-  public RestHighLevelClient createEsClient(final ElasticsearchProperties elsConfig) {
+  public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
@@ -186,8 +186,7 @@ public class ElasticsearchConnector {
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ElasticsearchProperties elsConfig) {
+      HttpAsyncClientBuilder httpAsyncClientBuilder, ElasticsearchProperties elsConfig) {
     setupAuthentication(httpAsyncClientBuilder, elsConfig);
     if (elsConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
@@ -196,18 +195,18 @@ public class ElasticsearchConnector {
   }
 
   private void setupSSLContext(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final SslProperties sslConfig) {
+      HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
     try {
       httpAsyncClientBuilder.setSSLContext(getSSLContext(sslConfig));
       if (!sslConfig.isVerifyHostname()) {
         httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
-    } catch (final Exception e) {
+    } catch (Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private SSLContext getSSLContext(final SslProperties sslConfig)
+  private SSLContext getSSLContext(SslProperties sslConfig)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(sslConfig);
     final TrustStrategy trustStrategy =
@@ -220,7 +219,7 @@ public class ElasticsearchConnector {
     }
   }
 
-  private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
+  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -230,7 +229,7 @@ public class ElasticsearchConnector {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
-    } catch (final Exception e) {
+    } catch (Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -242,7 +241,7 @@ public class ElasticsearchConnector {
     try {
       final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("elasticsearch-host", cert);
-    } catch (final Exception e) {
+    } catch (Exception e) {
       final String message =
           "Could not load configured server certificate for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -252,8 +251,7 @@ public class ElasticsearchConnector {
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (final BufferedInputStream bis =
-        new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -277,17 +275,17 @@ public class ElasticsearchConnector {
     return builder;
   }
 
-  private HttpHost getHttpHost(final ElasticsearchProperties elsConfig) {
+  private HttpHost getHttpHost(ElasticsearchProperties elsConfig) {
     try {
       final URI uri = new URI(elsConfig.getUrl());
       return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (final URISyntaxException e) {
+    } catch (URISyntaxException e) {
       throw new OperateRuntimeException("Error in url: " + elsConfig.getUrl(), e);
     }
   }
 
   private void setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder builder, ElasticsearchProperties elsConfig) {
     final String username = elsConfig.getUsername();
     final String password = elsConfig.getPassword();
 
@@ -302,7 +300,7 @@ public class ElasticsearchConnector {
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  public boolean checkHealth(final RestHighLevelClient esClient) {
+  public boolean checkHealth(RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
@@ -321,7 +319,7 @@ public class ElasticsearchConnector {
               })
           .build()
           .retry();
-    } catch (final Exception e) {
+    } catch (Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }
