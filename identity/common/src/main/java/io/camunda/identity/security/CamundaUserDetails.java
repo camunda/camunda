@@ -13,10 +13,22 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class CamundaUserDetails implements UserDetails {
-  private final UserDetails user;
+  private UserDetails user;
 
-  public CamundaUserDetails(final UserDetails user) {
+  //  These fields are here to support a migratory period between the Operate security classes
+  //  and the central auth layer, they may move in the future.
+  private final Long userId;
+  private final String displayName;
+
+  public CamundaUserDetails(final UserDetails user, final Long userId, final String displayName) {
     this.user = user;
+    this.userId = userId;
+    this.displayName = displayName;
+  }
+
+  public CamundaUserDetails(final Long userId, final String displayName) {
+    this.userId = userId;
+    this.displayName = displayName;
   }
 
   @Override
@@ -54,11 +66,26 @@ public class CamundaUserDetails implements UserDetails {
     return user.isEnabled();
   }
 
+  public Long getUserId() {
+    return userId;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
   public List<String> getRoles() {
     return user.getAuthorities().stream()
-        .filter(r -> r.getAuthority().startsWith("ROLE_"))
         .map(GrantedAuthority::getAuthority)
+        .filter(authority -> authority.startsWith("ROLE_"))
         .map(roleName -> roleName.replace("ROLE_", ""))
+        .toList();
+  }
+
+  public List<String> getPermissions() {
+    return user.getAuthorities().stream()
+        .map(GrantedAuthority::getAuthority)
+        .filter(authority -> !authority.startsWith("ROLE_"))
         .toList();
   }
 }

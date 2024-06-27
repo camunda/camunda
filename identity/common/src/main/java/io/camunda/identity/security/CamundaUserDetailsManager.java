@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.security;
 
+import io.camunda.identity.usermanagement.repository.UserProfileRepository;
 import java.util.ArrayList;
 import java.util.List;
 import javax.sql.DataSource;
@@ -19,17 +20,25 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
+  private final UserProfileRepository userProfileRepository;
 
-  public CamundaUserDetailsManager(final DataSource dataSource) {
+  public CamundaUserDetailsManager(
+      final DataSource dataSource, final UserProfileRepository userProfileRepository) {
     super(dataSource);
     setEnableGroups(true);
     setEnableAuthorities(true);
+    this.userProfileRepository = userProfileRepository;
   }
 
   @Override
   protected List<UserDetails> loadUsersByUsername(final String username) {
     return super.loadUsersByUsername(username).stream()
-        .map(u -> (UserDetails) new CamundaUserDetails(u))
+        .map(
+            userDetails -> {
+              final var profile = userProfileRepository.findByUsername(userDetails.getUsername());
+              return (UserDetails)
+                  new CamundaUserDetails(userDetails, profile.getId(), profile.getName());
+            })
         .toList();
   }
 
@@ -44,7 +53,9 @@ public class CamundaUserDetailsManager extends JdbcUserDetailsManager {
   @Override
   public CamundaUserDetails loadUserByUsername(final String username)
       throws UsernameNotFoundException {
-    return new CamundaUserDetails(super.loadUserByUsername(username));
+    final var user = super.loadUserByUsername(username);
+    final var profile = userProfileRepository.findByUsername(username);
+    return new CamundaUserDetails(user, profile.getId(), profile.getName());
   }
 
   private List<GrantedAuthority> loadPermissionsOfRoles(final List<GrantedAuthority> roles) {
