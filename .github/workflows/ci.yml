@@ -65,25 +65,21 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  build-platform-backend:
+  java-checks:
     if: needs.detect-changes.outputs.java-unit-tests == 'true'
     needs: [ detect-changes ]
+    name: Java checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
         with:
-          go: true
+          go: false
+          maven-cache-key-modifier: java-checks
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        with:
-          go: false
-          maven-extra-args: -T1C -PskipFrontendBuild
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -93,7 +89,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
 
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
