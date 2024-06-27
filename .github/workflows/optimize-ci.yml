@@ -321,7 +321,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
     name: Deploy Artifacts
-    needs: [unit-tests, migration, data-upgrade-test, integration-tests]
+    needs: [unit-tests, integration-tests]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
