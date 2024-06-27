@@ -52,7 +52,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class ZeebeClientSpringConfigurationPropertiesTest {
 
   @Autowired private ZeebeClientConfigurationProperties properties;
-  @Autowired private JsonMapper jsonMapper;
 
   @Test
   public void hasDeprecatedGatewayAddress() {

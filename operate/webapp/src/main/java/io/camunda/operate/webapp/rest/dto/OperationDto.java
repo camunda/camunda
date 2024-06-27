@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class OperationDto implements CreatableFromEntity<OperationDto, OperationEntity> {
@@ -23,6 +24,8 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
   private OperationState state;
 
   private String errorMessage;
+
+  private OffsetDateTime completedDate;
 
   public String getId() {
     return id;
@@ -69,19 +72,28 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
     return this;
   }
 
-  @Override
-  public OperationDto fillFrom(final OperationEntity operationEntity) {
-    this.setId(operationEntity.getId())
-        .setType(operationEntity.getType())
-        .setState(operationEntity.getState())
-        .setErrorMessage(operationEntity.getErrorMessage())
-        .setBatchOperationId(operationEntity.getBatchOperationId());
+  public OffsetDateTime getCompletedDate() {
+    return completedDate;
+  }
+
+  public OperationDto setCompletedDate(final OffsetDateTime completedDate) {
+    this.completedDate = completedDate;
     return this;
   }
 
   @Override
+  public OperationDto fillFrom(final OperationEntity operationEntity) {
+    return setId(operationEntity.getId())
+        .setType(operationEntity.getType())
+        .setState(operationEntity.getState())
+        .setErrorMessage(operationEntity.getErrorMessage())
+        .setBatchOperationId(operationEntity.getBatchOperationId())
+        .setCompletedDate(operationEntity.getCompletedDate());
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(id, batchOperationId, type, state, errorMessage);
+    return Objects.hash(id, batchOperationId, type, state, errorMessage, completedDate);
   }
 
   @Override
@@ -97,6 +109,28 @@ public class OperationDto implements CreatableFromEntity<OperationDto, Operation
         && Objects.equals(batchOperationId, that.batchOperationId)
         && type == that.type
         && state == that.state
-        && Objects.equals(errorMessage, that.errorMessage);
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(completedDate, that.completedDate);
+  }
+
+  @Override
+  public String toString() {
+    return "OperationDto{"
+        + "id='"
+        + id
+        + '\''
+        + ", batchOperationId='"
+        + batchOperationId
+        + '\''
+        + ", type="
+        + type
+        + ", state="
+        + state
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", completedDate="
+        + completedDate
+        + '}';
   }
 }

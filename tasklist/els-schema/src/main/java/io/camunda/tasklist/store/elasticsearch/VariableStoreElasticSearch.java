@@ -82,7 +82,10 @@ import org.springframework.stereotype.Component;
 public class VariableStoreElasticSearch implements VariableStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
+
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;

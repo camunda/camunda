@@ -54,7 +54,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@b80ff79f1755d06ba70441c368a6fe801f5f3a62
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -87,16 +87,6 @@ jobs:
       - name: Run Integration Tests
         run: |
           mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
-
-      # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Tasklist Test Results"
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
-            tasklist/**/target/failsafe-reports/TEST-*.xml
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

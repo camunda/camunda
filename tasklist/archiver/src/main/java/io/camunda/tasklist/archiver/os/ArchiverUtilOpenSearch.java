@@ -18,11 +18,12 @@ import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
@@ -37,6 +38,7 @@ import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -46,9 +48,13 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ArchiverUtilOpenSearch.class);
 
-  @Autowired protected RestClient opensearchRestClient;
+  @Autowired
+  @Qualifier("tasklistOsRestClient")
+  private RestClient opensearchRestClient;
 
-  @Autowired private OpenSearchAsyncClient osClient;
+  @Autowired
+  @Qualifier("tasklistOsAsyncClient")
+  private OpenSearchAsyncClient osClient;
 
   @Override
   public CompletableFuture<Long> deleteDocuments(
@@ -132,8 +138,12 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
       try {
         final Request request = new Request("POST", "/_plugins/_ism/add/" + destinationIndexName);
 
-        final JSONObject requestJson = new JSONObject();
-        requestJson.put("policy_id", OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES);
+        final JsonObject requestJson =
+            Json.createObjectBuilder()
+                .add(
+                    "policy_id",
+                    Json.createValue(OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES))
+                .build();
         request.setJsonEntity(requestJson.toString());
         final Response response = opensearchRestClient.performRequest(request);
       } catch (final IOException e) {

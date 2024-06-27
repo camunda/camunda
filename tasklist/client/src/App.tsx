@@ -78,7 +78,7 @@ const router = createBrowserRouter(
     </Route>,
   ),
   {
-    basename: window.clientConfig?.contextPath ?? '/',
+    basename: import.meta.env.DEV ? '/' : window.clientConfig?.baseName ?? '/',
   },
 );
 

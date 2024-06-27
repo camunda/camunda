@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
-      TasklistProfileService.class,
+      TasklistProfileServiceImpl.class,
       ClientConfig.class,
       ClientConfigRestService.class,
       TasklistProperties.class
@@ -43,7 +43,8 @@ import org.springframework.web.context.WebApplicationContext;
       // CAMUNDA_TASKLIST_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
       "CAMUNDA_TASKLIST_CLOUD_STAGE=stage",
       "CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN=i-am-a-token",
-      "CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST=https://fake.mixpanel.com"
+      "CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST=https://fake.mixpanel.com",
+      "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ClientConfigRestServiceIT {
@@ -60,7 +61,7 @@ public class ClientConfigRestServiceIT {
   @Test
   public void testGetClientConfig() throws Exception {
     // when
-    final MockHttpServletRequestBuilder request = get("/client-config.js");
+    final MockHttpServletRequestBuilder request = get("/tasklist/client-config.js");
     final MvcResult mvcResult =
         mockMvc
             .perform(request)
@@ -77,6 +78,7 @@ public class ClientConfigRestServiceIT {
                 + "\"canLogout\":true,"
                 + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","
+                + "\"baseName\":\"/tasklist\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","

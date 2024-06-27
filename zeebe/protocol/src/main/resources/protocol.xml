@@ -106,6 +106,8 @@
     <field name="key" id="4" type="uint64"/>
     <field name="valueType" id="5" type="ValueType"/>
     <field name="intent" id="6" type="uint8"/>
+    <!-- populated when the client passes an operation reference to the gateway-->
+    <field name="operationReference" id="9" type="uint64" presence="optional" sinceVersion="5"/>
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
@@ -149,6 +151,8 @@
     <field name="recordVersion" id="10" type="uint16" sinceVersion="3" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
+    <!-- populated when the client passes an operation reference to the gateway-->
+    <field name="operationReference" id="12" type="uint64" presence="optional" sinceVersion="5"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->

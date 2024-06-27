@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class TenantAwareElasticsearchClient {
 
   @Autowired
-  @Qualifier("esClient")
+  @Qualifier("tasklistEsClient")
   private RestHighLevelClient defaultClient;
 
   @Autowired(required = false)

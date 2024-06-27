@@ -18,9 +18,8 @@ import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
+import jakarta.json.Json;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,7 +111,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(
-            "/does-not-exist",
+            "/tasklist/does-not-exist",
             HttpMethod.GET,
             prepareRequestWithCookies(loginResponse.getHeaders()),
             String.class);
@@ -183,7 +182,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
   @Test
   @DirtiesContext
-  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
+  public void testCanReadAndWriteLoggersActuatorEndpoint() {
     ResponseEntity<String> response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
@@ -194,7 +193,8 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     final HttpEntity<String> request =
-        new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+        new HttpEntity<>(
+            Json.createObjectBuilder().add("configuredLevel", "TRACE").build().toString(), headers);
     response =
         testRestTemplate.postForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.tasklist",
@@ -217,7 +217,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
   private void assertThatClientConfigContains(final String text) {
     final ResponseEntity<String> clientConfigContent =
-        testRestTemplate.getForEntity("/client-config.js", String.class);
+        testRestTemplate.getForEntity("/tasklist/client-config.js", String.class);
     assertThat(clientConfigContent.getBody()).contains(text);
   }
 }

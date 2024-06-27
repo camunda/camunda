@@ -121,7 +121,8 @@ public class ProcessZeebeRecordProcessorOpenSearch {
             .setKey(process.getProcessDefinitionKey())
             .setBpmnProcessId(process.getBpmnProcessId())
             .setVersion(process.getVersion())
-            .setTenantId(process.getTenantId());
+            .setTenantId(process.getTenantId())
+            .setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
 
@@ -132,17 +133,14 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         flowNode -> processEntity.getFlowNodes().add(flowNode),
         userTaskFormCollector,
         processEntity::setFormKey,
-        formId -> processEntity.setFormId(formId),
+        processEntity::setFormId,
         processEntity::setStartedByForm);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));
 
     Optional.ofNullable(processEntity.getFormId())
-        .ifPresent(
-            id -> {
-              processEntity.setIsFormEmbedded(false);
-            });
+        .ifPresent(id -> processEntity.setIsFormEmbedded(false));
 
     return processEntity;
   }

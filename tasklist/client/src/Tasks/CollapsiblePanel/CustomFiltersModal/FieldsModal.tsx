@@ -149,8 +149,10 @@ const FieldsModal: React.FC<Props> = ({
                   onSubmit={handleSubmit}
                   tabIndex={-1}
                 >
-                  {[undefined, 'custom'].includes(values.name) ? null : (
-                    <Field name="name">
+                  {[undefined, 'custom'].includes(
+                    initialValues?.name,
+                  ) ? null : (
+                    <Field name="name" defaultValue="">
                       {({input}) => (
                         <TextInput
                           {...input}
@@ -259,7 +261,7 @@ const FieldsModal: React.FC<Props> = ({
                         id={input.name}
                         tenantId={values.tenant}
                         disabled={!isOpen}
-                        labelText="Process"
+                        labelText="Tasks for latest process version"
                       />
                     )}
                   </Field>
@@ -287,7 +289,7 @@ const FieldsModal: React.FC<Props> = ({
                         hideLabel
                         labelA="Hidden"
                         labelB="Visible"
-                        toggled={input.checked}
+                        toggled={input.value}
                         onToggle={input.onChange}
                       />
                     )}
@@ -497,7 +499,7 @@ const FieldsModal: React.FC<Props> = ({
                 >
                   Reset
                 </Button>
-                {values.name === undefined ? (
+                {initialValues?.name === undefined ? (
                   <>
                     <Button kind="secondary" onClick={onClose} type="button">
                       Cancel

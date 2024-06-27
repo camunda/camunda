@@ -38,6 +38,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private T value;
 
   private Map<String, Object> authorizations;
+  private long operationReference;
 
   public RecordImpl() {}
 
@@ -117,6 +118,15 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   public void setValue(final T value) {
     this.value = value;
+  }
+
+  @Override
+  public long getOperationReference() {
+    return operationReference;
+  }
+
+  public void setOperationReference(final long operationReference) {
+    this.operationReference = operationReference;
   }
 
   public void setValueType(final ValueType valueType) {
@@ -204,6 +214,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + (authorizations == null ? "null" : String.format("[size='%d']", authorizations.size()))
         + ", value="
         + value
+        + ", operationReference="
+        + operationReference
         + '}';
   }
 

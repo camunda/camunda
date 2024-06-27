@@ -19,6 +19,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
@@ -56,6 +56,7 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -73,8 +74,15 @@ public class RetryOpenSearchClient {
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryOpenSearchClient.class);
-  @Autowired protected RestClient opensearchRestClient;
-  @Autowired private OpenSearchClient openSearchClient;
+
+  @Autowired
+  @Qualifier("tasklistOsRestClient")
+  private RestClient opensearchRestClient;
+
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
+
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
   @Autowired private OpenSearchInternalTask openSearchInternalTask;
@@ -241,10 +249,14 @@ public class RetryOpenSearchClient {
   }
 
   public boolean createTemplate(final PutIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return openSearchClient.indices().putIndexTemplate(request).acknowledged();
           }
           return true;
@@ -640,12 +652,15 @@ public class RetryOpenSearchClient {
   public Response putLifeCyclePolicy(final String indexName, final String policyName) {
     final Request request = new Request("PUT", indexName + "/_settings");
 
-    final JSONObject settings = new JSONObject();
-    final JSONObject indexSettings = new JSONObject();
-    indexSettings.put(
-        "plugins.index_state_management.policy_id",
-        Objects.requireNonNullElse(policyName, JSONObject.NULL));
-    settings.put("index", indexSettings);
+    final JsonObject settings =
+        Json.createObjectBuilder()
+            .add(
+                "index",
+                Json.createObjectBuilder()
+                    .add(
+                        "plugins.index_state_management.policy_id",
+                        policyName != null ? Json.createValue(policyName) : JsonValue.NULL))
+            .build();
 
     request.setJsonEntity(settings.toString());
 
@@ -687,5 +702,14 @@ public class RetryOpenSearchClient {
     final Request request = new Request("PUT", "/_index_template/" + templateName);
     request.setJsonEntity(updateJson);
     opensearchRestClient.performRequest(request);
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        "PutMapping " + request.index(),
+        () -> {
+          openSearchClient.indices().putMapping(request);
+          return true;
+        });
   }
 }

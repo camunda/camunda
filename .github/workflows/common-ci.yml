@@ -2,28 +2,22 @@ name: Common CI
 
 on:
   pull_request:
-    paths-ignore:
-      - '.ci/**'
+    paths-ignore: # keep in sync with zeebe-ci.yml trigger
+      - '.ci/docker/test/*'
       - '.github/actions/**'
-      - '.github/workflows/operate-*'
-      - '.github/workflows/tasklist-*'
       - '.github/workflows/zeebe-*'
       - 'Dockerfile'
       - 'bom/*'
       - 'build-tools/**'
       - 'clients/**'
       - 'dist/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
-      - 'tasklist.Dockerfile'
-      - 'tasklist/**'
       - 'zeebe/**'
 
 jobs:
   test-summary:
-    # Dummy job used for pull requests that do not trigger zeebe-ci or operate-ci
+    # Dummy job used for pull requests that do not trigger zeebe-ci
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     name: Test summary
     if: always()

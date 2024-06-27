@@ -23,6 +23,7 @@ public class ClientConfig {
   public boolean canLogout;
   public boolean isLoginDelegated;
   public String contextPath;
+  public String baseName;
 
   // Cloud related properties for mixpanel events
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
@@ -55,6 +56,7 @@ public class ClientConfig {
     isEnterprise = tasklistProperties.isEnterprise();
     isMultiTenancyEnabled = tasklistProperties.getMultiTenancy().isEnabled();
     contextPath = context.getContextPath();
+    baseName = context.getContextPath() + "/tasklist";
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
   }

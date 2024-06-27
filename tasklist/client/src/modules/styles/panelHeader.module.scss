@@ -20,7 +20,7 @@
   height: layout.to-rem(48px);
 
   h1 {
-    @include type.type-style('heading-02');
+    @include type.type-style('heading-01');
     color: var(--cds-text-primary);
   }
 }

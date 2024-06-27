@@ -152,7 +152,8 @@ final class JsonSerializableToJsonTest {
                   .rejectionType(rejectionType)
                   .requestId(requestId)
                   .requestStreamId(requestStreamId)
-                  .authorization(authInfo);
+                  .authorization(authInfo)
+                  .operationReference(1234);
 
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -204,6 +205,7 @@ final class JsonSerializableToJsonTest {
             ]
           },
           "recordVersion": 10,
+          "operationReference": 1234,
           "sourceRecordPosition": 231,
           "value": {
             "processesMetadata": [
@@ -267,6 +269,7 @@ final class JsonSerializableToJsonTest {
             ]
           },
           "recordVersion": 1,
+          "operationReference": -1,
           "value": {
               "resources": [],
               "decisionRequirementsMetadata": [],
@@ -636,6 +639,7 @@ final class JsonSerializableToJsonTest {
               },
               "retries": 3,
               "jobKind": "BPMN_ELEMENT",
+              "jobListenerEventType": "UNSPECIFIED",
               "retryBackoff": 1002,
               "recurringTime": 1001,
               "errorMessage": "failed message",
@@ -734,6 +738,7 @@ final class JsonSerializableToJsonTest {
           },
           "retries": 12,
           "jobKind": "BPMN_ELEMENT",
+          "jobListenerEventType": "UNSPECIFIED",
           "retryBackoff": 1003,
           "recurringTime": 1004,
           "errorMessage": "failed message",
@@ -767,6 +772,7 @@ final class JsonSerializableToJsonTest {
           "worker": "",
           "retries": -1,
           "jobKind": "BPMN_ELEMENT",
+          "jobListenerEventType": "UNSPECIFIED",
           "retryBackoff": 0,
           "recurringTime": -1,
           "errorMessage": "",
@@ -805,6 +811,7 @@ final class JsonSerializableToJsonTest {
           "worker": "",
           "retries": -1,
           "jobKind": "BPMN_ELEMENT",
+          "jobListenerEventType": "UNSPECIFIED",
           "retryBackoff": 0,
           "recurringTime": -1,
           "errorCode": "",

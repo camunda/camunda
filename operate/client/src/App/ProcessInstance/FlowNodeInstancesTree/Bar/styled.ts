@@ -12,6 +12,7 @@ import {INSTANCE_HISTORY_LEFT_PADDING} from 'modules/constants';
 
 const NodeName = styled.span`
   margin-left: var(--cds-spacing-02);
+  align-self: center;
 `;
 
 const Container = styled.div`

@@ -42,7 +42,9 @@ public abstract class ElasticsearchDao<T> {
 
   @Autowired protected TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  protected ObjectMapper objectMapper;
 
   @Autowired protected OperateDateTimeFormatter dateTimeFormatter;
 

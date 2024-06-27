@@ -246,6 +246,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             isTimestampLabelVisible={
               !modificationsStore.isModificationModeEnabled
             }
+            isRoot={isRoot}
+            latestMigrationDate={
+              processInstanceDetailsStore.latestMigrationDate ?? undefined
+            }
             ref={rowRef}
           />
         }

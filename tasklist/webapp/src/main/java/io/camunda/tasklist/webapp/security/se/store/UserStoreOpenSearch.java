@@ -32,6 +32,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -39,13 +40,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
-@DependsOn("schemaStartup")
+@DependsOn("tasklistSchemaStartup")
 @Conditional(OpenSearchCondition.class)
 public class UserStoreOpenSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreOpenSearch.class);
 
   @Autowired private UserIndex userIndex;
-  @Autowired private OpenSearchClient openSearchClient;
+
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
 
   @Override
   public UserEntity getByUserId(String userId) {

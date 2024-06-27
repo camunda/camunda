@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 public class TenantAwareOpenSearchClient {
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient defaultClient;
 
   @Autowired(required = false)

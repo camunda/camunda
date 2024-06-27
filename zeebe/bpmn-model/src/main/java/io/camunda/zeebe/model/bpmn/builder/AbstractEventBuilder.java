@@ -18,15 +18,45 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Event;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
  */
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>
-    extends AbstractFlowNodeBuilder<B, E> {
+    extends AbstractFlowNodeBuilder<B, E> implements ZeebeExecutionListenersBuilder<B> {
+
+  private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
 
   protected AbstractEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeEndExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

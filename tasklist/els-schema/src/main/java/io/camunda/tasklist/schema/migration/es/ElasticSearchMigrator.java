@@ -63,7 +63,7 @@ public class ElasticSearchMigrator implements Migrator {
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
-  @Bean("migrationThreadPoolExecutor")
+  @Bean("tasklistMigrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(migrationProperties.getThreadsCount());

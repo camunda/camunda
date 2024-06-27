@@ -69,16 +69,18 @@ public class ElasticsearchTestExtension
   private static final String PATH_SEARCH_STATISTICS =
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
-  @Autowired protected RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("tasklistZeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
 
-  @Autowired protected TasklistProperties tasklistProperties;
-  @Autowired protected ZeebeImporter zeebeImporter;
-  @Autowired protected RecordsReaderHolder recordsReaderHolder;
-  protected boolean failed = false;
+  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private ZeebeImporter zeebeImporter;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
+  private boolean failed = false;
   @Autowired private SchemaManager elasticsearchSchemaManager;
 
   @Autowired private ObjectMapper objectMapper;
