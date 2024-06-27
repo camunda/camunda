@@ -71,9 +71,24 @@ public class CamundaDockerIT {
 
       // then
       assertThat(healthCheckResponse.getCode()).isEqualTo(200);
+      final String expectedHealthCheckResponse =
+          """
+            {
+              "status": "UP",
+              "components": {
+                "brokerReady": {"status": "UP"},
+                "brokerStartup": {"status": "UP"},
+                "brokerStatus": {"status": "UP"},
+                "indicesCheck": {"status": "UP"},
+                "livenessState": {"status": "UP"},
+                "readinessState": {"status": "UP"},
+                "searchEngineCheck": {"status": "UP"}
+              },
+              "groups": ["liveness", "readiness", "startup", "status"]
+            }
+            """;
       assertThat(EntityUtils.toString(healthCheckResponse.getEntity()))
-          .isEqualTo(
-              "{\"status\":\"UP\",\"components\":{\"brokerReady\":{\"status\":\"UP\"},\"brokerStartup\":{\"status\":\"UP\"},\"brokerStatus\":{\"status\":\"UP\"},\"indicesCheck\":{\"status\":\"UP\"},\"livenessState\":{\"status\":\"UP\"},\"readinessState\":{\"status\":\"UP\"},\"searchEngineCheck\":{\"status\":\"UP\"}},\"groups\":[\"liveness\",\"readiness\",\"startup\",\"status\"]}");
+          .isEqualTo(expectedHealthCheckResponse.replace("\n", "").replace(" ", ""));
     }
   }
 
@@ -89,7 +104,7 @@ public class CamundaDockerIT {
   }
 
   private <T extends GenericContainer> T createContainer(Supplier<T> containerSupplier) {
-    T container = containerSupplier.get();
+    final T container = containerSupplier.get();
     createdContainers.add(container);
     return container;
   }

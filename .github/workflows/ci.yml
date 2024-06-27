@@ -163,6 +163,10 @@ jobs:
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
+      - uses: ./.github/actions/build-frontend
+        id: build-identity-fe
+        with:
+          directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -307,9 +311,9 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ detect-changes, check-results ]
+    needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
@@ -330,6 +334,10 @@ jobs:
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
+      - uses: ./.github/actions/build-frontend
+        id: build-identity-fe
+        with:
+          directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
