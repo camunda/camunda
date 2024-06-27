@@ -68,6 +68,10 @@ public final class CreateProcessInstanceWithResultCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     CreateProcessInstanceWithResultCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<ProcessInstanceResult> send() {

@@ -55,6 +55,9 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link DeleteResourceCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<DeleteResourceResponse> send() {

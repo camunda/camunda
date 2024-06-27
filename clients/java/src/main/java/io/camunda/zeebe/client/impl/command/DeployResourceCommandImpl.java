@@ -69,7 +69,7 @@ public final class DeployResourceCommandImpl
   }
 
   /**
-   * @deprecated since 8.6.0, use {@link
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
    *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
    *     CamundaClientConfiguration config, Predicate retryPredicate)}
    */

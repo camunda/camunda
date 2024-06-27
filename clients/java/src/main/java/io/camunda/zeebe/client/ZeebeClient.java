@@ -47,6 +47,8 @@ import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClient:newClient()}
    * @return a new Zeebe client with default configuration values. In order to customize
    *     configuration, use the methods {@link #newClientBuilder()} or {@link
    *     #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder} for the configuration
@@ -58,6 +60,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   }
 
   /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClient:newClient(configuration)}
    * @return a new {@link ZeebeClient} using the provided configuration.
    */
   @Deprecated
@@ -66,6 +70,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   }
 
   /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClient:newClientBuilder()}
    * @return a builder to configure and create a new {@link ZeebeClient}.
    */
   @Deprecated
@@ -74,6 +80,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   }
 
   /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClient:newClientCloudBuilder()}
    * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
    */
   @Deprecated
@@ -102,8 +110,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   TopologyRequestStep1 newTopologyRequest();
 
   /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClient:getConfiguration()}
    * @return the client's configuration
    */
+  @Deprecated
   ZeebeClientConfiguration getConfiguration();
 
   @Override

@@ -78,6 +78,9 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<Void> send() {

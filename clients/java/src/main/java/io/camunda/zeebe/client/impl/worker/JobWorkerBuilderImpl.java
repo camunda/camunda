@@ -83,6 +83,11 @@ public final class JobWorkerBuilderImpl
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
+   *     JobWorkerBuilderImpl#JobWorkerBuilderImpl(CamundaClientConfiguration config, JobClient
+   *     jobClient, ScheduledExecutorService executorService, List closeables)}
+   */
   @Deprecated
   public JobWorkerBuilderImpl(
       final ZeebeClientConfiguration configuration,

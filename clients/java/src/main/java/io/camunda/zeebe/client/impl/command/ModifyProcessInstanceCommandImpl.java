@@ -212,6 +212,10 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     ModifyProcessInstanceCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<ModifyProcessInstanceResponse> send() {

@@ -104,6 +104,10 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link HttpClient#get(String path,
+   *     RequestConfig, Class, JsonResponseTransformer, HttpCamundaFuture)}
+   */
   @Deprecated
   public <HttpT, RespT> void get(
       final String path,
@@ -122,6 +126,10 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link HttpClient#post(String, String,
+   *     RequestConfig, HttpCamundaFuture)}
+   */
   @Deprecated
   public <RespT> void post(
       final String path,
@@ -149,6 +157,10 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link HttpClient#patch(String, String,
+   *     RequestConfig, HttpCamundaFuture)}
+   */
   @Deprecated
   public <RespT> void patch(
       final String path,
@@ -163,6 +175,10 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link HttpClient#delete(String,
+   *     RequestConfig, HttpCamundaFuture)}
+   */
   @Deprecated
   public <RespT> void delete(
       final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {

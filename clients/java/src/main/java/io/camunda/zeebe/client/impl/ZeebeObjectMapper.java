@@ -26,6 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.impl.CamundaObjectMapper}
+ */
 @Deprecated
 public class ZeebeObjectMapper implements JsonMapper {
 

@@ -57,6 +57,11 @@ public final class BroadcastSignalCommandImpl
     tenantId(configuration.getDefaultTenantId());
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
+   *     BroadcastSignalCommandImpl#BroadcastSignalCommandImpl(GatewayStub asyncStub,
+   *     CamundaClientConfiguration config, JsonMapper jsonMapper, Predicate retryPredicate)}
+   */
   @Deprecated
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
@@ -95,6 +100,10 @@ public final class BroadcastSignalCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     BroadcastSignalCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<BroadcastSignalResponse> send() {

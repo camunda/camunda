@@ -86,6 +86,9 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link FailJobCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<FailJobResponse> send() {

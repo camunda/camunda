@@ -19,6 +19,10 @@ package io.camunda.zeebe.client.impl;
 import io.camunda.client.impl.CamundaClientFutureImpl;
 import java.util.function.Consumer;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.impl.CamundaStreamingClientFutureImpl}
+ */
 @Deprecated
 public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
     extends CamundaClientFutureImpl<ClientResponse, BrokerResponse> {

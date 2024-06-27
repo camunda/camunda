@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.CamundaClientBuilder}
+ */
 @Deprecated
 public interface ZeebeClientBuilder {
 
@@ -53,6 +57,7 @@ public interface ZeebeClientBuilder {
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
+  @Deprecated
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**

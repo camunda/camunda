@@ -59,6 +59,10 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     CompleteUserTaskCommandImpl:sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<CompleteUserTaskResponse> send() {

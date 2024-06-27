@@ -61,6 +61,9 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link CompleteJobCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<CompleteJobResponse> send() {

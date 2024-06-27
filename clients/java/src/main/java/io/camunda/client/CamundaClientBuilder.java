@@ -52,7 +52,7 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     ZeebeClientBuilder#grpcAddress(URI)}
+   *     CamundaClientBuilder#grpcAddress(URI)}
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .

@@ -61,9 +61,9 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   /**
-   * @deprecated since 8.6.0, use {@link
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
    *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
-   *     jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   *     jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
    */
   @Deprecated
   public EvaluateDecisionCommandImpl(
@@ -130,6 +130,10 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     EvaluateDecisionCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<EvaluateDecisionResponse> send() {

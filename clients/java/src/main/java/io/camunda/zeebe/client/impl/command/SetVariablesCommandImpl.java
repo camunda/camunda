@@ -65,6 +65,9 @@ public final class SetVariablesCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link SetVariablesCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<SetVariablesResponse> send() {

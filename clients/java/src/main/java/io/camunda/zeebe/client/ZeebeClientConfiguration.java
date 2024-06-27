@@ -25,6 +25,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link CamundaClientConfiguration}
+ */
 @Deprecated
 public interface ZeebeClientConfiguration {
 

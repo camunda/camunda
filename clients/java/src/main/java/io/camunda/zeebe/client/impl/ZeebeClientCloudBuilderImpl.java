@@ -39,6 +39,11 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.impl.CamundaClientCloudBuilderImpl}
+ */
+@Deprecated
 public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
         ZeebeClientCloudBuilderStep2,

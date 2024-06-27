@@ -71,6 +71,10 @@ public class JobUpdateTimeoutCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     JobUpdateTimeoutCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<UpdateTimeoutJobResponse> send() {

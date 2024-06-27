@@ -66,7 +66,7 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   /**
-   * @deprecated since 8.6.0, use {@link
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
    *     JsonMapper jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
    */

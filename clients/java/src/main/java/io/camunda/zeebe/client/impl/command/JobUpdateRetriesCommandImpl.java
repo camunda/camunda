@@ -65,6 +65,10 @@ public final class JobUpdateRetriesCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     JobUpdateRetriesCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<UpdateRetriesJobResponse> send() {

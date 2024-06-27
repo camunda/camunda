@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.client;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.CamundaClientCloudBuilderStep1}
+ */
 @Deprecated
 public interface ZeebeClientCloudBuilderStep1 {
 
@@ -25,6 +29,10 @@ public interface ZeebeClientCloudBuilderStep1 {
    */
   ZeebeClientCloudBuilderStep2 withClusterId(String clusterId);
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+   *     io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2}
+   */
   @Deprecated
   interface ZeebeClientCloudBuilderStep2 {
 
@@ -36,6 +44,10 @@ public interface ZeebeClientCloudBuilderStep1 {
      */
     ZeebeClientCloudBuilderStep3 withClientId(String clientId);
 
+    /**
+     * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+     *     io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3}
+     */
     @Deprecated
     interface ZeebeClientCloudBuilderStep3 {
 
@@ -47,6 +59,10 @@ public interface ZeebeClientCloudBuilderStep1 {
        */
       ZeebeClientCloudBuilderStep4 withClientSecret(String clientSecret);
 
+      /**
+       * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+       *     io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4}
+       */
       @Deprecated
       interface ZeebeClientCloudBuilderStep4 extends ZeebeClientBuilder {
 

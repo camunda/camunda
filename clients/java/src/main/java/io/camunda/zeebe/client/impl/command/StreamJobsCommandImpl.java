@@ -76,6 +76,11 @@ public final class StreamJobsCommandImpl
     customTenantIds = new HashSet<>();
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
+   *     StreamJobsCommandImpl#StreamJobsCommandImpl(GatewayStub asyncStub, JsonMapper jsonMapper,
+   *     Predicate retryPredicate, CamundaClientConfiguration config)}
+   */
   @Deprecated
   public StreamJobsCommandImpl(
       final GatewayStub asyncStub,

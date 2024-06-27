@@ -52,6 +52,9 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link AssignUserTaskCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<AssignUserTaskResponse> send() {

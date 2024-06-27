@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.api.search.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
@@ -106,6 +107,9 @@ public class ProcessInstanceQueryImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {

@@ -99,6 +99,10 @@ public final class MigrateProcessInstanceCommandImpl
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     MigrateProcessInstanceCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<MigrateProcessInstanceResponse> send() {

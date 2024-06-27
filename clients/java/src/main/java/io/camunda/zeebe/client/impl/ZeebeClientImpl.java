@@ -99,6 +99,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.impl.CamundaClientImpl}
+ */
 @Deprecated
 public class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeClientConfiguration config;

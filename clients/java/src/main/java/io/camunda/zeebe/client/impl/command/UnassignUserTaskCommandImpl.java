@@ -45,6 +45,10 @@ public final class UnassignUserTaskCommandImpl implements UnassignUserTaskComman
     return this;
   }
 
+  /**
+   * @deprecated since 8.6 for removal with 8.8, use {@link
+   *     UnassignUserTaskCommandImpl#sendCommand()}
+   */
   @Override
   @Deprecated
   public ZeebeFuture<UnassignUserTaskResponse> send() {

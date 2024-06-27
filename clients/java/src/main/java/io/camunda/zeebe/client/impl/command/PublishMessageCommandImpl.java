@@ -58,6 +58,11 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     tenantId(configuration.getDefaultTenantId());
   }
 
+  /**
+   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
+   *     PublishMessageCommandImpl#PublishMessageCommandImpl(GatewayStub asyncStub,
+   *     CamundaClientConfiguration config, JsonMapper jsonMapper, Predicate retryPredicate)}
+   */
   @Deprecated
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
