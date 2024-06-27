@@ -69,6 +69,7 @@ jobs:
     if: needs.detect-changes.outputs.java-unit-tests == 'true'
     needs: [detect-changes]
     name: Java checks
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
