@@ -11,7 +11,12 @@ export type User = {
   enabled: boolean;
 };
 
-export const getUsers: ApiDefinition<User[]> = () => apiGet(USERS_ENDPOINT);
+export type UserSearch = {
+  items: User[];
+};
+
+export const postUserSearch: ApiDefinition<UserSearch> = () =>
+  apiPost(`${USERS_ENDPOINT}/search`);
 
 type GetUserParams = {
   id: string;
