@@ -61,7 +61,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
   export type ElementType =
     | FlowNodeType
     | 'label'
-    | `bpmn:${'Process' | 'SequenceFlow'}`;
+    | `bpmn:${'Process' | 'SequenceFlow' | 'Association'}`;
 
   export type BusinessObject = {
     id: string;
@@ -87,6 +87,8 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     cancelActivity?: boolean;
     triggeredByEvent?: boolean;
     $instanceOf?: (type: string) => boolean;
+    isForCompensation?: boolean;
+    targetRef?: BusinessObject;
   };
 
   export type BpmnElement = {
