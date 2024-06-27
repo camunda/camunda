@@ -15,8 +15,6 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
-import jakarta.servlet.http.HttpServletRequest;
-import java.net.URI;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,40 +41,37 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> createUser(
-      @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto,
-      final HttpServletRequest request) {
+      @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto) {
     try {
       final CamundaUserResponse camundaUserResponse =
           mapToCamundaUserResponse(
               userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
-      return handleException(e, request.getRequestURI());
+      return handleException(e);
     }
   }
 
   @DeleteMapping(path = "/{id}")
-  public ResponseEntity<Object> deleteUser(
-      @PathVariable final Long id, final HttpServletRequest request) {
+  public ResponseEntity<Object> deleteUser(@PathVariable final Long id) {
     try {
       userService.deleteUser(id);
       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     } catch (final Exception e) {
-      return handleException(e, request.getRequestURI());
+      return handleException(e);
     }
   }
 
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Object> findUserById(
-      @PathVariable final Long id, final HttpServletRequest request) {
+  public ResponseEntity<Object> findUserById(@PathVariable final Long id) {
     try {
       final CamundaUserResponse camundaUserResponse =
           mapToCamundaUserResponse(userService.findUserById(id));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e, request.getRequestURI());
+      return handleException(e);
     }
   }
 
@@ -85,7 +80,7 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> findAllUsers(
-      @RequestBody final SearchQueryRequest searchQueryRequest, final HttpServletRequest request) {
+      @RequestBody final SearchQueryRequest searchQueryRequest) {
     try {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
@@ -94,7 +89,7 @@ public class UserController {
 
       return new ResponseEntity<>(responseDto, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e, request.getRequestURI());
+      return handleException(e);
     }
   }
 
@@ -103,15 +98,13 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> updateUser(
-      @PathVariable final Long id,
-      @RequestBody final CamundaUserWithPasswordRequest user,
-      final HttpServletRequest request) {
+      @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordRequest user) {
     try {
       final CamundaUserResponse camundaUserResponse =
           mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e, request.getRequestURI());
+      return handleException(e);
     }
   }
 
@@ -139,17 +132,15 @@ public class UserController {
     return camundaUserDto;
   }
 
-  private ResponseEntity<Object> handleException(final Exception e, final String requestUri) {
+  private ResponseEntity<Object> handleException(final Exception e) {
     if (e instanceof IllegalArgumentException) {
       final ProblemDetail problemDetail =
           ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-      problemDetail.setInstance(URI.create(requestUri));
       return ResponseEntity.of(problemDetail).build();
     }
 
     final ProblemDetail problemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-    problemDetail.setInstance(URI.create(requestUri));
     return ResponseEntity.of(problemDetail).build();
   }
 }
