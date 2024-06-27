@@ -94,6 +94,16 @@ const TopPanel: React.FC = observer(() => {
     ? allFlowNodeStateOverlays
     : notCompletedFlowNodeStateOverlays;
 
+  const compensationAssociationIds =
+    processInstanceDetailsDiagramStore.compensationAssociations
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedFlowNodes.find(({activityId, completed}) => {
+          return targetRef?.id === activityId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
+
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
       {
@@ -248,7 +258,10 @@ const TopPanel: React.FC = observer(() => {
                   !isIncidentBarOpen && <MetadataPopover />
                 )
               }
-              highlightedSequenceFlows={processedSequenceFlows}
+              highlightedSequenceFlows={[
+                ...processedSequenceFlows,
+                ...compensationAssociationIds,
+              ]}
               highlightedFlowNodeIds={executedFlowNodes.map(
                 ({activityId}) => activityId,
               )}
