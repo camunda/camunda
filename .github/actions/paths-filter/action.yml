@@ -12,7 +12,7 @@ outputs:
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
   java-code-changes:
-    description: Output whether `java code changes` have been detected
+    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
     value: >-
       ${{
         github.event_name == 'push' ||
