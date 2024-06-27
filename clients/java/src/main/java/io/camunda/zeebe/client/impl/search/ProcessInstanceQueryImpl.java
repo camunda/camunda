@@ -32,7 +32,6 @@ import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -127,7 +126,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public CamundaFuture<SearchQueryResponse<ProcessInstance>> sendCommand() {
-    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/search",
         jsonMapper.toJson(request),

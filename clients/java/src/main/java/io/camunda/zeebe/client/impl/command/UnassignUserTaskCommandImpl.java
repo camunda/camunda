@@ -22,7 +22,6 @@ import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.UnassignUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,7 +51,7 @@ public final class UnassignUserTaskCommandImpl implements UnassignUserTaskComman
   @Override
   @Deprecated
   public ZeebeFuture<UnassignUserTaskResponse> send() {
-    final HttpZeebeFuture<UnassignUserTaskResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<UnassignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/user-tasks/" + userTaskKey + "/assignee", httpRequestConfig.build(), result);
     return result;

@@ -23,7 +23,6 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.UserTaskCompletionRequest;
 import java.time.Duration;
 import java.util.Map;
@@ -66,7 +65,7 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
   @Override
   @Deprecated
   public ZeebeFuture<CompleteUserTaskResponse> send() {
-    final HttpZeebeFuture<CompleteUserTaskResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CompleteUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/completion",
         jsonMapper.toJson(request),

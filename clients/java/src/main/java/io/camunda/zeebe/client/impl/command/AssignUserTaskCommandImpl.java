@@ -23,7 +23,6 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.UserTaskAssignmentRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +57,7 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
   @Override
   @Deprecated
   public ZeebeFuture<AssignUserTaskResponse> send() {
-    final HttpZeebeFuture<AssignUserTaskResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<AssignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/assignment",
         jsonMapper.toJson(request),
