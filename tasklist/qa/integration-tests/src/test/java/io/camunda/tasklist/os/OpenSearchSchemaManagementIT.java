@@ -35,7 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH = "/tasklist-test-opensearch.json";
+  private static final String ORIGINAL_SCHEMA_PATH =
+      "/tasklist-test-opensearch-schema-manager.json";
   private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;

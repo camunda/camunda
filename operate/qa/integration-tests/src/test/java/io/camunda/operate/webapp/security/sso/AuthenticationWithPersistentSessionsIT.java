@@ -56,6 +56,7 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import io.camunda.webapps.WebappsModuleConfiguration;
+import jakarta.json.Json;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -64,7 +65,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -200,7 +200,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   }
 
   private static String toJSON(final Map map) {
-    return new JSONObject(map).toString();
+    return Json.createObjectBuilder(map).build().toString();
   }
 
   @Before

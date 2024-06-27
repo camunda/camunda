@@ -10,6 +10,7 @@ package io.camunda.application;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
@@ -37,7 +38,10 @@ public class StandaloneOperate {
 
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OperateModuleConfiguration.class, WebappsModuleConfiguration.class)
+            .sources(
+                CommonsModuleConfiguration.class,
+                OperateModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
             .profiles(Profile.OPERATE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())

@@ -138,6 +138,7 @@ test.describe('Child Process Instance Migration @roundtrip', () => {
       `You are about to migrate 1 process instance from the process definition: ${childBpmnProcessId} - version ${childVersion} to the process definition: ${childBpmnProcessId} - version ${targetVersion}`,
     );
     await migrationView.confirmButton.click();
+    await migrationView.confirmMigration();
 
     await expect(commonPage.operationsList).toBeVisible();
 

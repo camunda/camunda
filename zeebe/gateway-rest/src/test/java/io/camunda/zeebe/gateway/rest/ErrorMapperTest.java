@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static org.mockito.ArgumentMatchers.any;
 
+import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
@@ -273,6 +274,11 @@ public class ErrorMapperTest {
     @Bean
     public ResponseObserverProvider responseObserverProvider() {
       return Mockito.mock(ResponseObserverProvider.class);
+    }
+
+    @Bean
+    public ProcessInstanceServices processInstanceService() {
+      return Mockito.mock(ProcessInstanceServices.class);
     }
   }
 }

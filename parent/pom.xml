@@ -61,7 +61,8 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.2</version.identity>
+    <version.identity>8.5.3</version.identity>
+    <version.surefire>3.3.0</version.surefire>
     <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.10.2</version.junit>
@@ -71,13 +72,13 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.111.Final</version.netty>
+    <version.netty>4.1.110.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
-    <version.protobuf-common>2.40.0</version.protobuf-common>
+    <version.protobuf-common>2.41.0</version.protobuf-common>
     <version.micrometer>1.13.1</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
@@ -85,17 +86,17 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.6.0</version.wiremock>
+    <version.wiremock>3.7.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
     <version.netflix.concurrency>0.5.1</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
-    <version.feel-scala>1.17.7</version.feel-scala>
+    <version.feel-scala>1.18.0-alpha1</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
-    <version.spring>6.1.9</version.spring>
-    <version.spring-security>6.3.0</version.spring-security>
+    <version.spring>6.1.10</version.spring>
+    <version.spring-security>6.3.1</version.spring-security>
     <version.spring-boot>3.3.0</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
@@ -109,20 +110,20 @@
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.173</version.classgraph>
+    <version.classgraph>4.8.174</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.8.5</version.spotbugs>
+    <version.spotbugs>4.8.6</version.spotbugs>
     <version.archunit>1.3.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.19</version.jnr-posix>
-    <version.zpt>8.5.3</version.zpt>
-    <version.feign>13.2.1</version.feign>
-    <version.google-sdk>26.41.0</version.google-sdk>
+    <version.zpt>8.5.4</version.zpt>
+    <version.feign>13.3</version.feign>
+    <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.1</version.awssdk>
+    <version.awssdk>2.26.10</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -141,11 +142,10 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.14.0</version.jna-platform>
-    <version.msal4j>1.15.1</version.msal4j>
 
     <version.commons-io>2.16.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
-    <version.unboundid-ldapsdk>7.0.0</version.unboundid-ldapsdk>
+    <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
     <version.parsson>1.1.6</version.parsson>
     <version.springdoc>2.5.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -153,12 +153,11 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.742</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.751</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
-    <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
@@ -174,7 +173,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.0</version.keycloak>
+    <version.keycloak>25.0.1</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -187,7 +186,6 @@
     <version.graphql-java-annotations>21.2</version.graphql-java-annotations>
 
     <version.javassist>3.30.2-GA</version.javassist>
-    <version.json>20240303</version.json>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -200,13 +198,13 @@
     <plugin.version.checkstyle>3.4.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.7.0</plugin.version.dependency>
+    <plugin.version.dependency>3.7.1</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.3.0</plugin.version.exec>
-    <plugin.version.failsafe>3.2.5</plugin.version.failsafe>
+    <plugin.version.failsafe>3.3.0</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
-    <plugin.version.maven-jar>3.4.1</plugin.version.maven-jar>
+    <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
@@ -214,8 +212,8 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.5.0</plugin.version.spotbugs>
-    <plugin.version.surefire>3.2.5</plugin.version.surefire>
+    <plugin.version.spotbugs>4.8.6.0</plugin.version.spotbugs>
+    <plugin.version.surefire>3.3.0</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
@@ -349,6 +347,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-qa-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-qa-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -805,6 +809,20 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-connect</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- camunda java client -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
@@ -922,7 +940,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>auth-spring-boot-starter</artifactId>
+        <artifactId>camunda-authentication</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-webjar</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -934,8 +958,20 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>identity-backend</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven.surefire</groupId>
+        <artifactId>surefire-shared-utils</artifactId>
+        <version>${version.surefire}</version>
       </dependency>
 
       <dependency>
@@ -1211,6 +1247,12 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-client-java</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -1749,13 +1791,6 @@
         <version>${version.jakarta.json-api}</version>
       </dependency>
 
-      <!-- internal conflicts from azure-identity -->
-      <dependency>
-        <groupId>com.microsoft.azure</groupId>
-        <artifactId>msal4j</artifactId>
-        <version>${version.msal4j}</version>
-      </dependency>
-
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-platform</artifactId>
@@ -1844,19 +1879,6 @@
         <groupId>org.hdrhistogram</groupId>
         <artifactId>HdrHistogram</artifactId>
         <version>${version.hdr-histogram}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.vaadin.external.google</groupId>
-        <artifactId>android-json</artifactId>
-        <version>${version.android-json}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.json</groupId>
-        <artifactId>json</artifactId>
-        <version>${version.json}</version>
       </dependency>
 
       <dependency>
@@ -2534,7 +2556,7 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
-                  <dep>io.camunda:auth-spring-boot-starter</dep>
+                  <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
                 </ignoredUnusedDeclaredDependencies>
@@ -2900,6 +2922,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
+                <dep>io.camunda:zeebe-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>

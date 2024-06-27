@@ -1,9 +1,10 @@
-import { ApiDefinition, apiGet, apiPost, apiPut } from "../request";
+import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 
 export const USERS_ENDPOINT = "/users";
 
 export type User = {
   id: string;
+  name: string;
   username: string;
   password: string;
   email: string;
@@ -28,3 +29,9 @@ type UpdateUserParams = Omit<User, "enabled">;
 
 export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (user) =>
   apiPut(`${USERS_ENDPOINT}/${user.id}`, { ...user, enabled: true });
+
+type DeleteUserParams = GetUserParams;
+
+export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
+  id,
+}) => apiDelete(`${USERS_ENDPOINT}/${id}`);

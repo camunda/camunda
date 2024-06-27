@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -172,13 +173,21 @@ public class ExecutionListenerTaskElementsTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_2").complete();
 
-    // then: EL jobs completed in expected order
-    assertExecutionListenerJobsCompleted(
-        processInstanceKey,
-        START_EL_TYPE + "_1",
-        START_EL_TYPE + "_2",
-        END_EL_TYPE + "_1",
-        END_EL_TYPE + "_2");
+    // then: EL jobs completed in expected order with expected listener event type
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED)
+                .withElementId(elementType.name())
+                .limit(4))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getType(), v.getJobKind(), v.getJobListenerEventType()))
+        .containsExactly(
+            tuple(START_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, JobListenerEventType.START),
+            tuple(START_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, JobListenerEventType.START),
+            tuple(END_EL_TYPE + "_1", JobKind.EXECUTION_LISTENER, JobListenerEventType.END),
+            tuple(END_EL_TYPE + "_2", JobKind.EXECUTION_LISTENER, JobListenerEventType.END));
 
     // assert the process instance has completed as expected
     assertThat(

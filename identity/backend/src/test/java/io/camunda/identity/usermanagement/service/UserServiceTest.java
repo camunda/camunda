@@ -13,8 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.authentication.user.CamundaUserDetailsManager;
 import io.camunda.identity.CamundaSpringBootTest;
+import io.camunda.identity.security.CamundaUserDetailsManager;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import java.util.UUID;
@@ -39,6 +39,19 @@ class UserServiceTest {
     final var existingUser = userService.findUserById(user.getId());
     Assertions.assertNotNull(existingUser);
     Assertions.assertEquals(username, existingUser.getUsername());
+  }
+
+  @Test
+  void userIsCreatedWithAName() {
+    final var username = "user" + UUID.randomUUID();
+    final var name = "Donald";
+
+    final var user =
+        userService.createUser(new CamundaUserWithPassword(username, name, "password"));
+
+    final var existingUser = userService.findUserById(user.getId());
+    Assertions.assertNotNull(existingUser);
+    Assertions.assertEquals(name, existingUser.getName());
   }
 
   @Test
