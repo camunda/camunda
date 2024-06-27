@@ -11,7 +11,7 @@ import {
   instanceWithIncident,
   mockResponses,
   runningInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 import {validateResults} from './validateResults';
 
 test.describe('process detail', () => {
