@@ -12,10 +12,11 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class SearchQueryBuilders {
 
@@ -128,15 +129,15 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery ids(final List<String> ids) {
-    return SearchIdsQuery.of(q -> q.values(withoutNull(ids))).toSearchQuery();
+    return ids(q -> q.values(withoutNull(ids))).toSearchQuery();
   }
 
   public static SearchQuery ids(final Collection<String> ids) {
-    return ids(ids.stream().collect(Collectors.toList()));
+    return ids(new ArrayList<>(Objects.requireNonNullElse(ids, List.of())));
   }
 
   public static SearchQuery ids(final String... ids) {
-    return ids(List.of(ids));
+    return ids(List.of(Objects.requireNonNullElse(ids, new String[0])));
   }
 
   public static SearchMatchQuery.Builder match() {
