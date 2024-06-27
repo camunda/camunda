@@ -7,7 +7,7 @@
  */
 package io.camunda.service.license;
 
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class CamundaLicense {
 
@@ -37,7 +37,7 @@ public class CamundaLicense {
   }
 
   private boolean isLicenseInitialized() {
-    return StringUtils.hasLength(licenseStr);
+    return StringUtils.isNotBlank(licenseStr);
   }
 
   private void initializeLicenseCache() {
