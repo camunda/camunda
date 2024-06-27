@@ -92,7 +92,7 @@ jobs:
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests
+          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
