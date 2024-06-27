@@ -37,8 +37,12 @@ public class DefaultUserInitializer {
   }
 
   private void setupUser(final CamundaUserWithPassword camundaUserWithPassword) {
+    if (userService.userExistsByUsername(camundaUserWithPassword.getUsername())) {
+      return;
+    }
+
     try {
-      userService.createUserIfNotExists(camundaUserWithPassword);
+      userService.createUser(camundaUserWithPassword);
     } catch (final Exception e) {
       if ("user.duplicate".equals(e.getMessage())) {
         LOG.info("User '{}' already exists, updating it.", camundaUserWithPassword.getUsername());

@@ -34,8 +34,7 @@ class UserServiceTest {
   void uniqueUsernameCreateUserCreated() {
     final var username = "user" + UUID.randomUUID();
 
-    final var user =
-        userService.createUserFailIfExists(new CamundaUserWithPassword(username, "password"));
+    final var user = userService.createUser(new CamundaUserWithPassword(username, "password"));
 
     final var existingUser = userService.findUserById(user.getId());
     Assertions.assertNotNull(existingUser);
@@ -48,7 +47,7 @@ class UserServiceTest {
     final var name = "Donald";
 
     final var user =
-        userService.createUserFailIfExists(new CamundaUserWithPassword(username, name, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, name, "password"));
 
     final var existingUser = userService.findUserById(user.getId());
     Assertions.assertNotNull(existingUser);
@@ -58,19 +57,18 @@ class UserServiceTest {
   @Test
   void duplicateUsernameCreateUserException() {
     final var username = "user" + UUID.randomUUID();
-    userService.createUserFailIfExists(new CamundaUserWithPassword(username, "password"));
+    userService.createUser(new CamundaUserWithPassword(username, "password"));
 
     assertThrows(
         IllegalArgumentException.class,
-        () ->
-            userService.createUserFailIfExists(new CamundaUserWithPassword(username, "password")));
+        () -> userService.createUser(new CamundaUserWithPassword(username, "password")));
   }
 
   @Test
   void existingUserDeleteUserDeleted() {
     final var username = "user" + UUID.randomUUID();
     final CamundaUser user =
-        userService.createUserFailIfExists(new CamundaUserWithPassword(username, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "password"));
 
     userService.deleteUser(user.getId());
 
@@ -91,10 +89,8 @@ class UserServiceTest {
   @Test
   void findAllUsersReturnsAllUsers() {
     final var count = userService.findAllUsers().size();
-    userService.createUserFailIfExists(
-        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password"));
-    userService.createUserFailIfExists(
-        new CamundaUserWithPassword("user" + UUID.randomUUID(), "password"));
+    userService.createUser(new CamundaUserWithPassword("user" + UUID.randomUUID(), "password"));
+    userService.createUser(new CamundaUserWithPassword("user" + UUID.randomUUID(), "password"));
 
     final var users = userService.findAllUsers();
     assertEquals(2 + count, users.size());
@@ -111,8 +107,7 @@ class UserServiceTest {
   void existingUserEnableUpdateUserEnabled() {
     final var username = "user" + UUID.randomUUID();
     final var user =
-        userService.createUserFailIfExists(
-            new CamundaUserWithPassword(username, "email", false, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
 
     userService.updateUser(
         user.getId(),
@@ -126,8 +121,7 @@ class UserServiceTest {
   void existingUserNewEmailUpdateUserEmailChanged() {
     final var username = "user" + UUID.randomUUID();
     final var user =
-        userService.createUserFailIfExists(
-            new CamundaUserWithPassword(username, "email", false, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
 
     userService.updateUser(
         user.getId(),
@@ -141,7 +135,7 @@ class UserServiceTest {
   void existingUserEmptyEmailUpdateUserEmailChanged() {
     final var username = "user" + UUID.randomUUID();
     final CamundaUser user =
-        userService.createUserFailIfExists(
+        userService.createUser(
             new CamundaUserWithPassword(0L, username, "email", false, "password"));
 
     userService.updateUser(
@@ -155,7 +149,7 @@ class UserServiceTest {
   void existingUserDisableUpdateUserDisabled() {
     final var username = "user" + UUID.randomUUID();
     final CamundaUser user =
-        userService.createUserFailIfExists(new CamundaUserWithPassword(username, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "password"));
 
     userService.updateUser(
         user.getId(),
@@ -169,8 +163,7 @@ class UserServiceTest {
   void noChangePassUpdateUserPasswordNotChanged() {
     final var username = "user" + UUID.randomUUID();
     final var user =
-        userService.createUserFailIfExists(
-            new CamundaUserWithPassword(username, "email", false, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
     final var userWithPassword =
         new CamundaUserWithPassword(user.getId(), username, "email", false, "password");
 
@@ -184,8 +177,7 @@ class UserServiceTest {
   void emptyPassUpdateUserPasswordNotChanged() {
     final var username = "user" + UUID.randomUUID();
     final var user =
-        userService.createUserFailIfExists(
-            new CamundaUserWithPassword(username, "email", false, "password"));
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, "password"));
     final var userWithPassword =
         new CamundaUserWithPassword(user.getId(), username, "email", false, "");
 
@@ -201,8 +193,7 @@ class UserServiceTest {
     final var password = "password";
     final var newPassword = "password1";
     final var user =
-        userService.createUserFailIfExists(
-            new CamundaUserWithPassword(username, "email", false, password));
+        userService.createUser(new CamundaUserWithPassword(username, "email", false, password));
 
     userService.updateUser(
         user.getId(),

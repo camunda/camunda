@@ -45,7 +45,7 @@ public class UserController {
     try {
       final CamundaUserResponse camundaUserResponse =
           mapToCamundaUserResponse(
-              userService.createUserFailIfExists(mapToUserWithPassword(userWithPasswordDto)));
+              userService.createUser(mapToUserWithPassword(userWithPasswordDto)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
       return handleException(e);

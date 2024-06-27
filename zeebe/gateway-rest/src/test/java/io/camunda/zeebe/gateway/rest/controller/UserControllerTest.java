@@ -92,7 +92,7 @@ public class UserControllerTest extends RestControllerTest {
     dto.setPassword("password");
     dto.setEnabled(true);
 
-    when(userService.createUserFailIfExists(camundaUserWithPassword)).thenReturn(camundaUser);
+    when(userService.createUser(camundaUserWithPassword)).thenReturn(camundaUser);
 
     webClient
         .post()
@@ -106,7 +106,7 @@ public class UserControllerTest extends RestControllerTest {
         .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
 
-    verify(userService, times(1)).createUserFailIfExists(camundaUserWithPassword);
+    verify(userService, times(1)).createUser(camundaUserWithPassword);
   }
 
   @Test
@@ -122,7 +122,7 @@ public class UserControllerTest extends RestControllerTest {
     dto.setPassword("password");
     dto.setEnabled(true);
 
-    when(userService.createUserFailIfExists(camundaUserWithPassword))
+    when(userService.createUser(camundaUserWithPassword))
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
