@@ -141,7 +141,7 @@ jobs:
             maven-test-fork-count: 7
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
-            maven-modules: "qa/integration-tests"
+            maven-modules: "qa/zeebe/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
           - group: qa-update
