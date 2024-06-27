@@ -114,7 +114,7 @@ jobs:
         with:
           directory: ./tasklist/client
       - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
+        id: build-identity-fe
         with:
           directory: ./identity/client
       - name: Observe build status
