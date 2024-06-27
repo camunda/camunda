@@ -14,54 +14,31 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.usermanagement.service.UserService;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserDto;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordDto;
-import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponseDto;
-import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
-import io.camunda.zeebe.gateway.rest.controller.UserControllerTest.TestUserControllerApplication;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
-@SpringBootTest(
-    classes = {
-      TestUserControllerApplication.class,
-      UserController.class,
-      GlobalControllerExceptionHandler.class
-    },
-    webEnvironment = WebEnvironment.RANDOM_PORT)
-public class UserControllerTest {
+@WebMvcTest(UserController.class)
+public class UserControllerTest extends RestControllerTest {
 
-  @MockBean private JobController jobController;
-  @MockBean private ProcessInstanceController processInstanceController;
-  @MockBean private TopologyController topologyController;
-  @MockBean private UserTaskController userTaskController;
-  @MockBean private HttpSecurity httpSecurity;
   @MockBean private UserService userService;
 
-  @Autowired private WebTestClient webClient;
-
   @Test
-  void getUserByIdWorks() {
+  void getUserByIdShouldReturnExistingUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
@@ -74,7 +51,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
   }
 
@@ -98,11 +75,11 @@ public class UserControllerTest {
   }
 
   @Test
-  void createUserWorks() {
+  void createUserShouldCreateAndReturnNewUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
@@ -110,12 +87,12 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
 
-    when(userService.createUserFailIfExists(camundaUserWithPassword)).thenReturn(camundaUser);
+    when(userService.createUser(camundaUserWithPassword)).thenReturn(camundaUser);
 
     webClient
         .post()
@@ -126,10 +103,10 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
 
-    verify(userService, times(1)).createUserFailIfExists(camundaUserWithPassword);
+    verify(userService, times(1)).createUser(camundaUserWithPassword);
   }
 
   @Test
@@ -140,12 +117,12 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
 
-    when(userService.createUserFailIfExists(camundaUserWithPassword))
+    when(userService.createUser(camundaUserWithPassword))
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
@@ -165,12 +142,12 @@ public class UserControllerTest {
   }
 
   @Test
-  void updateUserWorks() {
+  void updateUserShouldUpdateAndReturnUpdatedUser() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
     camundaUser.setName("updatedName");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
     camundaUserDto.setName("updatedName");
@@ -180,7 +157,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setName("updatedName");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setName("updatedName");
@@ -197,7 +174,7 @@ public class UserControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaUserDto.class)
+        .expectBody(CamundaUserResponse.class)
         .isEqualTo(camundaUserDto);
 
     verify(userService, times(1)).updateUser(1L, camundaUserWithPassword);
@@ -211,7 +188,7 @@ public class UserControllerTest {
     camundaUserWithPassword.setUsername("demo");
     camundaUserWithPassword.setPassword("password");
 
-    final CamundaUserWithPasswordDto dto = new CamundaUserWithPasswordDto();
+    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setEnabled(true);
@@ -236,7 +213,7 @@ public class UserControllerTest {
   }
 
   @Test
-  void deleteUserWorks() {
+  void deleteUserShouldRemoveExistingUser() {
 
     webClient
         .delete()
@@ -250,18 +227,18 @@ public class UserControllerTest {
   }
 
   @Test
-  void searchUsersWorks() {
+  void searchUsersShouldReturnAllUsers() {
     final CamundaUser camundaUser = new CamundaUser();
     camundaUser.setUsername("demo");
 
-    final CamundaUserDto camundaUserDto = new CamundaUserDto();
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setUsername("demo");
     camundaUserDto.setEnabled(true);
 
-    final UserSearchResponseDto userSearchResponseDto = new UserSearchResponseDto();
+    final UserSearchResponse userSearchResponseDto = new UserSearchResponse();
     userSearchResponseDto.setItems(List.of(camundaUserDto));
 
-    final SearchRequestDto searchRequestDto = new SearchRequestDto();
+    final SearchQueryRequest searchQueryRequest = new SearchQueryRequest();
 
     when(userService.findAllUsers()).thenReturn(List.of(camundaUser));
 
@@ -270,21 +247,40 @@ public class UserControllerTest {
         .uri("/v2/users/search")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(searchRequestDto)
+        .bodyValue(searchQueryRequest)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(UserSearchResponseDto.class)
+        .expectBody(UserSearchResponse.class)
         .isEqualTo(userSearchResponseDto);
 
     verify(userService, times(1)).findAllUsers();
   }
 
-  @SpringBootApplication(
-      exclude = {
-        SecurityAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class,
-        DataSourceAutoConfiguration.class
-      })
-  static class TestUserControllerApplication {}
+  @Test
+  void searchUsersWithoutRequestBodyShouldReturnAllUsers() {
+    final CamundaUser camundaUser = new CamundaUser();
+    camundaUser.setUsername("demo");
+
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
+    camundaUserDto.setUsername("demo");
+    camundaUserDto.setEnabled(true);
+
+    final UserSearchResponse userSearchResponseDto = new UserSearchResponse();
+    userSearchResponseDto.setItems(List.of(camundaUserDto));
+
+    when(userService.findAllUsers()).thenReturn(List.of(camundaUser));
+
+    webClient
+        .post()
+        .uri("/v2/users/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is2xxSuccessful()
+        .expectBody(UserSearchResponse.class)
+        .isEqualTo(userSearchResponseDto);
+
+    verify(userService, times(1)).findAllUsers();
+  }
 }

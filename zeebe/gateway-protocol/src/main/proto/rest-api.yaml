@@ -246,7 +246,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordDto"
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
         required: true
       responses:
         "201":
@@ -254,7 +254,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUserDto"
+                $ref: "#/components/schemas/CamundaUserResponse"
         "400":
           description: "Bad request"
           content:
@@ -349,7 +349,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUserDto"
+                $ref: "#/components/schemas/CamundaUserResponse"
         "400":
           description: "Bad request"
           content:
@@ -396,7 +396,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordDto"
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
         required: true
       responses:
         "200":
@@ -404,7 +404,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUserDto"
+                $ref: "#/components/schemas/CamundaUserResponse"
         "400":
           description: "Bad request"
           content:
@@ -445,7 +445,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SearchRequestDto"
+              $ref: "#/components/schemas/SearchQueryRequest"
         required: true
       responses:
         "200":
@@ -453,7 +453,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponseDto"
+                $ref: "#/components/schemas/UserSearchResponse"
         "400":
           description: "Bad request"
           content:
@@ -1173,7 +1173,7 @@ components:
         endDate:
           type: string
           format: date-time
-    CamundaUserDto:
+    CamundaUserResponse:
       type: "object"
       properties:
         id:
@@ -1187,13 +1187,22 @@ components:
           type: "string"
         enabled:
           type: "boolean"
-    CamundaUserWithPasswordDto:
+    CamundaUserWithPasswordRequest:
       allOf:
-        - $ref: '#/components/schemas/CamundaUserDto'
+        - $ref: '#/components/schemas/CamundaUserResponse'
         - type: "object"
           properties:
             password:
               type: "string"
+    UserSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CamundaUserResponse"
     CamundaGroupDto:
       type: "object"
       properties:
@@ -1202,47 +1211,15 @@ components:
           format: "int64"
         name:
           type: "string"
-    FilterDto:
-      type: "object"
-      properties: { }
-    SortDto:
-      type: "object"
-      properties: { }
-    PageDto:
-      type: "object"
-      properties: { }
-    SearchRequestDto:
-      type: "object"
-      properties:
-        filter:
-          type: "object"
-          properties: { }
-        sort:
-          type: "object"
-          properties: { }
-        page:
-          type: "object"
-          properties: { }
-    UserSearchResponseDto:
-      type: "object"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/CamundaUserDto'
-        page:
-          type: "object"
-          properties: { }
     GroupSearchResponseDto:
-      type: "object"
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/CamundaGroupDto'
-        page:
-          type: "object"
-          properties: { }
+            $ref: "#/components/schemas/CamundaGroupDto"
   securitySchemes:
     bearerAuth:
       type: http
