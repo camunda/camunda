@@ -136,8 +136,8 @@ public class UserTaskController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserTaskSearchQueryResponse> searchUserTasks(
-      @RequestBody final UserTaskSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserTaskQuery(query)
+      @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserTaskQuery(query == null? new UserTaskSearchQueryRequest() : query)
         .fold(
             (Function<? super UserTaskQuery, ? extends ResponseEntity<UserTaskSearchQueryResponse>>)
                 this::search,
