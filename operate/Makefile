@@ -5,14 +5,12 @@ env-up:
 	docker-compose -f docker-compose.yml up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
-	&& CAMUNDA_LICENSE_KEY=hello11 \
 	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
 
 env-os-up:
 	docker-compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
-	&& CAMUNDA_LICENSE_KEY=hello12 \
 	&& CAMUNDA_OPERATE_DATABASE=opensearch \
 	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
 
