@@ -198,6 +198,8 @@ test.describe('process instance page', () => {
         },
       });
 
+      await processInstancePage.executionCountToggleOn.click({force: true});
+
       await page.getByText(/show end date/i).click();
 
       await expect(page).toHaveScreenshot();
