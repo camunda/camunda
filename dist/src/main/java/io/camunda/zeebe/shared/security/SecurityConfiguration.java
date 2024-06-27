@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -61,6 +62,11 @@ public final class SecurityConfiguration {
 
   @Bean
   @ConditionalOnRestGatewayEnabled
+  @ConditionalOnProperty(
+      prefix = "zeebe.gateway.security",
+      value = "authentication.mode",
+      havingValue = "identity",
+      matchIfMissing = true)
   public SecurityFilterChain restGatewaySecurity(
       final HttpSecurity http,
       final IdentityAuthenticationManager authManager,
