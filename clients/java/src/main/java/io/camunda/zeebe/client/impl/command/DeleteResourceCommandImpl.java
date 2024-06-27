@@ -55,28 +55,8 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link DeleteResourceCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<DeleteResourceResponse> send() {
-    final DeleteResourceRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<
-            DeleteResourceResponse, GatewayOuterClass.DeleteResourceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeleteResourceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<DeleteResourceResponse> sendCommand() {
+  public CamundaFuture<DeleteResourceResponse> send() {
     final DeleteResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

@@ -106,29 +106,7 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
-  @Deprecated
-  public ZeebeFuture<StreamJobsResponse> send() {
-    builder.clearTenantIds();
-    if (customTenantIds.isEmpty()) {
-      builder.addAllTenantIds(defaultTenantIds);
-    } else {
-      builder.addAllTenantIds(customTenantIds);
-    }
-
-    final StreamActivatedJobsRequest request = builder.build();
-    final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> result =
-        new RetriableStreamingFutureImpl<>(
-            new StreamJobsResponseImpl(),
-            this::consumeJob,
-            retryPredicate,
-            streamObserver -> send(request, streamObserver));
-
-    send(request, result);
-    return result;
-  }
-
-  @Override
-  public CamundaFuture<StreamJobsResponse> sendCommand() {
+  public CamundaFuture<StreamJobsResponse> send() {
     builder.clearTenantIds();
     if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);

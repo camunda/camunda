@@ -100,28 +100,8 @@ public final class BroadcastSignalCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     BroadcastSignalCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<BroadcastSignalResponse> send() {
-    final BroadcastSignalRequest request = builder.build();
-    final RetriableClientFutureImpl<
-            BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                BroadcastSignalResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<BroadcastSignalResponse> sendCommand() {
+  public CamundaFuture<BroadcastSignalResponse> send() {
     final BroadcastSignalRequest request = builder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>

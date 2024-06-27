@@ -61,27 +61,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link CompleteJobCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<CompleteJobResponse> send() {
-    final CompleteJobRequest request = builder.build();
-
-    final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                CompleteJobResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<CompleteJobResponse> sendCommand() {
+  public CamundaFuture<CompleteJobResponse> send() {
     final CompleteJobRequest request = builder.build();
 
     final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>

@@ -184,7 +184,7 @@ final class JobStreamerImpl implements JobStreamer {
       streamControl = null;
     }
 
-    final CamundaFuture<StreamJobsResponse> control = command.sendCommand();
+    final CamundaFuture<StreamJobsResponse> control = command.send();
     control.whenCompleteAsync((ignored, error) -> handleStreamComplete(error), executor);
     streamControl = control;
     LOGGER.debug("Opened job stream of type '{}' for worker '{}'", jobType, workerName);

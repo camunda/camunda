@@ -126,23 +126,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
-  @Deprecated
-  public ZeebeFuture<PublishMessageResponse> send() {
-    final PublishMessageRequest request = builder.build();
-    final RetriableClientFutureImpl<
-            PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                PublishMessageResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<PublishMessageResponse> sendCommand() {
+  public CamundaFuture<PublishMessageResponse> send() {
     final PublishMessageRequest request = builder.build();
     final RetriableClientFutureImpl<
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>

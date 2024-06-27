@@ -45,21 +45,8 @@ public final class UnassignUserTaskCommandImpl implements UnassignUserTaskComman
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     UnassignUserTaskCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<UnassignUserTaskResponse> send() {
-    final HttpZeebeFuture<UnassignUserTaskResponse> result = new HttpZeebeFuture<>();
-    httpClient.delete(
-        "/user-tasks/" + userTaskKey + "/assignee", httpRequestConfig.build(), result);
-    return result;
-  }
-
-  @Override
-  public CamundaFuture<UnassignUserTaskResponse> sendCommand() {
+  public CamundaFuture<UnassignUserTaskResponse> send() {
     final HttpCamundaFuture<UnassignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/user-tasks/" + userTaskKey + "/assignee", httpRequestConfig.build(), result);

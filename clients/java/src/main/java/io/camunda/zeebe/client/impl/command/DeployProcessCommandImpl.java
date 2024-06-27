@@ -153,28 +153,8 @@ public final class DeployProcessCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link DeployProcessCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<DeploymentEvent> send() {
-    final DeployProcessRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeploymentEventImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<DeploymentEvent> sendCommand() {
+  public CamundaFuture<DeploymentEvent> send() {
     final DeployProcessRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>

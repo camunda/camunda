@@ -107,26 +107,8 @@ public class ProcessInstanceQueryImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
-        new HttpCamundaFuture<>();
-    httpClient.post(
-        "/process-instances/search",
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        ProcessInstanceSearchQueryResponse.class,
-        SearchResponseMapper::toProcessInstanceSearchResponse,
-        result);
-    return result;
-  }
-
-  @Override
-  public CamundaFuture<SearchQueryResponse<ProcessInstance>> sendCommand() {
+  public CamundaFuture<SearchQueryResponse<ProcessInstance>> send() {
     final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/process-instances/search",

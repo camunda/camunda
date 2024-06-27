@@ -58,29 +58,8 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     CancelProcessInstanceCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<CancelProcessInstanceResponse> send() {
-    final CancelProcessInstanceRequest request = builder.build();
-
-    final RetriableClientFutureImpl<
-            CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                CancelProcessInstanceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<CancelProcessInstanceResponse> sendCommand() {
+  public CamundaFuture<CancelProcessInstanceResponse> send() {
     final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<

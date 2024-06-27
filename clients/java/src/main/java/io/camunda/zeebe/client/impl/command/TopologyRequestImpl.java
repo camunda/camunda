@@ -75,21 +75,8 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link TopologyRequestImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<Topology> send() {
-    if (useRest) {
-      return sendRestRequest();
-    } else {
-      return sendGrpcRequest();
-    }
-  }
-
-  @Override
-  public CamundaFuture<Topology> sendCommand() {
+  public CamundaFuture<Topology> send() {
     if (useRest) {
       return sendRestRequest();
     } else {

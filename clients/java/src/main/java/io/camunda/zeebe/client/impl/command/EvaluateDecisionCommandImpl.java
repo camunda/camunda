@@ -130,30 +130,8 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     EvaluateDecisionCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
-  public ZeebeFuture<EvaluateDecisionResponse> send() {
-    final EvaluateDecisionRequest request = builder.build();
-
-    final RetriableClientFutureImpl<
-            EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                gatewayResponse -> new EvaluateDecisionResponseImpl(jsonMapper, gatewayResponse),
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<EvaluateDecisionResponse> sendCommand() {
+  public CamundaFuture<EvaluateDecisionResponse> send() {
     final EvaluateDecisionRequest request = builder.build();
 
     final RetriableClientFutureImpl<
