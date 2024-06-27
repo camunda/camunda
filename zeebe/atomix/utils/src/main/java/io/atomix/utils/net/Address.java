@@ -17,6 +17,7 @@
 package io.atomix.utils.net;
 
 import com.google.common.net.HostAndPort;
+import io.netty.util.NetUtil;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -25,6 +26,9 @@ import java.util.Objects;
 /** Representation of a network address. */
 public final class Address {
   private static final int DEFAULT_PORT = 5679;
+  private static final InetAddress DEFAULT_ADVERTISED_HOST =
+      AddressInitializations.computeDefaultAdvertisedHost();
+
   private final String host;
   private final int port;
   private volatile InetSocketAddress socketAddress;
@@ -41,6 +45,12 @@ public final class Address {
     } else {
       socketAddress = InetSocketAddress.createUnresolved(host, port);
     }
+  }
+
+  public Address(final InetSocketAddress address) {
+    host = address.getHostName();
+    port = address.getPort();
+    socketAddress = address;
   }
 
   /**
@@ -94,12 +104,28 @@ public final class Address {
     }
   }
 
+  /**
+   * Returns the default host for this machine that should be reachable externally. We do this by
+   * first looking up the hostname of the machine and resolving its DNS name to an IP address. If
+   * that fails, then we use the following heuristic:
+   *
+   * <ol>
+   *   <li>Collect the first non-loopback IPv4 and IPv6 addresses
+   *   <li>If IPv4 is preferred, return the IPv4 one; if there is none, the IPv6 one
+   *   <li>If IPv6 is preferred, return the IPv6 one; if there is none, the IPv4 one
+   *   <li>If there were no non-loopback addresses, return the appropriate loopback host
+   * </ol>
+   */
+  public static InetAddress defaultAdvertisedHost() {
+    return DEFAULT_ADVERTISED_HOST;
+  }
+
   /** Returns the local host. */
   private static InetAddress getLocalAddress() throws UnknownHostException {
     try {
       return InetAddress.getLocalHost(); // first NIC
     } catch (final Exception ignore) {
-      return InetAddress.getByName(null);
+      return NetUtil.LOCALHOST;
     }
   }
 

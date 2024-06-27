@@ -11,8 +11,8 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
-  java-unit-tests:
-    description: Output whether `unit-tests` (java) should be run based on GitHub event and files changed
+  java-code-changes:
+    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
     value: >-
       ${{
         github.event_name == 'push' ||

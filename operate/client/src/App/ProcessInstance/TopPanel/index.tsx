@@ -55,7 +55,8 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
-  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
+  const {selectableFlowNodes, executedFlowNodes} =
+    processInstanceDetailsStatisticsStore;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
@@ -236,6 +237,9 @@ const TopPanel: React.FC = observer(() => {
                 )
               }
               highlightedSequenceFlows={processedSequenceFlows}
+              highlightedFlowNodeIds={executedFlowNodes.map(
+                ({activityId}) => activityId,
+              )}
             >
               {stateOverlays.map((overlay) => {
                 const payload = overlay.payload as {

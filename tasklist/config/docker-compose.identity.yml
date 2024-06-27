@@ -35,7 +35,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: opensearchproject/opensearch:2.15.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -187,7 +187,7 @@ services:
       elasticsearch:
         condition: service_started
     restart: on-failure
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:8.5.3
     container_name: tasklist
     environment:
       - SERVER_PORT=8082
@@ -220,7 +220,7 @@ services:
       opensearch:
         condition: service_started
     restart: on-failure
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:8.5.3
     container_name: tasklist-opensearch
     environment:
       - SERVER_PORT=8082
