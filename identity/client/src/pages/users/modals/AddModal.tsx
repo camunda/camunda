@@ -8,12 +8,14 @@ import { createUser } from "src/utility/api/users";
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate();
   const [apiCall, { loading, namedErrors }] = useApiCall(createUser);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
+      name,
       email,
       username,
       password,
@@ -35,11 +37,11 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       confirmLabel={t("Create user")}
     >
       <TextField
-        label={t("Username")}
-        value={username}
-        placeholder={t("Username")}
-        onChange={setUsername}
-        errors={namedErrors?.username}
+        label={t("Name")}
+        value={name}
+        placeholder={t("Name")}
+        onChange={setName}
+        errors={namedErrors?.name}
         autoFocus
       />
       <TextField
@@ -48,6 +50,13 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Email")}
         onChange={setEmail}
         errors={namedErrors?.email}
+      />
+      <TextField
+        label={t("Username")}
+        value={username}
+        placeholder={t("Username")}
+        onChange={setUsername}
+        errors={namedErrors?.username}
       />
       <TextField
         label={t("Password")}

@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -16,12 +17,12 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
-public final class TestStandaloneGateway extends TestCamundaApplication<TestStandaloneGateway>
+public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final GatewayBasedProperties config;
 
   public TestStandaloneGateway() {
-    super(GatewayModuleConfiguration.class);
+    super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
     config = new GatewayBasedProperties();
 
     config.getNetwork().setHost("0.0.0.0");

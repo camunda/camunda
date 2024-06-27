@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
@@ -299,8 +301,10 @@ final class ProcessInstanceElementActivatingApplier
           eventSupplier.getInterruptingElementIds(),
           eventSupplier.getBoundaryElementIds());
     } else if (flowElement instanceof ExecutableJobWorkerElement
-        || flowElement instanceof ExecutableActivity) {
-      // job worker elements without events (e.g. message throw events)
+        || flowElement instanceof ExecutableActivity
+        || flowElement instanceof ExecutableExclusiveGateway
+        || flowElement instanceof ExecutableInclusiveGateway) {
+      // executable elements without events
       eventScopeInstanceState.createInstance(
           elementInstanceKey, Collections.emptySet(), Collections.emptySet());
     }
