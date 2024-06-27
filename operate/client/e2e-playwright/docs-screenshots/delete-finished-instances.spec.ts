@@ -21,7 +21,7 @@ import {
 import {
   mockResponses as mockProcessDetailResponses,
   completedOrderProcessInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
