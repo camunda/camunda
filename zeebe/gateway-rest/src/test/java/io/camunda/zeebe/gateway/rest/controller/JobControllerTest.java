@@ -9,10 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -44,7 +40,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.unit.DataSize;
 
 @WebMvcTest(JobController.class)
@@ -119,15 +114,18 @@ public class JobControllerTest extends RestControllerTest {
         }""";
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(JOBS_BASE_URL + "/activation")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verify(responseObserver, Mockito.times(1)).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
@@ -157,15 +155,18 @@ public class JobControllerTest extends RestControllerTest {
         }""";
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(JOBS_BASE_URL + "/activation")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verify(responseObserver, Mockito.never()).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
@@ -194,21 +195,23 @@ public class JobControllerTest extends RestControllerTest {
      * the round-robin index by any number already.
      */
     stub.addAvailableJobs("TEST", 1);
-    final MvcResult result =
+    final String result =
         webClient
-            .perform(
-                asyncRequest(
-                    post(JOBS_BASE_URL + "/activation")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(request)))
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn();
+            .post()
+            .uri(JOBS_BASE_URL + "/activation")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentType(MediaType.APPLICATION_JSON)
+            .expectBody(String.class)
+            .returnResult()
+            .getResponseBody();
 
-    final int basePartition =
-        Protocol.decodePartitionId(
-            JsonPath.read(result.getResponse().getContentAsString(), "$.jobs[0].key"));
+    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].key"));
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
 
@@ -221,18 +224,21 @@ public class JobControllerTest extends RestControllerTest {
       stub.addAvailableJobs("TEST", 2);
       // when/then
       webClient
-          .perform(
-              asyncRequest(
-                  post(JOBS_BASE_URL + "/activation")
-                      .accept(MediaType.APPLICATION_JSON)
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .content(request)))
-          .andExpect(status().isOk())
-          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-          .andExpect(
-              jsonPath("$.jobs[0].key").value(Protocol.encodePartitionId(expectedPartitionId, 0)))
-          .andExpect(
-              jsonPath("$.jobs[1].key").value(Protocol.encodePartitionId(expectedPartitionId, 1)));
+          .post()
+          .uri(JOBS_BASE_URL + "/activation")
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectHeader()
+          .contentType(MediaType.APPLICATION_JSON)
+          .expectBody()
+          .jsonPath("$.jobs[0].key")
+          .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 0))
+          .jsonPath("$.jobs[1].key")
+          .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 1));
     }
   }
 
@@ -272,15 +278,18 @@ public class JobControllerTest extends RestControllerTest {
 
     // when/then
     webClient
-        .perform(
-            asyncRequest(
-                post(JOBS_BASE_URL + "/activation")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     assertThat(callCounter).hasValue(1);
   }

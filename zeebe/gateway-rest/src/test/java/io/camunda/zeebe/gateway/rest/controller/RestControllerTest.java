@@ -7,13 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
 @TestPropertySource(
     properties = {
@@ -21,10 +17,5 @@ import org.springframework.test.web.servlet.RequestBuilder;
     })
 abstract class RestControllerTest {
 
-  @Autowired protected MockMvc webClient;
-
-  protected RequestBuilder asyncRequest(final RequestBuilder request) throws Exception {
-    return asyncDispatch(
-        webClient.perform(request).andExpect(request().asyncStarted()).andReturn());
-  }
+  @Autowired protected WebTestClient webClient;
 }
