@@ -35,8 +35,6 @@ public class UserControllerTest extends RestControllerTest {
 
   @MockBean private UserService userService;
 
-  @Autowired private WebTestClient webClient;
-
   @Test
   void getUserByIdShouldReturnExistingUser() {
     final CamundaUser camundaUser = new CamundaUser();
