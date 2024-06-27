@@ -215,6 +215,7 @@ jobs:
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
+    name: Camunda docker tests
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
