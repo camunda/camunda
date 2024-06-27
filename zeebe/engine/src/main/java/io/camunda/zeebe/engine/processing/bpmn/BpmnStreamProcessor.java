@@ -247,7 +247,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .thenDo(
             elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties));
+                jobBehavior.createNewExecutionListenerJob(
+                    context, element, elJobProperties, listener));
   }
 
   public Either<Failure, ?> onStartExecutionListenerComplete(

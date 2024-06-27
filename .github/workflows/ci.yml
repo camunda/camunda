@@ -26,6 +26,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-unit-tests: ${{ steps.filter.outputs.java-unit-tests }}
+      identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -89,10 +90,9 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -T2 -B --no-snapshot-updates
-          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
-          -pl '!testing/camunda-process-test-java'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -116,6 +116,45 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  identity-frontend-tests:
+    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: identity/client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: identity/client/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Check formatting
+        run: yarn test:format
+      - name: Lint code
+        run: yarn test:lint
+      - name: Unit & Integration tests
+        run: yarn test:unit
+      - name: Check licenses
+        run: yarn test:licenses
+      - name: Build frontend
+        run: yarn build
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -127,6 +166,7 @@ jobs:
     needs:
       - actionlint
       - java-unit-tests
+      - identity-frontend-tests
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 

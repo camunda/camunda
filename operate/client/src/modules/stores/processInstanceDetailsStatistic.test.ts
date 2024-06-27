@@ -149,6 +149,42 @@ describe('stores/processInstanceDetailsStatistics', () => {
     ]);
   });
 
+  it('should get executed/completed flow nodes', async () => {
+    mockAndFetchDiagram();
+    processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
+
+    await waitFor(() => {
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
+      expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
+        mockProcessInstanceDetailsStatistics,
+      );
+    });
+
+    expect(processInstanceDetailsStatisticsStore.executedFlowNodes).toEqual([
+      {
+        activityId: 'inclGatewayFork',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'startEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 25,
+      },
+      {
+        activityId: 'endEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 12,
+      },
+    ]);
+  });
+
   it('should start polling', async () => {
     mockAndFetchDiagram();
 

@@ -27,5 +27,5 @@ public @interface CamundaSpringBootTest {
   String[] properties() default "";
 
   @AliasFor(annotation = ActiveProfiles.class, attribute = "profiles")
-  String[] profiles() default {"test", "auth-basic", "h2"};
+  String[] profiles() default {"test", "auth-basic"};
 }

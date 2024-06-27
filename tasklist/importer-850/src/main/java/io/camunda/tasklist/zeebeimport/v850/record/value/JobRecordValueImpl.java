@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebeimport.v850.record.value;
 
 import io.camunda.tasklist.zeebeimport.v850.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +31,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
+  private JobListenerEventType jobListenerEventType;
 
   public JobRecordValueImpl() {}
 
@@ -185,6 +187,39 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
+  public JobListenerEventType getJobListenerEventType() {
+    return jobListenerEventType;
+  }
+
+  public JobRecordValueImpl setJobListenerEventType(
+      final JobListenerEventType jobListenerEventType) {
+    this.jobListenerEventType = jobListenerEventType;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionVersion,
+        type,
+        worker,
+        deadline,
+        customHeaders,
+        retries,
+        errorMessage,
+        errorCode,
+        tenantId,
+        jobKind,
+        jobListenerEventType);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -210,28 +245,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
-        && jobKind == that.jobKind;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        bpmnProcessId,
-        elementId,
-        elementInstanceKey,
-        processInstanceKey,
-        processDefinitionKey,
-        processDefinitionVersion,
-        type,
-        worker,
-        deadline,
-        customHeaders,
-        retries,
-        errorMessage,
-        errorCode,
-        tenantId,
-        jobKind);
+        && jobKind == that.jobKind
+        && jobListenerEventType == that.jobListenerEventType;
   }
 
   @Override
@@ -274,6 +289,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobKind="
         + jobKind
+        + '\''
+        + ", jobListenerEventType="
+        + jobListenerEventType
         + '}';
   }
 }
