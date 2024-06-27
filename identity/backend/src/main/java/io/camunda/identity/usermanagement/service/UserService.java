@@ -63,12 +63,12 @@ public class UserService {
     return createUser(camundaUserWithPassword);
   }
 
-  public void deleteUser(@NotNull(message = "User invalid.") final Long id) {
+  public void deleteUser(@NotNull(message = "Invalid user ID.") final Long id) {
     final CamundaUser user = findUserById(id);
     camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
-  public CamundaUser findUserById(@NotNull(message = "User invalid.") final Long id) {
+  public CamundaUser findUserById(@NotNull(message = "Invalid user ID.") final Long id) {
     return userProfileRepository
         .findUserById(id)
         .orElseThrow(() -> new IllegalArgumentException("User invalid."));
