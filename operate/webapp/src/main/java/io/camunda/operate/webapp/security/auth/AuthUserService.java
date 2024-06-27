@@ -16,13 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile(
-    "!"
-        + OperateProfileService.LDAP_AUTH_PROFILE
-        + " & ! "
-        + OperateProfileService.SSO_AUTH_PROFILE
-        + " & !"
-        + OperateProfileService.IDENTITY_AUTH_PROFILE)
+@Profile(OperateProfileService.AUTH_PROFILE)
 public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
 
   @Autowired private RolePermissionService rolePermissionService;
