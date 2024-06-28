@@ -552,9 +552,10 @@
         <version>1.21.0</version>
         <configuration>
           <gitFlowConfig>
-            <productionBranch>latest</productionBranch>
-            <developmentBranch>master</developmentBranch>
+            <productionBranch>optimize-latest</productionBranch>
+            <developmentBranch>merge-optimize-in</developmentBranch>
             <supportBranchPrefix>maintenance/</supportBranchPrefix>
+            <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
           <useSnapshotInRelease>true</useSnapshotInRelease>
@@ -634,12 +635,12 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/camunda/camunda-optimize</url>
+    <url>https://github.com/camunda/camunda</url>
     <connection>
-      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </connection>
     <developerConnection>
-      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </developerConnection>
     <tag>HEAD</tag>
   </scm>
