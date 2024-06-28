@@ -52,7 +52,7 @@
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <version.error-prone>2.28.0</version.error-prone>
-    <version.grpc>1.64.0</version.grpc>
+    <version.grpc>1.65.0</version.grpc>
     <version.gson>2.11.0</version.gson>
     <version.guava>33.2.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -65,7 +65,7 @@
     <version.surefire>3.3.0</version.surefire>
     <version.jackson>2.17.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.junit>5.10.2</version.junit>
+    <version.junit>5.10.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.23.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -102,7 +102,7 @@
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
-    <version.jqwik>1.8.5</version.jqwik>
+    <version.jqwik>1.9.0</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.byte-buddy>1.14.17</version.byte-buddy>
@@ -123,7 +123,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.10</version.awssdk>
+    <version.awssdk>2.26.11</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.751</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.752</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
@@ -212,7 +212,7 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.6.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.8.6.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.3.0</plugin.version.surefire>
     <plugin.version.versions>2.16.2</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
