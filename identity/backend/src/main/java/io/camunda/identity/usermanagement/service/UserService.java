@@ -56,30 +56,30 @@ public class UserService {
               createdUser.getId(), userWithCredential.getEmail(), userWithCredential.getName()));
       return nativeUserRepository.findByUsername(userWithCredential.getUsername());
     } catch (final DuplicateKeyException e) {
-      throw new RuntimeException("user.duplicate");
+      throw new IllegalArgumentException("User already exists.");
     }
   }
 
-  public void deleteUser(final Long id) {
+  public void deleteUser(@NotNull(message = "Invalid user ID.") final Long id) {
     final CamundaUser user = findUserById(id);
     camundaUserDetailsManager.deleteUser(user.getUsername());
   }
 
-  public CamundaUser findUserById(final Long id) {
+  public CamundaUser findUserById(@NotNull(message = "Invalid user ID.") final Long id) {
     return nativeUserRepository
         .findUserById(id)
-        .orElseThrow(() -> new RuntimeException("user.notFound"));
+        .orElseThrow(() -> new IllegalArgumentException("User invalid."));
   }
 
-  public CamundaUser findUserByUsername(final String username) {
+  public CamundaUser findUserByUsername(@NotBlank(message = "Username invalid.") final String username) {
     final var user = nativeUserRepository.findByUsername(username);
     if (user == null) {
-      throw new RuntimeException("user.notFound");
+      throw new IllegalArgumentException("User invalid.");
     }
     return user;
   }
 
-  public List<CamundaUser> findUsersByUsernameIn(final List<String> usernames) {
+  public List<CamundaUser> findUsersByUsernameIn(@NotNull(message = "Username invalid.") final List<String> usernames) {
     return nativeUserRepository.findAllByUsernameIn(usernames);
   }
 
@@ -87,17 +87,19 @@ public class UserService {
     return nativeUserRepository.findAllUsers();
   }
 
-  public CamundaUser updateUser(final Long id, final CamundaUserWithPassword userWithPassword) {
+  public CamundaUser updateUser(
+      @NotNull(message = "UserID invalid.") final Long id,
+      @Valid final CamundaUserWithPassword userWithPassword) {
     try {
       if (!Objects.equals(id, userWithPassword.getId())) {
-        throw new RuntimeException("user.notFound");
+        throw new IllegalArgumentException("User invalid.");
       }
 
       final CamundaUser existingUser = findUserById(id);
 
       if (existingUser == null
           || !existingUser.getUsername().equals(userWithPassword.getUsername())) {
-        throw new RuntimeException("user.notFound");
+        throw new IllegalArgumentException("User invalid.");
       }
 
       final CamundaUserDetails existingUserDetail =
@@ -121,9 +123,9 @@ public class UserService {
 
       return nativeUserRepository
           .findUserById(id)
-          .orElseThrow(() -> new RuntimeException("user.notFound"));
+          .orElseThrow(() -> new IllegalArgumentException("User invalid."));
     } catch (final UsernameNotFoundException e) {
-      throw new RuntimeException("user.notFound");
+      throw new IllegalArgumentException("User invalid.");
     }
   }
 }

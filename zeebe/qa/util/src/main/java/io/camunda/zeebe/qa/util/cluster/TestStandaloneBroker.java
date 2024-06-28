@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -28,14 +29,14 @@ import org.springframework.util.unit.DataSize;
 
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
-public final class TestStandaloneBroker extends TestCamundaApplication<TestStandaloneBroker>
+public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class);
+    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
 
     config = new BrokerBasedProperties();
 

@@ -5,14 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.qa.util.cluster;
+package io.camunda.operate;
 
-import io.camunda.commons.CommonsModuleConfiguration;
-
-public abstract class TestCamundaApplication<T extends TestCamundaApplication<T>>
-    extends TestSpringApplication<T> {
-
-  public TestCamundaApplication(final Class<?> springApplication) {
-    super(springApplication, CommonsModuleConfiguration.class);
-  }
+public enum ListenerState {
+  ACTIVE,
+  COMPLETED,
+  FAILED;
 }

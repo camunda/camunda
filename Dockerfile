@@ -125,7 +125,7 @@ LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
-LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
+LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
 LABEL org.opencontainers.image.title="Zeebe"
 LABEL org.opencontainers.image.description="Workflow engine for microservice orchestration"
 
@@ -137,7 +137,6 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
 ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_BROKER_GATEWAY_NETWORK_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"

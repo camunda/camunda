@@ -96,6 +96,9 @@ public final record TypedValue(ValueType type, Object value) {
 
   public static <T> List<TypedValue> of(
       final List<T> values, final Function<T, TypedValue> mapper) {
+    if (values == null) {
+      throw new IllegalArgumentException("Expected non-null values collection, for typed values.");
+    }
     return values.stream().map(mapper).collect(Collectors.toList());
   }
 
