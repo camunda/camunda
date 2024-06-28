@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.identity.rolemanagement.service.RoleMembershipService;
 import io.camunda.identity.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -30,9 +33,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserService userService;
+  private final RoleMembershipService roleMembershipService;
 
-  public UserController(final UserService userService) {
+  public UserController(
+      final UserService userService, final RoleMembershipService roleMembershipService) {
     this.userService = userService;
+    this.roleMembershipService = roleMembershipService;
   }
 
   @PostMapping(
@@ -109,4 +115,39 @@ public class UserController {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
+
+  @PostMapping(
+      path = "/{id}/roles/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Object> findRolesOfUser(
+      @PathVariable("id") final Long userId,
+      @RequestBody(required = false) final SearchQueryRequest searchQueryRequest) {
+    try {
+      final RoleSearchResponse roleSearchResponse = new RoleSearchResponse();
+      final List<RoleResponse> allRoleResponses =
+          roleMembershipService.getRolesByUserId(userId).stream()
+              .map(UserManagementMapper::mapToRoleResponse)
+              .toList();
+      roleSearchResponse.setItems(allRoleResponses);
+
+      return new ResponseEntity<>(roleSearchResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
+  }
+
+  @PostMapping(path = "/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void assignRoleToUser(
+      @PathVariable("id") final long userId, @RequestBody final RoleAssignRequest request) {
+    roleMembershipService.assignRoleToUser(request.roleName(), userId);
+  }
+
+  //  @DeleteMapping(path = "/{id}/roles/{roleName}")
+  //  @ResponseStatus(HttpStatus.NO_CONTENT)
+  //  public void unassignRoleFromUser(
+  //      @PathVariable("id") final long userId, @PathVariable final String roleName) {
+  //    roleMembershipService.unassignRoleFromUser(roleName, userId);
+  //  }
 }

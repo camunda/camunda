@@ -88,12 +88,12 @@ class RoleMembershipServiceTest {
     roleMembershipService.assignRoleToUser(role1.getName(), user.getId());
     roleMembershipService.assignRoleToUser(role2.getName(), user.getId());
 
-    final List<String> roles = roleMembershipService.getRolesByUserId(user.getId());
+    final List<Role> roles = roleMembershipService.getRolesByUserId(user.getId());
 
-    assertEquals(3, roles.size());
+    assertEquals(2, roles.size());
     assertTrue(roles.contains(TestHelper.DEFAULT_USER_ROLE));
-    assertTrue(roles.contains(role1.getName()));
-    assertTrue(roles.contains(role2.getName()));
+    assertTrue(roles.contains(role1));
+    assertTrue(roles.contains(role2));
   }
 
   @Test
@@ -102,11 +102,11 @@ class RoleMembershipServiceTest {
     final Role role = TestHelper.createAndSaveRandomRole(roleService);
     roleMembershipService.assignRoleToUser(role.getName(), user.getId());
 
-    final List<String> roles = roleMembershipService.getRolesByUserId(user.getId());
+    final List<Role> roles = roleMembershipService.getRolesByUserId(user.getId());
 
-    assertEquals(2, roles.size());
-    assertTrue(roles.contains(TestHelper.DEFAULT_USER_ROLE));
-    assertTrue(roles.contains(role.getName()));
+    assertEquals(1, roles.size());
+    assertTrue(roles.stream().anyMatch(r -> TestHelper.DEFAULT_USER_ROLE.equals(r.getName())));
+    assertTrue(roles.contains(role));
 
     roleMembershipService.unassignRoleFromUser(role.getName(), user.getId());
 

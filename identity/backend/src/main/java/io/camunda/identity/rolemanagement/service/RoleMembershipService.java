@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.rolemanagement.service;
 
+import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.repository.RoleRepository;
 import io.camunda.identity.security.CamundaUserDetails;
 import io.camunda.identity.security.CamundaUserDetailsManager;
@@ -44,9 +45,18 @@ public class RoleMembershipService {
     this.roleRepository = roleRepository;
   }
 
-  public List<String> getRolesByUserId(final long userId) {
+  public List<Role> getRolesByUserId(final long userId) {
     final CamundaUserDetails camundaUserDetails = retrieveCamundaUserDetails(userId);
-    return camundaUserDetails.getRoles();
+    final List<Role> roles = new ArrayList<>();
+    camundaUserDetails
+        .getRoles()
+        .forEach(
+            role -> {
+              if (roleRepository.existsById(role)) {
+                roles.add(roleRepository.findById(role).get());
+              }
+            });
+    return roles;
   }
 
   public void assignRoleToUser(final String roleName, final long userId) {

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ZeebeRestController
 @RequestMapping("/v2/groups")
@@ -166,5 +167,32 @@ public class GroupController {
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
+  }
+
+  @PostMapping(
+      path = "/{id}/roles/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public SearchResponseDto<String> findRolesOfGroup(
+      @PathVariable("id") final Long groupId,
+      @RequestBody final SearchRequestDto searchRequestDto) {
+    final List<String> roleNames = roleMembershipService.getRolesOfGroupByGroupId(groupId);
+    final SearchResponseDto<String> responseDto = new SearchResponseDto<>();
+    responseDto.setItems(roleNames);
+    return responseDto;
+  }
+
+  @PostMapping(path = "/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void assignRoleToGroup(
+      @PathVariable("id") final long groupId, @RequestBody final RoleAssignRequest request) {
+    roleMembershipService.assignRoleToGroup(request.roleName(), groupId);
+  }
+
+  @DeleteMapping(path = "/{id}/roles/{roleName}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void unassignRoleFromGroup(
+      @PathVariable("id") final long groupId, @PathVariable final String roleName) {
+    roleMembershipService.unassignRoleFromGroup(roleName, groupId);
   }
 }
