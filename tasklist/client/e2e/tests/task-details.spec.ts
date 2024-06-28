@@ -9,7 +9,6 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
-import {TasksPage} from '@/pageElements/TasksPage';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -102,7 +101,7 @@ test.describe('task details page', () => {
     await expect(tasksPage.detailsPanel).not.toContainText('Completion date');
   });
 
-  test('assign and unassign task', async ({page, tasksPage, taskFormView}) => {
+  test('assign and unassign task', async ({page, tasksPage}) => {
     await tasksPage.openTask('usertask_to_be_completed');
 
     await expect(tasksPage.assignToMeButton).toBeVisible();
