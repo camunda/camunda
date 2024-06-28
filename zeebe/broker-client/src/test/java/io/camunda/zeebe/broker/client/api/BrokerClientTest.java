@@ -38,6 +38,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -337,6 +338,27 @@ public final class BrokerClientTest {
     // then
     Awaitility.await("until notification received")
         .untilAtomic(messageRef, Matchers.equalTo("bar"));
+  }
+
+  @Test
+  public void shouldThrowCorrectErrorForInactivePartitionRequest() {
+    // given
+    final var partitionId = 1;
+    final var request = new TestCommand(1, topologyManager -> partitionId);
+
+    // when
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+    Awaitility.await("Partition is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                    .isNotEmpty());
+
+    // then
+    assertThatCode(() -> client.sendRequest(request).join())
+        .isInstanceOf(CompletionException.class)
+        .hasMessageContaining("The partition " + partitionId + " is currently INACTIVE");
   }
 
   private void registerSuccessResponse(final StubBroker broker) {
