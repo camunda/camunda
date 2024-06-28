@@ -93,8 +93,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("processInstanceId", processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<String> processDefinitionIds) {
-    return stringTerms("processDefinitionId", processDefinitionIds);
+  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
+    return longTerms("processDefinitionId", processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
