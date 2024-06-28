@@ -81,7 +81,7 @@ public class RoleController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> findAllRoles(
-      @RequestBody final SearchQueryRequest searchQueryRequest) {
+      @RequestBody(required = false) final SearchQueryRequest searchQueryRequest) {
     try {
       final RoleSearchResponse roleSearchResponse = new RoleSearchResponse();
       final List<RoleResponse> allRoleResponses =
