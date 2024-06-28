@@ -107,7 +107,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery exists(final String field) {
-    return SearchExistsQuery.of(q -> q.field(field)).toSearchQuery();
+    return exists(q -> q.field(field)).toSearchQuery();
   }
 
   public static SearchHasChildQuery.Builder hasChild() {
