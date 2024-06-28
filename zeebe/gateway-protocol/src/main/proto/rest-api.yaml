@@ -274,7 +274,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -320,7 +320,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -369,7 +369,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -424,7 +424,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -473,7 +473,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -522,7 +522,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -568,7 +568,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -617,7 +617,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -672,7 +672,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -721,7 +721,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:

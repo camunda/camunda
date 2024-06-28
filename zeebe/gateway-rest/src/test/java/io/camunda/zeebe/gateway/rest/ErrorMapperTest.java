@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.JobServices;
+import io.camunda.identity.usermanagement.service.GroupService;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.security.auth.Authentication;
@@ -63,6 +64,8 @@ public class ErrorMapperTest {
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockBean UserTaskServices userTaskServices;
+  @MockBean GroupService groupService;
+  @MockBean BrokerClient brokerClient;
 
   @Autowired private WebTestClient webClient;
 

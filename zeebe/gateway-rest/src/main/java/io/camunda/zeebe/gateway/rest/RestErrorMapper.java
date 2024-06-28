@@ -164,13 +164,14 @@ public class RestErrorMapper {
 
   public static ResponseEntity<Object> mapUserManagementExceptionsToResponse(final Exception e) {
     if (e instanceof IllegalArgumentException) {
-      final ProblemDetail problemDetail =
-          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-      return ResponseEntity.of(problemDetail).build();
+      final var problemDetail =
+          createProblemDetail(HttpStatus.BAD_REQUEST, e.getMessage(), e.getClass().getName());
+      return mapProblemToResponse(problemDetail);
     }
 
-    final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-    return ResponseEntity.of(problemDetail).build();
+    final var problemDetail =
+        createProblemDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName());
+    return mapProblemToResponse(problemDetail);
   }
 }
