@@ -634,7 +634,7 @@
     <developerConnection>
       scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </developerConnection>
-    <tag>8.6.0-alpha3-optimize</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
