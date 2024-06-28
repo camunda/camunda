@@ -214,6 +214,7 @@ final class BrokerRequestManager extends Actor {
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
+      throwIfPartitionInactive(request.getPartitionId());
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
@@ -222,10 +223,7 @@ final class BrokerRequestManager extends Actor {
       // select next partition id for request
       int partitionId = strategy.determinePartition(topologyManager);
 
-      final BrokerClusterState topology = topologyManager.getTopology();
-      if (topology != null && topology.getInactiveNodesForPartition(partitionId) != null) {
-        throw new PartitionInactiveException(partitionId);
-      }
+      throwIfPartitionInactive(partitionId);
 
       if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
         // could happen if the topology is not set yet, let's just try with partition 0 but we
@@ -239,6 +237,13 @@ final class BrokerRequestManager extends Actor {
     } else {
       // random broker
       return new BrokerAddressProvider();
+    }
+  }
+
+  private void throwIfPartitionInactive(final int partitionId) {
+    final BrokerClusterState topology = topologyManager.getTopology();
+    if (topology != null && topology.getInactiveNodesForPartition(partitionId) != null) {
+      throw new PartitionInactiveException(partitionId);
     }
   }
 
