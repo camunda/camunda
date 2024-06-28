@@ -1198,6 +1198,11 @@ components:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CamundaUserResponse"
     CamundaGroupRequest:
       type: "object"
       properties:
@@ -1218,6 +1223,11 @@ components:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CamundaGroupResponse"
     FilterDto:
       type: "object"
       properties: { }
@@ -1236,16 +1246,6 @@ components:
         sort:
           type: "object"
           properties: { }
-        page:
-          type: "object"
-          properties: { }
-    UserSearchResponseDto:
-      type: "object"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaUserResponse"
         page:
           type: "object"
           properties: { }
