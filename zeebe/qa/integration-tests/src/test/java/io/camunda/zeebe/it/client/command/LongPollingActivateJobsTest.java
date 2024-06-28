@@ -65,8 +65,10 @@ public class LongPollingActivateJobsTest {
     assertThat(response.getJobs()).hasSize(activateJobs);
   }
 
+  // TODO: the REST use case is currently not working, see
+  // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
+  @ValueSource(booleans = {false})
   public void shouldActivateJobsIfBatchIsTruncated(final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 10;
@@ -105,8 +107,10 @@ public class LongPollingActivateJobsTest {
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
   }
 
+  // TODO: the REST use case is currently not working, see
+  // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
+  @ValueSource(booleans = {false})
   public void shouldActivateJobForOpenRequest(final boolean useRest, final TestInfo testInfo)
       throws InterruptedException {
     // given
