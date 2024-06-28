@@ -4,7 +4,7 @@ import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignGroupMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api/hooks";
-import { getUsers, User } from "src/utility/api/users";
+import { searchUser, User } from "src/utility/api/users";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
@@ -22,11 +22,16 @@ const AssignMembersModal: FC<
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
-  const { data: users, loading, reload, errors } = useApi(getUsers);
+  const {
+    data: userSearchResults,
+    loading,
+    reload,
+    errors,
+  } = useApi(searchUser);
   const [callAssignUser] = useApiCall(assignGroupMember);
 
   const unassignedUsers =
-    users?.filter(
+    userSearchResults?.items.filter(
       ({ id }) =>
         !assignedUsers.some((user) => user.id === id) &&
         !selectedUsers.some((user) => user.id === id),
