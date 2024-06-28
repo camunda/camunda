@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.identity.permissions.PermissionEnum;
+import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.CamundaUser;
 import io.camunda.identity.usermanagement.CamundaUserWithPassword;
@@ -14,6 +16,12 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.Permission;
+import io.camunda.zeebe.gateway.protocol.rest.RoleRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserManagementMapper {
 
@@ -51,5 +59,53 @@ public class UserManagementMapper {
     camundaGroupResponse.setId(group.id());
     camundaGroupResponse.setName(group.name());
     return camundaGroupResponse;
+  }
+
+  public static Role mapToRole(final RoleRequest roleRequest) {
+    final Role role = new Role();
+    role.setName(roleRequest.getName());
+    role.setDescription(roleRequest.getDescription());
+    role.setPermissions(mapPermissionsToEnumsSet(roleRequest.getPermissions()));
+    return role;
+  }
+
+  public static Set<PermissionEnum> mapPermissionsToEnumsSet(final List<Permission> permissions) {
+    return permissions.stream()
+        .map(UserManagementMapper::mapToPermissionEnum)
+        .collect(Collectors.toSet());
+  }
+
+  public static PermissionEnum mapToPermissionEnum(final Permission permission) {
+    return switch (permission) {
+      case READ_ALL -> PermissionEnum.READ_ALL;
+      case CREATE_ALL -> PermissionEnum.CREATE_ALL;
+      case DELETE_ALL -> PermissionEnum.DELETE_ALL;
+      case UPDATE_ALL -> PermissionEnum.UPDATE_ALL;
+      default -> throw new IllegalArgumentException("Unsupported permission: " + permission);
+    };
+  }
+
+  public static RoleResponse mapToRoleResponse(final Role role) {
+    final RoleResponse roleResponse = new RoleResponse();
+    roleResponse.setName(role.getName());
+    roleResponse.setDescription(role.getDescription());
+    roleResponse.setPermissions(mapPermissionEnumsToPermissions(role.getPermissions()));
+    return roleResponse;
+  }
+
+  public static List<Permission> mapPermissionEnumsToPermissions(
+      final Set<PermissionEnum> permissionEnums) {
+    return permissionEnums.stream().map(UserManagementMapper::mapToPermission).toList();
+  }
+
+  public static Permission mapToPermission(final PermissionEnum permissionEnum) {
+    return switch (permissionEnum) {
+      case READ_ALL -> Permission.READ_ALL;
+      case CREATE_ALL -> Permission.CREATE_ALL;
+      case DELETE_ALL -> Permission.DELETE_ALL;
+      case UPDATE_ALL -> Permission.UPDATE_ALL;
+      default ->
+          throw new IllegalArgumentException("Unsupported permissionEnum: " + permissionEnum);
+    };
   }
 }

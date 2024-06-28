@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.permissions.PermissionEnum;
-import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.service.RoleService;
-import io.camunda.zeebe.gateway.protocol.rest.Permission;
 import io.camunda.zeebe.gateway.protocol.rest.RoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchResponse;
@@ -18,8 +15,6 @@ import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +42,8 @@ public class RoleController {
   public ResponseEntity<Object> createRole(@RequestBody final RoleRequest roleRequest) {
     try {
       final RoleResponse roleResponse =
-          mapToRoleResponse(roleService.createRole(mapToRole(roleRequest)));
+          UserManagementMapper.mapToRoleResponse(
+              roleService.createRole(UserManagementMapper.mapToRole(roleRequest)));
       return new ResponseEntity<>(roleResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -69,7 +65,8 @@ public class RoleController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<Object> getRoleById(@PathVariable("id") final String roleName) {
     try {
-      final RoleResponse roleResponse = mapToRoleResponse(roleService.findRoleByName(roleName));
+      final RoleResponse roleResponse =
+          UserManagementMapper.mapToRoleResponse(roleService.findRoleByName(roleName));
       return new ResponseEntity<>(roleResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -85,7 +82,7 @@ public class RoleController {
     try {
       final RoleSearchResponse roleSearchResponse = new RoleSearchResponse();
       final List<RoleResponse> allRoleResponses =
-          roleService.findAllRoles().stream().map(this::mapToRoleResponse).toList();
+          roleService.findAllRoles().stream().map(UserManagementMapper::mapToRoleResponse).toList();
       roleSearchResponse.setItems(allRoleResponses);
 
       return new ResponseEntity<>(roleSearchResponse, HttpStatus.OK);
@@ -102,56 +99,11 @@ public class RoleController {
       @PathVariable("id") final String roleName, @RequestBody final RoleRequest roleRequest) {
     try {
       final RoleResponse roleResponse =
-          mapToRoleResponse(roleService.updateRole(roleName, mapToRole(roleRequest)));
+          UserManagementMapper.mapToRoleResponse(
+              roleService.updateRole(roleName, UserManagementMapper.mapToRole(roleRequest)));
       return new ResponseEntity<>(roleResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
-  }
-
-  private Role mapToRole(final RoleRequest roleRequest) {
-    final Role role = new Role();
-    role.setName(roleRequest.getName());
-    role.setDescription(roleRequest.getDescription());
-    role.setPermissions(mapPermissionsToEnumsSet(roleRequest.getPermissions()));
-    return role;
-  }
-
-  private Set<PermissionEnum> mapPermissionsToEnumsSet(final List<Permission> permissions) {
-    return permissions.stream().map(this::mapToPermissionEnum).collect(Collectors.toSet());
-  }
-
-  private PermissionEnum mapToPermissionEnum(final Permission permission) {
-    return switch (permission) {
-      case READ_ALL -> PermissionEnum.READ_ALL;
-      case CREATE_ALL -> PermissionEnum.CREATE_ALL;
-      case DELETE_ALL -> PermissionEnum.DELETE_ALL;
-      case UPDATE_ALL -> PermissionEnum.UPDATE_ALL;
-      default -> throw new IllegalArgumentException("Unsupported permission: " + permission);
-    };
-  }
-
-  private RoleResponse mapToRoleResponse(final Role role) {
-    final RoleResponse roleResponse = new RoleResponse();
-    roleResponse.setName(role.getName());
-    roleResponse.setDescription(role.getDescription());
-    roleResponse.setPermissions(mapPermissionEnumsToPermissions(role.getPermissions()));
-    return roleResponse;
-  }
-
-  private List<Permission> mapPermissionEnumsToPermissions(
-      final Set<PermissionEnum> permissionEnums) {
-    return permissionEnums.stream().map(this::mapToPermission).toList();
-  }
-
-  private Permission mapToPermission(final PermissionEnum permissionEnum) {
-    return switch (permissionEnum) {
-      case READ_ALL -> Permission.READ_ALL;
-      case CREATE_ALL -> Permission.CREATE_ALL;
-      case DELETE_ALL -> Permission.DELETE_ALL;
-      case UPDATE_ALL -> Permission.UPDATE_ALL;
-      default ->
-          throw new IllegalArgumentException("Unsupported permissionEnum: " + permissionEnum);
-    };
   }
 }
