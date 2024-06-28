@@ -16,7 +16,7 @@ import {
   documentationHref,
   DocumentationLink,
 } from "src/components/documentation";
-import { postUserSearch, User } from "src/utility/api/users";
+import { searchUser, User } from "src/utility/api/users";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -35,14 +35,14 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(postUserSearch);
+  } = useApi(searchUser);
   const [addUser, addUserModal] = useModal(AddModal, reload);
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ id }: User) => navigate(`${id}`);
 
-  if (success && !userSearchResults?.items?.length) {
+  if (success && !userSearchResults?.items.length) {
     return (
       <Page>
         <PageTitle>
@@ -71,7 +71,7 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Users")}
-        data={userSearchResults?.items || []}
+        data={userSearchResults!.items}
         headers={[
           { header: t("Username"), key: "username" },
           { header: t("Name"), key: "name" },

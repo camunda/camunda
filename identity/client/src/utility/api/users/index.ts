@@ -12,7 +12,7 @@ export type User = {
   enabled: boolean;
 };
 
-export const postUserSearch: ApiDefinition<SearchResponse<User>> = () =>
+export const searchUser: ApiDefinition<SearchResponse<User>> = () =>
   apiPost(`${USERS_ENDPOINT}/search`);
 
 type GetUserParams = {
