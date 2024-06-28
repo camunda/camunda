@@ -9,9 +9,13 @@ import EntityList, {
 import useTranslate from "src/utility/localization";
 import { useEntityModal } from "src/components/modal";
 import { User } from "src/utility/api/users";
-import { getUserRoles } from "src/utility/api/users/roles";
-import AddModal from "./AddModal";
-import DeleteModal from "./DeleteModal";
+import {
+  assignUserRole,
+  getUserRoles,
+  removeUserRole,
+} from "src/utility/api/users/roles";
+import AssignRoleModal from "../../../roles/modals/AssignRoleModal";
+import UnassignRoleModal from "../../../roles/modals/UnassignRoleModal";
 import { DocumentationLink } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { useApi } from "src/utility/api";
@@ -33,10 +37,13 @@ const Roles: FC<RolesListProps> = ({ user, loadingUser }) => {
 
   const loading = loadingUser || loadingRoles;
 
-  const [assignRole, addModal] = useEntityModal(AddModal, reload, {
-    userRoles: roles || [],
+  const [assignRole, addModal] = useEntityModal(AssignRoleModal, reload, {
+    assignedRoles: roles || [],
+    assignRole: assignUserRole,
   });
-  const [removeRole, deleteModal] = useEntityModal(DeleteModal, reload);
+  const [removeRole, deleteModal] = useEntityModal(UnassignRoleModal, reload, {
+    unassignRole: removeUserRole,
+  });
 
   const areRolesEmpty = !roles || roles.length === 0;
 
@@ -58,7 +65,7 @@ const Roles: FC<RolesListProps> = ({ user, loadingUser }) => {
           { header: t("Description"), key: "description" },
         ]}
         addEntityLabel="Assign roles"
-        onAddEntity={() => assignRole(user)}
+        onAddEntity={() => assignRole(user.id)}
         menuItems={[
           {
             label: t("Delete"),

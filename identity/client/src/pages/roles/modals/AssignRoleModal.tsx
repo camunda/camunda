@@ -1,10 +1,15 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { ChangeEvent, FC, useEffect, useState } from "react";
 import { Checkbox, CheckboxSkeleton } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { AddFormModal, UseEntityModalCustomProps } from "src/components/modal";
 import { useApi, useApiCall } from "src/utility/api/hooks";
-import { Group } from "src/utility/api/groups";
-import { assignGroupRole } from "src/utility/api/groups/roles";
 import { getRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import {
@@ -12,10 +17,18 @@ import {
   TranslatedInlineNotification,
 } from "src/components/notifications/InlineNotification";
 import ascendingSort from "src/utility/ascendingSort";
+import { AssignRoleParams } from "src/utility/api/roles/assign";
+import { ApiDefinition } from "src/utility/api/request";
 
-const AddModal: FC<
-  UseEntityModalCustomProps<Group, { groupRoles: Role[] }>
-> = ({ open, onClose, onSuccess, entity: group, groupRoles }) => {
+const AssignRoleModal: FC<
+  UseEntityModalCustomProps<
+    string,
+    {
+      assignedRoles: Role[];
+      assignRole: ApiDefinition<undefined, AssignRoleParams>;
+    }
+  >
+> = ({ open, onClose, onSuccess, entity: id, assignedRoles, assignRole }) => {
   const { t } = useTranslate();
   const navigate = useNavigate();
 
@@ -30,18 +43,18 @@ const AddModal: FC<
   } = useApi(getRoles);
 
   const [callAssignRole, { loading: loadingAssignRole }] =
-    useApiCall(assignGroupRole);
+    useApiCall(assignRole);
 
   const loading = loadingRoles || loadingAssignRole;
 
   const unassignedRoles = (
-    groupRoles
-      ? roles?.filter(({ id }) => !groupRoles.some((role) => role.id === id))
+    assignedRoles
+      ? roles?.filter(({ id }) => !assignedRoles.some((role) => role.id === id))
       : roles
   )?.sort((a, b) => ascendingSort(a.name, b.name));
 
   const handleSubmit = async () => {
-    if (!group) return;
+    if (!id) return;
 
     if (selectedRoles.length === 0) {
       setShowSelectRoleError(true);
@@ -51,7 +64,7 @@ const AddModal: FC<
     setShowSelectRoleError(false);
 
     const results = await Promise.all(
-      selectedRoles.map((roleId) => callAssignRole({ id: group.id, roleId })),
+      selectedRoles.map((roleId) => callAssignRole({ id, roleId })),
     );
 
     if (results.every(({ success }) => success)) {
@@ -82,7 +95,7 @@ const AddModal: FC<
       open={open}
       loading={loading}
       loadingDescription={t("Assigning role")}
-      headline={t("Assign roles to group")}
+      headline={t("Assign roles")}
       onSubmit={handleSubmit}
       onClose={onClose}
     >
@@ -120,9 +133,9 @@ const AddModal: FC<
         getRolesSuccess &&
         roles &&
         roles.length > 0 &&
-        roles.length === groupRoles?.length && (
+        roles.length === assignedRoles?.length && (
           <TranslatedInlineNotification
-            title="All configured roles are already assigned to the user. You can configure a new role and then assign it to the user."
+            title="All configured roles are already assigned. You can configure a new role and then assign it."
             actionButton={{ label: "Go to roles", onClick: goToRolesPage }}
           />
         )}
@@ -130,4 +143,4 @@ const AddModal: FC<
   );
 };
 
-export default AddModal;
+export default AssignRoleModal;

@@ -21,7 +21,7 @@ import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
-import List from "src/pages/users/detail/roles/List.tsx";
+import List from "src/pages/users/detail/roles/List";
 
 const Details: FC = () => {
   const { t } = useTranslate();
