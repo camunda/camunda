@@ -47,16 +47,6 @@ jobs:
         run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
         run: ${{ inputs.command }}
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: always()
-        with:
-          comment_mode: off
-          report_individual_runs: true
-          report_suite_logs: error
-          check_name: "Operate Test Results"
-          files: |
-            operate/**/target/surefire-reports/*.xml
       - name: Send Slack notification on failure
         if: failure()
         uses: slackapi/slack-github-action@v1.26.0

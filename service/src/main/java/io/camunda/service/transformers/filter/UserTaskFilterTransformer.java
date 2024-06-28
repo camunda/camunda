@@ -8,7 +8,6 @@
 package io.camunda.service.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -21,7 +20,6 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
@@ -34,8 +32,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
     final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
-
-    final var variablesQuery = getVariablesQuery(filter.variableFilters());
 
     final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
     final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");
@@ -70,7 +66,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         followUpDateQuery,
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
-        variablesQuery,
         tenantQuery,
         userTaksImplementationQuery);
   }
@@ -84,19 +79,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     } else {
       return Arrays.asList("tasklist-task-8.5.0_alias");
     }
-  }
-
-  private SearchQuery getVariablesQuery(final List<VariableValueFilter> variableFilters) {
-    if (variableFilters != null && !variableFilters.isEmpty()) {
-      final var transformer = getVariableValueFilterTransformer();
-      final var queries =
-          variableFilters.stream()
-              .map(transformer::apply)
-              .map((q) -> hasChildQuery("variable", q))
-              .collect(Collectors.toList());
-      return and(queries);
-    }
-    return null;
   }
 
   private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {

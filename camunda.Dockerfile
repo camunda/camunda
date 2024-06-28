@@ -9,7 +9,7 @@ ARG BASE_DIGEST="sha256:19478ce7fc2ffbce89df29fea5725a8d12e57de52eb9ea570890dc58
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-jammy"
 ARG JDK_DIGEST="sha256:08553a9e5fa00ff728e4b69a390d49b08785675173d8384f38c27da2b49b0fc1"
 
-# set to "build" to build zeebe from scratch instead of using a distball
+# set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
 
 ### Base image ###
@@ -75,28 +75,28 @@ COPY --from=jre-build /jre ${JAVA_HOME}
 # TL;DR generate some class data sharing for faster load time
 RUN java -Xshare:dump;
 
-### Build zeebe from scratch ###
+### Build camunda from scratch ###
 FROM java as build
-WORKDIR /zeebe
+WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
-### Extract zeebe from distball ###
+### Extract camunda from distball ###
 # hadolint ignore=DL3006
 FROM base as distball
-WORKDIR /zeebe
+WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
-COPY --link ${DISTBALL} zeebe.tar.gz
+COPY --link ${DISTBALL} camunda.tar.gz
 
 # Remove zbctl from the distribution to reduce CVE related maintenance effort w.r.t to containers
 RUN mkdir camunda-zeebe && \
-    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe && \
+    tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe && \
     find . -type f -name 'zbctl*' -delete
 
-### Image containing the zeebe distribution ###
+### Image containing the camunda distribution ###
 # hadolint ignore=DL3006
 FROM ${DIST} as dist
 
@@ -126,7 +126,7 @@ LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
-LABEL org.opencontainers.image.title="Zeebe"
+LABEL org.opencontainers.image.title="Camunda 8"
 LABEL org.opencontainers.image.description="Workflow engine for microservice orchestration"
 
 # OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
@@ -136,33 +136,30 @@ LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
-ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_STANDALONE_GATEWAY=false \
-    ZEEBE_RESTORE=false
-ENV PATH "${ZB_HOME}/bin:${PATH}"
+ENV CAMUNDA_HOME=/usr/local/camunda
+ENV PATH "${CAMUNDA_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
 
-WORKDIR ${ZB_HOME}
+WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
-VOLUME ${ZB_HOME}/data
-VOLUME ${ZB_HOME}/logs
+VOLUME ${CAMUNDA_HOME}/data
+VOLUME ${CAMUNDA_HOME}/logs
 
 RUN groupadd --gid 1001 camunda && \
-    adduser --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+    adduser --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${ZB_HOME}/data && \
-    mkdir ${ZB_HOME}/logs && \
-    chown -R 1001:0 ${ZB_HOME} && \
-    chmod -R 0775 ${ZB_HOME}
+    mkdir ${CAMUNDA_HOME}/data && \
+    mkdir ${CAMUNDA_HOME}/logs && \
+    chown -R 1001:0 ${CAMUNDA_HOME} && \
+    chmod -R 0775 ${CAMUNDA_HOME}
 
-COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
-COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
+COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 USER 1001:1001
 
-ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
+ENTRYPOINT ["tini", "--", "/usr/local/camunda/bin/camunda"]
