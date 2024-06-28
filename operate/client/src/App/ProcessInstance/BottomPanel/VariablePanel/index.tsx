@@ -38,7 +38,7 @@ const VariablePanel = observer(function VariablePanel() {
 
   useEffect(() => {
     if (flowNodeId) {
-      fetchListeners(processInstanceId, flowNodeId);
+      fetchListeners('initial', processInstanceId, {flowNodeId});
     }
   }, [fetchListeners, processInstanceId, flowNodeId]);
 

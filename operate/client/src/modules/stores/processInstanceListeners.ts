@@ -7,16 +7,33 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {fetchProcessInstanceListeners} from 'modules/api/processInstances/fetchProcessInstanceListeners';
+import {
+  fetchProcessInstanceListeners,
+  ListenerPayload,
+} from 'modules/api/processInstances/fetchProcessInstanceListeners';
+
+type FetchType = 'initial' | 'prev' | 'next';
 
 type State = {
   listeners: ListenerEntity[];
-  status: 'initial' | 'fetched' | 'error';
+  page: number;
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetching-next'
+    | 'fetching-prev'
+    | 'fetched'
+    | 'error';
 };
+
 const DEFAULT_STATE: State = {
   listeners: [],
+  page: 1,
   status: 'initial',
 };
+
+const DEFAULT_PAYLOAD: ListenerPayload = {flowNodeId: '', pageSize: 20};
 
 class ProcessInstanceListeners {
   state: State = {...DEFAULT_STATE};
@@ -25,22 +42,11 @@ class ProcessInstanceListeners {
     makeAutoObservable(this);
   }
 
-  fetchListeners = async (
-    processInstanceId: ProcessInstanceEntity['id'],
-    flowNodeId: string,
-  ) => {
-    const response = await fetchProcessInstanceListeners({
-      processInstanceId,
-      payload: {
-        pageSize: 50,
-        flowNodeId,
-      },
-    });
-
-    if (response.isSuccess) {
-      this.handleFetchSuccess(response.data);
+  startFetching = () => {
+    if (this.state.status === 'initial') {
+      this.state.status = 'first-fetch';
     } else {
-      this.handleFetchFailure();
+      this.state.status = 'fetching';
     }
   };
 
@@ -51,6 +57,27 @@ class ProcessInstanceListeners {
 
   handleFetchFailure = () => {
     this.state.status = 'error';
+  };
+
+  fetchListeners = async (
+    fetchType: FetchType,
+    processInstanceId: ProcessInstanceEntity['id'],
+    payload: ListenerPayload = DEFAULT_PAYLOAD,
+  ) => {
+    if (fetchType === 'initial') {
+      this.startFetching();
+    }
+
+    const response = await fetchProcessInstanceListeners({
+      processInstanceId,
+      payload,
+    });
+
+    if (response.isSuccess) {
+      this.handleFetchSuccess(response.data);
+    } else {
+      this.handleFetchFailure();
+    }
   };
 
   reset = () => {

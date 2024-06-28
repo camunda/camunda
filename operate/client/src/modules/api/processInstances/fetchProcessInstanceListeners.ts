@@ -13,15 +13,15 @@ type ListenerPayload = {
   pageSize?: number;
 };
 
-const fetchProcessInstanceListeners = async ({
-  processInstanceId,
-  payload,
-  options,
-}: {
+type fetchProcessInstanceListenersParams = {
   processInstanceId: ProcessInstanceEntity['id'];
   payload: ListenerPayload;
-  options?: Parameters<typeof requestAndParse>[1];
-}) => {
+};
+
+const fetchProcessInstanceListeners = async (
+  {processInstanceId, payload}: fetchProcessInstanceListenersParams,
+  options?: Parameters<typeof requestAndParse>[1],
+) => {
   return await requestAndParse<ListenerEntity[]>(
     {
       url: `/api/process-instances/${processInstanceId}/listeners`,
@@ -33,3 +33,4 @@ const fetchProcessInstanceListeners = async ({
 };
 
 export {fetchProcessInstanceListeners};
+export type {ListenerPayload};
