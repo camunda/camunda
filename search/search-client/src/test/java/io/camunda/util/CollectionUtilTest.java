@@ -10,9 +10,41 @@ package io.camunda.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.stream.Streams;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CollectionUtilTest {
+
+  private static Stream<Arguments> provideParams() {
+    return Stream.of(
+        Arguments.arguments(new ArrayList<>(), List.of(), List.of()),
+        Arguments.arguments(new ArrayList<>(), List.of("1"), List.of("1")),
+        Arguments.arguments(null, null, List.of()),
+        Arguments.arguments(new ArrayList<>(), null, List.of()),
+        Arguments.arguments(null, List.of(), List.of()),
+        Arguments.arguments(null, List.of("1"), List.of("1")),
+        Arguments.arguments(
+            new ArrayList<>(Streams.of("1").toList()), List.of("2"), List.of("1", "2")),
+        Arguments.arguments(new ArrayList<>(Streams.of("1").toList()), null, List.of("1")));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideParams")
+  public void shouldAddValuesToList(
+      final List<String> list, final List<String> values, final List<String> expected) {
+    // given
+
+    // when
+    final var result = CollectionUtil.addValuesToList(list, values);
+
+    // then
+    assertThat(result).isEqualTo(expected);
+  }
 
   @Test
   public void shouldRemoveNullValuesFromStringArray() {
