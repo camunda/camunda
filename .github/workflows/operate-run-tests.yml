@@ -33,7 +33,7 @@ jobs:
           java-version: "21"
           cache: "maven"
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@v2.4.0
         with:
           githubServer: false
           servers: |
