@@ -11,6 +11,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -20,7 +21,8 @@ import jakarta.validation.constraints.NotNull;
 @Table(
     name = "mapping_rules",
     uniqueConstraints = {
-      @UniqueConstraint(columnNames = {"name", "claimName", "claimValue", "type", "operator"})
+      @UniqueConstraint(
+          columnNames = {"name", "claim_name", "claim_value", "type", "operator", "mapped_user_id"})
     })
 public class MappingRule {
 
@@ -32,7 +34,9 @@ public class MappingRule {
   @Enumerated(EnumType.STRING)
   private Operator operator;
 
-  @OneToOne private MappedUser mappedUser;
+  @OneToOne
+  @JoinColumn(name = "mapped_user_id")
+  private MappedUser mappedUser;
 
   public MappingRule() {}
 

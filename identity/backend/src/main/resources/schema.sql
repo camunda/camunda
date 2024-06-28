@@ -56,15 +56,20 @@ CREATE TABLE IF NOT EXISTS role_permissions(
 );
 
 
-CREATE TABLE IF NOT EXISTS native_users(
-                                           id bigint primary key,
-                                           name varchar(500)
+CREATE TABLE IF NOT EXISTS native_users(id bigint primary key,
+                                           name varchar(500),
                                            email varchar(100) unique,
-    name varchar,
     constraint fk_native_users_users foreign key(id) references users(id) ON DELETE CASCADE);
 
 CREATE TABLE IF NOT EXISTS mapped_users(
                                            id bigint primary key,
-                                           email varchar(100) unique,
-    name varchar,
-    constraint fk_native_users_users foreign key(id) references users(id) ON DELETE CASCADE);
+    constraint fk_mapped_users_users foreign key(id) references users(id) ON DELETE CASCADE);
+
+CREATE TABLE IF NOT EXISTS mapping_rules(
+    name varchar primary key ,
+    claim_name varchar,
+    claim_value varchar,
+    type varchar,
+    operator varchar,
+    mapped_user_id bigint,
+    constraint fk_mapping_rules_mapped_users foreign key(mapped_user_id) references mapped_users(id) ON DELETE CASCADE);

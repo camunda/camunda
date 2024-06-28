@@ -9,6 +9,7 @@ package io.camunda.identity.usermanagement.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -16,7 +17,10 @@ import jakarta.persistence.Table;
 @Table(name = "mapped_users")
 public class MappedUser {
   @Id private Long id;
-  @OneToOne private User user;
+
+  @OneToOne
+  @JoinColumn(referencedColumnName = "id", name = "id")
+  private User user;
 
   public Long getId() {
     return id;
