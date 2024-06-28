@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -121,6 +122,11 @@ final class BrokerRequestManager extends Actor {
       BrokerClientMetrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), "NO_TOPOLOGY");
       return;
+    } catch (final PartitionInactiveException e) {
+      returnFuture.completeExceptionally(e);
+      BrokerClientMetrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), "PARTITION_INACTIVE");
+      return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
@@ -215,6 +221,12 @@ final class BrokerRequestManager extends Actor {
 
       // select next partition id for request
       int partitionId = strategy.determinePartition(topologyManager);
+
+      final BrokerClusterState topology = topologyManager.getTopology();
+      if (topology != null && topology.getInactiveNodesForPartition(partitionId) != null) {
+        throw new PartitionInactiveException(partitionId);
+      }
+
       if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
         // could happen if the topology is not set yet, let's just try with partition 0 but we
         // should find a better solution
