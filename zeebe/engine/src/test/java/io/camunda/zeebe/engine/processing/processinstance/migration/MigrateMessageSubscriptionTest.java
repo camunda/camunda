@@ -68,7 +68,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .withVariables(Map.of("key1", "key1"))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -148,7 +148,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .withVariables(Map.of("key1", "key1"))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -246,7 +246,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .withVariables(Map.of("key1", "key1"))
             .create();
 
     Assertions.assertThat(
@@ -383,7 +383,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .withVariables(Map.of("key1", "key1"))
             .create();
 
     Assertions.assertThat(
@@ -529,7 +529,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2", "key3", "key3", "key4", "key4"))
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -680,7 +680,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2", "key3", "key3"))
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -804,7 +804,7 @@ public class MigrateMessageSubscriptionTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1", "key2", "key2", "key3", "key3"))
+            .withVariables(Map.of("key1", "key1", "key3", "key3"))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)

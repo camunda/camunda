@@ -21,6 +21,10 @@ const DiagramCanvas = styled.div`
   left: 0;
   top: 0;
 
+  .op-highlighted.djs-shape .djs-visual > :nth-child(1) {
+    stroke: var(--cds-background-brand) !important;
+  }
+
   .op-selectable:hover {
     cursor: pointer;
   }

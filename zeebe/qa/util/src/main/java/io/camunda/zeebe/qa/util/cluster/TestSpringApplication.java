@@ -27,7 +27,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.client.ReactorResourceFactory;
 
-abstract class TestSpringApplication<T extends TestSpringApplication<T>>
+public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;

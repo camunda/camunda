@@ -20,6 +20,7 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -45,6 +46,7 @@ public class ProcessInstanceRestServiceTest {
   @Mock private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
   @Mock private BatchOperationWriter batchOperationWriter;
   @Mock private ProcessInstanceReader processInstanceReader;
+  @Mock private ListenerReader listenerReader;
   @Mock private ListViewReader listViewReader;
   @Mock private IncidentReader incidentReader;
   @Mock private VariableReader variableReader;
@@ -63,6 +65,7 @@ public class ProcessInstanceRestServiceTest {
             modifyProcessInstanceRequestValidator,
             batchOperationWriter,
             processInstanceReader,
+            listenerReader,
             listViewReader,
             incidentReader,
             variableReader,

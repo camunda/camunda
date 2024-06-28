@@ -5,12 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.qa.util.cluster;
+package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.schema.SchemaStartup;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import io.camunda.operate.webapp.rest.dto.ListenerDto;
+import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import java.util.List;
 
-@Component("schemaStartup")
-@Profile("test")
-public class TestSchemaStartup extends SchemaStartup {}
+public interface ListenerReader {
+
+  public List<ListenerDto> getListenerExecutions(
+      String processInstanceId, ListenerRequestDto request);
+}

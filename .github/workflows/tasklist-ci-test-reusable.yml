@@ -88,16 +88,6 @@ jobs:
         run: |
           mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
-      # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Tasklist Test Results"
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
-            tasklist/**/target/failsafe-reports/TEST-*.xml
-
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
