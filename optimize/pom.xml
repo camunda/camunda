@@ -552,8 +552,8 @@
         <version>1.21.0</version>
         <configuration>
           <gitFlowConfig>
-            <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>merge-optimize-in</developmentBranch>
+            <productionBranch>latest</productionBranch>
+            <developmentBranch>master</developmentBranch>
             <supportBranchPrefix>maintenance/</supportBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
