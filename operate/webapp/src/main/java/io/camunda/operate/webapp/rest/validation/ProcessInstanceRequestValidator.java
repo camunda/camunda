@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
@@ -50,13 +51,20 @@ public class ProcessInstanceRequestValidator {
     }
     if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
       throw new InvalidRequestException(
-          "Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
+          "Only one of flowNodeId or flowNodeInstanceId must be specified in the request.");
     }
   }
 
   public void validateVariableRequest(final VariableRequestDto request) {
     if (request.getScopeId() == null) {
-      throw new InvalidRequestException("ScopeId must be specifies in the request.");
+      throw new InvalidRequestException("ScopeId must be specified in the request.");
+    }
+  }
+
+  public void validateListenerRequest(final ListenerRequestDto request) {
+    if (request.getPageSize() == null || request.getFlowNodeId() == null) {
+      throw new InvalidRequestException(
+          "'pageSize' and 'flowNodeId' must be specified in the request.");
     }
   }
 

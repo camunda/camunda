@@ -5,12 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.qa.util.cluster;
+package io.camunda.service;
 
-import io.camunda.operate.schema.SchemaStartup;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
+import io.camunda.service.license.CamundaLicense;
 
-@Component("schemaStartup")
-@Profile("test")
-public class TestSchemaStartup extends SchemaStartup {}
+public final class ManagementService {
+
+  private final CamundaLicense camundaLicense;
+
+  public ManagementService() {
+    camundaLicense = new CamundaLicense();
+  }
+
+  public boolean isCamundaLicenseValid() {
+    return camundaLicense.isValid();
+  }
+}

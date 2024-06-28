@@ -60,7 +60,7 @@ class UserServiceTest {
     userService.createUser(new CamundaUserWithPassword(username, "password"));
 
     assertThrows(
-        RuntimeException.class,
+        IllegalArgumentException.class,
         () -> userService.createUser(new CamundaUserWithPassword(username, "password")));
   }
 
@@ -72,18 +72,18 @@ class UserServiceTest {
 
     userService.deleteUser(user.getId());
 
-    assertThrows(RuntimeException.class, () -> userService.findUserById(user.getId()));
+    assertThrows(IllegalArgumentException.class, () -> userService.findUserById(user.getId()));
   }
 
   @Test
   void nonExistingUserDeleteUserException() {
-    assertThrows(RuntimeException.class, () -> userService.deleteUser(1000L));
+    assertThrows(IllegalArgumentException.class, () -> userService.deleteUser(1000L));
   }
 
   @Test
   void nonExistingUserFindUserByUsernameThrowsException() {
     final var username = "user" + UUID.randomUUID();
-    assertThrows(RuntimeException.class, () -> userService.findUserByUsername(username));
+    assertThrows(IllegalArgumentException.class, () -> userService.findUserByUsername(username));
   }
 
   @Test
@@ -100,7 +100,7 @@ class UserServiceTest {
   void nonExistingUserUpdateUserThrowsException() {
     final var username = "user" + UUID.randomUUID();
     final var user = new CamundaUserWithPassword(0L, username, "email", false, "password");
-    assertThrows(RuntimeException.class, () -> userService.updateUser(0L, user));
+    assertThrows(IllegalArgumentException.class, () -> userService.updateUser(0L, user));
   }
 
   @Test

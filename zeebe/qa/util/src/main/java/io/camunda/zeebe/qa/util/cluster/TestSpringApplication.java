@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.qa.util.cluster.util.RelaxedCollectorRegistry;
@@ -26,7 +27,7 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.client.ReactorResourceFactory;
 
-abstract class TestSpringApplication<T extends TestSpringApplication<T>>
+public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
@@ -175,7 +176,8 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .registerShutdownHook(false)
         .initializers(additionalInitializers.toArray(ApplicationContextInitializer[]::new))
         .profiles(additionalProfiles.toArray(String[]::new))
-        .sources(springApplications);
+        .sources(springApplications)
+        .sources(IdentityModuleConfiguration.class);
   }
 
   @Override

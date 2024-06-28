@@ -70,8 +70,7 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
               .findFirst()
               .ifPresent(
                   eventDefinition -> {
-                    if (eventDefinition instanceof ErrorEventDefinition
-                        || eventDefinition instanceof EscalationEventDefinition) {
+                    if (eventDefinition instanceof ErrorEventDefinition) {
                       final boolean endExecutionListenersDefined =
                           listeners.stream()
                               .map(ZeebeExecutionListener::getEventType)
@@ -79,7 +78,7 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
                       if (endExecutionListenersDefined) {
                         validationResultCollector.addError(
                             0,
-                            "Execution listeners of type 'end' are not supported by [escalation, error] end events");
+                            "Execution listeners of type 'end' are not supported by [error] end events");
                       }
                     }
                   });
