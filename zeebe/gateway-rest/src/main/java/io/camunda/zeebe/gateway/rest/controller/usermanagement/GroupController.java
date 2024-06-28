@@ -9,13 +9,16 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.service.GroupService;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupDto;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponseDto;
-import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,7 +26,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ZeebeRestController
 @RequestMapping("/v2/groups")
@@ -37,55 +39,81 @@ public class GroupController {
   @PostMapping(
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  @ResponseStatus(HttpStatus.CREATED)
-  public CamundaGroupDto createGroup(@RequestBody final CamundaGroupDto groupDto) {
-    return mapToGroupDto(groupService.createGroup(mapToGroup(groupDto)));
+  public ResponseEntity<Object> createGroup(@RequestBody final CamundaGroupRequest groupRequest) {
+    try {
+      final CamundaGroupResponse camundaGroupResponse =
+          mapToGroupResponse(groupService.createGroup(mapToGroup(groupRequest)));
+      return new ResponseEntity<>(camundaGroupResponse, HttpStatus.CREATED);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
   }
 
   @DeleteMapping(path = "/{id}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteGroup(@PathVariable(name = "id") final Long groupId) {
-    groupService.deleteGroupById(groupId);
+  public ResponseEntity<Object> deleteGroup(@PathVariable(name = "id") final Long groupId) {
+    try {
+      groupService.deleteGroupById(groupId);
+      return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
   }
 
   @GetMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaGroupDto findGroupById(@PathVariable(name = "id") final Long groupId) {
-    return mapToGroupDto(groupService.findGroupById(groupId));
+  public ResponseEntity<Object> findGroupById(@PathVariable(name = "id") final Long groupId) {
+    try {
+      final CamundaGroupResponse camundaGroupResponse =
+          mapToGroupResponse(groupService.findGroupById(groupId));
+      return new ResponseEntity<>(camundaGroupResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
   }
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public GroupSearchResponseDto findAllGroups(
-      @RequestBody final SearchRequestDto searchRequestDto) {
-    final GroupSearchResponseDto responseDto = new GroupSearchResponseDto();
-    final List<CamundaGroupDto> allGroupDtos =
-        groupService.findAllGroups().stream().map(this::mapToGroupDto).toList();
-    responseDto.setItems(allGroupDtos);
+  public ResponseEntity<Object> findAllGroups(
+      @RequestBody(required = false) final SearchQueryRequest searchQueryRequest) {
+    try {
+      final GroupSearchResponse groupSearchResponse = new GroupSearchResponse();
+      final List<CamundaGroupResponse> allGroupResponses =
+          groupService.findAllGroups().stream().map(this::mapToGroupResponse).toList();
+      groupSearchResponse.setItems(allGroupResponses);
 
-    return responseDto;
+      return new ResponseEntity<>(groupSearchResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
   }
 
   @PutMapping(
       path = "/{id}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CamundaGroupDto updateGroup(
-      @PathVariable(name = "id") final Long groupId, @RequestBody final CamundaGroupDto groupDto) {
-    return mapToGroupDto(groupService.updateGroup(groupId, mapToGroup(groupDto)));
+  public ResponseEntity<Object> updateGroup(
+      @PathVariable(name = "id") final Long groupId,
+      @RequestBody final CamundaGroupRequest groupRequest) {
+    try {
+      final CamundaGroupResponse camundaGroupResponse =
+          mapToGroupResponse(groupService.updateGroup(groupId, mapToGroup(groupRequest)));
+      return new ResponseEntity<>(camundaGroupResponse, HttpStatus.OK);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
   }
 
-  private CamundaGroup mapToGroup(final CamundaGroupDto groupDto) {
-    return new CamundaGroup(groupDto.getId(), groupDto.getName());
+  private CamundaGroup mapToGroup(final CamundaGroupRequest groupRequest) {
+    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
   }
 
-  private CamundaGroupDto mapToGroupDto(final CamundaGroup group) {
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setId(group.id());
-    camundaGroupDto.setName(group.name());
-    return camundaGroupDto;
+  private CamundaGroupResponse mapToGroupResponse(final CamundaGroup group) {
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(group.id());
+    camundaGroupResponse.setName(group.name());
+    return camundaGroupResponse;
   }
 }

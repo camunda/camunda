@@ -494,7 +494,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaGroupDto"
+              $ref: "#/components/schemas/CamundaGroupRequest"
         required: true
       responses:
         "201":
@@ -502,7 +502,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaGroupDto"
+                $ref: "#/components/schemas/CamundaGroupResponse"
         "400":
           description: "Bad request"
           content:
@@ -597,7 +597,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaGroupDto"
+                $ref: "#/components/schemas/CamundaGroupResponse"
         "400":
           description: "Bad request"
           content:
@@ -644,7 +644,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaGroupDto"
+              $ref: "#/components/schemas/CamundaGroupRequest"
         required: true
       responses:
         "200":
@@ -652,7 +652,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaGroupDto"
+                $ref: "#/components/schemas/CamundaGroupResponse"
         "400":
           description: "Bad request"
           content:
@@ -693,7 +693,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SearchRequestDto"
+              $ref: "#/components/schemas/SearchQueryRequest"
         required: true
       responses:
         "200":
@@ -701,7 +701,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaGroupDto"
+                $ref: "#/components/schemas/GroupSearchResponse"
         "400":
           description: "Bad request"
           content:
@@ -1203,7 +1203,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CamundaUserResponse"
-    CamundaGroupDto:
+    CamundaGroupRequest:
       type: "object"
       properties:
         id:
@@ -1211,7 +1211,15 @@ components:
           format: "int64"
         name:
           type: "string"
-    GroupSearchResponseDto:
+    CamundaGroupResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+    GroupSearchResponse:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -1219,7 +1227,7 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/CamundaGroupDto"
+            $ref: "#/components/schemas/CamundaGroupResponse"
   securitySchemes:
     bearerAuth:
       type: http
