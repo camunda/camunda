@@ -9,6 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -40,6 +44,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.unit.DataSize;
 
 @WebMvcTest(JobController.class)
@@ -57,7 +62,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   }
 
   @Test
-  void shouldActivateJobsImmediatelyIfAvailable() {
+  void shouldActivateJobsImmediatelyIfAvailable() throws Exception {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.addAvailableJobs("TEST", 2);
@@ -114,25 +119,22 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         }""";
     // when / then
     webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/activation")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(expectedBody);
+        .perform(
+            asyncRequest(
+                post(JOBS_BASE_URL + "/activation")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(request)))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(content().json(expectedBody));
 
     Mockito.verify(responseObserver, Mockito.times(1)).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
   }
 
   @Test
-  void shouldReturnNoJobsImmediatelyIfNoneAvailable() {
+  void shouldReturnNoJobsImmediatelyIfNoneAvailable() throws Exception {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(stubbedBrokerClient);
@@ -155,25 +157,22 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         }""";
     // when / then
     webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/activation")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(expectedBody);
+        .perform(
+            asyncRequest(
+                post(JOBS_BASE_URL + "/activation")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(request)))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(content().json(expectedBody));
 
     Mockito.verify(responseObserver, Mockito.never()).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
   }
 
   @Test
-  void shouldActivateJobsRoundRobin() {
+  void shouldActivateJobsRoundRobin() throws Exception {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(stubbedBrokerClient);
@@ -195,23 +194,21 @@ public class JobControllerLongPollingTest extends RestControllerTest {
      * the round-robin index by any number already.
      */
     stub.addAvailableJobs("TEST", 1);
-    final String result =
+    final MvcResult result =
         webClient
-            .post()
-            .uri(JOBS_BASE_URL + "/activation")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
-            .exchange()
-            .expectStatus()
-            .isOk()
-            .expectHeader()
-            .contentType(MediaType.APPLICATION_JSON)
-            .expectBody(String.class)
-            .returnResult()
-            .getResponseBody();
+            .perform(
+                asyncRequest(
+                    post(JOBS_BASE_URL + "/activation")
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn();
 
-    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].key"));
+    final int basePartition =
+        Protocol.decodePartitionId(
+            JsonPath.read(result.getResponse().getContentAsString(), "$.jobs[0].key"));
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
 
@@ -224,26 +221,23 @@ public class JobControllerLongPollingTest extends RestControllerTest {
       stub.addAvailableJobs("TEST", 2);
       // when/then
       webClient
-          .post()
-          .uri(JOBS_BASE_URL + "/activation")
-          .accept(MediaType.APPLICATION_JSON)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(request)
-          .exchange()
-          .expectStatus()
-          .isOk()
-          .expectHeader()
-          .contentType(MediaType.APPLICATION_JSON)
-          .expectBody()
-          .jsonPath("$.jobs[0].key")
-          .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 0))
-          .jsonPath("$.jobs[1].key")
-          .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 1));
+          .perform(
+              asyncRequest(
+                  post(JOBS_BASE_URL + "/activation")
+                      .accept(MediaType.APPLICATION_JSON)
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content(request)))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(
+              jsonPath("$.jobs[0].key").value(Protocol.encodePartitionId(expectedPartitionId, 0)))
+          .andExpect(
+              jsonPath("$.jobs[1].key").value(Protocol.encodePartitionId(expectedPartitionId, 1)));
     }
   }
 
   @Test
-  void shouldSendRejectionWithoutRetrying() {
+  void shouldSendRejectionWithoutRetrying() throws Exception {
     // given
     final AtomicInteger callCounter = new AtomicInteger();
     stubbedBrokerClient.registerHandler(
@@ -278,18 +272,15 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
     // when/then
     webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/activation")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody);
+        .perform(
+            asyncRequest(
+                post(JOBS_BASE_URL + "/activation")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(content().json(expectedBody));
 
     assertThat(callCounter).hasValue(1);
   }

@@ -9,7 +9,6 @@ component/zeebe:
         - 'Dockerfile'
         - 'bom/*'
         - 'build-tools/**'
-        - 'camunda.Dockerfile'
         - 'clients/**'
         - 'dist/**'
         - 'monitor/**'
@@ -26,7 +25,6 @@ component/operate:
         - '.github/renovate.json'
         - '.github/workflows/operate-*'
         - 'bom/*'
-        - 'camunda.Dockerfile'
         - 'dist/**'
         - 'operate.Dockerfile'
         - 'operate/**'
@@ -37,7 +35,6 @@ component/identity:
   - changed-files:
       - any-glob-to-any-file:
           - '.github/workflows/identity-*'
-          - 'camunda.Dockerfile'
           - 'identity/**'
 component/tasklist:
   - changed-files:
@@ -48,7 +45,6 @@ component/tasklist:
           - '.github/renovate.json'
           - '.github/workflows/tasklist-*'
           - 'bom/*'
-          - 'camunda.Dockerfile'
           - 'dist/**'
           - 'parent/*'
           - 'pom.xml'

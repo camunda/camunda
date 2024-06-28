@@ -11,7 +11,7 @@
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Tool for process observability and troubleshooting processes running in Camunda Platform 8",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/operate-deployment/install-and-start/",
-  "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Camunda-License-1.0)",
+  "org.opencontainers.image.licenses": "Proprietary",
   "org.opencontainers.image.revision": $REVISION,
   "org.opencontainers.image.source": "https://github.com/camunda/camunda-operate",
   "org.opencontainers.image.title": "Camunda Operate",

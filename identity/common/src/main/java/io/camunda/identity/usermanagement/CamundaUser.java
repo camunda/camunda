@@ -7,19 +7,13 @@
  */
 package io.camunda.identity.usermanagement;
 
-import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
 public class CamundaUser {
   private Long id;
-
-  @NotBlank(message = "user.invalid")
   private String username;
-
   private String name;
-
   private String email;
-
   private boolean enabled = true;
 
   public CamundaUser() {}

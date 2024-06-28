@@ -37,10 +37,6 @@ public class DefaultUserInitializer {
   }
 
   private void setupUser(final CamundaUserWithPassword camundaUserWithPassword) {
-    if (userService.userExistsByUsername(camundaUserWithPassword.getUsername())) {
-      return;
-    }
-
     try {
       userService.createUser(camundaUserWithPassword);
     } catch (final Exception e) {

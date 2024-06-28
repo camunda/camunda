@@ -23,9 +23,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@Profile("auth-basic")
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("auth-basic")
 public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {"/login**", "/logout**", "/error**", "/actuator**"};

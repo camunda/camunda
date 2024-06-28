@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.protocol;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import io.atomix.raft.RaftError;
@@ -39,15 +38,6 @@ public class InstallResponse extends AbstractRaftResponse {
 
   public int preferredChunkSize() {
     return preferredChunkSize;
-  }
-
-  @Override
-  public String toString() {
-    return toStringHelper(this)
-        .add("status", status)
-        .add("error", error)
-        .add("preferredChunkSize", preferredChunkSize)
-        .toString();
   }
 
   /**

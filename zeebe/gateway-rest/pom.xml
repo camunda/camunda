@@ -130,28 +130,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-backend</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-authentication</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-config</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- dependencies required for OpenAPI model generation -->
     <dependency>
       <groupId>jakarta.validation</groupId>

@@ -22,7 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.misc.StringUtils;
-import io.camunda.zeebe.snapshots.impl.SnapshotChunkId;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -205,10 +204,8 @@ public class InstallRequest extends AbstractRaftRequest {
         .add("index", index)
         .add("term", term)
         .add("version", version)
-        .add("chunkId", new SnapshotChunkId(chunkId).toString())
-        .add(
-            "nextChunkId",
-            nextChunkId == null ? "null" : new SnapshotChunkId(nextChunkId).toString())
+        .add("chunkId", StringUtils.printShortBuffer(chunkId))
+        .add("nextChunkId", StringUtils.printShortBuffer(nextChunkId))
         .add("data", StringUtils.printShortBuffer(data))
         .add("initial", initial)
         .add("complete", complete)
