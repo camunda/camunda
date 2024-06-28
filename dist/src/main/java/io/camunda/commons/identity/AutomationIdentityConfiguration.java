@@ -43,4 +43,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
     name = "zeebe.broker.gateway.enable",
     havingValue = "true",
     matchIfMissing = true)
-public class IdentityConfiguration {}
+public class AutomationIdentityConfiguration {}
