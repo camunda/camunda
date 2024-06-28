@@ -544,7 +544,7 @@
         <version>1.21.0</version>
         <configuration>
           <gitFlowConfig>
-            <productionBranch>latest</productionBranch>
+            <productionBranch>optimize-latest</productionBranch>
             <developmentBranch>test-optimize-release</developmentBranch>
             <supportBranchPrefix>maintenance/</supportBranchPrefix>
             <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
