@@ -26,7 +26,7 @@ regx='\(healthy\)'
 
 # Set interval (duration) in seconds.
 secs=${TIMEOUT}
-endTime=$(( $(date +%s) + secs ))
+endTime=$(($(date +%s) + secs))
 
 # Loop until interval has elapsed.
 # Version 2.21.0 of Docker Compose has introduced a change in its output format. This script must support both the old and new formats.
@@ -35,9 +35,9 @@ while [ $(date +%s) -lt $endTime ]; do
     cnt=0
     while IFS= read -r line; do
         if [[ $line =~ $regx ]]; then
-            cnt=$((cnt+1))
+            cnt=$((cnt + 1))
         fi
-    done <<< $(eval $DOCKER_COMMAND ps --format json | jq -n '[inputs] | flatten | .[].Status')
+    done <<<$(eval $DOCKER_COMMAND ps --format json | jq -n '[inputs] | flatten | .[].Status')
     echo -en "\rWaiting for services... $cnt/$(eval $DOCKER_COMMAND ps --format json | jq -n '[inputs] | flatten | .[].Status' | wc -l)"
     if [[ $cnt -eq $(eval $DOCKER_COMMAND ps --format json | jq -n '[inputs] | flatten | .[].Status' | wc -l) ]]; then
         echo ""
@@ -46,6 +46,8 @@ while [ $(date +%s) -lt $endTime ]; do
     fi
     sleep 1
 done
+
+echo "Services are not healthy after $TIMEOUT seconds"
 
 eval $DOCKER_COMMAND ps
 eval $DOCKER_COMMAND logs
