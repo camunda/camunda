@@ -313,6 +313,26 @@ public final class FileBasedSnapshotChunkReaderTest {
                 .collect(Collectors.toUnmodifiableList()));
   }
 
+  @Test
+  public void shouldSeekSameByteBufferTwiceWithNoError() throws IOException {
+    // given
+
+    final var buffer = ByteBuffer.wrap("file3__0".getBytes(StandardCharsets.UTF_8));
+    final var snapshotChunkReader = newReader();
+
+    // when
+    snapshotChunkReader.seek(buffer);
+    final var chunkFromFirstSeek = snapshotChunkReader.next();
+
+    snapshotChunkReader.seek(buffer);
+    final var chunkFromSecondSeek = snapshotChunkReader.next();
+
+    // then
+    assertThat(chunkFromFirstSeek.getChunkName()).isEqualTo(chunkFromSecondSeek.getChunkName());
+    assertThat(chunkFromFirstSeek.getContent()).isEqualTo(chunkFromSecondSeek.getContent());
+    assertThat(chunkFromFirstSeek.getChecksum()).isEqualTo(chunkFromSecondSeek.getChecksum());
+  }
+
   private List<SnapshotChunk> getAllChunks(final FileBasedSnapshotChunkReader reader) {
     final var snapshotChunks = new ArrayList<SnapshotChunk>();
 

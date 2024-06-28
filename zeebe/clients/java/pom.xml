@@ -16,4 +16,18 @@
       <artifactId>camunda-client-java</artifactId>
     </relocation>
   </distributionManagement>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <pomElements>
+            <distributionManagement></distributionManagement>
+          </pomElements>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

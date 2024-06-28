@@ -7,12 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -38,6 +32,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(UserTaskController.class)
@@ -75,16 +70,19 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldCompleteTaskWithoutActionAndVariables(final String baseUrl) throws Exception {
+  void shouldCompleteTaskWithoutActionAndVariables(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskCompletionRequest.class, request -> BROKER_RESPONSE);
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/completion").accept(MediaType.APPLICATION_JSON)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -96,7 +94,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldCompleteTaskWithAction(final String baseUrl) throws Exception {
+  void shouldCompleteTaskWithAction(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskCompletionRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -107,14 +105,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -126,7 +126,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldCompleteTaskWithVariables(final String baseUrl) throws Exception {
+  void shouldCompleteTaskWithVariables(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskCompletionRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -140,14 +140,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -159,7 +161,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldCompleteTaskWithActionAndVariables(final String baseUrl) throws Exception {
+  void shouldCompleteTaskWithActionAndVariables(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskCompletionRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -174,14 +176,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -193,7 +197,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUpdateTaskWithAction(final String baseUrl) throws Exception {
+  void shouldUpdateTaskWithAction(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskUpdateRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -204,14 +208,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -227,7 +233,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUpdateTaskWithChanges(final String baseUrl) throws Exception {
+  void shouldUpdateTaskWithChanges(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskUpdateRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -244,14 +250,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -271,7 +279,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUpdateTaskWithPartialChanges(final String baseUrl) throws Exception {
+  void shouldUpdateTaskWithPartialChanges(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskUpdateRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -286,14 +294,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -309,7 +319,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUpdateTaskWithPartialEmptyValueChanges(final String baseUrl) throws Exception {
+  void shouldUpdateTaskWithPartialEmptyValueChanges(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskUpdateRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -323,14 +333,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -346,7 +358,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUpdateTaskWithActionAndChanges(final String baseUrl) throws Exception {
+  void shouldUpdateTaskWithActionAndChanges(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskUpdateRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -364,14 +376,16 @@ public class UserTaskControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskUpdateRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -391,8 +405,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges(final String baseUrl) {
     // given
     final var expectedBody =
         """
@@ -408,22 +421,24 @@ for a supported attribute in the \\"changeset\\".",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedDueDate(final String baseUrl) {
     // given
     final var request =
         """
@@ -446,23 +461,25 @@ for a supported attribute in the \\"changeset\\".",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithMalformedFollowUpDate(final String baseUrl) {
     // given
     final var request =
         """
@@ -485,23 +502,25 @@ for a supported attribute in the \\"changeset\\".",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithoutMalformedFollowUpAndDueDate(final String baseUrl) {
     // given
     final var request =
         """
@@ -527,23 +546,25 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithUntrackedChanges(final String baseUrl) {
     // given
     final var request =
         """
@@ -564,23 +585,25 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenUpdateTaskWithOnlyUnknownProperties(final String baseUrl)
-      throws Exception {
+  void shouldYieldBadRequestWhenUpdateTaskWithOnlyUnknownProperties(final String baseUrl) {
     // given
     final var request =
         """
@@ -603,22 +626,25 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                patch(baseUrl + "/1")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) throws Exception {
+  void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) {
     // given
     brokerClient.registerHandler(
         BrokerUserTaskCompletionRequest.class,
@@ -640,14 +666,17 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -659,7 +688,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldConflictWhenInvalidState(final String baseUrl) throws Exception {
+  void shouldYieldConflictWhenInvalidState(final String baseUrl) {
     // given
     brokerClient.registerHandler(
         BrokerUserTaskCompletionRequest.class,
@@ -684,14 +713,17 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)))
-        .andExpect(status().isConflict())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -704,7 +736,7 @@ RFC 3339, section 5.6.",
   @ParameterizedTest
   @MethodSource("rejectionsAndUrls")
   public void shouldYieldBadRequestWhenRejectionOfInput(
-      final Pair<RejectionType, String> parameters) throws Exception {
+      final Pair<RejectionType, String> parameters) {
     // given
     brokerClient.registerHandler(
         BrokerUserTaskCompletionRequest.class,
@@ -729,14 +761,17 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(parameters.getRight() + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(parameters.getRight() + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -749,7 +784,7 @@ RFC 3339, section 5.6.",
   @ParameterizedTest
   @MethodSource("exceptionsAndUrls")
   public void shouldYieldInternalErrorWhenRejectionInternal(
-      final Pair<RejectionType, String> parameters) throws Exception {
+      final Pair<RejectionType, String> parameters) {
     // given
     brokerClient.registerHandler(
         BrokerUserTaskCompletionRequest.class,
@@ -774,14 +809,17 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(parameters.getRight() + "/1/completion")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)))
-        .andExpect(status().is5xxServerError())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(parameters.getRight() + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskCompletionRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -793,7 +831,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithoutActionAndAllowOverride(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithoutActionAndAllowOverride(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -804,14 +842,16 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -825,7 +865,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithActionWithoutAllowOverride(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithActionWithoutAllowOverride(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -837,14 +877,16 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -858,7 +900,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithActionWithAllowOverrideTrue(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithActionWithAllowOverrideTrue(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -871,14 +913,16 @@ RFC 3339, section 5.6.",
 
     // when/then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -892,7 +936,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithActionWithAllowOverrideFalse(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithActionWithAllowOverrideFalse(final String baseUrl) {
     // gíven
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -905,14 +949,16 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -926,7 +972,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithoutActionWithAllowOverrideTrue(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithoutActionWithAllowOverrideTrue(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -938,14 +984,16 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -959,7 +1007,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldAssignTaskWithoutActionWithAllowOverrideFalse(final String baseUrl) throws Exception {
+  void shouldAssignTaskWithoutActionWithAllowOverrideFalse(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     final var request =
@@ -971,14 +1019,16 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/2251799813685732/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .post()
+        .uri(baseUrl + "/2251799813685732/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
@@ -992,7 +1042,7 @@ RFC 3339, section 5.6.",
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldYieldBadRequestWhenNoAssigneeForTaskAssignment(final String baseUrl) throws Exception {
+  void shouldYieldBadRequestWhenNoAssigneeForTaskAssignment(final String baseUrl) {
     // given
     final var request = "{}";
 
@@ -1009,29 +1059,36 @@ RFC 3339, section 5.6.",
 
     // when / then
     webClient
-        .perform(
-            asyncRequest(
-                post(baseUrl + "/1/assignment")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-        .andExpect(content().json(expectedBody));
+        .post()
+        .uri(baseUrl + "/1/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verifyNoInteractions(brokerClient);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
-  void shouldUnassignTask(final String baseUrl) throws Exception {
+  void shouldUnassignTask(final String baseUrl) {
     // given
     brokerClient.registerHandler(BrokerUserTaskAssignmentRequest.class, request -> BROKER_RESPONSE);
     // when / then
     webClient
-        .perform(asyncRequest(delete(baseUrl + "/2251799813685732/assignee")))
-        .andExpect(status().isNoContent())
-        .andExpect(content().bytes(new byte[0]));
+        .delete()
+        .uri(baseUrl + "/2251799813685732/assignee")
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
 
     final var argumentCaptor = ArgumentCaptor.forClass(BrokerUserTaskAssignmentRequest.class);
     Mockito.verify(brokerClient).sendRequest(argumentCaptor.capture());
