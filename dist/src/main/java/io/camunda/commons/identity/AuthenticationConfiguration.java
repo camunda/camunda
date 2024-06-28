@@ -5,15 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.commons.identity;
 
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
 
 @ComponentScan(basePackages = {"io.camunda.authentication"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
-@EnableAutoConfiguration
 @Profile("auth-basic")
-public class AuthenticationModuleConfiguration {}
+public class AuthenticationConfiguration {}

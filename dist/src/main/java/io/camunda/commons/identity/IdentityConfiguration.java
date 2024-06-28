@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity;
+package io.camunda.commons.identity;
 
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -32,7 +31,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
           pattern = "io\\.camunda\\.identity\\.starter\\..*")
     })
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
-@EnableAutoConfiguration
 @EnableJpaRepositories("io.camunda.identity")
 @EntityScan("io.camunda.identity")
 @Import(
@@ -45,4 +43,4 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
     name = "zeebe.broker.gateway.enable",
     havingValue = "true",
     matchIfMissing = true)
-public class IdentityModuleConfiguration {}
+public class IdentityConfiguration {}
