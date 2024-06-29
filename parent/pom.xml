@@ -214,7 +214,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.3.0</plugin.version.surefire>
-    <plugin.version.versions>2.16.2</plugin.version.versions>
+    <plugin.version.versions>2.17.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
