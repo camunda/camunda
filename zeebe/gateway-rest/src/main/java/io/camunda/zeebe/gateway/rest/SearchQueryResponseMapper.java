@@ -85,21 +85,19 @@ public final class SearchQueryResponseMapper {
     }
 
     if (items != null) {
-      response.setItems(toUserTasks(items).get());
+      response.setItems(toUserTasks(items));
     }
 
     return response;
   }
 
-  public static Either<ProblemDetail, List<UserTaskItem>> toUserTasks(
+  public static List<UserTaskItem> toUserTasks(
       final List<UserTaskEntity> tasks) {
-    return Either.right(
-        tasks.stream().map(SearchQueryResponseMapper::toUserTask).map(Either::get).toList());
+    return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
   }
 
-  public static Either<ProblemDetail, UserTaskItem> toUserTask(final UserTaskEntity t) {
-    return Either.right(
-        new UserTaskItem()
+  public static UserTaskItem toUserTask(final UserTaskEntity t) {
+    return new UserTaskItem()
             .tenantIds(t.tenantId())
             .key(t.key())
             .processInstanceKey(t.processInstanceId())
@@ -113,6 +111,6 @@ public final class SearchQueryResponseMapper {
             .creationDate(t.creationTime())
             .completionDate(t.completionTime())
             .dueDate(t.dueDate())
-            .followUpDate(t.followUpDate()));
+            .followUpDate(t.followUpDate());
   }
 }

@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -117,6 +118,7 @@ public final class SearchQueryRequestMapper {
       final List<SearchQuerySortRequest> sorting) {
     if (sorting != null && !sorting.isEmpty()) {
       final var builder = SortOptionBuilders.processInstance();
+      final List<ProblemDetail> validationErrors = new ArrayList<>();
 
       for (final SearchQuerySortRequest sort : sorting) {
         final var field = sort.getField();
@@ -129,7 +131,10 @@ public final class SearchQueryRequestMapper {
         } else if ("endDate".equals(field)) {
           builder.endDate();
         } else {
-          throw new RuntimeException("unkown sortBy " + field);
+          // Collect validation error for unknown sortBy field
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          continue;
         }
 
         if ("asc".equalsIgnoreCase(order)) {
@@ -137,8 +142,14 @@ public final class SearchQueryRequestMapper {
         } else if ("desc".equalsIgnoreCase(order)) {
           builder.desc();
         } else {
-          throw new RuntimeException("unkown sortOrder " + order);
+          // Collect validation error for unknown sortOrder
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
         }
+      }
+
+      if (!validationErrors.isEmpty()) {
+        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
       }
 
       return Either.right(builder.build());
@@ -152,6 +163,7 @@ public final class SearchQueryRequestMapper {
 
     if (sorting != null && !sorting.isEmpty()) {
       final var builder = SortOptionBuilders.userTask();
+      final List<ProblemDetail> validationErrors = new ArrayList<>();
 
       for (final SearchQuerySortRequest sort : sorting) {
         final var field = sort.getField();
@@ -162,11 +174,10 @@ public final class SearchQueryRequestMapper {
         } else if ("completionTime".equals(field)) {
           builder.completionDate();
         } else {
-          // Return an Either.Left with a ProblemDetail for unknown sortBy field
-          final ProblemDetail problemDetail =
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field);
-          return Either.left(problemDetail);
+          // Collect validation error for unknown sortBy field
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          continue;
         }
 
         if ("asc".equalsIgnoreCase(order)) {
@@ -174,12 +185,14 @@ public final class SearchQueryRequestMapper {
         } else if ("desc".equalsIgnoreCase(order)) {
           builder.desc();
         } else {
-          // Return an Either.Left with a ProblemDetail for unknown sortOrder
-          final ProblemDetail problemDetail =
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order);
-          return Either.left(problemDetail);
+          // Collect validation error for unknown sortOrder
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
         }
+      }
+
+      if (!validationErrors.isEmpty()) {
+        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
       }
 
       return Either.right(builder.build());
