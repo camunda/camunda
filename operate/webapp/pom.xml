@@ -45,7 +45,20 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-common</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.data</groupId>
+          <artifactId>spring-data-jpa</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
