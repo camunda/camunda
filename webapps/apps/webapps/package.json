@@ -16,7 +16,7 @@
     "@camunda/tasklist": "workspace:8.6.0-SNAPSHOT",
     "@carbon/grid": "11.23.0",
     "@carbon/layout": "11.22.0",
-    "@carbon/react": "file:/home/vinicius/repos/carbon/packages/react",
+    "@carbon/react": "1.60.3",
     "@carbon/styles": "1.59.0",
     "@carbon/themes": "11.36.0",
     "@carbon/type": "11.27.0",
