@@ -21,6 +21,7 @@ import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -31,12 +32,13 @@ public final class ProcessInstanceFilterTest {
 
   private ProcessInstanceServices services;
   private StubbedCamundaSearchClient client;
+  private StubbedBrokerClient brokerClient;
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new ProcessInstanceSearchQueryStub().registerWith(client);
-    services = new ProcessInstanceServices(client);
+    services = new ProcessInstanceServices(brokerClient, client);
   }
 
   @Test
