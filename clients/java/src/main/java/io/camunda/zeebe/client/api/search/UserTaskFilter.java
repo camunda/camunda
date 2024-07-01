@@ -49,26 +49,4 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter);
 
   UserTaskFilter userTaskTenantId(final String tenantId);
-
-  // TODO move this to a shared utility module
-
-  public static <T> List<T> addValuesToList(final List<T> list, final List<T> values) {
-    final List<T> result;
-    if (list == null) {
-      result = Objects.requireNonNull(values);
-    } else {
-      result = new ArrayList<>(list);
-      result.addAll(values);
-    }
-    return result;
-  }
-
-  public static <T> List<T> collectValues(final T value, final T... values) {
-    final List<T> collectedValues = new ArrayList<>();
-    collectedValues.add(value);
-    if (values != null && values.length > 0) {
-      collectedValues.addAll(Arrays.asList(values));
-    }
-    return collectedValues;
-  }
 }
