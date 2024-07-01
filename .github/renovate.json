@@ -175,7 +175,7 @@
       "customType": "regex",
       "fileMatch": ["package\\.json"],
       "matchStrings": [
-        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?) \\\/bin\\\/bash"
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
       ],
       "depNameTemplate": "mcr.microsoft.com/playwright",
       "datasourceTemplate": "docker"
