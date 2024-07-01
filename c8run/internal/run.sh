@@ -23,7 +23,12 @@ OPTIONS_HELP="Options:
   --detached   - Starts Camunda Run as a detached process
 "
 
-architecture="$(uname -m)"
+architectureRaw="$(uname -m)"
+case "${architectureRaw}" in
+  arm64*)     architecture=aarch64;;
+  x86_64*)    architecture=x86_64;;
+  *)          architecture=UNKNOWN
+esac
 
 unameOut="$(uname -s)"
 case "${unameOut}" in
