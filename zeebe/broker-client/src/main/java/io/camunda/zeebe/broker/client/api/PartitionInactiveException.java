@@ -12,7 +12,8 @@ package io.camunda.zeebe.broker.client.api;
  * partition.
  */
 public class PartitionInactiveException extends BrokerClientException {
-  private static final String DEFAULT_ERROR_MESSAGE = "The partition %d is currently INACTIVE";
+  private static final String DEFAULT_ERROR_MESSAGE =
+      "The partition %d is currently INACTIVE with no leader.";
   private final int partitionId;
 
   public PartitionInactiveException(final int partitionId) {
