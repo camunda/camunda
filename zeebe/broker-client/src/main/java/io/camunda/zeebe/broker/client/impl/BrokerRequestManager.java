@@ -223,8 +223,6 @@ final class BrokerRequestManager extends Actor {
       // select next partition id for request
       int partitionId = strategy.determinePartition(topologyManager);
 
-      throwIfPartitionInactive(partitionId);
-
       if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
         // could happen if the topology is not set yet, let's just try with partition 0 but we
         // should find a better solution
@@ -232,6 +230,8 @@ final class BrokerRequestManager extends Actor {
         partitionId = Protocol.DEPLOYMENT_PARTITION;
       }
       request.setPartitionId(partitionId);
+
+      throwIfPartitionInactive(partitionId);
 
       return new BrokerAddressProvider(request.getPartitionId());
     } else {
