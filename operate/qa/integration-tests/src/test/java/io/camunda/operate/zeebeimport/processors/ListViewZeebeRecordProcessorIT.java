@@ -739,7 +739,8 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     listViewZeebeRecordProcessor.processProcessInstanceRecord(
         (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)),
         batchRequest,
-        mock(ImportBatch.class));
+        mock(ImportBatch.class),
+        true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -747,7 +748,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private void importIncidentZeebeRecord(final Record<IncidentRecordValue> zeebeRecord)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
-    listViewZeebeRecordProcessor.processIncidentRecord(zeebeRecord, batchRequest);
+    listViewZeebeRecordProcessor.processIncidentRecord(zeebeRecord, batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -756,7 +757,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processVariableRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
+        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -765,7 +766,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processJobRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
+        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }

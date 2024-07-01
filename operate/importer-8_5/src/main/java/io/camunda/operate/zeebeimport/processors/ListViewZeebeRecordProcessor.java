@@ -50,7 +50,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
-import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.*;
@@ -105,8 +104,6 @@ public class ListViewZeebeRecordProcessor {
 
   @Autowired private MetricsStore metricsStore;
 
-  @Autowired private ImportStore importStore;
-
   // treePath by processInstanceKey cache
   private Map<String, String> treePathCache;
   // flowNodeId by flowNodeInstanceId cache for call activities
@@ -137,6 +134,12 @@ public class ListViewZeebeRecordProcessor {
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
+    processIncidentRecord(record, batchRequest, false);
+  }
+
+  public void processIncidentRecord(
+      final Record record, final BatchRequest batchRequest, final boolean concurrencyMode)
+      throws PersistenceException {
 
     final String intentStr = record.getIntent().name();
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
@@ -166,8 +169,6 @@ public class ListViewZeebeRecordProcessor {
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
     updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
 
-    final boolean concurrencyMode = importStore.getConcurrencyMode();
-
     if (concurrencyMode) {
       batchRequest.upsertWithScriptAndRouting(
           listViewTemplate.getFullQualifiedName(),
@@ -189,6 +190,14 @@ public class ListViewZeebeRecordProcessor {
   public void processVariableRecords(
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
+      throws PersistenceException {
+    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
+  }
+
+  public void processVariableRecords(
+      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
+      final BatchRequest batchRequest,
+      final boolean concurrencyMode)
       throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache =
@@ -222,8 +231,6 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(VAR_VALUE, variableEntity.getVarValue());
         updateFields.put(POSITION, variableEntity.getPosition());
 
-        final boolean concurrencyMode = importStore.getConcurrencyMode();
-
         if (concurrencyMode) {
           batchRequest.upsertWithScriptAndRouting(
               listViewTemplate.getFullQualifiedName(),
@@ -249,8 +256,15 @@ public class ListViewZeebeRecordProcessor {
       final BatchRequest batchRequest,
       final ImportBatch importBatch)
       throws PersistenceException {
+    processProcessInstanceRecord(records, batchRequest, importBatch, false);
+  }
 
-    final boolean concurrencyMode = importStore.getConcurrencyMode();
+  public void processProcessInstanceRecord(
+      final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
+      final BatchRequest batchRequest,
+      final ImportBatch importBatch,
+      final boolean concurrencyMode)
+      throws PersistenceException {
 
     final Map<String, String> treePathMap = new HashMap<>();
     for (final Map.Entry<Long, List<Record<ProcessInstanceRecordValue>>> wiRecordsEntry :
@@ -446,12 +460,20 @@ public class ListViewZeebeRecordProcessor {
   public void processJobRecords(
       final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
+    processJobRecords(records, batchRequest, false);
+  }
+
+  public void processJobRecords(
+      final Map<Long, List<Record<JobRecordValue>>> records,
+      final BatchRequest batchRequest,
+      final boolean concurrencyMode)
+      throws PersistenceException {
     for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
       processLastRecord(
           jobRecords,
           rethrowConsumer(
               record -> {
-                updateFlowNodeInstanceFromJob(record, batchRequest);
+                updateFlowNodeInstanceFromJob(record, batchRequest, concurrencyMode);
               }));
     }
   }
@@ -615,7 +637,9 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private void updateFlowNodeInstanceFromJob(
-      final Record<JobRecordValue> record, final BatchRequest batchRequest)
+      final Record<JobRecordValue> record,
+      final BatchRequest batchRequest,
+      final boolean concurrencyMode)
       throws PersistenceException {
     final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
 
@@ -645,7 +669,7 @@ public class ListViewZeebeRecordProcessor {
     updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
     updateFields.put(JOB_POSITION, entity.getPositionJob());
 
-    if (importStore.getConcurrencyMode()) {
+    if (concurrencyMode) {
       batchRequest.upsertWithScriptAndRouting(
           listViewTemplate.getFullQualifiedName(),
           entity.getId(),
