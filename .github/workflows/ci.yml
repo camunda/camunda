@@ -66,7 +66,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   java-checks:
-    if: needs.detect-changes.outputs.java-unit-tests == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
